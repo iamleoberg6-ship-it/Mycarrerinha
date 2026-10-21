@@ -34,6 +34,26 @@ export const ESCOLAS: Escola[] = [
   { id: "JPN_KOR", nome: "Japão e Coreia do Sul", pais: "Japão", nacionalidade: "JPN", lingua: "ja", descricao: "Velocidade, fôlego e disciplina tática.", mods: { VEL: 4, RES: 3, POS: 1, DRI: -2, FOR: -1 }, pers: { profissionalismo: 3 } },
 ];
 
+export type PaisId = "BRA" | "ARG" | "URU" | "ESP" | "NED" | "GER" | "ITA" | "ENG" | "FRA" | "NGA" | "SEN" | "GHA" | "JPN" | "KOR";
+/** Cada país tem a sua carta; países da mesma escola de futebol compartilham as tendências de atributos. */
+export interface Pais { id: PaisId; nome: string; local: string; escola: EscolaId; nacionalidade: string; lingua: string; nota: string }
+export const PAISES: Pais[] = [
+  { id: "BRA", nome: "Brasil", local: "no Brasil", escola: "BRA", nacionalidade: "BRA", lingua: "pt", nota: "Terra do drible. Aqui a bola é brincadeira antes de ser profissão." },
+  { id: "ARG", nome: "Argentina", local: "na Argentina", escola: "ARG_URU", nacionalidade: "ARG", lingua: "es", nota: "Potreros, garra e um país inteiro que vive o futebol." },
+  { id: "URU", nome: "Uruguai", local: "no Uruguai", escola: "ARG_URU", nacionalidade: "URU", lingua: "es", nota: "Três milhões de pessoas e uma raça que não desiste." },
+  { id: "ESP", nome: "Espanha", local: "na Espanha", escola: "ESP_NED", nacionalidade: "ESP", lingua: "es", nota: "Desde pequeno, a bola não pode ser perdida." },
+  { id: "NED", nome: "Holanda", local: "na Holanda", escola: "ESP_NED", nacionalidade: "NED", lingua: "nl", nota: "A escola que inventou ocupar espaços." },
+  { id: "GER", nome: "Alemanha", local: "na Alemanha", escola: "GER", nacionalidade: "GER", lingua: "de", nota: "Método, disciplina e treino até cansar." },
+  { id: "ITA", nome: "Itália", local: "na Itália", escola: "ITA", nacionalidade: "ITA", lingua: "it", nota: "Onde defender bem é uma arte." },
+  { id: "ENG", nome: "Inglaterra", local: "na Inglaterra", escola: "ENG", nacionalidade: "ENG", lingua: "en", nota: "Chuva, lama e jogo intenso desde o primeiro chute." },
+  { id: "FRA", nome: "França", local: "na França", escola: "FRA", nacionalidade: "FRA", lingua: "fr", nota: "Os campos de bairro que viraram fábrica de craques." },
+  { id: "NGA", nome: "Nigéria", local: "na Nigéria", escola: "AFO", nacionalidade: "NGA", lingua: "en", nota: "Campinho de terra batida e uma explosão que ninguém ensina." },
+  { id: "SEN", nome: "Senegal", local: "no Senegal", escola: "AFO", nacionalidade: "SEN", lingua: "fr", nota: "Na praia de Dakar, todo fim de tarde vira jogo." },
+  { id: "GHA", nome: "Gana", local: "em Gana", escola: "AFO", nacionalidade: "GHA", lingua: "en", nota: "As Estrelas Negras inspiram cada garoto da rua." },
+  { id: "JPN", nome: "Japão", local: "no Japão", escola: "JPN_KOR", nacionalidade: "JPN", lingua: "ja", nota: "Escola organizada, treino diário e respeito ao coletivo." },
+  { id: "KOR", nome: "Coreia do Sul", local: "na Coreia do Sul", escola: "JPN_KOR", nacionalidade: "KOR", lingua: "ko", nota: "Fôlego infinito e disciplina de sobra." },
+];
+
 export interface Formacao {
   id: FormacaoId; nome: string; descricao: string; mods: Mods; pot?: number; pers?: Partial<PersonalidadeDNA>;
   exigeFamilia?: FamiliaId[]; traco?: TracoId;
@@ -69,7 +89,8 @@ export const TRACOS: Record<TracoId, Traco> = {
 export interface EscolhasCriacao {
   nome: string;
   apelido?: string;
-  escola: EscolaId;
+  pais: PaisId;
+  clubeCoracao?: string; // id do clube do pacote de dados
   familia: FamiliaId;
   formacao: FormacaoId;
   alturaCm: number; // 165–195
@@ -91,6 +112,8 @@ export interface ResultadoCriacao {
   dinheiroInicial: number;
   vidaNoturnaInicial: number;
   modsAplicados: Mods;
+  nacionalidade: string;
+  escola: EscolaId;
 }
 
 export function formacaoPermitida(f: FormacaoId, familia: FamiliaId): boolean {
@@ -112,7 +135,7 @@ function modsAltura(cm: number): Mods {
   return m;
 }
 
-function sortearTracos(rng: RNG, e: EscolhasCriacao, formacao: FormacaoId): TracoId[] {
+function sortearTracos(rng: RNG, e: EscolhasCriacao & { escola: EscolaId }, formacao: FormacaoId): TracoId[] {
   const peso: Record<TracoId, number> = { ginga: 1, drible_curto: 1, chute_longe: 1, cabeceador: 1, bicicleta: 0.5, lider_nato: 1, frieza: 1, velocista: 1 };
   const f = FORMACOES.find((x) => x.id === formacao)!;
   if (f.traco) peso[f.traco] += 4;
@@ -136,7 +159,8 @@ function sortearTracos(rng: RNG, e: EscolhasCriacao, formacao: FormacaoId): Trac
 
 /** Cria o jogador a partir das escolhas. Determinístico para a mesma semente e as mesmas escolhas. */
 export function criarJogador(e: EscolhasCriacao): ResultadoCriacao {
-  const rng = new RNG(e.semente ?? `${e.nome}|${e.escola}|${e.familia}|${e.formacao}|${e.alturaCm}|${e.pe}|${e.posicao}`);
+  const pais = PAISES.find((x) => x.id === e.pais)!;
+  const rng = new RNG(e.semente ?? `${e.nome}|${e.pais}|${e.familia}|${e.formacao}|${e.alturaCm}|${e.pe}|${e.posicao}`);
   if (!formacaoPermitida(e.formacao, e.familia)) throw new Error(`Formação ${e.formacao} exige outra origem familiar`);
   // peneira do clube grande
   let formacaoFinal = e.formacao;
@@ -149,7 +173,7 @@ export function criarJogador(e: EscolhasCriacao): ResultadoCriacao {
       : { aprovado, texto: "Na peneira de 300 garotos, faltou pouco. Você voltou para a escolinha do bairro, com mais vontade ainda." };
     if (!aprovado) formacaoFinal = "escolinha";
   }
-  const escola = ESCOLAS.find((x) => x.id === e.escola)!;
+  const escola = ESCOLAS.find((x) => x.id === pais.escola)!;
   const formacao = FORMACOES.find((x) => x.id === formacaoFinal)!;
   const familia = FAMILIAS.find((x) => x.id === e.familia)!;
   const mods = somar(escola.mods, formacao.mods, familia.mods, modsAltura(e.alturaCm), e.pe === "ambidestro" ? { DRI: 3, FIN: 3 } : {});
@@ -175,7 +199,7 @@ export function criarJogador(e: EscolhasCriacao): ResultadoCriacao {
 
   return {
     escolhas: e, formacaoFinal, peneira, atributos: at, ovr: Math.round(ovr(at, e.posicao)), potencial, faixaPotencial,
-    personalidade: pers, tracos: sortearTracos(rng, e, formacaoFinal), dinheiroInicial: familia.dinheiro,
-    vidaNoturnaInicial: familia.vidaNoturna, modsAplicados: mods,
+    personalidade: pers, tracos: sortearTracos(rng, { ...e, escola: escola.id }, formacaoFinal), dinheiroInicial: familia.dinheiro,
+    vidaNoturnaInicial: familia.vidaNoturna, modsAplicados: mods, nacionalidade: pais.nacionalidade, escola: escola.id,
   };
 }

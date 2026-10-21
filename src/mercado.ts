@@ -49,7 +49,7 @@ export function filaNaPosicao(clube: Clube, pos: Posicao, ovr: number): number {
 
 // ---------- Interesse dos clubes ----------
 
-const LINGUA: Record<string, string> = { BRA: "pt", POR: "pt", ANG: "pt", ARG: "es", URU: "es", COL: "es", ESP: "es", CHI: "es", PAR: "es", ECU: "es", PER: "es", VEN: "es", BOL: "es", ENG: "en", FRA: "fr", ITA: "it", GER: "de", NED: "nl", KSA: "ar" };
+const LINGUA: Record<string, string> = { BRA: "pt", POR: "pt", ANG: "pt", ARG: "es", URU: "es", COL: "es", ESP: "es", CHI: "es", PAR: "es", ECU: "es", PER: "es", VEN: "es", BOL: "es", ENG: "en", FRA: "fr", ITA: "it", GER: "de", NED: "nl", KSA: "ar", NGA: "en", GHA: "en", SEN: "fr", JPN: "ja", KOR: "ko" };
 const SUL_AMERICANOS = new Set(["BRA", "ARG", "URU", "COL", "CHI", "PAR", "ECU", "PER", "VEN", "BOL"]);
 export const LINGUA_DA_LIGA: Record<string, string> = { EUR: "es", BRA: "pt", ARA: "ar" };
 

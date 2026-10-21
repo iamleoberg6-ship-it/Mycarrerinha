@@ -5,7 +5,7 @@ import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.
 import { valorMercado, salarioMensal } from "../src/mercado.js";
 import { carregarPacote, ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
 import { Carreira } from "../src/carreira.js";
-import { criarJogador, formacaoPermitida, ESCOLAS, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
+import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
 const teste = (nome: string, fn: () => void) => { fn(); ok++; console.log("ok -", nome); };
@@ -71,16 +71,22 @@ teste("Carreira termina entre 30 e 40 anos e o patrimônio é positivo", () => {
   }
 });
 
-const base: EscolhasCriacao = { nome: "Teste", escola: "BRA", familia: "humilde", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "ATA", semente: "s1" };
+const base: EscolhasCriacao = { nome: "Teste", pais: "BRA", familia: "humilde", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "ATA", semente: "s1" };
 
 teste("DNA: mesma escolha e semente geram o mesmo jogador", () => {
   assert.deepEqual(criarJogador(base), criarJogador(base));
 });
 
 teste("DNA: escola muda os atributos na direção do documento", () => {
-  const bra = criarJogador(base), ita = criarJogador({ ...base, escola: "ITA" });
+  const bra = criarJogador(base), ita = criarJogador({ ...base, pais: "ITA" });
   assert.ok(bra.atributos.DRI > ita.atributos.DRI);
   assert.ok(ita.atributos.MAR > bra.atributos.MAR);
+});
+
+teste("DNA: Argentina e Uruguai são cartas separadas com a mesma escola", () => {
+  const ar = criarJogador({ ...base, pais: "ARG" }), ur = criarJogador({ ...base, pais: "URU" });
+  assert.equal(ar.escola, ur.escola);
+  assert.notEqual(ar.nacionalidade, ur.nacionalidade);
 });
 
 teste("DNA: academia particular exige família de classe média ou rica", () => {
@@ -90,10 +96,10 @@ teste("DNA: academia particular exige família de classe média ou rica", () => 
 
 teste("DNA: OVR inicial entre 42 e 58 em todas as combinações", () => {
   let n = 0, soma = 0;
-  for (const e of ESCOLAS) for (const f of FORMACOES) for (const fa of FAMILIAS) {
+  for (const e of PAISES) for (const f of FORMACOES) for (const fa of FAMILIAS) {
     if (!formacaoPermitida(f.id, fa.id)) continue;
     for (const pos of ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA"] as const) {
-      const r = criarJogador({ ...base, escola: e.id, formacao: f.id, familia: fa.id, posicao: pos, semente: `${e.id}${f.id}${fa.id}${pos}` });
+      const r = criarJogador({ ...base, pais: e.id, formacao: f.id, familia: fa.id, posicao: pos, semente: `${e.id}${f.id}${fa.id}${pos}` });
       assert.ok(r.ovr >= 42 && r.ovr <= 58, `${e.id}/${f.id}/${fa.id}/${pos}: ${r.ovr}`);
       assert.ok(r.faixaPotencial[0] <= r.potencial + 8 && r.faixaPotencial[1] >= r.potencial - 8);
       n++; soma += r.ovr;
