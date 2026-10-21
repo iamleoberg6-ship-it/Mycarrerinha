@@ -9,7 +9,8 @@ import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
-import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana } from "../src/jogo.js";
+import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo } from "../src/jogo.js";
+import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -246,6 +247,33 @@ teste("Carreira jogável: temporada completa, tabela fechada e mesma semente, me
     const ds = (p?.decisoes ?? []).map((d) => resolverDecisao(a, p!, d, d.opcoes[0].id));
     const res = concluirSemana(pacote, a, plano, p, ds);
     if (res.partida && res.partida.minutos > 0) assert.ok(res.partida.nota >= 3 && res.partida.nota <= 10);
+  }
+});
+
+teste("Lances: catálogo completo, sem marcador vazio e sem repetir a mesma situação no jogo", () => {
+  const todas = [...SITUACOES, ...POS_JOGO, COMEMORACAO];
+  assert.ok(SITUACOES.length >= 40, `só ${SITUACOES.length} situações de jogo`);
+  assert.equal(new Set(todas.map((x) => x.id)).size, todas.length, "id repetido");
+  for (const st of todas) for (const o of st.opcoes) assert.equal(o.niveis.length, 5, `${st.id}/${o.id}`);
+  const vazio = (t: string, onde: string) => assert.ok(!/[{}]/.test(t), `marcador sem nome em ${onde}: ${t}`);
+  for (const [i, pos] of (["ATA", "ZAG", "MEI", "LAT", "VOL", "PON"] as const).entries()) {
+    const r = criarJogador({ nome: "Var", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: pos, semente: `lances${i}` });
+    const dados = { resultado: r, aparencia: {}, clube: "FLA" };
+    const s = novoJogo(pacote, dados, ofertasDeBase(pacote, dados)[i % 3].clubeId, `lances${i}`);
+    for (let w = 0; w < 16; w++) {
+      const plano = planoPadrao(), p = prepararPartida(pacote, s, plano);
+      if (p && p.decisoes.length) {
+        vazio(p.abertura, "abertura"); p.narracao.forEach((l) => vazio(l.texto, "narração")); p.lances.forEach((l) => vazio(l.texto, "gol"));
+        assert.equal(new Set(p.decisoes.map((d) => d.situacao)).size, p.decisoes.length, "situação repetida no mesmo jogo");
+        const ds = p.decisoes.map((d) => { vazio(d.titulo + d.texto, d.situacao); return resolverDecisao(s, p, d, d.opcoes[w % d.opcoes.length].id); });
+        ds.forEach((x) => { vazio(x.texto, x.situacao); if (x.noticia) vazio(x.noticia, x.situacao); });
+        const c = decisaoComemoracao(s, p, 30); vazio(c.titulo + c.texto, "comemoração"); assert.ok(c.opcoes.length <= 4);
+        const pj = decisaoPosJogo(s, p, ds);
+        if (pj) { vazio(pj.titulo + pj.texto, pj.situacao); const rr = resolverDecisao(s, p, pj, pj.opcoes[0].id); vazio(rr.texto, pj.situacao); assert.equal(SITUACAO[pj.situacao].momento, "pos"); }
+        concluirSemana(pacote, s, plano, p, ds);
+      } else concluirSemana(pacote, s, plano, p, []);
+    }
+    assert.ok(Object.keys(s.carreira.memoria?.vistos ?? {}).length > 0, "memória de lances vazia");
   }
 });
 

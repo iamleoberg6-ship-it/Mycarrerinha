@@ -6,10 +6,11 @@ import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from ".
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro } from "../../src/casa";
 import {
-  ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
+  ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
 } from "../../src/jogo";
+import { SITUACAO } from "../../src/lances";
 import { svgFoto, APARENCIA_PADRAO, type Aparencia } from "../criacao/avatar";
 import { svgComodo } from "../casa/iso";
 
@@ -151,15 +152,15 @@ function abaCasa(s: Save): string {
 // ------------------------------------------------------------------ partida narrada
 let partida: Partida | undefined;
 let resultados: ResultadoDecisao[] = [];
-type ItemFila = { min: number; html?: string; decisao?: Decisao; gol?: "casa" | "fora"; meu?: "gol" | "assist"; saida?: boolean };
+type ItemFila = { min: number; html?: string; cls?: string; decisao?: Decisao; gol?: "casa" | "fora"; meu?: "gol" | "assist"; texto?: string; saida?: boolean; fim?: boolean };
 let fila: ItemFila[] = [];
-let placar = [0, 0], timer = 0, minutoAtual = 0, nDec = 0, amarelos = 0, expulso = false, comemorou = false;
+let placar = [0, 0], timer = 0, minutoAtual = 0, nDec = 0, amarelos = 0, expulso = false, comemorou = false, posFeito = false;
 const decisoesAbertas: Record<number, Decisao> = {};
 
-function htmlGol(p: Partida, lado: "casa" | "fora", meu?: "gol" | "assist") {
+function htmlGol(p: Partida, lado: "casa" | "fora", meu?: "gol" | "assist", texto?: string) {
   const nome = save!.jogador.apelido, time = lado === "casa" ? p.nomeCasa : p.nomeFora, meuTime = (lado === "casa") === p.souCasa;
   const extra = meu === "gol" ? ` GOL de ${esc(nome)}!` : meu === "assist" ? ` Assistência de ${esc(nome)}.` : "";
-  return `<span class="${meuTime ? (meu ? "meu" : "") : "contra"}">Gol do ${esc(time)}.${extra}</span>`;
+  return `<span class="${meuTime ? (meu ? "meu" : "") : "contra"}">Gol do ${esc(time)}!${extra}</span>${texto ? `<br><small class="detalhe">${esc(texto)}</small>` : ""}`;
 }
 
 function abrirJogo() {
@@ -168,15 +169,16 @@ function abrirJogo() {
   resultados = [];
   if (!partida || partida.escalacao === "lesionado" || partida.escalacao === "fora" || partida.escalacao === "suspenso" || (partida.escalacao === "banco" && partida.entrada > 90 && partida.lances.length === 0)) { fecharSemana(); return; }
   const p = partida, nome = save.jogador.apelido;
-  placar = [0, 0]; minutoAtual = 0; amarelos = 0; expulso = false; comemorou = false;
-  fila = [{ min: 0, html: `Bola rolando${p.tipo === "base" ? " no jogo da base" : ""}.${p.escalacao === "titular" || p.tipo === "base" ? ` ${esc(nome)} começa jogando.` : ` ${esc(nome)} começa no banco.`}` }];
+  placar = [0, 0]; minutoAtual = 0; amarelos = 0; expulso = false; comemorou = false; posFeito = false;
+  fila = [{ min: 0, html: `${esc(p.abertura || "Bola rolando.")}${p.escalacao === "titular" || p.tipo === "base" ? ` ${esc(nome)} começa jogando.` : ` ${esc(nome)} começa no banco.`}` }];
+  for (const l of p.narracao ?? []) fila.push({ min: l.min, html: esc(l.texto), cls: l.cls });
   if (p.entrada > 0 && p.entrada <= 90) fila.push({ min: p.entrada, html: `Substituição: ${esc(nome)} entra em campo.` });
   if (p.saida < 90) fila.push({ min: p.saida, saida: true, html: `${esc(nome)} sente o cansaço e é substituído.` });
   fila.push({ min: 45, html: "Intervalo." });
-  for (const l of p.lances) fila.push({ min: l.min, gol: l.lado, meu: l.meu });
+  for (const l of p.lances) fila.push({ min: l.min, gol: l.lado, meu: l.meu, texto: l.texto });
   p.decisoes.forEach((d) => fila.push({ min: d.min, decisao: d }));
   fila.sort((a, b) => a.min - b.min || (a.decisao ? 1 : 0) - (b.decisao ? 1 : 0));
-  fila.push({ min: 90, html: "Fim de jogo." });
+  fila.push({ min: 90, fim: true, html: "Fim de jogo." });
   $("telaJogo").innerHTML = `<div class="placar"><p class="rotulo" style="text-align:center;margin-bottom:6px">${p.tipo === "base" ? "Sub-17" : rotuloSemana(save.carreira)}</p>
     <div class="linha"><div class="time">${escudo(p.casa)}<span>${esc(p.nomeCasa)}</span></div><div class="gols" id="gols">0 × 0</div><div class="time dir"><span>${esc(p.nomeFora)}</span>${escudo(p.fora)}</div></div>
     <div class="min" id="minuto">0'</div></div>
@@ -194,13 +196,20 @@ function adicionarLance(min: number, html: string, cls = "") {
 function avancar() {
   clearTimeout(timer);
   const item = fila.shift();
-  if (!item || !partida || !save) return;
+  if (!partida || !save) return;
+  if (!item) { $("rodapeJogo").innerHTML = `<button class="botao grande" data-acao="fimjogo">Ver a semana</button>`; return; }
   minutoAtual = item.min;
   if (item.decisao) { mostrarDecisao(item.decisao); atualizarPlacar(); return; }
   if (item.gol) { if (item.gol === "casa") placar[0]++; else placar[1]++; }
   atualizarPlacar();
-  adicionarLance(item.min, item.html ?? htmlGol(partida, item.gol!, item.meu), item.gol ? "gol" : "");
+  adicionarLance(item.min, item.html ?? htmlGol(partida, item.gol!, item.meu, item.texto), item.gol ? "gol" : item.cls ?? "");
   if (item.meu === "gol") abrirComemoracao(item.min);
+  if (item.fim && !posFeito) {
+    // depois do apito, às vezes ainda tem entrevista, troca de camisa, conversa com o técnico...
+    posFeito = true;
+    const pos = decisaoPosJogo(save, partida, resultados);
+    if (pos) fila.unshift({ min: 90, decisao: pos });
+  }
   if (!fila.length) { $("rodapeJogo").innerHTML = `<button class="botao grande" data-acao="fimjogo">Ver a semana</button>`; return; }
   timer = window.setTimeout(avancar, item.gol ? 1100 : 650);
 }
@@ -209,13 +218,14 @@ function avancar() {
 function abrirComemoracao(min: number) {
   if (comemorou || expulso) return;
   comemorou = true;
-  fila.unshift({ min, decisao: decisaoComemoracao(min) });
+  fila.unshift({ min, decisao: decisaoComemoracao(save!, partida!, min) });
 }
 
 function mostrarDecisao(d: Decisao) {
   const i = nDec++; decisoesAbertas[i] = d;
   const el = document.createElement("div"); el.className = "decisao"; el.id = `dec${i}`;
-  el.innerHTML = `<p class="rotulo" style="color:var(--ouro)">${d.min}' · Sua decisão</p><h2>${esc(d.titulo)}</h2><p class="sub" style="font-size:15px;color:var(--giz)">${esc(d.texto)}</p>
+  const pos = SITUACAO[d.situacao]?.momento === "pos";
+  el.innerHTML = `<p class="rotulo" style="color:var(--ouro)">${pos ? "Depois do jogo" : `${d.min}' · Sua decisão`}</p><h2>${esc(d.titulo)}</h2><p class="sub" style="font-size:15px;color:var(--giz)">${esc(d.texto)}</p>
     <div class="ops">${d.opcoes.map((o) => `<button data-decidir="${i}" data-op="${o.id}"><span>${esc(o.rotulo)}</span><small>›</small></button>`).join("")}</div>`;
   $("lances").appendChild(el); el.scrollIntoView({ behavior: "smooth", block: "end" });
   $("rodapeJogo").innerHTML = `<p class="sub" style="text-align:center">Escolha uma opção.</p>`;
@@ -240,6 +250,10 @@ function decidir(i: number, op: string) {
     novos.push({ min: d.min, html: `<span class="cartao vermelho"></span><span class="contra">${r.vermelho ? "Cartão vermelho direto" : "Segundo amarelo, depois o vermelho"}. ${esc(save!.jogador.apelido)} está expulso.</span>` });
     // fora de campo: some o resto das decisões, a saída por cansaço e o crédito pelos gols que ainda vão sair
     fila = fila.filter((x) => !x.decisao && !x.saida).map((x) => (x.meu ? { ...x, meu: undefined } : x));
+  } else if (r.sai) {
+    expulso = true;
+    novos.push({ min: d.min, html: `${esc(save!.jogador.apelido)} deixa o campo.` });
+    fila = fila.filter((x) => !(x.decisao && SITUACAO[x.decisao.situacao]?.momento !== "pos") && !x.saida).map((x) => (x.meu ? { ...x, meu: undefined } : x));
   } else if (r.amarelo) novos.push({ min: d.min, html: `<span class="cartao"></span>Cartão amarelo para ${esc(save!.jogador.apelido)}.` });
   fila.unshift(...novos);
   $("rodapeJogo").innerHTML = `<button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button>`;
