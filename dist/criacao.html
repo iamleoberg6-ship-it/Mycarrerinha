@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nasce um Craque</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +29,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { background: var(--campo); color: var(--giz); font-family: var(--texto); font-size: 16px; line-height: 1.5; }
+body { margin: 0; background: var(--campo); color: var(--giz); font-family: var(--texto); font-size: 16px; line-height: 1.5; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--campo); }
 .pagina { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 120px; display: flex; flex-direction: column; gap: 20px; }
 
@@ -189,6 +194,8 @@ output { color: var(--giz); font-family: var(--display); font-size: 20px; letter
   .card, .cena, .opcao, #notificacao, .depois, .costas-marca em { transition: none; animation: none; }
 }
 </style>
+</head>
+<body>
 
 <div class="pagina">
   <header class="marca"><strong>Mycarrerinha</strong><span>Criação do jogador</span></header>
@@ -350,3 +357,5 @@ output { color: var(--giz); font-family: var(--display); font-size: 20px; letter
     </div>`:""}
   </section>`}function ka(){switch(s.passo){case 0:return s.nome.trim().length>=2;case 1:return!!s.pais;case 2:return!!s.familia;case 3:return s.clube!==null;case 4:return!!s.formacao&&(!s.familia||W(s.formacao,s.familia));case 6:return!!s.posicao;default:return!0}}var no=-1;function V(){let o=s.passo;o!==no&&(clearTimeout(ha),y("#notificacao").hidden=!0,no=o),y("#progresso").innerHTML=po.map((e,t)=>`<li class="${t<o?"feito":t===o?"atual":""}"><span>${e}</span></li>`).join(""),y("#conteudo").innerHTML=Xo(),y("#navegacao").hidden=o>=8,y("#voltar").disabled=o===0;let a=y("#avancar");a.disabled=!ka(),a.textContent=o===7?"Revelar o DNA":"Continuar",te()}function oa(o,a){let e=y("#notificacao");e.innerHTML=`<strong>${M(o)}</strong><span>${M(a)}</span>`,e.hidden=!1,e.classList.remove("sai"),clearTimeout(ha),ha=window.setTimeout(()=>{e.classList.add("sai"),ha=window.setTimeout(()=>e.hidden=!0,300)},4200)}function te(){let o=document.getElementById("nome");o?.addEventListener("input",()=>{s.nome=o.value,y("#avancar").disabled=!ka()});let a=document.getElementById("apelido");a?.addEventListener("input",()=>{s.apelido=a.value});let e=document.getElementById("altura");e?.addEventListener("input",()=>{s.alturaCm=Number(e.value),y("#altura-valor").textContent=Ra(s.alturaCm),y("#altura-efeito").textContent=$o(s.alturaCm)});let t=document.getElementById("sobrancelha");t?.addEventListener("input",()=>{s.aparencia.sobrancelha=Number(t.value),y(".avatar-grande").innerHTML=ea(void 0,s.traje)}),document.querySelectorAll("[data-grupo]").forEach(r=>r.addEventListener("click",()=>re(r.dataset.grupo,r.dataset.id)));let n=document.getElementById("card"),i=()=>{s.aberto||(s.aberto=!0,n.classList.add("aberto"),n.setAttribute("aria-label","Card do jogador"),window.setTimeout(()=>{let r=document.querySelector(".depois");r&&(r.hidden=!1)},700))};n?.addEventListener("click",i),n?.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),i())}),document.getElementById("exemplo")?.addEventListener("click",()=>{Object.assign(s,{pais:"BRA",familia:"humilde",clube:"FLA",formacao:"rua",posicao:"PON",alturaCm:174,pe:"esquerdo",aparenciaFeita:!0}),s.aparencia={...s.aparencia,pele:3,cabelo:"cacheado",corCabelo:0},Ma(),s.passo=8,V(),window.scrollTo(0,0)}),document.getElementById("sortear")?.addEventListener("click",()=>{s.tentativa++,Ma(),V(),window.scrollTo(0,0)}),document.getElementById("refazer")?.addEventListener("click",()=>{s.passo=1,V(),window.scrollTo(0,0)}),document.getElementById("guardar")?.addEventListener("click",()=>{let r=y("#aviso");try{localStorage.setItem("mycarrerinha:jogador",JSON.stringify({resultado:s.resultado,aparencia:s.aparencia,clube:s.clube,perfil:s.perfil?.id,decisao:s.decisao})),r.textContent="Jogador guardado neste navegador. A pr\xF3xima tela, a primeira semana no clube, vai come\xE7ar com ele."}catch{r.textContent="Este navegador n\xE3o deixou guardar o jogador. Ele continua aqui enquanto a p\xE1gina estiver aberta."}})}function re(o,a){if(o==="pais"){s.pais=a;let e=La();oa(`Nascido ${e.local}`,e.nota)}else if(o==="familia")s.familia=a,s.formacao&&!W(s.formacao,s.familia)&&(s.formacao=null),oa(K.find(e=>e.id===a).nome,Ko[a]);else if(o==="clube"){s.clube=a==="bairro"?"":a;let e=ia();oa(e.id?`Torcedor do ${e.apelido}`:"Time do bairro",e.id?"A camisa j\xE1 est\xE1 na foto. Um dia voc\xEA pode vestir a de verdade.":"Sem clube grande no cora\xE7\xE3o. Livre para vestir qualquer camisa.")}else if(o==="formacao")s.formacao=a,oa(z.find(e=>e.id===a).nome,Wo[a]);else if(o==="pe")s.pe=a;else if(o==="posicao")s.posicao=a;else if(o==="aba")s.aba=a,a==="roupa"&&(s.traje="social");else if(o==="traje")s.traje=a;else if(o==="liga"){let e=a;s.aparencia[e]=!s.aparencia[e]}else if(o==="decisao"){s.decisao=a;let e=s.perfil?.evento?.opcoes.find(t=>t.id===a);e&&oa("Decis\xE3o tomada",e.resultado)}else if(o.startsWith("ap-")){let e=o.slice(3),t=e==="pele"||e==="corCabelo"||e==="olhos"||e==="corSocial";s.aparencia[e]=t?Number(a):a}V()}function Ma(){s.resultado=Ba(oe()),s.perfil=io(s.resultado),s.decisao=null,s.aberto=!1}y("#voltar").addEventListener("click",()=>{s.passo>0&&(s.passo--,V(),window.scrollTo(0,0))});y("#avancar").addEventListener("click",()=>{ka()&&(s.passo===7&&(s.aparenciaFeita=!0,Ma()),s.passo++,V(),window.scrollTo(0,0))});V();})();
 </script>
+</body>
+</html>

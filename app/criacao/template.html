@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nasce um Craque</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +29,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { background: var(--campo); color: var(--giz); font-family: var(--texto); font-size: 16px; line-height: 1.5; }
+body { margin: 0; background: var(--campo); color: var(--giz); font-family: var(--texto); font-size: 16px; line-height: 1.5; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--campo); }
 .pagina { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 120px; display: flex; flex-direction: column; gap: 20px; }
 
@@ -189,6 +194,8 @@ output { color: var(--giz); font-family: var(--display); font-size: 20px; letter
   .card, .cena, .opcao, #notificacao, .depois, .costas-marca em { transition: none; animation: none; }
 }
 </style>
+</head>
+<body>
 
 <div class="pagina">
   <header class="marca"><strong>Mycarrerinha</strong><span>Criação do jogador</span></header>
@@ -203,3 +210,5 @@ output { color: var(--giz); font-family: var(--display); font-size: 20px; letter
   </div>
 </nav>
 <script>/*__SCRIPT__*/</script>
+</body>
+</html>
