@@ -9,10 +9,12 @@
     "balanceamento": "tsx scripts/balanceamento.ts",
     "carreira": "tsx scripts/carreira.ts",
     "test": "tsx scripts/testes.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:criacao": "node scripts/build-criacao.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "esbuild": "^0.24.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }

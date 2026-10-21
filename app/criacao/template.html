@@ -1,0 +1,154 @@
+<title>Nasce um Craque</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: uma coluna estreita como a tela de um celular; o progresso é uma linha de giz com 8 marcações, e o card dourado é o único objeto brilhante da página. */
+:root {
+  --campo: #0C1A17;
+  --campo-2: #13261F;
+  --campo-3: #1A3129;
+  --linha: #2B4239;
+  --giz: #EDF2EB;
+  --giz-2: #A3B6AD;
+  --ouro: #E3B341;
+  --ouro-claro: #F6DC8A;
+  --ouro-escuro: #6E5317;
+  --tinta: #241A06;
+  --pos: #74D394;
+  --neg: #EC7D69;
+  --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --texto: "Barlow", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--campo); color: var(--giz); font-family: var(--texto); font-size: 16px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--campo); }
+.pagina { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 120px; display: flex; flex-direction: column; gap: 20px; }
+
+.marca { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.marca strong { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ouro); }
+.marca span { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--giz-2); }
+
+#progresso { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+#progresso li { height: 4px; border-radius: 2px; background: var(--linha); position: relative; }
+#progresso li.feito { background: var(--giz-2); }
+#progresso li.atual { background: var(--ouro); }
+#progresso span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+#conteudo { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.capitulo { margin: 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ouro); font-weight: 600; }
+h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(34px, 9vw, 46px); line-height: 1.02; text-wrap: balance; text-transform: uppercase; }
+h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; letter-spacing: 0.02em; }
+.sub { margin: 0; color: var(--giz-2); max-width: 46ch; }
+.historia { margin: 0; padding-left: 12px; border-left: 2px solid var(--ouro-escuro); color: var(--giz-2); font-style: italic; max-width: 52ch; }
+
+.campos { display: flex; flex-direction: column; gap: 8px; }
+label, .rotulo { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--giz-2); font-weight: 600; display: flex; justify-content: space-between; }
+input[type="text"], input:not([type]) { width: 100%; background: var(--campo-2); color: var(--giz); border: 1px solid var(--linha); border-radius: 10px; padding: 14px; font: 600 20px var(--texto); margin-bottom: 8px; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
+input[type="range"] { width: 100%; accent-color: var(--ouro); }
+output { color: var(--giz); font-family: var(--display); font-size: 20px; letter-spacing: 0; }
+.efeito { margin: 0 0 8px; font-size: 14px; color: var(--ouro-claro); }
+
+.opcoes { display: flex; flex-direction: column; gap: 10px; }
+.opcao { text-align: left; background: var(--campo-2); color: var(--giz); border: 1px solid var(--linha); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+.opcao:hover:not(:disabled) { border-color: var(--giz-2); }
+.opcao.ativa { border-color: var(--ouro); background: var(--campo-3); box-shadow: inset 3px 0 0 var(--ouro); }
+.opcao:disabled { opacity: 0.5; cursor: not-allowed; }
+.opcao-titulo { font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; letter-spacing: 0.02em; }
+.opcao-texto { color: var(--giz-2); font-size: 15px; }
+.opcao-aviso { font-size: 13px; color: var(--neg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chip { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--campo); border: 1px solid var(--linha); font-variant-numeric: tabular-nums; }
+.chip.pos { color: var(--pos); } .chip.neg { color: var(--neg); } .chip.neutro { color: var(--giz-2); }
+
+.segmentado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.segmentado button, .pilula { background: var(--campo-2); color: var(--giz); border: 1px solid var(--linha); border-radius: 10px; padding: 12px 8px; font: 600 15px var(--texto); cursor: pointer; }
+.segmentado button.ativa, .pilula.ativa { border-color: var(--ouro); color: var(--ouro-claro); background: var(--campo-3); }
+
+.avatar-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.avatar-grande { background: radial-gradient(circle at 50% 40%, var(--campo-3), var(--campo-2) 70%); border: 1px solid var(--linha); border-radius: 16px; padding: 12px 24px 0; display: flex; justify-content: center; }
+.avatar-grande svg { width: 100%; max-width: 220px; height: auto; display: block; }
+.controles { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.amostras { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.amostra { width: 36px; height: 36px; border-radius: 50%; background: var(--c); border: 2px solid var(--linha); cursor: pointer; }
+.amostra.ativa { border-color: var(--ouro); box-shadow: 0 0 0 2px var(--campo), 0 0 0 4px var(--ouro); }
+.pilulas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.pilula { padding: 8px 12px; font-size: 14px; }
+
+#navegacao { position: fixed; left: 0; right: 0; bottom: 0; background: var(--campo); border-top: 1px solid var(--linha); padding-top: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+#navegacao .dentro { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: auto 1fr; gap: 10px; }
+.botao { background: var(--campo-2); color: var(--giz); border: 1px solid var(--linha); border-radius: 12px; padding: 14px 18px; font: 700 16px var(--texto); cursor: pointer; }
+.botao.primario { background: var(--ouro); color: var(--tinta); border-color: var(--ouro); }
+.botao:disabled { opacity: 0.4; cursor: not-allowed; }
+.botao.texto { background: none; border-color: transparent; color: var(--giz-2); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Revelação */
+.cena { perspective: 1400px; display: flex; justify-content: center; }
+.card { width: min(100%, 340px); aspect-ratio: 5 / 7.4; max-width: 100%; position: relative; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.2,.8,.2,1); cursor: pointer; animation: chegada .9s cubic-bezier(.2,.8,.2,1) both; }
+.card.virado { transform: rotateY(180deg); }
+@keyframes chegada { from { transform: translateY(16px) scale(.96); } to { transform: none; } }
+.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; }
+.frente { background: linear-gradient(155deg, var(--ouro-claro) 0%, var(--ouro) 38%, #B9861F 72%, var(--ouro-claro) 100%); color: var(--tinta); box-shadow: 0 24px 48px -20px rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,255,255,.35); }
+.verso { background: var(--campo-2); border: 1px solid var(--ouro-escuro); transform: rotateY(180deg); overflow-y: auto; gap: 2px; }
+.card-topo { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; }
+.ovr { display: flex; flex-direction: column; align-items: center; line-height: 1; padding-top: 6px; }
+.ovr-num { font-family: var(--display); font-weight: 900; font-size: 64px; }
+.ovr-pos { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: 0.04em; }
+.ovr-nac { margin-top: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; border-top: 1px solid rgba(36,26,6,.35); padding-top: 6px; }
+.card-avatar svg { width: 100%; height: auto; display: block; }
+.card-nome { margin: 4px 0 0; font-family: var(--display); font-weight: 900; font-size: 32px; text-align: center; letter-spacing: 0.04em; border-bottom: 1px solid rgba(36,26,6,.3); padding-bottom: 6px; overflow-wrap: anywhere; }
+.card-grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; text-align: center; }
+.card-grade div { display: flex; flex-direction: column; }
+.card-grupo { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.card-media { font-family: var(--display); font-weight: 900; font-size: 30px; font-variant-numeric: tabular-nums; }
+.card-pot { margin: auto 0 0; text-align: center; font-weight: 700; font-size: 14px; }
+.card-dica { margin: 4px 0 0; text-align: center; font-size: 12px; opacity: .7; }
+.verso-titulo { margin: 0 0 4px; font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; color: var(--ouro); }
+.verso-grupo { margin: 8px 0 2px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--giz-2); font-weight: 700; }
+.atributos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.atributos li { display: grid; grid-template-columns: 38px 1fr 26px 26px; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; font-size: 14px; }
+.atributos li.principal .sigla { color: var(--ouro-claro); }
+.sigla { font-weight: 700; color: var(--giz-2); }
+.barra { height: 6px; border-radius: 3px; background: var(--campo); overflow: hidden; }
+.barra span { display: block; height: 100%; background: var(--giz-2); border-radius: 3px; }
+.atributos li.principal .barra span { background: var(--ouro); }
+.valor { text-align: right; font-weight: 700; }
+.mod { font-size: 12px; font-weight: 700; text-align: right; }
+.mod.pos { color: var(--pos); } .mod.neg { color: var(--neg); }
+.legenda { margin: 8px 0 0; font-size: 12px; color: var(--giz-2); }
+
+.painel { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.tracos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.tracos li { display: flex; flex-direction: column; }
+.tracos strong { font-family: var(--display); font-size: 20px; text-transform: uppercase; color: var(--ouro-claro); letter-spacing: 0.02em; }
+.tracos span { color: var(--giz-2); font-size: 14px; }
+.ficha { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ficha div { display: flex; flex-direction: column; gap: 2px; }
+.ficha .larga { grid-column: 1 / -1; }
+.ficha strong { font-size: 16px; }
+.acoes-final { display: flex; flex-direction: column; gap: 8px; }
+.aviso { margin: 0; font-size: 14px; color: var(--ouro-claro); min-height: 1.5em; }
+
+@media (min-width: 720px) {
+  .avatar-editor { grid-template-columns: 220px minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .opcao { transition: none; animation: none; }
+}
+</style>
+
+<div class="pagina">
+  <header class="marca"><strong>Mycarrerinha</strong><span>Criação do jogador</span></header>
+  <ol id="progresso" aria-label="Progresso da criação"></ol>
+  <main id="conteudo"></main>
+</div>
+<nav id="navegacao" aria-label="Navegação da criação">
+  <div class="dentro">
+    <button type="button" class="botao" id="voltar">Voltar</button>
+    <button type="button" class="botao primario" id="avancar">Continuar</button>
+  </div>
+</nav>
+<script>/*__SCRIPT__*/</script>
