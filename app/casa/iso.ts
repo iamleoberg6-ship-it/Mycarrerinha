@@ -708,7 +708,7 @@ function bolaSvg(x: number, y: number, r: number, modelo: string, cores: [string
 }
 
 /** Troféu em cima do pedestal; (x, y) é o centro do tampo. */
-function trofeuSvg(x: number, y: number, modelo: string, cores: [string, string] | string[]): string {
+export function trofeuSvg(x: number, y: number, modelo: string, cores: [string, string] | string[]): string {
   const m = cores[0], s = cores[1], lz = claro(m, 0.35), tr = `stroke="${TINTA}" stroke-width="1"`;
   const base = (w: number, h: number) => `<path d="M${f1(x - w)} ${f1(y)} h${f1(2 * w)} v${f1(-h)} h${f1(-2 * w)} Z" fill="#2B2B2B" ${tr}/>`;
   switch (modelo) {

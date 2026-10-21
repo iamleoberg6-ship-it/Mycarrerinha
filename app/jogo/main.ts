@@ -15,8 +15,9 @@ import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type Ofe
 import { cartazPatrocinio, logoSvg } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia } from "../visual/cartazes";
-import { estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
-import { TRACOS } from "../../src/dna";
+import { trofeuSvg } from "../casa/iso";
+import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
+import { TRACOS, PAISES } from "../../src/dna";
 import { valorMercado } from "../../src/mercado";
 import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao, visualDe, tatuagemVisivel, type AreaTatuagem, type Fisico, type RoupaCasual } from "../../src/visual";
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
@@ -337,6 +338,17 @@ function perfilHtml(s: Save): string {
   const torc = c.torcida ?? 50;
   const idClube = (h: { clubeId?: string; clube: string }) => h.clubeId ?? Object.values(w.info).find((x) => x.nome === h.clube)?.id;
   const minGol = t.gols ? Math.round((t.jogos * 78) / t.gols) : 0;
+  const arm = armario(hist), aberto = arm.find((x) => x.nome === trofeuAberto);
+  // parceiros de vestiário: no clube onde mais jogou, os companheiros de idade parecida
+  const casa = [...clubes].sort((a, b) => b.jogos - a.jogos)[0], idCasa = casa ? idClube(casa) : undefined;
+  const elenco = idCasa ? w.clube[idCasa]?.elenco ?? [] : [];
+  const amigos = [...elenco].filter((x) => !x.nome.startsWith(j.apelido)).sort((a, b) => Math.abs(a.idade - j.idade) - Math.abs(b.idade - j.idade) || b.ovr - a.ovr).slice(0, 2).map((x) => ({ nome: x.nome, clube: casa!.clube }));
+  const tmax = c.torcidaMax ?? {}, nomeDe = (id: string) => infoClube(pacote, id)?.nome ?? id;
+  const idolo = Object.entries(tmax).filter(([, v]) => v >= 85).sort((a, b) => b[1] - a[1])[0]?.[0], querido = Object.entries(tmax).filter(([, v]) => v >= 70).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const pais = PAISES.find((x) => x.id === j.pais);
+  const bio = biografia({ nome: j.nome, apelido: j.apelido, pais: pais?.local ?? "no Brasil", posicao: NOME_POS[j.posicao], idade: j.idade, perfil: j.perfilNome, hist, clubeAtual: info.nome, fama: c.fama,
+    estilo: estiloDeJogo(j.at, j.posicao).nome, forte: pontos(j.at, j.posicao).fortes[0], traco: j.tracos[0] ? TRACOS[j.tracos[0]]?.nome : undefined,
+    idolo: idolo ? nomeDe(idolo) : undefined, querido: querido ? nomeDe(querido) : undefined, amigos: t.jogos >= 30 ? amigos : [], semente: s.semente });
   return `<div class="perfil-topo" style="--c1:${c1};--c2:${c2 ?? "#FFFFFF"}">
       <button class="fechar" data-acao="fechar-perfil" aria-label="Fechar">✕</button>
       <div class="perfil-foto">${foto(s)}</div>
@@ -345,6 +357,7 @@ function perfilHtml(s: Save): string {
       <div class="perfil-ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span><small>Pot. ${j.faixaPot[0]}–${j.faixaPot[1]}</small></div>
     </div>
     <div class="perfil-corpo">
+      <p class="bio">${esc(bio)}</p>
       <div class="kv perfil-info"><span>Altura</span><b>${j.alturaCm ? `${(j.alturaCm / 100).toFixed(2).replace(".", ",")} m` : "–"}</b><span>Pé</span><b>${j.pe === "esquerdo" ? "Esquerdo" : j.pe === "ambidestro" ? "Ambidestro" : "Direito"}</b><span>Valor de mercado</span><b>${milhoes(vm)}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.formacao ? "Base" : `${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}`}</b><span>Seguidores</span><b>${compacto(c.seguidores)}</b></div>
 
       <p class="rotulo">Carreira</p>
@@ -369,13 +382,15 @@ function perfilHtml(s: Save): string {
       <p class="rotulo">Clubes</p>
       <div class="lista-clubes">${clubes.map((k) => { const id = idClube(k); return `<div class="linha-clube">${id ? escudo(id) : ""}<div><b>${esc(k.clube)}</b><small>${k.de === k.ate ? k.de : `${k.de}–${k.ate}`}</small></div><span>${k.jogos} j · ${k.gols} g · ${k.assist} a${k.titulos ? ` · 🏆 ${k.titulos}` : ""}</span></div>`; }).join("") || `<p class="sub">Ainda na base.</p>`}</div>
 
-      <p class="rotulo">Títulos e prêmios</p>
-      ${t.titulos.length + t.premios.length ? `<div class="lista-titulos">${[...t.titulos.map((x) => ({ ...x, t: "🏆" })), ...t.premios.map((x) => ({ ...x, t: "🏅" }))].sort((a, b) => b.ano - a.ano).map((x) => `<div><span>${x.t}</span><b>${esc(x.nome)}</b><small>${x.ano} · ${esc(x.clube)}</small></div>`).join("")}</div>` : `<p class="sub">Nenhum ainda. A estante da casa está esperando.</p>`}
+      <p class="rotulo">Armário de troféus</p>
+      ${arm.length ? `<div class="armario">${arm.map((x) => `<button class="trofeu-cel${trofeuAberto === x.nome ? " ativo" : ""}" data-trofeu="${esc(x.nome)}" aria-expanded="${trofeuAberto === x.nome}"><svg viewBox="-13 -30 26 32" aria-hidden="true">${trofeuSvg(0, 0, x.modelo, x.cores)}</svg><b>${x.vezes.length}×</b><small>${esc(x.nome)}</small></button>`).join("")}</div>
+        ${aberto ? `<div class="trofeu-detalhe"><b>${esc(aberto.nome)}</b>${[...aberto.vezes].sort((a, b) => b.ano - a.ano).map((v) => `<div><span>${v.ano}</span>${esc(v.clube)}${v.liga ? ` · <small>${esc(v.liga)}</small>` : ""}</div>`).join("")}</div>` : `<p class="sub">Toque num troféu para ver as temporadas.</p>`}` : `<p class="sub">Nenhum ainda. A estante da casa está esperando.</p>`}
 
       <p class="rotulo">Temporada a temporada</p>
       <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
     </div>`;
 }
+let trofeuAberto: string | undefined;
 function abrirPerfil() {
   if (!save) return;
   $("telaPerfil").innerHTML = perfilHtml(save);
@@ -541,7 +556,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -572,6 +587,7 @@ document.addEventListener("click", (ev) => {
     if (rv.ok && d.tat) trajeVisto = tatuagemVisivel(areaTat, visualDe(save.jogador), "jogo") ? "jogo" : "casual";
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
+  else if (d.trofeu && save) { trofeuAberto = trofeuAberto === d.trofeu ? undefined : d.trofeu; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
   else if (d.sair && save) { const r = pedirParaSair(save, true, d.sair as Destino); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vida && save) { padraoDe(save.carreira)[d.vida as ItemVida] = +d.nivel!; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

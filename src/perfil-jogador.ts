@@ -121,3 +121,71 @@ export function totaisDaCarreira(hist: Temporada[]) {
   const premios = hist.flatMap((h) => (h.premios ?? []).filter((p) => !/campe/i.test(p)).map((p) => ({ ano: h.ano, nome: p.replace(/\s\d{4}$/, ""), clube: h.clube })));
   return { jogos, gols, assist, nota, est, titulos, premios, temporadas: hist.length };
 }
+
+// ------------------------------------------------------------------ armário de troféus
+export interface Trofeu { nome: string; modelo: string; cores: [string, string]; vezes: { ano: number; clube: string; liga?: string }[] }
+const OURO: [string, string] = ["#E3B341", "#9A7420"], PRATA: [string, string] = ["#C9CCD1", "#7F8389"];
+const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
+  [/^Taça de campeão/, "Campeão da liga", "taca", OURO],
+  [/^Artilheiro do sub-17/, "Artilheiro do sub-17", "chuteira", PRATA],
+  [/^Craque do sub-17/, "Craque do sub-17", "bola", PRATA],
+  [/^Artilheiro/, "Artilheiro", "chuteira", OURO],
+  [/^Rei das assistências/, "Rei das assistências", "prato", OURO],
+  [/^Craque do campeonato/, "Craque do campeonato", "bola", OURO],
+  [/^Seleção do campeonato/, "Seleção do campeonato", "placa", OURO],
+  [/^Revelação/, "Revelação", "estrela", OURO],
+  [/^Melhor sub-21/, "Melhor sub-21", "estrela", PRATA],
+  [/^Melhor contratação/, "Melhor contratação", "placa", PRATA],
+];
+export function armario(hist: Temporada[]): Trofeu[] {
+  const mapa = new Map<string, Trofeu>();
+  const add = (nome: string, modelo: string, cores: [string, string], h: Temporada) => {
+    const t = mapa.get(nome) ?? { nome, modelo, cores, vezes: [] };
+    if (!t.vezes.some((v) => v.ano === h.ano)) t.vezes.push({ ano: h.ano, clube: h.clube, liga: h.liga });
+    mapa.set(nome, t);
+  };
+  for (const h of hist) {
+    if (h.titulo) add("Campeão da liga", "taca", OURO, h);
+    for (const p of h.premios ?? []) {
+      const tipo = TIPOS_TROFEU.find(([re]) => re.test(p));
+      if (tipo) add(tipo[1], tipo[2], tipo[3], h);
+    }
+  }
+  const ordem = TIPOS_TROFEU.map((t) => t[1]);
+  return [...mapa.values()].sort((a, b) => ordem.indexOf(a.nome) - ordem.indexOf(b.nome));
+}
+
+// ------------------------------------------------------------------ biografia
+export interface DadosBio {
+  nome: string; apelido: string; pais: string; posicao: string; idade: number; perfil: string;
+  hist: Temporada[]; clubeAtual: string; fama: number; estilo: string; forte: string; traco?: string;
+  idolo?: string; querido?: string; amigos: { nome: string; clube: string }[]; semente: string;
+}
+export function biografia(d: DadosBio): string {
+  const r = new RNG(`bio|${d.semente}`);
+  const pro = d.hist.filter((h) => h.jogos > 0);
+  const t = totaisDaCarreira(d.hist), clubes = clubesDaCarreira(d.hist.filter((h) => h.jogos || h === d.hist[0]));
+  const base = d.hist[0]?.clube ?? d.clubeAtual;
+  const frases: string[] = [];
+  frases.push(`${d.nome}, o ${d.apelido}, é ${d.posicao.toLowerCase()} nascido ${d.pais}. Começou na base do ${base}${d.perfil ? ` com fama de ${d.perfil.toLowerCase()}` : ""}.`);
+  if (!pro.length) { frases.push(`Ainda sonha com a estreia no profissional e, aos ${d.idade} anos, já chama atenção pelo ${d.forte.charAt(0).toLowerCase() + d.forte.slice(1)}.`); return frases.join(" "); }
+  const estreia = pro[0];
+  frases.push(`Estreou como profissional em ${estreia.ano}, aos ${estreia.idade} anos, pelo ${estreia.clube}.`);
+  if (clubes.length > 1) {
+    const caminho = clubes.slice(1).map((k) => k.clube);
+    frases.push(caminho.length === 1 ? `Depois foi para o ${caminho[0]}.` : `Rodou por ${caminho.slice(0, -1).map((c) => `${c}`).join(", ")} e ${caminho[caminho.length - 1]}.`);
+  }
+  const casa = [...clubes].sort((a, b) => b.jogos - a.jogos)[0];
+  if (d.idolo) frases.push(`Virou ídolo no ${d.idolo}, onde a torcida canta o nome dele até hoje.`);
+  else if (d.querido) frases.push(`Foi muito querido pela torcida do ${d.querido}.`);
+  else if (casa && casa.jogos >= 40) frases.push(`Onde mais jogou foi no ${casa.clube}: ${casa.jogos} jogos e ${casa.gols} gols.`);
+  const pico = [...pro].sort((a, b) => (b.titulo ? 10 : 0) + (b.premios?.length ?? 0) * 3 + b.gols + b.assist * 0.6 - ((a.titulo ? 10 : 0) + (a.premios?.length ?? 0) * 3 + a.gols + a.assist * 0.6))[0];
+  if (pico) {
+    const feitos = [pico.titulo ? `campeão${pico.liga ? ` da ${pico.liga}` : ""}` : "", pico.gols >= 10 ? `${pico.gols} gols` : "", pico.assist >= 8 ? `${pico.assist} assistências` : "", ...(pico.premios ?? []).filter((p) => !/campe/i.test(p)).slice(0, 2).map((p) => p.replace(/\s\d{4}$/, "").toLowerCase())].filter(Boolean);
+    if (feitos.length) frases.push(`O ponto alto veio em ${pico.ano}, no ${pico.clube}: ${feitos.length > 1 ? feitos.slice(0, -1).join(", ") + " e " + feitos[feitos.length - 1] : feitos[0]}.`);
+  }
+  frases.push(`${r.pick(["É conhecido pelo", "Ficou marcado pelo", "Quem viu jogar lembra do"])} ${d.forte.charAt(0).toLowerCase() + d.forte.slice(1)}${d.traco ? `, com ${d.traco.toLowerCase()} como marca registrada` : ""}: um ${d.estilo.toLowerCase()} ${d.fama >= 75 ? "que o mundo inteiro conhece" : d.fama >= 45 ? "conhecido no país todo" : "ainda em busca do grande palco"}.`);
+  if (d.amigos.length) frases.push(`No vestiário, ${d.amigos.length > 1 ? `os parceiros mais próximos foram ${d.amigos.map((a) => `${a.nome} (${a.clube})`).join(" e ")}` : `o parceiro mais próximo foi ${d.amigos[0].nome}, no ${d.amigos[0].clube}`}.`);
+  frases.push(`Soma ${t.jogos} jogos, ${t.gols} gols e ${t.assist} assistências na carreira.`);
+  return frases.join(" ");
+}

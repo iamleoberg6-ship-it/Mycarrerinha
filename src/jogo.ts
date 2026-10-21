@@ -56,6 +56,8 @@ export interface Carreira {
   evento?: string; eventosVistos?: Record<string, number>;
   /** reputação com a torcida do clube atual (0–100) */
   torcida?: number;
+  /** maior reputação que teve com a torcida de cada clube */
+  torcidaMax?: Record<string, number>;
   /** patrocinadores: contratos ativos, proposta na mesa, marcas recusadas na temporada e números do mês para os bônus */
   patrocinios?: ContratoPatrocinio[]; propPatrocinio?: PropostaPatrocinio; recusadas?: string[]; mesStats?: { gols: number; assist: number; notas8: number };
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
@@ -518,6 +520,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   c.engajamento = clamp((c.engajamento ?? 40) - 2.5, 0, 100);
   c.hype = (c.hype ?? 0) * 0.85;
   c.torcida = clamp((c.torcida ?? 50) + (50 - (c.torcida ?? 50)) * 0.005, 0, 100);
+  (c.torcidaMax ??= {})[c.clubeId] = Math.max(c.torcidaMax[c.clubeId] ?? 0, c.torcida);
   const seg0 = c.seguidores;
   c.seguidores = semanaRedes(c.seguidores, alvoDeSeguidores(pacote, s));
   if (Math.abs(c.seguidores - seg0) >= Math.max(5000, seg0 * 0.01)) eventos.push(`${c.seguidores > seg0 ? "+" : "−"}${Math.abs(c.seguidores - seg0).toLocaleString("pt-BR")} seguidores nas redes.`);
