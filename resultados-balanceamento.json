@@ -1,0 +1,117 @@
+{
+  "geral": {
+    "carreiras": 1000,
+    "segundos": 8.6,
+    "idadeAposentadoria": 33.6,
+    "temporadasPorCarreira": 17.6,
+    "jogosCarreiraMediana": 282,
+    "lesoesPorTemporada": 0.9,
+    "semanasLesionadoPorTemporada": 2.8,
+    "transferenciasPorCarreira": 6.3,
+    "titulosPorCarreira": 0.2,
+    "chegaramEuropaTop": "28%",
+    "nuncaSairamDaSerieB": "5%",
+    "patrimonio": {
+      "p10": 929510,
+      "mediana": 14480787,
+      "p90": 201857007
+    },
+    "salarioMax": {
+      "p10": 9578,
+      "mediana": 281820,
+      "p90": 2454422
+    }
+  },
+  "porPotencial": [
+    {
+      "faixa": "POT 60–67",
+      "carreiras": 268,
+      "ovrPico": 63,
+      "gapPot": 0.5,
+      "idadePico": 28,
+      "europaTop": "0%",
+      "salarioMaxMediano": 11108,
+      "patrimonioFinalMediano": 1115938
+    },
+    {
+      "faixa": "POT 68–75",
+      "carreiras": 414,
+      "ovrPico": 70.6,
+      "gapPot": 0.9,
+      "idadePico": 28,
+      "europaTop": "0%",
+      "salarioMaxMediano": 264431,
+      "patrimonioFinalMediano": 12154833
+    },
+    {
+      "faixa": "POT 76–83",
+      "carreiras": 270,
+      "ovrPico": 77.3,
+      "gapPot": 1.4,
+      "idadePico": 28,
+      "europaTop": "86%",
+      "salarioMaxMediano": 1380550,
+      "patrimonioFinalMediano": 102315498
+    },
+    {
+      "faixa": "POT 84+",
+      "carreiras": 48,
+      "ovrPico": 83.9,
+      "gapPot": 2.2,
+      "idadePico": 28,
+      "europaTop": "100%",
+      "salarioMaxMediano": 5959642,
+      "patrimonioFinalMediano": 649713050
+    }
+  ],
+  "porPosicao": [
+    {
+      "posicao": "ZAG",
+      "golsPorTemporadaTitular": 1.3,
+      "assistPorTemporadaTitular": 0.7,
+      "maxGolsTemporada": 4,
+      "notaMediaTitular": 6.1,
+      "golsCarreiraMediana": 7
+    },
+    {
+      "posicao": "LAT",
+      "golsPorTemporadaTitular": 1.3,
+      "assistPorTemporadaTitular": 5,
+      "maxGolsTemporada": 5,
+      "notaMediaTitular": 6.3,
+      "golsCarreiraMediana": 6
+    },
+    {
+      "posicao": "VOL",
+      "golsPorTemporadaTitular": 2,
+      "assistPorTemporadaTitular": 3.1,
+      "maxGolsTemporada": 5,
+      "notaMediaTitular": 6.3,
+      "golsCarreiraMediana": 8
+    },
+    {
+      "posicao": "MEI",
+      "golsPorTemporadaTitular": 4.6,
+      "assistPorTemporadaTitular": 8.4,
+      "maxGolsTemporada": 12,
+      "notaMediaTitular": 6.4,
+      "golsCarreiraMediana": 25
+    },
+    {
+      "posicao": "PON",
+      "golsPorTemporadaTitular": 6.8,
+      "assistPorTemporadaTitular": 7.4,
+      "maxGolsTemporada": 18,
+      "notaMediaTitular": 6.4,
+      "golsCarreiraMediana": 54
+    },
+    {
+      "posicao": "ATA",
+      "golsPorTemporadaTitular": 11.8,
+      "assistPorTemporadaTitular": 4.1,
+      "maxGolsTemporada": 25,
+      "notaMediaTitular": 6.5,
+      "golsCarreiraMediana": 68
+    }
+  ]
+}

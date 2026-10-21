@@ -1,0 +1,19 @@
+{
+  "name": "carreira-jogador-motor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fase 0: motor de simulação do jogo de carreira de jogador de futebol",
+  "scripts": {
+    "temporada": "tsx scripts/temporada.ts",
+    "balanceamento": "tsx scripts/balanceamento.ts",
+    "carreira": "tsx scripts/carreira.ts",
+    "test": "tsx scripts/testes.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
