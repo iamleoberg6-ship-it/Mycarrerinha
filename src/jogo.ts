@@ -10,6 +10,7 @@ import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { mundo, infoClube, idClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
+import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
 import { alvoSeguidores, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
@@ -24,10 +25,14 @@ export interface Jogador {
   nome: string; apelido: string; posicao: Posicao; pais: string; nacionalidade: string; idade: number;
   at: Atributos; pot: number; faixaPot: [number, number]; personalidade: PersonalidadeDNA; tracos: TracoId[];
   perfilId: string; perfilNome: string; aparencia: unknown; numero: string; familia: string;
+  /** corpo inteiro: físico, uniforme, roupa do dia a dia e tatuagens */
+  visual?: Visual; alturaCm?: number;
 }
 export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number; baseNotas?: number[] }
 export interface ResumoTemporada { ano: number; idade: number; clube: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
-export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao" }
+/** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
+export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" };
+export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
 export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
@@ -152,6 +157,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
     nome: e.nome, apelido: e.apelido || e.nome.split(" ")[0], posicao: e.posicao, pais: e.pais, nacionalidade: r.nacionalidade, idade: 16,
     at: { ...r.atributos }, pot: r.potencial, faixaPot: r.faixaPotencial, personalidade: pers, tracos: r.tracos, perfilId: perfil.id, perfilNome: perfil.nome,
     aparencia: d.aparencia, numero: String(rng.int(26, 49)), familia: e.familia,
+    alturaCm: e.alturaCm, visual: { ...VISUAL_PADRAO, tatuagens: {}, fisico: fisicoInicial(r.atributos) },
   };
   const ordem = l.clubes.map((c) => c.id);
   for (let i = ordem.length - 1; i > 0; i--) { const j = rng.int(0, i); [ordem[i], ordem[j]] = [ordem[j], ordem[i]]; }
@@ -178,8 +184,8 @@ export function rotuloSemana(c: Carreira): string {
   const r = c.semana - SEMANAS_PRE + 1;
   return c.semana < SEMANAS_PRE ? `Pré-temporada ${ano} · semana ${c.semana + 1}` : r > nRodadas(c) ? `Temporada ${ano} · fim de calendário` : `Temporada ${ano} · rodada ${r}`;
 }
-export function noticia(s: Save, tipo: Noticia["tipo"], titulo: string, texto: string) {
-  s.noticias.unshift({ semana: rotuloSemana(s.carreira), titulo, texto, tipo });
+export function noticia(s: Save, tipo: Noticia["tipo"], titulo: string, texto: string, img?: ImgNoticia) {
+  s.noticias.unshift({ semana: rotuloSemana(s.carreira), titulo, texto, tipo, ...(img ? { img } : {}) });
   s.noticias = s.noticias.slice(0, 60);
 }
 
@@ -474,7 +480,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       if (l2) { c.lesao = l2.semanas; eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
       const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
       noticia(s, "jogo", `${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
-        `${res[0].toUpperCase() + res.slice(1)}${pro ? "" : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`);
+        `${res[0].toUpperCase() + res.slice(1)}${pro ? "" : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: jogo.casa, fora: jogo.fora, gc, gf });
     } else if (partida.escalacao === "banco") { c.moral = clamp(c.moral - 1, 0, 100); eventos.push("Ficou no banco o jogo todo."); }
   } else if (partida?.escalacao === "fora") { c.moral = clamp(c.moral - 3, 0, 100); eventos.push("Não foi relacionado para o jogo."); }
 
@@ -536,7 +542,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     const r3 = rngDe(s, "patrocinio");
     if (r3.chance(0.025 + c.fama / 700)) {
       const m = marcaInteressada(r3, c.fama, j.idade, c.patrocinios ?? [], c.recusadas ?? []);
-      if (m) { c.propPatrocinio = { marca: m.id, opcoes: ofertasDaMarca(r3, m, c.fama, c.seguidores), expira: semanaAbsJogo(c) + 4 }; eventos.push(`Proposta de patrocínio: ${m.nome}.`); noticia(s, "dinheiro", `${m.nome} quer patrocinar ${j.apelido}`, `A marca mandou três modelos de contrato. A proposta vale por quatro semanas.`); }
+      if (m) { c.propPatrocinio = { marca: m.id, opcoes: ofertasDaMarca(r3, m, c.fama, c.seguidores), expira: semanaAbsJogo(c) + 4 }; eventos.push(`Proposta de patrocínio: ${m.nome}.`); noticia(s, "dinheiro", `${m.nome} quer patrocinar ${j.apelido}`, `A marca mandou três modelos de contrato. A proposta vale por quatro semanas.`, { k: "patrocinio", marca: m.id }); }
     }
   }
   // 9. vida fora de campo: de vez em quando, uma decisão
@@ -598,7 +604,7 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   let texto = preencher(o.resultado, ctx), notas = aplicarEfeito(s, o.efeitos);
   if (o.risco && rngDe(s, "evento-risco", e.id).chance(o.risco.chance)) { texto += " " + preencher(o.risco.resultado, ctx); notas = [...notas, ...aplicarEfeito(s, o.risco.efeitos)]; }
   const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");
-  noticia(s, "vida", e.titulo, final);
+  noticia(s, "vida", e.titulo, final, { k: "vida" });
   return { titulo: e.titulo, texto: final };
 }
 const semanaAbsJogo = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + c.semana;
@@ -626,7 +632,7 @@ export function aceitarPatrocinio(s: Save, tipo: TipoContrato): ContratoPatrocin
   if (o.luvas) s.casa.saldo += o.luvas;
   c.fama = clamp(c.fama + 1, 0, 100);
   const m = MARCA[p.marca];
-  noticia(s, "dinheiro", `${s.jogador.apelido} é o novo rosto da ${m.nome}`, `Contrato ${tipo === "fixo" ? "de valor fixo" : tipo === "desempenho" ? "por desempenho" : "de longo prazo"}: ${o.meses} meses, R$ ${o.mensal.toLocaleString("pt-BR")} por mês${o.luvas ? ` e R$ ${o.luvas.toLocaleString("pt-BR")} de luvas` : ""}. "${m.slogan}"`);
+  noticia(s, "dinheiro", `${s.jogador.apelido} é o novo rosto da ${m.nome}`, `Contrato ${tipo === "fixo" ? "de valor fixo" : tipo === "desempenho" ? "por desempenho" : "de longo prazo"}: ${o.meses} meses, R$ ${o.mensal.toLocaleString("pt-BR")} por mês${o.luvas ? ` e R$ ${o.luvas.toLocaleString("pt-BR")} de luvas` : ""}. "${m.slogan}"`, { k: "patrocinio", marca: m.id });
   return k;
 }
 export function recusarPatrocinio(s: Save) {
@@ -636,6 +642,29 @@ export function recusarPatrocinio(s: Save) {
   c.propPatrocinio = undefined;
 }
 export const receitaPatrocinios = (c: Carreira) => (c.patrocinios ?? []).reduce((a, k) => a + k.mensal, 0);
+/** Estúdio de tatuagem: paga e a tatuagem aparece no corpo. */
+export function tatuar(s: Save, area: AreaTatuagem, id: string): { ok: boolean; msg: string } {
+  const t = TATUAGEM[id], v = visualDe(s.jogador);
+  if (!t || !t.areas.includes(area)) return { ok: false, msg: "Esse desenho não cabe aí." };
+  if (v.tatuagens[area]) return { ok: false, msg: `Já tem tatuagem ${noArea(area)}. Tire antes com laser.` };
+  if (s.casa.saldo < t.preco) return { ok: false, msg: "Dinheiro não dá." };
+  s.casa.saldo -= t.preco; v.tatuagens[area] = id;
+  s.carreira.moral = clamp(s.carreira.moral + 2, 0, 100); s.carreira.hype = clamp((s.carreira.hype ?? 0) + 0.05, -0.3, 1.5);
+  noticia(s, "vida", "Tatuagem nova", `${s.jogador.apelido} apareceu com ${t.nome.toLowerCase()} ${noArea(area)}. A foto rodou as redes.`, { k: "tatuagem" });
+  return { ok: true, msg: `${t.nome} ${noArea(area)}: R$ ${t.preco.toLocaleString("pt-BR")}.` };
+}
+export function removerTatuagem(s: Save, area: AreaTatuagem): { ok: boolean; msg: string } {
+  const v = visualDe(s.jogador), id = v.tatuagens[area];
+  if (!id) return { ok: false, msg: "Não tem tatuagem aí." };
+  const custo = custoRemocao(id);
+  if (s.casa.saldo < custo) return { ok: false, msg: "O laser é caro: dinheiro não dá." };
+  s.casa.saldo -= custo; delete v.tatuagens[area];
+  return { ok: true, msg: `Removida com laser: R$ ${custo.toLocaleString("pt-BR")}.` };
+}
+function fisicoInicial(at: Record<string, number>): Fisico {
+  const vals = Object.values(at), media = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return at.FOR >= media + 6 ? "forte" : at.FOR <= media - 6 ? "magro" : "atletico";
+}
 export const padraoDe = (c: Carreira): PadraoVida => (c.padrao ??= { ...PADRAO_INICIAL });
 /** Seguidores que o jogador "deveria" ter no clube atual. */
 export function alvoDeSeguidores(pacote: PacoteDados, s: Save, clubeId = s.carreira.clubeId): number {
@@ -653,7 +682,7 @@ function receberReliquias(s: Save, ganhos: Ganho[], eventos: string[]) {
     const r = ganharReliquia(s.casa, g.reliquia);
     if (!r.ok) continue;
     eventos.push(`Relíquia nova: ${r.msg}`);
-    noticia(s, "vida", g.reliquia.tipo === "trofeu" ? g.reliquia.nome : `Relíquia: ${g.reliquia.nome}`, `${g.reliquia.legenda}. Já faz parte da coleção de ${s.jogador.apelido}.`);
+    noticia(s, "vida", g.reliquia.tipo === "trofeu" ? g.reliquia.nome : `Relíquia: ${g.reliquia.nome}`, `${g.reliquia.legenda}. Já faz parte da coleção de ${s.jogador.apelido}.`, { k: "trofeu" });
   }
 }
 

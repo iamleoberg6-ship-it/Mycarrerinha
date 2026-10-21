@@ -116,7 +116,21 @@ tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--
 .agente { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; background: var(--campo-2); }
 .agente.atual { border-color: var(--ouro); } .agente > div { flex: 1 1 220px; }
 .kv small.pos { color: var(--pos); } .kv small.neg { color: var(--neg); }
-.noticia { border-left: 3px solid var(--linha); padding: 4px 0 4px 12px; }
+.noticia { border-left: 3px solid var(--linha); padding: 4px 0 4px 12px; display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
+.noticia .mini-noticia { width: 96px; height: 72px; display: block; }
+.noticia-img.grande { grid-column: 1 / -1; } .noticia-img.grande .anuncio { width: 100%; max-width: 320px; display: block; border-radius: 12px; }
+.noticia:has(.noticia-img.grande) { grid-template-columns: 1fr; }
+.anuncio-card { border-color: var(--ouro); display: flex; flex-direction: column; gap: 10px; }
+.anuncio-grande .anuncio { width: 100%; max-width: 380px; display: block; margin: 0 auto; border-radius: 16px; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+.visual-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+.figura { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 14px; padding: 8px 6px 6px; cursor: pointer; color: var(--giz-2); font: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.figura svg { width: 100%; max-height: 300px; } .figura.ativo { border-color: var(--ouro); color: var(--giz); }
+.cores-roupa { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.cores-roupa .cor { width: 30px; height: 30px; border-radius: 50%; background: var(--c); border: 2px solid var(--linha); cursor: pointer; } .cores-roupa .cor.ativo { border-color: var(--ouro); box-shadow: 0 0 0 2px var(--ouro); }
+.chips + .chips { margin-top: 6px; }
+.tat-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 8px; }
+.tat-op { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--giz); font: inherit; font-size: 13px; cursor: pointer; text-align: center; }
+.tat-op:hover { border-color: var(--ouro); } .tat-op small { color: var(--giz-2); }
 .noticia.jogo { border-color: var(--ouro); } .noticia.polemica, .noticia.lesao { border-color: var(--neg); } .noticia.dinheiro { border-color: var(--pos); }
 .noticia strong { display: block; } .noticia small { color: var(--giz-2); font-size: 12px; }
 .casa-mini { background: radial-gradient(120% 90% at 50% 40%, #1C3A30 0%, #0F211C 70%); border-radius: 12px; padding: 6px; }

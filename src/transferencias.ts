@@ -278,7 +278,7 @@ export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo:
   if (imovelAtual(s.casa).categoria === "alojamento") mudar(s.casa, alojamentosDoClube(cc)[0], "alugar", c.salario);
   const ano = ANO_INICIAL + c.temporada, ligaNome = infoLiga(destino.ligaId).curto;
   const titulo = tipo === "emprestimo" ? `Emprestado ao ${destino.nome}` : tipo === "livre" ? `${s.jogador.apelido} acerta com o ${destino.nome}` : `${s.jogador.apelido} é do ${destino.nome}`;
-  noticia(s, "clube", titulo, `${tipo === "transferencia" ? `Negócio de € ${(taxa / 1e6).toFixed(1)} mi. ` : ""}${ligaNome}, ${ano}. ${tipo === "emprestimo" ? "Volta no fim da temporada." : `Contrato de ${c.anosContrato} anos, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`}${imovelAtual(s.casa).categoria === "alojamento" ? ` Mora em: ${nomeImovel(s.casa, IMOVEL[s.casa.imovel])}.` : ""}`);
+  noticia(s, "clube", titulo, `${tipo === "transferencia" ? `Negócio de € ${(taxa / 1e6).toFixed(1)} mi. ` : ""}${ligaNome}, ${ano}. ${tipo === "emprestimo" ? "Volta no fim da temporada." : `Contrato de ${c.anosContrato} anos, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`}${imovelAtual(s.casa).categoria === "alojamento" ? ` Mora em: ${nomeImovel(s.casa, IMOVEL[s.casa.imovel])}.` : ""}`, { k: "transferencia", clube: destino.id, tipo, ate: tipo === "emprestimo" ? ano : ano + c.anosContrato, taxa });
   const dSeg = c.seguidores - seg0;
   if (Math.abs(dSeg) >= 1000) noticia(s, "vida", dSeg > 0 ? "Chuva de seguidores" : "Menos holofote", dSeg > 0 ? `A torcida do ${destino.nome} chegou junto: +${dSeg.toLocaleString("pt-BR")} seguidores na primeira semana.` : `Longe dos holofotes de antes, ${s.jogador.apelido} perdeu ${(-dSeg).toLocaleString("pt-BR")} seguidores.`);
 }

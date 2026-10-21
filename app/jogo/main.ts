@@ -8,11 +8,14 @@ import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarRe
 import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
-  type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
-  migrarSave, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
+  type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
+  migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
 } from "../../src/jogo";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg } from "./poster";
+import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
+import { anuncioTransferencia, miniNoticia } from "../visual/cartazes";
+import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao, visualDe, tatuagemVisivel, type AreaTatuagem, type Fisico, type RoupaCasual } from "../../src/visual";
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
 import { SITUACAO } from "../../src/lances";
 import { infoClube, mundo } from "../../src/mundo";
@@ -20,7 +23,7 @@ import { infoLiga } from "../../src/ligas";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA } from "../../src/identidade";
 import { AGENTE_INFO, NOME_PAPEL, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, type PropostaSave } from "../../src/transferencias";
 import { AGENTES, type TipoAgente } from "../../src/mercado";
-import { svgFoto, APARENCIA_PADRAO, type Aparencia } from "../criacao/avatar";
+import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, type Aparencia } from "../criacao/avatar";
 import { svgComodo } from "../casa/iso";
 
 const pacote = pacoteJson as unknown as PacoteDados;
@@ -49,10 +52,19 @@ function escudo(id: string): string {
   const [a, b] = cores(id), c2 = b ?? "#FFFFFF";
   return `<svg class="escudo" viewBox="0 0 26 30" aria-hidden="true"><path d="M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z" fill="${a}" stroke="#0A0A0A" stroke-width="1.6"/><path d="M1 12 H25 V17 H1 Z" fill="${c2}" opacity=".9"/><path d="M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z" fill="none" stroke="#0A0A0A" stroke-width="1.6"/></svg>`;
 }
+/** Uniforme do clube (cores e padrão) com a chuteira do patrocinador de material esportivo, se houver. */
+function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
+  const info = infoClube(pacote, clubeId), [a, b] = info.cores;
+  const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
+  return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, chuteira: mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1]] : undefined };
+}
+function corpoDe(s: Save, traje: "jogo" | "casual", clubeId?: string): string {
+  return svgCorpo({ aparencia: (s.jogador.aparencia as Partial<Aparencia>) ?? null, visual: visualDe(s.jogador), alturaCm: s.jogador.alturaCm, traje, kit: kitDe(s, clubeId) });
+}
 function foto(s: Save): string {
   const [a, b] = cores(s.carreira.clubeId);
   const ap = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) };
-  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: s.jogador.numero, traje: "jogo" });
+  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: s.jogador.numero, traje: "jogo", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
 }
 const barra = (nome: string, v: number, max = 100, cor?: string, txt?: string) =>
   `<div class="barra">${nome}<b>${txt ?? Math.round(v)}</b><i style="--v:${Math.max(0, Math.min(100, (100 * v) / max))}%${cor ? `;--c:${cor}` : ""}"></i></div>`;
@@ -116,6 +128,7 @@ function telaSemana(s: Save): string {
   </section>
 
   <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${jogoHtml}${previsao}</section>
+  ${cardAnuncio(s)}
   ${cardPatrocinio(s)}
   ${cardEvento(s)}
   ${nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"}. Ver no Mercado.</small></span></button>` : ""}
@@ -143,6 +156,37 @@ function abaTabela(s: Save): string {
 }
 
 let msgEvento: { titulo: string; texto: string } | undefined;
+let msgVisual: { texto: string; ok: boolean } | undefined, areaTat: AreaTatuagem = "antebracoD", trajeVisto: "jogo" | "casual" = "jogo";
+const CHAVE_ANUNCIO = "mycarrerinha:anuncio";
+function anuncioDe(s: Save, n: Noticia): string {
+  const img = n.img as Extract<ImgNoticia, { k: "transferencia" }>, info = infoClube(pacote, img.clube);
+  return anuncioTransferencia({ clube: info.nome, apelidoClube: info.nome, cores: info.cores, liga: infoLiga(info.ligaId).nome, jogador: s.jogador.apelido, numero: s.jogador.numero, tipo: img.tipo as "transferencia", ate: img.ate, taxa: img.taxa, corpoSvg: corpoDe(s, "jogo", img.clube) });
+}
+function cardAnuncio(s: Save): string {
+  const n = s.noticias.find((x) => x.img?.k === "transferencia");
+  if (!n) return "";
+  const chave = `${s.semente}|${n.semana}|${n.titulo}`;
+  if (ler<string>(CHAVE_ANUNCIO) === chave) return "";
+  return `<section class="painel anuncio-card"><p class="rotulo">Anúncio oficial</p><div class="anuncio-grande">${anuncioDe(s, n)}</div><button class="botao sec peq" data-acao="fechar-anuncio" data-chave="${esc(chave)}">Fechar</button></section>`;
+}
+function blocoVisual(s: Save): string {
+  const v = visualDe(s.jogador), aviso = msgVisual ? `<p class="msg-mercado ${msgVisual.ok ? "ok" : "nao"}">${esc(msgVisual.texto)}</p>` : "";
+  msgVisual = undefined;
+  const chips = <T extends string>(campo: string, opcoes: [T, string][], atual: T) => `<div class="chips" style="flex-wrap:wrap">${opcoes.map(([k, n]) => `<button class="chip${atual === k ? " ativo" : ""}" data-vis="${campo}" data-val="${k}">${esc(n)}</button>`).join("")}</div>`;
+  const atualTat = v.tatuagens[areaTat];
+  const designs = TATUAGENS.filter((t) => t.areas.includes(areaTat));
+  return `${aviso}<p class="rotulo">Visual</p>
+    <div class="visual-duplo"><button class="figura${trajeVisto === "jogo" ? " ativo" : ""}" data-traje="jogo">${corpoDe(s, "jogo")}<small>Uniforme</small></button><button class="figura${trajeVisto === "casual" ? " ativo" : ""}" data-traje="casual">${corpoDe(s, "casual")}<small>Dia a dia</small></button></div>
+    <p class="sub" style="margin:12px 0 6px;font-weight:600">Físico</p>${chips("fisico", (Object.keys(NOME_FISICO) as Fisico[]).map((k) => [k, NOME_FISICO[k]]), v.fisico)}
+    <p class="sub" style="margin:12px 0 6px;font-weight:600">Uniforme</p>${chips("manga", [["curta", "Manga curta"], ["longa", "Manga longa"]], v.manga)}${chips("caimento", [["justo", "Justo"], ["largo", "Largo"]], v.caimento)}${chips("meiao", [["alto", "Meião alto"], ["baixo", "Meião baixo"]], v.meiao)}
+    <p class="sub" style="margin:12px 0 6px;font-weight:600">Dia a dia</p>${chips("casual", (Object.keys(NOME_CASUAL) as RoupaCasual[]).map((k) => [k, NOME_CASUAL[k]]), v.casual)}${chips("perna", [["bermuda", "Bermuda"], ["calca", "Calça"]], v.perna)}
+    <div class="cores-roupa">${CORES_ROUPA.map((c, i) => `<button class="cor${v.corCasual === i ? " ativo" : ""}" style="--c:${c}" data-vis="corCasual" data-val="${i}" aria-label="${esc(NOMES_ROUPA[i])}"></button>`).join("")}</div>
+    <p class="rotulo" style="margin-top:16px">Estúdio de tatuagem</p>
+    <div class="chips" style="flex-wrap:wrap">${(Object.keys(NOME_AREA) as AreaTatuagem[]).map((a) => `<button class="chip${areaTat === a ? " ativo" : ""}" data-tarea="${a}">${esc(NOME_AREA[a])}${v.tatuagens[a] ? " •" : ""}</button>`).join("")}</div>
+    ${atualTat ? `<p class="sub" style="margin-top:8px">${esc(NOME_AREA[areaTat])}: <b>${esc(TATUAGEM[atualTat].nome)}</b>. <button class="botao sec peq" data-tat-remover="${areaTat}">Tirar com laser (${dinheiro(custoRemocao(atualTat))})</button></p>`
+      : `<div class="tat-lista">${designs.map((t) => `<button class="tat-op" data-tat="${t.id}"><span class="tat-prev">${previaTatuagem(t.id)}</span><b>${esc(t.nome)}</b><small>${dinheiro(t.preco)}</small></button>`).join("")}</div>`}
+    ${!tatuagemVisivel(areaTat, v, trajeVisto) ? `<p class="sub">Com essa roupa, a tatuagem nessa parte fica escondida.</p>` : ""}`;
+}
 let cartazNovo: ContratoPatrocinio | undefined;
 const cartaz = (s: Save, k: ContratoPatrocinio) => cartazPatrocinio(MARCA[k.marca], foto(s), s.jogador.apelido, s.jogador.numero, k.desde);
 function cardPatrocinio(s: Save): string {
@@ -199,9 +243,10 @@ function tendencia(s: Save): string {
 }
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
+  const visual = blocoVisual(s);
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
   const grupos: [string, Grupo][] = [["Físico", "fisico"], ["Técnico", "tecnico"], ["Tático", "tatico"]];
-  return `<p class="rotulo">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
+  return `${visual}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
@@ -247,8 +292,21 @@ function abaMercado(s: Save): string {
     <p class="sub" style="margin-top:12px">Janelas: semanas ${JANELAS.map((x) => `${x.ini + 1}–${x.fim + 1}`).join(" e ")} de cada temporada.</p>`;
 }
 
+let casualMini: string | undefined;
+function imgNoticia(s: Save, n: Noticia, i: number): string {
+  const img = n.img;
+  if (img?.k === "transferencia" && s.noticias.findIndex((x) => x.img?.k === "transferencia") === i) return `<div class="noticia-img grande">${anuncioDe(s, n)}</div>`;
+  const ci = (id: string) => { const c = infoClube(pacote, id); return [c.cores[0], c.cores[1] ?? "#FFFFFF"] as [string, string]; };
+  if (img?.k === "placar") return miniNoticia({ k: "placar", casa: ci(img.casa), fora: ci(img.fora), gc: img.gc, gf: img.gf, nomeCasa: infoClube(pacote, img.casa).nome, nomeFora: infoClube(pacote, img.fora).nome });
+  if (img?.k === "transferencia") return miniNoticia({ k: "transferencia", cores: ci(img.clube), corpoSvg: corpoDe(s, "jogo", img.clube) });
+  if (img?.k === "patrocinio" && MARCA[img.marca]) return miniNoticia({ k: "patrocinio", logoSvg: logoSvg(MARCA[img.marca]), cor: MARCA[img.marca].cores[2] });
+  if (img?.k === "trofeu") return miniNoticia({ k: "trofeu" });
+  if (img?.k === "vida" || img?.k === "tatuagem") return miniNoticia({ k: "vida", corpoSvg: casualMini ??= corpoDe(s, "casual") });
+  return miniNoticia(n.tipo === "lesao" ? { k: "lesao" } : n.tipo === "dinheiro" ? { k: "dinheiro" } : n.tipo === "polemica" ? { k: "polemica" } : n.tipo === "jogo" ? { k: "trofeu", cor: "#C9CCD1" } : { k: "clube", cores: ci(s.carreira.clubeId) });
+}
 function abaNoticias(s: Save): string {
-  return s.noticias.length ? `<div style="display:flex;flex-direction:column;gap:12px">${s.noticias.slice(0, 25).map((n) => `<div class="noticia ${n.tipo}"><small>${esc(n.semana)}</small><strong>${esc(n.titulo)}</strong><span class="sub">${esc(n.texto)}</span></div>`).join("")}</div>` : `<p class="sub">Nada por enquanto.</p>`;
+  casualMini = undefined;
+  return s.noticias.length ? `<div style="display:flex;flex-direction:column;gap:12px">${s.noticias.slice(0, 25).map((n, i) => `<div class="noticia ${n.tipo}">${imgNoticia(s, n, i)}<div><small>${esc(n.semana)}</small><strong>${esc(n.titulo)}</strong><span class="sub">${esc(n.texto)}</span></div></div>`).join("")}</div>` : `<p class="sub">Nada por enquanto.</p>`;
 }
 
 function abaCasa(s: Save): string {
@@ -405,7 +463,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -425,6 +483,17 @@ document.addEventListener("click", (ev) => {
     if (d.patro === "recusar") recusarPatrocinio(save); else cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato);
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
+  else if (d.vis && save) {
+    const v = visualDe(save.jogador) as unknown as Record<string, unknown>;
+    v[d.vis] = d.vis === "corCasual" ? +d.val! : d.val; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  } else if (d.traje) { trajeVisto = d.traje as "jogo" | "casual"; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.tarea) { areaTat = d.tarea as AreaTatuagem; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if ((d.tat || d.tatRemover) && save) {
+    const rv = d.tat ? tatuar(save, areaTat, d.tat) : removerTatuagem(save, d.tatRemover as AreaTatuagem);
+    msgVisual = { texto: rv.msg, ok: rv.ok };
+    if (rv.ok && d.tat) trajeVisto = tatuagemVisivel(areaTat, visualDe(save.jogador), "jogo") ? "jogo" : "casual";
+    salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  }
   else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vida && save) { padraoDe(save.carreira)[d.vida as ItemVida] = +d.nivel!; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else switch (d.acao) {
@@ -434,6 +503,7 @@ document.addEventListener("click", (ev) => {
       render(); break;
     }
     case "jogar": abrirJogo(); break;
+    case "fechar-anuncio": gravar(CHAVE_ANUNCIO, b.dataset.chave); render(); break;
     case "sair": case "ficar": if (save) { const r = pedirParaSair(save, d.acao === "sair"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); } break;
     case "pular": if (save) {
       // atalho de teste: o jogo segue no automático (sem mexer no mercado) até abrir a próxima janela com você profissional

@@ -496,6 +496,10 @@ export interface OpcoesFoto {
   numero?: string;
   cenario?: string; // cenário no sistema antigo de 200x220, ampliado para o quadro
   traje?: Traje;
+  /** só a cabeça e o pescoço, sem fundo (para montar o corpo inteiro) */
+  soCabeca?: boolean;
+  /** desenho extra por cima do pescoço (tatuagem), nas coordenadas do quadro */
+  pescoco?: string;
 }
 
 export function svgFoto(o: OpcoesFoto): string {
@@ -517,7 +521,9 @@ export function svgFoto(o: OpcoesFoto): string {
     const d = `M${x} 128 C${x + lado * 13} 122 ${x + lado * 16} 142 ${x + lado * 11} 156 C${x + lado * 8} 166 ${x + lado * 2} 168 ${x - lado * 2} 163 Z`;
     return `<path d="${d}" fill="${lado === 1 ? sombraPele : pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M${x + lado * 4} 136 C${x + lado * 10} 136 ${x + lado * 10} 150 ${x + lado * 5} 154" stroke="${TINTA}" stroke-width="1.4" fill="none"/>`;
   };
-  const corpo = silhueta
+  const corpo = o.soCabeca
+    ? `<path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>`
+    : silhueta
     ? uniforme({ cor1: "#1E2E28", cor2: "#18261F", estilo: "lisa" }, undefined, pele, sombraPele, hach)
     : o.traje === "social" ? roupaSocial(a.roupaSocial, a.corSocial, pele, sombraPele, hach)
     : uniforme(o.camisa ?? CAMISA_PADRAO, o.numero, pele, sombraPele, hach);
@@ -532,13 +538,14 @@ export function svgFoto(o: OpcoesFoto): string {
     ${nariz(a.nariz, luzPele)}
     ${boca(a.boca, pele)}
     ${detalhes}`;
-  const cenario = o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>`;
+  const cenario = o.soCabeca ? "" : o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>`;
   return `<svg viewBox="0 0 ${LARG} ${ALT}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto de perfil do jogador">
   ${defs}${cenario}
   <g${silhueta ? ' opacity="0.94"' : ""}>
   ${cabeloAtras(a.cabelo, f, cor)}
   ${corpo}
   ${silhueta ? "" : a.corrente && o.traje === "social" ? `<path d="M126 226 Q150 270 174 226" stroke="#D9B44A" stroke-width="2.6" fill="none"/><circle cx="150" cy="252" r="4" fill="#D9B44A" stroke="${TINTA}" stroke-width="1.2"/>` : ""}
+  ${o.pescoco ?? ""}
   ${orelha(-1)}${orelha(1)}
   <path d="${rostoD}" fill="${pele}"/>
   <g clip-path="url(#${clipRosto})">
