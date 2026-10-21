@@ -14,7 +14,9 @@ import { mundo } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
-import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave } from "../src/jogo.js";
+import { alvoSeguidores, semanaRedes, imposto } from "../src/vida.js";
+import { tetoSalarial } from "../src/mercado.js";
+import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave, resolverEvento } from "../src/jogo.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
@@ -338,6 +340,27 @@ teste("Identidade: clube formador dá chance ao jovem, clube comprador não", ()
   assert.ok(bonusJovem("SAN", 20) < bonusJovem("SAN", 19));
   assert.ok(chanceSubir("PAL").chance > chanceSubir("SA-NAS").chance);
   for (const id of Object.keys(mundo(pacote).clube)) assert.ok(culturaBase(id) >= 1 && culturaBase(id) <= 5, id);
+});
+
+teste("Vida: seguidores com teto, imposto por país, teto salarial e eventos fora de campo", () => {
+  // seguidores: nunca passam de ~700 mi, mesmo com fama máxima, gigante, marqueteiro e postando muito
+  assert.ok(alvoSeguidores(100, 2, 20, 100, 1.5) < 7e8 && alvoSeguidores(100, 2, 20, 100, 1.5) > 4e8);
+  assert.ok(alvoSeguidores(40, 0.4, 10, 40, 0) < 1e6);
+  assert.ok(alvoSeguidores(70, 2, 10, 40, 0) > alvoSeguidores(70, 0.5, 10, 40, 0) * 3, "clube grande dá mais seguidores");
+  assert.equal(semanaRedes(1e12, 5e6), 5e6, "save com seguidores absurdos é corrigido");
+  assert.ok(semanaRedes(10e6, 5e6) < 10e6 && semanaRedes(10e6, 5e6) > 9e6, "perde devagar");
+  assert.equal(imposto(1e6, "KSA1"), 0); assert.ok(imposto(1e6, "ENG1") > imposto(1e6, "BRA1"));
+  const w = mundo(pacote);
+  assert.ok(tetoSalarial(w.clube["SA-HIL"], w.liga.KSA1) > tetoSalarial(w.clube["EN-MCI"], w.liga.ENG1), "o Golfo paga mais");
+  assert.ok(salarioMensal({ ovr: 92, idade: 27, liga: w.liga.BRA2, clube: w.clube.SBE, agente: "top", fama: 100 }) <= tetoSalarial(w.clube.SBE, w.liga.BRA2));
+  // eventos: aparecem, resolvem e não repetem os únicos
+  const r = criarJogador({ nome: "Vida", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "MEI", semente: "vida" });
+  const sv = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "vida");
+  let vistos = 0;
+  for (let k = 0; k < 160; k++) { if (sv.carreira.evento) vistos++; semanaAutomatica(pacote, sv); }
+  assert.ok(vistos >= 8, `poucos eventos: ${vistos}`);
+  sv.carreira.evento = "mae-casa"; const saldo = sv.casa.saldo;
+  assert.ok(resolverEvento(pacote, sv, "comprar")); assert.ok(sv.casa.saldo < saldo); assert.equal(sv.carreira.evento, undefined);
 });
 
 teste("Mercado: transferência para outra liga, empréstimo, renovação, agente e passe livre", () => {

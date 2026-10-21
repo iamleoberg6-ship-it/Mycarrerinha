@@ -112,9 +112,10 @@ export function evoluirSemana(at: Atributos, pot: number, ctx: ContextoTreino): 
     const fTreino = (g === ctx.foco ? 1.5 : 0.85) * fInt * (ctx.personalTrainer ? 1.1 : 1);
     const ganho = CALIB.taxaBase * fIdade(ctx.idade, g) * fTreino * F_JOGO[ctx.participacao] * fMoral * fProf * Math.max(0, 1 - at[a] / pot);
     let declinio = 0;
-    if (g === "fisico" && ctx.idade >= 29) declinio = 0.05;
-    if (g === "tecnico" && ctx.idade >= 32) declinio = 0.03;
-    if (g === "tatico" && ctx.idade >= 34) declinio = 0.03;
+    // o corpo cobra cada vez mais depois dos 33: aos 38, o físico cai quase 6 pontos por temporada
+    if (g === "fisico" && ctx.idade >= 29) declinio = ctx.idade >= 36 ? 0.15 : ctx.idade >= 33 ? 0.09 : 0.05;
+    if (g === "tecnico" && ctx.idade >= 32) declinio = ctx.idade >= 36 ? 0.07 : 0.03;
+    if (g === "tatico" && ctx.idade >= 34) declinio = ctx.idade >= 37 ? 0.05 : 0.03;
     novo[a] = clamp(at[a] + ganho - declinio * reducaoDeclinio, 1, 99);
   }
   return novo;

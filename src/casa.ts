@@ -779,6 +779,13 @@ export function mudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", sal
   return { ok: true, msg: `Mudança feita: ${nomeImovel(e, m)}.${e.deposito.length ? ` ${e.deposito.length} ${e.deposito.length > 1 ? "itens foram" : "item foi"} para o depósito.` : ""}` };
 }
 
+/** Custo de manter o que é seu: imóveis próprios (condomínio, IPTU, funcionários) e veículos (seguro, IPVA, revisão). */
+export function manutencaoMensal(e: EstadoCasa): { nome: string; valor: number }[] {
+  const imoveis = e.proprios.reduce((a, id) => a + (IMOVEL[id]?.compra ?? 0) * 0.0035, 0);
+  const veiculos = [...e.objetos.map((o) => o.item), ...e.deposito.map((d) => d.item)].filter((id) => ["carro", "moto"].includes(ITENS[id]?.tipo)).reduce((a, id) => a + ITENS[id].preco * 0.012, 0);
+  return [{ nome: "Imóveis próprios (condomínio, IPTU, funcionários)", valor: Math.round(imoveis) }, { nome: "Veículos (seguro, IPVA, revisão)", valor: Math.round(veiculos) }];
+}
+
 export function fecharMes(e: EstadoCasa, salario: number): { aluguel: number } {
   const aluguel = e.proprios.includes(e.imovel) ? 0 : imovelAtual(e).aluguel;
   e.saldo += salario - aluguel;

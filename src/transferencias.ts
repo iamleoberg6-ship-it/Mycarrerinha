@@ -1,14 +1,15 @@
 // Mercado da carreira jogável: janelas, propostas, negociação pelo agente, empréstimo, renovação
 // e troca de agente. As fórmulas de interesse, valor e salário vêm de mercado.ts.
 import { RNG, clamp } from "./rng.js";
-import { AGENTES, CAMBIO, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
+import { AGENTES, CAMBIO, tetoSalarial, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
 import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { mundo, infoClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
 import { bonusJovem } from "./identidade.js";
+import { saltoTransferencia } from "./vida.js";
 import { alojamentosDoClube, imovelAtual, mudar, nomeImovel, IMOVEL } from "./casa.js";
-import { SEMANAS_PRE, SEMANAS_TEMPORADA, ANO_INICIAL, clubeCasa, ligaAtual, noticia, ovr, type Carreira, type Save } from "./jogo.js";
+import { alvoDeSeguidores, SEMANAS_PRE, SEMANAS_TEMPORADA, ANO_INICIAL, clubeCasa, ligaAtual, noticia, ovr, type Carreira, type Save } from "./jogo.js";
 
 // ------------------------------------------------------------------ tipos
 export type TipoProposta = "transferencia" | "emprestimo" | "renovacao" | "livre";
@@ -109,7 +110,8 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   if (c.anosContrato <= 1 && !m.emprestimo && m.semRenovacao !== c.temporada && !m.propostas.some((p) => p.tipo === "renovacao")) {
     const quer = ovr(j) >= clube.forca - 9 || j.idade <= 22;
     if (quer) {
-      const sal = Math.round(Math.max(c.salario * 1.02, salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama })));
+      const mercado = salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama });
+      const sal = Math.round(Math.min(tetoSalarial(clube, l), j.idade <= 30 ? Math.max(c.salario * 1.02, mercado) : Math.max(c.salario * 0.7, mercado)));
       const p = nova(m, { tipo: "renovacao", clubeId: c.clubeId, ligaId: l.id, salario: sal, anos: j.idade <= 24 ? 4 : j.idade <= 30 ? 3 : 2, taxa: 0, luvas: Math.round(sal * 1.5), papel: papelNoClube(clube, s), interesse: 0.8, expira: fimDaJanela(c) + SEMANAS_TEMPORADA / 2 });
       m.propostas.push(p);
       eventos.push(`O ${clube.nome} quer renovar seu contrato: ${p.anos} anos.`);
@@ -135,7 +137,9 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   const perfil = perfilDe(pacote, s);
   const chance = 0.45 + (m.listaTransferencia ? 0.25 : 0);
   if (!rng.chance(chance)) return;
-  const cand = gerarPropostas(rng, perfil, w.ligas, c.fama).filter((p) => !m.propostas.some((x) => x.clubeId === p.clube.id) && golfoQuer(p, s));
+  const golfoNaMesa = m.propostas.some((x) => x.ligaId === "KSA1");
+  const cand = gerarPropostas(rng, perfil, w.ligas, c.fama).filter((p) => !m.propostas.some((x) => x.clubeId === p.clube.id) && golfoQuer(p, s))
+    .filter((p, i, arr) => p.liga.id !== "KSA1" || (!golfoNaMesa && arr.findIndex((x) => x.liga.id === "KSA1") === i)); // um clube do Golfo por vez
   for (const p of cand.slice(0, rng.chance(0.25) ? 2 : 1)) {
     const prop = paraSave(pacote, s, p);
     m.propostas.push(prop);
@@ -149,7 +153,8 @@ const golfoQuer = (p: Proposta, s: Save) => p.liga.id !== "KSA1" || s.jogador.id
 
 function paraSave(pacote: PacoteDados, s: Save, p: Proposta): PropostaSave {
   const m = mercadoDe(s.carreira), livre = !p.taxa;
-  const salario = Math.round(Math.max(p.salario, s.carreira.salario));
+  // para tirar o jogador de onde está, o clube tenta cobrir o salário atual, mas só até onde a folha aguenta
+  const salario = Math.round(Math.min(tetoSalarial(p.clube, p.liga), Math.max(p.salario, Math.min(p.salario * 1.3, s.carreira.salario * (s.jogador.idade <= 30 ? 1.05 : 0.85)))));
   const luvas = Math.round(livre ? salario * 3 : p.taxa * CAMBIO * 0.03);
   return nova(m, { tipo: livre ? "livre" : "transferencia", clubeId: p.clube.id, ligaId: p.liga.id, salario, anos: p.anos, taxa: Math.round(p.taxa), luvas, papel: papelNoClube(p.clube, s), interesse: p.interesse, expira: fimDaJanela(s.carreira) });
 }
@@ -169,7 +174,7 @@ export function negociar(pacote: PacoteDados, s: Save, id: string): R {
   const nome = p.tipo === "renovacao" ? `o ${nomeClube(pacote, p.clubeId)}` : `o ${nomeClube(pacote, p.clubeId)}`;
   if (rng.chance(chance)) {
     const f = 1.06 + HABILIDADE_AGENTE[s.carreira.agente] * 0.3;
-    p.salario = Math.round(p.salario * f); p.luvas = Math.round(p.luvas * (f + 0.1));
+    p.salario = Math.round(Math.min(p.salario * f, Math.max(p.salario, tetoSalarial(mundo(pacote).clube[p.clubeId], mundo(pacote).liga[p.ligaId]) * 1.05))); p.luvas = Math.round(p.luvas * (f + 0.1));
     return { ok: true, msg: `Deu certo: ${nome} subiu o salário para R$ ${p.salario.toLocaleString("pt-BR")}.` };
   }
   if (p.tipo !== "renovacao" && rng.chance(0.4)) {
@@ -255,6 +260,8 @@ function receberLuvas(s: Save, luvas: number) {
 /** Troca de clube no meio da carreira: liga, tabela, técnico novo, moradia. */
 export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo: TipoProposta, taxa: number, ordemFixa?: string[]) {
   const c = s.carreira, m = mercadoDe(c), w = mundo(pacote), de = c.clubeId, ligaDe = infoLiga(c.ligaId).id;
+  const seg0 = c.seguidores;
+  c.seguidores = saltoTransferencia(c.seguidores, alvoDeSeguidores(pacote, s, destino.id));
   c.clubeId = destino.id; c.ligaId = destino.ligaId;
   if (destino.ligaId !== ligaDe) {
     const l = w.liga[destino.ligaId], rng = new RNG(`${s.semente}|tabela|${c.temporada}|${destino.ligaId}`);
@@ -272,6 +279,8 @@ export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo:
   const ano = ANO_INICIAL + c.temporada, ligaNome = infoLiga(destino.ligaId).curto;
   const titulo = tipo === "emprestimo" ? `Emprestado ao ${destino.nome}` : tipo === "livre" ? `${s.jogador.apelido} acerta com o ${destino.nome}` : `${s.jogador.apelido} é do ${destino.nome}`;
   noticia(s, "clube", titulo, `${tipo === "transferencia" ? `Negócio de € ${(taxa / 1e6).toFixed(1)} mi. ` : ""}${ligaNome}, ${ano}. ${tipo === "emprestimo" ? "Volta no fim da temporada." : `Contrato de ${c.anosContrato} anos, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`}${imovelAtual(s.casa).categoria === "alojamento" ? ` Mora em: ${nomeImovel(s.casa, IMOVEL[s.casa.imovel])}.` : ""}`);
+  const dSeg = c.seguidores - seg0;
+  if (Math.abs(dSeg) >= 1000) noticia(s, "vida", dSeg > 0 ? "Chuva de seguidores" : "Menos holofote", dSeg > 0 ? `A torcida do ${destino.nome} chegou junto: +${dSeg.toLocaleString("pt-BR")} seguidores na primeira semana.` : `Longe dos holofotes de antes, ${s.jogador.apelido} perdeu ${(-dSeg).toLocaleString("pt-BR")} seguidores.`);
 }
 
 function embaralhar(rng: RNG, ids: string[]): string[] {

@@ -34,12 +34,23 @@ export function valorMercado(ovr: number, idade: number, anosContrato: number, f
   return 0.5e6 * Math.exp((ovr - 60) / 5) * fIdadeVM(idade) * fContrato(anosContrato) * fLiga;
 }
 
-/** Salário mensal em reais. */
+/** Maior salário mensal (R$) que um clube de fClube 1,0 paga em cada liga. O Golfo paga muito acima de todo mundo. */
+const TETO_LIGA: Record<string, number> = {
+  ENG1: 5.5e6, ESP1: 4.2e6, ITA1: 3.2e6, GER1: 3.4e6, FRA1: 2.8e6, POR1: 0.9e6, NED1: 0.8e6, BRA1: 1.0e6, ARG1: 0.35e6,
+  KSA1: 14e6, ENG2: 0.7e6, ESP2: 0.25e6, BRA2: 0.2e6,
+};
+/** Teto salarial do clube: o que a folha aguenta pagar para um único jogador. */
+export function tetoSalarial(clube: Clube, liga: Liga): number {
+  return (TETO_LIGA[liga.id] ?? 0.5e6) * Math.pow(clube.fClube, 1.6);
+}
+
+/** Salário mensal em reais: valor de mercado, prestígio e agente, até o teto da folha do clube. */
 export function salarioMensal(o: { ovr: number; idade: number; liga: Liga; clube: Clube; agente: TipoAgente; fama: number; formacao?: boolean }): number {
   const vm = valorMercado(o.ovr, o.idade, 3, o.liga.fLiga);
   const piso = o.formacao ? 3000 : 8000;
   const base = Math.max(piso, (0.1 * vm * o.clube.fClube * CAMBIO * o.liga.fSalario) / 12);
-  return base * (1 + AGENTES[o.agente].bonus) * (1 + o.fama / 200);
+  const pedido = base * (1 + AGENTES[o.agente].bonus) * (1 + o.fama / 200);
+  return Math.max(piso, Math.min(pedido, tetoSalarial(o.clube, o.liga)));
 }
 
 /** Posição do jogador na fila do elenco (0 = melhor). */
@@ -138,8 +149,10 @@ export function gerarPropostas(rng: RNG, p: PerfilMercado, mundo: Liga[], fama: 
     for (const clube of liga.clubes) {
       const c = componentesInteresse(p, clube, liga);
       if (!passaFiltros(p, clube, liga, c.vm, c.orcamento)) continue;
-      const I = 0.3 * c.nivel + 0.25 * c.necessidade + 0.15 * c.vis + 0.15 * c.afinidade + 0.15 * c.custo;
-      if (I < 0.6) continue;
+      // o Golfo vai atrás de jogador experiente e conhecido; o resto do interesse tem um pouco de acaso (olheiro, técnico, momento)
+      const golfo = liga.fSalario >= 2 && p.idade >= 27 && p.ovr >= 70 ? 0.08 + (p.fama >= 55 ? 0.08 : 0) : 0;
+      const I = 0.3 * c.nivel + 0.25 * c.necessidade + 0.15 * c.vis + 0.15 * c.afinidade + 0.15 * c.custo + golfo + rng.range(-0.08, 0.08);
+      if (I < 0.58) continue;
       const salario = salarioMensal({ ovr: p.ovr, idade: p.idade, liga, clube, agente: p.agente, fama });
       candidatas.push({ clube, liga, interesse: I, taxa: p.clubeAtual ? c.vm * rng.range(0.9, 1.3) * (1 + (I - 0.6)) : 0, orcamento: c.orcamento, salario, anos: rng.int(2, 5), titularProvavel: c.titular });
     }

@@ -4,17 +4,19 @@ import { RNG, clamp } from "./rng.js";
 import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos, type Grupo, type Intensidade, type Participacao, type Posicao } from "./atributos.js";
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube, type Liga, type LinhaTabela, type PacoteDados } from "./liga.js";
-import { salarioMensal, AGENTES, seguidoresDaFama, type TipoAgente } from "./mercado.js";
+import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { mundo, infoClube, idClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
+import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
+import { alvoSeguidores, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
 import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from "./identidade.js";
 import { semanaDoMercado, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
-import { ganharReliquia, novoEstado, fecharMes, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
+import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
 // ------------------------------------------------------------------ tipos
 export interface Jogador {
@@ -39,6 +41,12 @@ export interface Carreira {
   chegadaClube?: number;
   /** jogos como profissional por clube (camisa de cada clube) */
   jogosPorClube?: Record<string, number>;
+  /** redes sociais: quanto posta (0–100) e repercussão recente de lances (decai) */
+  engajamento?: number; hype?: number;
+  /** padrão de vida escolhido (alimentação, carro, lazer, família) */
+  padrao?: PadraoVida;
+  /** evento fora de campo esperando decisão, e a temporada em que cada evento apareceu */
+  evento?: string; eventosVistos?: Record<string, number>;
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
@@ -227,7 +235,7 @@ export function previaPlano(s: Save, p: Plano) {
   const casa = efeitosDaCasa(s.casa).total, cont = (a: Acao) => p.acoes.filter((x) => x === a).length;
   const cansaco = clamp(s.carreira.cansaco + 10 * cont("treino") - 15 * cont("descanso") + 10 * cont("amigos") + (p.intensidade === "alta" ? 10 : p.intensidade === "leve" ? -10 : 0) + 12, 0, 100);
   const moral = clamp(s.carreira.moral + 2 * cont("familia") + 4 * cont("amigos"), 0, 100);
-  const evolucao = Math.round(100 * (cont("treino") * 0.1 + (p.intensidade === "alta" ? 0.2 : p.intensidade === "leve" ? -0.2 : 0) + casa.evolucao / 100 + s.carreira.bonusEvolucao));
+  const evolucao = Math.round(100 * (cont("treino") * 0.1 + (p.intensidade === "alta" ? 0.2 : p.intensidade === "leve" ? -0.2 : 0) + (casa.evolucao + efeitosVida(padraoDe(s.carreira)).evolucao) / 100 + s.carreira.bonusEvolucao));
   return { cansaco: Math.round(cansaco), moral: Math.round(moral), evolucao, notaExtra: Math.min(0.3, 0.15 * cont("video")) };
 }
 
@@ -357,7 +365,7 @@ export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
 export interface ResumoSemana {
   rotulo: string; escalacao: Escalacao; partida?: { nomeCasa: string; nomeFora: string; golsCasa: number; golsFora: number; nota: number; gols: number; assist: number; minutos: number; tipo: Partida["tipo"] };
   ovrAntes: number; ovrDepois: number; ganhos: [Atributo, number][]; moral: [number, number]; cansaco: [number, number]; fama: [number, number];
-  dinheiro?: { salario: number; aluguel: number }; eventos: string[]; posicaoTabela: number; fimDeTemporada?: ResumoTemporada;
+  dinheiro?: { salario: number; aluguel: number; gastos?: number }; eventos: string[]; posicaoTabela: number; fimDeTemporada?: ResumoTemporada;
 }
 
 const POLEMICAS = [
@@ -379,9 +387,8 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   c.cansaco = prev.cansaco; c.moral = prev.moral;
   c.relTecnico = clamp(c.relTecnico + cont("video") + (cont("treino") >= 2 ? 1 : 0), 0, 100);
   if (cont("redes")) {
-    const ganho = Math.round(c.seguidores * 0.01 * cont("redes") + 200 * cont("redes") * (1 + j.personalidade.carisma / 10));
-    c.seguidores += ganho; c.fama = clamp(c.fama + 0.3 * cont("redes"), 0, 100); c.exposicao = clamp(c.exposicao + 2 * cont("redes"), 0, 100);
-    eventos.push(`+${ganho.toLocaleString("pt-BR")} seguidores nas redes.`);
+    c.engajamento = clamp((c.engajamento ?? 40) + 9 * cont("redes"), 0, 100);
+    c.fama = clamp(c.fama + 0.15 * cont("redes"), 0, 100); c.exposicao = clamp(c.exposicao + 2 * cont("redes"), 0, 100);
   }
   if (cont("amigos")) c.vidaNoturna = clamp(c.vidaNoturna + 2 * cont("amigos"), 0, 100);
   plano.acoes.forEach((a, dia) => {
@@ -416,7 +423,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       if (d.fama) c.fama = clamp(c.fama + d.fama, 0, 100);
       if (d.moral) c.moral = clamp(c.moral + d.moral, 0, 100);
       if (d.relTecnico) c.relTecnico = clamp(c.relTecnico + d.relTecnico, 0, 100);
-      if (d.seguidores) c.seguidores = Math.round(c.seguidores * (1 + d.seguidores) + 500 * d.seguidores * 100);
+      if (d.seguidores) c.hype = clamp((c.hype ?? 0) + 2 * d.seguidores, -0.3, 1.5);
       if (d.lesao) c.lesao = Math.max(c.lesao, d.lesao);
       if (d.noticia) noticia(s, "polemica", "Repercussão", d.noticia);
       if (d.amarelo) amarelos++;
@@ -457,7 +464,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
       c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5), 0, 100);
       const grande = clubeDe(l, c.clubeId).forca >= 75 ? 1.5 : 1;
-      c.fama = clamp(c.fama + (pro ? grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
+      c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
       c.cansaco = clamp(c.cansaco + (30 * minutos) / 90, 0, 100);
       const l2 = sortearLesao(rng, c.cansaco, plano.intensidade === "alta", j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6));
       if (l2) { c.lesao = l2.semanas; eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
@@ -480,23 +487,35 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   // 4. evolução e recuperação
   if (c.lesao > 0 && participacao !== "titular" && participacao !== "entrou") { participacao = "ferias"; }
   const evoluido = evoluirSemana(j.at, j.pot, { idade: j.idade, foco: plano.foco, intensidade: plano.intensidade, participacao, moral: c.moral, personalTrainer: false, profissionalismo: j.personalidade.profissionalismo });
-  const mult = 1 + cont("treino") * 0.1 + casa.evolucao / 100 + c.bonusEvolucao;
+  const vida = efeitosVida(padraoDe(c));
+  const mult = 1 + cont("treino") * 0.1 + (casa.evolucao + vida.evolucao) / 100 + c.bonusEvolucao;
   for (const k of ATRIBUTOS) j.at[k] = clamp(j.at[k] + (evoluido[k] - j.at[k]) * (evoluido[k] > j.at[k] ? mult : 1), 1, 99);
   if (c.lesao > 0) c.lesao--;
-  c.cansaco = clamp(c.cansaco - 20 - casa.recuperacao, 0, 100);
-  c.moral = clamp(c.moral + 0.18 * (60 + casa.moral - c.moral), 0, 100);
-  c.fama = clamp(c.fama + casa.fama * 0.02, 0, 100);
+  c.cansaco = clamp(c.cansaco - 20 - casa.recuperacao - vida.recuperacao, 0, 100);
+  c.moral = clamp(c.moral + 0.18 * (60 + casa.moral + vida.moral - c.moral), 0, 100);
+  c.fama = clamp(c.fama + (casa.fama + vida.fama) * 0.02, 0, 100);
+  if (vida.noite) c.vidaNoturna = clamp(c.vidaNoturna + 0.3 * vida.noite, 0, 100);
   if (participacao !== "titular" && participacao !== "entrou") c.fama = clamp(c.fama * 0.995, 0, 100);
-  c.seguidores = Math.max(c.seguidores, Math.round(seguidoresDaFama(c.fama) * 0.1 * (1 + c.exposicao / 50)));
+  { // a fama volta aos poucos para o tamanho real do jogador e do clube
+    const cl = clubeDe(l, c.clubeId), ref = famaDeReferencia(ovr(j), visibilidade(c.clubeId, c.ligaId, cl.fClube));
+    c.fama = clamp(c.fama + (ref - c.fama) * (c.fama > ref ? 0.012 : 0.004), 0, 100);
+  }
+  // redes: quem não posta perde engajamento; repercussão de lance passa
+  c.engajamento = clamp((c.engajamento ?? 40) - 2.5, 0, 100);
+  c.hype = (c.hype ?? 0) * 0.85;
+  const seg0 = c.seguidores;
+  c.seguidores = semanaRedes(c.seguidores, alvoDeSeguidores(pacote, s));
+  if (Math.abs(c.seguidores - seg0) >= Math.max(5000, seg0 * 0.01)) eventos.push(`${c.seguidores > seg0 ? "+" : "−"}${Math.abs(c.seguidores - seg0).toLocaleString("pt-BR")} seguidores nas redes.`);
 
   // 5. dinheiro no fim do mês
   let dinheiro: ResumoSemana["dinheiro"];
   if (c.semana % 4 === 3) {
-    const liquido = salarioLiquido(c);
-    const { aluguel } = fecharMes(s.casa, liquido);
+    const liquido = salarioLiquido(c), g = gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
+    const { aluguel } = fecharMes(s.casa, liquido - g.total);
     if (c.mesesPatrocinio > 0) c.mesesPatrocinio--; else c.patrocinioMensal = 0;
-    dinheiro = { salario: Math.round(liquido), aluguel };
-    noticia(s, "dinheiro", "Caiu o salário", `R$ ${Math.round(liquido).toLocaleString("pt-BR")} na conta${aluguel ? `, R$ ${aluguel.toLocaleString("pt-BR")} de aluguel` : ""}.`);
+    dinheiro = { salario: Math.round(liquido), aluguel, gastos: g.total };
+    noticia(s, "dinheiro", "Fechou o mês", `R$ ${Math.round(liquido).toLocaleString("pt-BR")} de salário líquido, R$ ${g.total.toLocaleString("pt-BR")} de custo de vida${aluguel ? `, R$ ${aluguel.toLocaleString("pt-BR")} de aluguel` : ""}.`);
+    if (s.casa.saldo < 0) { c.moral = clamp(c.moral - 4, 0, 100); eventos.push("Conta no vermelho: o custo de vida está maior que o salário."); noticia(s, "dinheiro", "Conta no vermelho", "Os gastos passaram do que entra. Hora de rever o padrão de vida."); }
   }
 
   // 6. avança
@@ -506,6 +525,15 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (c.semana >= SEMANAS_TEMPORADA) fim = fimDeTemporada(pacote, s, eventos);
   // 7. mercado: propostas da janela, renovação, empréstimo
   semanaDoMercado(pacote, s, rngDe(s, "mercado"), eventos);
+  // 8. vida fora de campo: de vez em quando, uma decisão
+  if (c.evento && !EVENTO[c.evento]) c.evento = undefined;
+  if (!c.evento && c.semana > 0) {
+    const r2 = rngDe(s, "evento");
+    if (r2.chance(0.14)) {
+      const ctx = contextoEvento(pacote, s), e = sortearEvento(r2, ctx, c.eventosVistos ??= {});
+      if (e) { c.evento = e.id; c.eventosVistos[e.id] = c.temporada; eventos.push(`Fora de campo: ${e.titulo}.`); }
+    }
+  }
   return {
     rotulo, escalacao: partida?.escalacao ?? (c.semana - 1 < SEMANAS_PRE ? "semJogo" : "fora"), partida: resumoPartida,
     ovrAntes, ovrDepois: ovr(j), ganhos, moral: [moral0, c.moral], cansaco: [cansaco0, c.cansaco], fama: [fama0, c.fama], dinheiro, eventos,
@@ -514,8 +542,56 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
 }
 
 export function salarioLiquido(c: Carreira): number {
-  const s = c.salario, ir = 0.275 * Math.max(0, s - 5000);
+  const s = c.salario, ir = c.formacao ? 0 : imposto(s, c.ligaId);
   return s - ir - AGENTES[c.agente].comissao * s + c.patrocinioMensal;
+}
+export function contextoEvento(pacote: PacoteDados, s: Save): CtxEvento {
+  const c = s.carreira, info = infoClube(pacote, c.clubeId), li = infoLiga(c.ligaId);
+  const base = { idade: s.jogador.idade, fama: c.fama, salario: c.salario, saldo: s.casa.saldo, exterior: li.regiao !== "BRA", golfo: li.id === "KSA1",
+    titular: c.stats.titular > c.stats.jogos / 2, nome: s.jogador.apelido, clube: info.nome, cidade: info.cidade, liga: li.curto, temporada: c.temporada, seguidores: c.seguidores };
+  return { ...base, fase: fasesDe(base, c.formacao) };
+}
+/** Evento esperando decisão (com o texto já preenchido). */
+export function eventoPendente(pacote: PacoteDados, s: Save) {
+  const e = s.carreira.evento ? EVENTO[s.carreira.evento] : undefined;
+  if (!e) return undefined;
+  const ctx = contextoEvento(pacote, s);
+  return { id: e.id, titulo: e.titulo, texto: preencher(e.texto, ctx), opcoes: e.opcoes.map((o) => ({ id: o.id, rotulo: o.rotulo, custo: dinheiroDoEfeito(o.efeitos, s.carreira.salario) })) };
+}
+function aplicarEfeito(s: Save, f: EfeitoEvento): string[] {
+  const c = s.carreira, notas: string[] = [];
+  const din = dinheiroDoEfeito(f, c.salario);
+  if (din) { s.casa.saldo += din; notas.push(`${din > 0 ? "+" : "−"}R$ ${Math.abs(din).toLocaleString("pt-BR")}`); }
+  if (f.moral) c.moral = clamp(c.moral + f.moral, 0, 100);
+  if (f.fama) c.fama = clamp(c.fama + f.fama, 0, 100);
+  if (f.relTecnico) c.relTecnico = clamp(c.relTecnico + f.relTecnico, 0, 100);
+  if (f.engajamento) c.engajamento = clamp((c.engajamento ?? 40) + f.engajamento, 0, 100);
+  if (f.hype) c.hype = clamp((c.hype ?? 0) + f.hype, -0.3, 1.5);
+  if (f.pressao) c.pressao = clamp(c.pressao + f.pressao, 0, 100);
+  if (f.vidaNoturna) c.vidaNoturna = clamp(c.vidaNoturna + f.vidaNoturna, 0, 100);
+  if (f.cansaco) c.cansaco = clamp(c.cansaco + f.cansaco, 0, 100);
+  if (f.evolucao) c.bonusEvolucao += f.evolucao;
+  const pat = patrocinioDoEfeito(f, c.salario);
+  if (pat && f.patrocinio) { c.patrocinioMensal += pat; c.mesesPatrocinio = Math.max(c.mesesPatrocinio, f.patrocinio.meses); notas.push(`patrocínio de R$ ${pat.toLocaleString("pt-BR")}/mês`); }
+  return notas;
+}
+/** O jogador decide o evento fora de campo. */
+export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): { titulo: string; texto: string } | undefined {
+  const c = s.carreira, e = c.evento ? EVENTO[c.evento] : undefined, o = e?.opcoes.find((x) => x.id === opcaoId);
+  if (!e || !o) return;
+  c.evento = undefined;
+  const ctx = contextoEvento(pacote, s);
+  let texto = preencher(o.resultado, ctx), notas = aplicarEfeito(s, o.efeitos);
+  if (o.risco && rngDe(s, "evento-risco", e.id).chance(o.risco.chance)) { texto += " " + preencher(o.risco.resultado, ctx); notas = [...notas, ...aplicarEfeito(s, o.risco.efeitos)]; }
+  const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");
+  noticia(s, "vida", e.titulo, final);
+  return { titulo: e.titulo, texto: final };
+}
+export const padraoDe = (c: Carreira): PadraoVida => (c.padrao ??= { ...PADRAO_INICIAL });
+/** Seguidores que o jogador "deveria" ter no clube atual. */
+export function alvoDeSeguidores(pacote: PacoteDados, s: Save, clubeId = s.carreira.clubeId): number {
+  const c = s.carreira, cl = mundo(pacote).clube[clubeId];
+  return alvoSeguidores(c.fama, visibilidade(clubeId, cl?.ligaId, cl?.fClube ?? 1), s.jogador.personalidade.carisma ?? 10, c.engajamento ?? 40, c.hype ?? 0);
 }
 function posicaoNaTabela(fixa: number | undefined, s: Save): number {
   if (fixa) return fixa;
@@ -577,6 +653,7 @@ export function planoAutomatico(s: Save): Plano {
 /** Joga uma semana inteira sem interface, escolhendo a primeira opção de cada decisão. */
 export function semanaAutomatica(pacote: PacoteDados, s: Save, decidirMercado = true): ResumoSemana {
   if (decidirMercado) decidirAutomatico(pacote, s);
+  if (s.carreira.evento) resolverEvento(pacote, s, EVENTO[s.carreira.evento]?.opcoes[0].id ?? "");
   const plano = planoAutomatico(s), p = prepararPartida(pacote, s, plano);
   const ds: ResultadoDecisao[] = [];
   let fora = 99;

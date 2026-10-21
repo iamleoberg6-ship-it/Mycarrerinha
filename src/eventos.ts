@@ -1,0 +1,197 @@
+// Eventos fora de campo que acompanham a fase da carreira: na base, a escola e a família; no começo, o primeiro
+// carro e o empresário; já estabelecido, patrocínio e televisão; como estrela, documentário, gala e marca própria;
+// veterano, despedida, mentor e o que fazer depois. Um por vez, com decisão.
+import { RNG, clamp } from "./rng.js";
+
+export type Fase = "base" | "inicio" | "estabelecido" | "estrela" | "veterano";
+export interface CtxEvento {
+  fase: Fase[]; idade: number; fama: number; salario: number; saldo: number; exterior: boolean; golfo: boolean; titular: boolean;
+  nome: string; clube: string; cidade: string; liga: string; temporada: number; seguidores: number;
+}
+export interface EfeitoEvento {
+  /** dinheiro em R$ (negativo = gasto) ou em salários do jogador (sal) */
+  dinheiro?: number; sal?: number;
+  moral?: number; fama?: number; relTecnico?: number; engajamento?: number; hype?: number; pressao?: number; vidaNoturna?: number; cansaco?: number;
+  /** bônus permanente de evolução (0,02 = +2%) */
+  evolucao?: number;
+  /** patrocínio: fração do salário por mês, por N meses (piso em reais para quem ganha pouco) */
+  patrocinio?: { pct: number; piso: number; meses: number };
+}
+export interface OpcaoEvento { id: string; rotulo: string; resultado: string; efeitos: EfeitoEvento; risco?: { chance: number; resultado: string; efeitos: EfeitoEvento } }
+export interface EventoVida {
+  id: string; fases: Fase[]; titulo: string; texto: string; opcoes: OpcaoEvento[];
+  /** só uma vez na carreira */
+  unico?: boolean; quando?: (c: CtxEvento) => boolean;
+}
+
+const ev = (id: string, fases: Fase[], titulo: string, texto: string, opcoes: OpcaoEvento[], extra: Partial<EventoVida> = {}): EventoVida => ({ id, fases, titulo, texto, opcoes, ...extra });
+const op = (id: string, rotulo: string, resultado: string, efeitos: EfeitoEvento, risco?: OpcaoEvento["risco"]): OpcaoEvento => ({ id, rotulo, resultado, efeitos, risco });
+
+export const EVENTOS: EventoVida[] = [
+  // ------------------------------------------------------------ base
+  ev("escola-prova", ["base"], "Semana de provas", "A escola do clube marcou as provas finais na mesma semana dos treinos em dois períodos.", [
+    op("estudar", "Virar a noite estudando", "Passou em tudo. A mãe mandou print do boletim para a família inteira.", { moral: 4, cansaco: 15 }),
+    op("treino", "Priorizar o treino", "Treinou forte, mas a recuperação ficou para janeiro. O coordenador da base não gostou.", { relTecnico: 3, moral: -3 }),
+  ]),
+  ev("base-saudade", ["base"], "Saudade de casa", "Faz dois meses que você não vê a família. O alojamento está quieto no domingo.", [
+    op("visitar", "Pegar o ônibus e ir visitar", "Doze horas de estrada, um almoço de domingo e a cabeça no lugar.", { moral: 8, cansaco: 10, dinheiro: -400 }),
+    op("ligar", "Fazer chamada de vídeo e ficar", "A avó chorou na chamada. Você chorou depois, sozinho.", { moral: 2 }),
+  ]),
+  ev("base-chuteira", ["base"], "Chuteira furada", "A chuteira abriu na sola no meio do treino. A nova custa metade da sua ajuda de custo.", [
+    op("comprar", "Comprar a nova", "Pé firme no gramado. O mês vai ser de miojo.", { dinheiro: -600, moral: 2 }),
+    op("colar", "Colar com cola de sapateiro", "Aguentou duas semanas. No terceiro treino, abriu de novo.", { moral: -2 }, { chance: 0.3, resultado: "A sola soltou num pique e você torceu o tornozelo.", efeitos: { moral: -4, cansaco: 20 } }),
+  ]),
+  ev("base-olheiro", ["base"], "Olheiro na arquibancada", "Dizem que tem gente de um clube grande vendo o jogo da base no sábado.", [
+    op("show", "Jogar para aparecer", "Você tentou tudo sozinho. O olheiro anotou seu nome, o técnico anotou outra coisa.", { fama: 2, relTecnico: -3 }),
+    op("time", "Jogar pelo time", "Jogo simples e correto. O técnico da base elogiou na frente de todos.", { relTecnico: 4, moral: 2 }),
+  ]),
+  ev("base-empresario", ["base"], "Um empresário na porta", "Um empresário com relógio dourado quer conversar com seus pais. Promete clube na Europa em dois anos.", [
+    op("ouvir", "Ouvir a proposta com a família", "Muita promessa e um contrato de dez páginas. Seu pai pediu tempo para pensar.", { moral: 2, fama: 1 }),
+    op("recusar", "Agradecer e recusar", "Ele saiu batendo a porta do carro. Seu pai disse que fez bem.", { moral: 1 }),
+  ], { unico: true }),
+  // ------------------------------------------------------------ início de carreira
+  ev("primeiro-carro", ["inicio"], "O primeiro carro", "Com o primeiro salário de profissional, a concessionária do bairro oferece um carro em 48 parcelas.", [
+    op("popular", "Um popular usado", "Simples e pago à vista. Seu pai dirigiu primeiro.", { sal: -1.5, moral: 4 }),
+    op("financiar", "Financiar o importado", "Todo mundo no CT reparou. A parcela também vai reparar em você todo mês.", { sal: -4, moral: 6, fama: 2, pressao: 5 }),
+    op("nada", "Continuar de aplicativo", "O dinheiro fica guardado. O motorista do aplicativo já te conhece.", { moral: -1 }),
+  ], { unico: true, quando: (c) => c.salario >= 8000 }),
+  ev("festa-elenco", ["inicio", "estabelecido"], "Convite para a festa", "Os mais velhos do elenco vão a uma festa depois do jogo. Te chamaram.", [
+    op("ir", "Ir com o grupo", "Você virou parte da turma. Voltou às 4 da manhã.", { moral: 5, vidaNoturna: 6, cansaco: 15, relTecnico: -1 }, { chance: 0.2, resultado: "Alguém filmou a mesa. O vídeo chegou na diretoria.", efeitos: { relTecnico: -6, fama: 2, pressao: 6 } }),
+    op("casa", "Agradecer e ir para casa", "Sono de atleta. No dia seguinte, ninguém lembrava que você não foi.", { cansaco: -5 }),
+  ]),
+  ev("mae-casa", ["inicio", "estabelecido"], "A casa da mãe", "Sua mãe mora de aluguel há vinte anos. Você pode dar a entrada numa casa para ela.", [
+    op("comprar", "Dar a casa", "Ela chorou na entrega das chaves. Você também.", { sal: -6, moral: 12 }),
+    op("depois", "Prometer para o ano que vem", "Ela disse que não tem pressa. Tem.", { moral: -2 }),
+  ], { unico: true, quando: (c) => c.salario >= 20000 }),
+  ev("podcast", ["inicio", "estabelecido"], "Convite para podcast", "Um podcast de futebol com milhões de visualizações quer você no próximo episódio.", [
+    op("ir", "Ir e falar de tudo", "Três horas de conversa e um corte viral sobre a infância.", { fama: 4, engajamento: 15, hype: 0.15 }, { chance: 0.25, resultado: "Uma frase sobre o técnico saiu de contexto e virou manchete.", efeitos: { relTecnico: -8, pressao: 8 } }),
+    op("recusar", "Recusar: foco no campo", "O assessor do clube agradeceu. Ninguém mais lembrou.", { relTecnico: 2 }),
+  ]),
+  ev("chuteira-patrocinio", ["inicio"], "Marca de chuteira", "Uma marca de chuteira oferece material e um pequeno contrato.", [
+    op("aceitar", "Assinar", "Chuteira personalizada com seu número. E um dinheiro que ajuda.", { patrocinio: { pct: 0.08, piso: 3000, meses: 24 }, fama: 2, moral: 3 }),
+    op("esperar", "Esperar uma marca maior", "O agente acha que vem coisa melhor. Pode vir.", { moral: -1 }),
+  ], { unico: true }),
+  ev("faculdade", ["inicio", "estabelecido"], "Faculdade à distância", "Um curso de Administração à distância encaixa na sua rotina, se você abrir mão de algumas folgas.", [
+    op("matricular", "Fazer a matrícula", "Aula gravada à noite, prova no sábado. Cansa, mas a cabeça agradece.", { dinheiro: -1200, cansaco: 5, moral: 3, evolucao: 0.01 }),
+    op("depois", "Deixar para depois da carreira", "O futebol primeiro. O curso continua lá.", {}),
+  ], { unico: true }),
+  ev("treino-extra-veterano", ["inicio"], "O capitão te chama", "O capitão do time oferece ficar depois do treino para te ensinar a se posicionar.", [
+    op("ficar", "Ficar todos os dias", "Um mês de aulas no campo vazio. Você joga diferente.", { evolucao: 0.02, relTecnico: 3, cansaco: 10 }),
+    op("ir", "Agradecer e ir descansar", "Ele entendeu. Chamou outro garoto.", {}),
+  ], { unico: true }),
+  ev("golpe-pix", ["inicio", "estabelecido"], "Investimento milagroso", "Um conhecido do bairro oferece um investimento que 'rende 10% ao mês, garantido'.", [
+    op("investir", "Colocar um dinheiro", "O site saiu do ar três semanas depois. O conhecido também.", { sal: -2, moral: -6 }),
+    op("recusar", "Recusar e contar para o agente", "O agente riu: é o golpe mais velho do mundo.", { moral: 1 }),
+  ], { unico: true, quando: (c) => c.saldo > 20000 }),
+  // ------------------------------------------------------------ estabelecido
+  ev("tv-programa", ["estabelecido", "estrela"], "Convite da TV", "Um programa de auditório de domingo quer você no quadro de talentos.", [
+    op("ir", "Ir e dançar no palco", "O Brasil inteiro viu você dançando mal. O Brasil inteiro adorou.", { fama: 5, hype: 0.2, engajamento: 10, cansaco: 5 }),
+    op("recusar", "Recusar com educação", "Domingo em casa, com a família.", { moral: 3 }),
+  ]),
+  ev("patrocinio-marca", ["estabelecido"], "Proposta de patrocínio", "Uma marca de bebida esportiva quer você na campanha da temporada.", [
+    op("aceitar", "Assinar a campanha", "Seu rosto no ponto de ônibus e uma diária de gravação por mês.", { patrocinio: { pct: 0.15, piso: 15000, meses: 12 }, fama: 3, cansaco: 5 }),
+    op("negociar", "Pedir mais (agente)", "O agente apertou. A marca topou pagar mais, por menos tempo.", { patrocinio: { pct: 0.22, piso: 20000, meses: 6 }, fama: 2 }, { chance: 0.35, resultado: "A marca desistiu e fechou com um colega de elenco.", efeitos: { moral: -3 } }),
+    op("recusar", "Recusar", "Não quer associar sua imagem a isso. O agente suspirou.", {}),
+  ]),
+  ev("instituto", ["estabelecido", "estrela"], "Projeto social", "O campinho onde você começou está abandonado. Dá para reformar e montar uma escolinha.", [
+    op("fazer", "Bancar a reforma", "Cem crianças com uniforme novo. A foto do primeiro treino rodou o país.", { sal: -3, moral: 8, fama: 4, hype: 0.1 }),
+    op("ajudar", "Doar material esportivo", "Bolas, coletes e chuteiras. Um começo.", { sal: -0.5, moral: 3, fama: 1 }),
+    op("nao", "Não agora", "O campinho continua lá, esperando.", {}),
+  ], { unico: true }),
+  ev("polemica-rede", ["estabelecido", "estrela"], "Comentário que viralizou", "Um torcedor rival fez piada com sua família nas redes. Todo mundo espera sua resposta.", [
+    op("responder", "Responder à altura", "A resposta foi genial e cruel. Engajamento recorde, nota de repúdio do clube.", { engajamento: 15, hype: 0.25, relTecnico: -5, pressao: 6 }),
+    op("ignorar", "Ignorar", "Em dois dias ninguém lembrava. Você dormiu bem.", { moral: 1 }),
+    op("gol", "Responder em campo", "Você guardou o print. A resposta vem no domingo.", { moral: 3, pressao: 3 }),
+  ]),
+  ev("videogame", ["estabelecido", "estrela"], "Capa de videogame regional", "Um jogo de futebol quer você na capa da edição do seu país.", [
+    op("aceitar", "Aceitar", "Seu rosto em todas as lojas. O sobrinho jogou com você o fim de semana inteiro.", { patrocinio: { pct: 0.1, piso: 30000, meses: 12 }, fama: 6, hype: 0.2 }),
+    op("recusar", "Recusar", "Dizem que capa de videogame dá azar.", {}),
+  ], { unico: true, quando: (c) => c.fama >= 50 }),
+  ev("casamento-amigo", ["estabelecido", "estrela", "veterano"], "Casamento do melhor amigo", "Seu amigo de infância casa no sábado, no interior. O clube joga no domingo.", [
+    op("ir", "Ir e voltar de madrugada", "Fez o discurso, chorou, voltou às 5 da manhã para a concentração.", { moral: 8, cansaco: 20 }),
+    op("video", "Mandar um vídeo", "Ele entendeu. Disse que entendeu.", { moral: -3 }),
+  ], { unico: true }),
+  ev("investimento-imovel", ["estabelecido", "estrela", "veterano"], "Oportunidade de negócio", "Um amigo do agente propõe sociedade numa rede de academias.", [
+    op("entrar", "Entrar como sócio", "Três unidades abertas no primeiro ano. Dá trabalho e dá dinheiro, um dia.", { sal: -5, moral: 2 }, { chance: 0.4, resultado: "A rede quebrou na pandemia de gripe do ano seguinte. Prejuízo total.", efeitos: { moral: -6 } }),
+    op("nao", "Ficar fora", "Dinheiro parado também não perde.", {}),
+  ], { quando: (c) => c.saldo > 1e6 }),
+  ev("lesao-amigo", ["estabelecido", "estrela"], "Companheiro lesionado", "Seu parceiro de quarto rompeu o ligamento e está mal. Você pode passar as folgas com ele na fisioterapia.", [
+    op("acompanhar", "Acompanhar a recuperação", "O elenco reparou. O capitão disse que é isso que faz um grupo.", { moral: 4, relTecnico: 4, cansaco: 5 }),
+    op("mensagem", "Mandar mensagem e seguir a vida", "Ele respondeu com um joinha.", {}),
+  ]),
+  ev("exterior-adaptacao", ["inicio", "estabelecido", "estrela"], "Saudade de comida de casa", "Faz meses que você não come arroz e feijão de verdade. Tem um restaurante brasileiro a uma hora daqui.", [
+    op("ir", "Ir toda semana", "O dono virou amigo. A saudade diminuiu.", { moral: 6, dinheiro: -1500 }),
+    op("aula", "Fazer aula do idioma no lugar", "Ainda erra os verbos, mas já pede café sem apontar.", { relTecnico: 4, moral: 1 }),
+  ], { quando: (c) => c.exterior }),
+  ev("golfo-calor", ["estabelecido", "estrela", "veterano"], "Calor de 45 graus", "Treino às 22h, jogo à meia-noite. A família está entediada no condomínio.", [
+    op("viagem", "Levar a família para viajar na folga", "Dubai, deserto, parque aquático. Todo mundo voltou feliz.", { sal: -0.3, moral: 7 }),
+    op("aguentar", "Aguentar a rotina", "O dinheiro na conta compensa. Quase sempre.", { moral: -3 }),
+  ], { quando: (c) => c.golfo }),
+  // ------------------------------------------------------------ estrela
+  ev("documentario", ["estrela"], "Documentário sobre você", "Uma plataforma de streaming quer filmar sua temporada inteira para uma série.", [
+    op("aceitar", "Abrir as portas", "Câmera no vestiário, na cozinha e no carro. A série estreou em 190 países.", { patrocinio: { pct: 0.2, piso: 200000, meses: 6 }, fama: 6, hype: 0.35, pressao: 10, relTecnico: -3 }),
+    op("recusar", "Manter a vida privada", "Sua casa continua sendo sua casa.", { moral: 3 }),
+  ], { unico: true, quando: (c) => c.fama >= 70 }),
+  ev("gala", ["estrela"], "Gala do prêmio de melhor do mundo", "Você foi indicado ao prêmio de melhor jogador do mundo. A cerimônia é em Paris, numa segunda-feira.", [
+    op("ir", "Ir de terno sob medida", "Não ganhou, mas a foto no tapete vermelho correu o mundo.", { fama: 5, hype: 0.3, moral: 5, cansaco: 10, dinheiro: -80000 }),
+    op("ficar", "Ficar treinando", "O técnico gostou. Os patrocinadores, não.", { relTecnico: 5, fama: -2 }),
+  ], { quando: (c) => c.fama >= 85 }),
+  ev("marca-propria", ["estrela", "veterano"], "Sua própria marca", "Você pode lançar uma linha de roupas com seu apelido.", [
+    op("lancar", "Lançar a coleção", "Esgotou em uma hora no primeiro lote. Depois, as vendas se estabilizaram.", { sal: -4, patrocinio: { pct: 0.12, piso: 100000, meses: 24 }, fama: 3, engajamento: 10 }),
+    op("nao", "Deixar quieto", "Um time de marketing a menos para gerenciar.", {}),
+  ], { unico: true, quando: (c) => c.fama >= 65 }),
+  ev("assedio", ["estrela"], "Fãs na porta de casa", "Tem fã acampado na frente do condomínio desde segunda.", [
+    op("atender", "Descer, tirar foto com todos", "Duas horas de fotos. Um garoto chorou abraçado em você.", { moral: 3, fama: 2, engajamento: 8, cansaco: 5 }),
+    op("seguranca", "Contratar mais segurança", "Carro blindado, horário trocado. A vida ficou mais estranha.", { sal: -0.5, moral: -2 }),
+  ]),
+  ev("selecao-convocacao", ["estrela"], "A seleção chamou", "Seu nome saiu na convocação. Jogo de eliminatória daqui a duas semanas.", [
+    op("comemorar", "Comemorar com a família", "Seu pai emoldurou o recorte do jornal.", { moral: 10, fama: 5, hype: 0.25, cansaco: 10 }),
+  ], { quando: (c) => c.fama >= 75 }),
+  ev("leilao", ["estrela", "veterano"], "Leilão beneficente", "Um hospital infantil pede uma camisa autografada para leilão. Você pode doar também o valor que ela atingir.", [
+    op("doar", "Doar a camisa e dobrar o valor", "A camisa saiu por uma fortuna. Você dobrou. A ala nova leva o nome da sua mãe.", { sal: -1, moral: 8, fama: 3 }),
+    op("camisa", "Só a camisa", "Ajudou bastante. O hospital mandou uma carta escrita pelas crianças.", { moral: 4, fama: 1 }),
+  ]),
+  // ------------------------------------------------------------ veterano
+  ev("mentor", ["veterano"], "O garoto da base", "Um garoto de 17 anos que subiu agora joga na sua posição. Ele te pede conselho.", [
+    op("ensinar", "Ser o mentor dele", "Ele vai jogar no seu lugar um dia. E vai lembrar de quem ensinou.", { moral: 5, relTecnico: 5 }),
+    op("disputar", "Disputar a vaga sem dó", "Ele é bom, mas a camisa ainda é sua.", { moral: 1, pressao: 3 }),
+  ]),
+  ev("comentarista", ["veterano"], "Convite para comentarista", "Uma emissora quer você comentando jogos da Copa nas férias.", [
+    op("aceitar", "Aceitar o trabalho de férias", "Você é bom nisso. A emissora já fala em contrato depois que pendurar as chuteiras.", { dinheiro: 150000, fama: 3, cansaco: 10 }),
+    op("descansar", "Descansar nas férias", "Corpo de veterano precisa de férias de verdade.", { cansaco: -15, moral: 2 }),
+  ], { unico: true }),
+  ev("corpo", ["veterano"], "O corpo reclama", "O joelho dói de manhã. O fisioterapeuta sugere um tratamento caro com câmara hiperbárica.", [
+    op("tratar", "Fazer o tratamento", "Duas semanas e o joelho parece de 28 anos de novo. Quase.", { sal: -0.5, cansaco: -20, evolucao: 0.01 }),
+    op("seguir", "Seguir com gelo e analgésico", "Funciona. Por enquanto.", { moral: -2 }),
+  ]),
+  ev("despedida-cidade", ["veterano"], "Homenagem da cidade natal", "A câmara da sua cidade quer te dar o título de cidadão ilustre e batizar uma rua.", [
+    op("ir", "Ir à cerimônia", "A rua da sua infância agora tem seu nome. Seu pai não parava de tirar foto da placa.", { moral: 10, fama: 2 }),
+  ], { unico: true, quando: (c) => c.fama >= 50 }),
+  ev("futuro", ["veterano"], "E depois?", "O agente pergunta o que você quer fazer quando parar: técnico, dirigente, empresário ou praia.", [
+    op("tecnico", "Começar o curso de treinador", "Licença de treinador nas férias. Você começa a ver o jogo com outros olhos.", { dinheiro: -30000, relTecnico: 6, evolucao: 0.01 }),
+    op("empresa", "Montar uma empresa de gestão de carreira", "Três garotos da base já assinaram com você.", { sal: -2, moral: 3 }),
+    op("praia", "Praia, e não se fala mais nisso", "O agente riu. Você não.", { moral: 4 }),
+  ], { unico: true }),
+];
+export const EVENTO: Record<string, EventoVida> = Object.fromEntries(EVENTOS.map((e) => [e.id, e]));
+
+export function fasesDe(c: Omit<CtxEvento, "fase">, formacao: boolean): Fase[] {
+  if (formacao) return ["base"];
+  const f: Fase[] = [];
+  if (c.idade >= 32) f.push("veterano");
+  if (c.fama >= 65) f.push("estrela");
+  else if (c.fama >= 35 || c.idade >= 24) f.push("estabelecido");
+  else f.push("inicio");
+  return f;
+}
+
+export function sortearEvento(rng: RNG, ctx: CtxEvento, vistos: Record<string, number>): EventoVida | undefined {
+  const pool = EVENTOS.filter((e) => e.fases.some((f) => ctx.fase.includes(f)) && (!e.quando || e.quando(ctx))
+    && !(e.unico && vistos[e.id] !== undefined) && !(vistos[e.id] !== undefined && ctx.temporada - vistos[e.id] < 3));
+  return pool.length ? rng.pick(pool) : undefined;
+}
+
+export const preencher = (t: string, c: CtxEvento) => t.replaceAll("{clube}", c.clube).replaceAll("{cidade}", c.cidade).replaceAll("{nome}", c.nome);
+export const dinheiroDoEfeito = (e: EfeitoEvento, salario: number) => Math.round((e.dinheiro ?? 0) + (e.sal ?? 0) * Math.max(3000, salario));
+export const patrocinioDoEfeito = (e: EfeitoEvento, salario: number) => (e.patrocinio ? Math.round(Math.max(e.patrocinio.piso, e.patrocinio.pct * salario)) : 0);
+export const limitar = (x: number) => clamp(x, 0, 100);

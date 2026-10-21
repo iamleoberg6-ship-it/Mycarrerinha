@@ -4,13 +4,14 @@ import type { PacoteDados } from "../../src/liga";
 import { ordenar } from "../../src/liga";
 import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from "../../src/atributos";
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
-import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias } from "../../src/casa";
+import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono } from "../../src/casa";
 import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
-  migrarSave,
+  migrarSave, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores,
 } from "../../src/jogo";
+import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
 import { SITUACAO } from "../../src/lances";
 import { infoClube, mundo } from "../../src/mundo";
 import { infoLiga } from "../../src/ligas";
@@ -109,10 +110,11 @@ function telaSemana(s: Save): string {
       <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div></div>
       <div class="ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span></div></div>
     <div class="barras">${barra("Moral", c.moral, 100, "#74D394")}${barra("Cansaço", c.cansaco, 100, c.cansaco > 60 ? "#EC7D69" : "#E3B341")}${barra("Forma", forma(c), 10, "#6FB7E0", forma(c).toFixed(1))}${barra("Técnico", c.relTecnico, 100, "#B9A3E8")}</div>
-    <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${c.fama.toFixed(1)}</b></span><span><b>${c.seguidores.toLocaleString("pt-BR")}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
+    <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${c.fama.toFixed(1)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
   </section>
 
   <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${jogoHtml}${previsao}</section>
+  ${cardEvento(s)}
   ${nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"}. Ver no Mercado.</small></span></button>` : ""}
 
   <section class="painel grupo-plano" aria-label="Plano da semana">
@@ -137,6 +139,39 @@ function abaTabela(s: Save): string {
   return `<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
 
+let msgEvento: { titulo: string; texto: string } | undefined;
+const compacto = (n: number) => n >= 1e6 ? `${(n / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: n >= 1e8 ? 0 : 1 })} mi` : n >= 1e4 ? `${Math.round(n / 1e3).toLocaleString("pt-BR")} mil` : n.toLocaleString("pt-BR");
+function cardEvento(s: Save): string {
+  if (msgEvento) { const m = msgEvento; msgEvento = undefined; return `<section class="painel evento"><p class="rotulo">Fora de campo · ${esc(m.titulo)}</p><p>${esc(m.texto)}</p></section>`; }
+  const e = eventoPendente(pacote, s);
+  if (!e) return "";
+  return `<section class="painel evento"><p class="rotulo">Fora de campo</p><h2>${esc(e.titulo)}</h2><p class="sub">${esc(e.texto)}</p>
+    <div class="ferr-botoes">${e.opcoes.map((o) => `<button class="botao sec" data-evento="${o.id}">${esc(o.rotulo)}${o.custo < 0 ? `<small>${dinheiro(-o.custo)}</small>` : ""}</button>`).join("")}</div></section>`;
+}
+function blocoVida(s: Save): string {
+  const c = s.carreira, pd = padraoDe(c), g = gastosDoMes(pd, c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
+  const ir = c.formacao ? 0 : imposto(c.salario, c.ligaId), ag = AGENTES[c.agente].comissao * c.salario, liq = salarioLiquido(c);
+  const sobra = liq - g.total - (imovelAtual(s.casa).categoria === "alojamento" || ehDono(s.casa) ? 0 : imovelAtual(s.casa).aluguel);
+  const pct = Math.round(100 * aliquota(c.ligaId));
+  return `<p class="rotulo" style="margin-top:16px">Dinheiro do mês</p>
+    <div class="kv" style="margin-top:6px"><span>Salário bruto</span><b>${dinheiro(c.salario)}</b>${ir ? `<span>Imposto (${pct}%)</span><b class="neg">−${dinheiro(ir)}</b>` : c.formacao ? "" : `<span>Imposto</span><b>isento no Golfo</b>`}${ag ? `<span>Agente</span><b class="neg">−${dinheiro(ag)}</b>` : ""}${c.patrocinioMensal ? `<span>Patrocínios (${c.mesesPatrocinio} meses)</span><b class="pos">+${dinheiro(c.patrocinioMensal)}</b>` : ""}
+    ${g.itens.filter((x) => x.valor).map((x) => `<span>${esc(x.nome)}</span><b class="neg">−${dinheiro(x.valor)}</b>`).join("")}
+    ${!ehDono(s.casa) && imovelAtual(s.casa).aluguel ? `<span>Aluguel</span><b class="neg">−${dinheiro(imovelAtual(s.casa).aluguel)}</b>` : ""}
+    <span><b>Sobra no mês</b></span><b class="${sobra >= 0 ? "pos" : "neg"}">${sobra >= 0 ? "" : "−"}${dinheiro(Math.abs(sobra))}</b></div>
+    <p class="rotulo" style="margin-top:16px">Padrão de vida</p>
+    ${ITENS_VIDA.map((k) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${VIDA[k].nome}</p><div class="chips" style="flex-wrap:wrap">${VIDA[k].niveis.map((n, i) => `<button class="chip${pd[k] === i ? " ativo" : ""}" data-vida="${k}" data-nivel="${i}">${esc(n.nome)}</button>`).join("")}</div><p class="sub" style="margin-top:4px">${esc(VIDA[k].niveis[pd[k]].texto)} ${dinheiro(Math.round(VIDA[k].niveis[pd[k]].custo * fCustoVida(c.ligaId)))}/mês${efeitoTxt(VIDA[k].niveis[pd[k]])}</p>`).join("")}
+    <p class="rotulo" style="margin-top:16px">Redes sociais</p>
+    <div class="kv" style="margin-top:6px"><span>Seguidores</span><b>${compacto(c.seguidores)}</b><span>Tendência</span><b>${tendencia(s)}</b><span>Engajamento</span><b>${Math.round(c.engajamento ?? 40)}/100</b></div>
+    <p class="sub" style="margin-top:4px">Os seguidores acompanham sua fama, o tamanho do clube e o quanto você posta. Clube grande traz torcida nova de uma vez; ficar sem postar ou ir para um clube menor faz perder aos poucos.</p>`;
+}
+const efeitoTxt = (n: { moral?: number; recuperacao?: number; evolucao?: number; fama?: number }) => {
+  const p = [n.moral ? `moral ${sinal(n.moral)}` : "", n.recuperacao ? `recuperação ${sinal(n.recuperacao)}` : "", n.evolucao ? `evolução ${sinal(n.evolucao)}%` : "", n.fama ? `fama ${sinal(n.fama)}` : ""].filter(Boolean);
+  return p.length ? ` · ${p.join(", ")}` : "";
+};
+function tendencia(s: Save): string {
+  const alvo = alvoDeSeguidores(pacote, s), seg = s.carreira.seguidores;
+  return alvo > seg * 1.05 ? "subindo ↑" : alvo < seg * 0.95 ? "caindo ↓" : "estável";
+}
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
@@ -145,6 +180,7 @@ function abaJogador(s: Save): string {
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
+    ${blocoVida(s)}
     ${c.historico.length ? `<p class="rotulo" style="margin-top:16px">Carreira</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">Nota</th></tr></thead><tbody>${c.historico.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.nota || "–"}</td></tr>`).join("")}</tbody></table>` : ""}`;
 }
 
@@ -343,7 +379,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -359,6 +395,8 @@ document.addEventListener("click", (ev) => {
     if (r.ok && (d.op === "aceitar" || d.op === "forcar")) window.scrollTo({ top: 0, behavior: "smooth" });
   } else if (d.agente && save) { const r = trocarAgente(save, d.agente as TipoAgente); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.decidir) decidir(+d.decidir, d.op!);
+  else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.vida && save) { padraoDe(save.carreira)[d.vida as ItemVida] = +d.nivel!; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else switch (d.acao) {
     case "exemplo": {
       const e: EscolhasCriacao = { nome: "Gabriel Souza", apelido: "Gabi", pais: "BRA", familia: "humilde", formacao: "rua", alturaCm: 176, pe: "esquerdo", posicao: "PON", clubeCoracao: "FLA" };
