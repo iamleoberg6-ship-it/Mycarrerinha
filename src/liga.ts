@@ -1,5 +1,4 @@
 // Ligas, clubes e temporada. Usa o pacote de dados (Série A) e gera ligas abstratas para o resto do mundo.
-import { readFileSync } from "node:fs";
 import { RNG, clamp } from "./rng.js";
 import type { Posicao } from "./atributos.js";
 import { simularPlacar } from "./partida.js";
@@ -36,10 +35,6 @@ export interface Liga {
 export interface PacoteDados {
   clubes: { id: string; nome: string; forca: number; f_clube: number }[];
   jogadores: { clube: string; nome: string; posicao: string; ovr_estimado: number; idade_aprox: number; nacionalidade: string }[];
-}
-
-export function carregarPacote(caminho: string): PacoteDados {
-  return JSON.parse(readFileSync(caminho, "utf8"));
 }
 
 export function forcaDoElenco(elenco: { posicao: string; ovr: number }[]): number {

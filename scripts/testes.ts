@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import { RNG } from "../src/rng.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
 import { valorMercado, salarioMensal } from "../src/mercado.js";
-import { carregarPacote, ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
+import { ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
+import { carregarPacote } from "../src/pacote.js";
 import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
+import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana } from "../src/jogo.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -224,6 +226,27 @@ teste("Casa: cada móvel no seu cômodo, instalação só com escritura, alojame
   const niveis = CLUBES_CASA.map(estruturaDoClube);
   for (const n of [1, 2, 3, 4, 5]) assert.ok(niveis.includes(n), `nenhum clube com estrutura ${n}`);
   assert.ok(areaM2(IMOVEL["aloj-elite"]) > areaM2(IMOVEL["aloj-ct"]) && areaM2(IMOVEL["aloj-ct"]) > areaM2(IMOVEL["aloj-kitnet"]));
+});
+
+teste("Carreira jogável: temporada completa, tabela fechada e mesma semente, mesmo resultado", () => {
+  const r = criarJogador({ nome: "Teste", pais: "BRA", familia: "humilde", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "ATA", semente: "carreira" });
+  const dados = { resultado: r, aparencia: {}, clube: "PAL" };
+  const of = ofertasDeBase(pacote, dados);
+  assert.equal(of.length, 3); assert.equal(new Set(of.map((o) => o.clubeId)).size, 3);
+  const a = novoJogo(pacote, dados, of[0].clubeId, "fixa"), b = novoJogo(pacote, dados, of[0].clubeId, "fixa");
+  for (let w = 0; w < SEMANAS_TEMPORADA; w++) { semanaAutomatica(pacote, a); semanaAutomatica(pacote, b); }
+  assert.deepEqual(a.jogador.at, b.jogador.at);
+  assert.equal(a.carreira.temporada, 1); assert.equal(a.carreira.semana, 0); assert.equal(a.jogador.idade, 17);
+  const h = a.carreira.historico[0];
+  assert.ok(h.posicao >= 1 && h.posicao <= 20);
+  assert.ok(a.casa.saldo > r.dinheiroInicial, "salário entrou");
+  // partida interativa: decisões mudam o placar de forma coerente
+  for (let w = 0; w < 3; w++) {
+    const plano = planoPadrao(), p = prepararPartida(pacote, a, plano);
+    const ds = (p?.decisoes ?? []).map((d, i) => resolverDecisao(a, p!, i, d.opcoes[0].id));
+    const res = concluirSemana(pacote, a, plano, p, ds);
+    if (res.partida && res.partida.minutos > 0) assert.ok(res.partida.nota >= 3 && res.partida.nota <= 10);
+  }
 });
 
 console.log(`\n${ok} testes passaram`);

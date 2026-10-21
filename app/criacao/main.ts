@@ -1,3 +1,4 @@
+declare const __CARREIRA__: boolean;
 // Tela de criação do jogador em história guiada. Usa o DNA do motor (src/dna.ts).
 // As escolhas não mostram números: o DNA é surpresa até a revelação do card.
 import {
@@ -299,7 +300,7 @@ function telaRevelacao(): string {
         <div class="larga"><span class="rotulo">Personalidade</span><strong>Será revelada nos primeiros meses de clube</strong></div>
       </section>
       <div class="acoes-final">
-        <button type="button" class="botao primario" id="guardar">Guardar este jogador</button>
+        <button type="button" class="botao primario" id="guardar">${__CARREIRA__ ? "Começar a carreira" : "Guardar este jogador"}</button>
         <button type="button" class="botao" id="sortear">Sortear outro DNA</button>
         <button type="button" class="botao texto" id="refazer">Mudar escolhas</button>
       </div>
@@ -404,6 +405,7 @@ function ligarEventos() {
     const aviso = $("#aviso");
     try {
       localStorage.setItem("mycarrerinha:jogador", JSON.stringify({ resultado: estado.resultado, aparencia: estado.aparencia, clube: estado.clube, perfil: estado.perfil?.id, decisao: estado.decisao }));
+      if (__CARREIRA__) { localStorage.removeItem("mycarrerinha:save"); localStorage.removeItem("mycarrerinha:plano"); location.href = "index.html"; return; }
       aviso.textContent = "Jogador guardado neste navegador. A próxima tela, a primeira semana no clube, vai começar com ele.";
     } catch {
       aviso.textContent = "Este navegador não deixou guardar o jogador. Ele continua aqui enquanto a página estiver aberta.";

@@ -1,6 +1,7 @@
 // Mostra uma carreira simulada, temporada a temporada. Uso: npm run carreira -- <semente> [posicao]
 import { RNG } from "../src/rng.js";
-import { carregarPacote, criarMundo } from "../src/liga.js";
+import { criarMundo } from "../src/liga.js";
+import { carregarPacote } from "../src/pacote.js";
 import { Carreira } from "../src/carreira.js";
 import type { Posicao } from "../src/atributos.js";
 

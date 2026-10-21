@@ -8,6 +8,7 @@ import {
   type Acabamento, type Categoria, type CategoriaImovel, type Efeitos, type Estilo, type EstadoCasa, type Item, type Objeto, type TipoComodo,
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
+import { salarioLiquido, type Save } from "../../src/jogo";
 import { svgComodo, svgFantasma, svgItem, svgRevestimento, telaParaChao } from "./iso";
 
 const FASES = [
@@ -25,7 +26,11 @@ const CAT_DO_COMODO: Record<TipoComodo, Categoria> = {
 const CHAVE = "mycarrerinha-casa-v3";
 interface Salvo { e: EstadoCasa; fase: string; comodo: string }
 const CLUBE_PADRAO = CLUBES_CASA.find((c) => c.id === "PAL") ?? CLUBES_CASA[0];
+/** No jogo completo a casa vive dentro do save da carreira: dinheiro e salário vêm de lá. */
+const CHAVE_CARREIRA = "mycarrerinha:save";
+const carreira: Save | null = (() => { try { return JSON.parse(localStorage.getItem(CHAVE_CARREIRA) ?? "null") as Save | null; } catch { return null; } })();
 function carregar(): Salvo {
+  if (carreira?.casa) return { e: carreira.casa, fase: "carreira", comodo: carreira.casa.imovel ? IMOVEL[carreira.casa.imovel].comodos[0].id : "quarto" };
   try {
     const s = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as Salvo | null;
     if (s && IMOVEL[s.e.imovel] && s.e.objetos.every((o) => ITENS[o.item])) return s;
@@ -33,7 +38,7 @@ function carregar(): Salvo {
   return { e: novoEstado(3000, "aloj-ct", CLUBE_PADRAO), fase: "base", comodo: "quarto" };
 }
 const st = carregar();
-const salvar = () => { try { localStorage.setItem(CHAVE, JSON.stringify(st)); } catch { /* ok */ } };
+const salvar = () => { try { if (carreira) { carreira.casa = st.e; localStorage.setItem(CHAVE_CARREIRA, JSON.stringify(carreira)); } else localStorage.setItem(CHAVE, JSON.stringify(st)); } catch { /* ok */ } };
 const ui = {
   sel: undefined as string | undefined, brilho: undefined as string | undefined,
   aba: "moveis" as "moveis" | "reforma" | "deposito",
@@ -44,7 +49,7 @@ const ui = {
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-const salario = () => FASES.find((f) => f.id === st.fase)!.salario;
+const salario = () => (carreira ? salarioLiquido(carreira.carreira) : FASES.find((f) => f.id === st.fase)!.salario);
 const cacheItem = new Map<string, string>();
 const miniItem = (id: string, cor = 0) => { const k = `${id}:${cor}`; if (!cacheItem.has(k)) cacheItem.set(k, svgItem(id, cor)); return cacheItem.get(k)!; };
 const cacheRev = new Map<string, string>();
@@ -71,7 +76,7 @@ const objSel = (): Objeto | undefined => st.e.objetos.find((o) => o.uid === ui.s
 function renderConta() {
   const m = imovelAtual(st.e), dono = st.e.proprios.includes(m.id);
   const s = $("saldo"); s.textContent = dinheiro(st.e.saldo); s.classList.toggle("neg", st.e.saldo < 0);
-  $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span><span>Mês <b>${st.e.mes + 1}</b></span>`;
+  $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês${carreira ? " líquido" : ""}</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span>${carreira ? "" : `<span>Mês <b>${st.e.mes + 1}</b></span>`}`;
   $("clubes").innerHTML = CLUBES_CASA.map((c) => `<button class="chip${c.id === st.e.clube?.id ? " ativo" : ""}" data-clube="${c.id}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.cores[0]};border:1px solid #0008;margin-right:6px;vertical-align:-1px"></span>${c.nome} · ${"★".repeat(estruturaDoClube(c))}</button>`).join("");
   $("fases").innerHTML = FASES.map((f) => `<button class="chip${f.id === st.fase ? " ativo" : ""}" data-fase="${f.id}">${f.nome} · ${dinheiro(f.salario)}</button>`).join("");
 }
@@ -350,4 +355,10 @@ $("imobiliaria").addEventListener("click", () => { ui.catImob = "auto"; renderIm
 $("dlgImob").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ($("dlgImob") as HTMLDialogElement).close(); });
 $("recomecar").addEventListener("click", () => { st.e = novoEstado(3000, "aloj-ct", st.e.clube ?? CLUBE_PADRAO); st.fase = "base"; st.comodo = "quarto"; ui.sel = undefined; ui.previa = undefined; tudo(); aviso("De volta ao alojamento."); });
 void REVEST; void ehDono; void NOME_COMODO;
+if (carreira) {
+  // dentro da carreira: o mês fecha na semana, não aqui; nada de modo de teste
+  $("fecharMes").hidden = true;
+  document.querySelector<HTMLElement>("details.teste")!.hidden = true;
+  document.querySelector(".marca span")!.innerHTML = `<a href="index.html" style="color:var(--ouro-claro);text-decoration:none;font-weight:700">← Voltar à semana</a>`;
+}
 tudo();

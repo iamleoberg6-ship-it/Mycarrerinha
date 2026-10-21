@@ -1,7 +1,8 @@
 // Simula N carreiras e mostra as distribuições usadas para calibrar as fórmulas.
 import { writeFileSync } from "node:fs";
 import { RNG } from "../src/rng.js";
-import { carregarPacote, criarMundo } from "../src/liga.js";
+import { criarMundo } from "../src/liga.js";
+import { carregarPacote } from "../src/pacote.js";
 import { Carreira } from "../src/carreira.js";
 import type { Posicao } from "../src/atributos.js";
 

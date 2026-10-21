@@ -1,6 +1,7 @@
 // Valida o placar: simula N temporadas da Série A do pacote e compara com a realidade.
 import { RNG } from "../src/rng.js";
-import { carregarPacote, ligaDoPacote, simularTemporada } from "../src/liga.js";
+import { ligaDoPacote, simularTemporada } from "../src/liga.js";
+import { carregarPacote } from "../src/pacote.js";
 
 const N = Number(process.argv[2] ?? 500);
 const liga = ligaDoPacote(carregarPacote(new URL("../data/pacote-brasil-serie-a-v0.3.json", import.meta.url).pathname));

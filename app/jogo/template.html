@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mycarrerinha</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Semana do jogador: cartão do jogador no topo, a semana planejada dia a dia, o jogo como uma narração com decisões e o resumo no fim. Mesma linguagem das outras telas. */
+:root {
+  --campo: #0C1A17; --campo-2: #13261F; --campo-3: #1A3129; --linha: #2B4239;
+  --giz: #EDF2EB; --giz-2: #A3B6AD; --ouro: #E3B341; --ouro-claro: #F6DC8A; --ouro-escuro: #6E5317;
+  --tinta: #241A06; --pos: #74D394; --neg: #EC7D69;
+  --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --texto: "Barlow", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--campo); color: var(--giz); font-family: var(--texto); font-size: 16px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--campo); }
+button { font: inherit; color: inherit; }
+a { color: var(--ouro-claro); }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
+.pagina { max-width: 640px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 120px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; }
+.marca { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.marca strong { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; color: var(--ouro); }
+.marca span { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--giz-2); }
+h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(32px, 8.5vw, 46px); line-height: 1.02; text-transform: uppercase; text-wrap: balance; }
+h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; letter-spacing: .02em; }
+.rotulo { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--giz-2); font-weight: 600; margin: 0; }
+.sub { margin: 0; color: var(--giz-2); font-size: 14px; }
+.painel { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 14px; padding: 14px 16px; }
+.botao { background: var(--ouro); color: var(--tinta); border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 6px; }
+.botao:hover:not(:disabled) { filter: brightness(1.06); }
+.botao:disabled { opacity: .45; cursor: not-allowed; }
+.botao.sec { background: var(--campo-3); color: var(--giz); border: 1px solid var(--linha); }
+.botao.grande { padding: 16px; font-size: 18px; width: 100%; }
+.botao.peq { padding: 7px 11px; font-size: 13px; border-radius: 10px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; background: transparent; border: 1px solid var(--linha); color: var(--giz-2); border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+.chip.ativo { border-color: var(--ouro); color: var(--tinta); background: var(--ouro); font-weight: 600; }
+
+/* jogador */
+.jogador { display: grid; grid-template-columns: 84px 1fr auto; gap: 12px; align-items: center; }
+.jogador .foto { width: 84px; height: 100px; border-radius: 12px; overflow: hidden; background: var(--campo-3); }
+.jogador .foto svg { width: 100%; height: 100%; display: block; }
+.jogador .nome { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1; text-transform: uppercase; }
+.jogador .det { font-size: 13px; color: var(--giz-2); }
+.ovr { text-align: center; }
+.ovr strong { display: block; font-family: var(--display); font-weight: 900; font-size: 44px; line-height: .9; color: var(--ouro-claro); }
+.ovr span { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--giz-2); }
+.barras { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 12px; }
+.barra { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; color: var(--giz-2); }
+.barra b { color: var(--giz); font-weight: 600; font-variant-numeric: tabular-nums; }
+.barra i { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--linha); overflow: hidden; display: block; }
+.barra i::after { content: ""; display: block; height: 100%; width: var(--v); background: var(--c, var(--giz-2)); border-radius: 3px; }
+.linha-info { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--giz-2); margin-top: 10px; }
+.linha-info b { color: var(--giz); font-weight: 600; }
+
+/* semana */
+.jogo-card { display: flex; flex-direction: column; gap: 8px; }
+.confronto { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.time { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; line-height: 1.15; }
+.time.dir { justify-content: flex-end; text-align: right; }
+.escudo { width: 26px; height: 30px; flex: none; }
+.vs { font-family: var(--display); font-weight: 800; color: var(--giz-2); }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: var(--campo-3); border: 1px solid var(--linha); }
+.tag.titular { background: #1F4D33; border-color: #2F7A4F; color: #BFF0D0; }
+.tag.banco { background: #4A3C14; border-color: var(--ouro-escuro); color: var(--ouro-claro); }
+.tag.ruim { background: #4D2420; border-color: #7A3A33; color: #F6C2B8; }
+.dias { display: flex; flex-direction: column; gap: 8px; }
+.dia { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: center; }
+.dia > span { font-size: 13px; font-weight: 600; color: var(--giz-2); }
+.dia .chips { margin-right: -16px; padding-right: 16px; }
+.previa { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--giz-2); padding-top: 4px; }
+.previa b { color: var(--giz); }
+.grupo-plano { display: flex; flex-direction: column; gap: 8px; }
+.grade-semana { display: grid; grid-template-columns: 1fr repeat(5, 40px); gap: 4px 4px; align-items: center; }
+.grade-semana .cab { text-align: center; font-size: 12px; font-weight: 700; color: var(--giz-2); line-height: 1.1; }
+.grade-semana .cab small { display: block; font-size: 9px; font-weight: 600; color: var(--ouro); text-transform: uppercase; letter-spacing: .04em; }
+.grade-semana .acao { font-size: 14px; font-weight: 600; line-height: 1.15; padding: 4px 0; }
+.grade-semana .acao small { display: block; font-size: 11px; font-weight: 400; color: var(--giz-2); }
+.cel { width: 40px; height: 36px; border-radius: 10px; border: 1px solid var(--linha); background: var(--campo); cursor: pointer; position: relative; }
+.cel::after { content: ""; position: absolute; inset: 0; margin: auto; width: 10px; height: 10px; border-radius: 50%; background: var(--linha); }
+.cel.ativo { background: var(--ouro); border-color: var(--ouro); }
+.cel.ativo::after { background: var(--tinta); width: 12px; height: 12px; }
+
+.abas { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 4px; gap: 4px; }
+.abas button { background: none; border: 0; border-radius: 9px; padding: 9px 4px; font-weight: 600; font-size: 14px; color: var(--giz-2); cursor: pointer; }
+.abas button.ativo { background: var(--ouro); color: var(--tinta); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--giz-2); font-weight: 600; padding: 6px 4px; }
+td { padding: 7px 4px; border-top: 1px solid var(--linha); }
+td.n, th.n { text-align: right; }
+tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--ouro-claro); }
+.atrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
+.noticia { border-left: 3px solid var(--linha); padding: 4px 0 4px 12px; }
+.noticia.jogo { border-color: var(--ouro); } .noticia.polemica, .noticia.lesao { border-color: var(--neg); } .noticia.dinheiro { border-color: var(--pos); }
+.noticia strong { display: block; } .noticia small { color: var(--giz-2); font-size: 12px; }
+.casa-mini { background: radial-gradient(120% 90% at 50% 40%, #1C3A30 0%, #0F211C 70%); border-radius: 12px; padding: 6px; }
+.casa-mini svg { width: 100%; height: auto; display: block; max-height: 260px; }
+
+/* ofertas */
+.ofertas { display: flex; flex-direction: column; gap: 10px; }
+.oferta { display: grid; grid-template-columns: 8px 1fr; border-radius: 14px; overflow: hidden; border: 1px solid var(--linha); background: var(--campo-2); }
+.oferta .faixa { background: var(--c1); }
+.oferta .corpo { padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+.estrelas { color: var(--ouro); letter-spacing: 2px; }
+
+/* partida e resumo */
+dialog { background: var(--campo); color: var(--giz); border: 0; padding: 0; width: 100vw; max-width: 640px; height: 100dvh; max-height: 100dvh; margin: 0 auto; }
+dialog::backdrop { background: rgba(3, 8, 6, .85); }
+.tela { display: flex; flex-direction: column; height: 100%; }
+.placar { padding: max(16px, env(safe-area-inset-top, 0px)) 16px 12px; background: var(--campo-2); border-bottom: 1px solid var(--linha); }
+.placar .linha { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+.placar .gols { font-family: var(--display); font-weight: 900; font-size: 46px; line-height: 1; letter-spacing: .04em; }
+.placar .min { text-align: center; font-size: 13px; color: var(--ouro-claro); font-weight: 700; margin-top: 4px; }
+.lances { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.lance { display: grid; grid-template-columns: 40px 1fr; gap: 8px; font-size: 15px; animation: entra .35s ease both; }
+.lance .m { color: var(--giz-2); font-variant-numeric: tabular-nums; font-weight: 600; }
+.lance.gol { font-weight: 700; }
+.lance.meu { color: var(--ouro-claro); }
+.lance.contra { color: #F6C2B8; }
+@keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.decisao { background: var(--campo-2); border: 1px solid var(--ouro); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; animation: entra .35s ease both; }
+.decisao .ops { display: flex; flex-direction: column; gap: 8px; }
+.decisao .ops button { text-align: left; background: var(--campo-3); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+.decisao .ops button:hover { border-color: var(--ouro); }
+.decisao .ops small { color: var(--giz-2); white-space: nowrap; }
+.resultado { font-weight: 700; padding: 8px 12px; border-radius: 10px; }
+.resultado.ok { background: #1F4D33; color: #BFF0D0; } .resultado.nao { background: #4D2420; color: #F6C2B8; }
+.rodape { padding: 12px 16px max(16px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--linha); background: var(--campo-2); }
+.resumo { padding: 20px 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.grande-num { font-family: var(--display); font-weight: 900; font-size: 56px; line-height: 1; color: var(--ouro-claro); }
+.delta { font-variant-numeric: tabular-nums; }
+.delta.pos { color: var(--pos); } .delta.neg { color: var(--neg); }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 15px; }
+.kv span:nth-child(odd) { color: var(--giz-2); }
+.teste summary { cursor: pointer; font-weight: 600; color: var(--giz-2); }
+@media (prefers-reduced-motion: reduce) { .lance, .decisao { animation: none; } }
+</style>
+</head>
+<body>
+<main class="pagina" id="app"></main>
+<dialog id="dlgJogo"><div class="tela" id="telaJogo"></div></dialog>
+<dialog id="dlgResumo"><div class="tela" id="telaResumo"></div></dialog>
+<script>/*__SCRIPT__*/</script>
+</body>
+</html>
