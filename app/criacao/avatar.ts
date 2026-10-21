@@ -8,7 +8,9 @@ export type Olho = "amendoado" | "redondo" | "estreito" | "caido" | "erguido" | 
 export type Sobrancelha = "reta" | "arqueada" | "angulada" | "suave" | "corte";
 export type Nariz = "reto" | "pequeno" | "fino" | "largo" | "achatado" | "arrebitado" | "aquilino" | "grande";
 export type RoupaSocial = "camiseta" | "moletom" | "polo" | "jaqueta" | "camisa" | "regata";
-export type Barba = "nenhuma" | "rala" | "cavanhaque" | "cheia";
+export type Barba =
+  | "nenhuma" | "sombra" | "rala" | "bigode" | "bigodao" | "cavanhaque" | "cavanhaque_bigode"
+  | "queixo" | "costeletas" | "curta" | "cheia" | "longa";
 export type Boca = "sorriso" | "neutra" | "aberta" | "lado" | "cheia";
 export type Traje = "jogo" | "social";
 export type EstiloCamisa = "lisa" | "listrasV" | "listrasH" | "faixa" | "faixaH";
@@ -60,7 +62,10 @@ export const BOCAS: { id: Boca; nome: string }[] = [
   { id: "cheia", nome: "Lábios cheios" },
 ];
 export const BARBAS: { id: Barba; nome: string }[] = [
-  { id: "nenhuma", nome: "Sem barba" }, { id: "rala", nome: "Rala" }, { id: "cavanhaque", nome: "Cavanhaque" }, { id: "cheia", nome: "Cheia" },
+  { id: "nenhuma", nome: "Sem barba" }, { id: "sombra", nome: "Por fazer" }, { id: "rala", nome: "Rala" },
+  { id: "bigode", nome: "Bigode" }, { id: "bigodao", nome: "Bigodão" }, { id: "cavanhaque", nome: "Cavanhaque" },
+  { id: "cavanhaque_bigode", nome: "Cavanhaque com bigode" }, { id: "queixo", nome: "Contorno do queixo" },
+  { id: "costeletas", nome: "Costeletas" }, { id: "curta", nome: "Curta" }, { id: "cheia", nome: "Cheia" }, { id: "longa", nome: "Longa" },
 ];
 
 export const APARENCIA_PADRAO: Aparencia = {
@@ -79,15 +84,27 @@ const luminancia = (hex: string) => { const n = parseInt(hex.slice(1), 16); retu
 const f1 = (n: number) => n.toFixed(1);
 
 /** Medidas de cada formato: lados (L, R) na altura das têmporas, topo (T), centro vertical (cy). */
-interface Medidas { L: number; R: number; T: number; cy: number; quina?: boolean }
+interface Medidas { L: number; R: number; T: number; cy: number; queixo: number; quina?: boolean }
 const MEDIDAS: Record<Rosto, Medidas> = {
-  oval: { L: 56, R: 144, T: 45, cy: 100 },
-  redondo: { L: 51, R: 149, T: 51, cy: 102 },
-  quadrado: { L: 56, R: 144, T: 46, cy: 100, quina: true },
-  longo: { L: 59, R: 141, T: 41, cy: 100 },
-  coracao: { L: 55, R: 145, T: 45, cy: 98 },
-  largo: { L: 54, R: 146, T: 45, cy: 100, quina: true },
+  oval: { L: 56, R: 144, T: 45, cy: 100, queixo: 155 },
+  redondo: { L: 51, R: 149, T: 51, cy: 102, queixo: 153 },
+  quadrado: { L: 56, R: 144, T: 46, cy: 100, queixo: 156, quina: true },
+  longo: { L: 59, R: 141, T: 41, cy: 100, queixo: 159 },
+  coracao: { L: 55, R: 145, T: 45, cy: 98, queixo: 156 },
+  largo: { L: 54, R: 146, T: 45, cy: 100, queixo: 156, quina: true },
 };
+
+function formaCabeca(rosto: Rosto): string {
+  const elipse = (cx: number, cy: number, rx: number, ry: number) => `M${cx - rx} ${cy} A${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A${rx} ${ry} 0 1 0 ${cx - rx} ${cy} Z`;
+  switch (rosto) {
+    case "redondo": return elipse(100, 102, 49, 51);
+    case "quadrado": return "M56 70 Q56 46 80 46 L120 46 Q144 46 144 70 L144 124 Q144 154 100 156 Q56 154 56 124 Z";
+    case "longo": return elipse(100, 100, 41, 59);
+    case "coracao": return "M55 90 C55 58 74 45 100 45 C126 45 145 58 145 90 C145 122 120 150 100 156 C80 150 55 122 55 90 Z";
+    case "largo": return "M54 82 C54 56 76 45 100 45 C124 45 146 56 146 82 L146 120 C146 144 126 156 100 156 C74 156 54 144 54 120 Z";
+    default: return elipse(100, 100, 44, 55);
+  }
+}
 
 function cabeca(rosto: Rosto, fill: string): string {
   switch (rosto) {
@@ -264,6 +281,16 @@ function nariz(n: Nariz, s: string): string {
   }
 }
 
+/** Pontos da boca usados pela barba: cantos esquerdo/direito, topo e base no centro. */
+interface GeoBoca { e: [number, number]; d: [number, number]; topo: number; base: number }
+const GEO_BOCA: Record<Boca, GeoBoca> = {
+  sorriso: { e: [88, 135], d: [112, 135], topo: 135, base: 139 },
+  aberta: { e: [86, 133], d: [114, 133], topo: 133, base: 141 },
+  neutra: { e: [89, 136], d: [111, 136], topo: 135, base: 137 },
+  lado: { e: [89, 137], d: [112, 132], topo: 133.5, base: 137.5 },
+  cheia: { e: [87, 135], d: [113, 135], topo: 131, base: 144 },
+};
+
 function boca(b: Boca, pele: string): string {
   const s = escurecer(pele, 0.55);
   switch (b) {
@@ -304,13 +331,53 @@ function roupaSocialSVG(tipo: RoupaSocial, corIdx: number, pele: string): string
   }
 }
 
-function barba(b: Barba, m: Medidas, cor: string, pele: string): string {
+let seqBarba = 0;
+/** Barba desenhada a partir da boca: o bigode acompanha os cantos da boca e um recorte em volta dos lábios
+ *  garante que nenhum estilo cubra a boca. Tudo fica dentro do contorno do rosto (a longa desce pelo pescoço). */
+function barba(b: Barba, m: Medidas, rosto: Rosto, bocaId: Boca, nariz: Nariz, cor: string, pele: string): string {
   if (b === "nenhuma") return "";
-  if (b === "cavanhaque") return `<path d="M90 140 Q100 152 110 140 Q106 146 100 147 Q94 146 90 140 Z" fill="${cor}"/><path d="M90 131 Q100 127 110 131" stroke="${cor}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
-  const fill = b === "rala" ? mistura(cor, pele, 0.62) : cor;
-  return `<path d="M${m.L + 4} ${m.cy + 10} C${m.L + 6} ${m.cy + 50} 84 157 100 157 C116 157 ${m.R - 6} ${m.cy + 50} ${m.R - 4} ${m.cy + 10} C${m.R - 10} ${m.cy + 30} 118 ${m.cy + 30} 112 ${m.cy + 28} Q100 ${m.cy + 24} 88 ${m.cy + 28} C82 ${m.cy + 30} ${m.L + 10} ${m.cy + 30} ${m.L + 4} ${m.cy + 10} Z" fill="${fill}"/>`;
+  const g = GEO_BOCA[bocaId], [ex, ey] = g.e, [dx, dy] = g.d, Q = m.queixo, cy = m.cy;
+  const nb = nariz === "grande" ? 127 : 125; // base do nariz
+  const id = `bb${++seqBarba}`;
+  const furo = `M${ex - 1.5} ${ey} Q100 ${g.topo - 2.5} ${dx + 1.5} ${dy} Q100 ${g.base + 2.5} ${ex - 1.5} ${ey} Z`;
+  // bigode: faixa entre a base do nariz e o lábio de cima, inclinada junto com a boca (sorriso de canto inclina o bigode)
+  const labio = Math.min(ey, dy, g.topo) - 1.2;
+  const bigode = (grosso: boolean) => {
+    const ponta = grosso ? 3.5 : 1.5, alto = grosso ? nb + 3 : nb + 5;
+    return `M${ex - 2 - ponta} ${ey - 1 + (grosso ? 3 : 0)} L${ex - 1} ${ey - 1.6} Q100 ${labio - 0.5} ${dx + 1} ${dy - 1.6} L${dx + 2 + ponta} ${dy - 1 + (grosso ? 3 : 0)} C${dx + 2} ${alto + 4} ${dx - 6} ${alto} 100 ${alto + 0.5} C${ex + 6} ${alto} ${ex - 2} ${alto + 4} ${ex - 2 - ponta} ${ey - 1 + (grosso ? 3 : 0)} Z`;
+  };
+  // cavanhaque: do lábio de baixo até a ponta do queixo (o contorno do rosto recorta embaixo)
+  const queixo = `M${ex + 1} ${ey + 2.5} Q100 ${g.base + 3} ${dx - 1} ${dy + 2.5} C${dx} ${Q - 10} ${dx - 3} ${Q + 2} 100 ${Q + 4} C${ex + 3} ${Q + 2} ${ex} ${Q - 10} ${ex + 1} ${ey + 2.5} Z`;
+  // região da barba cheia: abaixo da linha das bochechas, contornando o bigode
+  const regiao = `M${m.L - 12} ${cy - 8} L${m.L + 7} ${cy - 8} C${m.L + 10} ${cy + 20} ${ex - 12} ${ey - 12} ${ex - 6} ${nb + 3} Q100 ${nb - 1} ${dx + 6} ${nb + 3} C${dx + 12} ${dy - 12} ${m.R - 10} ${cy + 20} ${m.R - 7} ${cy - 8} L${m.R + 12} ${cy - 8} L${m.R + 12} 180 L${m.L - 12} 180 Z`;
+  const cabecaD = formaCabeca(rosto);
+  const mascara = `<mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="220"><rect width="200" height="220" fill="#fff"/><path d="${furo}" fill="#000"/>${
+    b === "queixo" ? `<path d="${cabecaD}" transform="translate(100 ${m.T}) scale(0.87) translate(-100 ${-m.T})" fill="#000"/>` : ""}</mask>`;
+  const recorte = `<clipPath id="${id}c"><path d="${cabecaD}"/></clipPath>`;
+  const dentro = (conteudo: string) => `<g clip-path="url(#${id}c)" mask="url(#${id}m)">${conteudo}</g>`;
+  const fora = (conteudo: string) => `<g mask="url(#${id}m)">${conteudo}</g>`;
+  const p = (d: string, fill: string) => `<path d="${d}" fill="${fill}"/>`;
+  // ligação do bigode ao cavanhaque, contornando os cantos da boca
+  const conector = `M${ex - 3.5} ${ey - 1} L${ex - 0.5} ${ey - 1} L${ex + 2} ${ey + 4} L${ex - 1} ${ey + 5} Z M${dx + 3.5} ${dy - 1} L${dx + 0.5} ${dy - 1} L${dx - 2} ${dy + 4} L${dx + 1} ${dy + 5} Z`;
+  let corpo = "";
+  switch (b) {
+    case "sombra": corpo = dentro(p(regiao, mistura(cor, pele, 0.8))); break;
+    case "rala": corpo = dentro(p(regiao, mistura(cor, pele, 0.6))); break;
+    case "bigode": corpo = dentro(p(bigode(false), cor)); break;
+    case "bigodao": corpo = dentro(p(bigode(true), cor)); break;
+    case "cavanhaque": corpo = dentro(p(queixo, cor)); break;
+    case "cavanhaque_bigode": corpo = dentro(p(bigode(false), cor) + p(queixo, cor) + p(conector, cor)); break;
+    case "queixo": corpo = dentro(p(regiao, cor)); break;
+    case "costeletas": corpo = dentro(`<rect x="${m.L - 2}" y="${cy - 10}" width="${10}" height="34" rx="3" fill="${cor}"/><rect x="${m.R - 8}" y="${cy - 10}" width="${10}" height="34" rx="3" fill="${cor}"/>`); break;
+    case "curta": corpo = dentro(p(regiao, mistura(cor, pele, 0.28)) + p(bigode(false), mistura(cor, pele, 0.15))); break;
+    case "cheia": corpo = dentro(p(regiao, cor)); break;
+    case "longa":
+      corpo = dentro(p(regiao, cor)) + fora(p(`M${m.L + 12} ${cy + 36} Q${m.L + 10} ${Q + 14} 100 ${Q + 24} Q${m.R - 10} ${Q + 14} ${m.R - 12} ${cy + 36} Z`, cor) +
+        `<path d="M92 ${Q + 4} Q100 ${Q + 18} 108 ${Q + 4}" stroke="${escurecer(cor, 0.7)}" stroke-width="1.6" fill="none"/>`);
+      break;
+  }
+  return `<defs>${mascara}${recorte}</defs>${corpo}`;
 }
-
 
 export interface OpcoesFoto {
   aparencia: Aparencia | null; // null = silhueta (ainda sem aparência escolhida)
@@ -353,7 +420,7 @@ export function svgFoto(o: OpcoesFoto): string {
   <ellipse cx="${m.L}" cy="${m.cy + 6}" rx="8" ry="12" fill="${sombraPele}"/>
   <ellipse cx="${m.R}" cy="${m.cy + 6}" rx="8" ry="12" fill="${sombraPele}"/>
   ${cabeca(a.rosto, pele)}
-  ${silhueta ? "" : barba(a.barba, m, cor, pele)}
+  ${silhueta ? "" : barba(a.barba, m, a.rosto, a.boca, a.nariz, cor, pele)}
   ${cabeloFrente(a.cabelo, m, cor, pele)}
   ${rosto}
   ${silhueta ? `<text x="100" y="112" text-anchor="middle" font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif" font-weight="900" font-size="36" fill="#3A5148">?</text>` : ""}
