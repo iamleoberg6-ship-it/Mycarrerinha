@@ -294,7 +294,14 @@ const GEO_BOCA: Record<Boca, GeoBoca> = {
 function boca(b: Boca, pele: string): string {
   const s = escurecer(pele, 0.55);
   switch (b) {
-    case "aberta": return `<path d="M86 133 Q100 148 114 133 Z" fill="#5A1E1E"/><path d="M88 134 L112 134 L110 138 L90 138 Z" fill="#F7F3EC"/>`;
+    case "aberta": {
+      // dentes e língua recortados pelo formato da boca: nada sai dos lábios
+      const forma = "M86 133 Q100 135 114 133 Q100 149 86 133 Z", id = `bo${++seq}`;
+      return `<clipPath id="${id}"><path d="${forma}"/></clipPath><path d="${forma}" fill="#4A1616"/>
+        <g clip-path="url(#${id})"><rect x="84" y="128" width="32" height="9.5" fill="#F7F3EC"/><line x1="100" y1="134" x2="100" y2="137.5" stroke="#D9D2C4" stroke-width="0.8"/>
+        <ellipse cx="100" cy="145" rx="8" ry="4" fill="#B5474A"/></g>
+        <path d="${forma}" fill="none" stroke="${s}" stroke-width="1.8" stroke-linejoin="round"/>`;
+    }
     case "neutra": return `<path d="M89 136 L111 136" stroke="${s}" stroke-width="3" stroke-linecap="round"/>`;
     case "lado": return `<path d="M89 137 Q101 139 112 132" stroke="${s}" stroke-width="3" stroke-linecap="round" fill="none"/>`;
     case "cheia": return `<path d="M87 135 Q93 130 100 132.5 Q107 130 113 135 Q100 138 87 135 Z" fill="${escurecer(pele, 0.72)}"/><path d="M87 135 Q100 138 113 135 Q107 144 100 144 Q93 144 87 135 Z" fill="${escurecer(pele, 0.8)}"/><path d="M87 135 Q100 138.5 113 135" stroke="${s}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
