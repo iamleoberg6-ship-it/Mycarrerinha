@@ -236,6 +236,7 @@ export function pedirParaSair(s: Save, sim: boolean, destino: Destino = "qualque
   m.listaTransferencia = true; m.destinoSaida = destino;
   const especifico = destino !== "qualquer";
   c.relTecnico = clamp(c.relTecnico - (ja ? 2 : 8) - (especifico ? 4 : 0), 0, 100);
+  c.torcida = clamp((c.torcida ?? 50) - (especifico ? 15 : 8), 0, 100);
   c.moral = clamp(c.moral - (especifico ? 3 : 1), 0, 100);
   c.pressao = clamp(c.pressao + (especifico ? 10 : 5), 0, 100);
   const manchete: Record<Destino, [string, string]> = {
@@ -311,7 +312,7 @@ export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo:
     c.ordem = ordemFixa ?? embaralhar(rng, l.clubes.map((x) => x.id));
     c.tabela = tabelaAteAgora(rng, l, c);
   }
-  c.relTecnico = clamp(45 + c.fama / 5, 0, 100);
+  c.relTecnico = clamp(45 + c.fama / 5, 0, 100); c.torcida = 50;
   c.suspensao = 0;
   if (tipo !== "emprestimo") c.chegadaClube = c.temporada;
   m.transferencias.push({ temporada: c.temporada, semana: c.semana, de, para: destino.id, tipo, taxa });

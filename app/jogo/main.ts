@@ -8,13 +8,16 @@ import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarRe
 import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
-  type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
+  ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
 } from "../../src/jogo";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia } from "../visual/cartazes";
+import { estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
+import { TRACOS } from "../../src/dna";
+import { valorMercado } from "../../src/mercado";
 import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao, visualDe, tatuagemVisivel, type AreaTatuagem, type Fisico, type RoupaCasual } from "../../src/visual";
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
 import { SITUACAO } from "../../src/lances";
@@ -120,9 +123,9 @@ function telaSemana(s: Save): string {
   const ints: [Intensidade, string][] = [["leve", "Leve"], ["normal", "Normal"], ["alta", "Puxado"]];
   const acoesDisp = (Object.keys(ACOES) as Acao[]).filter((a) => a !== "video" || jogo);
   return `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}</span></header>
-  <section class="painel">
+  <section class="painel card-jogador" data-acao="perfil" role="button" tabindex="0" aria-label="Abrir o perfil do jogador">
     <div class="jogador"><div class="foto">${foto(s)}</div>
-      <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div></div>
+      <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
       <div class="ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span></div></div>
     <div class="barras">${barra("Moral", c.moral, 100, "#74D394")}${barra("Cansaço", c.cansaco, 100, c.cansaco > 60 ? "#EC7D69" : "#E3B341")}${barra("Forma", forma(c), 10, "#6FB7E0", forma(c).toFixed(1))}${barra("Técnico", c.relTecnico, 100, "#B9A3E8")}</div>
     <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${c.fama.toFixed(1)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
@@ -307,6 +310,77 @@ function imgNoticia(s: Save, n: Noticia, i: number): string {
   if (img?.k === "trofeu") return miniNoticia({ k: "trofeu" });
   if (img?.k === "vida" || img?.k === "tatuagem") return miniNoticia({ k: "vida", corpoSvg: casualMini ??= corpoDe(s, "casual") });
   return miniNoticia(n.tipo === "lesao" ? { k: "lesao" } : n.tipo === "dinheiro" ? { k: "dinheiro" } : n.tipo === "polemica" ? { k: "polemica" } : n.tipo === "jogo" ? { k: "trofeu", cor: "#C9CCD1" } : { k: "clube", cores: ci(s.carreira.clubeId) });
+}
+// ------------------------------------------------------------------ perfil completo (estilo Football Manager)
+function radar(at: Record<Atributo, number>): string {
+  const eixos: [string, number][] = [["Ritmo", at.VEL], ["Finalização", (at.FIN * 2 + at.CAB) / 3], ["Passe", (at.PAS + at.VIS + at.CRU) / 3], ["Drible", (at.DRI * 2 + at.COM) / 3], ["Defesa", (at.MAR + at.POS) / 2], ["Físico", (at.FOR + at.RES) / 2]];
+  const cx = 130, cy = 108, R = 78, pt = (i: number, v: number) => { const a = -Math.PI / 2 + (i * Math.PI) / 3; return [cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v]; };
+  const anel = (k: number) => eixos.map((_, i) => pt(i, k).map((x) => x.toFixed(1)).join(",")).join(" ");
+  const dados = eixos.map(([, v], i) => pt(i, Math.max(0.08, v / 99)).map((x) => x.toFixed(1)).join(",")).join(" ");
+  return `<svg class="radar" viewBox="0 0 260 220" role="img" aria-label="Radar de atributos">
+    ${[0.25, 0.5, 0.75, 1].map((k) => `<polygon points="${anel(k)}" fill="none" stroke="var(--linha)" stroke-width="1"/>`).join("")}
+    ${eixos.map((_, i) => { const [x, y] = pt(i, 1); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--linha)"/>`; }).join("")}
+    <polygon points="${dados}" fill="#E3B341" fill-opacity=".32" stroke="#E3B341" stroke-width="2.4" stroke-linejoin="round"/>
+    ${eixos.map(([n, v], i) => { const [x, y] = pt(i, 1.22); return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--giz-2)">${n} <tspan fill="var(--giz)" font-weight="800">${Math.round(v)}</tspan></text>`; }).join("")}
+  </svg>`;
+}
+const tile = (valor: string, rotulo: string) => `<div class="tile"><b>${valor}</b><span>${rotulo}</span></div>`;
+function perfilHtml(s: Save): string {
+  const j = s.jogador, c = s.carreira, info = infoClube(pacote, c.clubeId), w = mundo(pacote);
+  const [c1, c2] = info.cores;
+  const atual: ResumoTemporada | undefined = c.stats.jogos || c.stats.base ? { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: info.nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: c.stats.notas.length ? c.stats.notas.reduce((a, b) => a + b, 0) / c.stats.notas.length : 0, posicao: 0, titulo: false, base: c.stats.base, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`) } : undefined;
+  const hist = [...c.historico, ...(atual ? [atual] : [])];
+  const t = totaisDaCarreira(hist), clubes = clubesDaCarreira(hist.filter((h) => h.jogos || h === hist[0]));
+  const est = t.est ?? estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`);
+  const pers = personalidade({ ...j.personalidade, carisma: j.personalidade.carisma ?? 10 }), estilo = estiloDeJogo(j.at, j.posicao), pf = pontos(j.at, j.posicao);
+  const vm = valorMercado(ovr(j), j.idade, c.anosContrato, w.liga[infoLiga(c.ligaId).id].fLiga);
+  const torc = c.torcida ?? 50;
+  const idClube = (h: { clubeId?: string; clube: string }) => h.clubeId ?? Object.values(w.info).find((x) => x.nome === h.clube)?.id;
+  const minGol = t.gols ? Math.round((t.jogos * 78) / t.gols) : 0;
+  return `<div class="perfil-topo" style="--c1:${c1};--c2:${c2 ?? "#FFFFFF"}">
+      <button class="fechar" data-acao="fechar-perfil" aria-label="Fechar">✕</button>
+      <div class="perfil-foto">${foto(s)}</div>
+      <div class="perfil-nome"><small>${esc(NOME_POS[j.posicao])} · ${j.idade} anos · ${esc(NOME_PAIS[j.nacionalidade] ?? j.nacionalidade)}</small><h1>${esc(j.apelido)}</h1><span>${esc(j.nome)}</span>
+        <div class="perfil-clube">${escudo(c.clubeId)}<b>${esc(info.nome)}</b><small>${esc(infoLiga(c.ligaId).curto)}</small></div></div>
+      <div class="perfil-ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span><small>Pot. ${j.faixaPot[0]}–${j.faixaPot[1]}</small></div>
+    </div>
+    <div class="perfil-corpo">
+      <div class="kv perfil-info"><span>Altura</span><b>${j.alturaCm ? `${(j.alturaCm / 100).toFixed(2).replace(".", ",")} m` : "–"}</b><span>Pé</span><b>${j.pe === "esquerdo" ? "Esquerdo" : j.pe === "ambidestro" ? "Ambidestro" : "Direito"}</b><span>Valor de mercado</span><b>${milhoes(vm)}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.formacao ? "Base" : `${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}`}</b><span>Seguidores</span><b>${compacto(c.seguidores)}</b></div>
+
+      <p class="rotulo">Carreira</p>
+      <div class="tiles">${tile(String(t.jogos), "Jogos")}${tile(String(t.gols), "Gols")}${tile(String(t.assist), "Assistências")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média")}${tile(String(t.titulos.length), "Títulos")}${tile(String(t.premios.length), "Prêmios")}</div>
+
+      <p class="rotulo">Estatísticas <small>(média da carreira, estimada pelo scout)</small></p>
+      <div class="tiles">${tile(`${est.passe}%`, "Passes certos")}${tile(`${est.chute}%`, "Chutes no gol")}${tile(String(est.drible).replace(".", ","), "Dribles por jogo")}${tile(String(est.desarme).replace(".", ","), "Desarmes por jogo")}${tile(t.jogos ? (t.gols / t.jogos).toFixed(2).replace(".", ",") : "–", "Gols por jogo")}${tile(minGol ? `${minGol}'` : "–", "Minutos por gol")}</div>
+
+      <p class="rotulo">Atributos</p>
+      ${radar(j.at)}
+
+      <p class="rotulo">Relatório do olheiro</p>
+      <div class="relatorio">
+        <div><small>Estilo de jogo</small><b>${esc(estilo.nome)}</b><span>${esc(estilo.texto)}</span></div>
+        <div><small>Personalidade</small><b>${esc(pers.nome)}</b><span>${esc(pers.texto)}</span></div>
+      </div>
+      <div class="chips-lista">${pf.fortes.map((x) => `<span class="chip-info pos">+ ${esc(x)}</span>`).join("")}${pf.fracos.map((x) => `<span class="chip-info neg">− ${esc(x)}</span>`).join("")}${j.tracos.map((x) => `<span class="chip-info">★ ${esc(TRACOS[x]?.nome ?? x)}</span>`).join("")}</div>
+
+      <p class="rotulo">Reputação</p>
+      <div class="barras">${barra(`Torcida · ${rotuloTorcida(torc)}`, torc, 100, "#74D394")}${barra(`Técnico · ${rotuloTecnico(c.relTecnico)}`, c.relTecnico, 100, "#B9A3E8")}${barra(`Mundo · ${rotuloFama(c.fama)}`, c.fama, 100, "#E3B341")}</div>
+
+      <p class="rotulo">Clubes</p>
+      <div class="lista-clubes">${clubes.map((k) => { const id = idClube(k); return `<div class="linha-clube">${id ? escudo(id) : ""}<div><b>${esc(k.clube)}</b><small>${k.de === k.ate ? k.de : `${k.de}–${k.ate}`}</small></div><span>${k.jogos} j · ${k.gols} g · ${k.assist} a${k.titulos ? ` · 🏆 ${k.titulos}` : ""}</span></div>`; }).join("") || `<p class="sub">Ainda na base.</p>`}</div>
+
+      <p class="rotulo">Títulos e prêmios</p>
+      ${t.titulos.length + t.premios.length ? `<div class="lista-titulos">${[...t.titulos.map((x) => ({ ...x, t: "🏆" })), ...t.premios.map((x) => ({ ...x, t: "🏅" }))].sort((a, b) => b.ano - a.ano).map((x) => `<div><span>${x.t}</span><b>${esc(x.nome)}</b><small>${x.ano} · ${esc(x.clube)}</small></div>`).join("")}</div>` : `<p class="sub">Nenhum ainda. A estante da casa está esperando.</p>`}
+
+      <p class="rotulo">Temporada a temporada</p>
+      <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
+    </div>`;
+}
+function abrirPerfil() {
+  if (!save) return;
+  $("telaPerfil").innerHTML = perfilHtml(save);
+  ($("dlgPerfil") as HTMLDialogElement).showModal();
+  $("telaPerfil").scrollTop = 0;
 }
 function abaNoticias(s: Save): string {
   casualMini = undefined;
@@ -508,6 +582,8 @@ document.addEventListener("click", (ev) => {
       render(); break;
     }
     case "jogar": abrirJogo(); break;
+    case "perfil": abrirPerfil(); break;
+    case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
     case "fechar-anuncio": gravar(CHAVE_ANUNCIO, b.dataset.chave); render(); break;
     case "sair": case "ficar": if (save) { const r = pedirParaSair(save, d.acao === "sair"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); } break;
     case "pular": if (save) {
@@ -532,5 +608,6 @@ document.addEventListener("click", (ev) => {
   }
 });
 $("dlgJogo").addEventListener("cancel", (ev) => ev.preventDefault());
+document.addEventListener("keydown", (ev) => { if ((ev.key === "Enter" || ev.key === " ") && (ev.target as HTMLElement).classList?.contains("card-jogador")) { ev.preventDefault(); abrirPerfil(); } });
 void SEMANAS_PRE;
 render();

@@ -109,6 +109,27 @@ tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--
 .cartaz-grande .cartaz { width: 100%; max-width: 360px; display: block; margin: 0 auto; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
 .patro-galeria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
 .patro-item { display: flex; flex-direction: column; gap: 2px; } .patro-item .cartaz { width: 100%; border-radius: 10px; } .patro-item small { color: var(--giz-2); font-size: 12px; }
+.card-jogador { cursor: pointer; transition: border-color .15s; } .card-jogador:hover { border-color: var(--ouro); } .ver-perfil { color: var(--ouro) !important; font-weight: 600; margin-top: 2px; }
+.perfil { overflow-y: auto; }
+.perfil-topo { position: relative; display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: center; padding: 18px 16px 16px; background: linear-gradient(135deg, var(--c1) 0%, color-mix(in srgb, var(--c1) 55%, #000) 100%); border-bottom: 4px solid var(--c2); }
+.perfil-topo::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 26px, rgba(255,255,255,.06) 26px 40px); pointer-events: none; }
+.perfil-foto svg { width: 96px; height: 115px; border-radius: 12px; display: block; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.perfil-nome { color: #FFF; text-shadow: 0 1px 3px rgba(0,0,0,.5); min-width: 0; } .perfil-nome h1 { font-size: 34px; margin: 2px 0 0; } .perfil-nome > span { font-size: 13px; opacity: .9; } .perfil-nome small { font-size: 12px; opacity: .9; }
+.perfil-clube { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; font-size: 14px; } .perfil-clube .escudo { width: 18px; height: 21px; } .perfil-clube small { opacity: .8; }
+.perfil-ovr { text-align: center; color: #FFF; z-index: 1; } .perfil-ovr strong { display: block; font-family: var(--display); font-weight: 900; font-size: 44px; line-height: .9; } .perfil-ovr span { font-size: 11px; letter-spacing: .1em; } .perfil-ovr small { display: block; font-size: 11px; opacity: .85; margin-top: 4px; }
+.perfil-topo > * { z-index: 1; }
+.fechar { position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,.35); color: #FFF; border: 0; width: 32px; height: 32px; border-radius: 50%; font-size: 15px; cursor: pointer; z-index: 2; }
+.perfil-corpo { padding: 16px; display: flex; flex-direction: column; gap: 10px; } .perfil-corpo .rotulo { margin-top: 10px; } .perfil-corpo .rotulo small { text-transform: none; letter-spacing: 0; font-weight: 500; opacity: .8; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tile { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.tile b { font-family: var(--display); font-weight: 900; font-size: 26px; line-height: 1; color: var(--ouro); } .tile span { font-size: 11.5px; color: var(--giz-2); }
+.radar { width: 100%; max-width: 360px; margin: 0 auto; display: block; }
+.relatorio { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .relatorio > div { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.relatorio small { color: var(--giz-2); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; } .relatorio b { color: var(--ouro); } .relatorio span { font-size: 13px; color: var(--giz-2); }
+.chips-lista { display: flex; flex-wrap: wrap; gap: 6px; } .chip-info { font-size: 12.5px; padding: 5px 10px; border-radius: 999px; background: var(--campo-2); border: 1px solid var(--linha); } .chip-info.pos { border-color: #2E7D4F; color: #BFF0D0; } .chip-info.neg { border-color: #8C3A30; color: #F6C2B8; }
+.lista-clubes, .lista-titulos { display: flex; flex-direction: column; gap: 6px; }
+.linha-clube { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--campo-2); border-radius: 10px; } .linha-clube .escudo { width: 22px; height: 26px; } .linha-clube small { display: block; color: var(--giz-2); font-size: 12px; } .linha-clube > span { font-size: 13px; color: var(--giz-2); }
+.lista-titulos > div { display: grid; grid-template-columns: 24px 1fr; column-gap: 8px; padding: 6px 10px; background: var(--campo-2); border-radius: 10px; } .lista-titulos span { grid-row: span 2; font-size: 18px; } .lista-titulos small { color: var(--giz-2); font-size: 12px; }
 .evento { border-color: #6FB7E0; } .evento h2 { margin: 2px 0 6px; } .evento .ferr-botoes { margin-top: 10px; flex-wrap: wrap; } .evento .botao small { display: block; font-size: 11.5px; opacity: .75; font-weight: 500; }
 .kv b.pos { color: var(--pos); } .kv b.neg { color: var(--neg); }
 .msg-mercado { padding: 10px 12px; border-radius: 10px; font-weight: 600; margin-bottom: 10px; } .msg-mercado.ok { background: #1F4D33; color: #BFF0D0; } .msg-mercado.nao { background: #4D2420; color: #F6C2B8; }
@@ -184,6 +205,7 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 <main class="pagina" id="app"></main>
 <dialog id="dlgJogo"><div class="tela" id="telaJogo"></div></dialog>
 <dialog id="dlgResumo"><div class="tela" id="telaResumo"></div></dialog>
+<dialog id="dlgPerfil" aria-label="Perfil do jogador"><div class="tela perfil" id="telaPerfil"></div></dialog>
 <script>/*__SCRIPT__*/</script>
 </body>
 </html>

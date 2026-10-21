@@ -10,6 +10,7 @@ import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { mundo, infoClube, idClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
+import { estatisticasEstimadas, type EstatEstimada } from "./perfil-jogador.js";
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
@@ -26,10 +27,10 @@ export interface Jogador {
   at: Atributos; pot: number; faixaPot: [number, number]; personalidade: PersonalidadeDNA; tracos: TracoId[];
   perfilId: string; perfilNome: string; aparencia: unknown; numero: string; familia: string;
   /** corpo inteiro: físico, uniforme, roupa do dia a dia e tatuagens */
-  visual?: Visual; alturaCm?: number;
+  visual?: Visual; alturaCm?: number; pe?: string;
 }
 export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number; baseNotas?: number[] }
-export interface ResumoTemporada { ano: number; idade: number; clube: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
+export interface ResumoTemporada { ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
 /** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
 export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" };
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
@@ -53,6 +54,8 @@ export interface Carreira {
   padrao?: PadraoVida;
   /** evento fora de campo esperando decisão, e a temporada em que cada evento apareceu */
   evento?: string; eventosVistos?: Record<string, number>;
+  /** reputação com a torcida do clube atual (0–100) */
+  torcida?: number;
   /** patrocinadores: contratos ativos, proposta na mesa, marcas recusadas na temporada e números do mês para os bônus */
   patrocinios?: ContratoPatrocinio[]; propPatrocinio?: PropostaPatrocinio; recusadas?: string[]; mesStats?: { gols: number; assist: number; notas8: number };
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
@@ -157,7 +160,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
     nome: e.nome, apelido: e.apelido || e.nome.split(" ")[0], posicao: e.posicao, pais: e.pais, nacionalidade: r.nacionalidade, idade: 16,
     at: { ...r.atributos }, pot: r.potencial, faixaPot: r.faixaPotencial, personalidade: pers, tracos: r.tracos, perfilId: perfil.id, perfilNome: perfil.nome,
     aparencia: d.aparencia, numero: String(rng.int(26, 49)), familia: e.familia,
-    alturaCm: e.alturaCm, visual: { ...VISUAL_PADRAO, tatuagens: {}, fisico: fisicoInicial(r.atributos) },
+    alturaCm: e.alturaCm, pe: e.pe, visual: { ...VISUAL_PADRAO, tatuagens: {}, fisico: fisicoInicial(r.atributos) },
   };
   const ordem = l.clubes.map((c) => c.id);
   for (let i = ordem.length - 1; i > 0; i--) { const j = rng.int(0, i); [ordem[i], ordem[j]] = [ordem[j], ordem[i]]; }
@@ -404,7 +407,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     const risco = a === "amigos" ? (dia === 4 && partida ? 0.1 : 0.05) : a === "redes" ? 0.01 + j.personalidade.temperamento / 400 : 0;
     if (risco && rng.chance(risco)) {
       const t = rng.pick(POLEMICAS);
-      c.moral = clamp(c.moral - 5, 0, 100); c.relTecnico = clamp(c.relTecnico - 4, 0, 100); c.fama = clamp(c.fama + 1, 0, 100);
+      c.moral = clamp(c.moral - 5, 0, 100); c.relTecnico = clamp(c.relTecnico - 4, 0, 100); c.fama = clamp(c.fama + 1, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 2, 0, 100);
       eventos.push(`Polêmica na ${DIAS[dia].toLowerCase()}: ${t}`);
       noticia(s, "polemica", "Polêmica", t);
     }
@@ -471,6 +474,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       }, (id) => (s.casa.reliquias ?? []).some((r) => r.id === id));
       receberReliquias(s, ganhos, eventos);
       c.formaUlt = [...c.formaUlt.slice(-4), nota];
+      if (pro) c.torcida = clamp((c.torcida ?? 50) + (nota - 6.5) * 1.5 + gols, 0, 100);
       c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
       c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5), 0, 100);
       const grande = clubeDe(l, c.clubeId).forca >= 75 ? 1.5 : 1;
@@ -513,6 +517,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   // redes: quem não posta perde engajamento; repercussão de lance passa
   c.engajamento = clamp((c.engajamento ?? 40) - 2.5, 0, 100);
   c.hype = (c.hype ?? 0) * 0.85;
+  c.torcida = clamp((c.torcida ?? 50) + (50 - (c.torcida ?? 50)) * 0.005, 0, 100);
   const seg0 = c.seguidores;
   c.seguidores = semanaRedes(c.seguidores, alvoDeSeguidores(pacote, s));
   if (Math.abs(c.seguidores - seg0) >= Math.max(5000, seg0 * 0.01)) eventos.push(`${c.seguidores > seg0 ? "+" : "−"}${Math.abs(c.seguidores - seg0).toLocaleString("pt-BR")} seguidores nas redes.`);
@@ -691,7 +696,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   const posicao = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const titulo = posicao === 1 && c.stats.jogos >= 10;
   const notas = c.stats.notas, media = (x: number[]) => (x.length ? +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(2) : 0);
-  const r: ResumoTemporada = { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols };
+  const r: ResumoTemporada = { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`), ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols };
   // premiação: troféus que vão para a casa
   const cc = clubeCasa(pacote, c.clubeId), ev: string[] = [];
   const premios = premiosDaTemporada(rngDe(s, "premios"), { ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
@@ -701,7 +706,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   receberReliquias(s, premios, ev);
   r.premios = premios.filter((g) => g.reliquia.tipo === "trofeu").map((g) => g.reliquia.nome);
   c.historico.push(r);
-  if (titulo) c.fama = clamp(c.fama + 5, 0, 100);
+  if (titulo) { c.fama = clamp(c.fama + 5, 0, 100); c.torcida = clamp((c.torcida ?? 50) + 10, 0, 100); }
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);
   // nova temporada
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
