@@ -7,6 +7,7 @@ import { ligaDoPacote, tabelaTurnoReturno, novaTabela, registrar, ordenar, type 
 import { salarioMensal, AGENTES, seguidoresDaFama, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
+import { SITUACAO, COMEMORACAO, escolherSituacao, habilidade, sortearNivel, notaEsperada, type Efeito, type Nivel } from "./lances.js";
 import { novoEstado, fecharMes, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
 // ------------------------------------------------------------------ tipos
@@ -21,6 +22,7 @@ export interface Noticia { semana: string; titulo: string; texto: string; tipo: 
 export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
+  suspensao?: number;
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
@@ -127,14 +129,15 @@ export function jogoDaSemana(s: Save): (Jogo & { rodada: number; souCasa: boolea
 }
 
 // ------------------------------------------------------------------ escalação
-export type Escalacao = "titular" | "banco" | "base" | "fora" | "lesionado" | "semJogo";
+export type Escalacao = "titular" | "banco" | "base" | "fora" | "lesionado" | "semJogo" | "suspenso";
 export const NOME_ESCALACAO: Record<Escalacao, string> = {
-  titular: "Titular", banco: "No banco", base: "Jogo da base", fora: "Fora dos relacionados", lesionado: "Lesionado", semJogo: "Sem jogo",
+  titular: "Titular", banco: "No banco", base: "Jogo da base", fora: "Fora dos relacionados", lesionado: "Lesionado", semJogo: "Sem jogo", suspenso: "Suspenso",
 };
 export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carreira.cansaco): Escalacao {
   const c = s.carreira, j = s.jogador;
   if (c.lesao > 0) return "lesionado";
   if (c.semana < SEMANAS_PRE) return "semJogo";
+  if (c.suspensao) return "suspenso";
   const clube = clubeDe(liga(pacote), c.clubeId);
   const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto);
   const rank = clube.elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
@@ -173,57 +176,17 @@ export function previaPlano(s: Save, p: Plano) {
 
 // ------------------------------------------------------------------ partida
 export interface Opcao { id: string; rotulo: string }
-export interface Decisao { min: number; titulo: string; texto: string; opcoes: Opcao[]; modelo: string }
+export interface Decisao { min: number; titulo: string; texto: string; opcoes: Opcao[]; situacao: string }
 export interface Lance { min: number; lado: "casa" | "fora"; meu?: "gol" | "assist"; texto: string }
 export interface Partida {
   tipo: "profissional" | "base"; escalacao: Escalacao; casa: string; fora: string; nomeCasa: string; nomeFora: string; souCasa: boolean;
   entrada: number; saida: number; golsCasa: number; golsFora: number; lances: Lance[]; decisoes: Decisao[];
   base: { gols: number; assist: number; nota: number }; fAdv: number;
 }
-export interface ResultadoDecisao { sucesso: boolean; texto: string; golPro: boolean; golContra: boolean; meu?: "gol" | "assist"; nota: number }
-
-interface Modelo { titulo: string; texto: string; opcoes: { id: string; rotulo: string; at: Partial<Record<Atributo, number>>; ajuste: number; tracos?: Partial<Record<TracoId, number>>;
-  sucesso: { texto: string; golPro?: number; meu?: "gol" | "assist"; nota: number }; falha: { texto: string; golContra?: number; nota: number } }[] }
-const MODELOS: Record<string, Modelo> = {
-  caraACara: { titulo: "Cara a cara com o goleiro", texto: "A bola sobra na entrada da pequena área. Só tem o goleiro na sua frente.", opcoes: [
-    { id: "colocado", rotulo: "Bater colocado", at: { FIN: 0.7, COM: 0.3 }, ajuste: 0, tracos: { frieza: 6 }, sucesso: { texto: "No canto, sem chance. GOL!", golPro: 1, meu: "gol", nota: 0.3 }, falha: { texto: "O goleiro se esticou todo e espalmou.", nota: -0.2 } },
-    { id: "forte", rotulo: "Encher o pé", at: { FIN: 0.5, FOR: 0.5 }, ajuste: -0.05, tracos: { chute_longe: 4 }, sucesso: { texto: "Bomba! A rede estufou. GOL!", golPro: 1, meu: "gol", nota: 0.3 }, falha: { texto: "Foi por cima do travessão.", nota: -0.3 } },
-    { id: "driblar", rotulo: "Driblar o goleiro", at: { DRI: 0.6, COM: 0.4 }, ajuste: -0.12, tracos: { ginga: 6, drible_curto: 5 }, sucesso: { texto: "Deixou o goleiro sentado e tocou pro gol vazio. Golaço!", golPro: 1, meu: "gol", nota: 0.6 }, falha: { texto: "O goleiro abafou o drible.", nota: -0.35 } },
-    { id: "tocar", rotulo: "Rolar para o companheiro", at: { PAS: 0.6, VIS: 0.4 }, ajuste: 0.08, sucesso: { texto: "Passe açucarado, é só empurrar. Gol do time, assistência sua!", golPro: 1, meu: "assist", nota: 0.3 }, falha: { texto: "O zagueiro cortou o passe.", nota: -0.15 } },
-  ] },
-  ponta: { titulo: "Um contra um na ponta", texto: "Você recebe aberto, com o lateral adversário vindo sozinho.", opcoes: [
-    { id: "cruzar", rotulo: "Passar e cruzar", at: { DRI: 0.5, CRU: 0.5 }, ajuste: 0, tracos: { ginga: 3 }, sucesso: { texto: "Passou e cruzou na cabeça do centroavante. Gol, assistência sua!", golPro: 1, meu: "assist", nota: 0.35 }, falha: { texto: "O cruzamento saiu forte demais.", nota: -0.2 } },
-    { id: "cortar", rotulo: "Cortar para dentro e chutar", at: { DRI: 0.5, FIN: 0.5 }, ajuste: -0.1, tracos: { chute_longe: 5, drible_curto: 4 }, sucesso: { texto: "Cortou e bateu de chapa no ângulo. GOL!", golPro: 1, meu: "gol", nota: 0.5 }, falha: { texto: "O chute travou na defesa.", nota: -0.2 } },
-    { id: "segurar", rotulo: "Segurar e tocar", at: { PAS: 0.6, VIS: 0.4 }, ajuste: 0.15, sucesso: { texto: "Prendeu a bola e o time respirou.", nota: 0.15 }, falha: { texto: "Perdeu a bola no meio do caminho.", nota: -0.2 } },
-  ] },
-  meio: { titulo: "Espaço entre as linhas", texto: "Você gira livre na intermediária. O centroavante pede em profundidade.", opcoes: [
-    { id: "enfiar", rotulo: "Enfiar a bola", at: { VIS: 0.6, PAS: 0.4 }, ajuste: -0.05, sucesso: { texto: "Passe entre os zagueiros, o atacante só tocou. Assistência sua!", golPro: 1, meu: "assist", nota: 0.4 }, falha: { texto: "O passe ficou longo.", nota: -0.15 } },
-    { id: "chute", rotulo: "Arriscar de fora da área", at: { FIN: 0.8, FOR: 0.2 }, ajuste: -0.2, tracos: { chute_longe: 12 }, sucesso: { texto: "De fora da área, no ângulo! Golaço!", golPro: 1, meu: "gol", nota: 0.7 }, falha: { texto: "Foi pela linha de fundo.", nota: -0.15 } },
-    { id: "tabelar", rotulo: "Tabelar e entrar na área", at: { PAS: 0.5, DRI: 0.5 }, ajuste: -0.1, sucesso: { texto: "Tabelinha perfeita e você bateu na saída do goleiro. GOL!", golPro: 1, meu: "gol", nota: 0.5 }, falha: { texto: "O zagueiro chegou antes.", nota: -0.2 } },
-  ] },
-  contra: { titulo: "Contra-ataque do adversário", texto: "Eles roubaram a bola e vêm três contra dois. O atacante parte para cima de você.", opcoes: [
-    { id: "bote", rotulo: "Dar o bote", at: { MAR: 0.6, FOR: 0.4 }, ajuste: -0.05, sucesso: { texto: "Bote limpo, bola recuperada. A torcida levantou.", nota: 0.45 }, falha: { texto: "Ele passou e tocou para o gol. Gol deles.", golContra: 1, nota: -0.45 } },
-    { id: "acompanhar", rotulo: "Acompanhar e fechar o ângulo", at: { POS: 0.6, VEL: 0.4 }, ajuste: 0.08, sucesso: { texto: "Fechou o espaço e o chute saiu fraco.", nota: 0.3 }, falha: { texto: "Ele achou o espaço e bateu cruzado. Gol deles.", golContra: 1, nota: -0.35 } },
-    { id: "falta", rotulo: "Fazer a falta tática", at: {}, ajuste: 0.4, sucesso: { texto: "Falta no meio-campo, cartão amarelo. Ataque parado.", nota: -0.05 }, falha: { texto: "O juiz deu vantagem e saiu o gol. Gol deles.", golContra: 1, nota: -0.3 } },
-  ] },
-  antecipar: { titulo: "Bola longa nas costas da defesa", texto: "O meia deles levantou a cabeça e vai lançar.", opcoes: [
-    { id: "antecipar", rotulo: "Antecipar o lançamento", at: { POS: 0.5, VIS: 0.5 }, ajuste: -0.1, tracos: { lider_nato: 3 }, sucesso: { texto: "Leu a jogada, roubou e saiu jogando. O contra-ataque terminou em gol!", golPro: 1, meu: "assist", nota: 0.6 }, falha: { texto: "Chegou atrasado e o atacante saiu cara a cara. Gol deles.", golContra: 1, nota: -0.45 } },
-    { id: "recuar", rotulo: "Recuar e proteger a área", at: { POS: 0.7, VEL: 0.3 }, ajuste: 0.1, sucesso: { texto: "Cobertura perfeita, bola afastada.", nota: 0.25 }, falha: { texto: "O lançamento caiu no pé do atacante. Gol deles.", golContra: 1, nota: -0.3 } },
-  ] },
-  escanteio: { titulo: "Escanteio a favor", texto: "O camisa 10 vai bater. Você está na área.", opcoes: [
-    { id: "subir", rotulo: "Subir para cabecear", at: { CAB: 0.7, FOR: 0.3 }, ajuste: -0.12, tracos: { cabeceador: 12, bicicleta: 4 }, sucesso: { texto: "Subiu mais que todo mundo. Cabeçada no canto, GOL!", golPro: 1, meu: "gol", nota: 0.5 }, falha: { texto: "A cabeçada saiu por cima.", nota: -0.1 } },
-    { id: "rebote", rotulo: "Ficar na sobra", at: { POS: 0.5, FIN: 0.5 }, ajuste: -0.05, sucesso: { texto: "A bola sobrou e você empurrou para a rede. GOL!", golPro: 1, meu: "gol", nota: 0.4 }, falha: { texto: "A defesa afastou.", nota: 0 } },
-  ] },
-  fundo: { titulo: "Linha de fundo livre", texto: "Você passou pelo marcador e chegou à linha de fundo.", opcoes: [
-    { id: "cruzar", rotulo: "Cruzar na área", at: { CRU: 0.8, VIS: 0.2 }, ajuste: 0, sucesso: { texto: "Cruzamento na medida. Gol do time, assistência sua!", golPro: 1, meu: "assist", nota: 0.4 }, falha: { texto: "O goleiro saiu e pegou o cruzamento.", nota: -0.15 } },
-    { id: "rasteiro", rotulo: "Tocar rasteiro para trás", at: { PAS: 0.7, VIS: 0.3 }, ajuste: 0.05, sucesso: { texto: "O volante chegou batendo. Gol, assistência sua!", golPro: 1, meu: "assist", nota: 0.35 }, falha: { texto: "A zaga cortou.", nota: -0.1 } },
-    { id: "chutar", rotulo: "Chutar sem ângulo", at: { FIN: 0.7, COM: 0.3 }, ajuste: -0.25, sucesso: { texto: "Sem ângulo nenhum, entrou! GOL!", golPro: 1, meu: "gol", nota: 0.6 }, falha: { texto: "Bateu na rede pelo lado de fora.", nota: -0.25 } },
-  ] },
-};
-const MODELOS_POS: Record<Posicao, string[]> = {
-  ATA: ["caraACara", "escanteio", "caraACara", "meio"], PON: ["ponta", "caraACara", "fundo"], MEI: ["meio", "caraACara", "antecipar"],
-  VOL: ["contra", "antecipar", "meio"], ZAG: ["contra", "escanteio", "antecipar"], LAT: ["fundo", "contra", "ponta"],
-};
+export interface ResultadoDecisao extends Efeito { min: number; nivel: Nivel; situacao: string }
+const decisaoDe = (id: string, min: number): Decisao => { const st = SITUACAO[id]; return { min, titulo: st.titulo, texto: st.texto, opcoes: st.opcoes.map((o) => ({ id: o.id, rotulo: o.rotulo })), situacao: id }; };
+/** Decisão extra que a tela abre quando o jogador marca: como comemorar. */
+export const decisaoComemoracao = (min: number) => decisaoDe(COMEMORACAO.id, min);
 
 /** Força dos times da base (sub-17/20) a partir da força do profissional. */
 const forcaBase = (forcaPro: number) => 46 + (forcaPro - 70) * 0.6;
@@ -233,7 +196,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   if (!jogo) return;
   const prev = previaPlano(s, plano);
   const esc = escalacao(pacote, s, prev.cansaco);
-  if (esc === "lesionado" || esc === "fora") return { tipo: "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: clubeDe(l, jogo.casa).nome, nomeFora: clubeDe(l, jogo.fora).nome, souCasa: jogo.souCasa, entrada: 0, saida: 0, golsCasa: 0, golsFora: 0, lances: [], decisoes: [], base: { gols: 0, assist: 0, nota: 0 }, fAdv: 0 };
+  if (esc === "lesionado" || esc === "fora" || esc === "suspenso") return { tipo: "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: clubeDe(l, jogo.casa).nome, nomeFora: clubeDe(l, jogo.fora).nome, souCasa: jogo.souCasa, entrada: 0, saida: 0, golsCasa: 0, golsFora: 0, lances: [], decisoes: [], base: { gols: 0, assist: 0, nota: 0 }, fAdv: 0 };
   const rng = rngDe(s, "partida");
   const base = esc === "base";
   const meuClube = clubeDe(l, c.clubeId), adv = clubeDe(l, jogo.adversario);
@@ -264,14 +227,16 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
     lances.push({ min: m, lado: lado(true), meu, texto: "" });
   }
   for (let i = 0; i < golsAdv; i++) lances.push({ min: minutosLivres(), lado: lado(false), texto: "" });
-  // decisões dentro do tempo em campo
-  const nDec = minutos <= 0 ? 0 : minutos >= 45 ? 2 : 1;
-  const modelos = [...MODELOS_POS[j.posicao]];
-  const decisoes: Decisao[] = [];
-  for (let i = 0; i < nDec; i++) {
-    const id = modelos.splice(rng.int(0, modelos.length - 1), 1)[0], mod = MODELOS[id];
-    const lo = Math.max(entrada + 3, i === 0 ? 8 : 50), hi = Math.min(saida - 2, i === 0 ? 44 : 88);
-    decisoes.push({ min: rng.int(Math.min(lo, hi), Math.max(lo, hi)), titulo: mod.titulo, texto: mod.texto, opcoes: mod.opcoes.map((o) => ({ id: o.id, rotulo: o.rotulo })), modelo: id });
+  // decisões dentro do tempo em campo: de uma a três, situações diferentes conforme posição, minuto e placar
+  const nDec = minutos <= 0 ? 0 : minutos < 30 ? 1 : rng.chance(0.25) ? 1 : rng.chance(0.7) ? 2 : 3;
+  const decisoes: Decisao[] = [], usadas: string[] = [];
+  const janelas = nDec === 1 ? [[entrada + 3, saida - 2]] : nDec === 2 ? [[Math.max(entrada + 3, 6), 44], [Math.max(entrada + 3, 50), saida - 1]] : [[Math.max(entrada + 3, 6), 32], [Math.max(entrada + 3, 36), 66], [Math.max(entrada + 3, 70), saida - 1]];
+  for (const [lo0, hi0] of janelas) {
+    const lo = Math.min(lo0, hi0), hi = Math.max(lo0, hi0), min = rng.int(lo, hi);
+    const saldo = lances.filter((x) => x.min < min).reduce((acc, x) => acc + (x.lado === lado(true) ? 1 : -1), 0);
+    const sit = escolherSituacao(rng, { pos: j.posicao, min, saldo, base, jaFezGol: false }, usadas);
+    usadas.push(sit.id);
+    decisoes.push(decisaoDe(sit.id, min));
   }
   lances.sort((x, y) => x.min - y.min);
   const nomeC = base ? `${clubeDe(l, jogo.casa).nome} sub-17` : clubeDe(l, jogo.casa).nome, nomeF = base ? `${clubeDe(l, jogo.fora).nome} sub-17` : clubeDe(l, jogo.fora).nome;
@@ -280,33 +245,19 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
     entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF };
 }
 
-/** Chance de sucesso de uma opção, de 0 a 1 (mostrada como dica na tela). */
-export function chanceOpcao(s: Save, p: Partida, i: number, opcaoId: string): number {
-  const mod = MODELOS[p.decisoes[i].modelo], op = mod.opcoes.find((o) => o.id === opcaoId)!;
-  const peso = Object.values(op.at).reduce((a, b) => a + b, 0);
-  const hab = peso ? Object.entries(op.at).reduce((acc, [k, w]) => acc + s.jogador.at[k as Atributo] * w, 0) / peso : 60;
-  const tr = Object.entries(op.tracos ?? {}).reduce((acc, [t, v]) => acc + (s.jogador.tracos.includes(t as TracoId) ? v : 0), 0);
-  const dif = p.tipo === "base" ? p.fAdv + 2 : p.fAdv - 2;
-  return clamp(0.5 + (hab + tr - dif) / 30 + op.ajuste, 0.08, 0.92);
-}
+/** Nível do adversário no lance: no profissional o lance já nasce numa situação boa para quem decide. */
+const nivelAdversario = (p: Partida) => (p.tipo === "base" ? p.fAdv - 2 : p.fAdv - 6);
 
-/** Mesmo uma boa jogada nem sempre vira gol (e um erro nem sempre custa um gol). */
-const CONVERSAO: Record<string, number> = {
-  "caraACara.colocado": 0.6, "caraACara.forte": 0.5, "caraACara.driblar": 0.7, "caraACara.tocar": 0.6,
-  "ponta.cruzar": 0.35, "ponta.cortar": 0.4, "meio.enfiar": 0.45, "meio.chute": 0.45, "meio.tabelar": 0.45,
-  "escanteio.subir": 0.4, "escanteio.rebote": 0.35, "fundo.cruzar": 0.35, "fundo.rasteiro": 0.4, "fundo.chutar": 0.5, "antecipar.antecipar": 0.3,
-  "contra.bote": 0.55, "contra.acompanhar": 0.45, "contra.falta": 0.6, "antecipar.recuar": 0.4,
-};
-export function resolverDecisao(s: Save, p: Partida, i: number, opcaoId: string): ResultadoDecisao {
-  const modelo = p.decisoes[i].modelo, mod = MODELOS[modelo], op = mod.opcoes.find((o) => o.id === opcaoId)!;
-  const rng = rngDe(s, "decisao", i, opcaoId);
-  const ok = rng.chance(chanceOpcao(s, p, i, opcaoId)), conv = rng.chance(CONVERSAO[`${modelo}.${opcaoId}`] ?? 0.5);
-  if (ok) {
-    if (op.sucesso.golPro && !conv) return { sucesso: true, texto: op.sucesso.meu === "assist" ? "Jogada perfeita, mas o companheiro chutou em cima do goleiro." : "Foi quase! A bola passou raspando a trave.", golPro: false, golContra: false, nota: op.sucesso.nota / 2 };
-    return { sucesso: true, texto: op.sucesso.texto, golPro: !!op.sucesso.golPro, golContra: false, meu: op.sucesso.meu, nota: op.sucesso.nota };
-  }
-  if (op.falha.golContra && !conv) return { sucesso: false, texto: "Ele passou e finalizou, mas o goleiro salvou.", golPro: false, golContra: false, nota: op.falha.nota / 2 };
-  return { sucesso: false, texto: op.falha.texto, golPro: false, golContra: !!op.falha.golContra, nota: op.falha.nota };
+export function resolverDecisao(s: Save, p: Partida, d: Decisao, opcaoId: string): ResultadoDecisao {
+  const op = SITUACAO[d.situacao].opcoes.find((o) => o.id === opcaoId)!;
+  const hab = habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op);
+  const nivel = sortearNivel(rngDe(s, "decisao", d.situacao, d.min, opcaoId), hab, nivelAdversario(p), op);
+  return { ...op.niveis[nivel], min: d.min, nivel, situacao: d.situacao };
+}
+/** Melhor opção pela nota esperada (só para a política automática; a tela não mostra nada disso). */
+export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
+  const ops = SITUACAO[d.situacao].opcoes;
+  return ops.map((op) => ({ id: op.id, v: notaEsperada(habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op), nivelAdversario(p), op) })).sort((a, b) => b.v - a.v)[0].id;
 }
 
 // ------------------------------------------------------------------ fim da semana
@@ -355,13 +306,32 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   let resumoPartida: ResumoSemana["partida"];
   const jogo = jogoDaSemana(s);
   let placarMeuJogo: [number, number] | undefined;
-  if (partida && jogo && partida.escalacao !== "lesionado" && partida.escalacao !== "fora") {
+  if (partida?.escalacao === "suspenso") { c.suspensao = 0; eventos.push("Cumpriu suspensão."); }
+  if (partida && jogo && partida.escalacao !== "lesionado" && partida.escalacao !== "fora" && partida.escalacao !== "suspenso") {
     let gc = partida.golsCasa, gf = partida.golsFora, gols = partida.base.gols, assist = partida.base.assist, nota = partida.base.nota;
-    for (const d of decisoes) {
+    // expulsão: dois amarelos ou um vermelho tiram o jogador do jogo naquele minuto
+    let amarelos = 0, expulsoMin = 99;
+    for (const d of [...decisoes].sort((a, b) => a.min - b.min)) {
+      if (d.min > expulsoMin) continue;
       if (d.golPro) { if (partida.souCasa) gc++; else gf++; }
       if (d.golContra) { if (partida.souCasa) gf++; else gc++; }
       if (d.meu === "gol") gols++; if (d.meu === "assist") assist++;
       nota += d.nota;
+      if (d.fama) c.fama = clamp(c.fama + d.fama, 0, 100);
+      if (d.moral) c.moral = clamp(c.moral + d.moral, 0, 100);
+      if (d.relTecnico) c.relTecnico = clamp(c.relTecnico + d.relTecnico, 0, 100);
+      if (d.seguidores) c.seguidores = Math.round(c.seguidores * (1 + d.seguidores) + 500 * d.seguidores * 100);
+      if (d.lesao) c.lesao = Math.max(c.lesao, d.lesao);
+      if (d.noticia) noticia(s, "polemica", "Repercussão", d.noticia);
+      if (d.amarelo) amarelos++;
+      if (d.vermelho || amarelos >= 2) { expulsoMin = d.min; eventos.push(amarelos >= 2 && !d.vermelho ? "Expulso com dois amarelos. Fica fora do próximo jogo." : "Cartão vermelho. Fica fora do próximo jogo."); c.suspensao = 1; }
+      else if (d.amarelo) eventos.push("Levou cartão amarelo.");
+    }
+    if (expulsoMin < 99) {
+      // tira do jogador os gols e assistências do placar original que vieram depois da expulsão
+      for (const l of partida.lances) if (l.meu && l.min > expulsoMin) { if (l.meu === "gol") gols--; else assist--; }
+      partida.saida = Math.min(partida.saida, expulsoMin);
+      nota -= 0.5;
     }
     const minutos = Math.max(0, Math.min(90, partida.saida) - partida.entrada);
     if (minutos > 0) nota = Math.round(clamp(nota + prev.notaExtra, 3, 10) * 10) / 10; else nota = 0;
@@ -473,9 +443,9 @@ export function planoAutomatico(s: Save): Plano {
 /** Joga uma semana inteira sem interface, escolhendo a primeira opção de cada decisão. */
 export function semanaAutomatica(pacote: PacoteDados, s: Save): ResumoSemana {
   const plano = planoAutomatico(s), p = prepararPartida(pacote, s, plano);
-  const ds = (p?.decisoes ?? []).map((d, i) => {
-    const melhor = d.opcoes.map((o) => ({ o, ch: chanceOpcao(s, p!, i, o.id) })).sort((a, b) => b.ch - a.ch)[0].o.id;
-    return resolverDecisao(s, p!, i, melhor);
-  });
+  const ds = (p?.decisoes ?? []).map((d) => resolverDecisao(s, p!, d, melhorOpcao(s, p!, d)));
+  // primeiro gol do jogador no jogo: comemoração, como na tela
+  const golMin = p ? [...p.lances.filter((l) => l.meu === "gol").map((l) => l.min), ...ds.filter((r) => r.meu === "gol").map((r) => r.min)].sort((a, b) => a - b)[0] : undefined;
+  if (p && golMin !== undefined) { const d = decisaoComemoracao(golMin); ds.push(resolverDecisao(s, p, d, melhorOpcao(s, p, d))); }
   return concluirSemana(pacote, s, plano, p, ds);
 }

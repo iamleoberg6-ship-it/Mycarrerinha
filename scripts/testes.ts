@@ -243,7 +243,7 @@ teste("Carreira jogável: temporada completa, tabela fechada e mesma semente, me
   // partida interativa: decisões mudam o placar de forma coerente
   for (let w = 0; w < 3; w++) {
     const plano = planoPadrao(), p = prepararPartida(pacote, a, plano);
-    const ds = (p?.decisoes ?? []).map((d, i) => resolverDecisao(a, p!, i, d.opcoes[0].id));
+    const ds = (p?.decisoes ?? []).map((d) => resolverDecisao(a, p!, d, d.opcoes[0].id));
     const res = concluirSemana(pacote, a, plano, p, ds);
     if (res.partida && res.partida.minutos > 0) assert.ok(res.partida.nota >= 3 && res.partida.nota <= 10);
   }
