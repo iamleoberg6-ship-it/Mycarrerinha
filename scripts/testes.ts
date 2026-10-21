@@ -6,7 +6,7 @@ import { valorMercado, salarioMensal } from "../src/mercado.js";
 import { carregarPacote, ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
 import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
-import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel } from "../src/casa.js";
+import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
@@ -213,14 +213,17 @@ teste("Casa: cada móvel no seu cômodo, instalação só com escritura, alojame
   assert.ok(comprar(e, "pia-moderno-2-2", 0, "banheiro").ok);
   mudar(e, "ap-2q", "alugar", 1e6); mudar(e, "casa-cond", "alugar", 0);
   assert.equal(e.objetos.filter((o) => o.comodo === "banheiro" && o.item.startsWith("pia")).length, 1);
-  assert.equal(comprar(e, "carro-basico-1-1", 0, "sala").comodo, "garagem");
+  assert.equal((comprar(e, "carro-basico-1-1", 0, "sala") as { comodo?: string }).comodo, "garagem");
   // alojamento depende do clube
-  const pal = CLUBES_CASA.find((c) => c.id === "PAL")!, cha = CLUBES_CASA.find((c) => c.forca < 70)!;
-  assert.deepEqual(alojamentosDoClube(pal), ["aloj-ct", "aloj-familia"]);
-  const p = novoEstado(0, "aloj-ct", cha);
-  assert.equal(p.imovel, "aloj-vila");
-  assert.ok(nomeImovel(p, IMOVEIS[0]).includes(cha.nome));
-  assert.equal(mudar(p, "aloj-ct", "alugar", 0).ok, false);
+  const pal = CLUBES_CASA.find((c) => c.id === "PAL")!, pobre = CLUBES_CASA.find((c) => estruturaDoClube(c) === 1)!;
+  assert.deepEqual(alojamentosDoClube(pal), ["aloj-elite", "aloj-familia"]);
+  const p = novoEstado(0, "aloj-elite", pobre);
+  assert.equal(p.imovel, "aloj-kitnet");
+  assert.ok(nomeImovel(p, imovelAtual(p)).includes(pobre.nome));
+  assert.equal(mudar(p, "aloj-elite", "alugar", 0).ok, false);
+  const niveis = CLUBES_CASA.map(estruturaDoClube);
+  for (const n of [1, 2, 3, 4, 5]) assert.ok(niveis.includes(n), `nenhum clube com estrutura ${n}`);
+  assert.ok(areaM2(IMOVEL["aloj-elite"]) > areaM2(IMOVEL["aloj-ct"]) && areaM2(IMOVEL["aloj-ct"]) > areaM2(IMOVEL["aloj-kitnet"]));
 });
 
 console.log(`\n${ok} testes passaram`);

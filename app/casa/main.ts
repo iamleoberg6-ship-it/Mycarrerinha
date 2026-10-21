@@ -4,7 +4,7 @@ import {
   CATALOGO, CATEGORIAS, CATEGORIAS_IMOVEL, ESTILOS, IMOVEIS, IMOVEL, ITENS, NOMES_EFEITO, REVEST, REVESTIMENTOS, TETO, TIPOS,
   acabamento, areaM2, bonusDeEstilo, cabe, comodoDe, comprar, conforto, dinheiro, efeitosDaCasa, fecharMes, girar, guardar,
   imovelAtual, mover, mudar, novoEstado, patrimonio, podeMudar, podeReformar, precoAcabamento, precoTrocaCor, reformar,
-  rendaMinima, tirarDoDeposito, trocarCor, vender, VALOR_REVENDA, alojamentosDoClube, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
+  rendaMinima, tirarDoDeposito, trocarCor, vender, VALOR_REVENDA, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
   type Acabamento, type Categoria, type CategoriaImovel, type Efeitos, type Estilo, type EstadoCasa, type Item, type Objeto, type TipoComodo,
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
@@ -72,14 +72,15 @@ function renderConta() {
   const m = imovelAtual(st.e), dono = st.e.proprios.includes(m.id);
   const s = $("saldo"); s.textContent = dinheiro(st.e.saldo); s.classList.toggle("neg", st.e.saldo < 0);
   $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span><span>Mês <b>${st.e.mes + 1}</b></span>`;
-  $("clubes").innerHTML = CLUBES_CASA.map((c) => `<button class="chip${c.id === st.e.clube?.id ? " ativo" : ""}" data-clube="${c.id}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.cores[0]};border:1px solid #0008;margin-right:6px;vertical-align:-1px"></span>${c.nome}</button>`).join("");
+  $("clubes").innerHTML = CLUBES_CASA.map((c) => `<button class="chip${c.id === st.e.clube?.id ? " ativo" : ""}" data-clube="${c.id}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.cores[0]};border:1px solid #0008;margin-right:6px;vertical-align:-1px"></span>${c.nome} · ${"★".repeat(estruturaDoClube(c))}</button>`).join("");
   $("fases").innerHTML = FASES.map((f) => `<button class="chip${f.id === st.fase ? " ativo" : ""}" data-fase="${f.id}">${f.nome} · ${dinheiro(f.salario)}</button>`).join("");
 }
 
 function renderCena() {
   const c = comodoAtual(), m = imovelAtual(st.e);
   st.comodo = c.id;
-  $("local").textContent = `${CATEGORIAS_IMOVEL[m.categoria].replace(/s$/, "").replace(/õe$/, "ão")} · ${m.local}${st.e.proprios.includes(m.id) ? " · seu" : ""}`;
+  const estr = m.categoria === "alojamento" && st.e.clube && m.id !== "aloj-familia" ? ` · estrutura ${ESTRUTURAS[estruturaDoClube(st.e.clube)].toLowerCase()} ${"★".repeat(estruturaDoClube(st.e.clube))}` : "";
+  $("local").textContent = `${CATEGORIAS_IMOVEL[m.categoria].replace(/s$/, "").replace(/õe$/, "ão")} · ${m.local}${estr}${st.e.proprios.includes(m.id) ? " · seu" : ""}`;
   $("imovel").textContent = nomeImovel(st.e, m);
   $("abas").innerHTML = m.comodos.map((x) => `<button class="aba${x.id === c.id ? " ativa" : ""}" data-comodo="${x.id}">${x.nome}</button>`).join("");
   const previa = ui.previa ? { [ui.previa.lugar]: ui.previa.ac } : undefined;
@@ -144,7 +145,7 @@ function renderReforma() {
     : regra === "parede" && l === "piso" ? `<div class="trava">Imóvel alugado: dá para mexer nas paredes. O piso só se o imóvel for seu.</div>` : "";
   const tog = `<div class="chips"><button class="chip${l === "parede" ? " ativo" : ""}" data-lugar="parede">${c.ambiente === "externo" ? "Muro" : "Paredes"}</button><button class="chip${l === "piso" ? " ativo" : ""}" data-lugar="piso">Piso</button></div>`;
   const pode = regra === "tudo" || (regra === "parede" && l === "parede");
-  const ops = REVESTIMENTOS.filter((r) => r.lugar === l && r.ambientes.includes(c.ambiente) && (r.id !== "faixa"));
+  const ops = REVESTIMENTOS.filter((r) => r.lugar === l && r.ambientes.includes(c.ambiente) && r.id !== "faixa" && r.id !== "descascada");
   const card = (r: typeof ops[number]) => {
     const ehAtual = atual[l].id === r.id, corSel = ui.previa?.lugar === l && ui.previa.ac.id === r.id ? ui.previa.ac.cor : ehAtual ? atual[l].cor : 0;
     const preco = precoAcabamento(c, l, r.id), mesmo = ehAtual && atual[l].cor === corSel;
@@ -198,7 +199,7 @@ function renderImobiliaria() {
       : `<button class="botao" data-mudar="${m.id}" data-modo="alugar" ${alug.ok ? "" : "disabled"}>${m.aluguel ? "Alugar" : "Morar aqui"}</button>${comp ? `<button class="botao sec" data-mudar="${m.id}" data-modo="comprar" ${comp.ok ? "" : "disabled"}>Comprar</button>` : ""}`;
     const motivo = !aqui && !dono && !alug.ok ? `<span class="req">${esc(alug.msg)}</span>` : "";
     return `<div class="morada${aqui ? " atual" : ""}"><div class="vista">${previaImovel(m.id)}</div><div class="txt">
-      <p class="rotulo">${esc(m.local)} · ${areaM2(m)} m² · ${m.comodos.length} ${m.comodos.length > 1 ? "ambientes" : "ambiente"}</p><h2>${esc(nomeImovel(st.e, m))}</h2><p class="sub">${esc(m.descricao)}</p>
+      <p class="rotulo">${m.categoria === "alojamento" && st.e.clube && m.id !== "aloj-familia" ? `Estrutura ${ESTRUTURAS[estruturaDoClube(st.e.clube)].toLowerCase()} ${"★".repeat(estruturaDoClube(st.e.clube))} · ` : ""}${esc(m.local)} · ${areaM2(m)} m² · ${m.comodos.length} ${m.comodos.length > 1 ? "ambientes" : "ambiente"}</p><h2>${esc(nomeImovel(st.e, m))}</h2><p class="sub">${esc(m.descricao)}</p>
       <p class="sub">${m.comodos.map((c) => c.nome).join(" · ")}</p>
       <p class="preco">${m.aluguel ? `Aluguel <b>${dinheiro(m.aluguel)}</b>/mês · renda mínima ${dinheiro(rendaMinima(m))}` : "<b>Pago pelo clube</b>"}${m.compra ? ` · compra <b>${dinheiro(m.compra)}</b>` : ""}</p>
       <div class="acoes">${acoes}${motivo}</div></div></div>`;

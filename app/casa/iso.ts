@@ -127,6 +127,12 @@ const D: Record<string, Desenho> = {
     m.cx(1.85, 2.4, 0, 0.12, 1.2, 3.4, P.madeira);
   },
   cama(m, f, P) {
+    if (f === 4) { // colchão no chão
+      m.cx(0.8, 0.3, 0, 2.4, 4.3, 0.45, "#E9E2CC");
+      travesseiro(m, 1.0, 0.45, 0.45, 1.6);
+      const l = m.cx(0.75, 1.9, 0.45, 2.5, 2.4, 0.1, P.cor); m.topo(l, 0.75, 3.25, 1.9, 2.3, 0.55, claro(P.cor, 0.3), 0.6);
+      return;
+    }
     const larg = [0, 2.4, 3.4, 4][f], u0 = (4 - larg) / 2, comp = f === 3 ? 4.4 : 4.6;
     const hc = { basico: 2.2, moderno: 1.8, rustico: 2.6, classico: 3.6, gamer: 2.4, brasileiro: 2.2 }[P.estilo];
     const corCab = P.estilo === "classico" ? P.cor : P.madeira;
@@ -704,6 +710,7 @@ function desenhaParede(p: "esq" | "dir", L: number, hp: number, ac: Acabamento, 
   s += poli(Q(0, L, 0, hp), base, 1.6);
   const det = sombra(contraste(cor, 0.12));
   switch (r.padrao) {
+    case "descascada": for (let i = 0; i < L * 1.2; i++) { const [x, y] = naParede(p, ((i * 37) % 97) / 97 * L, 0.4 + ((i * 53) % 89) / 89 * (hp - 0.8)); s += i % 3 ? `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${3 + (i % 4)}" ry="${2 + (i % 3)}" fill="${escuro(cor, 0.16)}" opacity="0.55"/>` : `<path d="M${f1(x)} ${f1(y)} l5 -3 l4 2 l-2 4 l-6 1 Z" fill="${claro(cor, 0.35)}" stroke="${escuro(cor, 0.3)}" stroke-width="0.6"/>`; } break;
     case "faixa": s += poli(Q(0, L, 2.2, 2.6), sombra(clube ? clube[0] : "#2E7D4F"), 0.8); if (clube) s += poli(Q(0, L, 2.6, 2.75), sombra(clube[1].toUpperCase() === "#FFFFFF" ? "#FFFFFF" : clube[1]), 0.6); break;
     case "listras": for (let t = 0.3; t < L; t += 0.7) s += poli(Q(t, Math.min(L, t + 0.3), 0, hp), det, 0); break;
     case "floral": for (let t = 0.5, i = 0; t < L; t += 0.9, i++) for (let z = 0.5 + (i % 2) * 0.45; z < hp; z += 0.9) { const [x, y] = naParede(p, t, z); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="1.8" fill="${contraste(cor, 0.3)}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="0.7" fill="${lum(cor) > 0.5 ? "#C0392B" : "#F2D98A"}"/>`; } break;

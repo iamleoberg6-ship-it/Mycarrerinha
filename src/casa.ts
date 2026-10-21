@@ -129,7 +129,7 @@ const escala = (v: number, nivel: number) => { const r = Math.round(Math.abs(v) 
 type Linha = [Estilo, number, number, string, Partial<{ preco: number; efeitos: Partial<Efeitos>; cores: string[]; venda: boolean }>?];
 const PRODUTOS: Partial<Record<TipoMovel, Linha[]>> = {
   beliche: [["basico", 1, 1, "Beliche de madeira"]],
-  cama: [["basico", 1, 1, "Cama de solteiro"], ["brasileiro", 1, 1, "Cama de solteiro com colcha de chita"], ["basico", 2, 2, "Cama de casal"],
+  cama: [["basico", 4, 1, "Colchão de solteiro no chão", { preco: 150, efeitos: { recuperacao: 1 } }], ["basico", 1, 1, "Cama de solteiro"], ["brasileiro", 1, 1, "Cama de solteiro com colcha de chita"], ["basico", 2, 2, "Cama de casal"],
     ["rustico", 2, 2, "Cama de casal de madeira maciça"], ["moderno", 2, 3, "Cama box de casal"], ["gamer", 2, 3, "Cama gamer com LED"],
     ["classico", 3, 4, "Cama king capitonê"], ["moderno", 3, 4, "Cama king flutuante"]],
   criado: [["basico", 1, 1, "Criado-mudo"], ["rustico", 1, 2, "Criado-mudo de demolição"], ["moderno", 2, 2, "Mesa de cabeceira suspensa"],
@@ -231,6 +231,7 @@ const rv = (id: string, nome: string, lugar: "parede" | "piso", ambientes: Ambie
 export const REVESTIMENTOS: Revestimento[] = [
   rv("pintura", "Pintura", "parede", ["interno", "garagem"], ["#F1EFEA", "#E8DCC4", "#D9DCDA", "#B9C9B0", "#BFD7E6", "#D99A78", "#F2D98A", "#E3B9B4", "#2F4560", "#3E5E48", "#4A4D52", "#6E2E3A"], 25, 1,
     ["Branco gelo", "Areia", "Cinza claro", "Verde sálvia", "Azul céu", "Terracota", "Amarelo", "Rosa antigo", "Azul marinho", "Verde floresta", "Grafite", "Vinho"]),
+  rv("descascada", "Pintura descascada", "parede", ["interno"], ["#D9D2BE", "#C9CFC0"], 10, 1),
   rv("faixa", "Pintura com faixa", "parede", ["interno"], ["#CFDCCB", "#E8DCC4", "#D9DCDA"], 35, 1),
   rv("listras", "Papel listrado", "parede", ["interno"], ["#E8DCC4", "#BFD7E6", "#B9C9B0", "#E3B9B4"], 60, 2),
   rv("floral", "Papel floral", "parede", ["interno"], ["#F3EAD8", "#DCE8D6", "#2F4560"], 80, 3),
@@ -296,6 +297,11 @@ const PIA = (x = 0, y = 0, item = "bancada-basico-1-1"): Incluso[] => [{ item, x
 
 export const IMOVEIS: Imovel[] = [
   // ---------------- alojamentos
+  { id: "aloj-kitnet", categoria: "alojamento", nome: "Kitnet paga pelo clube", local: "Rua de trás do estádio", vista: "rua", aluguel: 0,
+    descricao: "O clube não tem alojamento. Paga uma kitnet apertada: colchão no chão, parede descascada e um banheiro onde mal cabe você.",
+    comodos: [cm("kitnet", "Kitnet", "kitnet", 8, 7, { parede: ac("descascada"), piso: ac("cimento", 2), janelas: [jn("esq", 5, 1.6)],
+      inclusos: [{ item: "cama-basico-4-1", x: 0, y: 0 }, { item: "geladeira-basico-1-1", x: 4, y: 0 }, { item: "fogao-basico-1-1", x: 6, y: 0 }, { item: "quadro-basico-1-1", x: 2, y: 0, parede: "esq" }] }),
+      cm("banheiro", "Banheiro", "banheiro", 4, 5, { parede: ac("descascada", 1), piso: ac("cimento", 2), inclusos: [{ item: "vaso-basico-1-1", x: 0, y: 0 }, { item: "pia-basico-1-1", x: 2, y: 0 }, { item: "chuveiro-basico-1-1", x: 0, y: 3, rot: 1 }] })] },
   { id: "aloj-vila", categoria: "alojamento", nome: "Alojamento de clube pequeno", local: "CT do interior", vista: "ct", aluguel: 0,
     descricao: "Quatro garotos num quarto, dois beliches e um armário de metal. Banheiro no fim do corredor.",
     comodos: [cm("quarto", "Quarto", "quarto", 10, 8, { parede: ac("faixa"), piso: ac("cimento"), janelas: [jn("dir", 8)], escudo: { parede: "esq", pos: 2.6 },
@@ -305,6 +311,19 @@ export const IMOVEIS: Imovel[] = [
     comodos: [cm("quarto", "Quarto", "quarto", 11, 9, { parede: ac("faixa", 2), piso: ac("porcelanato", 1), janelas: [jn("esq", 6)], escudo: { parede: "dir", pos: 5.5 },
       inclusos: [{ item: "cama-basico-1-1", x: 0, y: 0 }, { item: "cama-basico-1-1", x: 6, y: 0 }, { item: "criado-basico-1-1", x: 4, y: 0 }] }),
       banheiro(6, 6)] },
+  { id: "aloj-individual", categoria: "alojamento", nome: "Quarto individual no CT", local: "CT de clube rico", vista: "ct", aluguel: 0,
+    descricao: "Quarto só seu, cama de casal, TV e banheiro próprio. O roupeiro do clube lava a sua roupa.",
+    comodos: [cm("quarto", "Quarto", "quarto", 11, 9, { parede: ac("faixa", 2), piso: ac("madeira"), janelas: [jn("esq", 4)], escudo: { parede: "dir", pos: 9.6 },
+      inclusos: [{ item: "cama-basico-2-2", x: 0, y: 0 }, { item: "criado-basico-1-1", x: 4, y: 0 }, { item: "armario-basico-2-2", x: 5, y: 0 }, { item: "mesa-basico-1-1", x: 8, y: 0 }, { item: "tv-basico-2-2", x: 0, y: 6, rot: 1 }] }),
+      banheiro(6, 6)] },
+  { id: "aloj-elite", categoria: "alojamento", nome: "Residência de atletas", local: "CT de clube de elite", vista: "ct", aluguel: 0,
+    descricao: "Suíte grande, banheiro de hotel e uma sala de convivência com sinuca e pebolim. Parece concentração de seleção.",
+    comodos: [cm("quarto", "Suíte", "quarto", 13, 10, { parede: ac("faixa", 2), piso: ac("madeira", 1), janelas: [jn("esq", 3.5, 3)], escudo: { parede: "dir", pos: 7.2 },
+      inclusos: [{ item: "criado-moderno-2-2", x: 0, y: 0 }, { item: "cama-moderno-3-4", x: 1, y: 0 }, { item: "criado-moderno-2-2", x: 5, y: 0 }, { item: "armario-moderno-3-3", x: 9, y: 0 },
+        { item: "tv-moderno-2-3", x: 0, y: 6, rot: 1 }, { item: "videogame-gamer-2-2", x: 3, y: 7 }, { item: "mesa-moderno-2-2", x: 10, y: 4, rot: 1 }] }),
+      banheiro(8, 7, { inclusos: BANHEIRO_LUXO("moderno"), parede: ac("marmoreP"), piso: ac("porcelanato", 2) }),
+      cm("convivencia", "Sala de convivência", "jogos", 12, 9, { parede: ac("faixa", 2), piso: ac("carpete", 1), escudo: { parede: "esq", pos: 4.5 },
+        inclusos: [{ item: "sofa-moderno-2-3", x: 0, y: 0 }, { item: "tv-moderno-2-3", x: 5, y: 0 }, { item: "pebolim-basico-1-1", x: 10, y: 0 }, { item: "sinuca-moderno-2-3", x: 4, y: 2 }] })] },
   { id: "aloj-familia", categoria: "alojamento", nome: "Casa de família anfitriã", local: "Bairro perto do CT", vista: "rua", aluguel: 0,
     descricao: "O clube paga uma família para te receber. Quarto dos fundos, comida da dona Cida e hora para chegar.",
     comodos: [cm("quarto", "Quarto dos fundos", "quarto", 9, 8, { parede: ac("floral"), piso: ac("taco"), janelas: [jn("dir", 6.5)],
@@ -421,13 +440,21 @@ export interface EstadoCasa {
 export type Resultado = { ok: true; msg: string; uid?: string; comodo?: string } | { ok: false; msg: string };
 
 /** Clube grande tem CT com quarto para dois; clube menor, quarto coletivo. Todo clube também indica uma família anfitriã. */
+/** Estrutura do clube, de 1 (pobre) a 5 (elite), pela força do elenco. Decide o alojamento que ele oferece. */
+export const ESTRUTURAS = ["", "Pobre", "Modesta", "Média", "Rica", "Elite"];
+const ALOJ_POR_NIVEL = ["", "aloj-kitnet", "aloj-vila", "aloj-ct", "aloj-individual", "aloj-elite"];
+export function estruturaDoClube(c: ClubeCasa): number {
+  return c.forca >= 76 ? 5 : c.forca >= 73 ? 4 : c.forca >= 71 ? 3 : c.forca >= 68 ? 2 : 1;
+}
 export function alojamentosDoClube(clube?: ClubeCasa): string[] {
-  if (!clube) return ["aloj-vila", "aloj-ct", "aloj-familia"];
-  return [clube.forca >= 72 ? "aloj-ct" : "aloj-vila", "aloj-familia"];
+  if (!clube) return [...ALOJ_POR_NIVEL.slice(1), "aloj-familia"];
+  return [ALOJ_POR_NIVEL[estruturaDoClube(clube)], "aloj-familia"];
 }
 export function nomeImovel(e: EstadoCasa, m: Imovel): string {
   if (m.categoria !== "alojamento" || !e.clube) return m.nome;
-  return m.id === "aloj-familia" ? `Casa de família indicada pelo ${e.clube.apelido}` : `Alojamento do ${e.clube.nome}`;
+  const n = e.clube.nome;
+  return ({ "aloj-familia": `Casa de família indicada pelo ${e.clube.apelido}`, "aloj-kitnet": `Kitnet paga pelo ${n}`, "aloj-vila": `Alojamento coletivo do ${n}`,
+    "aloj-ct": `Alojamento do ${n}`, "aloj-individual": `Quarto individual no CT do ${n}`, "aloj-elite": `Residência de atletas do ${n}` } as Record<string, string>)[m.id] ?? m.nome;
 }
 /** Cor principal do clube para pintar o alojamento (pula o branco). */
 export function coresDoClube(c?: ClubeCasa): [string, string] | undefined {
