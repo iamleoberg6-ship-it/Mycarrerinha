@@ -1,5 +1,5 @@
-// Avatar 2D montado por partes. Cabelo e orelhas usam as medidas de cada formato de rosto,
-// então todo corte encaixa em todo rosto. A camisa pode ter o padrão do clube do coração.
+// Avatar do jogador no estilo de arte do jogo (mistura de quadrinho e figurinha), montado por partes.
+// Todo corte de cabelo, barba e orelha é calculado a partir do contorno do rosto escolhido.
 export type Rosto = "oval" | "redondo" | "quadrado" | "longo" | "coracao" | "largo";
 export type Cabelo =
   | "careca" | "raspado" | "curto" | "degrade" | "topete" | "franja" | "ondulado" | "cacheado"
@@ -83,354 +83,475 @@ export function escurecer(hex: string, f: number): string {
 const luminancia = (hex: string) => { const n = parseInt(hex.slice(1), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
 const f1 = (n: number) => n.toFixed(1);
 
-/** Medidas de cada formato: lados (L, R) na altura das têmporas, topo (T), centro vertical (cy). */
-interface Medidas { L: number; R: number; T: number; cy: number; queixo: number; quina?: boolean }
-const MEDIDAS: Record<Rosto, Medidas> = {
-  oval: { L: 56, R: 144, T: 45, cy: 100, queixo: 155 },
-  redondo: { L: 51, R: 149, T: 51, cy: 102, queixo: 153 },
-  quadrado: { L: 56, R: 144, T: 46, cy: 100, queixo: 156, quina: true },
-  longo: { L: 59, R: 141, T: 41, cy: 100, queixo: 159 },
-  coracao: { L: 55, R: 145, T: 45, cy: 98, queixo: 156 },
-  largo: { L: 54, R: 146, T: 45, cy: 100, queixo: 156, quina: true },
-};
+// ============================================================================================
+// Estilo "mistura": traço preto grosso de quadrinho, sombras em dois tons e um pouco de hachura.
+// Proporção de atleta: cabeça menor, pescoço forte, ombros largos. viewBox 0 0 300 360.
+// As feições ficam em posições fixas (olhos y=141, nariz até y≈182, boca y≈195);
+// cada formato de rosto muda só o contorno, e cabelo, barba e orelhas são calculados a partir dele.
+// ============================================================================================
 
-function formaCabeca(rosto: Rosto): string {
-  const elipse = (cx: number, cy: number, rx: number, ry: number) => `M${cx - rx} ${cy} A${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A${rx} ${ry} 0 1 0 ${cx - rx} ${cy} Z`;
-  switch (rosto) {
-    case "redondo": return elipse(100, 102, 49, 51);
-    case "quadrado": return "M56 70 Q56 46 80 46 L120 46 Q144 46 144 70 L144 124 Q144 154 100 156 Q56 154 56 124 Z";
-    case "longo": return elipse(100, 100, 41, 59);
-    case "coracao": return "M55 90 C55 58 74 45 100 45 C126 45 145 58 145 90 C145 122 120 150 100 156 C80 150 55 122 55 90 Z";
-    case "largo": return "M54 82 C54 56 76 45 100 45 C124 45 146 56 146 82 L146 120 C146 144 126 156 100 156 C74 156 54 144 54 120 Z";
-    default: return elipse(100, 100, 44, 55);
-  }
-}
+const TINTA = "#0A0A0A";
+const TRACO = 2.8;
+const LARG = 300, ALT = 360;
 
-function cabeca(rosto: Rosto, fill: string): string {
-  switch (rosto) {
-    case "redondo": return `<ellipse cx="100" cy="102" rx="49" ry="51" fill="${fill}"/>`;
-    case "quadrado": return `<path d="M56 70 Q56 46 80 46 L120 46 Q144 46 144 70 L144 124 Q144 154 100 156 Q56 154 56 124 Z" fill="${fill}"/>`;
-    case "longo": return `<ellipse cx="100" cy="100" rx="41" ry="59" fill="${fill}"/>`;
-    case "coracao": return `<path d="M55 90 C55 58 74 45 100 45 C126 45 145 58 145 90 C145 122 120 150 100 156 C80 150 55 122 55 90 Z" fill="${fill}"/>`;
-    case "largo": return `<path d="M54 82 C54 56 76 45 100 45 C124 45 146 56 146 82 L146 120 C146 144 126 156 100 156 C74 156 54 144 54 120 Z" fill="${fill}"/>`;
-    default: return `<ellipse cx="100" cy="100" rx="44" ry="55" fill="${fill}"/>`;
-  }
-}
-
-/** Calota de cabelo que acompanha o topo da cabeça. */
-function calota(m: Medidas, desce = 50, recuo = 16, sobe = 6): string {
-  const w = m.R - m.L, cx = (m.L + m.R) / 2, T = m.T;
-  const [ax, ay, bx] = m.quina ? [m.L - 4, T - 6, cx - w * 0.46] : [m.L - 2, T + 8, cx - w * 0.3];
-  const c2 = m.quina ? cx + w * 0.46 : cx + w * 0.3;
-  const dx = m.quina ? m.R + 4 : m.R + 2, dy = m.quina ? T - 6 : T + 8;
-  return `M${m.L} ${T + desce} C${ax} ${ay} ${f1(bx)} ${T - sobe} ${cx} ${T - sobe} C${f1(c2)} ${T - sobe} ${dx} ${dy} ${m.R} ${T + desce} C${m.R - 6} ${T + 28} ${f1(cx + w * 0.27)} ${T + recuo} ${cx} ${T + recuo} C${f1(cx - w * 0.27)} ${T + recuo} ${m.L + 6} ${T + 28} ${m.L} ${T + desce} Z`;
-}
-const fina = (m: Medidas) => ({ ...m, L: m.L + 1, R: m.R - 1 });
-
-/** Mistura duas cores: t=0 é a primeira, t=1 é a segunda. Usado para cabelo raspado (cor sólida, nunca transparência). */
 function mistura(a: string, b: string, t: number): string {
   const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
   const c = (s: number) => Math.round(((x >> s) & 255) * (1 - t) + ((y >> s) & 255) * t);
   return `#${((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1)}`;
 }
-let seqCabelo = 0;
-/** Desenha `conteudo` recortado pelo formato `d`: nada sai do contorno do cabelo. */
-function recortado(d: string, conteudo: string): string {
-  const id = `cb${++seqCabelo}`;
-  return `<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})">${conteudo}</g>`;
+
+type P = [number, number];
+/** Curva suave (Catmull-Rom) passando por todos os pontos. */
+function suave(pts: P[], fechado: boolean): string {
+  const n = pts.length;
+  const pt = (i: number): P => (fechado ? pts[(i + n) % n] : pts[Math.max(0, Math.min(n - 1, i))]);
+  let d = `M${f1(pts[0][0])} ${f1(pts[0][1])}`;
+  const fim = fechado ? n : n - 1;
+  for (let i = 0; i < fim; i++) {
+    const p0 = pt(i - 1), p1 = pt(i), p2 = pt(i + 1), p3 = pt(i + 2);
+    const c1: P = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2: P = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${f1(c1[0])} ${f1(c1[1])} ${f1(c2[0])} ${f1(c2[1])} ${f1(p2[0])} ${f1(p2[1])}`;
+  }
+  return fechado ? d + " Z" : d;
 }
 
-/** Massa de cabelo atrás da cabeça (aparece nas laterais e acima). Sempre uma forma sólida e contínua. */
-function cabeloAtras(c: Cabelo, m: Medidas, cor: string): string {
-  const cx = (m.L + m.R) / 2, w = m.R - m.L, T = m.T, sombra = escurecer(cor, 0.72);
+/** Contorno de cada formato: meia-largura em algumas alturas, topo e queixo. */
+interface Forma { T: number; w100: number; w122: number; w150: number; w176: number; w199: number; Q: number; plano: number }
+const FORMAS: Record<Rosto, Forma> = {
+  oval: { T: 70, w100: 48, w122: 50, w150: 48, w176: 42, w199: 27, Q: 216, plano: 0 },
+  redondo: { T: 72, w100: 52, w122: 54, w150: 53, w176: 47, w199: 32, Q: 212, plano: 0 },
+  quadrado: { T: 71, w100: 50, w122: 51, w150: 51, w176: 50, w199: 38, Q: 214, plano: 14 },
+  longo: { T: 64, w100: 45, w122: 46, w150: 45, w176: 40, w199: 28, Q: 222, plano: 0 },
+  coracao: { T: 70, w100: 51, w122: 52, w150: 47, w176: 36, w199: 21, Q: 214, plano: 0 },
+  largo: { T: 71, w100: 49, w122: 50, w150: 51, w176: 51, w199: 41, Q: 216, plano: 16 },
+};
+
+function contornoRosto(f: Forma): string {
+  const esq: P[] = [[150 - 0.62 * f.w100, f.T + 7], [150 - f.w100, 100], [150 - f.w122, 122], [150 - f.w150, 150], [150 - f.w176, 176], [150 - f.w199, 199]];
+  const queixo: P[] = f.plano ? [[150 - f.plano, f.Q - 1], [150 + f.plano, f.Q - 1]] : [[150, f.Q]];
+  const dir = esq.map(([x, y]) => [300 - x, y] as P).reverse();
+  return suave([[150, f.T], ...esq, ...queixo, ...dir], true);
+}
+/** Meia-largura do rosto numa altura y (interpolada). */
+function largura(f: Forma, y: number): number {
+  const tab: P[] = [[f.T, 0], [f.T + 7, 0.62 * f.w100], [100, f.w100], [122, f.w122], [150, f.w150], [176, f.w176], [199, f.w199], [f.Q, f.plano]];
+  for (let i = 0; i < tab.length - 1; i++) {
+    const [y0, w0] = tab[i], [y1, w1] = tab[i + 1];
+    if (y >= y0 && y <= y1) return w0 + ((w1 - w0) * (y - y0)) / (y1 - y0);
+  }
+  return y < f.T ? 0 : f.plano;
+}
+/** Lado escuro do rosto (luz vindo da esquerda). */
+function sombraRosto(f: Forma): string {
+  const ys = [f.T, 90, 110, 130, 150, 170, 190, 205, f.Q];
+  const pts = ys.map((y) => `${f1(150 + 0.42 * largura(f, y) + 8 * Math.sin(((y - f.T) / (f.Q - f.T)) * Math.PI))} ${y}`);
+  return `M${pts.join(" L")} L260 ${f.Q} L260 ${f.T} Z`;
+}
+
+// ---------------------------------- cabelo ----------------------------------
+interface CalotaOpts { volume?: number; testa?: number; tempora?: number; folga?: number }
+/** Cabelo que acompanha o topo da cabeça: borda de fora acima do contorno, linha do cabelo na testa. */
+function calotaPartes(f: Forma, o: CalotaOpts = {}): { borda: string; dentro: string } {
+  const vol = o.volume ?? 6, testa = o.testa ?? f.T + 24, tY = o.tempora ?? 126, folga = o.folga ?? 3;
+  const wT = largura(f, tY), w = f.w100;
+  const fora: P[] = [[150 - wT - folga, tY], [150 - f.w100 - folga - 2, 98], [150 - 0.66 * f.w100 - 2, f.T + 3 - vol * 0.6], [150, f.T - 3 - vol],
+    [150 + 0.66 * f.w100 + 2, f.T + 3 - vol * 0.6], [150 + f.w100 + folga + 2, 98], [150 + wT + folga, tY]];
+  const borda = suave(fora, false);
+  const linha: P[] = [[150 + wT - 2, tY], [150 + wT - 9, tY - 5], [150 + 0.62 * w, testa + 7], [150 + 0.36 * w, testa + 1], [150, testa + 2],
+    [150 - 0.36 * w, testa + 1], [150 - 0.62 * w, testa + 7], [150 - wT + 9, tY - 5], [150 - wT + 2, tY]];
+  return { borda, dentro: " L" + suave(linha, false).slice(1) + " Z" };
+}
+/** Cabelo que acompanha o topo da cabeça: borda de fora acima do contorno, linha do cabelo na testa. */
+function calota(f: Forma, o: CalotaOpts = {}): string {
+  const { borda, dentro } = calotaPartes(f, o);
+  return borda + dentro;
+}
+
+let seq = 0;
+const novoId = (p: string) => `${p}${++seq}`;
+function recorte(d: string, conteudo: string): string {
+  const id = novoId("rc");
+  return `<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})">${conteudo}</g>`;
+}
+const contorno = (d: string, fill: string, extra = "") => `<path d="${d}" fill="${fill}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"${extra}/>`;
+
+/** Massa de cabelo atrás da cabeça. */
+function cabeloAtras(c: Cabelo, f: Forma, cor: string): string {
+  const s = escurecer(cor, 0.72), T = f.T, w = f.w122;
   switch (c) {
     case "blackpower": {
-      // volume redondo com borda crespa: círculos na borda, todos encostados no volume
-      const r = w / 2 + 20, cy = T + 36;
+      const r = w + 26, cy = T + 40;
       let borda = "";
-      for (let i = 0; i < 22; i++) { const ang = (i / 22) * Math.PI * 2; borda += `<circle cx="${f1(cx + r * Math.cos(ang))}" cy="${f1(cy + r * Math.sin(ang))}" r="7" fill="${cor}"/>`; }
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${cor}"/>${borda}`;
+      for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2; borda += `<circle cx="${f1(150 + r * Math.cos(a))}" cy="${f1(cy + r * Math.sin(a))}" r="8"/>`; }
+      return `<g fill="${cor}" stroke="${TINTA}" stroke-width="${TRACO}">${borda}</g><circle cx="150" cy="${cy}" r="${r}" fill="${cor}"/>`;
     }
-    case "longo": return `<path d="M${m.L - 8} ${T + 55} C${m.L - 12} ${T + 2} ${cx - 30} ${T - 14} ${cx} ${T - 14} C${cx + 30} ${T - 14} ${m.R + 12} ${T + 2} ${m.R + 8} ${T + 55} L${m.R + 12} 174 L${m.L - 12} 174 Z" fill="${cor}"/>`;
-    case "ondulado": return `<path d="M${m.L - 6} ${T + 50} C${m.L - 10} ${T + 4} ${cx - 30} ${T - 10} ${cx} ${T - 10} C${cx + 30} ${T - 10} ${m.R + 10} ${T + 4} ${m.R + 6} ${T + 50} Q${m.R + 12} ${T + 66} ${m.R + 4} ${T + 80} L${m.L - 4} ${T + 80} Q${m.L - 12} ${T + 66} ${m.L - 6} ${T + 50} Z" fill="${cor}"/>`;
+    case "longo": {
+      const d = `M${150 - w - 12} 140 C${150 - w - 16} ${T + 4} ${150 - 40} ${T - 16} 150 ${T - 16} C${150 + 40} ${T - 16} ${150 + w + 16} ${T + 4} ${150 + w + 12} 140 L${150 + w + 18} 252 Q150 262 ${150 - w - 18} 252 Z`;
+      return contorno(d, cor) + recorte(d, [-0.7, -0.35, 0.35, 0.7].map((k) => `<path d="M${150 + k * (w + 12)} ${T + 20} Q${150 + k * (w + 20)} 180 ${150 + k * (w + 14)} 250" stroke="${s}" stroke-width="2" fill="none"/>`).join(""));
+    }
+    case "ondulado": {
+      const d = `M${150 - w - 9} 132 C${150 - w - 13} ${T + 4} ${150 - 36} ${T - 12} 150 ${T - 12} C${150 + 36} ${T - 12} ${150 + w + 13} ${T + 4} ${150 + w + 9} 132 Q${150 + w + 16} 152 ${150 + w + 6} 172 L${150 - w - 6} 172 Q${150 - w - 16} 152 ${150 - w - 9} 132 Z`;
+      return contorno(d, cor);
+    }
     case "dreads": {
-      // massa única até a altura dos ombros; os dreads são desenhados DENTRO dela
-      const base = T + 108;
-      const massa = `M${m.L - 12} ${T + 40} C${m.L - 14} ${T - 2} ${cx - 34} ${T - 14} ${cx} ${T - 14} C${cx + 34} ${T - 14} ${m.R + 14} ${T - 2} ${m.R + 12} ${T + 40} L${m.R + 14} ${base - 8} Q${m.R + 10} ${base} ${m.R} ${base} L${m.L} ${base} Q${m.L - 10} ${base} ${m.L - 14} ${base - 8} Z`;
+      const base = 262;
+      const d = `M${150 - w - 16} 132 C${150 - w - 18} ${T - 2} ${150 - 42} ${T - 16} 150 ${T - 16} C${150 + 42} ${T - 16} ${150 + w + 18} ${T - 2} ${150 + w + 16} 132 L${150 + w + 20} ${base - 10} Q${150 + w + 14} ${base} ${150 + w} ${base} L${150 - w} ${base} Q${150 - w - 14} ${base} ${150 - w - 20} ${base - 10} Z`;
       let locs = "";
-      for (let i = 0; i < 12; i++) {
-        const x = m.L - 12 + (i * (w + 24)) / 11;
-        locs += `<path d="M${f1(x)} ${T - 20} Q${f1(x + (i % 2 ? 3 : -3))} ${T + 50} ${f1(x)} ${base + 4}" stroke="${i % 2 ? sombra : escurecer(cor, 0.86)}" stroke-width="5" fill="none"/>`;
-      }
-      return `<path d="${massa}" fill="${cor}"/>${recortado(massa, locs)}`;
+      for (let i = 0; i < 14; i++) { const x = 150 - w - 18 + (i * (2 * w + 36)) / 13; locs += `<path d="M${f1(x)} ${T - 20} Q${f1(x + (i % 2 ? 4 : -4))} 180 ${f1(x)} ${base + 6}" stroke="${i % 2 ? s : escurecer(cor, 0.86)}" stroke-width="7" fill="none"/><path d="M${f1(x)} ${T} L${f1(x)} ${base}" stroke="${TINTA}" stroke-width="0.8" stroke-dasharray="4 5" fill="none" opacity="0.45"/>`; }
+      return contorno(d, cor) + recorte(d, locs);
     }
-    case "coque": return `<circle cx="${cx}" cy="${T - 7}" r="14" fill="${cor}"/><path d="M${cx - 12} ${T - 7} Q${cx} ${T - 15} ${cx + 12} ${T - 7}" stroke="${sombra}" stroke-width="2" fill="none"/>`;
+    case "coque": return contorno(`M150 ${T - 19} m-17 0 a17 15 0 1 0 34 0 a17 15 0 1 0 -34 0`, cor);
     default: return "";
   }
 }
 
-/** Cabelo sobre a cabeça. Tudo em cor sólida; texturas ficam recortadas pelo formato do cabelo. */
-function cabeloFrente(c: Cabelo, m: Medidas, cor: string, pele: string): string {
-  const sombra = escurecer(cor, 0.7), cx = (m.L + m.R) / 2, w = m.R - m.L, T = m.T;
-  const raspadoCor = mistura(cor, pele, 0.5);
-  const cheia = calota(m);
+/** Cabelo sobre a cabeça. Cor sólida, contorno preto; texturas recortadas pelo formato do cabelo. */
+function fios(f: Forma, s: string): string {
+  const w = f.w100, T = f.T;
+  return [-0.7, -0.4, -0.1, 0.2, 0.5].map((k, i) => `<path d="M${f1(150 + k * w)} ${T + 22 + (i % 2) * 3} q${f1(4 + 0.06 * w)} -9 ${f1(10 + 0.1 * w)} -14" stroke="${s}" stroke-width="2" fill="none" stroke-linecap="round"/>`).join("");
+}
+function cabeloFrente(c: Cabelo, f: Forma, cor: string, pele: string): string {
+  const s = escurecer(cor, 0.68), T = f.T, w = f.w122, cheia = calota(f);
+  const brilho = luminancia(cor) < 0.3 ? mistura(cor, "#FFFFFF", 0.18) : mistura(cor, "#FFFFFF", 0.35);
+  const reflexo = `<path d="M${150 - 0.5 * w} ${T + 4} Q${150 - 0.2 * w} ${T - 6} ${150 + 0.1 * w} ${T - 5}" stroke="${brilho}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
   switch (c) {
-    case "careca": return `<ellipse cx="${cx - 12}" cy="${T + 12}" rx="10" ry="5" fill="#FFFFFF" opacity="0.18"/>`;
+    case "careca": return `<path d="M${150 - 0.55 * w} ${T + 18} Q${150 - 0.3 * w} ${T + 4} ${150 - 0.05 * w} ${T + 4}" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="4" fill="none" stroke-linecap="round"/>`;
     case "raspado": {
-      const d = calota(fina(m), 44, 20, 1);
-      let pontos = "";
-      for (let i = 0; i < 40; i++) pontos += `<circle cx="${f1(m.L + ((i * 37) % 97) / 97 * w)}" cy="${f1(T - 2 + ((i * 53) % 61) / 61 * 46)}" r="0.9" fill="${escurecer(raspadoCor, 0.78)}"/>`;
-      return `<path d="${d}" fill="${raspadoCor}"/>${recortado(d, pontos)}`;
+      const d = calota(f, { volume: 1, folga: 1.5, testa: T + 26 });
+      const cr = mistura(cor, pele, 0.5);
+      let pts = "";
+      for (let i = 0; i < 70; i++) pts += `<circle cx="${f1(150 - w + ((i * 37) % 97) / 97 * 2 * w)}" cy="${f1(T - 2 + ((i * 53) % 61) / 61 * 58)}" r="1" fill="${escurecer(cr, 0.75)}"/>`;
+      return contorno(d, cr) + recorte(d, pts);
     }
-    case "curto": return `<path d="${cheia}" fill="${cor}"/>`;
-    case "degrade": return `<path d="${calota(fina(m), 46, 22, 1)}" fill="${mistura(cor, pele, 0.55)}"/><path d="${calota(fina(m), 36, 20, 2)}" fill="${mistura(cor, pele, 0.28)}"/><path d="${calota({ ...m, L: m.L + 10, R: m.R - 10 }, 24, 14, 8)}" fill="${cor}"/>`;
-    case "topete": return `<path d="${cheia}" fill="${cor}"/><path d="M${cx - 30} ${T + 14} C${cx - 22} ${T - 22} ${cx + 26} ${T - 24} ${cx + 34} ${T + 10} C${cx + 18} ${T + 2} ${cx - 12} ${T + 2} ${cx - 30} ${T + 14} Z" fill="${cor}"/>`;
+    case "curto": return contorno(cheia, cor) + recorte(cheia, fios(f, s) + reflexo);
+    case "degrade": {
+      const lados = calota(f, { volume: 1, folga: 1.5, testa: T + 28 });
+      const topo = calota({ ...f, w100: f.w100 - 12 }, { volume: 7, tempora: 104, testa: T + 24, folga: 2 });
+      return contorno(lados, mistura(cor, pele, 0.55)) + recorte(lados, `<path d="${calota(f, { volume: 1, folga: 1.5, tempora: 112, testa: T + 26 })}" fill="${mistura(cor, pele, 0.25)}"/>`) + `<path d="${topo}" fill="${cor}"/>` + recorte(topo, fios(f, s) + reflexo) + `<path d="${calotaPartes({ ...f, w100: f.w100 - 12 }, { volume: 7, tempora: 104, testa: T + 22, folga: 2 }).borda}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linecap="round"/>`;
+    }
+    case "topete": {
+      const d = calota(f, { volume: 17, testa: T + 22 });
+      return contorno(d, cor) + recorte(d, `<path d="M${150 - 0.55 * w} ${T + 18} C${150 - 0.4 * w} ${T - 12} ${150 + 0.2 * w} ${T - 22} ${150 + 0.7 * w} ${T - 2}" stroke="${s}" stroke-width="2.4" fill="none"/><path d="M${150 - 0.2 * w} ${T + 20} C${150 - 0.05 * w} ${T} ${150 + 0.3 * w} ${T - 8} ${150 + 0.75 * w} ${T + 10}" stroke="${s}" stroke-width="2" fill="none"/>` + reflexo);
+    }
     case "franja": {
-      let franja = `M${m.L + 4} ${T + 30}`;
-      const n = 7;
-      for (let i = 0; i < n; i++) {
-        const x0 = m.L + 4 + (i * (w - 8)) / n, x1 = m.L + 4 + ((i + 1) * (w - 8)) / n;
-        franja += ` L${f1((x0 + x1) / 2)} ${T + 42 + (i % 2) * 3} L${f1(x1)} ${T + 28}`;
-      }
-      return `<path d="${cheia}" fill="${cor}"/><path d="${franja} L${m.R - 4} ${T + 10} L${m.L + 4} ${T + 10} Z" fill="${cor}"/>`;
+      const n = 8, y0 = T + 34;
+      let serra = `M${150 - w - 4} ${y0}`;
+      for (let k = 0; k < n; k++) { const x0 = 150 - w + 2 + (k * (2 * w - 4)) / n, x1 = 150 - w + 2 + ((k + 1) * (2 * w - 4)) / n; serra += ` L${f1((x0 + x1) / 2)} ${T + 48 + (k % 2) * 4} L${f1(x1)} ${y0}`; }
+      const preench = `${serra} L${150 + w + 6} ${T} L${150 - w - 6} ${T} Z`;
+      const rosto = contornoRosto(f);
+      return contorno(cheia, cor) + recorte(rosto, `<path d="${preench}" fill="${cor}"/><path d="${serra}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`);
     }
-    case "ondulado": return `<path d="${cheia}" fill="${cor}"/>${recortado(cheia, `<path d="M${cx - 34} ${T + 10} Q${cx - 18} ${T + 22} ${cx - 2} ${T + 8} Q${cx + 14} ${T - 4} ${cx + 34} ${T + 10}" stroke="${sombra}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`)}`;
+    case "ondulado": return contorno(cheia, cor) + recorte(cheia, `<path d="M${150 - w} ${T + 12} Q${150 - 0.5 * w} ${T + 26} ${150 - 0.05 * w} ${T + 10} Q${150 + 0.4 * w} ${T - 4} ${150 + w} ${T + 12}" stroke="${s}" stroke-width="3" fill="none"/>${reflexo}`);
     case "cacheado": {
-      let s = `<path d="${cheia}" fill="${cor}"/>`;
-      const rx = w / 2 + 2, ry = 46;
-      for (let i = 0; i <= 11; i++) { const a = Math.PI * (0.04 + (0.92 * i) / 11); s += `<circle cx="${f1(cx - rx * Math.cos(a))}" cy="${f1(T + 44 - ry * Math.sin(a))}" r="10" fill="${cor}"/>`; }
-      return s;
+      let cachos = "";
+      const rx = w + 4, ry = 54;
+      for (let i = 0; i <= 13; i++) { const a = Math.PI * (0.04 + (0.92 * i) / 13); cachos += `<circle cx="${f1(150 - rx * Math.cos(a))}" cy="${f1(T + 50 - ry * Math.sin(a))}" r="11.5"/>`; }
+      return `<g fill="${cor}" stroke="${TINTA}" stroke-width="${TRACO}">${cachos}</g>` + `<path d="${cheia}" fill="${cor}"/>` + recorte(cheia, Array.from({ length: 9 }, (_, i) => `<path d="M${150 - w + 10 + i * (2 * w - 20) / 8} ${T + 16} q5 -7 0 -12" stroke="${s}" stroke-width="2" fill="none"/>`).join(""));
     }
     case "crespo": {
-      let s = `<path d="${calota(m, 46, 14, 4)}" fill="${cor}"/>`;
-      const rx = w / 2 - 2, ry = 40;
-      for (let i = 0; i <= 14; i++) { const a = Math.PI * (0.08 + (0.84 * i) / 14); s += `<circle cx="${f1(cx - rx * Math.cos(a))}" cy="${f1(T + 40 - ry * Math.sin(a))}" r="5.5" fill="${cor}"/>`; }
-      return s;
+      const d = calota(f, { volume: 5, testa: T + 22 });
+      let cachos = "";
+      for (let k = 0; k < 34; k++) { const x = 150 - w + ((k * 41) % 89) / 89 * 2 * w, y = T - 6 + ((k * 29) % 47) / 47 * 34; cachos += `<path d="M${f1(x)} ${f1(y)} a2.6 2.6 0 1 1 3.4 3" stroke="${s}" stroke-width="1.6" fill="none"/>`; }
+      return contorno(d, cor) + recorte(d, cachos);
     }
-    case "blackpower": {
-      // linha do cabelo sólida na testa, ligada ao volume de trás
-      const d = calota(m, 46, 20, 2);
-      return `<path d="${d}" fill="${cor}"/>`;
-    }
+    case "blackpower": return `<path d="${calota(f, { volume: 2, testa: T + 22 })}" fill="${cor}"/>`;
     case "trancas": {
-      // tranças nagô deitadas na cabeça, da testa para trás, recortadas pelo cabelo
       let linhas = "";
-      for (const k of [-0.36, -0.22, -0.08, 0.08, 0.22, 0.36]) {
-        const x = cx + k * w;
-        linhas += `<path d="M${f1(x)} ${T + 22} Q${f1(x + k * 10)} ${T + 6} ${f1(x + k * 18)} ${T - 10}" stroke="${sombra}" stroke-width="2.4" fill="none" stroke-dasharray="3 2"/>`;
-      }
-      return `<path d="${cheia}" fill="${cor}"/>${recortado(cheia, linhas)}`;
+      for (const k of [-0.62, -0.38, -0.13, 0.13, 0.38, 0.62]) linhas += `<path d="M${150 + k * w} ${T + 30} Q${150 + k * w * 1.1} ${T + 8} ${150 + k * w * 1.25} ${T - 12}" stroke="${s}" stroke-width="3" fill="none" stroke-dasharray="4 2.5"/><path d="M${150 + (k + 0.12) * w} ${T + 28} Q${150 + (k + 0.12) * w * 1.1} ${T + 8} ${150 + (k + 0.12) * w * 1.25} ${T - 12}" stroke="${TINTA}" stroke-width="1" fill="none" opacity="0.6"/>`;
+      return contorno(cheia, cor) + recorte(cheia, linhas);
     }
     case "dreads": {
       let raizes = "";
-      for (const k of [-0.36, -0.18, 0, 0.18, 0.36]) raizes += `<path d="M${f1(cx + k * w)} ${T + 20} Q${f1(cx + k * w * 1.1)} ${T + 6} ${f1(cx + k * w * 1.2)} ${T - 8}" stroke="${sombra}" stroke-width="4" fill="none"/>`;
-      return `<path d="${cheia}" fill="${cor}"/>${recortado(cheia, raizes)}`;
+      for (const k of [-0.7, -0.35, 0, 0.35, 0.7]) raizes += `<path d="M${150 + k * w} ${T + 30} Q${150 + k * w * 1.1} ${T + 10} ${150 + k * w * 1.25} ${T - 12}" stroke="${s}" stroke-width="5" fill="none"/>`;
+      return contorno(cheia, cor) + recorte(cheia, raizes);
     }
     case "moicano": {
-      const lados = calota(fina(m), 44, 20, 1);
-      const crista = `M${cx - 13} ${T + 22} L${cx - 11} ${T - 14} Q${cx} ${T - 26} ${cx + 11} ${T - 14} L${cx + 13} ${T + 22} Z`;
-      return `<path d="${lados}" fill="${mistura(cor, pele, 0.55)}"/><path d="${crista}" fill="${cor}"/>`;
+      const lados = calota(f, { volume: 1, folga: 1.5, testa: T + 28 });
+      const crista = `M${150 - 15} ${T + 28} L${150 - 13} ${T - 16} Q150 ${T - 32} ${150 + 13} ${T - 16} L${150 + 15} ${T + 28} Z`;
+      return contorno(lados, mistura(cor, pele, 0.55)) + contorno(crista, cor);
     }
-    case "coque": return `<path d="${calota(m, 44, 18, 3)}" fill="${cor}"/>${recortado(calota(m, 44, 18, 3), `<path d="M${cx - 30} ${T + 20} Q${cx - 14} ${T + 2} ${cx} ${T - 4} M${cx + 30} ${T + 20} Q${cx + 14} ${T + 2} ${cx} ${T - 4}" stroke="${sombra}" stroke-width="1.6" fill="none"/>`)}`;
-    case "longo": return `<path d="${cheia}" fill="${cor}"/><path d="M${m.L + 2} ${T + 48} C${m.L + 2} ${T + 26} ${m.L + 14} ${T + 12} ${cx - 12} ${T + 10} C${m.L + 22} ${T + 22} ${m.L + 14} ${T + 34} ${m.L + 14} ${T + 52} Z" fill="${cor}"/>`;
+    case "coque": {
+      const d = calota(f, { volume: 3, testa: T + 22 });
+      return contorno(d, cor) + recorte(d, `<path d="M${150 - w} ${T + 26} Q${150 - 0.4 * w} ${T + 2} 150 ${T - 6} M${150 + w} ${T + 26} Q${150 + 0.4 * w} ${T + 2} 150 ${T - 6}" stroke="${s}" stroke-width="2" fill="none"/>`);
+    }
+    case "longo": {
+      const mecha = `M${150 - w + 3} ${T + 58} C${150 - w + 2} ${T + 30} ${150 - w + 18} ${T + 14} ${150 - 14} ${T + 12} C${150 - w + 28} ${T + 26} ${150 - w + 18} ${T + 40} ${150 - w + 17} ${T + 62} Z`;
+      return contorno(cheia, cor) + recorte(cheia, reflexo) + contorno(mecha, cor);
+    }
   }
 }
 
-// Olho esquerdo desenhado em torno de (0,0); o direito é espelhado.
+// ---------------------------------- rosto ----------------------------------
 const FORMA_OLHO: Record<Olho, string> = {
-  amendoado: "M-9 0 Q0 -7 9 0 Q0 6 -9 0 Z",
-  redondo: "M-8 0 A8 6.6 0 1 0 8 0 A8 6.6 0 1 0 -8 0 Z",
-  estreito: "M-9 0 Q0 -4.5 9 0 Q0 3.5 -9 0 Z",
-  caido: "M-9 1.5 Q-1 -7 9 -0.5 Q1 5.5 -9 1.5 Z",
-  erguido: "M-9 -1 Q1 -7 9 1.5 Q0 5.5 -9 -1 Z",
-  semdobra: "M-9.5 -1.2 Q-1 -5.2 9 0.6 Q0 3.6 -9.5 -1.2 Z",
-  encapuzado: "M-9 0.5 Q0 -4.8 9 0.5 Q0 5.5 -9 0.5 Z",
+  amendoado: "M-11.5 0 Q0 -9 11.5 0 Q0 7.5 -11.5 0 Z",
+  redondo: "M-10 0 A10 8.2 0 1 0 10 0 A10 8.2 0 1 0 -10 0 Z",
+  estreito: "M-11.5 0 Q0 -6 11.5 0 Q0 4.5 -11.5 0 Z",
+  caido: "M-11.5 2 Q-1 -9 11.5 -0.6 Q1 7 -11.5 2 Z",
+  erguido: "M-11.5 -1.2 Q1 -9 11.5 2 Q0 7 -11.5 -1.2 Z",
+  semdobra: "M-12 -1.4 Q-1 -6.6 11.5 0.8 Q0 4.6 -12 -1.4 Z",
+  encapuzado: "M-11.5 0.6 Q0 -6 11.5 0.6 Q0 7 -11.5 0.6 Z",
 };
 const PALPEBRA: Record<Olho, string> = {
-  amendoado: "M-9 0 Q0 -7 9 0", redondo: "M-8 0 A8 6.6 0 0 1 8 0", estreito: "M-9 0 Q0 -4.5 9 0",
-  caido: "M-9 1.5 Q-1 -7 9 -0.5", erguido: "M-9 -1 Q1 -7 9 1.5", semdobra: "M-9.5 -1.2 Q-1 -5.2 9 0.6",
-  encapuzado: "M-9 0.5 Q0 -4.8 9 0.5",
+  amendoado: "M-11.5 0 Q0 -9 11.5 0", redondo: "M-10 0 A10 8.2 0 0 1 10 0", estreito: "M-11.5 0 Q0 -6 11.5 0",
+  caido: "M-11.5 2 Q-1 -9 11.5 -0.6", erguido: "M-11.5 -1.2 Q1 -9 11.5 2", semdobra: "M-12 -1.4 Q-1 -6.6 11.5 0.8",
+  encapuzado: "M-11.5 0.6 Q0 -6 11.5 0.6",
 };
-function olho(x: number, espelhado: boolean, f: Olho, cor: string, id: string, pele: string): string {
-  return `<g transform="translate(${x} 103)${espelhado ? " scale(-1 1)" : ""}"><clipPath id="${id}"><path d="${FORMA_OLHO[f]}"/></clipPath>
-    <path d="${FORMA_OLHO[f]}" fill="#F7F3EC"/><g clip-path="url(#${id})"><circle cx="0.8" cy="0" r="4.3" fill="${cor}"/><circle cx="0.8" cy="0" r="1.9" fill="#0B0B0B"/><circle cx="2" cy="-1.4" r="1" fill="#FFFFFF" opacity="0.8"/></g>
-    <path d="${PALPEBRA[f]}" stroke="#2A1A12" stroke-width="${f === "semdobra" ? 2 : 1.4}" fill="none" stroke-linecap="round"/>
-    ${f === "encapuzado" ? `<path d="M-10 -2.6 Q0 -9 10 -2.4" stroke="${pele}" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M-10 -2.6 Q0 -9 10 -2.4" stroke="#2A1A12" stroke-width="0.9" fill="none" opacity="0.45"/>` : ""}</g>`;
+function olho(x: number, espelho: boolean, f: Olho, cor: string, pele: string, sombraPele: string): string {
+  const id = novoId("ol");
+  const vinco = f === "semdobra" ? "" : f === "encapuzado"
+    ? `<path d="M-13 -3.2 Q0 -11.5 13 -3" stroke="${sombraPele}" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M-12 -3.6 Q0 -11.5 12 -3.4" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity="0.7"/>`
+    : `<path d="M-9 -8.4 Q0 -12.5 9 -8.4" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity="0.55"/>`;
+  return `<g transform="translate(${x} 141)${espelho ? " scale(-1 1)" : ""}">
+    <clipPath id="${id}"><path d="${FORMA_OLHO[f]}"/></clipPath>
+    <path d="${FORMA_OLHO[f]}" fill="#F4EFE6"/>
+    <g clip-path="url(#${id})"><circle cx="0.8" cy="0.2" r="5.2" fill="${cor}"/><circle cx="0.8" cy="0.2" r="2.4" fill="#000"/><circle cx="2.4" cy="-1.6" r="1.3" fill="#fff"/>
+      <path d="${PALPEBRA[f]}" stroke="${pele}" stroke-width="2" fill="none" opacity="0.4"/></g>
+    <path d="${PALPEBRA[f]}" stroke="${TINTA}" stroke-width="${f === "semdobra" ? 3.2 : 2.6}" fill="none" stroke-linecap="round"/>
+    ${vinco}</g>`;
 }
 
 function sobrancelhas(f: Sobrancelha, esp: number, cor: string): string {
   const d: Record<Sobrancelha, string> = {
-    reta: "M71 91 L93 89", arqueada: "M71 92 Q82 83 93 90", angulada: "M71 92 L86 86 L93 89", suave: "M71 90.5 Q82 87.5 93 90", corte: "M71 92 Q76 87.5 80 86.6",
+    reta: "M113 129 L141 125.5", arqueada: "M113 131 Q127 120 141 125.5", angulada: "M113 131 L132 122.5 L141 125.5",
+    suave: "M113 129 Q127 124 141 126.5", corte: "M113 131 Q119 124.5 125 123.2",
   };
-  const extra = f === "corte" ? `<path d="M84 86.6 Q89 87 93 90" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" fill="none"/>` : "";
-  const uma = `<path d="${d[f]}" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>${extra}`;
-  return `<g>${uma}</g><g transform="translate(200 0) scale(-1 1)">${f === "corte" ? `<path d="${d.arqueada}" stroke="${cor}" stroke-width="${esp}" stroke-linecap="round" fill="none"/>` : uma}</g>`;
+  const larg = 1.6 * esp + 1.5;
+  const uma = (t: Sobrancelha) => `<path d="${d[t]}" stroke="${TINTA}" stroke-width="${larg + 2}" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="${d[t]}" stroke="${cor}" stroke-width="${larg}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  const esquerda = uma(f) + (f === "corte" ? `<path d="M130 122.6 Q136 122.6 141 125.5" stroke="${TINTA}" stroke-width="${larg + 2}" stroke-linecap="round" fill="none"/><path d="M130 122.6 Q136 122.6 141 125.5" stroke="${cor}" stroke-width="${larg}" stroke-linecap="round" fill="none"/>` : "");
+  return `<g>${esquerda}</g><g transform="translate(300 0) scale(-1 1)">${uma(f === "corte" ? "arqueada" : f)}</g>`;
 }
 
-function nariz(n: Nariz, s: string): string {
-  const linha = (d: string) => `<path d="${d}" stroke="${s}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+function nariz(n: Nariz, luz: string): string {
+  const l = (d: string, w = 2.4) => `<path d="${d}" stroke="${TINTA}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  const narinas = (x1: number, x2: number, y: number) => `<g fill="${TINTA}" opacity="0.75"><ellipse cx="${x1}" cy="${y}" rx="2.3" ry="1.3"/><ellipse cx="${x2}" cy="${y}" rx="2.3" ry="1.3"/></g>`;
+  const ponta = (x: number, y: number) => `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="2.2" fill="${luz}"/>`;
   switch (n) {
-    case "pequeno": return linha("M96 117 Q100 121 104 117");
-    case "fino": return linha("M100.5 104 L100 117 Q98 120.5 100 121.5 Q102 122 103.5 120.5");
-    case "achatado": return linha("M98 110 L97 117") + linha("M87 120 Q93 126 100 123.5 Q107 126 113 120") + `<g fill="${s}" opacity="0.6"><ellipse cx="95" cy="121.5" rx="2" ry="1.2"/><ellipse cx="105" cy="121.5" rx="2" ry="1.2"/></g>`;
-    case "largo": return linha("M98 106 L97 116") + linha("M89 118 Q93 125 100 122.5 Q107 125 111 118");
-    case "arrebitado": return linha("M100 106 Q97 115 95 119 Q100 123 105 119");
-    case "aquilino": return linha("M101 104 Q105 113 99 121 Q103 124 107 121");
-    case "grande": return linha("M101 100 Q93 119 96 124 Q102 128 110 122") + linha("M91 121 Q93 124.5 96.5 124.5");
-    default: return linha("M100 108 Q95 121 99 123 Q103 124 106 121");
+    case "fino": return ponta(149, 172) + l("M153 140 Q155.5 160 156.5 172") + l("M144 177 Q147.5 181 150 179.5 Q152.5 181 156 177", 2.2);
+    case "pequeno": return ponta(149, 172) + l("M143 176 Q150 181.5 157 176");
+    case "largo": return ponta(149, 173) + l("M157 145 Q161 162 164 172") + l("M135 177 Q140 185 150 181.5 Q160 185 165 177") + narinas(143, 157, 179.5);
+    case "achatado": return ponta(149, 175) + l("M159 160 Q163 168 165 175") + l("M133 178 Q139 186 150 183 Q161 186 167 178") + narinas(142, 158, 181);
+    case "arrebitado": return ponta(149, 170) + l("M155 144 Q157 161 158 169") + l("M141 175 Q146 181 150 177.5 Q154 181 159 175");
+    case "aquilino": return ponta(152, 170) + l("M152 136 Q161 151 157 168 Q155 175 161 177") + l("M141 177 Q145 182 150 180");
+    case "grande": return ponta(150, 175) + l("M157 136 Q165 160 166 176") + l("M136 178 Q142 187 151 183.5 Q160 187 166 178") + narinas(144, 158, 181);
+    default: return ponta(149, 172) + l("M156 140 Q160 160 162 172") + l("M141 177 Q145 182 150 180 Q155 182 159 177");
   }
 }
 
-/** Pontos da boca usados pela barba: cantos esquerdo/direito, topo e base no centro. */
-interface GeoBoca { e: [number, number]; d: [number, number]; topo: number; base: number }
+interface GeoBoca { e: P; d: P; topo: number; base: number }
 const GEO_BOCA: Record<Boca, GeoBoca> = {
-  sorriso: { e: [88, 135], d: [112, 135], topo: 135, base: 139 },
-  aberta: { e: [86, 133], d: [114, 133], topo: 133, base: 141 },
-  neutra: { e: [89, 136], d: [111, 136], topo: 135, base: 137 },
-  lado: { e: [89, 137], d: [112, 132], topo: 133.5, base: 137.5 },
-  cheia: { e: [87, 135], d: [113, 135], topo: 131, base: 144 },
+  sorriso: { e: [134, 194], d: [166, 194], topo: 194, base: 203 },
+  aberta: { e: [132, 192], d: [168, 192], topo: 192, base: 208 },
+  neutra: { e: [136, 196], d: [164, 196], topo: 195.5, base: 201 },
+  lado: { e: [136, 197], d: [166, 190], topo: 192.5, base: 201 },
+  cheia: { e: [133, 195], d: [167, 195], topo: 189, base: 206 },
 };
-
 function boca(b: Boca, pele: string): string {
-  const s = escurecer(pele, 0.55);
+  const labio = mistura(pele, "#7A2E2A", 0.35), labioLuz = mistura(pele, "#E8A090", 0.2);
+  const linha = (d: string) => `<path d="${d}" stroke="${TINTA}" stroke-width="2.6" stroke-linecap="round" fill="none"/>`;
   switch (b) {
     case "aberta": {
-      // dentes e língua recortados pelo formato da boca: nada sai dos lábios
-      const forma = "M86 133 Q100 135 114 133 Q100 149 86 133 Z", id = `bo${++seq}`;
-      return `<clipPath id="${id}"><path d="${forma}"/></clipPath><path d="${forma}" fill="#4A1616"/>
-        <g clip-path="url(#${id})"><rect x="84" y="128" width="32" height="9.5" fill="#F7F3EC"/><line x1="100" y1="134" x2="100" y2="137.5" stroke="#D9D2C4" stroke-width="0.8"/>
-        <ellipse cx="100" cy="145" rx="8" ry="4" fill="#B5474A"/></g>
-        <path d="${forma}" fill="none" stroke="${s}" stroke-width="1.8" stroke-linejoin="round"/>`;
+      const forma = "M132 192 Q150 195 168 192 Q150 214 132 192 Z", id = novoId("bo");
+      return `<clipPath id="${id}"><path d="${forma}"/></clipPath><path d="${forma}" fill="#3A1010"/>
+        <g clip-path="url(#${id})"><rect x="128" y="186" width="44" height="13" fill="#F7F3EC"/><line x1="150" y1="193" x2="150" y2="198.5" stroke="#CFC6B6" stroke-width="1"/><ellipse cx="150" cy="210" rx="10" ry="5" fill="#B5474A"/></g>
+        <path d="${forma}" fill="none" stroke="${TINTA}" stroke-width="2.6" stroke-linejoin="round"/>`;
     }
-    case "neutra": return `<path d="M89 136 L111 136" stroke="${s}" stroke-width="3" stroke-linecap="round"/>`;
-    case "lado": return `<path d="M89 137 Q101 139 112 132" stroke="${s}" stroke-width="3" stroke-linecap="round" fill="none"/>`;
-    case "cheia": return `<path d="M87 135 Q93 130 100 132.5 Q107 130 113 135 Q100 138 87 135 Z" fill="${escurecer(pele, 0.72)}"/><path d="M87 135 Q100 138 113 135 Q107 144 100 144 Q93 144 87 135 Z" fill="${escurecer(pele, 0.8)}"/><path d="M87 135 Q100 138.5 113 135" stroke="${s}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
-    default: return `<path d="M88 135 Q100 142 112 135" stroke="${s}" stroke-width="3" stroke-linecap="round" fill="none"/>`;
+    case "neutra": return `<path d="M140 198 Q150 203 160 198 Q150 200 140 198 Z" fill="${labio}"/>` + linha("M136 196 L164 196");
+    case "lado": return `<path d="M141 199 Q152 205 161 196 Q152 201 141 199 Z" fill="${labio}"/>` + linha("M136 197 Q153 199 166 190");
+    case "cheia": return `<path d="M133 195 Q141 187 150 190 Q159 187 167 195 Q150 197 133 195 Z" fill="${mistura(labio, "#000", 0.15)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M133 195 Q150 197 167 195 Q160 207 150 207 Q140 207 133 195 Z" fill="${labio}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><ellipse cx="146" cy="201" rx="5" ry="1.6" fill="${labioLuz}"/>`;
+    default: return `<path d="M138 197 Q150 205 162 197 Q150 201 138 197 Z" fill="${labio}"/>` + linha("M134 194 Q150 201 166 194");
   }
 }
 
-let seq = 0;
-const TRONCO = "M28 222 C32 184 58 168 100 168 C142 168 168 184 172 222 Z";
-function camisaSVG(c: Camisa): string {
-  const id = `cam${++seq}`;
-  let padrao = "";
-  if (c.estilo === "listrasV") for (let x = 34; x < 172; x += 22) padrao += `<rect x="${x}" y="160" width="11" height="70" fill="${c.cor2}"/>`;
-  if (c.estilo === "listrasH") for (let y = 172; y < 224; y += 14) padrao += `<rect x="20" y="${y}" width="160" height="7" fill="${c.cor2}"/>`;
-  if (c.estilo === "faixa") padrao = `<path d="M40 178 L62 168 L172 224 L144 224 Z" fill="${c.cor2}"/>`;
-  if (c.estilo === "faixaH") padrao = `<rect x="20" y="192" width="160" height="8" fill="${c.cor2}"/>${c.cor3 ? `<rect x="20" y="200" width="160" height="8" fill="${c.cor3}"/>` : ""}`;
-  return `<clipPath id="${id}"><path d="${TRONCO}"/></clipPath><path d="${TRONCO}" fill="${c.cor1}"/><g clip-path="url(#${id})">${padrao}</g>`;
-}
-
-function roupaSocialSVG(tipo: RoupaSocial, corIdx: number, pele: string): string {
-  const c = CORES_ROUPA[corIdx], s = escurecer(c, 0.78), claro = luminancia(c) > 0.6;
-  const base = `<path d="${TRONCO}" fill="${c}"/>`;
-  switch (tipo) {
-    case "camiseta": return base + `<path d="M82 168 Q100 180 118 168" stroke="${s}" stroke-width="4" fill="none"/>`;
-    case "moletom": return `<path d="M66 176 Q70 150 100 150 Q130 150 134 176 Q118 168 100 168 Q82 168 66 176 Z" fill="${s}"/>` + base +
-      `<path d="M86 170 Q100 182 114 170" stroke="${s}" stroke-width="5" fill="none"/><line x1="94" y1="176" x2="93" y2="196" stroke="${claro ? "#555" : "#EEE"}" stroke-width="2"/><line x1="106" y1="176" x2="107" y2="196" stroke="${claro ? "#555" : "#EEE"}" stroke-width="2"/><path d="M72 206 L128 206 L124 222 L76 222 Z" fill="${s}" opacity="0.5"/>`;
-    case "polo": return base + `<path d="M82 166 L100 176 L90 186 Z" fill="${s}"/><path d="M118 166 L100 176 L110 186 Z" fill="${s}"/><rect x="98" y="176" width="4" height="22" fill="${s}"/><circle cx="100" cy="184" r="1.4" fill="${claro ? "#666" : "#EEE"}"/><circle cx="100" cy="192" r="1.4" fill="${claro ? "#666" : "#EEE"}"/>`;
-    case "jaqueta": return `<path d="${TRONCO}" fill="#4F6E9C"/><path d="M84 168 L100 222 L116 168 Q100 176 84 168 Z" fill="${c}"/><path d="M84 168 L100 222 M116 168 L100 222" stroke="#2F4A70" stroke-width="3"/><path d="M60 190 L76 190 M124 190 L140 190" stroke="#E2B36A" stroke-width="1.5" stroke-dasharray="3 2"/>`;
-    case "regata": {
-      const id = `rg${++seq}`;
-      return `<clipPath id="${id}"><path d="${TRONCO}"/></clipPath><path d="${TRONCO}" fill="${escurecer(pele, 0.88)}"/><g clip-path="url(#${id})"><path d="M64 174 Q74 200 72 230 L128 230 Q126 200 136 174 Q126 169 117 169 Q110 186 100 186 Q90 186 83 169 Q74 169 64 174 Z" fill="${c}"/></g>`;
-    }
-    case "camisa": return base + `<path d="M84 166 L100 178 L92 188 L80 172 Z" fill="${escurecer(c, 0.9)}" stroke="${s}" stroke-width="1"/><path d="M116 166 L100 178 L108 188 L120 172 Z" fill="${escurecer(c, 0.9)}" stroke="${s}" stroke-width="1"/><line x1="100" y1="178" x2="100" y2="222" stroke="${s}" stroke-width="1.5"/>${[188, 198, 208].map((y) => `<circle cx="103" cy="${y}" r="1.4" fill="${s}"/>`).join("")}`;
-  }
-}
-
-let seqBarba = 0;
-/** Barba desenhada a partir da boca: o bigode acompanha os cantos da boca e um recorte em volta dos lábios
- *  garante que nenhum estilo cubra a boca. Tudo fica dentro do contorno do rosto (a longa desce pelo pescoço). */
-function barba(b: Barba, m: Medidas, rosto: Rosto, bocaId: Boca, nariz: Nariz, cor: string, pele: string): string {
+// ---------------------------------- barba ----------------------------------
+/** Barba feita a partir da boca: o bigode liga nas laterais, o recorte deixa só os lábios à mostra. */
+function barba(b: Barba, f: Forma, rostoD: string, bocaId: Boca, nariz: Nariz, cor: string, pele: string): string {
   if (b === "nenhuma") return "";
-  const g = GEO_BOCA[bocaId], [ex, ey] = g.e, [dx, dy] = g.d, Q = m.queixo, cy = m.cy;
-  const nb = nariz === "grande" ? 127 : 125; // base do nariz
-  const id = `bb${++seqBarba}`;
-  const furo = `M${ex - 1.5} ${ey} Q100 ${g.topo - 2.5} ${dx + 1.5} ${dy} Q100 ${g.base + 2.5} ${ex - 1.5} ${ey} Z`;
-  // bigode: faixa entre a base do nariz e o lábio de cima, inclinada junto com a boca (sorriso de canto inclina o bigode)
-  const labio = Math.min(ey, dy, g.topo) - 1.2;
-  const bigode = (grosso: boolean) => {
-    const ponta = grosso ? 3.5 : 1.5, alto = grosso ? nb + 3 : nb + 5;
-    return `M${ex - 2 - ponta} ${ey - 1 + (grosso ? 3 : 0)} L${ex - 1} ${ey - 1.6} Q100 ${labio - 0.5} ${dx + 1} ${dy - 1.6} L${dx + 2 + ponta} ${dy - 1 + (grosso ? 3 : 0)} C${dx + 2} ${alto + 4} ${dx - 6} ${alto} 100 ${alto + 0.5} C${ex + 6} ${alto} ${ex - 2} ${alto + 4} ${ex - 2 - ponta} ${ey - 1 + (grosso ? 3 : 0)} Z`;
+  const g = GEO_BOCA[bocaId], [ex, ey] = g.e, [dx, dy] = g.d;
+  const nb = nariz === "grande" || nariz === "achatado" ? 186 : 183; // logo abaixo do nariz
+  const furo = `M${ex - 2} ${ey} Q150 ${g.topo - 3} ${dx + 2} ${dy} Q150 ${g.base + 3} ${ex - 2} ${ey} Z`;
+  const bigodeD = (grosso: boolean) => {
+    const p = grosso ? 5 : 2, alto = grosso ? nb : nb + 1.5;
+    return `M${ex - 2 - p} ${ey + (grosso ? 6 : 0)} L${ex - 1} ${ey - 1.5} Q150 ${Math.min(ey, dy, g.topo) - 2} ${dx + 1} ${dy - 1.5} L${dx + 2 + p} ${dy + (grosso ? 6 : 0)} C${dx + 2} ${alto + 5} ${dx - 8} ${alto} 150 ${alto + 0.5} C${ex + 8} ${alto} ${ex - 2} ${alto + 5} ${ex - 2 - p} ${ey + (grosso ? 6 : 0)} Z`;
   };
-  // cavanhaque: do lábio de baixo até a ponta do queixo (o contorno do rosto recorta embaixo)
-  const queixo = `M${ex + 1} ${ey + 2.5} Q100 ${g.base + 3} ${dx - 1} ${dy + 2.5} C${dx} ${Q - 10} ${dx - 3} ${Q + 2} 100 ${Q + 4} C${ex + 3} ${Q + 2} ${ex} ${Q - 10} ${ex + 1} ${ey + 2.5} Z`;
-  // região da barba cheia: abaixo da linha das bochechas, contornando o bigode
-  const regiao = `M${m.L - 12} ${cy - 8} L${m.L + 7} ${cy - 8} C${m.L + 10} ${cy + 20} ${ex - 12} ${ey - 12} ${ex - 6} ${nb + 3} Q100 ${nb - 1} ${dx + 6} ${nb + 3} C${dx + 12} ${dy - 12} ${m.R - 10} ${cy + 20} ${m.R - 7} ${cy - 8} L${m.R + 12} ${cy - 8} L${m.R + 12} 180 L${m.L - 12} 180 Z`;
-  const cabecaD = formaCabeca(rosto);
-  const mascara = `<mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="220"><rect width="200" height="220" fill="#fff"/><path d="${furo}" fill="#000"/>${
-    b === "queixo" ? `<path d="${cabecaD}" transform="translate(100 ${m.T}) scale(0.87) translate(-100 ${-m.T})" fill="#000"/>` : ""}</mask>`;
-  const recorte = `<clipPath id="${id}c"><path d="${cabecaD}"/></clipPath>`;
-  const dentro = (conteudo: string) => `<g clip-path="url(#${id}c)" mask="url(#${id}m)">${conteudo}</g>`;
-  const fora = (conteudo: string) => `<g mask="url(#${id}m)">${conteudo}</g>`;
+  const queixoD = `M${ex + 1} ${ey + 4} Q150 ${g.base + 4} ${dx - 1} ${dy + 4} C${dx + 1} ${f.Q - 12} ${dx - 4} ${f.Q + 2} 150 ${f.Q + 4} C${ex + 4} ${f.Q + 2} ${ex - 1} ${f.Q - 12} ${ex + 1} ${ey + 4} Z`;
+  const wB = largura(f, 132);
+  const regiao = `M${150 - wB - 14} 130 L${150 - wB + 9} 130 C${150 - wB + 12} 160 ${ex - 14} ${ey - 16} ${ex - 7} ${nb + 1} Q150 ${nb - 4} ${dx + 7} ${nb + 1} C${dx + 14} ${dy - 16} ${150 + wB - 12} 160 ${150 + wB - 9} 130 L${150 + wB + 14} 130 L${150 + wB + 14} 250 L${150 - wB - 14} 250 Z`;
+  const mascara = novoId("bm"), clip = novoId("bc"), pts = novoId("bp");
+  const defs = `<defs><mask id="${mascara}" maskUnits="userSpaceOnUse" x="0" y="0" width="${LARG}" height="${ALT}"><rect width="${LARG}" height="${ALT}" fill="#fff"/><path d="${furo}" fill="#000"/>${
+    b === "queixo" ? `<path d="${rostoD}" transform="translate(150 140) scale(0.84 0.86) translate(-150 -140)" fill="#000"/>` : ""}</mask>
+    <clipPath id="${clip}"><path d="${rostoD}"/></clipPath>
+    <pattern id="${pts}" width="3.6" height="3.6" patternUnits="userSpaceOnUse"><circle cx="1.8" cy="1.8" r="0.8" fill="${TINTA}"/></pattern></defs>`;
+  const dentro = (c: string) => `<g clip-path="url(#${clip})" mask="url(#${mascara})">${c}</g>`;
+  const fora = (c: string) => `<g mask="url(#${mascara})">${c}</g>`;
   const p = (d: string, fill: string) => `<path d="${d}" fill="${fill}"/>`;
-  // ligação do bigode ao cavanhaque, contornando os cantos da boca
-  const conector = `M${ex - 3.5} ${ey - 1} L${ex - 0.5} ${ey - 1} L${ex + 2} ${ey + 4} L${ex - 1} ${ey + 5} Z M${dx + 3.5} ${dy - 1} L${dx + 0.5} ${dy - 1} L${dx - 2} ${dy + 4} L${dx + 1} ${dy + 5} Z`;
+  const textura = (d: string, op: number) => `<path d="${d}" fill="url(#${pts})" opacity="${op}"/>`;
+  const conector = `M${ex - 4} ${ey - 1.5} L${ex - 0.5} ${ey - 1.5} L${ex + 3} ${ey + 6} L${ex - 1} ${ey + 7} Z M${dx + 4} ${dy - 1.5} L${dx + 0.5} ${dy - 1.5} L${dx - 3} ${dy + 6} L${dx + 1} ${dy + 7} Z`;
   let corpo = "";
   switch (b) {
-    case "sombra": corpo = dentro(p(regiao, mistura(cor, pele, 0.8))); break;
-    case "rala": corpo = dentro(p(regiao, mistura(cor, pele, 0.6))); break;
-    case "bigode": corpo = dentro(p(bigode(false), cor)); break;
-    case "bigodao": corpo = dentro(p(bigode(true), cor)); break;
-    case "cavanhaque": corpo = dentro(p(queixo, cor)); break;
-    case "cavanhaque_bigode": corpo = dentro(p(bigode(false), cor) + p(queixo, cor) + p(conector, cor)); break;
-    case "queixo": corpo = dentro(p(regiao, cor)); break;
-    case "costeletas": corpo = dentro(`<rect x="${m.L - 2}" y="${cy - 10}" width="${10}" height="34" rx="3" fill="${cor}"/><rect x="${m.R - 8}" y="${cy - 10}" width="${10}" height="34" rx="3" fill="${cor}"/>`); break;
-    case "curta": corpo = dentro(p(regiao, mistura(cor, pele, 0.28)) + p(bigode(false), mistura(cor, pele, 0.15))); break;
-    case "cheia": corpo = dentro(p(regiao, cor)); break;
-    case "longa":
-      corpo = dentro(p(regiao, cor)) + fora(p(`M${m.L + 12} ${cy + 36} Q${m.L + 10} ${Q + 14} 100 ${Q + 24} Q${m.R - 10} ${Q + 14} ${m.R - 12} ${cy + 36} Z`, cor) +
-        `<path d="M92 ${Q + 4} Q100 ${Q + 18} 108 ${Q + 4}" stroke="${escurecer(cor, 0.7)}" stroke-width="1.6" fill="none"/>`);
+    case "sombra": corpo = dentro(p(regiao, mistura(cor, pele, 0.78)) + textura(regiao, 0.35)); break;
+    case "rala": corpo = dentro(p(regiao, mistura(cor, pele, 0.55)) + textura(regiao, 0.5)); break;
+    case "bigode": corpo = dentro(p(bigodeD(false), cor) + `<path d="${bigodeD(false)}" fill="none" stroke="${TINTA}" stroke-width="1.6"/>`); break;
+    case "bigodao": corpo = dentro(p(bigodeD(true), cor) + `<path d="${bigodeD(true)}" fill="none" stroke="${TINTA}" stroke-width="1.8"/>`); break;
+    case "cavanhaque": corpo = dentro(p(queixoD, cor) + `<path d="${queixoD}" fill="none" stroke="${TINTA}" stroke-width="1.6"/>`); break;
+    case "cavanhaque_bigode": corpo = dentro(p(bigodeD(false), cor) + p(queixoD, cor) + p(conector, cor) + textura(queixoD, 0.3)); break;
+    case "queixo": corpo = dentro(p(regiao, cor) + textura(regiao, 0.3)); break;
+    case "costeletas": corpo = dentro(`<rect x="${150 - wB - 4}" y="118" width="17" height="56" rx="4" fill="${cor}"/><rect x="${150 + wB - 13}" y="118" width="17" height="56" rx="4" fill="${cor}"/>`); break;
+    case "curta": corpo = dentro(p(regiao, mistura(cor, pele, 0.22)) + textura(regiao, 0.55)); break;
+    case "cheia": corpo = dentro(p(regiao, cor) + textura(regiao, 0.35)); break;
+    case "longa": {
+      const ext = `M${150 - f.w176 + 6} 176 Q${150 - f.w176} ${f.Q + 22} 150 ${f.Q + 36} Q${150 + f.w176} ${f.Q + 22} ${150 + f.w176 - 6} 176 Z`;
+      corpo = dentro(p(regiao, cor) + textura(regiao, 0.3)) + fora(p(ext, cor) + `<path d="M${150 - f.w176 + 8} ${f.Q - 4} Q${150 - f.w176 + 4} ${f.Q + 20} 150 ${f.Q + 34} Q${150 + f.w176 - 4} ${f.Q + 20} ${150 + f.w176 - 8} ${f.Q - 4}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}"/><path d="M142 ${f.Q + 8} Q150 ${f.Q + 26} 158 ${f.Q + 8}" stroke="${escurecer(cor, 0.7)}" stroke-width="2" fill="none"/>`);
       break;
+    }
   }
-  return `<defs>${mascara}${recorte}</defs>${corpo}`;
+  return defs + corpo;
 }
 
+// ---------------------------------- corpo ----------------------------------
+const TRONCO_V = "M0 360 L0 294 C10 270 40 256 76 248 C96 244 106 236 110 221 L150 273 L190 221 C194 236 204 244 224 248 C260 256 290 270 300 294 L300 360 Z";
+const TRONCO_RETO = "M0 360 L0 294 C10 270 40 256 76 248 C98 243 112 236 118 225 C130 236 170 236 182 225 C188 236 202 243 224 248 C260 256 290 270 300 294 L300 360 Z";
+const PESCOCO = "M124 186 L120 242 L180 242 L176 186 Z";
+const PEITO = "M106 218 L150 286 L194 218 Z";
+const GOLA_TRAS = "M110 221 C113 214 128 211 150 211 C172 211 187 214 190 221 L182 224 C179 219 168 217 150 217 C132 217 121 219 118 224 Z";
+const GOLA_V = "M110 221 L150 273 L190 221 L182 224 L150 262 L118 224 Z";
+
+function sombrasTronco(id: string): string {
+  return `<path d="M0 300 C20 276 50 262 80 254 L60 360 L0 360 Z" fill="#000" opacity="0.22"/><path d="M300 300 C280 276 250 262 220 254 L240 360 L300 360 Z" fill="#000" opacity="0.34"/>
+    <path d="M300 300 C280 276 250 262 220 254 L240 360 L300 360 Z" fill="url(#${id})" opacity="0.5"/>`;
+}
+function padraoCamisa(c: Camisa): string {
+  switch (c.estilo) {
+    case "listrasV": return Array.from({ length: 11 }, (_, i) => `<rect x="${-6 + i * 30}" y="210" width="15" height="150" fill="${c.cor2}"/>`).join("");
+    case "listrasH": return Array.from({ length: 8 }, (_, i) => `<rect x="0" y="${246 + i * 18}" width="300" height="9" fill="${c.cor2}"/>`).join("");
+    case "faixa": return `<path d="M54 250 L88 242 L300 352 L300 360 L258 360 Z" fill="${c.cor2}"/>`;
+    case "faixaH": return `<rect x="0" y="326" width="300" height="12" fill="${c.cor2}"/>${c.cor3 ? `<rect x="0" y="338" width="300" height="12" fill="${c.cor3}"/>` : ""}`;
+    default: return "";
+  }
+}
+
+function uniforme(c: Camisa, numero: string | undefined, pele: string, sombraPele: string, hach: string): string {
+  const id = novoId("tr");
+  const golaCor = luminancia(c.cor1) > 0.8 ? c.cor2 : c.estilo === "lisa" ? escurecer(c.cor1, 0.55) : c.cor2;
+  const friso = luminancia(golaCor) < 0.4 ? "#E9E2CF" : escurecer(golaCor, 0.6);
+  const corNumero = luminancia(c.cor1) < 0.5 || c.estilo === "listrasV" ? "#F2E6C2" : escurecer(c.cor1, 0.4);
+  return `<path d="${GOLA_TRAS}" fill="${golaCor}" stroke="${TINTA}" stroke-width="${TRACO * 0.8}" stroke-linejoin="round"/>
+    <path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
+    <path d="${PEITO}" fill="${pele}"/>
+    <path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>
+    <clipPath id="${id}"><path d="${TRONCO_V}"/></clipPath>
+    <path d="${TRONCO_V}" fill="${c.cor1}"/>
+    <g clip-path="url(#${id})">${padraoCamisa(c)}${sombrasTronco(hach)}</g>
+    <path d="${TRONCO_V}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
+    <path d="${GOLA_V}" fill="${golaCor}" stroke="${TINTA}" stroke-width="${TRACO * 0.8}" stroke-linejoin="round"/>
+    <path d="M118 224 L150 262 L182 224" fill="none" stroke="${friso}" stroke-width="1.8" stroke-linejoin="round"/>
+    ${numero ? `<text x="98" y="318" text-anchor="middle" font-family="'Big Shoulders Display','Arial Narrow',sans-serif" font-weight="900" font-size="32" fill="${corNumero}" stroke="${TINTA}" stroke-width="1.4" paint-order="stroke">${numero}</text>` : ""}`;
+}
+
+function roupaSocial(tipo: RoupaSocial, corIdx: number, pele: string, sombraPele: string, hach: string): string {
+  const c = CORES_ROUPA[corIdx], s = escurecer(c, 0.78), claro = luminancia(c) > 0.6;
+  const detalhe = claro ? escurecer(c, 0.55) : mistura(c, "#FFFFFF", 0.45);
+  const id = novoId("rs");
+  const pescoco = `<path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>`;
+  const corpo = (d: string, fill: string) => `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${fill}"/><g clip-path="url(#${id})">${sombrasTronco(hach)}</g><path d="${d}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`;
+  switch (tipo) {
+    case "regata": {
+      const ombros = TRONCO_RETO;
+      const regata = "M100 360 C104 316 96 282 108 250 L124 230 C134 242 166 242 176 230 L192 250 C204 282 196 316 200 360 Z";
+      return pescoco + `<path d="${ombros}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M0 300 C20 276 50 262 80 254 L60 360 L0 360 Z" fill="${sombraPele}" opacity="0.5"/><path d="M300 300 C280 276 250 262 220 254 L240 360 L300 360 Z" fill="${sombraPele}"/>` +
+        corpo(regata, c) + `<path d="M124 232 C134 244 166 244 176 232" stroke="${s}" stroke-width="3" fill="none"/>`;
+    }
+    case "moletom": {
+      const capuz = "M96 250 C92 218 116 202 150 202 C184 202 208 218 204 250 C190 238 172 232 150 232 C128 232 110 238 96 250 Z";
+      return `<path d="${capuz}" fill="${s}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>` + pescoco + corpo(TRONCO_RETO, c) +
+        `<path d="M118 226 C130 240 170 240 182 226" stroke="${s}" stroke-width="7" fill="none"/><path d="M118 226 C130 240 170 240 182 226" stroke="${TINTA}" stroke-width="1.6" fill="none"/>` +
+        `<path d="M138 238 L136 276 M162 238 L164 276" stroke="${detalhe}" stroke-width="2.6" stroke-linecap="round"/><circle cx="136" cy="278" r="2.6" fill="${detalhe}"/><circle cx="164" cy="278" r="2.6" fill="${detalhe}"/>` +
+        `<path d="M104 330 L196 330 L188 360 L112 360 Z" fill="${s}" stroke="${TINTA}" stroke-width="1.6"/>`;
+    }
+    case "polo":
+      return pescoco + corpo(TRONCO_RETO, c) +
+        `<path d="M116 224 L150 238 L136 258 L108 236 Z" fill="${s}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M184 224 L150 238 L164 258 L192 236 Z" fill="${s}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>` +
+        `<path d="M146 238 L146 280 L154 280 L154 238" fill="none" stroke="${TINTA}" stroke-width="1.4"/><circle cx="150" cy="252" r="2" fill="${detalhe}"/><circle cx="150" cy="266" r="2" fill="${detalhe}"/>`;
+    case "jaqueta": {
+      const jeans = "#4F6E9C", jeansS = "#3B5680";
+      return pescoco + corpo(TRONCO_RETO, jeans) +
+        `<path d="M122 228 L150 250 L178 228 L182 360 L118 360 Z" fill="${c}" stroke="${TINTA}" stroke-width="1.8"/>` +
+        `<path d="M114 224 L140 262 L124 278 L96 238 Z" fill="${jeansS}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M186 224 L160 262 L176 278 L204 238 Z" fill="${jeansS}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>` +
+        `<path d="M72 296 L104 296 M196 296 L228 296" stroke="#E2B36A" stroke-width="1.6" stroke-dasharray="4 3"/><path d="M118 280 L118 360 M182 280 L182 360" stroke="${TINTA}" stroke-width="1.6"/>`;
+    }
+    case "camisa":
+      return pescoco + corpo(TRONCO_RETO, c) +
+        `<path d="M116 222 L150 242 L134 258 L108 232 Z" fill="${mistura(c, "#000", 0.06)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M184 222 L150 242 L166 258 L192 232 Z" fill="${mistura(c, "#000", 0.06)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>` +
+        `<path d="M150 242 L150 360" stroke="${TINTA}" stroke-width="1.4"/>${[262, 286, 310, 334].map((y) => `<circle cx="154" cy="${y}" r="2" fill="${detalhe}"/>`).join("")}`;
+    default:
+      return pescoco + corpo(TRONCO_RETO, c) + `<path d="M118 226 C130 240 170 240 182 226" stroke="${s}" stroke-width="5" fill="none"/><path d="M118 226 C130 240 170 240 182 226" stroke="${TINTA}" stroke-width="1.4" fill="none"/>`;
+  }
+}
+
+// ---------------------------------- montagem ----------------------------------
 export interface OpcoesFoto {
   aparencia: Aparencia | null; // null = silhueta (ainda sem aparência escolhida)
   camisa?: Camisa;
   numero?: string;
-  cenario?: string;
-  traje?: "jogo" | "social";
+  cenario?: string; // cenário no sistema antigo de 200x220, ampliado para o quadro
+  traje?: Traje;
 }
 
 export function svgFoto(o: OpcoesFoto): string {
   const a = { ...APARENCIA_PADRAO, ...(o.aparencia ?? {}) };
   const silhueta = !o.aparencia;
-  const m = MEDIDAS[a.rosto];
+  const f = FORMAS[a.rosto];
+  const rostoD = contornoRosto(f);
   const pele = silhueta ? "#1E2E28" : PELES[a.pele];
-  const sombraPele = silhueta ? "#1A2823" : escurecer(pele, 0.8);
-  const cor = silhueta ? "#16241F" : CORES_CABELO[a.corCabelo];
-  const corSobr = silhueta ? cor : (a.corCabelo >= 7 ? CORES_CABELO[2] : cor); // platinado/tingido: sobrancelha natural
-  const camisa = silhueta ? { cor1: "#1E2E28", cor2: "#1E2E28", estilo: "lisa" as const } : (o.camisa ?? CAMISA_PADRAO);
-  const corNumero = luminancia(camisa.cor1) < 0.45 ? "#F2E6C2" : escurecer(camisa.cor1, 0.55);
-  const n = ++seq;
+  const sombraPele = silhueta ? "#18261F" : mistura(pele, "#2A1206", 0.28);
+  const luzPele = silhueta ? pele : mistura(pele, "#FFF3E0", 0.22);
+  const cor = silhueta ? "#14211C" : CORES_CABELO[a.corCabelo];
+  const corSobr = silhueta ? cor : (a.corCabelo >= 7 ? CORES_CABELO[2] : cor);
+  const hach = novoId("hc"), clipRosto = novoId("cr");
+  const defs = `<defs><pattern id="${hach}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><line x1="0" y1="0" x2="0" y2="6" stroke="${TINTA}" stroke-width="1"/></pattern>
+    <clipPath id="${clipRosto}"><path d="${rostoD}"/></clipPath></defs>`;
+  const wO = largura(f, 146);
+  const orelha = (lado: -1 | 1) => {
+    const x = 150 + lado * (wO - 1);
+    const d = `M${x} 128 C${x + lado * 13} 122 ${x + lado * 16} 142 ${x + lado * 11} 156 C${x + lado * 8} 166 ${x + lado * 2} 168 ${x - lado * 2} 163 Z`;
+    return `<path d="${d}" fill="${lado === 1 ? sombraPele : pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M${x + lado * 4} 136 C${x + lado * 10} 136 ${x + lado * 10} 150 ${x + lado * 5} 154" stroke="${TINTA}" stroke-width="1.4" fill="none"/>`;
+  };
+  const corpo = silhueta
+    ? uniforme({ cor1: "#1E2E28", cor2: "#18261F", estilo: "lisa" }, undefined, pele, sombraPele, hach)
+    : o.traje === "social" ? roupaSocial(a.roupaSocial, a.corSocial, pele, sombraPele, hach)
+    : uniforme(o.camisa ?? CAMISA_PADRAO, o.numero, pele, sombraPele, hach);
   const detalhes = silhueta ? "" : [
-    a.sardas ? [[78, 116], [84, 119], [90, 116], [110, 116], [116, 119], [122, 116]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="${escurecer(pele, 0.62)}"/>`).join("") : "",
-    a.pinta ? `<circle cx="117" cy="128" r="1.6" fill="${escurecer(pele, 0.45)}"/>` : "",
-    a.brinco ? `<circle cx="${m.L - 1}" cy="${m.cy + 18}" r="2.6" fill="#E9E4D8" stroke="#A9A39A" stroke-width="0.8"/>` : "",
+    a.sardas ? [[118, 160], [125, 164], [132, 160], [168, 160], [175, 164], [182, 160], [121, 168], [179, 168]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${mistura(pele, "#5A2A12", 0.5)}"/>`).join("") : "",
+    a.pinta ? `<circle cx="172" cy="186" r="2" fill="${mistura(pele, "#000", 0.6)}"/>` : "",
+    a.brinco ? `<circle cx="${150 - wO - 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
   ].join("");
   const rosto = silhueta ? "" : `
-  ${sobrancelhas(a.formatoSobrancelha, a.sobrancelha, corSobr)}
-  ${olho(82, false, a.formatoOlho, CORES_OLHOS[a.olhos], `ol${n}`, pele)}${olho(118, true, a.formatoOlho, CORES_OLHOS[a.olhos], `or${n}`, pele)}
-  ${nariz(a.nariz, sombraPele)}
-  ${boca(a.boca, pele)}
-  ${detalhes}`;
-  return `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto de perfil do jogador">
-  ${o.cenario ?? ""}
-  <g${silhueta ? ' opacity="0.92"' : ""}>
-  ${cabeloAtras(a.cabelo, m, cor)}
-  <rect x="84" y="138" width="32" height="36" rx="10" fill="${sombraPele}"/>
-  ${o.traje === "social" && !silhueta ? roupaSocialSVG(a.roupaSocial, a.corSocial, pele) : `${camisaSVG(camisa)}<path d="M84 168 L100 184 L116 168 Z" fill="${escurecer(camisa.cor1, 0.75)}"/>`}
-  ${a.corrente && !silhueta ? `<path d="M86 170 Q100 196 114 170" stroke="#D9B44A" stroke-width="2" fill="none"/><circle cx="100" cy="190" r="2.6" fill="#D9B44A"/>` : ""}
-  ${o.numero && !silhueta && o.traje !== "social" ? `<text x="100" y="214" text-anchor="middle" font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif" font-weight="800" font-size="22" fill="${corNumero}">${o.numero}</text>` : ""}
-  <ellipse cx="${m.L}" cy="${m.cy + 6}" rx="8" ry="12" fill="${sombraPele}"/>
-  <ellipse cx="${m.R}" cy="${m.cy + 6}" rx="8" ry="12" fill="${sombraPele}"/>
-  ${cabeca(a.rosto, pele)}
-  ${silhueta ? "" : barba(a.barba, m, a.rosto, a.boca, a.nariz, cor, pele)}
-  ${cabeloFrente(a.cabelo, m, cor, pele)}
+    ${sobrancelhas(a.formatoSobrancelha, a.sobrancelha, corSobr)}
+    ${olho(129, false, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}${olho(171, true, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}
+    ${nariz(a.nariz, luzPele)}
+    ${boca(a.boca, pele)}
+    ${detalhes}`;
+  const cenario = o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>`;
+  return `<svg viewBox="0 0 ${LARG} ${ALT}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto de perfil do jogador">
+  ${defs}${cenario}
+  <g${silhueta ? ' opacity="0.94"' : ""}>
+  ${cabeloAtras(a.cabelo, f, cor)}
+  ${corpo}
+  ${silhueta ? "" : a.corrente && o.traje === "social" ? `<path d="M126 226 Q150 270 174 226" stroke="#D9B44A" stroke-width="2.6" fill="none"/><circle cx="150" cy="252" r="4" fill="#D9B44A" stroke="${TINTA}" stroke-width="1.2"/>` : ""}
+  ${orelha(-1)}${orelha(1)}
+  <path d="${rostoD}" fill="${pele}"/>
+  <g clip-path="url(#${clipRosto})">
+    <path d="${sombraRosto(f)}" fill="${sombraPele}"/>
+    <path d="${sombraRosto(f)}" fill="url(#${hach})" opacity="0.35"/>
+    ${silhueta ? "" : `<path d="M${150 - 0.7 * f.w100} ${f.T + 30} Q${150 - 0.5 * f.w100} ${f.T + 18} ${150 - 0.15 * f.w100} ${f.T + 18} Q${150 - 0.45 * f.w100} ${f.T + 26} ${150 - 0.55 * f.w100} ${f.T + 46} Z" fill="${luzPele}"/>`}
+    <path d="M${150 - f.w176 + 2} 176 Q150 ${f.Q + 6} ${150 + f.w176 - 2} 176 L${150 + f.w176} ${f.Q + 10} L${150 - f.w176} ${f.Q + 10} Z" fill="${sombraPele}" opacity="0.25"/>
+  </g>
+  ${silhueta ? "" : barba(a.barba, f, rostoD, a.boca, a.nariz, cor, pele)}
+  <path d="${rostoD}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
+  ${cabeloFrente(a.cabelo, f, cor, pele)}
   ${rosto}
-  ${silhueta ? `<text x="100" y="112" text-anchor="middle" font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif" font-weight="900" font-size="36" fill="#3A5148">?</text>` : ""}
+  ${silhueta ? `<text x="150" y="160" text-anchor="middle" font-family="'Big Shoulders Display','Arial Narrow',sans-serif" font-weight="900" font-size="52" fill="#3A5148">?</text>` : ""}
   </g>
 </svg>`;
 }
