@@ -5,6 +5,7 @@ import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.
 import { valorMercado, salarioMensal } from "../src/mercado.js";
 import { carregarPacote, ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
 import { Carreira } from "../src/carreira.js";
+import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -106,6 +107,25 @@ teste("DNA: OVR inicial entre 42 e 58 em todas as combinações", () => {
     }
   }
   console.log(`   média de OVR inicial: ${(soma / n).toFixed(1)} em ${n} combinações`);
+});
+
+teste("Perfil: todos os perfis aparecem e a joia rara é rara", () => {
+  const cont: Record<string, number> = {};
+  let n = 0;
+  for (const e of PAISES) for (const f of FORMACOES) for (const fa of FAMILIAS) {
+    if (!formacaoPermitida(f.id, fa.id)) continue;
+    for (const pos of ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA"] as const) for (const k of [1, 2, 3]) {
+      const r = criarJogador({ ...base, pais: e.id, formacao: f.id, familia: fa.id, posicao: pos, semente: `p${e.id}${f.id}${fa.id}${pos}${k}` });
+      const pf = definirPerfil(r);
+      cont[pf.id] = (cont[pf.id] ?? 0) + 1; n++;
+      assert.ok(estiloDeJogo(r).rotulo.length > 0);
+      if (pf.evento) for (const o of pf.evento.opcoes) assert.ok(o.resultado.length > 0);
+    }
+  }
+  const pct = Object.fromEntries(Object.entries(cont).map(([k, v]) => [k, Math.round((100 * v) / n)]));
+  console.log("   distribuição (%):", JSON.stringify(pct));
+  assert.equal(Object.keys(cont).length, 7);
+  assert.ok(pct.joia_rara <= 10, "joia rara comum demais");
 });
 
 console.log(`\n${ok} testes passaram`);

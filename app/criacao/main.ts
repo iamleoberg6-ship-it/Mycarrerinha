@@ -7,8 +7,10 @@ import {
 import { ATRIBUTOS, GRUPO, peso, type Atributo, type Posicao } from "../../src/atributos.js";
 import {
   svgFoto, APARENCIA_PADRAO, CAMISA_PADRAO, PELES, CORES_CABELO, NOMES_CABELO_COR, CORES_OLHOS, NOMES_OLHOS, ROSTOS, CABELOS,
+  OLHOS, SOBRANCELHAS, NARIZES, BOCAS, BARBAS, ROUPAS_SOCIAIS, CORES_ROUPA, NOMES_ROUPA,
   type Aparencia, type Camisa,
 } from "./avatar.js";
+import { definirPerfil, estiloDeJogo, type PerfilCraque } from "../../src/perfil.js";
 import { cenarioCompleto } from "./cenario.js";
 
 const NOME_ATR: Record<Atributo, string> = {
@@ -71,10 +73,13 @@ interface Estado {
   passo: number; nome: string; apelido: string; pais: PaisId | null; familia: FamiliaId | null; clube: string | null;
   formacao: FormacaoId | null; alturaCm: number; pe: Pe; posicao: Posicao | null; aparencia: Aparencia;
   aparenciaFeita: boolean; tentativa: number; resultado: ResultadoCriacao | null; aberto: boolean;
+  aba: "rosto" | "olhos" | "nariz" | "cabelo" | "roupa"; traje: "jogo" | "social";
+  perfil: PerfilCraque | null; decisao: string | null;
 }
 const estado: Estado = {
   passo: 0, nome: "Gabriel Souza", apelido: "Gabi", pais: null, familia: null, clube: null, formacao: null, alturaCm: 178,
   pe: "direito", posicao: null, aparencia: { ...APARENCIA_PADRAO }, aparenciaFeita: false, tentativa: 0, resultado: null, aberto: false,
+  aba: "rosto", traje: "jogo", perfil: null, decisao: null,
 };
 
 let timerNotif = 0;
@@ -85,10 +90,10 @@ const pais = () => PAISES.find((p) => p.id === estado.pais);
 const clube = () => (estado.clube === null ? null : CLUBES.find((c) => c.id === estado.clube) ?? BAIRRO);
 const altura = (cm: number) => `${(cm / 100).toFixed(2).replace(".", ",")} m`;
 
-function foto(numero?: string): string {
+function foto(numero?: string, traje: "jogo" | "social" = "jogo"): string {
   return svgFoto({
     aparencia: estado.aparenciaFeita || estado.passo >= 7 ? estado.aparencia : null,
-    camisa: clube()?.camisa ?? CAMISA_PADRAO, numero,
+    camisa: clube()?.camisa ?? CAMISA_PADRAO, numero, traje,
     cenario: cenarioCompleto(estado.pais, estado.familia, estado.formacao),
   });
 }
@@ -168,19 +173,45 @@ function telaPasso(): string {
     case 7:
       return `${cab("A aparência", "E era assim que você chegava no treino.")}
       <div class="avatar-editor">
-        <div class="avatar-grande">${foto()}</div>
+        <div class="previa">
+          <div class="avatar-grande">${foto(undefined, estado.traje)}</div>
+          <div class="segmentado duplo" role="group" aria-label="Roupa na prévia">
+            <button type="button" data-grupo="traje" data-id="jogo" class="${estado.traje === "jogo" ? "ativa" : ""}" aria-pressed="${estado.traje === "jogo"}">Uniforme</button>
+            <button type="button" data-grupo="traje" data-id="social" class="${estado.traje === "social" ? "ativa" : ""}" aria-pressed="${estado.traje === "social"}">Fora de campo</button>
+          </div>
+        </div>
         <div class="controles">
-          ${grupoCores("pele", "Tom de pele", PELES, estado.aparencia.pele)}
-          ${grupoTexto("rosto", "Rosto", ROSTOS, estado.aparencia.rosto)}
-          ${grupoTexto("cabelo", "Cabelo", CABELOS, estado.aparencia.cabelo)}
-          ${grupoCores("corCabelo", "Cor do cabelo", CORES_CABELO, estado.aparencia.corCabelo, NOMES_CABELO_COR)}
-          ${grupoCores("olhos", "Olhos", CORES_OLHOS, estado.aparencia.olhos, NOMES_OLHOS)}
-          <label for="sobrancelha" class="rotulo">Sobrancelha</label>
-          <input id="sobrancelha" type="range" min="2" max="5" step="0.5" value="${estado.aparencia.sobrancelha}">
+          <div class="abas" role="tablist" aria-label="Partes da aparência">
+            ${([["rosto", "Rosto"], ["olhos", "Olhos"], ["nariz", "Nariz e boca"], ["cabelo", "Cabelo"], ["roupa", "Roupa"]] as const).map(([id, nome]) =>
+              `<button type="button" role="tab" data-grupo="aba" data-id="${id}" class="aba${estado.aba === id ? " ativa" : ""}" aria-selected="${estado.aba === id}">${nome}</button>`).join("")}
+          </div>
+          ${painelAparencia()}
         </div>
       </div>`;
     default:
       return telaRevelacao();
+  }
+}
+
+function painelAparencia(): string {
+  const a = estado.aparencia;
+  switch (estado.aba) {
+    case "rosto":
+      return grupoTexto("rosto", "Formato do rosto", ROSTOS, a.rosto) + grupoCores("pele", "Tom de pele", PELES, a.pele) +
+        `<span class="rotulo">Detalhes</span><div class="pilulas">${([["sardas", "Sardas"], ["pinta", "Pinta"], ["brinco", "Brinco"]] as const).map(([k, n]) =>
+          `<button type="button" class="pilula${a[k] ? " ativa" : ""}" data-grupo="liga" data-id="${k}" aria-pressed="${a[k]}">${n}</button>`).join("")}</div>`;
+    case "olhos":
+      return grupoTexto("formatoOlho", "Formato dos olhos", OLHOS, a.formatoOlho) + grupoCores("olhos", "Cor dos olhos", CORES_OLHOS, a.olhos, NOMES_OLHOS) +
+        grupoTexto("formatoSobrancelha", "Sobrancelha", SOBRANCELHAS, a.formatoSobrancelha) +
+        `<label for="sobrancelha" class="rotulo">Espessura da sobrancelha</label><input id="sobrancelha" type="range" min="2" max="5" step="0.5" value="${a.sobrancelha}">`;
+    case "nariz":
+      return grupoTexto("nariz", "Nariz", NARIZES, a.nariz) + grupoTexto("boca", "Boca", BOCAS, a.boca) + grupoTexto("barba", "Barba", BARBAS, a.barba);
+    case "cabelo":
+      return grupoTexto("cabelo", "Corte", CABELOS, a.cabelo) + grupoCores("corCabelo", "Cor do cabelo", CORES_CABELO, a.corCabelo, NOMES_CABELO_COR);
+    case "roupa":
+      return grupoTexto("roupaSocial", "Roupa fora de campo", ROUPAS_SOCIAIS, a.roupaSocial) + grupoCores("corSocial", "Cor", CORES_ROUPA, a.corSocial, NOMES_ROUPA) +
+        `<span class="rotulo">Acessório</span><div class="pilulas"><button type="button" class="pilula${a.corrente ? " ativa" : ""}" data-grupo="liga" data-id="corrente" aria-pressed="${a.corrente}">Corrente</button></div>
+        <p class="efeito">Em campo, você veste o uniforme do clube. A camisa da foto é a do seu clube do coração até assinar o primeiro contrato.</p>`;
   }
 }
 
@@ -239,6 +270,7 @@ function telaRevelacao(): string {
             <div class="card-foto">${foto("16")}</div>
           </div>
           <p class="card-nome">${camisa}</p>
+          <p class="card-estilo">${estiloDeJogo(r).rotulo}</p>
           <div class="card-grade">
             ${grupos.map(([g, ats]) => `<div><span class="card-grupo">${g}</span><span class="card-media">${Math.round(ats.reduce((s, a) => s + r.atributos[a], 0) / ats.length)}</span></div>`).join("")}
           </div>
@@ -247,6 +279,7 @@ function telaRevelacao(): string {
       </div>
     </div>
     <div class="depois"${estado.aberto ? "" : " hidden"}>
+      ${painelPerfil()}
       <section class="painel">
         <h2>DNA completo</h2>
         ${grupos.map(([g, ats]) => `<p class="verso-grupo">${g}</p><ul class="atributos">${ats.map(linha).join("")}</ul>`).join("")}
@@ -257,6 +290,7 @@ function telaRevelacao(): string {
         <ul class="tracos">${r.tracos.map((t) => `<li><strong>${TRACOS[t].nome}</strong><span>${TRACOS[t].efeito}</span></li>`).join("")}</ul>
       </section>
       <section class="painel ficha">
+        <div class="larga fora-de-campo"><div class="mini-foto">${foto(undefined, "social")}</div><div><span class="rotulo">Fora de campo</span><strong>${ROUPAS_SOCIAIS.find((x) => x.id === estado.aparencia.roupaSocial)!.nome} ${NOMES_ROUPA[estado.aparencia.corSocial].toLowerCase()}</strong></div></div>
         <div><span class="rotulo">Altura</span><strong>${altura(e.alturaCm)}</strong></div>
         <div><span class="rotulo">Pé</span><strong>${e.pe[0].toUpperCase() + e.pe.slice(1)}</strong></div>
         <div><span class="rotulo">Dinheiro</span><strong>R$ ${r.dinheiroInicial.toLocaleString("pt-BR")}</strong></div>
@@ -271,6 +305,33 @@ function telaRevelacao(): string {
       </div>
       <p class="aviso" id="aviso" role="status"></p>
     </div>`;
+}
+
+function painelPerfil(): string {
+  const pf = estado.perfil;
+  if (!pf) return "";
+  const ev = pf.evento;
+  const escolhida = ev?.opcoes.find((o) => o.id === estado.decisao);
+  const efeitos = [
+    pf.efeitos.seguidores ? `${pf.efeitos.seguidores.toLocaleString("pt-BR")} seguidores` : "",
+    pf.efeitos.fama ? `fama ${pf.efeitos.fama}` : "",
+    pf.efeitos.bonusEvolucao ? "evolui mais rápido no treino" : "",
+    pf.efeitos.forcaMinimaClubeInicial ? "começa na base de um clube grande" : "",
+    pf.efeitos.vidaNoturna ? "atraído pela noite" : "",
+  ].filter(Boolean);
+  return `<section class="painel perfil">
+    <p class="perfil-rotulo">Seu perfil</p>
+    <h2 class="perfil-nome">${pf.nome}</h2>
+    <p class="perfil-texto">${pf.descricao}</p>
+    ${efeitos.length ? `<p class="perfil-efeitos">${efeitos.join(" · ")}</p>` : ""}
+    ${ev ? `<div class="mensagem">
+      <p class="mensagem-de">${esc(ev.remetente)}</p>
+      <p class="mensagem-titulo">${esc(ev.titulo)}</p>
+      <p class="mensagem-texto">${esc(ev.texto)}</p>
+      ${ev.opcoes.length ? (escolhida ? `<p class="mensagem-resultado">${esc(escolhida.resultado)}</p>` : `<div class="mensagem-opcoes">${ev.opcoes.map((o, i) =>
+        `<button type="button" class="botao${i === 0 ? " primario" : ""}" data-grupo="decisao" data-id="${o.id}">${esc(o.rotulo)}</button>`).join("")}</div>`) : ""}
+    </div>` : ""}
+  </section>`;
 }
 
 function podeAvancar(): boolean {
@@ -320,7 +381,7 @@ function ligarEventos() {
     $("#altura-efeito").textContent = fraseAltura(estado.alturaCm);
   });
   const sob = document.getElementById("sobrancelha") as HTMLInputElement | null;
-  sob?.addEventListener("input", () => { estado.aparencia.sobrancelha = Number(sob.value); $(".avatar-grande").innerHTML = foto(); });
+  sob?.addEventListener("input", () => { estado.aparencia.sobrancelha = Number(sob.value); $(".avatar-grande").innerHTML = foto(undefined, estado.traje); });
   document.querySelectorAll<HTMLButtonElement>("[data-grupo]").forEach((b) => b.addEventListener("click", () => escolher(b.dataset.grupo!, b.dataset.id!)));
   const card = document.getElementById("card");
   const abrir = () => {
@@ -342,7 +403,7 @@ function ligarEventos() {
   document.getElementById("guardar")?.addEventListener("click", () => {
     const aviso = $("#aviso");
     try {
-      localStorage.setItem("mycarrerinha:jogador", JSON.stringify({ resultado: estado.resultado, aparencia: estado.aparencia, clube: estado.clube }));
+      localStorage.setItem("mycarrerinha:jogador", JSON.stringify({ resultado: estado.resultado, aparencia: estado.aparencia, clube: estado.clube, perfil: estado.perfil?.id, decisao: estado.decisao }));
       aviso.textContent = "Jogador guardado neste navegador. A próxima tela, a primeira semana no clube, vai começar com ele.";
     } catch {
       aviso.textContent = "Este navegador não deixou guardar o jogador. Ele continua aqui enquanto a página estiver aberta.";
@@ -368,9 +429,17 @@ function escolher(grupo: string, id: string) {
     notificar(FORMACOES.find((f) => f.id === id)!.nome, NOTIF_FORMACAO[id as FormacaoId]);
   } else if (grupo === "pe") estado.pe = id as Pe;
   else if (grupo === "posicao") estado.posicao = id as Posicao;
+  else if (grupo === "aba") { estado.aba = id as Estado["aba"]; if (id === "roupa") estado.traje = "social"; }
+  else if (grupo === "traje") estado.traje = id as Estado["traje"];
+  else if (grupo === "liga") { const k = id as "sardas" | "pinta" | "brinco" | "corrente"; estado.aparencia[k] = !estado.aparencia[k]; }
+  else if (grupo === "decisao") {
+    estado.decisao = id;
+    const op = estado.perfil?.evento?.opcoes.find((o) => o.id === id);
+    if (op) notificar("Decisão tomada", op.resultado);
+  }
   else if (grupo.startsWith("ap-")) {
     const chave = grupo.slice(3) as keyof Aparencia;
-    const numerico = chave === "pele" || chave === "corCabelo" || chave === "olhos";
+    const numerico = chave === "pele" || chave === "corCabelo" || chave === "olhos" || chave === "corSocial";
     (estado.aparencia as unknown as Record<string, unknown>)[chave] = numerico ? Number(id) : id;
   }
   render();
@@ -378,6 +447,8 @@ function escolher(grupo: string, id: string) {
 
 function gerar() {
   estado.resultado = criarJogador(escolhas());
+  estado.perfil = definirPerfil(estado.resultado);
+  estado.decisao = null;
   estado.aberto = false;
 }
 

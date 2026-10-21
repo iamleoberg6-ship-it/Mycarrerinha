@@ -32,7 +32,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .marca strong { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ouro); }
 .marca span { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--giz-2); }
 
-#progresso { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+#progresso { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
 #progresso li { height: 4px; border-radius: 2px; background: var(--linha); position: relative; }
 #progresso li.feito { background: var(--giz-2); }
 #progresso li.atual { background: var(--ouro); }
@@ -92,6 +92,27 @@ output { color: var(--giz); font-family: var(--display); font-size: 20px; letter
 .segmentado button.ativa, .pilula.ativa { border-color: var(--ouro); color: var(--ouro-claro); background: var(--campo-3); }
 
 .avatar-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.previa { display: flex; flex-direction: column; gap: 8px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--campo); padding-block: 8px; }
+.previa .avatar-grande { max-width: 220px; }
+.segmentado.duplo { grid-template-columns: repeat(2, 1fr); max-width: 320px; align-self: center; width: 100%; }
+.abas { display: flex; flex-wrap: wrap; gap: 2px 4px; margin-bottom: 4px; border-bottom: 1px solid var(--linha); }
+.aba { flex: none; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--giz-2); font: 700 14px var(--texto); padding: 8px 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em; }
+.aba.ativa { color: var(--ouro); border-bottom-color: var(--ouro); }
+.card-estilo { margin: 2px 0 0; text-align: center; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.perfil { border-color: var(--ouro-escuro); }
+.perfil-rotulo { margin: 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ouro); font-weight: 700; }
+.perfil-nome { font-size: 34px; color: var(--ouro-claro); }
+.perfil-texto { margin: 0; color: var(--giz); }
+.perfil-efeitos { margin: 0; font-size: 14px; color: var(--giz-2); }
+.mensagem { background: var(--campo); border: 1px solid var(--linha); border-radius: 14px 14px 14px 4px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.mensagem-de { margin: 0; font-size: 12px; font-weight: 700; color: var(--ouro-claro); }
+.mensagem-titulo { margin: 0; font-weight: 700; }
+.mensagem-texto { margin: 0; color: var(--giz-2); font-size: 15px; }
+.mensagem-opcoes { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.mensagem-resultado { margin: 6px 0 0; color: var(--pos); font-weight: 600; }
+.fora-de-campo { display: flex !important; flex-direction: row !important; align-items: center; gap: 12px !important; }
+.mini-foto { width: 72px; flex: none; border-radius: 10px; overflow: hidden; border: 1px solid var(--linha); }
+.mini-foto svg { width: 100%; height: auto; display: block; }
 .avatar-grande { border: 1px solid var(--linha); border-radius: 16px; overflow: hidden; display: flex; justify-content: center; max-width: 320px; align-self: center; width: 100%; }
 .avatar-grande svg { width: 100%; height: auto; display: block; }
 .controles { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -161,7 +182,8 @@ output { color: var(--giz); font-family: var(--display); font-size: 20px; letter
 .aviso { margin: 0; font-size: 14px; color: var(--ouro-claro); min-height: 1.5em; }
 
 @media (min-width: 720px) {
-  .avatar-editor { grid-template-columns: 220px minmax(0, 1fr); }
+  .avatar-editor { grid-template-columns: 240px minmax(0, 1fr); }
+  .previa { align-self: start; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card, .cena, .opcao, #notificacao, .depois, .costas-marca em { transition: none; animation: none; }
