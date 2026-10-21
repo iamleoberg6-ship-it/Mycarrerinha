@@ -1,372 +1,673 @@
-// A casa do jogador: moradias, cômodos com lugares fixos, catálogo de móveis e carros.
-// Cada móvel ocupa um lugar (slot) de um tipo; comprar troca o que está lá e guarda o antigo.
-// Os efeitos somados da casa entram na semana: menos cansaço, mais moral, menos lesão, mais evolução, fama.
+// A casa do jogador: imobiliária com vários imóveis por faixa, móveis posicionados livremente no chão,
+// estilos de decoração, cores por móvel e revestimentos de parede e piso por cômodo.
+// Unidade do chão: ladrilho de meio metro. x corre ao longo da parede da direita (y=0), y ao longo da parede da esquerda (x=0).
 
-export interface Efeitos {
-  recuperacao: number; // pontos de cansaço a menos por semana
-  moral: number; // pontos de moral alvo
-  lesao: number; // % a menos de risco de lesão
-  evolucao: number; // % a mais de evolução
-  fama: number; // fama passiva
-}
+// ------------------------------------------------------------------ efeitos
+export interface Efeitos { recuperacao: number; moral: number; lesao: number; evolucao: number; fama: number }
 export const EFEITOS_ZERO: Efeitos = { recuperacao: 0, moral: 0, lesao: 0, evolucao: 0, fama: 0 };
 export const NOMES_EFEITO: Record<keyof Efeitos, string> = { recuperacao: "Recuperação", moral: "Moral", lesao: "Proteção contra lesão", evolucao: "Evolução", fama: "Fama" };
+/** A casa ajuda, mas não substitui treino e descanso: cada efeito tem um teto. */
+export const TETO: Efeitos = { recuperacao: 15, moral: 20, lesao: 25, evolucao: 20, fama: 10 };
 
-export type TipoMovel =
-  | "beliche" | "cama" | "armario" | "tv" | "videogame" | "sofa" | "mesa" | "tapete" | "quadro" | "planta" | "luminaria"
-  | "geladeira" | "fogao" | "mesaJantar" | "som" | "esteira" | "pesos" | "espreguicadeira" | "piscina" | "churrasqueira"
-  | "estante" | "trofeus" | "carro";
-
-/** Espaço que cada tipo ocupa no chão, em ladrilhos de meio metro (largura em x, fundo em y). Quadros ficam na parede. */
-export const FORMATO: Record<TipoMovel, { w: number; d: number; parede?: boolean; plano?: boolean }> = {
-  beliche: { w: 2, d: 4 }, cama: { w: 4, d: 5 }, armario: { w: 3, d: 1 }, tv: { w: 3, d: 1 }, videogame: { w: 2, d: 2 },
-  sofa: { w: 4, d: 2 }, mesa: { w: 3, d: 2 }, tapete: { w: 4, d: 3, plano: true }, quadro: { w: 2, d: 0, parede: true },
-  planta: { w: 1, d: 1 }, luminaria: { w: 1, d: 1 }, geladeira: { w: 2, d: 2 }, fogao: { w: 2, d: 2 }, mesaJantar: { w: 4, d: 3 },
-  som: { w: 2, d: 1 }, esteira: { w: 2, d: 4 }, pesos: { w: 3, d: 2 }, espreguicadeira: { w: 2, d: 4 }, piscina: { w: 6, d: 5, plano: true },
-  churrasqueira: { w: 2, d: 2 }, estante: { w: 3, d: 1 }, trofeus: { w: 4, d: 1 }, carro: { w: 4, d: 7 },
+// ------------------------------------------------------------------ estilos
+export type Estilo = "basico" | "moderno" | "rustico" | "classico" | "gamer" | "brasileiro";
+export interface InfoEstilo { nome: string; fator: number; tecido: string[]; madeira: string[]; metal: string[]; detalhe: string }
+export const ESTILOS: Record<Estilo, InfoEstilo> = {
+  basico: { nome: "Básico", fator: 0.8, tecido: ["#8E9AA6", "#B5524A", "#3E6FA8", "#7A8B6A"], madeira: ["#C49A6C", "#E2CFB0", "#8A6A48"], metal: ["#9BA4A8", "#F2F2F2", "#2A2A2A"], detalhe: "#DDDDDD" },
+  moderno: { nome: "Moderno", fator: 1.3, tecido: ["#B8BEC4", "#3C4048", "#E9E4DA", "#4F6B5A", "#C7A27C"], madeira: ["#D9C2A3", "#F2EFEA", "#2B2B2B"], metal: ["#2B2B2B", "#E9E9E9", "#B9BEC2"], detalhe: "#111111" },
+  rustico: { nome: "Rústico", fator: 1.1, tecido: ["#C8A879", "#7B4A2A", "#5E6B4A", "#A0522D"], madeira: ["#8A5A35", "#6B4A30", "#A87B50"], metal: ["#4A3B2E", "#7A6A5A"], detalhe: "#5E3B22" },
+  classico: { nome: "Clássico", fator: 1.6, tecido: ["#7A2A34", "#1F3A5F", "#2F4F3A", "#E9E1D3"], madeira: ["#5A3424", "#3B2418", "#F1ECE2"], metal: ["#C9A04A", "#EDEAE4", "#2C2C2C"], detalhe: "#C9A04A" },
+  gamer: { nome: "Gamer", fator: 1.4, tecido: ["#111111", "#C0392B", "#1ABC9C", "#8E44AD"], madeira: ["#1E1E24", "#2A2A33"], metal: ["#1E1E24", "#F2F2F2"], detalhe: "#18E0C8" },
+  brasileiro: { nome: "Brasileiro raiz", fator: 1.0, tecido: ["#F2B705", "#D7263D", "#1B98E0", "#2E7D4F", "#F08A24"], madeira: ["#B0703A", "#E8C27A"], metal: ["#2E7D4F", "#F2B705", "#D7263D"], detalhe: "#F2B705" },
 };
 
-export interface Item { id: string; tipo: TipoMovel; nivel: number; nome: string; preco: number; efeitos: Partial<Efeitos>; cor: string }
-
-const item = (tipo: TipoMovel, nivel: number, nome: string, preco: number, efeitos: Partial<Efeitos>, cor: string): Item =>
-  ({ id: `${tipo}-${nivel}`, tipo, nivel, nome, preco, efeitos, cor });
-
-export const CATALOGO: Item[] = [
-  item("beliche", 1, "Beliche do alojamento", 0, {}, "#8A6A48"),
-  item("cama", 1, "Cama de solteiro", 900, { recuperacao: 2 }, "#3E6FA8"),
-  item("cama", 2, "Cama de casal ortopédica", 6000, { recuperacao: 4, moral: 1 }, "#5B7C99"),
-  item("cama", 3, "Cama king com colchão de molas", 35000, { recuperacao: 6, moral: 2 }, "#E9E2D3"),
-  item("armario", 1, "Arara de roupas", 300, { moral: 1 }, "#9AA3A8"),
-  item("armario", 2, "Guarda-roupa de três portas", 3500, { moral: 1 }, "#B58A5C"),
-  item("armario", 3, "Closet planejado", 40000, { moral: 2, fama: 1 }, "#5A3C2A"),
-  item("tv", 1, "TV de 32 polegadas", 1200, { moral: 1 }, "#2A2A2A"),
-  item("tv", 2, "Smart TV de 55 polegadas", 4500, { moral: 2 }, "#1C1C1C"),
-  item("tv", 3, "Telão de 85 com home theater", 30000, { moral: 3 }, "#111111"),
-  item("videogame", 1, "Videogame usado e um pufe", 1500, { moral: 2, recuperacao: -1 }, "#7B4FA0"),
-  item("videogame", 2, "Console novo e cadeira gamer", 6000, { moral: 3, recuperacao: -1 }, "#C0392B"),
-  item("videogame", 3, "Setup gamer para lives", 25000, { moral: 4, recuperacao: -2, fama: 1 }, "#1ABC9C"),
-  item("sofa", 1, "Sofá de dois lugares", 1500, { moral: 1 }, "#8E7F6A"),
-  item("sofa", 2, "Sofá retrátil", 7000, { moral: 2, recuperacao: 1 }, "#4F6273"),
-  item("sofa", 3, "Sofá de couro em L", 45000, { moral: 3, recuperacao: 1 }, "#6B3A22"),
-  item("mesa", 1, "Escrivaninha simples", 400, { moral: 1 }, "#C9A27A"),
-  item("mesa", 2, "Mesa com notebook para ver jogos", 5000, { evolucao: 1 }, "#7D5A3C"),
-  item("mesa", 3, "Central de análise de vídeo", 30000, { evolucao: 3 }, "#2F3B45"),
-  item("tapete", 1, "Tapete de algodão", 300, { moral: 1 }, "#B5524A"),
-  item("tapete", 2, "Tapete felpudo", 2500, { moral: 1 }, "#D8CDB8"),
-  item("tapete", 3, "Tapete persa", 18000, { moral: 2 }, "#7A2A34"),
-  item("quadro", 1, "Pôster do clube do coração", 50, { moral: 1 }, "#2E7D4F"),
-  item("quadro", 2, "Quadro emoldurado", 1200, { moral: 1 }, "#E3B341"),
-  item("quadro", 3, "Obra de arte original", 60000, { moral: 2, fama: 1 }, "#3A7CA5"),
-  item("planta", 1, "Vaso de suculenta", 80, { moral: 1 }, "#5E9C4E"),
-  item("planta", 2, "Costela-de-adão", 800, { moral: 1 }, "#3F8A4A"),
-  item("planta", 3, "Oliveira em vaso de cerâmica", 6000, { moral: 2 }, "#6F8E4E"),
-  item("luminaria", 1, "Abajur", 150, { recuperacao: 1 }, "#F2D27A"),
-  item("luminaria", 2, "Luminária de piso", 1500, { recuperacao: 1, moral: 1 }, "#E8C468"),
-  item("luminaria", 3, "Luminária de design", 12000, { recuperacao: 1, moral: 2 }, "#D9A441"),
-  item("geladeira", 1, "Frigobar", 900, { lesao: 1 }, "#E8E8E8"),
-  item("geladeira", 2, "Geladeira cheia de comida saudável", 5000, { lesao: 3 }, "#D0D4D6"),
-  item("geladeira", 3, "Geladeira inox de quatro portas", 25000, { lesao: 4, moral: 1 }, "#A9B2B8"),
-  item("fogao", 1, "Fogão de duas bocas", 400, { lesao: 1 }, "#EDEDED"),
-  item("fogao", 2, "Cooktop com forno embutido", 6000, { lesao: 2 }, "#3B3B3B"),
-  item("fogao", 3, "Ilha gourmet", 60000, { lesao: 3, moral: 2 }, "#E6E1D6"),
-  item("mesaJantar", 1, "Mesa de quatro lugares", 800, { moral: 1 }, "#C49A6C"),
-  item("mesaJantar", 2, "Mesa de madeira para seis", 6000, { moral: 2 }, "#8A5A35"),
-  item("mesaJantar", 3, "Mesa de mármore para dez", 50000, { moral: 3, fama: 1 }, "#EDEAE4"),
-  item("som", 1, "Caixinha de som", 200, { moral: 1 }, "#2D3436"),
-  item("som", 2, "Soundbar", 3000, { moral: 2 }, "#1E272E"),
-  item("som", 3, "Som ambiente de estúdio", 28000, { moral: 3 }, "#3D3D3D"),
-  item("esteira", 1, "Bicicleta ergométrica", 2000, { evolucao: 1 }, "#4A4A4A"),
-  item("esteira", 2, "Esteira profissional", 15000, { evolucao: 2 }, "#2C3E50"),
-  item("esteira", 3, "Esteira antigravidade", 120000, { evolucao: 3, lesao: 2 }, "#ECF0F1"),
-  item("pesos", 1, "Halteres e banco", 1000, { evolucao: 1 }, "#555555"),
-  item("pesos", 2, "Estação de musculação", 18000, { evolucao: 2 }, "#34495E"),
-  item("pesos", 3, "Academia de clube em casa", 90000, { evolucao: 3, recuperacao: 1 }, "#B03A2E"),
-  item("espreguicadeira", 1, "Cadeira de praia", 600, { moral: 1 }, "#E67E22"),
-  item("espreguicadeira", 2, "Espreguiçadeira de madeira", 4000, { moral: 1, recuperacao: 1 }, "#A0522D"),
-  item("espreguicadeira", 3, "Daybed com cobertura", 20000, { moral: 2, recuperacao: 1 }, "#F4F1EA"),
-  item("piscina", 1, "Piscina de fibra", 40000, { recuperacao: 2, moral: 1 }, "#4FB3D9"),
-  item("piscina", 2, "Piscina aquecida", 150000, { recuperacao: 3, moral: 2 }, "#2E9CCA"),
-  item("piscina", 3, "Piscina com hidro e banheira de gelo", 450000, { recuperacao: 5, lesao: 3, moral: 2 }, "#1F8FBF"),
-  item("churrasqueira", 1, "Churrasqueira portátil", 300, { moral: 1 }, "#444444"),
-  item("churrasqueira", 2, "Churrasqueira de alvenaria", 8000, { moral: 2 }, "#B5651D"),
-  item("churrasqueira", 3, "Espaço gourmet", 70000, { moral: 3, fama: 1 }, "#7F8C8D"),
-  item("estante", 1, "Estante de livros", 500, { moral: 1 }, "#B08B5E"),
-  item("estante", 2, "Estante com camisas trocadas", 5000, { moral: 1, fama: 1 }, "#6E4B2E"),
-  item("estante", 3, "Painel com bolas de hat-trick", 30000, { moral: 2, fama: 1 }, "#2C2C2C"),
-  item("trofeus", 1, "Prateleira de troféus", 2000, { moral: 1 }, "#9C7A4C"),
-  item("trofeus", 2, "Vitrine iluminada", 25000, { moral: 2, fama: 1 }, "#5D4037"),
-  item("trofeus", 3, "Galeria de troféus", 200000, { moral: 3, fama: 3 }, "#1B1B1B"),
-  item("carro", 1, "Hatch popular", 90000, { moral: 1 }, "#C0392B"),
-  item("carro", 2, "Sedã executivo", 280000, { moral: 1, fama: 1 }, "#2C3E50"),
-  item("carro", 3, "SUV premium", 600000, { moral: 1, fama: 2 }, "#ECECEC"),
-  item("carro", 4, "Superesportivo", 3000000, { moral: 2, fama: 6 }, "#F1C40F"),
-];
-export const ITENS: Record<string, Item> = Object.fromEntries(CATALOGO.map((i) => [i.id, i]));
-export const opcoesDoTipo = (t: TipoMovel) => CATALOGO.filter((i) => i.tipo === t && i.preco > 0);
-
-export interface Slot { id: string; tipo: TipoMovel; x: number; y: number; rot?: boolean; fixo?: string; parede?: "esq" | "dir" }
+// ------------------------------------------------------------------ tipos de móvel
 export type Ambiente = "interno" | "externo" | "garagem";
-export interface Comodo { id: string; nome: string; w: number; d: number; ambiente: Ambiente; slots: Slot[]; janela?: { parede: "esq" | "dir"; pos: number; largura: number } }
-export interface Moradia {
-  id: string; nome: string; fase: string; descricao: string;
-  aluguel: number; compra?: number; acabamento: number; // 1 a 5: piso, paredes e vista
-  vista: "ct" | "rua" | "cidade" | "condominio" | "mar";
-  comodos: Comodo[];
+export type Camada = "chao" | "tapete" | "parede" | "piscina";
+export type Categoria = "dormir" | "sala" | "cozinha" | "banheiro" | "lazer" | "treino" | "decoracao" | "externo" | "garagem";
+export const CATEGORIAS: Record<Categoria, string> = {
+  dormir: "Quarto", sala: "Sala", cozinha: "Cozinha", banheiro: "Banheiro", lazer: "Lazer", treino: "Treino",
+  decoracao: "Decoração", externo: "Área externa", garagem: "Garagem",
+};
+export type TipoMovel =
+  | "beliche" | "cama" | "criado" | "armario" | "comoda" | "rede"
+  | "sofa" | "poltrona" | "mesaCentro" | "tv" | "som" | "estante" | "luminaria"
+  | "geladeira" | "fogao" | "bancada" | "mesaJantar"
+  | "vaso" | "pia" | "chuveiro" | "banheira"
+  | "videogame" | "sinuca" | "pebolim" | "fliperama" | "piano" | "aquario"
+  | "esteira" | "pesos" | "maca" | "gelo"
+  | "tapete" | "planta" | "quadro" | "escultura" | "trofeus"
+  | "piscina" | "espreguicadeira" | "churrasqueira" | "mesaExterna" | "trave" | "jacuzzi" | "fogueira"
+  | "carro" | "moto" | "mesa";
+
+interface InfoTipo { nome: string; categoria: Categoria; w: number; d: number; camada: Camada; ambientes: Ambiente[]; base: number; efeito: Partial<Efeitos>; corDe: "tecido" | "madeira" | "metal"; encosta?: boolean }
+const I: Ambiente[] = ["interno"], E: Ambiente[] = ["externo"], IE: Ambiente[] = ["interno", "externo"], G: Ambiente[] = ["garagem"];
+const t = (nome: string, categoria: Categoria, w: number, d: number, base: number, efeito: Partial<Efeitos>, corDe: InfoTipo["corDe"], o: Partial<InfoTipo> = {}): InfoTipo =>
+  ({ nome, categoria, w, d, camada: "chao", ambientes: I, base, efeito, corDe, ...o });
+export const TIPOS: Record<TipoMovel, InfoTipo> = {
+  beliche: t("Beliche", "dormir", 2, 4, 700, { recuperacao: 1 }, "tecido", { encosta: true }),
+  cama: t("Cama", "dormir", 4, 5, 900, { recuperacao: 2 }, "tecido", { encosta: true }),
+  criado: t("Criado-mudo", "dormir", 1, 1, 250, { moral: 1 }, "madeira", { encosta: true }),
+  armario: t("Guarda-roupa", "dormir", 3, 1, 600, { moral: 1 }, "madeira", { encosta: true }),
+  comoda: t("Cômoda", "dormir", 2, 1, 450, { moral: 1 }, "madeira", { encosta: true }),
+  rede: t("Rede", "lazer", 4, 2, 300, { recuperacao: 1, moral: 1 }, "tecido", { ambientes: IE }),
+  sofa: t("Sofá", "sala", 4, 2, 1500, { moral: 1 }, "tecido"),
+  poltrona: t("Poltrona", "sala", 2, 2, 600, { moral: 1 }, "tecido"),
+  mesaCentro: t("Mesa de centro", "sala", 2, 2, 300, { moral: 1 }, "madeira"),
+  tv: t("TV", "sala", 3, 1, 1200, { moral: 1 }, "madeira", { encosta: true }),
+  som: t("Som", "sala", 2, 1, 250, { moral: 1 }, "metal", { encosta: true }),
+  estante: t("Estante", "sala", 3, 1, 500, { moral: 1 }, "madeira", { encosta: true }),
+  luminaria: t("Luminária", "decoracao", 1, 1, 150, { recuperacao: 1 }, "tecido"),
+  geladeira: t("Geladeira", "cozinha", 2, 2, 900, { lesao: 1 }, "metal", { encosta: true }),
+  fogao: t("Fogão", "cozinha", 2, 2, 450, { lesao: 1 }, "metal", { encosta: true }),
+  bancada: t("Pia da cozinha", "cozinha", 3, 2, 600, { lesao: 1 }, "madeira", { encosta: true }),
+  mesaJantar: t("Mesa de jantar", "cozinha", 4, 3, 800, { moral: 1 }, "madeira"),
+  vaso: t("Vaso sanitário", "banheiro", 1, 2, 300, { lesao: 1 }, "metal", { encosta: true }),
+  pia: t("Pia do banheiro", "banheiro", 2, 1, 300, { lesao: 1 }, "madeira", { encosta: true }),
+  chuveiro: t("Chuveiro", "banheiro", 2, 2, 500, { recuperacao: 1 }, "metal", { encosta: true }),
+  banheira: t("Banheira", "banheiro", 2, 4, 2500, { recuperacao: 2 }, "metal", { encosta: true }),
+  videogame: t("Videogame", "lazer", 2, 2, 1500, { moral: 2, recuperacao: -1 }, "tecido"),
+  sinuca: t("Sinuca", "lazer", 4, 6, 2500, { moral: 2 }, "tecido"),
+  pebolim: t("Pebolim", "lazer", 2, 3, 900, { moral: 1 }, "madeira"),
+  fliperama: t("Fliperama", "lazer", 2, 1, 2000, { moral: 1 }, "tecido", { encosta: true }),
+  piano: t("Piano", "lazer", 3, 3, 3000, { moral: 1, fama: 1 }, "madeira", { encosta: true }),
+  aquario: t("Aquário", "decoracao", 2, 1, 1200, { moral: 1 }, "madeira", { encosta: true }),
+  esteira: t("Cardio", "treino", 2, 4, 2000, { evolucao: 1 }, "metal"),
+  pesos: t("Musculação", "treino", 3, 2, 1000, { evolucao: 1 }, "metal"),
+  maca: t("Maca de massagem", "treino", 2, 4, 1800, { recuperacao: 2 }, "tecido"),
+  gelo: t("Banheira de gelo", "treino", 2, 2, 1500, { recuperacao: 1, lesao: 1 }, "metal", { ambientes: IE }),
+  tapete: t("Tapete", "decoracao", 4, 3, 300, { moral: 1 }, "tecido", { camada: "tapete" }),
+  planta: t("Planta", "decoracao", 1, 1, 80, { moral: 1 }, "tecido", { ambientes: IE }),
+  quadro: t("Quadro", "decoracao", 2, 0, 60, { moral: 1 }, "tecido", { camada: "parede" }),
+  escultura: t("Escultura", "decoracao", 1, 1, 800, { moral: 1 }, "metal", { ambientes: IE }),
+  trofeus: t("Troféus", "decoracao", 4, 1, 2000, { moral: 1, fama: 1 }, "madeira", { encosta: true }),
+  piscina: t("Piscina", "externo", 6, 5, 2000, { recuperacao: 2, moral: 1 }, "tecido", { camada: "piscina", ambientes: E }),
+  espreguicadeira: t("Espreguiçadeira", "externo", 2, 4, 600, { moral: 1 }, "tecido", { ambientes: E }),
+  churrasqueira: t("Churrasqueira", "externo", 2, 2, 300, { moral: 1 }, "metal", { ambientes: E, encosta: true }),
+  mesaExterna: t("Mesa externa", "externo", 3, 3, 400, { moral: 1 }, "tecido", { ambientes: E }),
+  trave: t("Trave de treino", "externo", 6, 2, 900, { evolucao: 1 }, "metal", { ambientes: E }),
+  jacuzzi: t("Jacuzzi", "externo", 3, 3, 4000, { recuperacao: 2 }, "metal", { ambientes: IE }),
+  fogueira: t("Fogueira", "externo", 2, 2, 600, { moral: 1 }, "metal", { ambientes: E }),
+  carro: t("Carro", "garagem", 4, 7, 0, { moral: 1 }, "metal", { ambientes: G }),
+  moto: t("Moto", "garagem", 2, 4, 0, { moral: 1 }, "metal", { ambientes: G }),
+  mesa: t("Escrivaninha", "sala", 3, 2, 400, { moral: 1 }, "madeira", { encosta: true }),
+};
+
+// ------------------------------------------------------------------ catálogo
+export interface Item {
+  id: string; tipo: TipoMovel; estilo: Estilo; forma: number; nivel: number; nome: string;
+  preco: number; efeitos: Partial<Efeitos>; cores: string[]; aVenda: boolean;
 }
+const MULT = [0, 1, 5, 22, 90];
+const redondo = (v: number) => { if (v < 100) return Math.round(v / 10) * 10; const p = 10 ** (Math.floor(Math.log10(v)) - 1); return Math.round(v / p) * p; };
+const escala = (v: number, nivel: number) => { const r = Math.round(Math.abs(v) * (1 + (nivel - 1) * 0.75)); return v < 0 ? -r : r; };
 
-const s = (id: string, tipo: TipoMovel, x: number, y: number, extra: Partial<Slot> = {}): Slot => ({ id, tipo, x, y, ...extra });
+type Linha = [Estilo, number, number, string, Partial<{ preco: number; efeitos: Partial<Efeitos>; cores: string[]; venda: boolean }>?];
+const PRODUTOS: Partial<Record<TipoMovel, Linha[]>> = {
+  beliche: [["basico", 1, 1, "Beliche de madeira"]],
+  cama: [["basico", 1, 1, "Cama de solteiro"], ["brasileiro", 1, 1, "Cama de solteiro com colcha de chita"], ["basico", 2, 2, "Cama de casal"],
+    ["rustico", 2, 2, "Cama de casal de madeira maciça"], ["moderno", 2, 3, "Cama box de casal"], ["gamer", 2, 3, "Cama gamer com LED"],
+    ["classico", 3, 4, "Cama king capitonê"], ["moderno", 3, 4, "Cama king flutuante"]],
+  criado: [["basico", 1, 1, "Criado-mudo"], ["rustico", 1, 2, "Criado-mudo de demolição"], ["moderno", 2, 2, "Mesa de cabeceira suspensa"],
+    ["gamer", 2, 2, "Cabeceira com carregador e LED"], ["classico", 3, 3, "Mesa de cabeceira com puxador dourado"], ["brasileiro", 1, 1, "Banquinho de feira"]],
+  armario: [["basico", 1, 1, "Arara de roupas"], ["brasileiro", 1, 1, "Arara com cortina de chita"], ["basico", 2, 2, "Guarda-roupa de três portas"],
+    ["rustico", 2, 2, "Guarda-roupa de madeira maciça"], ["gamer", 2, 3, "Guarda-roupa preto com LED"], ["moderno", 3, 3, "Guarda-roupa com porta de espelho"],
+    ["classico", 3, 4, "Closet planejado com dourado"]],
+  comoda: [["basico", 1, 1, "Cômoda de quatro gavetas"], ["rustico", 1, 2, "Cômoda de peroba"], ["moderno", 2, 2, "Aparador laqueado"], ["classico", 2, 3, "Cômoda com pés torneados"]],
+  rede: [["brasileiro", 1, 1, "Rede de algodão no suporte"], ["brasileiro", 2, 2, "Rede de casal colorida"], ["rustico", 2, 2, "Rede com suporte de madeira"]],
+  sofa: [["basico", 1, 1, "Sofá de dois lugares"], ["brasileiro", 1, 1, "Sofá com manta de crochê"], ["basico", 2, 2, "Sofá retrátil"],
+    ["rustico", 2, 2, "Sofá de couro rústico"], ["moderno", 2, 3, "Sofá de linhas retas"], ["gamer", 2, 3, "Sofá gamer reclinável"],
+    ["classico", 3, 4, "Sofá Chesterfield"], ["moderno", 3, 4, "Sofá modular de veludo"]],
+  poltrona: [["basico", 1, 1, "Poltrona simples"], ["brasileiro", 2, 1, "Cadeira de balanço"], ["rustico", 1, 2, "Poltrona de couro"],
+    ["moderno", 3, 3, "Poltrona de design"], ["classico", 1, 3, "Poltrona bergère"], ["gamer", 4, 3, "Cadeira gamer"]],
+  mesaCentro: [["basico", 1, 1, "Mesa de centro"], ["brasileiro", 3, 1, "Caixote de feira"], ["rustico", 3, 2, "Mesa de tronco"],
+    ["moderno", 2, 2, "Mesa de centro de vidro"], ["classico", 1, 3, "Mesa de centro de mármore"]],
+  tv: [["basico", 1, 1, "TV de 32 na mesinha"], ["brasileiro", 4, 1, "TV de tubo da vó"], ["basico", 2, 2, "Smart TV de 55 no rack"],
+    ["moderno", 2, 3, "TV de 65 em rack suspenso"], ["gamer", 3, 3, "Monitor gigante com LED"], ["classico", 3, 4, "Telão de 85 com home theater"],
+    ["moderno", 3, 4, "TV OLED de 77"]],
+  som: [["basico", 1, 1, "Caixinha de som"], ["brasileiro", 4, 1, "Rádio antigo"], ["moderno", 2, 2, "Soundbar"], ["gamer", 2, 2, "Soundbar com subwoofer RGB"],
+    ["rustico", 3, 3, "Caixas acústicas de madeira"], ["classico", 4, 3, "Vitrola com discos"]],
+  estante: [["basico", 1, 1, "Estante de livros"], ["rustico", 1, 2, "Estante de demolição"], ["brasileiro", 2, 2, "Estante com camisas trocadas", { efeitos: { moral: 2, fama: 1 } }],
+    ["gamer", 3, 3, "Painel com bolas de hat-trick", { efeitos: { moral: 2, fama: 2 } }], ["classico", 1, 3, "Biblioteca de nogueira"], ["moderno", 2, 2, "Nichos com camisas emolduradas", { efeitos: { moral: 2, fama: 1 } }]],
+  luminaria: [["basico", 1, 1, "Abajur"], ["brasileiro", 1, 1, "Luminária de palha"], ["moderno", 2, 2, "Luminária de piso"], ["rustico", 2, 2, "Luminária de tripé"],
+    ["gamer", 2, 2, "Luminária de LED colorido"], ["classico", 3, 3, "Luminária de arco dourada"], ["moderno", 3, 3, "Luminária de arco"]],
+  geladeira: [["basico", 1, 1, "Frigobar"], ["brasileiro", 1, 1, "Frigobar com ímã de time"], ["basico", 2, 2, "Geladeira duplex"],
+    ["rustico", 4, 2, "Geladeira retrô"], ["moderno", 3, 3, "Geladeira inox de quatro portas"], ["classico", 3, 4, "Geladeira embutida com adega"]],
+  fogao: [["basico", 1, 1, "Fogão de duas bocas"], ["brasileiro", 4, 2, "Fogão a lenha"], ["rustico", 4, 2, "Fogão a lenha de ferro"],
+    ["moderno", 2, 2, "Cooktop com forno embutido"], ["moderno", 3, 3, "Ilha com cooktop de indução"], ["classico", 3, 4, "Ilha gourmet de mármore"]],
+  bancada: [["basico", 1, 1, "Pia com gabinete"], ["brasileiro", 1, 1, "Pia de granito com filtro de barro"], ["rustico", 2, 2, "Bancada de madeira com cuba de cobre"],
+    ["moderno", 2, 3, "Bancada de quartzo"], ["classico", 2, 4, "Bancada de mármore com armários"]],
+  mesaJantar: [["basico", 1, 1, "Mesa de quatro lugares"], ["brasileiro", 1, 1, "Mesa de fórmica com cadeiras de bar"], ["rustico", 2, 2, "Mesa de fazenda para seis"],
+    ["moderno", 2, 3, "Mesa de vidro para seis"], ["classico", 3, 4, "Mesa de mármore para dez"]],
+  vaso: [["basico", 1, 1, "Vaso sanitário"], ["moderno", 2, 2, "Vaso suspenso"], ["classico", 2, 3, "Vaso com acabamento dourado"]],
+  pia: [["basico", 1, 1, "Pia de coluna"], ["rustico", 1, 2, "Pia de pedra"], ["moderno", 2, 2, "Cuba de apoio"], ["classico", 2, 3, "Bancada de mármore com cuba"]],
+  chuveiro: [["basico", 1, 1, "Box com chuveiro elétrico"], ["brasileiro", 1, 1, "Chuveiro elétrico com cortina"], ["moderno", 2, 3, "Box de vidro com ducha"], ["classico", 2, 3, "Ducha dourada"]],
+  banheira: [["basico", 1, 1, "Banheira simples"], ["moderno", 1, 2, "Banheira de imersão"], ["classico", 2, 3, "Banheira vitoriana"]],
+  videogame: [["basico", 1, 1, "Videogame usado e um pufe"], ["brasileiro", 1, 1, "Videogame antigo de fita"], ["moderno", 2, 2, "Console com poltrona"],
+    ["gamer", 2, 2, "Console novo e cadeira gamer"], ["gamer", 3, 3, "Setup gamer para lives", { efeitos: { moral: 4, recuperacao: -2, fama: 1 } }]],
+  sinuca: [["brasileiro", 1, 1, "Mesa de bilhar de bar"], ["rustico", 1, 2, "Mesa de sinuca de madeira"], ["classico", 2, 3, "Mesa de sinuca profissional"], ["moderno", 2, 3, "Mesa de sinuca de design"]],
+  pebolim: [["basico", 1, 1, "Pebolim"], ["brasileiro", 1, 1, "Pebolim de boteco"], ["gamer", 1, 2, "Pebolim de torneio"]],
+  fliperama: [["brasileiro", 1, 1, "Fliperama de boteco"], ["gamer", 1, 2, "Fliperama retrô"]],
+  piano: [["classico", 1, 2, "Piano de armário"], ["classico", 2, 3, "Piano de meia cauda"], ["moderno", 2, 3, "Piano de cauda branco"]],
+  aquario: [["basico", 1, 1, "Aquário pequeno"], ["moderno", 1, 2, "Aquário de água doce"], ["classico", 1, 3, "Aquário marinho"]],
+  esteira: [["basico", 1, 1, "Bicicleta ergométrica"], ["moderno", 2, 2, "Esteira profissional"], ["gamer", 2, 2, "Esteira com tela"], ["moderno", 3, 4, "Esteira antigravidade", { efeitos: { evolucao: 3, lesao: 2 } }]],
+  pesos: [["basico", 1, 1, "Halteres e banco"], ["brasileiro", 1, 1, "Peso de lata de cimento"], ["moderno", 2, 2, "Estação de musculação"],
+    ["rustico", 3, 3, "Gaiola de agachamento"], ["moderno", 3, 4, "Academia de clube em casa", { efeitos: { evolucao: 3, recuperacao: 1 } }]],
+  maca: [["basico", 1, 1, "Maca de massagem"], ["moderno", 1, 2, "Maca com aquecimento"], ["classico", 1, 3, "Maca de spa"]],
+  gelo: [["brasileiro", 1, 1, "Tonel com gelo"], ["moderno", 2, 3, "Banheira de crioterapia"]],
+  tapete: [["basico", 1, 1, "Tapete de algodão"], ["brasileiro", 4, 1, "Tapete de retalhos"], ["rustico", 1, 2, "Tapete de sisal"],
+    ["moderno", 2, 2, "Tapete felpudo"], ["gamer", 2, 2, "Tapete com escudo do clube"], ["classico", 3, 3, "Tapete persa"]],
+  planta: [["basico", 1, 1, "Vaso de suculenta"], ["brasileiro", 2, 1, "Samambaia"], ["moderno", 2, 2, "Costela-de-adão"],
+    ["rustico", 3, 2, "Bananeira no vaso"], ["classico", 3, 3, "Oliveira em vaso de cerâmica"]],
+  quadro: [["basico", 1, 1, "Pôster do clube do coração"], ["brasileiro", 1, 1, "Pôster da seleção"], ["rustico", 2, 2, "Quadro de paisagem"],
+    ["gamer", 4, 2, "Camisa autografada emoldurada", { efeitos: { moral: 1, fama: 1 } }], ["moderno", 3, 3, "Obra de arte abstrata"], ["classico", 2, 4, "Pintura a óleo com moldura dourada", { efeitos: { moral: 3, fama: 1 } }]],
+  escultura: [["brasileiro", 1, 1, "Bola de capotão no pedestal"], ["moderno", 2, 2, "Escultura abstrata"], ["classico", 3, 3, "Busto de mármore", { efeitos: { moral: 2, fama: 1 } }]],
+  trofeus: [["basico", 1, 1, "Prateleira de troféus"], ["rustico", 1, 2, "Prateleira de madeira de lei"], ["moderno", 2, 3, "Vitrine iluminada"], ["classico", 3, 4, "Galeria de troféus"]],
+  piscina: [["basico", 1, 3, "Piscina de fibra"], ["moderno", 2, 4, "Piscina aquecida com luz"], ["classico", 3, 4, "Piscina com hidro e banheira de gelo", { efeitos: { recuperacao: 5, lesao: 3, moral: 2 } }]],
+  espreguicadeira: [["brasileiro", 1, 1, "Cadeira de praia listrada"], ["rustico", 2, 2, "Espreguiçadeira de madeira"], ["moderno", 2, 2, "Espreguiçadeira de alumínio"], ["classico", 3, 3, "Daybed com cobertura"]],
+  churrasqueira: [["basico", 1, 1, "Churrasqueira portátil"], ["brasileiro", 2, 2, "Churrasqueira de alvenaria"], ["rustico", 2, 2, "Churrasqueira de tijolo à vista"], ["moderno", 3, 3, "Espaço gourmet"]],
+  mesaExterna: [["brasileiro", 1, 1, "Mesa de plástico com guarda-sol"], ["rustico", 2, 2, "Mesa de madeira de demolição"], ["moderno", 2, 3, "Mesa de jardim com ombrelone"]],
+  trave: [["basico", 1, 2, "Trave de treino"], ["moderno", 2, 3, "Gol com rede de finalização"]],
+  jacuzzi: [["moderno", 1, 3, "Jacuzzi para seis"]],
+  fogueira: [["rustico", 1, 2, "Fogueira de pedra"], ["moderno", 2, 3, "Lareira externa a gás"]],
+  carro: [
+    ["basico", 1, 1, "Hatch popular", { preco: 90000, efeitos: { moral: 1 }, cores: ["#C0392B", "#ECECEC", "#2C3E50", "#7F8C8D"] }],
+    ["brasileiro", 5, 1, "Kombi reformada", { preco: 120000, efeitos: { moral: 2 }, cores: ["#1B98E0", "#2E7D4F", "#F08A24"] }],
+    ["rustico", 6, 2, "Picape cabine dupla", { preco: 250000, efeitos: { moral: 1, fama: 1 }, cores: ["#2C2C2C", "#ECECEC", "#7B4A2A"] }],
+    ["classico", 2, 2, "Sedã executivo", { preco: 280000, efeitos: { moral: 1, fama: 1 }, cores: ["#2C3E50", "#111111", "#ECECEC"] }],
+    ["moderno", 3, 3, "SUV premium", { preco: 600000, efeitos: { moral: 1, fama: 2 }, cores: ["#ECECEC", "#111111", "#4F6B5A"] }],
+    ["moderno", 4, 3, "Esportivo conversível", { preco: 1200000, efeitos: { moral: 2, fama: 3 }, cores: ["#C0392B", "#1F3A5F", "#ECECEC"] }],
+    ["gamer", 4, 4, "Superesportivo", { preco: 3000000, efeitos: { moral: 2, fama: 6 }, cores: ["#F1C40F", "#18E0C8", "#C0392B", "#8E44AD"] }],
+  ],
+  moto: [
+    ["basico", 1, 1, "Moto de entregador", { preco: 15000, efeitos: { moral: 1 }, cores: ["#C0392B", "#2C2C2C"] }],
+    ["gamer", 2, 2, "Moto esportiva", { preco: 90000, efeitos: { moral: 1, fama: 1 }, cores: ["#18E0C8", "#C0392B", "#111111"] }],
+  ],
+  mesa: [["basico", 1, 1, "Escrivaninha simples"], ["rustico", 1, 2, "Escrivaninha de madeira maciça"], ["moderno", 2, 2, "Mesa com notebook para ver jogos", { efeitos: { evolucao: 1 } }],
+    ["gamer", 3, 3, "Central de análise de vídeo", { efeitos: { evolucao: 3 } }]],
+};
 
-export const MORADIAS: Moradia[] = [
-  {
-    id: "alojamento", nome: "Alojamento do clube", fase: "Base", acabamento: 1, vista: "ct", aluguel: 0,
-    descricao: "Quarto dividido no CT. Beliche, armário de metal e um colega de quarto que ronca.",
-    comodos: [{ id: "quarto", nome: "Quarto", w: 9, d: 8, ambiente: "interno", janela: { parede: "dir", pos: 4.5, largura: 2.4 }, slots: [
-      s("beliche", "beliche", 0, 0, { fixo: "beliche-1" }),
-      s("armario", "armario", 3, 0, { fixo: "armario-1" }),
-      s("mesa", "mesa", 6, 0),
-      s("luminaria", "luminaria", 8, 2),
-      s("planta", "planta", 8, 4),
-      s("tv", "tv", 0, 5, { rot: true }),
-      s("videogame", "videogame", 2, 6),
-      s("tapete", "tapete", 3, 3),
-      s("quadro", "quadro", 0, 0, { parede: "esq", x: 5.5 }),
-    ] }],
-  },
-  {
-    id: "kitnet", nome: "Kitnet alugada", fase: "Primeiro contrato", acabamento: 2, vista: "rua", aluguel: 1500,
-    descricao: "Um cômodo só, mas é seu. Cama, cozinha no canto e a TV a dois passos.",
-    comodos: [{ id: "kitnet", nome: "Kitnet", w: 11, d: 9, ambiente: "interno", janela: { parede: "esq", pos: 3, largura: 2.4 }, slots: [
-      s("cama", "cama", 0, 0),
-      s("mesa", "mesa", 4, 0),
-      s("geladeira", "geladeira", 7, 0),
-      s("fogao", "fogao", 9, 0),
-      s("luminaria", "luminaria", 4, 2),
-      s("planta", "planta", 10, 3),
-      s("tv", "tv", 0, 6, { rot: true }),
-      s("videogame", "videogame", 3, 6),
-      s("tapete", "tapete", 5, 4),
-      s("quadro", "quadro", 0, 0, { parede: "dir", x: 5.5 }),
-    ] }],
-  },
-  {
-    id: "apartamento", nome: "Apartamento", fase: "Titular", acabamento: 3, vista: "cidade", aluguel: 8000, compra: 900000,
-    descricao: "Sala, quarto, cozinha, varanda e uma vaga na garagem do prédio.",
-    comodos: [
-      { id: "quarto", nome: "Quarto", w: 10, d: 8, ambiente: "interno", janela: { parede: "esq", pos: 6.5, largura: 2.4 }, slots: [
-        s("cama", "cama", 0, 0), s("luminaria", "luminaria", 4, 0), s("armario", "armario", 5, 0), s("planta", "planta", 9, 0),
-        s("mesa", "mesa", 8, 2, { rot: true }), s("tv", "tv", 9, 5, { rot: true }), s("tapete", "tapete", 4, 4), s("quadro", "quadro", 0, 0, { parede: "dir", x: 2 }),
-      ] },
-      { id: "sala", nome: "Sala", w: 11, d: 9, ambiente: "interno", janela: { parede: "esq", pos: 6, largura: 3 }, slots: [
-        s("planta", "planta", 0, 0), s("som", "som", 1, 0), s("tv", "tv", 4, 0), s("luminaria", "luminaria", 10, 0),
-        s("tapete", "tapete", 4, 2), s("videogame", "videogame", 8, 2), s("sofa", "sofa", 4, 6), s("mesaJantar", "mesaJantar", 0, 4, { rot: true }),
-        s("quadro", "quadro", 0, 0, { parede: "dir", x: 8.5 }),
-      ] },
-      { id: "cozinha", nome: "Cozinha", w: 8, d: 7, ambiente: "interno", janela: { parede: "dir", pos: 6, largura: 2 }, slots: [
-        s("geladeira", "geladeira", 0, 0), s("fogao", "fogao", 2, 0), s("planta", "planta", 7, 0), s("mesaJantar", "mesaJantar", 3, 3),
-        s("quadro", "quadro", 0, 0, { parede: "esq", x: 4 }),
-      ] },
-      { id: "varanda", nome: "Varanda", w: 8, d: 5, ambiente: "externo", slots: [
-        s("planta", "planta", 0, 0), s("espreguicadeira", "espreguicadeira", 1, 0, { rot: true }), s("churrasqueira", "churrasqueira", 6, 0),
-      ] },
-      { id: "garagem", nome: "Garagem", w: 6, d: 9, ambiente: "garagem", slots: [s("vaga1", "carro", 1, 1)] },
-    ],
-  },
-  {
-    id: "casa", nome: "Casa em condomínio", fase: "Estrela", acabamento: 4, vista: "condominio", aluguel: 22000, compra: 2500000,
-    descricao: "Quintal com piscina, academia em casa e garagem para dois carros. A família pode vir morar junto.",
-    comodos: [
-      { id: "quarto", nome: "Suíte", w: 11, d: 9, ambiente: "interno", janela: { parede: "esq", pos: 6.5, largura: 3 }, slots: [
-        s("cama", "cama", 0, 0), s("luminaria", "luminaria", 4, 0), s("armario", "armario", 5, 0), s("planta", "planta", 10, 0),
-        s("mesa", "mesa", 9, 2, { rot: true }), s("tv", "tv", 10, 6, { rot: true }), s("tapete", "tapete", 4, 4), s("quadro", "quadro", 0, 0, { parede: "dir", x: 2 }),
-      ] },
-      { id: "sala", nome: "Sala", w: 12, d: 10, ambiente: "interno", janela: { parede: "esq", pos: 6.5, largura: 4 }, slots: [
-        s("planta", "planta", 0, 0), s("som", "som", 1, 0), s("tv", "tv", 5, 0), s("luminaria", "luminaria", 11, 0),
-        s("tapete", "tapete", 5, 2), s("videogame", "videogame", 9, 2), s("sofa", "sofa", 5, 6), s("mesaJantar", "mesaJantar", 0, 5, { rot: true }),
-        s("estante", "estante", 0, 1, { rot: true }), s("quadro", "quadro", 0, 0, { parede: "dir", x: 9.5 }),
-      ] },
-      { id: "cozinha", nome: "Cozinha", w: 9, d: 8, ambiente: "interno", janela: { parede: "dir", pos: 6.5, largura: 2.4 }, slots: [
-        s("geladeira", "geladeira", 0, 0), s("fogao", "fogao", 2, 0), s("planta", "planta", 8, 0), s("mesaJantar", "mesaJantar", 4, 4),
-        s("quadro", "quadro", 0, 0, { parede: "esq", x: 4.5 }),
-      ] },
-      { id: "academia", nome: "Academia", w: 9, d: 8, ambiente: "interno", janela: { parede: "esq", pos: 5.5, largura: 3 }, slots: [
-        s("esteira", "esteira", 0, 0), s("pesos", "pesos", 4, 0), s("som", "som", 8, 0, { rot: true }), s("planta", "planta", 8, 3), s("tapete", "tapete", 4, 4),
-      ] },
-      { id: "externa", nome: "Quintal", w: 12, d: 10, ambiente: "externo", slots: [
-        s("planta", "planta", 0, 0), s("churrasqueira", "churrasqueira", 10, 0), s("espreguicadeira", "espreguicadeira", 0, 3),
-        s("piscina", "piscina", 3, 3), s("espreguicadeira2", "espreguicadeira", 10, 3),
-      ] },
-      { id: "garagem", nome: "Garagem", w: 11, d: 9, ambiente: "garagem", slots: [s("vaga1", "carro", 1, 1), s("vaga2", "carro", 6, 1)] },
-    ],
-  },
-  {
-    id: "mansao", nome: "Mansão", fase: "Lenda", acabamento: 5, vista: "mar", aluguel: 90000, compra: 15000000,
-    descricao: "Vista para o mar, sala de troféus, piscina com hidro e garagem para a coleção.",
-    comodos: [
-      { id: "quarto", nome: "Suíte master", w: 12, d: 10, ambiente: "interno", janela: { parede: "esq", pos: 6.5, largura: 4 }, slots: [
-        s("cama", "cama", 1, 0), s("luminaria", "luminaria", 0, 0), s("luminaria2", "luminaria", 5, 0), s("armario", "armario", 7, 0), s("planta", "planta", 11, 0),
-        s("mesa", "mesa", 10, 2, { rot: true }), s("tv", "tv", 11, 6, { rot: true }), s("tapete", "tapete", 5, 5), s("quadro", "quadro", 0, 0, { parede: "dir", x: 3 }),
-      ] },
-      { id: "sala", nome: "Sala", w: 13, d: 11, ambiente: "interno", janela: { parede: "esq", pos: 7, largura: 5 }, slots: [
-        s("planta", "planta", 0, 0), s("som", "som", 2, 0), s("tv", "tv", 5, 0), s("som2", "som", 9, 0), s("luminaria", "luminaria", 12, 0),
-        s("tapete", "tapete", 5, 3), s("videogame", "videogame", 10, 3), s("sofa", "sofa", 5, 7), s("mesaJantar", "mesaJantar", 0, 6, { rot: true }),
-        s("estante", "estante", 0, 1, { rot: true }), s("quadro", "quadro", 0, 0, { parede: "dir", x: 11 }),
-      ] },
-      { id: "cozinha", nome: "Cozinha gourmet", w: 10, d: 8, ambiente: "interno", janela: { parede: "dir", pos: 7.5, largura: 3 }, slots: [
-        s("geladeira", "geladeira", 0, 0), s("fogao", "fogao", 3, 2), s("planta", "planta", 9, 0), s("mesaJantar", "mesaJantar", 5, 4),
-        s("quadro", "quadro", 0, 0, { parede: "esq", x: 4.5 }),
-      ] },
-      { id: "trofeus", nome: "Sala de troféus", w: 10, d: 8, ambiente: "interno", slots: [
-        s("trofeus", "trofeus", 1, 0), s("trofeus2", "trofeus", 6, 0), s("estante", "estante", 0, 2, { rot: true }), s("tapete", "tapete", 4, 3),
-        s("planta", "planta", 9, 3), s("quadro", "quadro", 0, 0, { parede: "esq", x: 6.5 }),
-      ] },
-      { id: "academia", nome: "Academia", w: 10, d: 8, ambiente: "interno", janela: { parede: "esq", pos: 5.5, largura: 4 }, slots: [
-        s("esteira", "esteira", 0, 0), s("esteira2", "esteira", 2, 0), s("pesos", "pesos", 5, 0), s("som", "som", 9, 0, { rot: true }), s("tapete", "tapete", 5, 4),
-      ] },
-      { id: "externa", nome: "Área da piscina", w: 14, d: 11, ambiente: "externo", slots: [
-        s("planta", "planta", 0, 0), s("churrasqueira", "churrasqueira", 12, 0), s("espreguicadeira", "espreguicadeira", 0, 3), s("espreguicadeira3", "espreguicadeira", 2, 3),
-        s("piscina", "piscina", 5, 3), s("espreguicadeira2", "espreguicadeira", 12, 3), s("planta2", "planta", 13, 10),
-      ] },
-      { id: "garagem", nome: "Garagem", w: 21, d: 9, ambiente: "garagem", slots: [s("vaga1", "carro", 1, 1), s("vaga2", "carro", 6, 1), s("vaga3", "carro", 11, 1), s("vaga4", "carro", 16, 1)] },
-    ],
-  },
+export const CATALOGO: Item[] = [];
+for (const [tipo, linhas] of Object.entries(PRODUTOS) as [TipoMovel, Linha[]][]) {
+  const info = TIPOS[tipo];
+  linhas.forEach(([estilo, forma, nivel, nome, o = {}]) => {
+    const preco = o.preco ?? redondo(info.base * MULT[nivel] * ESTILOS[estilo].fator);
+    const efeitos = o.efeitos ?? Object.fromEntries(Object.entries(info.efeito).map(([k, v]) => [k, escala(v as number, nivel)]));
+    const id = `${tipo}-${estilo}-${forma}-${nivel}`;
+    CATALOGO.push({ id, tipo, estilo, forma, nivel, nome, preco, efeitos, cores: o.cores ?? ESTILOS[estilo][info.corDe], aVenda: o.venda ?? tipo !== "beliche" });
+  });
+}
+export const ITENS: Record<string, Item> = Object.fromEntries(CATALOGO.map((i) => [i.id, i]));
+export const itemPorNome = (nome: string) => CATALOGO.find((i) => i.nome === nome)!;
+
+// ------------------------------------------------------------------ revestimentos de parede e piso
+export interface Revestimento { id: string; nome: string; lugar: "parede" | "piso"; ambientes: Ambiente[]; padrao: string; cores: string[]; nomesCores?: string[]; precoM2: number; qualidade: number }
+const rv = (id: string, nome: string, lugar: "parede" | "piso", ambientes: Ambiente[], cores: string[], precoM2: number, qualidade: number, nomesCores?: string[]): Revestimento =>
+  ({ id, nome, lugar, ambientes, padrao: id, cores, precoM2, qualidade, nomesCores });
+export const REVESTIMENTOS: Revestimento[] = [
+  rv("pintura", "Pintura", "parede", ["interno", "garagem"], ["#F1EFEA", "#E8DCC4", "#D9DCDA", "#B9C9B0", "#BFD7E6", "#D99A78", "#F2D98A", "#E3B9B4", "#2F4560", "#3E5E48", "#4A4D52", "#6E2E3A"], 25, 1,
+    ["Branco gelo", "Areia", "Cinza claro", "Verde sálvia", "Azul céu", "Terracota", "Amarelo", "Rosa antigo", "Azul marinho", "Verde floresta", "Grafite", "Vinho"]),
+  rv("faixa", "Pintura com faixa", "parede", ["interno"], ["#CFDCCB", "#E8DCC4", "#D9DCDA"], 35, 1),
+  rv("listras", "Papel listrado", "parede", ["interno"], ["#E8DCC4", "#BFD7E6", "#B9C9B0", "#E3B9B4"], 60, 2),
+  rv("floral", "Papel floral", "parede", ["interno"], ["#F3EAD8", "#DCE8D6", "#2F4560"], 80, 3),
+  rv("geometrico", "Papel geométrico", "parede", ["interno"], ["#1E1E1E", "#F1EFEA", "#2F4560"], 90, 3),
+  rv("tijolinho", "Tijolinho à vista", "parede", ["interno", "garagem"], ["#B5603F", "#EDE6DC", "#5A5A5A"], 120, 3, ["Tijolo", "Branco", "Grafite"]),
+  rv("concreto", "Concreto aparente", "parede", ["interno", "garagem"], ["#A9ABA7"], 150, 3),
+  rv("azulejo", "Azulejo português", "parede", ["interno"], ["#2B5BA8", "#2E7D4F", "#B5603F"], 180, 4),
+  rv("ripado", "Madeira ripada", "parede", ["interno"], ["#B98E5F", "#6B4A30", "#2B2B2B"], 220, 4, ["Carvalho", "Nogueira", "Preto"]),
+  rv("boiserie", "Boiserie", "parede", ["interno"], ["#F1EFEA", "#5E7A66", "#2F4560"], 300, 5),
+  rv("marmoreP", "Mármore", "parede", ["interno"], ["#EFEBE4", "#2A2A2A", "#E3D3BE"], 450, 5, ["Carrara", "Nero", "Travertino"]),
+  rv("muro", "Muro pintado", "parede", ["externo"], ["#E8DCC4", "#F1EFEA", "#D99A78", "#B9C9B0"], 30, 1),
+  rv("cerca", "Cerca viva", "parede", ["externo"], ["#4E8F44", "#3B6E35"], 90, 3),
+  rv("vidro", "Guarda-corpo de vidro", "parede", ["externo"], ["#BFE3F2"], 400, 4),
+  rv("pedra", "Muro de pedra", "parede", ["externo"], ["#9C9488", "#7A6E62"], 160, 3),
+  rv("cimento", "Cimento queimado", "piso", ["interno", "garagem"], ["#9EA19A", "#B9B6AE", "#6F7270"], 40, 1),
+  rv("ceramica", "Cerâmica", "piso", ["interno"], ["#E3D9C6", "#C9CCC8", "#B87A5A"], 60, 2),
+  rv("taco", "Taco de madeira", "piso", ["interno"], ["#B98E5F", "#8A5A35"], 110, 3),
+  rv("madeira", "Assoalho de madeira", "piso", ["interno"], ["#D2B48C", "#8A5A35", "#5A3B26"], 180, 3, ["Carvalho", "Nogueira", "Ipê"]),
+  rv("carpete", "Carpete", "piso", ["interno"], ["#C8BBA3", "#7D8288", "#2F4560", "#6E2E3A"], 90, 3),
+  rv("hidraulico", "Ladrilho hidráulico", "piso", ["interno"], ["#2E7D4F", "#2B5BA8", "#B5524A"], 200, 4),
+  rv("porcelanato", "Porcelanato", "piso", ["interno", "garagem"], ["#DDD8CF", "#B9BBB8", "#F4F2EE", "#3A3A3A"], 160, 4),
+  rv("marmore", "Mármore", "piso", ["interno"], ["#EFEBE4", "#E3D3BE", "#2A2A2A"], 600, 5, ["Carrara", "Travertino", "Nero"]),
+  rv("epoxi", "Epóxi", "piso", ["garagem"], ["#8E9592", "#2E2E2E", "#2B5BA8"], 120, 3),
+  rv("grama", "Grama", "piso", ["externo"], ["#86B86A", "#6FA35A"], 30, 2),
+  rv("deck", "Deck de madeira", "piso", ["externo"], ["#B98E5F", "#8A5A35"], 250, 4),
+  rv("pedraPiso", "Pedra", "piso", ["externo"], ["#C9C1B3", "#9C9488"], 140, 3),
+  rv("porcelanatoExt", "Porcelanato externo", "piso", ["externo"], ["#E6E1D6", "#B9BBB8"], 180, 4),
 ];
-export const MORADIA: Record<string, Moradia> = Object.fromEntries(MORADIAS.map((m) => [m.id, m]));
+export const REVEST: Record<string, Revestimento> = Object.fromEntries(REVESTIMENTOS.map((r) => [r.id, r]));
+export interface Acabamento { id: string; cor: number }
 
-/** Retângulo ocupado por um lugar no chão (com a rotação aplicada). */
-export function areaDoSlot(sl: Slot): { x: number; y: number; w: number; d: number } {
-  const f = FORMATO[sl.tipo];
-  return sl.rot ? { x: sl.x, y: sl.y, w: f.d, d: f.w } : { x: sl.x, y: sl.y, w: f.w, d: f.d };
+// ------------------------------------------------------------------ imóveis
+export type CategoriaImovel = "alojamento" | "kitnet" | "apartamento" | "casa" | "mansao";
+export const CATEGORIAS_IMOVEL: Record<CategoriaImovel, string> = { alojamento: "Alojamentos", kitnet: "Kitnets", apartamento: "Apartamentos", casa: "Casas", mansao: "Mansões" };
+export type Vista = "ct" | "rua" | "cidade" | "condominio" | "mar" | "campo";
+export type TipoComodo = "quarto" | "sala" | "cozinha" | "banheiro" | "escritorio" | "academia" | "jogos" | "trofeus" | "externo" | "garagem" | "kitnet";
+export interface Janela { parede: "esq" | "dir"; pos: number; largura: number }
+export interface Incluso { item: string; x: number; y: number; rot?: number; parede?: "esq" | "dir" }
+export interface Comodo {
+  id: string; nome: string; tipo: TipoComodo; ambiente: Ambiente; w: number; d: number; alturaParede?: number;
+  janelas: Janela[]; parede: Acabamento; piso: Acabamento; inclusos?: Incluso[];
 }
+export interface Imovel {
+  id: string; categoria: CategoriaImovel; nome: string; local: string; descricao: string;
+  aluguel: number; compra?: number; vista: Vista; comodos: Comodo[];
+}
+
+const ac = (id: string, cor = 0): Acabamento => ({ id, cor });
+const cm = (id: string, nome: string, tipo: TipoComodo, w: number, d: number, o: Partial<Comodo> = {}): Comodo => {
+  const ambiente: Ambiente = tipo === "externo" ? "externo" : tipo === "garagem" ? "garagem" : "interno";
+  const padraoPiso = ambiente === "externo" ? ac("grama") : ambiente === "garagem" ? ac("cimento") : ac("ceramica");
+  const padraoParede = ambiente === "externo" ? ac("muro") : ambiente === "garagem" ? ac("pintura", 2) : ac("pintura");
+  return { id, nome, tipo, ambiente, w, d, janelas: [], parede: padraoParede, piso: padraoPiso, ...o };
+};
+const jn = (parede: "esq" | "dir", pos: number, largura = 2.4): Janela => ({ parede, pos, largura });
+const BANHEIRO_BASICO: Incluso[] = [{ item: "vaso-basico-1-1", x: 0, y: 0 }, { item: "pia-basico-1-1", x: 2, y: 0 }, { item: "chuveiro-basico-1-1", x: 0, y: 3, rot: 1 }];
+const banheiro = (w: number, d: number, o: Partial<Comodo> = {}) => cm("banheiro", "Banheiro", "banheiro", w, d, { parede: ac("azulejo"), piso: ac("ceramica", 1), inclusos: BANHEIRO_BASICO, ...o });
+
+export const IMOVEIS: Imovel[] = [
+  // ---------------- alojamentos
+  { id: "aloj-vila", categoria: "alojamento", nome: "Alojamento de clube pequeno", local: "CT do interior", vista: "ct", aluguel: 0,
+    descricao: "Quatro garotos num quarto, dois beliches e um armário de metal. Banheiro no fim do corredor.",
+    comodos: [cm("quarto", "Quarto", "quarto", 10, 8, { parede: ac("faixa"), piso: ac("cimento"), janelas: [jn("dir", 8)],
+      inclusos: [{ item: "beliche-basico-1-1", x: 0, y: 0 }, { item: "beliche-basico-1-1", x: 3, y: 0 }, { item: "armario-basico-2-2", x: 0, y: 5, rot: 1 }] })] },
+  { id: "aloj-ct", categoria: "alojamento", nome: "Alojamento de CT profissional", local: "CT de clube grande", vista: "ct", aluguel: 0,
+    descricao: "Quarto para dois, cama de verdade e banheiro próprio. O colega de quarto é o goleiro do sub-17.",
+    comodos: [cm("quarto", "Quarto", "quarto", 11, 9, { parede: ac("faixa", 2), piso: ac("porcelanato", 1), janelas: [jn("esq", 6)],
+      inclusos: [{ item: "cama-basico-1-1", x: 0, y: 0 }, { item: "cama-basico-1-1", x: 6, y: 0 }, { item: "criado-basico-1-1", x: 4, y: 0 }] }),
+      banheiro(6, 6)] },
+  { id: "aloj-familia", categoria: "alojamento", nome: "Casa de família anfitriã", local: "Bairro perto do CT", vista: "rua", aluguel: 0,
+    descricao: "O clube paga uma família para te receber. Quarto dos fundos, comida da dona Cida e hora para chegar.",
+    comodos: [cm("quarto", "Quarto dos fundos", "quarto", 9, 8, { parede: ac("floral"), piso: ac("taco"), janelas: [jn("dir", 6.5)],
+      inclusos: [{ item: "cama-brasileiro-1-1", x: 0, y: 0 }, { item: "armario-basico-2-2", x: 0, y: 5, rot: 1 }] })] },
+  // ---------------- kitnets
+  { id: "kit-ct", categoria: "kitnet", nome: "Kitnet perto do CT", local: "Vila Operária", vista: "rua", aluguel: 1200,
+    descricao: "Um cômodo só, mas é seu. Dá para ir a pé ao treino.",
+    comodos: [cm("kitnet", "Kitnet", "kitnet", 11, 9, { piso: ac("ceramica"), janelas: [jn("esq", 4)] }), banheiro(5, 6)] },
+  { id: "kit-centro", categoria: "kitnet", nome: "Studio no centro", local: "Centro", vista: "cidade", aluguel: 2400,
+    descricao: "Prédio novo, varandinha com vista para a cidade e muito barulho na sexta.",
+    comodos: [cm("kitnet", "Studio", "kitnet", 12, 9, { parede: ac("pintura", 2), piso: ac("porcelanato"), janelas: [jn("esq", 6, 3)] }),
+      banheiro(5, 6, { parede: ac("pintura") }), cm("varanda", "Varanda", "externo", 7, 4, { piso: ac("porcelanatoExt"), parede: ac("vidro") })] },
+  { id: "kit-republica", categoria: "kitnet", nome: "Quarto em república", local: "Perto da faculdade", vista: "rua", aluguel: 800,
+    descricao: "Barato e animado. Cozinha dividida com três estudantes e uma geladeira com nomes nos potes.",
+    comodos: [cm("quarto", "Quarto", "quarto", 8, 8, { parede: ac("pintura", 6), piso: ac("taco", 1), janelas: [jn("dir", 5)] }),
+      cm("cozinha", "Cozinha dividida", "cozinha", 9, 7, { parede: ac("azulejo", 1), piso: ac("hidraulico"), janelas: [jn("esq", 4)],
+        inclusos: [{ item: "geladeira-basico-2-2", x: 0, y: 0 }, { item: "fogao-basico-1-1", x: 2, y: 0 }, { item: "mesaJantar-brasileiro-1-1", x: 3, y: 3 }] })] },
+  { id: "kit-loft", categoria: "kitnet", nome: "Loft industrial", local: "Antiga fábrica", vista: "cidade", aluguel: 3200,
+    descricao: "Pé-direito alto, tijolinho e janelão de ferro. Cabe muita coisa.",
+    comodos: [cm("kitnet", "Loft", "kitnet", 14, 10, { alturaParede: 6.8, parede: ac("tijolinho"), piso: ac("cimento", 2), janelas: [jn("esq", 5, 4), jn("dir", 9, 4)] }),
+      banheiro(6, 6, { parede: ac("concreto"), piso: ac("cimento", 2) })] },
+  // ---------------- apartamentos
+  { id: "ap-2q", categoria: "apartamento", nome: "Apartamento de dois quartos", local: "Bairro residencial", vista: "cidade", aluguel: 6000, compra: 750000,
+    descricao: "Sala, cozinha, varanda, um quarto e um escritório. Uma vaga na garagem do prédio.",
+    comodos: [cm("quarto", "Quarto", "quarto", 10, 8, { piso: ac("madeira"), janelas: [jn("esq", 6.5)] }), cm("escritorio", "Escritório", "escritorio", 8, 7, { piso: ac("madeira"), janelas: [jn("dir", 5)] }),
+      cm("sala", "Sala", "sala", 11, 9, { piso: ac("madeira"), janelas: [jn("esq", 6, 3)] }), cm("cozinha", "Cozinha", "cozinha", 8, 7, { janelas: [jn("dir", 6, 2)] }),
+      banheiro(6, 6), cm("varanda", "Varanda", "externo", 8, 4, { piso: ac("deck"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 6, 9)] },
+  { id: "ap-garden", categoria: "apartamento", nome: "Apartamento garden", local: "Térreo com jardim", vista: "condominio", aluguel: 8000, compra: 1100000,
+    descricao: "Térreo com um jardim só seu. Dá para fazer churrasco sem incomodar o vizinho de cima.",
+    comodos: [cm("quarto", "Quarto", "quarto", 10, 8, { piso: ac("porcelanato"), janelas: [jn("esq", 6.5)] }), cm("sala", "Sala", "sala", 12, 9, { piso: ac("porcelanato"), janelas: [jn("esq", 6, 4)] }),
+      cm("cozinha", "Cozinha", "cozinha", 8, 7, { janelas: [jn("dir", 6, 2)] }), banheiro(6, 6),
+      cm("jardim", "Jardim", "externo", 11, 8, { parede: ac("cerca") }), cm("garagem", "Garagem", "garagem", 6, 9)] },
+  { id: "ap-mar", categoria: "apartamento", nome: "Apartamento de frente para o mar", local: "Orla", vista: "mar", aluguel: 14000, compra: 2200000,
+    descricao: "Acorda com o mar na janela. Varanda gourmet e duas vagas.",
+    comodos: [cm("quarto", "Suíte", "quarto", 11, 9, { piso: ac("porcelanato", 2), janelas: [jn("esq", 6, 4)] }), cm("sala", "Sala", "sala", 13, 9, { piso: ac("porcelanato", 2), janelas: [jn("esq", 5, 5), jn("dir", 9, 3)] }),
+      cm("cozinha", "Cozinha", "cozinha", 9, 7, { janelas: [jn("dir", 6, 2)] }), banheiro(7, 6, { parede: ac("pintura") }),
+      cm("varanda", "Varanda gourmet", "externo", 11, 5, { piso: ac("porcelanatoExt"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 11, 9)] },
+  { id: "ap-alto", categoria: "apartamento", nome: "Apartamento alto padrão", local: "Bairro nobre", vista: "cidade", aluguel: 12000, compra: 1800000,
+    descricao: "Suíte, closet, sala ampla e porteiro que já pediu foto. Duas vagas.",
+    comodos: [cm("quarto", "Suíte", "quarto", 11, 9, { piso: ac("madeira", 1), janelas: [jn("esq", 6, 3)] }), cm("escritorio", "Closet e escritório", "escritorio", 9, 7, { piso: ac("madeira", 1) }),
+      cm("sala", "Sala", "sala", 13, 10, { piso: ac("madeira", 1), janelas: [jn("esq", 6, 5)] }), cm("cozinha", "Cozinha", "cozinha", 9, 8, { piso: ac("porcelanato"), janelas: [jn("dir", 6.5, 2.4)] }),
+      banheiro(7, 6, { parede: ac("marmoreP"), piso: ac("porcelanato", 2) }), cm("varanda", "Varanda", "externo", 9, 4, { piso: ac("deck"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 11, 9)] },
+  // ---------------- casas
+  { id: "casa-cond", categoria: "casa", nome: "Casa em condomínio", local: "Condomínio fechado", vista: "condominio", aluguel: 22000, compra: 2500000,
+    descricao: "Quintal grande, academia em casa e garagem para dois carros. A família pode vir morar junto.",
+    comodos: [cm("quarto", "Suíte", "quarto", 11, 9, { piso: ac("porcelanato"), janelas: [jn("esq", 6.5, 3)] }), cm("sala", "Sala", "sala", 12, 10, { piso: ac("porcelanato"), janelas: [jn("esq", 6.5, 4)] }),
+      cm("cozinha", "Cozinha", "cozinha", 9, 8, { janelas: [jn("dir", 6.5)] }), banheiro(7, 6), cm("academia", "Academia", "academia", 9, 8, { piso: ac("cimento", 2), janelas: [jn("esq", 5.5, 3)] }),
+      cm("quintal", "Quintal", "externo", 13, 11, { parede: ac("cerca") }), cm("garagem", "Garagem", "garagem", 11, 9)] },
+  { id: "casa-praia", categoria: "casa", nome: "Casa pé na areia", local: "Litoral", vista: "mar", aluguel: 30000, compra: 3800000,
+    descricao: "Deck de madeira de frente para o mar e piscina já construída. Chinelo é obrigatório.",
+    comodos: [cm("quarto", "Suíte", "quarto", 11, 9, { parede: ac("pintura", 4), piso: ac("madeira"), janelas: [jn("esq", 6, 4)] }),
+      cm("sala", "Sala", "sala", 12, 10, { parede: ac("ripado"), piso: ac("madeira"), janelas: [jn("esq", 6, 5)] }), cm("cozinha", "Cozinha", "cozinha", 9, 7, { parede: ac("azulejo"), janelas: [jn("dir", 6)] }),
+      banheiro(7, 6), cm("deck", "Deck", "externo", 15, 10, { piso: ac("deck"), parede: ac("vidro"), inclusos: [{ item: "piscina-basico-1-3", x: 5, y: 3 }] }), cm("garagem", "Garagem", "garagem", 6, 9)] },
+  { id: "casa-sobrado", categoria: "casa", nome: "Sobrado na cidade", local: "Bairro tradicional", vista: "rua", aluguel: 15000, compra: 1800000,
+    descricao: "Dois andares, dois quartos, quintal de pedra e garagem para dois.",
+    comodos: [cm("quarto", "Quarto", "quarto", 10, 9, { piso: ac("taco"), janelas: [jn("esq", 6)] }), cm("quarto2", "Quarto de hóspedes", "quarto", 9, 8, { piso: ac("taco"), janelas: [jn("dir", 5)] }),
+      cm("sala", "Sala", "sala", 12, 9, { piso: ac("taco"), janelas: [jn("esq", 6, 3)] }), cm("cozinha", "Cozinha", "cozinha", 9, 8, { piso: ac("hidraulico", 2), janelas: [jn("dir", 6)] }),
+      banheiro(6, 6), cm("quintal", "Quintal", "externo", 9, 7, { piso: ac("pedraPiso"), parede: ac("muro", 2) }), cm("garagem", "Garagem", "garagem", 11, 9)] },
+  { id: "casa-sitio", categoria: "casa", nome: "Sítio no interior", local: "Interior", vista: "campo", aluguel: 18000, compra: 2800000,
+    descricao: "Varandão, fogão a lenha, campinho no gramado e galpão para a picape.",
+    comodos: [cm("quarto", "Quarto", "quarto", 10, 9, { parede: ac("pintura", 1), piso: ac("taco", 1), janelas: [jn("esq", 6)] }),
+      cm("sala", "Sala", "sala", 12, 10, { parede: ac("tijolinho"), piso: ac("taco", 1), janelas: [jn("esq", 6, 3)] }),
+      cm("cozinha", "Cozinha caipira", "cozinha", 10, 8, { parede: ac("azulejo", 1), piso: ac("hidraulico", 2), janelas: [jn("dir", 7)], inclusos: [{ item: "fogao-brasileiro-4-2", x: 0, y: 0 }] }),
+      banheiro(6, 6), cm("varandao", "Varandão", "externo", 13, 5, { piso: ac("pedraPiso", 1), parede: ac("muro") }),
+      cm("gramado", "Gramado", "externo", 16, 12, { parede: ac("cerca", 1) }), cm("garagem", "Galpão", "garagem", 7, 9, { parede: ac("tijolinho") })] },
+  // ---------------- mansões
+  { id: "man-moderna", categoria: "mansao", nome: "Mansão moderna", local: "Condomínio de luxo", vista: "cidade", aluguel: 90000, compra: 15000000,
+    descricao: "Vidro, concreto e piscina de borda infinita. Sala de jogos e garagem para quatro.",
+    comodos: [cm("quarto", "Suíte master", "quarto", 12, 10, { parede: ac("concreto"), piso: ac("madeira", 1), janelas: [jn("esq", 6.5, 5)] }),
+      cm("sala", "Sala", "sala", 14, 11, { parede: ac("pintura"), piso: ac("porcelanato", 1), janelas: [jn("esq", 6, 6), jn("dir", 9, 4)] }),
+      cm("cozinha", "Cozinha gourmet", "cozinha", 10, 8, { parede: ac("marmoreP", 1), piso: ac("porcelanato", 1), janelas: [jn("dir", 7.5, 3)] }),
+      banheiro(9, 7, { parede: ac("marmoreP"), piso: ac("porcelanato", 2) }), cm("jogos", "Sala de jogos", "jogos", 12, 10, { parede: ac("pintura", 10), piso: ac("carpete", 1) }),
+      cm("academia", "Academia", "academia", 10, 8, { piso: ac("cimento", 2), janelas: [jn("esq", 5.5, 4)] }),
+      cm("piscina", "Área da piscina", "externo", 16, 12, { piso: ac("porcelanatoExt"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 21, 9, { piso: ac("epoxi", 1) })] },
+  { id: "man-classica", categoria: "mansao", nome: "Mansão clássica", local: "Bairro histórico", vista: "condominio", aluguel: 75000, compra: 12000000,
+    descricao: "Boiserie, mármore e lustre. Biblioteca, sala de troféus e jardim francês.",
+    comodos: [cm("quarto", "Suíte master", "quarto", 12, 10, { parede: ac("boiserie"), piso: ac("madeira", 2), janelas: [jn("esq", 6.5, 3)] }),
+      cm("sala", "Salão", "sala", 14, 11, { parede: ac("boiserie", 1), piso: ac("marmore"), janelas: [jn("esq", 4, 3), jn("esq", 9, 3)] }),
+      cm("cozinha", "Cozinha", "cozinha", 10, 8, { parede: ac("azulejo"), piso: ac("hidraulico", 1), janelas: [jn("dir", 7)] }),
+      banheiro(8, 7, { parede: ac("marmoreP"), piso: ac("marmore") }), cm("trofeus", "Sala de troféus", "trofeus", 11, 8, { parede: ac("ripado", 1), piso: ac("carpete", 3) }),
+      cm("escritorio", "Biblioteca", "escritorio", 10, 8, { parede: ac("ripado", 1), piso: ac("madeira", 1), janelas: [jn("dir", 7)] }),
+      cm("jardim", "Jardim", "externo", 15, 12, { parede: ac("cerca"), piso: ac("grama", 1) }), cm("garagem", "Garagem", "garagem", 16, 9, { piso: ac("porcelanato", 1) })] },
+  { id: "man-cobertura", categoria: "mansao", nome: "Cobertura triplex", local: "Topo do prédio mais alto", vista: "cidade", aluguel: 110000, compra: 18000000,
+    descricao: "Três andares no alto da cidade, terraço com piscina e sala de jogos.",
+    comodos: [cm("quarto", "Suíte master", "quarto", 12, 10, { parede: ac("geometrico", 1), piso: ac("madeira", 2), janelas: [jn("esq", 6.5, 6)] }),
+      cm("sala", "Sala", "sala", 15, 11, { parede: ac("pintura", 10), piso: ac("porcelanato", 3), janelas: [jn("esq", 5.5, 7), jn("dir", 8, 6)] }),
+      cm("cozinha", "Cozinha", "cozinha", 10, 8, { parede: ac("marmoreP", 1), piso: ac("porcelanato", 3) }), banheiro(8, 7, { parede: ac("marmoreP", 1), piso: ac("porcelanato", 3) }),
+      cm("jogos", "Sala de jogos", "jogos", 12, 10, { parede: ac("tijolinho", 2), piso: ac("madeira", 2) }),
+      cm("terraco", "Terraço", "externo", 15, 11, { piso: ac("deck", 1), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 16, 9, { piso: ac("epoxi", 1) })] },
+  { id: "man-mar", categoria: "mansao", nome: "Mansão à beira-mar", local: "Praia particular", vista: "mar", aluguel: 140000, compra: 25000000,
+    descricao: "Areia na porta, piscina, academia, sala de troféus e garagem para a coleção.",
+    comodos: [cm("quarto", "Suíte master", "quarto", 13, 10, { parede: ac("pintura", 4), piso: ac("madeira"), janelas: [jn("esq", 6.5, 6)] }),
+      cm("sala", "Sala", "sala", 15, 11, { parede: ac("ripado"), piso: ac("marmore", 1), janelas: [jn("esq", 7, 8)] }),
+      cm("cozinha", "Cozinha gourmet", "cozinha", 11, 8, { parede: ac("azulejo"), piso: ac("marmore", 1), janelas: [jn("dir", 7.5, 3)] }),
+      banheiro(9, 7, { parede: ac("marmoreP", 2), piso: ac("marmore", 1) }), cm("academia", "Academia", "academia", 10, 8, { piso: ac("cimento", 2), janelas: [jn("esq", 5.5, 4)] }),
+      cm("trofeus", "Sala de troféus", "trofeus", 11, 8, { parede: ac("pintura", 10), piso: ac("carpete", 2) }),
+      cm("piscina", "Área da piscina", "externo", 17, 12, { piso: ac("deck"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 21, 9, { piso: ac("epoxi") })] },
+];
+export const IMOVEL: Record<string, Imovel> = Object.fromEntries(IMOVEIS.map((m) => [m.id, m]));
+export const areaM2 = (m: Imovel) => Math.round(m.comodos.reduce((s, c) => s + c.w * c.d * 0.25, 0));
 
 // ------------------------------------------------------------------ estado
+export interface Objeto { uid: string; item: string; cor: number; comodo: string; x: number; y: number; rot: number; parede?: "esq" | "dir"; fixo?: boolean }
+export interface Guardado { uid: string; item: string; cor: number }
 export interface EstadoCasa {
-  saldo: number;
-  moradia: string;
-  propria: string[]; // moradias compradas
-  instalados: Record<string, string>; // "comodo.slot" -> id do item
-  guardados: string[]; // itens comprados fora de lugar
-  mes: number;
+  saldo: number; imovel: string; proprios: string[];
+  objetos: Objeto[]; deposito: Guardado[];
+  acabamentos: Record<string, { parede: Acabamento; piso: Acabamento }>; // "imovel.comodo"
+  mes: number; seq: number;
 }
+export type Resultado = { ok: true; msg: string; uid?: string; comodo?: string } | { ok: false; msg: string };
 
-export const chave = (comodo: string, slot: string) => `${comodo}.${slot}`;
-
-export function novoEstado(saldo = 3000): EstadoCasa {
-  const e: EstadoCasa = { saldo, moradia: "alojamento", propria: [], instalados: {}, guardados: [], mes: 0 };
-  colocarFixos(e);
+export function novoEstado(saldo = 3000, imovel = "aloj-vila"): EstadoCasa {
+  const e: EstadoCasa = { saldo, imovel, proprios: [], objetos: [], deposito: [], acabamentos: {}, mes: 0, seq: 0 };
+  colocarInclusos(e);
   return e;
 }
+const novoUid = (e: EstadoCasa) => `o${++e.seq}`;
+export const imovelAtual = (e: EstadoCasa) => IMOVEL[e.imovel];
+export const comodoDe = (e: EstadoCasa, id: string) => imovelAtual(e).comodos.find((c) => c.id === id)!;
 
-function colocarFixos(e: EstadoCasa) {
-  for (const c of MORADIA[e.moradia].comodos) for (const sl of c.slots) if (sl.fixo) e.instalados[chave(c.id, sl.id)] = sl.fixo;
-}
-const ehFixo = (id: string) => ITENS[id]?.preco === 0;
-
-export function itemNoSlot(e: EstadoCasa, comodo: string, slot: string): Item | undefined {
-  const id = e.instalados[chave(comodo, slot)];
-  return id ? ITENS[id] : undefined;
+export function acabamento(e: EstadoCasa, comodo: string): { parede: Acabamento; piso: Acabamento } {
+  const c = comodoDe(e, comodo);
+  return e.acabamentos[`${e.imovel}.${comodo}`] ?? { parede: c.parede, piso: c.piso };
 }
 
-export type Resultado = { ok: true; msg: string } | { ok: false; msg: string };
+function colocarInclusos(e: EstadoCasa) {
+  for (const c of imovelAtual(e).comodos) for (const inc of c.inclusos ?? [])
+    e.objetos.push({ uid: `fixo-${c.id}-${inc.x}-${inc.y}`, item: inc.item, cor: 0, comodo: c.id, x: inc.x, y: inc.y, rot: inc.rot ?? 0, parede: inc.parede, fixo: true });
+}
 
-/** Compra um item para um lugar. O que estava lá vai para os guardados. */
-export function comprar(e: EstadoCasa, comodo: string, slot: string, itemId: string): Resultado {
-  const m = MORADIA[e.moradia], c = m.comodos.find((x) => x.id === comodo), sl = c?.slots.find((x) => x.id === slot), it = ITENS[itemId];
-  if (!c || !sl || !it) return { ok: false, msg: "Esse lugar não existe nesta casa." };
-  if (sl.fixo) return { ok: false, msg: "Esse móvel é do clube e não pode ser trocado." };
-  if (it.tipo !== sl.tipo) return { ok: false, msg: "Esse item não cabe nesse lugar." };
-  if (e.instalados[chave(comodo, slot)] === itemId) return { ok: false, msg: "Você já tem esse item aí." };
+/** Retângulo ocupado no chão (rot ímpar troca largura e fundo). Para itens de parede, x é a posição ao longo da parede. */
+export function area(o: { item: string; x: number; y: number; rot: number }) {
+  const t = TIPOS[ITENS[o.item].tipo];
+  return o.rot % 2 ? { x: o.x, y: o.y, w: t.d, d: t.w } : { x: o.x, y: o.y, w: t.w, d: t.d };
+}
+const cruza = (a: { x: number; y: number; w: number; d: number }, b: typeof a) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.d && b.y < a.y + a.d;
+const comprimentoParede = (c: Comodo, p: "esq" | "dir") => (p === "esq" ? c.d : c.w);
+
+/** Diz se um objeto cabe onde está, ignorando a si mesmo. */
+export function cabe(e: EstadoCasa, o: Objeto): boolean {
+  const c = imovelAtual(e).comodos.find((x) => x.id === o.comodo);
+  if (!c) return false;
+  const tipo = TIPOS[ITENS[o.item].tipo];
+  if (!tipo.ambientes.includes(c.ambiente)) return false;
+  const outros = e.objetos.filter((x) => x.comodo === o.comodo && x.uid !== o.uid);
+  if (tipo.camada === "parede") {
+    if (!o.parede || c.ambiente === "externo") return false;
+    const L = comprimentoParede(c, o.parede), a0 = o.x - tipo.w / 2, a1 = o.x + tipo.w / 2;
+    if (a0 < 0.3 || a1 > L - 0.3) return false;
+    for (const j of c.janelas) if (j.parede === o.parede && a0 < j.pos + j.largura / 2 + 0.1 && j.pos - j.largura / 2 - 0.1 < a1) return false;
+    for (const x of outros) if (TIPOS[ITENS[x.item].tipo].camada === "parede" && x.parede === o.parede) {
+      const w = TIPOS[ITENS[x.item].tipo].w;
+      if (a0 < x.x + w / 2 && x.x - w / 2 < a1) return false;
+    }
+    return true;
+  }
+  const a = area(o);
+  if (a.x < 0 || a.y < 0 || a.x + a.w > c.w || a.y + a.d > c.d) return false;
+  for (const x of outros) {
+    const cx = TIPOS[ITENS[x.item].tipo].camada;
+    if (cx === "parede") continue;
+    const conflito = tipo.camada === "piscina" || cx === "piscina" || tipo.camada === cx;
+    if (conflito && cruza(a, area(x))) return false;
+  }
+  return true;
+}
+
+/** Procura o primeiro lugar livre no cômodo: encostado na parede quando o móvel pede, senão em qualquer canto. */
+export function acharLugar(e: EstadoCasa, item: string, comodo: string, uid = "?"): Objeto | undefined {
+  const c = comodoDe(e, comodo), tipo = TIPOS[ITENS[item].tipo];
+  const tenta = (o: Objeto) => (cabe(e, o) ? o : undefined);
+  if (tipo.camada === "parede") {
+    for (const p of ["dir", "esq"] as const) for (let x = 1.5; x < comprimentoParede(c, p); x += 0.5) {
+      const r = tenta({ uid, item, cor: 0, comodo, x, y: 0, rot: 0, parede: p }); if (r) return r;
+    }
+    return;
+  }
+  const rots = tipo.camada === "piscina" || ITENS[item].tipo === "carro" || ITENS[item].tipo === "moto" ? [0] : [0, 1];
+  if (tipo.encosta) {
+    for (let x = 0; x < c.w; x++) { const r = tenta({ uid, item, cor: 0, comodo, x, y: 0, rot: 0 }); if (r) return r; }
+    for (let y = 0; y < c.d; y++) { const r = tenta({ uid, item, cor: 0, comodo, x: 0, y, rot: 1 }); if (r) return r; }
+  }
+  // o resto: do meio para fora, para não colar tudo nas paredes
+  const pos: [number, number][] = [];
+  for (let y = 0; y < c.d; y++) for (let x = 0; x < c.w; x++) pos.push([x, y]);
+  const cx = c.w / 2, cy = c.d / 2;
+  if (!tipo.encosta && tipo.camada !== "chao") pos.sort((p, q) => Math.hypot(p[0] + tipo.w / 2 - cx, p[1] + tipo.d / 2 - cy) - Math.hypot(q[0] + tipo.w / 2 - cx, q[1] + tipo.d / 2 - cy));
+  for (const rot of rots) for (const [x, y] of pos) { const r = tenta({ uid, item, cor: 0, comodo, x, y, rot }); if (r) return r; }
+}
+
+/** Cômodos onde o item pode ir, começando pelo preferido e depois pelos do mesmo tipo de ambiente. */
+function comodosPara(e: EstadoCasa, item: string, preferido?: string): string[] {
+  const amb = TIPOS[ITENS[item].tipo].ambientes, cs = imovelAtual(e).comodos.filter((c) => amb.includes(c.ambiente)).map((c) => c.id);
+  return preferido && cs.includes(preferido) ? [preferido, ...cs.filter((c) => c !== preferido)] : cs;
+}
+
+export function comprar(e: EstadoCasa, itemId: string, cor: number, comodo: string): Resultado {
+  const it = ITENS[itemId];
+  if (!it || !it.aVenda) return { ok: false, msg: "Esse item não está à venda." };
   if (e.saldo < it.preco) return { ok: false, msg: `Falta ${dinheiro(it.preco - e.saldo)} para comprar.` };
   e.saldo -= it.preco;
-  const antigo = e.instalados[chave(comodo, slot)];
-  if (antigo && !ehFixo(antigo)) e.guardados.push(antigo);
-  e.instalados[chave(comodo, slot)] = itemId;
-  return { ok: true, msg: `Comprou: ${it.nome}.` };
+  const uid = novoUid(e);
+  for (const cid of comodosPara(e, itemId, comodo)) {
+    const lugar = acharLugar(e, itemId, cid, uid);
+    if (lugar) { e.objetos.push({ ...lugar, cor }); return { ok: true, msg: `Comprou: ${it.nome}.`, uid, comodo: cid }; }
+  }
+  e.deposito.push({ uid, item: itemId, cor });
+  return { ok: true, msg: `Comprou: ${it.nome}. Não coube na casa, foi para o depósito.` };
 }
 
-/** Coloca um item guardado num lugar vazio ou troca pelo que está lá. */
-export function instalarGuardado(e: EstadoCasa, comodo: string, slot: string, itemId: string): Resultado {
-  const i = e.guardados.indexOf(itemId);
-  const c = MORADIA[e.moradia].comodos.find((x) => x.id === comodo), sl = c?.slots.find((x) => x.id === slot);
-  if (i < 0 || !sl || sl.fixo || ITENS[itemId].tipo !== sl.tipo) return { ok: false, msg: "Não dá para colocar esse item aí." };
-  e.guardados.splice(i, 1);
-  const antigo = e.instalados[chave(comodo, slot)];
-  if (antigo && !ehFixo(antigo)) e.guardados.push(antigo);
-  e.instalados[chave(comodo, slot)] = itemId;
-  return { ok: true, msg: `De volta ao lugar: ${ITENS[itemId].nome}.` };
+export function mover(e: EstadoCasa, uid: string, pos: { x: number; y: number; parede?: "esq" | "dir"; rot?: number }): Resultado {
+  const o = e.objetos.find((x) => x.uid === uid);
+  if (!o) return { ok: false, msg: "Objeto não encontrado." };
+  if (o.fixo) return { ok: false, msg: "Esse é do imóvel e não sai do lugar." };
+  const novo = { ...o, ...pos, rot: pos.rot ?? o.rot };
+  if (!cabe(e, novo)) return { ok: false, msg: "Não cabe aí." };
+  Object.assign(o, novo);
+  return { ok: true, msg: "" };
+}
+
+/** Gira 90°; se não couber no mesmo canto, tenta deslizar um pouco. */
+export function girar(e: EstadoCasa, uid: string): Resultado {
+  const o = e.objetos.find((x) => x.uid === uid);
+  if (!o || o.fixo) return { ok: false, msg: "Esse não dá para girar." };
+  if (TIPOS[ITENS[o.item].tipo].camada === "parede") return { ok: false, msg: "Quadros ficam na parede." };
+  const rot = (o.rot + 1) % 4;
+  for (const [dx, dy] of [[0, 0], [-1, 0], [0, -1], [-1, -1], [1, 0], [0, 1], [-2, 0], [0, -2], [-2, -2]]) {
+    const r = mover(e, uid, { x: o.x + dx, y: o.y + dy, rot });
+    if (r.ok) return r;
+  }
+  return { ok: false, msg: "Não tem espaço para girar aqui." };
+}
+
+export function guardar(e: EstadoCasa, uid: string): Resultado {
+  const i = e.objetos.findIndex((x) => x.uid === uid);
+  if (i < 0 || e.objetos[i].fixo) return { ok: false, msg: "Esse é do imóvel." };
+  const [o] = e.objetos.splice(i, 1);
+  e.deposito.push({ uid: o.uid, item: o.item, cor: o.cor });
+  return { ok: true, msg: `Guardado: ${ITENS[o.item].nome}.` };
+}
+
+export function tirarDoDeposito(e: EstadoCasa, uid: string, comodo: string): Resultado {
+  const i = e.deposito.findIndex((x) => x.uid === uid);
+  if (i < 0) return { ok: false, msg: "Item não encontrado." };
+  const g = e.deposito[i];
+  for (const cid of comodosPara(e, g.item, comodo)) {
+    const lugar = acharLugar(e, g.item, cid, g.uid);
+    if (lugar) { e.deposito.splice(i, 1); e.objetos.push({ ...lugar, cor: g.cor }); return { ok: true, msg: `De volta: ${ITENS[g.item].nome}.`, uid: g.uid, comodo: cid }; }
+  }
+  return { ok: false, msg: "Não tem espaço para esse item nesta casa." };
 }
 
 export const VALOR_REVENDA = 0.3;
-export function vender(e: EstadoCasa, itemId: string): Resultado {
-  const i = e.guardados.indexOf(itemId);
-  if (i < 0) return { ok: false, msg: "Item não encontrado." };
-  e.guardados.splice(i, 1);
-  const v = Math.round(ITENS[itemId].preco * VALOR_REVENDA);
+export function vender(e: EstadoCasa, uid: string): Resultado {
+  const i = e.objetos.findIndex((x) => x.uid === uid), j = e.deposito.findIndex((x) => x.uid === uid);
+  const ref = i >= 0 ? e.objetos[i] : e.deposito[j];
+  if (!ref || (i >= 0 && e.objetos[i].fixo)) return { ok: false, msg: "Esse não dá para vender." };
+  if (i >= 0) e.objetos.splice(i, 1); else e.deposito.splice(j, 1);
+  const v = Math.round(ITENS[ref.item].preco * VALOR_REVENDA);
   e.saldo += v;
   return { ok: true, msg: `Vendido por ${dinheiro(v)}.` };
 }
 
-/** Muda de casa (alugando ou comprando). Os móveis vão junto para lugares do mesmo tipo; o resto fica guardado. */
-export function mudar(e: EstadoCasa, destino: string, modo: "alugar" | "comprar"): Resultado {
-  const m = MORADIA[destino];
-  if (!m || destino === e.moradia) return { ok: false, msg: "Você já mora aqui." };
-  const jaTem = e.propria.includes(destino);
-  if (modo === "comprar" && !jaTem) {
-    if (!m.compra) return { ok: false, msg: "Esse lugar não está à venda." };
-    if (e.saldo < m.compra) return { ok: false, msg: `Falta ${dinheiro(m.compra - e.saldo)} para comprar.` };
-    e.saldo -= m.compra;
-    e.propria.push(destino);
-  } else if (!jaTem && e.saldo < m.aluguel * 2) {
-    return { ok: false, msg: `Precisa de ${dinheiro(m.aluguel * 2)} para o depósito e o primeiro aluguel.` };
-  } else if (!jaTem) {
-    e.saldo -= m.aluguel; // depósito; o aluguel do mês entra no fechamento
-  }
-  const moveis = Object.values(e.instalados).filter((id) => !ehFixo(id));
-  const comodosAntigos = Object.keys(e.instalados).reduce<Record<string, string>>((acc, k) => (acc[e.instalados[k]] ??= k.split(".")[0], acc), {});
-  e.moradia = destino;
-  e.instalados = {};
-  colocarFixos(e);
-  const sobra: string[] = [];
-  // os melhores itens escolhem primeiro; tenta o mesmo cômodo, depois qualquer lugar do tipo
-  for (const id of [...moveis, ...e.guardados].sort((a, b) => ITENS[b].preco - ITENS[a].preco)) {
-    const tipo = ITENS[id].tipo, origem = comodosAntigos[id];
-    const livres = m.comodos.flatMap((c) => c.slots.filter((sl) => sl.tipo === tipo && !sl.fixo && !e.instalados[chave(c.id, sl.id)]).map((sl) => ({ c, sl })));
-    const alvo = livres.find((l) => l.c.id === origem) ?? livres[0];
-    if (alvo) e.instalados[chave(alvo.c.id, alvo.sl.id)] = id; else sobra.push(id);
-  }
-  e.guardados = sobra;
-  return { ok: true, msg: `Mudança feita: ${m.nome}.` };
+export const precoTrocaCor = (itemId: string) => Math.max(20, redondo(ITENS[itemId].preco * 0.1));
+export function trocarCor(e: EstadoCasa, uid: string, cor: number): Resultado {
+  const o = e.objetos.find((x) => x.uid === uid);
+  if (!o || o.fixo) return { ok: false, msg: "Esse não dá para trocar a cor." };
+  if (o.cor === cor) return { ok: false, msg: "Já está dessa cor." };
+  const p = precoTrocaCor(o.item);
+  if (e.saldo < p) return { ok: false, msg: `Falta ${dinheiro(p - e.saldo)} para a reforma.` };
+  e.saldo -= p; o.cor = cor;
+  return { ok: true, msg: `Cor trocada por ${dinheiro(p)}.` };
 }
 
-/** Fecha o mês: entra o salário, sai o aluguel (se a casa não for sua). */
+// ------------------------------------------------------------------ reforma
+export type RegraReforma = "nada" | "parede" | "tudo";
+export function podeReformar(e: EstadoCasa): RegraReforma {
+  const m = imovelAtual(e);
+  if (m.categoria === "alojamento") return "nada";
+  return e.proprios.includes(m.id) ? "tudo" : "parede";
+}
+export function precoAcabamento(c: Comodo, lugar: "parede" | "piso", revId: string): number {
+  const r = REVEST[revId];
+  const m2 = lugar === "piso" ? c.w * c.d * 0.25 : (c.w + c.d) * 0.5 * ((c.alturaParede ?? (c.ambiente === "externo" ? 1.6 : 5.6)) * 0.5);
+  return redondo(Math.max(100, m2 * r.precoM2));
+}
+export function reformar(e: EstadoCasa, comodo: string, lugar: "parede" | "piso", revId: string, cor: number): Resultado {
+  const c = comodoDe(e, comodo), r = REVEST[revId], regra = podeReformar(e);
+  if (regra === "nada") return { ok: false, msg: "No alojamento não dá para reformar." };
+  if (lugar === "piso" && regra !== "tudo") return { ok: false, msg: "Trocar o piso só em imóvel próprio." };
+  if (!r || r.lugar !== lugar || !r.ambientes.includes(c.ambiente)) return { ok: false, msg: "Esse acabamento não serve aqui." };
+  const atual = acabamento(e, comodo);
+  if (atual[lugar].id === revId && atual[lugar].cor === cor) return { ok: false, msg: "Já está assim." };
+  const p = precoAcabamento(c, lugar, revId);
+  if (e.saldo < p) return { ok: false, msg: `Falta ${dinheiro(p - e.saldo)} para a reforma.` };
+  e.saldo -= p;
+  e.acabamentos[`${e.imovel}.${comodo}`] = { ...atual, [lugar]: { id: revId, cor } };
+  return { ok: true, msg: `Reforma feita por ${dinheiro(p)}.` };
+}
+
+// ------------------------------------------------------------------ mudança e mês
+export const rendaMinima = (m: Imovel) => m.aluguel * 3;
+export function podeMudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", salario: number): Resultado {
+  const m = IMOVEL[id];
+  if (!m) return { ok: false, msg: "Imóvel não encontrado." };
+  if (id === e.imovel) return { ok: false, msg: "Você já mora aqui." };
+  if (e.proprios.includes(id)) return { ok: true, msg: "É seu: volta sem pagar nada." };
+  if (modo === "comprar") {
+    if (!m.compra) return { ok: false, msg: "Não está à venda." };
+    if (e.saldo < m.compra) return { ok: false, msg: `Falta ${dinheiro(m.compra - e.saldo)}.` };
+    return { ok: true, msg: "" };
+  }
+  if (salario < rendaMinima(m)) return { ok: false, msg: `O dono pede renda de ${dinheiro(rendaMinima(m))} por mês.` };
+  if (e.saldo < m.aluguel) return { ok: false, msg: `Precisa de ${dinheiro(m.aluguel)} para o depósito.` };
+  return { ok: true, msg: "" };
+}
+
+/** Muda de imóvel. Tudo o que você comprou vai junto e é arrumado em cômodos do mesmo tipo; o que não couber vai para o depósito. */
+export function mudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", salario: number): Resultado {
+  const ok = podeMudar(e, id, modo, salario);
+  if (!ok.ok) return ok;
+  const m = IMOVEL[id];
+  if (!e.proprios.includes(id)) {
+    if (modo === "comprar") { e.saldo -= m.compra!; e.proprios.push(id); } else e.saldo -= m.aluguel;
+  }
+  const antigo = imovelAtual(e);
+  const tipoDe = (cid: string) => antigo.comodos.find((c) => c.id === cid)?.tipo;
+  const levar = e.objetos.filter((o) => !o.fixo).map((o) => ({ uid: o.uid, item: o.item, cor: o.cor, tipo: tipoDe(o.comodo) }));
+  const guardados = e.deposito.map((g) => ({ ...g, tipo: undefined as TipoComodo | undefined }));
+  e.imovel = id; e.objetos = []; e.deposito = [];
+  colocarInclusos(e);
+  const area0 = (it: string) => TIPOS[ITENS[it].tipo].w * TIPOS[ITENS[it].tipo].d;
+  for (const g of [...levar, ...guardados].sort((a, b) => area0(b.item) - area0(a.item) || ITENS[b.item].preco - ITENS[a.item].preco)) {
+    const pref = m.comodos.find((c) => c.tipo === g.tipo || (g.tipo === "kitnet" && c.tipo === "quarto") || (g.tipo === "quarto" && c.tipo === "kitnet"))?.id;
+    let posto = false;
+    for (const cid of comodosPara(e, g.item, pref)) {
+      const lugar = acharLugar(e, g.item, cid, g.uid);
+      if (lugar) { e.objetos.push({ ...lugar, cor: g.cor }); posto = true; break; }
+    }
+    if (!posto) e.deposito.push({ uid: g.uid, item: g.item, cor: g.cor });
+  }
+  return { ok: true, msg: `Mudança feita: ${m.nome}.${e.deposito.length ? ` ${e.deposito.length} ${e.deposito.length > 1 ? "itens foram" : "item foi"} para o depósito.` : ""}` };
+}
+
 export function fecharMes(e: EstadoCasa, salario: number): { aluguel: number } {
-  const aluguel = e.propria.includes(e.moradia) ? 0 : MORADIA[e.moradia].aluguel;
+  const aluguel = e.proprios.includes(e.imovel) ? 0 : imovelAtual(e).aluguel;
   e.saldo += salario - aluguel;
   e.mes++;
   return { aluguel };
 }
 
-export function efeitosDaCasa(e: EstadoCasa): Efeitos {
-  const t = { ...EFEITOS_ZERO };
-  for (const id of Object.values(e.instalados)) for (const [k, v] of Object.entries(ITENS[id].efeitos)) t[k as keyof Efeitos] += v as number;
-  return t;
+// ------------------------------------------------------------------ efeitos, estilo e conforto
+export interface BonusEstilo { comodo: string; estilo: Estilo; itens: number; moral: number }
+/** Cômodo com 4 ou mais itens do mesmo estilo ganha moral; com 7 ou mais, ganha mais. */
+export function bonusDeEstilo(e: EstadoCasa): BonusEstilo[] {
+  const r: BonusEstilo[] = [];
+  for (const c of imovelAtual(e).comodos) {
+    const cont: Partial<Record<Estilo, number>> = {};
+    for (const o of e.objetos) if (o.comodo === c.id && !o.fixo) { const s = ITENS[o.item].estilo; if (s !== "basico") cont[s] = (cont[s] ?? 0) + 1; }
+    for (const [s, n] of Object.entries(cont) as [Estilo, number][]) if (n >= 4) r.push({ comodo: c.id, estilo: s, itens: n, moral: n >= 7 ? 2 : 1 });
+  }
+  return r;
 }
 
-/** Nota de 0 a 100 que resume a casa: quanto do melhor possível nesta moradia já está montado. */
+export function efeitosDaCasa(e: EstadoCasa): { total: Efeitos; bruto: Efeitos } {
+  const b = { ...EFEITOS_ZERO };
+  for (const o of e.objetos) for (const [k, v] of Object.entries(ITENS[o.item].efeitos)) b[k as keyof Efeitos] += v as number;
+  for (const x of bonusDeEstilo(e)) b.moral += x.moral;
+  const total = { ...b };
+  for (const k of Object.keys(TETO) as (keyof Efeitos)[]) total[k] = Math.min(TETO[k], b[k]);
+  return { total, bruto: b };
+}
+
+/** 0 a 100: quanto a casa está montada e bem acabada, ponderado pelo tamanho de cada cômodo. */
 export function conforto(e: EstadoCasa): number {
-  const m = MORADIA[e.moradia];
-  let tem = 0, max = 0;
-  for (const c of m.comodos) for (const sl of c.slots) {
-    const melhor = Math.max(...CATALOGO.filter((i) => i.tipo === sl.tipo).map((i) => i.nivel));
-    max += melhor;
-    const it = itemNoSlot(e, c.id, sl.id);
-    tem += it ? (it.preco === 0 ? 0.5 : it.nivel) : 0;
+  let soma = 0, peso = 0;
+  const bonus = bonusDeEstilo(e);
+  for (const c of imovelAtual(e).comodos) {
+    const a = c.w * c.d, alvo = Math.max(4, a / 9);
+    const pts = e.objetos.filter((o) => o.comodo === c.id).reduce((s, o) => s + (o.fixo && ITENS[o.item].tipo === "beliche" ? 0.5 : ITENS[o.item].nivel), 0);
+    const acab = acabamento(e, c.id), q = (REVEST[acab.parede.id].qualidade + REVEST[acab.piso.id].qualidade) / 10;
+    const est = bonus.some((b) => b.comodo === c.id) ? 1 : 0;
+    const nota = 0.65 * Math.min(1, pts / alvo) + 0.25 * q + 0.1 * est;
+    soma += nota * a; peso += a;
   }
-  return Math.round((100 * tem) / max);
+  return Math.round((100 * soma) / peso);
 }
 
 export function patrimonio(e: EstadoCasa): number {
-  const moveis = [...Object.values(e.instalados), ...e.guardados].reduce((s, id) => s + ITENS[id].preco * VALOR_REVENDA, 0);
-  const imoveis = e.propria.reduce((s, id) => s + (MORADIA[id].compra ?? 0), 0);
+  const moveis = [...e.objetos.filter((o) => !o.fixo), ...e.deposito].reduce((s, o) => s + ITENS[o.item].preco * VALOR_REVENDA, 0);
+  const imoveis = e.proprios.reduce((s, id) => s + (IMOVEL[id].compra ?? 0), 0);
   return Math.round(e.saldo + moveis + imoveis);
 }
 

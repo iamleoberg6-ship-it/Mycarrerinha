@@ -6,7 +6,7 @@ import { valorMercado, salarioMensal } from "../src/mercado.js";
 import { carregarPacote, ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
 import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
-import { MORADIAS, FORMATO, CATALOGO, areaDoSlot, novoEstado, comprar, mudar, fecharMes, efeitosDaCasa, conforto, vender, instalarGuardado, itemNoSlot } from "../src/casa.js";
+import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento } from "../src/casa.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -129,55 +129,68 @@ teste("Perfil: todos os perfis aparecem e a joia rara é rara", () => {
   assert.ok(pct.joia_rara <= 10, "joia rara comum demais");
 });
 
-teste("Casa: todo móvel cabe no cômodo e nenhum se sobrepõe", () => {
-  for (const m of MORADIAS) for (const c of m.comodos) {
-    const ids = new Set<string>();
-    const areas = c.slots.filter((sl) => !FORMATO[sl.tipo].parede && !FORMATO[sl.tipo].plano).map((sl) => ({ sl, a: areaDoSlot(sl) }));
-    for (const sl of c.slots) { assert.ok(!ids.has(sl.id), `${m.id}.${c.id}.${sl.id} repetido`); ids.add(sl.id); }
-    for (const sl of c.slots) {
-      const a = areaDoSlot(sl);
-      if (FORMATO[sl.tipo].parede) { assert.ok(sl.x > 1 && sl.x < (sl.parede === "esq" ? c.d : c.w) - 1, `${m.id}.${c.id}.${sl.id} fora da parede`); continue; }
-      assert.ok(a.x >= 0 && a.y >= 0 && a.x + a.w <= c.w && a.y + a.d <= c.d, `${m.id}.${c.id}.${sl.id} fora do cômodo`);
-    }
-    for (let i = 0; i < areas.length; i++) for (let j = i + 1; j < areas.length; j++) {
-      const p = areas[i].a, q = areas[j].a;
-      const cruza = p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.d && q.y < p.y + p.d;
-      assert.ok(!cruza, `${m.id}.${c.id}: ${areas[i].sl.id} e ${areas[j].sl.id} se sobrepõem`);
+teste("Casa: imóveis válidos, inclusos cabem, catálogo completo", () => {
+  assert.ok(IMOVEIS.length >= 18);
+  for (const cat of ["alojamento", "kitnet", "apartamento", "casa", "mansao"]) assert.ok(IMOVEIS.filter((m) => m.categoria === cat).length >= 3, cat);
+  for (const m of IMOVEIS) {
+    const e = novoEstado(0, m.id);
+    const ids = new Set(m.comodos.map((c) => c.id)); assert.equal(ids.size, m.comodos.length, m.id);
+    for (const o of e.objetos) assert.ok(ITENS[o.item] && cabe(e, o), `${m.id}: incluso ${o.item} não cabe`);
+    for (const c of m.comodos) for (const l of ["parede", "piso"] as const) {
+      const r = REVEST[c[l].id]; assert.ok(r && r.ambientes.includes(c.ambiente) && c[l].cor < r.cores.length, `${m.id}.${c.id} ${l}`);
     }
   }
-  for (const it of CATALOGO) if (it.preco > 0) assert.ok(Object.keys(it.efeitos).length > 0, `${it.id} sem efeito`);
+  for (const tipo of Object.keys(TIPOS)) assert.ok(CATALOGO.some((i) => i.tipo === tipo), `sem produto: ${tipo}`);
+  for (const it of CATALOGO) { assert.ok(it.preco > 0 && it.cores.length > 0, it.id); if (it.aVenda) assert.ok(Object.values(it.efeitos).some((v) => v !== 0), `${it.id} sem efeito`); }
+  assert.equal(new Set(CATALOGO.map((i) => i.id)).size, CATALOGO.length);
+  console.log(`   ${IMOVEIS.length} imóveis, ${CATALOGO.length} itens, ${REVESTIMENTOS.length} revestimentos`);
 });
 
-teste("Casa: comprar, guardar, mudar e fechar o mês", () => {
-  const e = novoEstado(10000);
-  assert.equal(comprar(e, "quarto", "beliche", "cama-1").ok, false);
-  assert.ok(comprar(e, "quarto", "tv", "tv-1").ok);
-  assert.ok(comprar(e, "quarto", "tv", "tv-2").ok);
-  assert.deepEqual(e.guardados, ["tv-1"]);
-  assert.equal(e.saldo, 10000 - 1200 - 4500);
-  assert.equal(comprar(e, "quarto", "mesa", "mesa-3").ok, false);
+teste("Casa: comprar, mover, girar, guardar, reformar e mudar", () => {
+  const e = novoEstado(20000);
+  assert.equal(mover(e, e.objetos[0].uid, { x: 5, y: 5 }).ok, false); // beliche do clube
+  const r = comprar(e, "tv-basico-1-1", 0, "quarto"); assert.ok(r.ok && r.uid);
+  const o = e.objetos.find((x) => x.uid === r.uid)!;
+  assert.ok(cabe(e, o));
+  assert.equal(mover(e, o.uid, { x: 0, y: 0 }).ok, false); // em cima do beliche
+  assert.ok(girar(e, o.uid).ok);
+  assert.ok(comprar(e, "tapete-basico-1-1", 0, "quarto").ok); // tapete pode ficar embaixo de móvel
+  assert.equal(comprar(e, "piscina-basico-1-3", 0, "quarto").ok, false); // sem dinheiro
+  assert.equal(reformar(e, "quarto", "parede", "pintura", 3).ok, false); // alojamento
+  assert.ok(guardar(e, o.uid).ok && e.deposito.length === 1);
+  assert.ok(tirarDoDeposito(e, o.uid, "quarto").ok);
+  // aluguel exige renda
+  assert.equal(mudar(e, "ap-2q", "alugar", 2000).ok, false);
+  e.saldo = 50000;
+  assert.ok(mudar(e, "ap-2q", "alugar", 25000).ok);
+  assert.ok(e.objetos.some((x) => x.item === "tv-basico-1-1"));
+  assert.ok(reformar(e, "sala", "parede", "listras", 1).ok);
+  assert.equal(reformar(e, "sala", "piso", "marmore", 0).ok, false); // alugado
+  const s0 = e.saldo; fecharMes(e, 25000); assert.equal(e.saldo, s0 + 25000 - 6000);
+  // compra, reforma completa e volta para um lugar pequeno
+  e.saldo = 1e7;
+  assert.ok(mudar(e, "casa-cond", "comprar", 0).ok);
+  assert.ok(reformar(e, "sala", "piso", "marmore", 0).ok);
+  assert.ok(comprar(e, "piscina-basico-1-3", 0, "quintal").ok);
+  assert.ok(comprar(e, "carro-gamer-4-4", 2, "garagem").ok);
+  const ef = efeitosDaCasa(e).total; assert.ok(ef.recuperacao >= 2 && ef.fama >= 6);
+  assert.ok(mudar(e, "kit-ct", "alugar", 1e6).ok);
+  assert.ok(e.deposito.some((g) => g.item === "piscina-basico-1-3") && e.deposito.some((g) => g.item === "carro-gamer-4-4"));
+  assert.ok(mudar(e, "casa-cond", "alugar", 0).ok); // é dono
+  assert.equal(acabamento(e, "sala").piso.id, "marmore");
+  assert.ok(e.objetos.some((x) => x.item === "piscina-basico-1-3"));
+  assert.equal(e.objetos.find((x) => x.item === "carro-gamer-4-4")!.cor, 2);
+});
+
+teste("Casa: estilo completo dá bônus e conforto cresce", () => {
+  const e = novoEstado(1e8, "aloj-vila");
+  assert.ok(mudar(e, "man-moderna", "comprar", 0).ok);
   const c0 = conforto(e);
-  assert.ok(vender(e, "tv-1").ok && e.guardados.length === 0);
-  e.saldo = 1e6;
-  assert.ok(mudar(e, "apartamento", "alugar").ok);
-  assert.equal(itemNoSlot(e, "quarto", "tv")?.id ?? itemNoSlot(e, "sala", "tv")?.id, "tv-2");
-  assert.ok(!Object.values(e.instalados).includes("beliche-1"));
-  const s0 = e.saldo;
-  fecharMes(e, 50000);
-  assert.equal(e.saldo, s0 + 50000 - 8000);
-  e.saldo = 3e6;
-  assert.ok(mudar(e, "casa", "comprar").ok);
-  const s1 = e.saldo; fecharMes(e, 0); assert.equal(e.saldo, s1);
-  assert.ok(comprar(e, "externa", "piscina", "piscina-1").ok);
-  assert.ok(efeitosDaCasa(e).recuperacao >= 2);
-  // volta para um lugar menor: o que não cabe fica guardado
-  assert.ok(comprar(e, "garagem", "vaga1", "carro-1").ok);
-  assert.ok(mudar(e, "kitnet", "alugar").ok);
-  assert.ok(e.guardados.includes("piscina-1") && e.guardados.includes("carro-1"));
-  assert.ok(mudar(e, "casa", "alugar").ok); // já é dono: volta sem pagar
-  assert.ok(itemNoSlot(e, "externa", "piscina")?.id === "piscina-1");
-  assert.ok(c0 > 0);
-  assert.ok(instalarGuardado(e, "quarto", "cama", "inexistente").ok === false);
+  for (const id of ["sofa-rustico-2-2", "poltrona-rustico-1-2", "mesaCentro-rustico-3-2", "estante-rustico-1-2", "luminaria-rustico-2-2"]) assert.ok(comprar(e, id, 0, "sala").ok, id);
+  const b = bonusDeEstilo(e); assert.ok(b.some((x) => x.comodo === "sala" && x.estilo === "rustico"));
+  assert.ok(conforto(e) > c0);
+  for (const it of CATALOGO) if (it.aVenda && it.nivel >= 3) comprar(e, it.id, 0, "sala");
+  assert.ok(conforto(e) > 50, `conforto ${conforto(e)}`);
+  const ef = efeitosDaCasa(e); assert.ok(ef.total.moral <= TETO.moral);
 });
-
 console.log(`\n${ok} testes passaram`);

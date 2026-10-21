@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap">
 <style>
-/* Mesma linguagem da criação: campo escuro, giz e ouro. A maquete isométrica é o centro da tela; o catálogo vem logo abaixo, cômodo por cômodo. */
+/* Mesma linguagem da criação: campo escuro, giz e ouro. A maquete é o centro; abaixo dela ficam as ferramentas do móvel escolhido e as abas de móveis, reforma e depósito. */
 :root {
   --campo: #0C1A17; --campo-2: #13261F; --campo-3: #1A3129; --linha: #2B4239;
   --giz: #EDF2EB; --giz-2: #A3B6AD; --ouro: #E3B341; --ouro-claro: #F6DC8A; --ouro-escuro: #6E5317;
@@ -24,98 +24,108 @@ body { margin: 0; background: var(--campo); color: var(--giz); font-family: var(
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--campo); }
 button { font: inherit; color: inherit; }
 button:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
-.pagina { max-width: 620px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 120px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 18px; }
+.pagina { max-width: 680px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 120px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; }
 .marca { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .marca strong { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; color: var(--ouro); }
 .marca span { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--giz-2); }
-h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(32px, 8.5vw, 44px); line-height: 1.02; text-transform: uppercase; text-wrap: balance; }
+h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(30px, 8vw, 42px); line-height: 1.02; text-transform: uppercase; text-wrap: balance; }
 h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; letter-spacing: .02em; }
 .rotulo { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--giz-2); font-weight: 600; margin: 0; }
-.sub { margin: 0; color: var(--giz-2); }
-
+.sub { margin: 0; color: var(--giz-2); font-size: 14px; }
 .painel { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 14px; padding: 14px 16px; }
 .conta { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: end; }
-.saldo { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: 1; color: var(--ouro-claro); font-variant-numeric: tabular-nums; }
+.saldo { font-family: var(--display); font-weight: 900; font-size: 34px; line-height: 1; color: var(--ouro-claro); font-variant-numeric: tabular-nums; }
 .saldo.neg { color: var(--neg); }
-.linhas { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; color: var(--giz-2); }
+.linhas { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 14px; color: var(--giz-2); }
 .linhas b { color: var(--giz); font-weight: 600; }
-.botao { background: var(--ouro); color: var(--tinta); border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.botao { background: var(--ouro); color: var(--tinta); border: 0; border-radius: 12px; padding: 11px 16px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .botao:hover:not(:disabled) { filter: brightness(1.06); }
 .botao:disabled { opacity: .45; cursor: not-allowed; }
 .botao.sec { background: var(--campo-3); color: var(--giz); border: 1px solid var(--linha); }
-.fases { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.chip { background: transparent; border: 1px solid var(--linha); color: var(--giz-2); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.botao.peq { padding: 7px 11px; font-size: 13px; border-radius: 10px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 2px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; background: transparent; border: 1px solid var(--linha); color: var(--giz-2); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
 .chip.ativo { border-color: var(--ouro); color: var(--ouro-claro); background: var(--campo-3); }
+.casa-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.abas .aba { flex: none; background: var(--campo-2); border: 1px solid var(--linha); color: var(--giz-2); border-radius: 10px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 14px; }
+.abas .aba.ativa { color: var(--tinta); background: var(--ouro); border-color: var(--ouro); }
 
-.casa-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: -6px; }
-.casa-topo .botao { padding: 10px 16px; }
-.teste summary { cursor: pointer; font-weight: 600; color: var(--giz-2); }
-.saldo { font-size: 34px; }
-.abas { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin: 0 -16px; padding-inline: 16px; }
-.abas::-webkit-scrollbar { display: none; }
-.aba { flex: none; background: var(--campo-2); border: 1px solid var(--linha); color: var(--giz-2); border-radius: 10px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 14px; }
-.aba.ativa { color: var(--tinta); background: var(--ouro); border-color: var(--ouro); }
-
-.cena { position: relative; background: radial-gradient(120% 90% at 50% 40%, #1C3A30 0%, #0F211C 70%); border: 1px solid var(--linha); border-radius: 16px; padding: 8px; }
-.cena svg { width: 100%; height: auto; display: block; max-height: 62vh; }
-.cena .slot { cursor: pointer; }
-.cena .slot:hover { filter: brightness(1.08); }
-.cena .slot.novo { animation: chega .6s cubic-bezier(.2,1.4,.4,1) both; transform-box: fill-box; transform-origin: 50% 100%; }
+.cena { position: relative; background: radial-gradient(120% 90% at 50% 40%, #1C3A30 0%, #0F211C 70%); border: 1px solid var(--linha); border-radius: 16px; padding: 8px; user-select: none; -webkit-user-select: none; }
+.cena svg { width: 100%; height: auto; display: block; max-height: 60vh; }
+.cena.editando svg { touch-action: none; }
+.cena .obj { cursor: pointer; }
+.cena .obj.fixo { cursor: default; }
+.cena .obj.sel { cursor: grab; }
+.cena .obj.arrastando { opacity: .35; }
+.cena .obj.novo { animation: chega .6s cubic-bezier(.2,1.4,.4,1) both; transform-box: fill-box; transform-origin: 50% 100%; }
 @keyframes chega { from { transform: translateY(-18px) scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
-.conforto { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; gap: 2px; }
+.conforto { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
 .conforto strong { font-family: var(--display); font-size: 30px; line-height: 1; color: var(--ouro-claro); }
 .conforto span { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--giz-2); }
+.previa-aviso { position: absolute; right: 12px; top: 12px; background: var(--ouro); color: var(--tinta); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+
+.ferramentas { background: var(--campo-2); border: 1px solid var(--ouro-escuro); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.ferr-topo { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.ferr-topo strong { font-weight: 700; }
+.ferr-topo span { font-size: 13px; color: var(--giz-2); }
+.ferr-botoes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.seta { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; font-size: 18px; }
+.cores { display: flex; gap: 8px; flex-wrap: wrap; }
+.amostra { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--linha); cursor: pointer; padding: 0; }
+.amostra.ativa { border-color: var(--ouro); box-shadow: 0 0 0 2px var(--campo-2), 0 0 0 4px var(--ouro); }
+.amostra.peq { width: 22px; height: 22px; }
 
 .efeitos { display: flex; flex-wrap: wrap; gap: 6px; }
 .efeito { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--campo-2); border: 1px solid var(--linha); color: var(--giz-2); }
 .efeito b { color: var(--pos); }
 .efeito.neg b { color: var(--neg); }
+.efeito.estilo { border-color: var(--ouro-escuro); color: var(--ouro-claro); }
 
-.lista { display: flex; flex-direction: column; gap: 8px; }
-.lugar { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 14px; overflow: hidden; }
-.lugar.aberto { border-color: var(--ouro-escuro); }
-.lugar > button { width: 100%; background: none; border: 0; display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; text-align: left; cursor: pointer; }
-.mini { width: 56px; height: 56px; border-radius: 10px; background: var(--campo-3); display: grid; place-items: center; overflow: hidden; }
-.mini svg { width: 100%; height: 100%; }
-.mini.vazio { border: 1.5px dashed var(--ouro-escuro); color: var(--ouro); font-size: 26px; font-weight: 700; background: transparent; }
-.lugar .nome { font-weight: 600; }
-.lugar .det { font-size: 13px; color: var(--giz-2); }
-.seta { color: var(--giz-2); transition: transform .2s; }
-.lugar.aberto .seta { transform: rotate(90deg); }
-.opcoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; padding: 0 14px 14px; }
-.op { background: var(--campo); border: 1px solid var(--linha); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
-.op.tem { border-color: var(--ouro-escuro); }
-.op .fig { height: 96px; background: var(--campo-3); border-radius: 8px; display: grid; place-items: center; padding: 4px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg button { background: none; border: 0; border-radius: 9px; padding: 9px 6px; font-weight: 600; font-size: 14px; color: var(--giz-2); cursor: pointer; }
+.seg button.ativo { background: var(--ouro); color: var(--tinta); }
+
+.grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.op { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.op .fig { height: 104px; background: var(--campo-3); border-radius: 8px; display: grid; place-items: center; padding: 4px; }
 .op .fig svg { width: 100%; height: 100%; }
-.op .n { font-size: 14px; font-weight: 600; line-height: 1.2; min-height: 2.4em; }
-.op .p { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--ouro-claro); }
-.op .ef { font-size: 12px; color: var(--pos); min-height: 1.4em; }
+.op .n { font-size: 14px; font-weight: 600; line-height: 1.2; }
+.op .tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--giz-2); }
+.op .p { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--ouro-claro); line-height: 1; }
+.op .ef { font-size: 12px; color: var(--pos); }
 .op .ef .neg { color: var(--neg); }
-.op .botao { padding: 8px 10px; font-size: 14px; }
+.op .botao { padding: 8px 10px; font-size: 14px; margin-top: auto; }
 .op .falta { font-size: 12px; color: var(--neg); }
+.op .vai { font-size: 12px; color: var(--giz-2); }
+.op.atual { border-color: var(--ouro); }
+.vazio { color: var(--giz-2); font-size: 14px; padding: 16px; text-align: center; border: 1px dashed var(--linha); border-radius: 12px; }
+.trava { font-size: 14px; color: var(--ouro-claro); background: var(--campo-2); border: 1px solid var(--ouro-escuro); border-radius: 12px; padding: 10px 14px; }
 
-.guardado { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 10px; align-items: center; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 8px 12px; }
-.guardado .mini { width: 48px; height: 48px; }
-.guardado .botao { padding: 8px 12px; font-size: 13px; }
+.guardado { display: grid; grid-template-columns: 52px 1fr auto auto; gap: 10px; align-items: center; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 8px 12px; }
+.guardado .mini { width: 52px; height: 52px; border-radius: 8px; background: var(--campo-3); }
+.guardado .mini svg { width: 100%; height: 100%; }
 
-dialog { background: var(--campo-2); color: var(--giz); border: 1px solid var(--linha); border-radius: 18px; padding: 0; width: min(560px, calc(100vw - 24px)); max-height: 86vh; }
+dialog { background: var(--campo-2); color: var(--giz); border: 1px solid var(--linha); border-radius: 18px; padding: 0; width: min(640px, calc(100vw - 24px)); max-height: 88vh; }
 dialog::backdrop { background: rgba(3, 8, 6, .72); }
 .dlg { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
 .dlg-topo { display: flex; justify-content: space-between; align-items: center; }
-.fechar { background: none; border: 0; color: var(--giz-2); font-size: 26px; cursor: pointer; line-height: 1; }
+.fechar { background: none; border: 0; color: var(--giz-2); font-size: 28px; cursor: pointer; line-height: 1; }
 .morada { border: 1px solid var(--linha); border-radius: 14px; overflow: hidden; background: var(--campo); }
 .morada.atual { border-color: var(--ouro); }
-.morada .vista { background: radial-gradient(120% 90% at 50% 40%, #1C3A30 0%, #0F211C 70%); padding: 6px 30px 0; }
-.morada .vista svg { width: 100%; height: auto; display: block; max-height: 170px; }
+.morada .vista { background: radial-gradient(120% 90% at 50% 40%, #1C3A30 0%, #0F211C 70%); padding: 6px 24px 0; }
+.morada .vista svg { width: 100%; height: auto; display: block; max-height: 190px; }
 .morada .txt { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
-.morada .acoes { display: flex; gap: 8px; flex-wrap: wrap; }
-.morada .preco { font-size: 14px; color: var(--giz-2); }
+.morada .acoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.morada .preco { font-size: 14px; color: var(--giz-2); margin: 0; }
 .morada .preco b { color: var(--ouro-claro); }
+.morada .req { font-size: 13px; color: var(--neg); }
 
-#aviso { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 140%); background: var(--giz); color: var(--tinta); font-weight: 600; padding: 12px 18px; border-radius: 12px; max-width: calc(100vw - 32px); transition: transform .3s cubic-bezier(.2,.8,.2,1); z-index: 20; box-shadow: 0 10px 30px -10px #000; }
+#aviso { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 160%); background: var(--giz); color: var(--tinta); font-weight: 600; padding: 12px 18px; border-radius: 12px; max-width: calc(100vw - 32px); transition: transform .3s cubic-bezier(.2,.8,.2,1); z-index: 20; box-shadow: 0 10px 30px -10px #000; }
 #aviso.ver { transform: translate(-50%, 0); }
 #aviso.erro { background: var(--neg); }
-@media (prefers-reduced-motion: reduce) { .cena .slot.novo { animation: none; } #aviso { transition: none; } }
+.teste summary { cursor: pointer; font-weight: 600; color: var(--giz-2); }
+@media (prefers-reduced-motion: reduce) { .cena .obj.novo { animation: none; } #aviso { transition: none; } }
 </style>
 </head>
 <body>
@@ -131,37 +141,35 @@ dialog::backdrop { background: rgba(3, 8, 6, .72); }
   </section>
 
   <section class="casa-topo">
-    <div><p class="rotulo" id="fase"></p><h1 id="moradia"></h1></div>
-    <button class="botao sec" id="mudar">Mudar</button>
+    <div><p class="rotulo" id="local"></p><h1 id="imovel"></h1></div>
+    <button class="botao sec" id="imobiliaria">Imobiliária</button>
   </section>
 
-  <nav class="abas" id="abas" aria-label="Cômodos"></nav>
+  <nav class="chips abas" id="abas" aria-label="Cômodos"></nav>
   <section class="cena" id="cena"></section>
+  <section class="ferramentas" id="ferramentas" hidden></section>
   <div class="efeitos" id="efeitos" aria-label="Efeitos da casa"></div>
 
-  <section style="display:flex;flex-direction:column;gap:10px">
-    <h2 id="tituloCatalogo">Catálogo</h2>
-    <p class="sub" style="margin-top:-6px;font-size:14px">Toque num móvel na maquete ou escolha um lugar abaixo.</p>
-    <div class="lista" id="lugares"></div>
-  </section>
+  <div class="seg" role="tablist" id="seg">
+    <button data-aba="moveis" role="tab">Móveis</button>
+    <button data-aba="reforma" role="tab">Paredes e piso</button>
+    <button data-aba="deposito" role="tab">Depósito</button>
+  </div>
+  <section id="painel" style="display:flex;flex-direction:column;gap:10px"></section>
 
-  <section id="secGuardados" style="display:flex;flex-direction:column;gap:10px">
-    <h2>Guardados</h2>
-    <p class="sub" style="margin-top:-6px;font-size:14px">Itens que saíram do lugar. Recoloque ou venda por 30% do preço.</p>
-    <div class="lista" id="guardados"></div>
-  </section>
   <details class="painel teste">
     <summary>Modo de teste</summary>
-    <p class="sub" style="font-size:14px;margin-top:8px">Na carreira o salário vem do contrato. Aqui dá para escolher a fase para ver a casa crescer.</p>
-    <div class="fases" id="fases"></div>
-    <button class="botao sec" id="recomecar" style="margin-top:12px;font-size:13px;padding:8px 12px">Recomeçar do alojamento</button>
+    <p class="sub" style="margin-top:8px">Na carreira o salário vem do contrato. Aqui dá para escolher a fase para ver a casa crescer.</p>
+    <div class="chips" id="fases" style="margin-top:10px;flex-wrap:wrap"></div>
+    <button class="botao sec peq" id="recomecar" style="margin-top:12px">Recomeçar do alojamento</button>
   </details>
 </main>
 
-<dialog id="dlgMudar" aria-labelledby="tMudar"><div class="dlg">
-  <div class="dlg-topo"><h2 id="tMudar">Mudar de casa</h2><button class="fechar" data-fechar aria-label="Fechar">×</button></div>
-  <p class="sub" style="font-size:14px">Os móveis vão junto para lugares do mesmo tipo. O que não couber fica guardado.</p>
-  <div class="lista" id="moradas"></div>
+<dialog id="dlgImob" aria-labelledby="tImob"><div class="dlg">
+  <div class="dlg-topo"><h2 id="tImob">Imobiliária</h2><button class="fechar" data-fechar aria-label="Fechar">×</button></div>
+  <p class="sub">Aluguel pede renda de três vezes o valor. Comprando, não tem aluguel e a reforma é completa. Tudo o que é seu vai junto na mudança.</p>
+  <div class="chips" id="catImob"></div>
+  <div style="display:flex;flex-direction:column;gap:10px" id="imoveis"></div>
 </div></dialog>
 
 <div id="aviso" role="status" aria-live="polite"></div>
