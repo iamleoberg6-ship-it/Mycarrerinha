@@ -110,34 +110,64 @@ function calota(m: Medidas, desce = 50, recuo = 16, sobe = 6): string {
 }
 const fina = (m: Medidas) => ({ ...m, L: m.L + 1, R: m.R - 1 });
 
+/** Mistura duas cores: t=0 é a primeira, t=1 é a segunda. Usado para cabelo raspado (cor sólida, nunca transparência). */
+function mistura(a: string, b: string, t: number): string {
+  const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+  const c = (s: number) => Math.round(((x >> s) & 255) * (1 - t) + ((y >> s) & 255) * t);
+  return `#${((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1)}`;
+}
+let seqCabelo = 0;
+/** Desenha `conteudo` recortado pelo formato `d`: nada sai do contorno do cabelo. */
+function recortado(d: string, conteudo: string): string {
+  const id = `cb${++seqCabelo}`;
+  return `<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})">${conteudo}</g>`;
+}
+
+/** Massa de cabelo atrás da cabeça (aparece nas laterais e acima). Sempre uma forma sólida e contínua. */
 function cabeloAtras(c: Cabelo, m: Medidas, cor: string): string {
-  const cx = (m.L + m.R) / 2, w = m.R - m.L, T = m.T, sombra = escurecer(cor, 0.75);
+  const cx = (m.L + m.R) / 2, w = m.R - m.L, T = m.T, sombra = escurecer(cor, 0.72);
   switch (c) {
-    case "blackpower": return `<circle cx="${cx}" cy="${T + 38}" r="${w / 2 + 22}" fill="${cor}"/>`;
+    case "blackpower": {
+      // volume redondo com borda crespa: círculos na borda, todos encostados no volume
+      const r = w / 2 + 20, cy = T + 36;
+      let borda = "";
+      for (let i = 0; i < 22; i++) { const ang = (i / 22) * Math.PI * 2; borda += `<circle cx="${f1(cx + r * Math.cos(ang))}" cy="${f1(cy + r * Math.sin(ang))}" r="7" fill="${cor}"/>`; }
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${cor}"/>${borda}`;
+    }
     case "longo": return `<path d="M${m.L - 8} ${T + 55} C${m.L - 12} ${T + 2} ${cx - 30} ${T - 14} ${cx} ${T - 14} C${cx + 30} ${T - 14} ${m.R + 12} ${T + 2} ${m.R + 8} ${T + 55} L${m.R + 12} 174 L${m.L - 12} 174 Z" fill="${cor}"/>`;
     case "ondulado": return `<path d="M${m.L - 6} ${T + 50} C${m.L - 10} ${T + 4} ${cx - 30} ${T - 10} ${cx} ${T - 10} C${cx + 30} ${T - 10} ${m.R + 10} ${T + 4} ${m.R + 6} ${T + 50} Q${m.R + 12} ${T + 66} ${m.R + 4} ${T + 80} L${m.L - 4} ${T + 80} Q${m.L - 12} ${T + 66} ${m.L - 6} ${T + 50} Z" fill="${cor}"/>`;
     case "dreads": {
-      let s = "";
-      for (let i = 0; i < 9; i++) {
-        const x = m.L - 4 + (i * (w + 8)) / 8;
-        const lado = x < cx ? -1 : 1;
-        s += `<path d="M${f1(x)} ${T + 10} Q${f1(x + lado * 6)} ${T + 70} ${f1(x + lado * 4)} ${T + 118}" stroke="${i % 2 ? cor : sombra}" stroke-width="9" stroke-linecap="round" fill="none"/>`;
+      // massa única até a altura dos ombros; os dreads são desenhados DENTRO dela
+      const base = T + 108;
+      const massa = `M${m.L - 12} ${T + 40} C${m.L - 14} ${T - 2} ${cx - 34} ${T - 14} ${cx} ${T - 14} C${cx + 34} ${T - 14} ${m.R + 14} ${T - 2} ${m.R + 12} ${T + 40} L${m.R + 14} ${base - 8} Q${m.R + 10} ${base} ${m.R} ${base} L${m.L} ${base} Q${m.L - 10} ${base} ${m.L - 14} ${base - 8} Z`;
+      let locs = "";
+      for (let i = 0; i < 12; i++) {
+        const x = m.L - 12 + (i * (w + 24)) / 11;
+        locs += `<path d="M${f1(x)} ${T - 20} Q${f1(x + (i % 2 ? 3 : -3))} ${T + 50} ${f1(x)} ${base + 4}" stroke="${i % 2 ? sombra : escurecer(cor, 0.86)}" stroke-width="5" fill="none"/>`;
       }
-      return s;
+      return `<path d="${massa}" fill="${cor}"/>${recortado(massa, locs)}`;
     }
-    case "coque": return `<circle cx="${cx}" cy="${T - 10}" r="13" fill="${cor}"/><circle cx="${cx}" cy="${T - 10}" r="6" fill="${sombra}" opacity="0.5"/>`;
+    case "coque": return `<circle cx="${cx}" cy="${T - 7}" r="14" fill="${cor}"/><path d="M${cx - 12} ${T - 7} Q${cx} ${T - 15} ${cx + 12} ${T - 7}" stroke="${sombra}" stroke-width="2" fill="none"/>`;
     default: return "";
   }
 }
 
-function cabeloFrente(c: Cabelo, m: Medidas, cor: string): string {
+/** Cabelo sobre a cabeça. Tudo em cor sólida; texturas ficam recortadas pelo formato do cabelo. */
+function cabeloFrente(c: Cabelo, m: Medidas, cor: string, pele: string): string {
   const sombra = escurecer(cor, 0.7), cx = (m.L + m.R) / 2, w = m.R - m.L, T = m.T;
+  const raspadoCor = mistura(cor, pele, 0.5);
+  const cheia = calota(m);
   switch (c) {
     case "careca": return `<ellipse cx="${cx - 12}" cy="${T + 12}" rx="10" ry="5" fill="#FFFFFF" opacity="0.18"/>`;
-    case "raspado": return `<path d="${calota(fina(m), 44, 20, 1)}" fill="${cor}" opacity="0.5"/>`;
-    case "curto": return `<path d="${calota(m)}" fill="${cor}"/>`;
-    case "degrade": return `<path d="${calota(fina(m), 46, 22, 1)}" fill="${cor}" opacity="0.32"/><path d="${calota({ ...m, L: m.L + 10, R: m.R - 10 }, 26, 14, 8)}" fill="${cor}"/>`;
-    case "topete": return `<path d="${calota(m)}" fill="${cor}"/><path d="M${cx - 30} ${T + 14} C${cx - 22} ${T - 22} ${cx + 26} ${T - 24} ${cx + 34} ${T + 10} C${cx + 18} ${T + 2} ${cx - 12} ${T + 2} ${cx - 30} ${T + 14} Z" fill="${cor}"/>`;
+    case "raspado": {
+      const d = calota(fina(m), 44, 20, 1);
+      let pontos = "";
+      for (let i = 0; i < 40; i++) pontos += `<circle cx="${f1(m.L + ((i * 37) % 97) / 97 * w)}" cy="${f1(T - 2 + ((i * 53) % 61) / 61 * 46)}" r="0.9" fill="${escurecer(raspadoCor, 0.78)}"/>`;
+      return `<path d="${d}" fill="${raspadoCor}"/>${recortado(d, pontos)}`;
+    }
+    case "curto": return `<path d="${cheia}" fill="${cor}"/>`;
+    case "degrade": return `<path d="${calota(fina(m), 46, 22, 1)}" fill="${mistura(cor, pele, 0.55)}"/><path d="${calota(fina(m), 36, 20, 2)}" fill="${mistura(cor, pele, 0.28)}"/><path d="${calota({ ...m, L: m.L + 10, R: m.R - 10 }, 24, 14, 8)}" fill="${cor}"/>`;
+    case "topete": return `<path d="${cheia}" fill="${cor}"/><path d="M${cx - 30} ${T + 14} C${cx - 22} ${T - 22} ${cx + 26} ${T - 24} ${cx + 34} ${T + 10} C${cx + 18} ${T + 2} ${cx - 12} ${T + 2} ${cx - 30} ${T + 14} Z" fill="${cor}"/>`;
     case "franja": {
       let franja = `M${m.L + 4} ${T + 30}`;
       const n = 7;
@@ -145,11 +175,11 @@ function cabeloFrente(c: Cabelo, m: Medidas, cor: string): string {
         const x0 = m.L + 4 + (i * (w - 8)) / n, x1 = m.L + 4 + ((i + 1) * (w - 8)) / n;
         franja += ` L${f1((x0 + x1) / 2)} ${T + 42 + (i % 2) * 3} L${f1(x1)} ${T + 28}`;
       }
-      return `<path d="${calota(m)}" fill="${cor}"/><path d="${franja} L${m.R - 4} ${T + 10} L${m.L + 4} ${T + 10} Z" fill="${cor}"/>`;
+      return `<path d="${cheia}" fill="${cor}"/><path d="${franja} L${m.R - 4} ${T + 10} L${m.L + 4} ${T + 10} Z" fill="${cor}"/>`;
     }
-    case "ondulado": return `<path d="${calota(m)}" fill="${cor}"/><path d="M${cx - 24} ${T + 6} Q${cx - 10} ${T + 18} ${cx + 4} ${T + 6} Q${cx + 18} ${T - 4} ${cx + 30} ${T + 8}" stroke="${sombra}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+    case "ondulado": return `<path d="${cheia}" fill="${cor}"/>${recortado(cheia, `<path d="M${cx - 34} ${T + 10} Q${cx - 18} ${T + 22} ${cx - 2} ${T + 8} Q${cx + 14} ${T - 4} ${cx + 34} ${T + 10}" stroke="${sombra}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`)}`;
     case "cacheado": {
-      let s = `<path d="${calota(m)}" fill="${cor}"/>`;
+      let s = `<path d="${cheia}" fill="${cor}"/>`;
       const rx = w / 2 + 2, ry = 46;
       for (let i = 0; i <= 11; i++) { const a = Math.PI * (0.04 + (0.92 * i) / 11); s += `<circle cx="${f1(cx - rx * Math.cos(a))}" cy="${f1(T + 44 - ry * Math.sin(a))}" r="10" fill="${cor}"/>`; }
       return s;
@@ -160,16 +190,32 @@ function cabeloFrente(c: Cabelo, m: Medidas, cor: string): string {
       for (let i = 0; i <= 14; i++) { const a = Math.PI * (0.08 + (0.84 * i) / 14); s += `<circle cx="${f1(cx - rx * Math.cos(a))}" cy="${f1(T + 40 - ry * Math.sin(a))}" r="5.5" fill="${cor}"/>`; }
       return s;
     }
-    case "blackpower": return `<path d="${calota(m, 40, 22, -2)}" fill="${sombra}" opacity="0.4"/>`;
-    case "trancas": {
-      let s = `<path d="${calota(m)}" fill="${cor}"/>`;
-      for (const k of [-0.32, -0.16, 0, 0.16, 0.32]) { const x = cx + k * w; s += `<path d="M${f1(x)} ${T + 16} L${f1(x + k * 22)} ${T - 2}" stroke="${sombra}" stroke-width="3" stroke-linecap="round"/>`; }
-      return s;
+    case "blackpower": {
+      // linha do cabelo sólida na testa, ligada ao volume de trás
+      const d = calota(m, 46, 20, 2);
+      return `<path d="${d}" fill="${cor}"/>`;
     }
-    case "dreads": return `<path d="${calota(m)}" fill="${cor}"/>${[-0.3, -0.1, 0.1, 0.3].map((k) => `<path d="M${f1(cx + k * w)} ${T + 14} L${f1(cx + k * w * 1.2)} ${T}" stroke="${sombra}" stroke-width="5" stroke-linecap="round"/>`).join("")}`;
-    case "moicano": return `<path d="${calota(fina(m), 44, 20, 1)}" fill="${cor}" opacity="0.3"/><path d="M${cx - 10} ${T - 18} Q${cx} ${T - 26} ${cx + 10} ${T - 18} L${cx + 13} ${T + 22} L${cx - 13} ${T + 22} Z" fill="${cor}"/>`;
-    case "coque": return `<path d="${calota(m, 44, 18, 3)}" fill="${cor}"/><path d="M${cx - 20} ${T + 8} Q${cx} ${T - 2} ${cx + 20} ${T + 8}" stroke="${sombra}" stroke-width="2" fill="none"/>`;
-    case "longo": return `<path d="${calota(m)}" fill="${cor}"/><path d="M${m.L + 2} ${T + 48} C${m.L + 2} ${T + 26} ${m.L + 14} ${T + 12} ${cx - 12} ${T + 10} C${m.L + 22} ${T + 22} ${m.L + 14} ${T + 34} ${m.L + 14} ${T + 52} Z" fill="${cor}"/>`;
+    case "trancas": {
+      // tranças nagô deitadas na cabeça, da testa para trás, recortadas pelo cabelo
+      let linhas = "";
+      for (const k of [-0.36, -0.22, -0.08, 0.08, 0.22, 0.36]) {
+        const x = cx + k * w;
+        linhas += `<path d="M${f1(x)} ${T + 22} Q${f1(x + k * 10)} ${T + 6} ${f1(x + k * 18)} ${T - 10}" stroke="${sombra}" stroke-width="2.4" fill="none" stroke-dasharray="3 2"/>`;
+      }
+      return `<path d="${cheia}" fill="${cor}"/>${recortado(cheia, linhas)}`;
+    }
+    case "dreads": {
+      let raizes = "";
+      for (const k of [-0.36, -0.18, 0, 0.18, 0.36]) raizes += `<path d="M${f1(cx + k * w)} ${T + 20} Q${f1(cx + k * w * 1.1)} ${T + 6} ${f1(cx + k * w * 1.2)} ${T - 8}" stroke="${sombra}" stroke-width="4" fill="none"/>`;
+      return `<path d="${cheia}" fill="${cor}"/>${recortado(cheia, raizes)}`;
+    }
+    case "moicano": {
+      const lados = calota(fina(m), 44, 20, 1);
+      const crista = `M${cx - 13} ${T + 22} L${cx - 11} ${T - 14} Q${cx} ${T - 26} ${cx + 11} ${T - 14} L${cx + 13} ${T + 22} Z`;
+      return `<path d="${lados}" fill="${mistura(cor, pele, 0.55)}"/><path d="${crista}" fill="${cor}"/>`;
+    }
+    case "coque": return `<path d="${calota(m, 44, 18, 3)}" fill="${cor}"/>${recortado(calota(m, 44, 18, 3), `<path d="M${cx - 30} ${T + 20} Q${cx - 14} ${T + 2} ${cx} ${T - 4} M${cx + 30} ${T + 20} Q${cx + 14} ${T + 2} ${cx} ${T - 4}" stroke="${sombra}" stroke-width="1.6" fill="none"/>`)}`;
+    case "longo": return `<path d="${cheia}" fill="${cor}"/><path d="M${m.L + 2} ${T + 48} C${m.L + 2} ${T + 26} ${m.L + 14} ${T + 12} ${cx - 12} ${T + 10} C${m.L + 22} ${T + 22} ${m.L + 14} ${T + 34} ${m.L + 14} ${T + 52} Z" fill="${cor}"/>`;
   }
 }
 
@@ -258,11 +304,11 @@ function roupaSocialSVG(tipo: RoupaSocial, corIdx: number, pele: string): string
   }
 }
 
-function barba(b: Barba, m: Medidas, cor: string): string {
+function barba(b: Barba, m: Medidas, cor: string, pele: string): string {
   if (b === "nenhuma") return "";
-  if (b === "cavanhaque") return `<path d="M90 140 Q100 152 110 140 Q106 146 100 147 Q94 146 90 140 Z" fill="${cor}" opacity="0.9"/><path d="M90 131 Q100 127 110 131" stroke="${cor}" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>`;
-  const op = b === "rala" ? 0.32 : 0.85;
-  return `<path d="M${m.L + 4} ${m.cy + 10} C${m.L + 6} ${m.cy + 50} 84 157 100 157 C116 157 ${m.R - 6} ${m.cy + 50} ${m.R - 4} ${m.cy + 10} C${m.R - 10} ${m.cy + 30} 118 ${m.cy + 30} 112 ${m.cy + 28} Q100 ${m.cy + 24} 88 ${m.cy + 28} C82 ${m.cy + 30} ${m.L + 10} ${m.cy + 30} ${m.L + 4} ${m.cy + 10} Z" fill="${cor}" opacity="${op}"/>`;
+  if (b === "cavanhaque") return `<path d="M90 140 Q100 152 110 140 Q106 146 100 147 Q94 146 90 140 Z" fill="${cor}"/><path d="M90 131 Q100 127 110 131" stroke="${cor}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const fill = b === "rala" ? mistura(cor, pele, 0.62) : cor;
+  return `<path d="M${m.L + 4} ${m.cy + 10} C${m.L + 6} ${m.cy + 50} 84 157 100 157 C116 157 ${m.R - 6} ${m.cy + 50} ${m.R - 4} ${m.cy + 10} C${m.R - 10} ${m.cy + 30} 118 ${m.cy + 30} 112 ${m.cy + 28} Q100 ${m.cy + 24} 88 ${m.cy + 28} C82 ${m.cy + 30} ${m.L + 10} ${m.cy + 30} ${m.L + 4} ${m.cy + 10} Z" fill="${fill}"/>`;
 }
 
 
@@ -307,8 +353,8 @@ export function svgFoto(o: OpcoesFoto): string {
   <ellipse cx="${m.L}" cy="${m.cy + 6}" rx="8" ry="12" fill="${sombraPele}"/>
   <ellipse cx="${m.R}" cy="${m.cy + 6}" rx="8" ry="12" fill="${sombraPele}"/>
   ${cabeca(a.rosto, pele)}
-  ${silhueta ? "" : barba(a.barba, m, cor)}
-  ${cabeloFrente(a.cabelo, m, cor)}
+  ${silhueta ? "" : barba(a.barba, m, cor, pele)}
+  ${cabeloFrente(a.cabelo, m, cor, pele)}
   ${rosto}
   ${silhueta ? `<text x="100" y="112" text-anchor="middle" font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif" font-weight="900" font-size="36" fill="#3A5148">?</text>` : ""}
   </g>
