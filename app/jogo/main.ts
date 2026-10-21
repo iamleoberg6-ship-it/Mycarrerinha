@@ -9,6 +9,7 @@ import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
+  agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
 } from "../../src/jogo";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
@@ -21,6 +22,8 @@ import { TRACOS, PAISES } from "../../src/dna";
 import { valorMercado } from "../../src/mercado";
 import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao, visualDe, tatuagemVisivel, type AreaTatuagem, type Fisico, type RoupaCasual } from "../../src/visual";
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
+import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, type AcaoRel, type Relacao } from "../../src/relacoes";
+import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
 import { infoClube, mundo } from "../../src/mundo";
 import { infoLiga } from "../../src/ligas";
@@ -47,7 +50,8 @@ let save: Save | null = ler<Save>(CHAVE_SAVE);
 if (save && migrarSave(pacote, save)) gravar(CHAVE_SAVE, save);
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
-let aba: "tabela" | "jogador" | "noticias" | "casa" | "mercado" = "tabela";
+let aba: "tabela" | "jogador" | "noticias" | "casa" | "mercado" | "amigos" = "tabela";
+let msgRel: { texto: string; ok: boolean } | undefined, msgPos: { texto: string; ok: boolean } | undefined;
 let msgMercado: { texto: string; ok: boolean } | undefined;
 const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, plano); };
 
@@ -136,11 +140,14 @@ function telaSemana(s: Save): string {
   ${cardAnuncio(s)}
   ${cardPatrocinio(s)}
   ${cardEvento(s)}
+  ${cardSugestao(s)}
+  ${cardCraque(s)}
   ${nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"}. Ver no Mercado.</small></span></button>` : ""}
 
   <section class="painel grupo-plano" aria-label="Plano da semana">
     <p class="rotulo">Treino do clube</p>
     <div class="chips" style="flex-wrap:wrap">${focos.map(([k, n]) => `<button class="chip${plano.foco === k ? " ativo" : ""}" data-foco="${k}">${n}</button>`).join("")}<span style="width:8px"></span>${ints.map(([k, n]) => `<button class="chip${plano.intensidade === k ? " ativo" : ""}" data-int="${k}">${n}</button>`).join("")}</div>
+    ${blocoTreinoPosicao(s)}
     <p class="rotulo" style="margin-top:6px">Seu tempo livre</p>
     <div class="grade-semana" role="grid" aria-label="Tempo livre de segunda a sexta">
       <span></span>${DIAS.map((d, i) => `<span class="cab">${d}${i === 4 && jogo ? "<small>véspera</small>" : ""}</span>`).join("")}
@@ -150,8 +157,8 @@ function telaSemana(s: Save): string {
   </section>
   <button class="botao grande" data-acao="jogar">${jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
 
-  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
-  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : abaCasa(s)}</section>
+  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Amigos"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
+  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaAmigos(s) : abaCasa(s)}</section>
   <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
 }
 
@@ -246,12 +253,90 @@ function tendencia(s: Save): string {
   const alvo = alvoDeSeguidores(pacote, s), seg = s.carreira.seguidores;
   return alvo > seg * 1.05 ? "subindo ↑" : alvo < seg * 0.95 ? "caindo ↓" : "estável";
 }
+// ------------------------------------------------------------------ posições
+const ICONE_POS: Record<string, string> = { ZAG: "🛡️", LAT: "↔️", VOL: "⚓", MEI: "🎯", PON: "⚡", ATA: "⚽" };
+function blocoTreinoPosicao(s: Save): string {
+  const j = s.jogador, c = s.carreira, fam = familiaridadeDe(j), alvo = c.treinoPosicao;
+  const sug = c.sugestaoPos?.aceita ? c.sugestaoPos.pos : undefined;
+  const info = alvo ? (() => {
+    const f = fam[alvo] ?? 0, sem = semanasParaAprender(j.at, j.posicao, alvo, f, sug === alvo);
+    return `<div class="treino-pos-info"><div class="tp-barra"><i style="width:${f}%"></i><b style="left:${PODE_JOGAR}%"></b></div>
+      <span>${NOME_POS[alvo]}: <b>${Math.round(f)}%</b> · ${f >= PODE_JOGAR ? "já pode jogar ali" : `joga ali a partir de ${PODE_JOGAR}%`} · faltam ~${sem} sem. para dominar${sug === alvo ? " · pedido do técnico (+30%)" : ""}. A evolução normal cai 10% enquanto treina.</span></div>`;
+  })() : `<p class="sub" style="margin:4px 0 0">Escolha uma posição para treinar além do treino do clube. Quanto mais parecida com a sua e mais seus atributos combinam, mais rápido.</p>`;
+  return `<p class="rotulo" style="margin-top:8px">Treino de posição</p>
+    <div class="chips" style="flex-wrap:wrap"><button class="chip${!alvo ? " ativo" : ""}" data-tpos="">Nenhum</button>${POSICOES.filter((p) => p !== j.posicao).map((p) => `<button class="chip pos-chip${alvo === p ? " ativo" : ""}" data-tpos="${p}" title="${NOME_POS[p]}">${ICONE_POS[p]} ${NOME_POS[p]} <small>${Math.round(fam[p] ?? 0)}%</small></button>`).join("")}</div>${info}
+    ${msgPos ? `<p class="msg-mercado ${msgPos.ok ? "ok" : "nao"}" style="margin:8px 0 0">${esc(msgPos.texto)}</p>` : ""}`;
+}
+function blocoPosicoes(s: Save): string {
+  const j = s.jogador, fam = familiaridadeDe(j);
+  const linhas = [...POSICOES].sort((a, b) => (fam[b] ?? 0) - (fam[a] ?? 0)).map((p) => {
+    const f = Math.round(fam[p] ?? 0), atual = p === j.posicao;
+    return `<div class="pos-linha${atual ? " atual" : ""}"><span class="pos-nome">${ICONE_POS[p]} ${NOME_POS[p]}</span>
+      <span class="pos-fam"><i style="width:${f}%;background:${f >= 100 ? "#74D394" : f >= PODE_JOGAR ? "#E3B341" : "#6B7A70"}"></i></span>
+      <span class="pos-num">${f}%</span><span class="pos-ovr">${Math.round(ovrEm(j, p))}</span>
+      ${atual ? `<span class="tag titular">Atual</span>` : f >= PODE_JOGAR ? `<button class="botao sec peq" data-mudapos="${p}">Jogar aqui</button>` : `<span class="pos-vazio"></span>`}</div>`;
+  }).join("");
+  return `<p class="rotulo" style="margin-top:16px">Posições · domínio e OVR em cada uma</p><div class="pos-lista">${linhas}</div>`;
+}
+function cardSugestao(s: Save): string {
+  const sg = s.carreira.sugestaoPos;
+  if (!sg || sg.aceita !== undefined) return "";
+  const j = s.jogador, sem = semanasParaAprender(j.at, j.posicao, sg.pos, familiaridadeDe(j)[sg.pos] ?? 0, true);
+  return `<section class="painel evento sugestao"><p class="rotulo">Conversa com o técnico</p><h2>"Talvez eu queira te usar de ${NOME_POS[sg.pos].toLowerCase()}. Vamos treinar?"</h2>
+    <p class="sub">Seus atributos rendem ${Math.round(ovrEm(j, sg.pos) + (100 - (familiaridadeDe(j)[sg.pos] ?? 0)) * 0.07)} de OVR ali (hoje você joga de ${NOME_POS[j.posicao].toLowerCase()} com ${Math.round(ovr(j))}). Com o técnico acompanhando, o treino rende 30% mais: cerca de ${sem} semanas para dominar.</p>
+    <div class="ferr-botoes"><button class="botao" data-sug="sim">Topo treinar<small>Técnico +4</small></button><button class="botao sec" data-sug="nao">Prefiro minha posição<small>Técnico −2</small></button></div></section>`;
+}
+// ------------------------------------------------------------------ relações
+/** Estrela do adversário desta semana: chance de conversar no túnel e pedir a camisa. */
+function cardCraque(s: Save): string {
+  const jg = jogoDaSemana(s);
+  if (!jg) return "";
+  const rr = relacoesDe(s.carreira), cs = estrelasDoMundo(pacote).filter((e) => e.clubeId === jg.adversario).slice(0, 2);
+  if (!cs.length) return "";
+  return `<section class="painel craque"><p class="rotulo">Craque do outro lado</p>${cs.map((e) => {
+    const x = rr.lista[e.nome], nivel = x?.nivel ?? 0, pedida = rr.camisaPedida === e.nome;
+    return `<div class="craque-linha">${camisaMini(e.clubeId, e.numero)}<div><b>${esc(e.nome)}</b><small>${esc(nomeDe(e.clubeId))} · ${NOME_POS[e.posicao] ?? "Goleiro"} · OVR ${e.ovr} · ${rotuloNivel(nivel)}${x?.camisa ? " · camisa na coleção" : ""}</small></div>
+      ${x?.camisa ? "" : pedida ? `<span class="tag titular">Camisa pedida · ${Math.round(100 * chanceCamisa(nivel, s.carreira.fama, e.fama))}%</span>` : `<button class="botao sec peq" data-rel="${esc(e.nome)}" data-op="camisa">Pedir a camisa<small>${Math.round(100 * chanceCamisa(nivel, s.carreira.fama, e.fama))}%</small></button>`}</div>`;
+  }).join("")}<p class="sub" style="margin-top:6px">Se você jogar, a troca acontece no apito final. Quanto mais amizade, maior a chance.</p></section>`;
+}
+function camisaMini(clubeId: string, numero: number): string {
+  const [a, b] = cores(clubeId), c2 = b ?? "#FFFFFF";
+  return `<svg class="camisa-mini" viewBox="0 0 40 36" aria-hidden="true"><path d="M12 2 L4 7 L1 15 L7 17 L9 13 L9 34 L31 34 L31 13 L33 17 L39 15 L36 7 L28 2 Q20 7 12 2 Z" fill="${a}" stroke="#0A0A0A" stroke-width="1.6" stroke-linejoin="round"/><text x="20" y="27" text-anchor="middle" font-family="Big Shoulders Display,sans-serif" font-weight="800" font-size="13" fill="${c2}" stroke="#0A0A0A" stroke-width=".6">${numero}</text></svg>`;
+}
+function linhaRel(s: Save, x: Relacao, acoes: AcaoRel[], extra = ""): string {
+  const e = estrelasDoMundo(pacote).find((k) => k.nome === x.nome), cor = x.nivel >= 80 ? "#E3B341" : x.nivel >= 60 ? "#74D394" : x.nivel >= 40 ? "#6FB7E0" : "#8A968E";
+  return `<div class="rel-linha"><div class="rel-topo">${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><b>${esc(x.nome)}</b>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${esc(nomeDe(x.clubeId))}${extra}</small></div>
+    <div class="rel-nivel"><span style="color:${cor}">${rotuloNivel(x.nivel)}</span><span class="rel-barra"><i style="width:${x.nivel}%;background:${cor}"></i></span></div></div>
+    <div class="rel-acoes">${acoes.map((a) => `<button class="chip" data-rel="${esc(x.nome)}" data-op="${a}">${NOME_ACAO_REL[a]}</button>`).join("")}</div></div>`;
+}
+function abaAmigos(s: Save): string {
+  const c = s.carreira, rr = relacoesDe(c), lista = Object.values(rr.lista), est = estrelasDoMundo(pacote);
+  const usadas = rr.semana === semanaAbsJogo(c) ? rr.feitas.length : 0;
+  const jan = !!janelaAberta(c);
+  const comp = lista.filter((x) => x.companheiro).sort((a, b) => b.nivel - a.nivel);
+  const ex = lista.filter((x) => !x.companheiro && !est.some((e) => e.nome === x.nome)).sort((a, b) => b.nivel - a.nivel);
+  const seguidas = lista.filter((x) => !x.companheiro && est.some((e) => e.nome === x.nome)).sort((a, b) => b.nivel - a.nivel);
+  const ligaEst = est.filter((e) => !rr.lista[e.nome] && mundo(pacote).info[e.clubeId]?.ligaId === c.ligaId && e.clubeId !== c.clubeId).slice(0, 4);
+  const mundoEst = est.filter((e) => !rr.lista[e.nome] && !ligaEst.includes(e)).slice(0, 6);
+  const novo = (e: typeof est[number]) => linhaRel(s, { nome: e.nome, clubeId: e.clubeId, nivel: 0, desde: 0 }, ["redes", "mensagem"], ` · ${NOME_POS[e.posicao] ?? "Goleiro"} · ${Math.round(100 * atencao(c.fama, e.fama))}% de atenção`);
+  const camisas = lista.filter((x) => x.camisa).length;
+  return `<div class="amigos-topo"><div><b>${MAX_ACOES_SEMANA - usadas}</b><span>conversas livres nesta semana</span></div><div><b>${lista.filter((x) => x.nivel >= 40).length}</b><span>amigos</span></div><div><b>${camisas}</b><span>camisas trocadas</span></div></div>
+    <p class="sub">A convivência no clube cria amizade sozinha; sair com os amigos no tempo livre acelera. Estrelas respondem mais a quem tem fama. Amigo de verdade (Parceiro, 60+) pode te indicar ao clube dele na janela.</p>
+    ${msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : ""}
+    <p class="rotulo" style="margin-top:14px">Companheiros de clube</p>
+    ${comp.length ? comp.slice(0, 10).map((x) => linhaRel(s, x, ["mensagem", "jantar"])).join("") : `<p class="sub">Jogue algumas semanas para conhecer o elenco.</p>`}
+    ${ex.length ? `<p class="rotulo" style="margin-top:14px">Ex-companheiros</p>${ex.slice(0, 8).map((x) => linhaRel(s, x, x.nivel >= 60 && jan ? ["mensagem", "indicacao"] : ["mensagem"])).join("")}` : ""}
+    ${seguidas.length ? `<p class="rotulo" style="margin-top:14px">Estrelas que você conhece</p>${seguidas.map((x) => linhaRel(s, x, x.nivel >= 60 && jan ? ["redes", "mensagem", "indicacao"] : ["redes", "mensagem"])).join("")}` : ""}
+    ${ligaEst.length ? `<p class="rotulo" style="margin-top:14px">Estrelas da sua liga</p>${ligaEst.map(novo).join("")}` : ""}
+    <p class="rotulo" style="margin-top:14px">Estrelas do mundo</p>${mundoEst.map(novo).join("")}`;
+}
+
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const visual = blocoVisual(s);
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
   const grupos: [string, Grupo][] = [["Físico", "fisico"], ["Técnico", "tecnico"], ["Tático", "tatico"]];
-  return `${visual}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
+  return `${visual}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
@@ -348,7 +433,7 @@ function perfilHtml(s: Save): string {
   const pais = PAISES.find((x) => x.id === j.pais);
   const bio = biografia({ nome: j.nome, apelido: j.apelido, pais: pais?.local ?? "no Brasil", posicao: NOME_POS[j.posicao], idade: j.idade, perfil: j.perfilNome, hist, clubeAtual: info.nome, fama: c.fama,
     estilo: estiloDeJogo(j.at, j.posicao).nome, forte: pontos(j.at, j.posicao).fortes[0], traco: j.tracos[0] ? TRACOS[j.tracos[0]]?.nome : undefined,
-    idolo: idolo ? nomeDe(idolo) : undefined, querido: querido ? nomeDe(querido) : undefined, amigos: t.jogos >= 30 ? amigos : [], semente: s.semente });
+    idolo: idolo ? nomeDe(idolo) : undefined, querido: querido ? nomeDe(querido) : undefined, amigos: (() => { const reais = melhoresAmigos(pacote, s.carreira); return reais.length ? reais : t.jogos >= 30 ? amigos : []; })(), semente: s.semente });
   return `<div class="perfil-topo" style="--c1:${c1};--c2:${c2 ?? "#FFFFFF"}">
       <button class="fechar" data-acao="fechar-perfil" aria-label="Fechar">✕</button>
       <div class="perfil-foto">${foto(s)}</div>
@@ -556,7 +641,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -588,6 +673,14 @@ document.addEventListener("click", (ev) => {
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.trofeu && save) { trofeuAberto = trofeuAberto === d.trofeu ? undefined : d.trofeu; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
+  else if (d.rel && save) {
+    const r = agirRelacao(pacote, save, d.rel, d.op as AcaoRel); msgRel = { texto: r.msg, ok: r.ok };
+    if (d.op === "camisa" && aba !== "amigos") msgRel = undefined;
+    salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  }
+  else if (d.tpos !== undefined && save) { msgPos = { texto: treinarPosicao(save, (d.tpos || undefined) as never), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.mudapos && save) { const r = mudarPosicao(save, d.mudapos as never); msgPos = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.sug && save) { msgPos = { texto: responderSugestao(save, d.sug === "sim"), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.sair && save) { const r = pedirParaSair(save, true, d.sair as Destino); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vida && save) { padraoDe(save.carreira)[d.vida as ItemVida] = +d.nivel!; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

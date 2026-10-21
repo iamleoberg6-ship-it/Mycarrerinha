@@ -31,7 +31,7 @@ export function mundo(pacote: PacoteDados): Mundo {
       continue;
     }
     const clubes: Clube[] = (json[li.id]?.clubes ?? []).map((c) => {
-      const elenco: JogadorNPC[] = c.elenco.map(([nome, posicao, ovr, idade, nacionalidade]) => ({ nome, posicao: posicao as Posicao | "GOL", ovr, idade, nacionalidade }));
+      const elenco: JogadorNPC[] = c.elenco.map(([nome, posicao, ovr, idade, nacionalidade, numero]) => ({ nome, posicao: posicao as Posicao | "GOL", ovr, idade, nacionalidade, numero: numero || undefined }));
       info[c.id] = { id: c.id, nome: c.nome, apelido: c.apelido, cores: c.cores, forca: c.forca, cidade: c.cidade, estadio: c.estadio, capacidade: c.capacidade, padrao: c.padrao, ligaId: li.id, pais: li.pais };
       return { id: c.id, nome: c.nome, ligaId: li.id, forca: c.forca, fClube: c.fClube, elenco, pais: li.pais };
     });

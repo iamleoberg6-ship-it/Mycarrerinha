@@ -18,6 +18,9 @@ import { alvoSeguidores, semanaRedes, imposto } from "../src/vida.js";
 import { tetoSalarial } from "../src/mercado.js";
 import { MARCAS, MARCA, ofertasDaMarca, marcaInteressada } from "../src/marcas.js";
 import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave, resolverEvento } from "../src/jogo.js";
+import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSemana, melhoresAmigos, ovr as ovrJ, ovrEm } from "../src/jogo.js";
+import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
+import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
@@ -443,6 +446,58 @@ teste("Mercado: transferência para outra liga, empréstimo, renovação, agente
   for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 90;
   assert.equal(papelNoClube(w.liga.BRA2.clubes[0], s), "titular");
   void mudarDeClube;
+});
+
+teste("Estrelas espalhadas por todas as ligas, craques de verdade no topo", () => {
+  const est = estrelas(pacote), w = mundo(pacote);
+  assert.ok(est[0].ovr >= 88 && est.filter((e) => e.ovr >= 85).length >= 15);
+  for (const l of w.ligas) {
+    const n = est.filter((e) => w.info[e.clubeId].ligaId === l.id).length;
+    assert.ok(n >= Math.floor(l.clubes.length / 2) - 2, `${l.id}: ${n} estrelas para ${l.clubes.length} clubes`);
+  }
+  assert.ok(chanceCamisa(90, 50, 90) > chanceCamisa(10, 50, 90), "amizade aumenta a chance da camisa");
+  assert.ok(chanceCamisa(50, 90, 90) > chanceCamisa(50, 10, 90), "fama aumenta a chance da camisa");
+});
+
+teste("Relações: convivência cria amigos, limite de conversas e troca de camisa", () => {
+  const r = criarJogador({ nome: "Amigo", pais: "BRA", familia: "media", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "PON", semente: "rel" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "rel");
+  for (let k = 0; k < 12; k++) semanaAutomatica(pacote, s);
+  const rr = relacoesDe(s.carreira);
+  assert.ok(Object.values(rr.lista).filter((x) => x.companheiro).length >= 10, "conheceu o elenco");
+  const est = estrelas(pacote)[0];
+  assert.ok(agirRelacao(pacote, s, est.nome, "redes").ok);
+  assert.equal(agirRelacao(pacote, s, est.nome, "mensagem").ok, false, "uma vez por semana com cada um");
+  const comp = Object.values(rr.lista).filter((x) => x.companheiro);
+  assert.ok(agirRelacao(pacote, s, comp[0].nome, "mensagem").ok && agirRelacao(pacote, s, comp[1].nome, "mensagem").ok);
+  assert.equal(agirRelacao(pacote, s, comp[2].nome, "mensagem").ok, false, "três por semana");
+  // troca de camisa: profissional, amigo de todas as estrelas e pedindo a camisa toda semana
+  const c = s.carreira; c.formacao = false; c.fama = 80; s.jogador.idade = 24;
+  for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 92;
+  let trocas = 0;
+  for (let k = 0; k < 30 && !trocas; k++) {
+    const jg = jogoDaSemana(s), e = jg && estrelas(pacote).find((x) => x.clubeId === jg.adversario);
+    if (e) { const x = rr.lista[e.nome] ?? (rr.lista[e.nome] = { nome: e.nome, clubeId: e.clubeId, nivel: 100, desde: 2026 }); x.nivel = 100; rr.camisaPedida = e.nome; }
+    semanaAutomatica(pacote, s);
+    trocas = Object.values(rr.lista).filter((x) => x.camisa).length;
+  }
+  assert.ok(trocas >= 1, "trocou ao menos uma camisa");
+  assert.ok((s.casa.reliquias ?? []).some((x) => x.chave === "camisa-troca"), "a camisa vai para a casa");
+  assert.ok(melhoresAmigos(pacote, c).length >= 1);
+});
+
+teste("Treino de posição: ponta vira centroavante mais rápido do que zagueiro", () => {
+  const r = criarJogador({ nome: "Pos", pais: "BRA", familia: "media", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "PON", semente: "pos" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "pos"), j = s.jogador;
+  assert.ok(ganhoSemanal(j.at, "PON", "ATA", false, 0) > 2 * ganhoSemanal(j.at, "PON", "ZAG", false, 0));
+  assert.ok(semanasParaAprender(j.at, "PON", "ATA", 28) < semanasParaAprender(j.at, "PON", "LAT", 21));
+  assert.ok(ovrEm(j, "ZAG") < ovrJ(j), "posição sem treino rende menos");
+  assert.equal(mudarPosicao(s, "ATA").ok, false);
+  treinarPosicao(s, "ATA");
+  const antes = familiaridadeDe(j).ATA!;
+  for (let k = 0; k < 20; k++) semanaAutomatica(pacote, s);
+  assert.ok(familiaridadeDe(j).ATA! > antes + 30, `ATA ${antes} → ${familiaridadeDe(j).ATA}`);
+  assert.ok(mudarPosicao(s, "ATA").ok); assert.equal(j.posicao, "ATA");
 });
 
 console.log(`\n${ok} testes passaram`);

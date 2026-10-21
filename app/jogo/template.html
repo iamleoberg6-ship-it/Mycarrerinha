@@ -205,6 +205,35 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 .kv span:nth-child(odd) { color: var(--giz-2); }
 .teste summary { cursor: pointer; font-weight: 600; color: var(--giz-2); }
 @media (prefers-reduced-motion: reduce) { .lance, .decisao { animation: none; } }
+
+/* treino de posição */
+.pos-chip small { opacity: .75; margin-left: 3px; font-size: 11px; }
+.treino-pos-info { margin-top: 8px; display: grid; gap: 6px; font-size: 12.5px; color: var(--giz-2); }
+.tp-barra { position: relative; height: 8px; border-radius: 99px; background: rgba(255,255,255,.1); border: 1px solid var(--linha); overflow: visible; }
+.tp-barra i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: var(--ouro); }
+.tp-barra b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--giz); }
+.pos-lista { display: grid; gap: 6px; margin-top: 6px; }
+.pos-linha { display: grid; grid-template-columns: 118px 1fr 38px 28px 86px; align-items: center; gap: 8px; font-size: 13px; padding: 4px 6px; border-radius: 8px; }
+.pos-linha.atual { background: var(--campo-2); }
+.pos-fam { height: 7px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; } .pos-fam i { display: block; height: 100%; }
+.pos-num { text-align: right; color: var(--giz-2); } .pos-ovr { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 16px; text-align: right; }
+.pos-linha .botao.peq, .pos-linha .tag { justify-self: end; }
+.sugestao h2 { font-size: 20px; }
+/* relações */
+.camisa-mini { width: 38px; height: 34px; flex: none; }
+.craque-linha { display: flex; align-items: center; gap: 10px; padding: 6px 0; } .craque-linha > div { flex: 1; min-width: 0; } .craque-linha small { display: block; color: var(--giz-2); font-size: 12px; }
+.craque-linha .botao small { display: block; font-size: 11px; opacity: .8; }
+.amigos-topo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.amigos-topo div { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 10px; padding: 8px 10px; display: grid; }
+.amigos-topo b { font-family: "Big Shoulders Display", sans-serif; font-size: 24px; } .amigos-topo span { font-size: 11.5px; color: var(--giz-2); }
+.rel-linha { padding: 8px 0; border-bottom: 1px solid var(--linha); }
+.rel-topo { display: flex; align-items: center; gap: 10px; }
+.rel-nome { flex: 1; min-width: 0; } .rel-nome small { display: block; color: var(--giz-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.selo { font-size: 11px; padding: 1px 6px; border-radius: 99px; background: var(--campo-2); border: 1px solid var(--linha); } .selo.estrela { color: var(--ouro); border-color: var(--ouro); }
+.rel-nivel { width: 110px; display: grid; gap: 4px; font-size: 12px; text-align: right; font-weight: 600; }
+.rel-barra { display: block; height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; } .rel-barra i { display: block; height: 100%; }
+.rel-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0 48px; } .rel-acoes .chip { padding: 5px 10px; font-size: 12px; }
+@media (max-width: 420px) { .pos-linha { grid-template-columns: 100px 1fr 34px 24px 76px; font-size: 12px; } .rel-nivel { width: 86px; } .rel-acoes { margin-left: 0; } }
 </style>
 </head>
 <body>

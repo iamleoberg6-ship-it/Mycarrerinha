@@ -9,6 +9,7 @@ export interface JogadorNPC {
   ovr: number;
   idade: number;
   nacionalidade: string;
+  numero?: number;
 }
 
 export interface Clube {

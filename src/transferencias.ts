@@ -1,7 +1,7 @@
 // Mercado da carreira jogável: janelas, propostas, negociação pelo agente, empréstimo, renovação
 // e troca de agente. As fórmulas de interesse, valor e salário vêm de mercado.ts.
 import { RNG, clamp } from "./rng.js";
-import { AGENTES, CAMBIO, tetoSalarial, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
+import { AGENTES, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
 import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { mundo, infoClube } from "./mundo.js";
@@ -170,6 +170,16 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
 /** O Golfo compra jogador pronto: a partir dos 24 anos, ou estrela. */
 const golfoQuer = (p: Proposta, s: Save) => p.liga.id !== "KSA1" || s.jogador.idade >= 24 || ovr(s.jogador) >= 76;
 
+/** Um amigo do clube indicou você: o clube dele faz uma proposta (só com janela aberta). */
+export function propostaPorIndicacao(pacote: PacoteDados, s: Save, clubeId: string): PropostaSave | undefined {
+  const c = s.carreira, w = mundo(pacote), clube = w.clube[clubeId];
+  if (!clube || clubeId === c.clubeId || !janelaAberta(c) || c.formacao || s.jogador.idade < 18) return undefined;
+  const liga = w.liga[clube.ligaId], perfil = perfilDe(pacote, s), comp = componentesInteresse(perfil, clube, liga);
+  const salario = salarioMensal({ ovr: ovr(s.jogador), idade: s.jogador.idade, liga, clube, agente: c.agente, fama: c.fama });
+  const p = paraSave(pacote, s, { clube, liga, interesse: 0.7, taxa: perfil.clubeAtual ? comp.vm : 0, orcamento: comp.orcamento, salario, anos: 3, titularProvavel: comp.titular });
+  mercadoDe(c).propostas.push(p);
+  return p;
+}
 function paraSave(pacote: PacoteDados, s: Save, p: Proposta): PropostaSave {
   const m = mercadoDe(s.carreira), livre = !p.taxa;
   // para tirar o jogador de onde está, o clube tenta cobrir o salário atual, mas só até onde a folha aguenta

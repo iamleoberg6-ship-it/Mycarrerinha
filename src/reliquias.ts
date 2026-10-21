@@ -20,6 +20,7 @@ export const CONQUISTAS: Conquista[] = [
   { chave: "camisa-clube", tipo: "camisa", grupo: "Camisas", nome: "Camisa de cada clube", dica: "Faça 10 jogos como profissional por um clube.", repetivel: true },
   { chave: "camisa-jogo", tipo: "camisa", grupo: "Camisas", nome: "Camisa de jogo marcante", dica: "Chegue a 100, 200, 300... jogos como profissional.", repetivel: true },
   { chave: "camisa-titulo", tipo: "camisa", grupo: "Camisas", nome: "Camisa do título", dica: "Seja campeão da liga jogando pelo menos 10 partidas.", repetivel: true },
+  { chave: "camisa-troca", tipo: "camisa", grupo: "Camisas", nome: "Camisa trocada com um craque", dica: "Fique amigo de uma estrela e peça a camisa dela depois do jogo.", repetivel: true },
   { chave: "camisa-selecao", tipo: "camisa", grupo: "Camisas", nome: "Camisa da estreia pela seleção", dica: "Seja convocado e estreie pela seleção.", emBreve: true },
   { chave: "bola-gol-base", tipo: "bola", grupo: "Bolas", nome: "Bola do primeiro gol na base", dica: "Marque seu primeiro gol na base." },
   { chave: "bola-estreia", tipo: "bola", grupo: "Bolas", nome: "Bola da estreia", dica: "Estreie no time profissional." },
