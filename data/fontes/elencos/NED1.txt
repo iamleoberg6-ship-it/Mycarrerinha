@@ -1,0 +1,428 @@
+ADO Den Haag
+1|GK|BFA|Kilian Nikiema
+3|DF|NED|Pascal Mulder
+4|DF|BEL|Matteo Waem
+5|DF|DEN|Jonas Jensen-Abbew
+7|FW|NED|Daryl van Mieghem
+8|MF|CZE|Jan Žambůrek
+9|FW|NED|Jesse Bal
+10|FW|NED|Illaijh de Ruijter
+11|FW|NED|Evan Rottier
+12|GK|NED|Sem Eekhout
+14|MF|NED|Mylian Jimenez
+15|DF|NED|Milan Hokke
+16|MF|NED|Finn de Bruin
+17|FW|USA|Jalen Hawkins
+18|DF|GUI|Sekou Sylla
+19|FW|AUT|Luka Reischl
+21|FW|AUS|Cameron Peupion
+22|DF|GER|Lasse Wilhelm
+23|GK|GER|Niclas Thiede
+24|FW|ESP|Álex Pozo
+25|MF|FIN|Juho Kilo
+27|FW|NED|Nigel Thomas
+35|DF|SUR|Sanyika Bergtop
+
+Ajax
+1|GK|GER|Marc-André ter Stegen
+2|DF|BRA|Lucas Rosa
+3|DF|DEN|Anton Gaaei
+4|MF|MAR|Sofyan Amrabat
+5|DF|NED|Owen Wijndal
+6|DF|GER|Thilo Kehrer
+7|FW|CIV|Simon Adingra
+8|MF|GER|Julian Brandt
+9|FW|DEN|Kasper Dolberg
+10|MF|ISR|Oscar Gloukh
+11|MF|UKR|Viktor Tsyhankov
+12|DF|BRA|Caio Henrique
+15|DF|NED|Youri Baas
+17|DF|NED|Daley Blind
+18|MF|NED|Davy Klaassen
+20|FW|NOR|Oliver Edvardsen
+21|DF|ESP|Jofre Torrents
+22|GK|NED|Joeri Heerkens
+23|FW|NED|Steven Berghuis
+24|MF|COD|Jorthy Mokio
+26|GK|IDN|Maarten Paes
+28|MF|MLI|Yves Bissouma
+30|DF|NED|Aaron Bouwman
+38|FW|BRA|Marcos Leonardo
+
+AZ
+1|GK|NED|Rome-Jayden Owusu-Oduro
+2|DF|JPN|Seiya Maikuma
+3|DF|NED|Wouter Goes
+4|DF|NED|Maxim Dekker
+5|DF|POR|Alexandre Penetra
+6|MF|NED|Peer Koopmeiners
+7|FW|BRA|Weslley Patati
+8|MF|NED|Jordy Clasie
+9|FW|IRL|Troy Parrott
+10|MF|NED|Sven Mijnans
+11|FW|GHA|Ibrahim Sadiq
+12|GK|NED|Hobie Verhulst
+15|DF|MEX|Mateo Chávez
+18|DF|JPN|Rion Ichihara
+19|FW|NED|Jizz Hornkamp
+20|MF|NED|Kasper Boogaard
+22|DF|NED|Elijah Dijkstra
+23|DF|NED|Billy van Duijl
+24|FW|NED|Ayoub Oufkir
+26|MF|NED|Kees Smit
+27|FW|NED|Ro-Zangelo Daal
+30|DF|NED|Denso Kasius
+33|MF|CZE|Matěj Šín
+34|DF|NED|Mees de Wit
+
+Cambuur
+1|GK|NED|Thijs Jansen
+2|DF|ITA|Devid Eugene Bouah
+3|DF|NED|Jorn Berkhout
+4|DF|MAR|Ismaël Baouf
+6|DF|NED|Jamal Amofa
+7|FW|MAR|Sami Bouhoudane
+8|MF|CUW|Nicky Souren
+9|FW|NED|Skye Vink
+11|FW|FRA|Ilyes Hamache
+13|FW|AUT|Nicolas Binder
+15|FW|NOR|Fabian Kvam
+16|DF|NED|Rik Mulders
+17|MF|FRA|Ethan Apkakou
+18|MF|NED|Wiebe van der Heide
+19|FW|NED|Danyello Look
+20|MF|NED|Daan Visser
+21|GK|NED|Jasper Meijster
+23|DF|NED|Lucas Jetten
+27|DF|NED|Wiebe Kooistra
+28|DF|FRA|Morgan Costarelli
+29|FW|NED|Iwan Henstra
+33|MF|BEL|Mathieu Maertens
+
+Excelsior
+1|GK|NED|Stijn van Gassel
+2|DF|GER|Eric da Silva Moreira
+3|DF|NED|Rick Meissen
+4|DF|SWE|Casper Widell
+6|MF|NED|Daniël van Vianen
+7|FW|NED|Aymen Sliti
+8|MF|GEO|Irakli Yegoian
+9|FW|ESP|Mario Domínguez
+10|MF|NED|Noah Naujoks
+11|MF|IRN|Alireza Jahanbakhsh
+12|DF|AUS|Kasey Bos
+14|DF|NED|Jan Plug
+15|DF|NED|Simon Janssen
+16|GK|GNB|Celton Biai
+18|MF|AUT|Valentin Sulzbacher
+19|FW|NED|David Garden
+20|MF|NED|Lennard Hartjes
+21|FW|CPV|Ilano Silva Timas
+22|DF|GER|Osman Turay
+24|DF|NED|Guilliano Cairo
+25|DF|JAM|Marlon van de Wetering
+28|FW|NED|Nesto Groen
+30|FW|ISL|Ágúst Orri Þorsteinsson
+40|GK|NED|Tijmen Holla
+
+Fortuna Sittard
+1|GK|NED|Luuk Koopmans
+2|DF|BEL|Siebe Wylin
+5|MF|MAR|Yassin Oukili
+6|DF|NED|Syb van Ottele
+7|FW|SWE|Kristoffer Peterson
+8|MF|NED|Jasper Dahlhaus
+12|DF|POR|Ivo Pinto
+14|MF|NED|Sven Simons
+15|DF|NED|Nick de Groot
+20|MF|FRA|Édouard Michut
+23|MF|NED|Philip Brittijn
+28|DF|IDN|Justin Hubner
+31|GK|NED|Mattijs Branderhorst
+38|MF|BEL|Moussa Gbemou
+44|DF|ESP|Iván Márquez
+52|MF|MAR|Mohamed Ihattaren
+
+Go Ahead Eagles
+1|GK|NOR|Kjetil Haug
+2|DF|ISL|Alfons Sampsted
+3|DF|GER|Gerrit Nauber
+4|DF|NED|Joris Kramer
+5|DF|IDN|Dean James
+8|MF|NED|Evert Linthorst
+9|FW|ISL|Stefán Ingi Sigurðarson
+10|FW|DEN|Søren Tengstedt
+11|FW|NOR|Oskar Sivertsen
+15|MF|NED|Robbin Weijenberg
+16|FW|SWE|Victor Edvardsen
+17|MF|BEL|Mathis Suray
+18|FW|SUR|Richonell Margaret
+20|DF|NED|Eus Waayers
+21|MF|NED|Melle Meulensteen
+22|GK|NED|Nick Marsman
+23|FW|BEL|Thibo Baeten
+25|DF|NED|Giovanni van Zwam
+27|DF|FIN|Tomas Galvez
+28|DF|NED|Pim Saathof
+29|FW|NOR|Erik Flataker
+32|FW|GHA|Ofosu Boakye
+34|MF|NED|Yassir Salah Rahmouni
+
+Groningen
+1|GK|SUR|Etienne Vaessen
+2|DF|NED|Wouter Prins
+3|DF|NED|Thijmen Blokzijl
+4|DF|HUN|Márk Csinger
+5|DF|GER|Marco Rente
+7|MF|NOR|Travis Hernes
+8|MF|NED|Tika de Jonge
+9|FW|ISL|Brynjólfur Willumsson
+12|DF|SVK|Nikolas Brandis
+13|GK|SVN|Lovro Štubljar
+14|MF|NED|Jorg Schreuders
+15|DF|SWE|Elvis van der Laan
+16|MF|SWE|Alvin Nordin
+17|MF|NED|David van der Werff
+19|FW|POL|Oskar Zawada
+20|FW|NED|Nils Eggens
+24|MF|NED|Pelle Clement
+26|FW|NED|Thom van Bergen
+29|DF|CUW|Tyrique Mercera
+31|GK|NED|Rijk Janse
+34|FW|NED|Ryan Metu
+0|FW|RWA|Noam Emeran
+
+Heerenveen
+3|DF|NED|Maas Willemsen
+4|DF|NED|Sam Kersten
+6|MF|NED|Joris van Overeem
+7|FW|FRA|Maxence Rivera
+8|MF|NED|Luuk Brouwers
+9|FW|SUR|Dylan Vente
+10|MF|NED|Ringo Meerveld
+11|MF|BEL|Luca Oyen
+14|MF|NED|Levi Smans
+15|DF|NED|Mats Egbring
+16|MF|SWE|Marcus Linday
+17|DF|NOR|Nikolai Hopland
+19|DF|GRE|Vasilios Zagaritis
+20|FW|DEN|Jacob Trenskow
+22|GK|NED|Bernt Klaverboer
+28|DF|BUL|Hristiyan Petrov
+31|GK|NED|Nordin Bakker
+33|FW|SUR|Jermaine Rijssel
+34|DF|NED|Robin Bouw
+35|MF|CUW|Isaiah Ahmed
+44|GK|NED|Andries Noppert
+45|DF|NOR|Oliver Braude
+
+NEC
+1|GK|ESP|Gonzalo Crettaz
+3|DF|NED|Philippe Sandler
+4|DF|NED|Perr Schuurs
+6|MF|CRO|Darko Nejašmić
+7|FW|TUR|Emre Mor
+8|MF|NOR|Isak Hansen-Aarøen
+9|MF|SUR|Tjaronn Chery
+10|FW|SRB|Dušan Tadić
+11|MF|ISL|Willum Þór Willumsson
+12|GK|AUT|Nikolas Polster
+14|FW|NED|Kaj Sierhuis
+17|DF|NED|Bram Nuytinck
+18|MF|GER|Dennis Geiger
+19|FW|MAR|Adam Tahaui
+20|MF|FRA|Noé Lebreton
+21|DF|DEN|Tobias Storm
+22|DF|TUR|Ahmetcan Kaplan
+24|DF|CUW|Deveron Fonville
+26|MF|NED|Sam de Laat
+30|FW|NED|Bryan Linssen
+35|MF|CPV|Jamiro Monteiro
+36|GK|NED|Freek Entius
+
+PEC Zwolle
+1|GK|NED|Jasper Schendelaar
+2|DF|CUW|Sherel Floranus
+3|DF|NED|Olivier Aertssen
+4|DF|NED|Tijs Velthuis
+6|DF|GER|Jan Bürger
+7|FW|DEN|Younes Namli
+8|MF|DEN|Tobias Sommer
+9|FW|DEN|Elias Sørensen
+10|FW|NED|Koen Kostons
+11|FW|BEL|Dylan Mbayo
+16|GK|NED|Tom de Graaff
+18|FW|NED|Odysseus Velanas
+20|MF|NED|Gabriël Reiziger
+22|FW|GUI|Ibrahim Cissoko
+24|DF|NED|Nick Viergever
+25|MF|NED|Thijs Oosting
+28|DF|DEN|Simon Graves
+30|MF|NZL|Ryan Thomas
+33|DF|NED|Damian van der Haar
+34|MF|NED|Nick Fichtinger
+41|GK|NED|Duke Verduin
+
+Feyenoord
+1|GK|GER|Tjark Ernst
+2|DF|NED|Bart Nieuwkoop
+3|DF|NED|Thomas Beelen
+4|DF|JPN|Tsuyoshi Watanabe
+5|DF|NED|Gijs Smal
+6|DF|NED|Jeremiah St. Juste
+7|MF|POL|Jakub Moder
+8|MF|NED|Gjivai Zechiël
+10|MF|NED|Luciano Valente
+11|FW|POR|Gonçalo Borges
+14|MF|NED|Sem Steijn
+15|DF|AUS|Jordan Bos
+16|DF|ESP|Javi López
+17|FW|ENG|Reiss Nelson
+19|FW|ESP|Nacho Ferri
+20|DF|NED|Mats Deijl
+23|FW|ALG|Anis Hadj Moussa
+24|MF|NED|Thijs Kraaijeveld
+26|DF|NED|Givairo Read
+27|FW|MLI|Gaoussou Diarra
+28|MF|MAR|Oussama Targhalline
+33|GK|GER|Florian Kastenmeier
+34|MF|BEL|Charles Vanhoutte
+35|DF|ESP|Mika Mármol
+
+PSV
+1|GK|NED|Nick Olij
+2|DF|NED|Lutsharel Geertruida
+3|DF|ESP|Yarek Gasiorowski
+4|DF|CUW|Armando Obispo
+5|MF|CRO|Ivan Perišić
+6|DF|NED|Ryan Flamingo
+7|FW|NED|Ruben van Bommel
+8|DF|USA|Sergiño Dest
+9|FW|USA|Ricardo Pepi
+10|MF|AUT|Paul Wanner
+11|FW|NED|Sami Ouaissa
+14|FW|FRA|Alassane Pléa
+17|DF|BRA|Mauro Júnior
+18|DF|SRB|Filip Kostić
+19|FW|BIH|Esmir Bajraktarević
+20|MF|NED|Guus Til
+22|MF|NED|Jerdy Schouten
+23|FW|DEN|Mikkel Bro Hansen
+24|MF|JPN|Kodai Sano
+25|DF|FRA|Kiliann Sildillia
+27|FW|ROU|Dennis Man
+29|FW|NED|Sam Lammers
+31|MF|BEL|Noah Fernandez
+32|GK|CZE|Matěj Kovář
+
+Sparta Rotterdam
+1|GK|NED|Joël Drommel
+2|DF|NED|Lushendry Martes
+3|DF|SUR|Marvin Young
+4|DF|VEN|Teo Quintero
+5|MF|NED|Mike Kleijn
+6|MF|NOR|Joshua Kitolano
+7|FW|NED|Mitchell van Bergen
+8|MF|CPV|Ayoni Santos
+9|FW|NOR|Tobias Lauritsen
+10|FW|NED|Vito van Crooij
+11|FW|NED|Milan Zonneveld
+12|DF|CUW|Shurandy Sambo
+13|DF|NED|Max de Ligt
+14|DF|NED|Bruno Martins Indi
+15|DF|NED|Patrick van Aanholt
+17|DF|COM|Saïd Bakari
+18|MF|NED|Jens Toornstra
+19|FW|FIN|Casper Terho
+20|GK|POL|Filip Bednarek
+21|MF|NOR|Alwande Roaldsøy
+22|MF|JPN|Shunsuke Mito
+23|MF|NED|Julian Baas
+30|GK|NED|Pascal Kuiper
+
+Telstar
+1|GK|NED|Ronald Koeman Jr.
+2|DF|NED|Jeff Hardeveld
+3|DF|NED|Gerald Alders
+4|DF|FRA|Abdelnour Soualhia
+5|DF|NED|Prince Aning
+7|FW|POR|Rui Mendes
+8|FW|TUR|Emirhan Demircan
+9|FW|NED|Jelani Seedorf
+10|MF|NED|Tyrone Owusu
+11|FW|ISL|Nökkvi Þeyr Þórisson
+13|GK|NED|Finn Mulder
+14|MF|NED|Harrie Kuster
+15|DF|NED|Nigel Ogidi Nwankwo
+16|DF|NED|Sem Valk
+17|MF|NED|Nils Rossen
+18|DF|NED|Gabi Caschili
+19|MF|NED|Fabiano Rust
+21|FW|NED|Fofin Turay
+23|MF|NED|Noach Shenkman
+27|FW|NED|Patrick Brouwer
+28|DF|SUR|Rojendro Oudsten
+42|FW|CUW|Ar'jany Martha
+43|DF|BEL|Marvin Peersman
+
+Twente
+1|GK|GER|Lars Unnerstall
+2|DF|IDN|Mees Hilgers
+3|DF|NED|Robin Pröpper
+4|MF|NOR|Mathias Kjølø
+6|MF|ALG|Ramiz Zerrouki
+7|FW|CRO|Marko Pjaca
+8|FW|USA|Taylor Booth
+9|FW|NED|Ricky van Wolfswinkel
+11|FW|NED|Daan Rots
+12|DF|POR|Guilherme Peixoto
+14|MF|ISL|Kristian Hlynsson
+16|GK|MAR|Issam El Maach
+20|MF|NED|Thomas van den Belt
+22|GK|POL|Przemysław Tytoń
+23|DF|ISR|Stav Lemkin
+25|FW|NED|Lucas Vennegoor of Hesselink
+27|MF|NOR|Sondre Ørjasæter
+28|DF|NED|Bart van Rooij
+32|MF|BEL|Arno Verschueren
+33|DF|NED|Björn Titulaer
+38|DF|NED|Max Bruns
+42|MF|FRA|Daouda Weidmann
+
+Utrecht
+1|GK|GRE|Vasilis Barkas
+2|DF|BEL|Siebe Horemans
+3|DF|BEL|Matisse Didden
+5|DF|CYP|Nikolas Panayiotou
+6|MF|NED|Guus Offerhaus
+7|FW|DEN|Victor Jensen
+9|FW|UKR|Artem Stepanov
+10|FW|FRA|Yoann Cathline
+11|FW|ESP|Ángel Alarcón
+15|FW|ENG|Adrian Blake
+17|FW|NED|Sem van Duijn
+18|DF|CRO|Jakov Medić
+20|MF|NED|Dani de Wit
+21|DF|NED|Neville Ogidi Nwankwo
+22|GK|NED|Sergio Padt
+23|MF|DEN|Niklas Vesterlund
+26|FW|IDN|Miliano Jonathans
+27|MF|BEL|Alonzo Engwanda
+29|FW|NED|Noah Ohio
+30|MF|USA|Kevin Paredes
+31|GK|NED|Mees Eppink
+32|DF|NED|Per Kloosterboer
+34|MF|NED|Davy van den Berg
+
+Willem II
+15|MF|NED|Jens Mathijsen
+20|DF|NED|Uriël van Aalst
+23|MF|NED|Per van Loon
+24|DF|DEN|Lasse Abildgaard
+34|FW|NED|Karst de Leeuw
+43|FW|MAR|Amine Lachkar
+45|MF|NED|Feliciano de Ruijter
+47|DF|NED|Pieter van Maarschalkerwaard
+0|FW|MAR|Anass Zarrouk
+0|DF|NED|Siegert Baartmans
+

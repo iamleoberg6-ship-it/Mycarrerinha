@@ -1,0 +1,509 @@
+Alavés
+1|GK|ESP|Antonio Sivera
+2|DF|ARG|Nicolás Valentini
+3|DF|MAR|Youssef Enríquez
+4|MF|ESP|Denis Suárez
+5|DF|MAS|Facundo Garcés
+6|MF|ESP|Ander Guevara
+7|MF|ESP|Ángel Pérez
+8|MF|ESP|Antonio Blanco
+9|FW|DOM|Mariano Díaz
+10|MF|ESP|Carles Aleñá
+11|FW|ESP|Toni Martínez
+12|DF|ESP|Hugo Novoa
+13|GK|ARG|Adrián Rodríguez
+14|DF|ARG|Nahuel Tenaglia
+15|FW|ARG|Lucas Boyé
+16|DF|FIN|Ville Koski
+17|DF|ESP|Jonny Otto
+18|MF|ESP|Mikel Rodríguez
+19|MF|ESP|Pablo Ibáñez
+20|FW|ESP|Aitor Mañas
+21|MF|ALG|Abde Rebbach
+22|MF|ESP|Miguel Rodríguez
+23|MF|URU|Carlos Protesoni
+27|DF|ESP|Xanet Oláiz
+31|GK|CAN|Grégoire Świderski
+
+Athletic Bilbao
+1|GK|ESP|Unai Simón
+3|DF|ESP|Dani Vivian
+4|DF|ESP|Aitor Paredes
+5|DF|ESP|Yeray Álvarez
+6|MF|ESP|Beñat Prados
+7|FW|ESP|Álex Berenguer
+8|MF|ESP|Oihan Sancet
+9|FW|GHA|Iñaki Williams
+10|FW|ESP|Nico Williams
+11|FW|ESP|Gorka Guruzeta
+12|DF|ESP|Jesús Areso
+13|GK|MEX|Álex Padilla
+14|DF|ESP|Aymeric Laporte
+15|DF|ESP|Hugo Rincón
+16|MF|ESP|Iñigo Ruiz de Galarreta
+17|DF|ESP|Yuri Berchiche
+18|MF|ESP|Mikel Jauregizar
+20|MF|ESP|Alejandro Rego
+21|FW|MAR|Maroan Sannadi
+22|FW|ESP|Nico Serrano
+23|FW|ESP|Robert Navarro
+24|MF|ESP|Beñat Gerenabarrena
+25|FW|GNB|Álvaro Djaló
+28|MF|ESP|Peio Canales
+31|DF|FRA|Johaneko Louis-Jean
+26|GK|ESP|Mikel Santos
+
+Atlético Madrid
+1|GK|ARG|Juan Musso
+3|MF|MEX|Obed Vargas
+4|MF|ESP|Rodrigo Mendoza
+5|MF|USA|Johnny Cardoso
+6|MF|ESP|Koke
+7|MF|KOR|Lee Kang-in
+8|MF|ESP|Pablo Barrios
+9|FW|NOR|Alexander Sørloth
+10|MF|ESP|Álex Baena
+11|MF|NGA|Ademola Lookman
+13|GK|SVN|Jan Oblak
+14|MF|ESP|Marcos Llorente
+15|FW|CAN|Jonathan David
+16|MF|ESP|Arnau Ortiz
+17|DF|SVK|Dávid Hancko
+18|DF|ESP|Marc Pubill
+19|FW|ARG|Julián Álvarez
+20|FW|ARG|Giuliano Simeone
+21|DF|ARG|Cristian Romero
+22|DF|ESP|Alejandro Grimaldo
+23|MF|DEN|Morten Hjulmand
+24|DF|ESP|Robin Le Normand
+25|GK|ESP|Salvi Esquivel
+30|DF|ESP|Dani Martínez
+
+Barcelona
+1|GK|ESP|Joan Garcia
+2|DF|POR|João Cancelo
+3|DF|ESP|Alejandro Balde
+5|DF|ESP|Pau Cubarsí
+6|MF|ESP|Gavi
+7|MF|ESP|Fermín López
+8|MF|ESP|Pedri
+10|FW|ESP|Lamine Yamal
+11|FW|BRA|Raphinha
+12|DF|ESP|Xavi Espart
+13|GK|POL|Wojciech Szczęsny
+14|FW|GER|Karim Adeyemi
+15|DF|DEN|Andreas Christensen
+16|MF|ESP|Rodri
+17|FW|ENG|Anthony Gordon
+18|DF|ESP|Gerard Martín
+19|FW|SWE|Roony Bardghji
+20|MF|ESP|Dani Olmo
+21|MF|NED|Frenkie de Jong
+22|MF|ESP|Marc Bernal
+23|DF|FRA|Jules Koundé
+24|DF|ESP|Eric García
+25|GK|CRO|Dominik Livaković
+—|MF|ESP|Marc Casadó
+
+Celta Vigo
+1|GK|ESP|Iván Villar
+2|DF|SWE|Carl Starfelt
+5|DF|ESP|Sergio Carreira
+6|MF|GUI|Ilaix Moriba
+7|FW|ESP|Borja Iglesias
+9|FW|ESP|Ferran Jutglà
+10|FW|ESP|Iago Aspas
+12|DF|ESP|Manu Fernández
+13|GK|ROU|Ionuț Radu
+14|DF|ESP|Álvaro Núñez
+15|MF|URU|Matías Vecino
+16|MF|ESP|Miguel Román
+17|DF|ESP|Javi Rueda
+18|FW|ESP|Pablo Durán
+19|FW|SWE|Williot Swedberg
+20|DF|ESP|Marcos Alonso
+22|MF|ESP|Hugo Sotelo
+23|FW|ESP|Hugo Álvarez
+24|DF|ESP|Carlos Domínguez
+29|DF|ESP|Yoel Lago
+32|DF|ESP|Javi Rodríguez
+39|FW|MAR|Jones El-Abdellaoui
+—|DF|ESP|Javi Galán
+
+Deportivo A Coruña
+1|GK|ESP|Germán Parreño
+2|DF|ESP|Adrià Altimira
+3|DF|ESP|Arnau Comas
+4|DF|BEL|Lucas Noubi
+5|DF|ESP|Dani Barcia
+6|MF|ENG|Charlie Patino
+7|FW|ITA|Samuele Mulattieri
+8|MF|ESP|Diego Villares
+9|FW|NED|Zakaria Eddahchouri
+10|FW|ESP|Yeremay Hernández
+11|FW|ESP|David Mella
+12|DF|ITA|Giacomo Quagliata
+13|GK|ESP|Eric Puerto
+14|MF|ESP|Riki
+15|DF|ESP|Miguel Loureiro
+16|MF|ESP|José Gragera
+17|FW|ESP|Cristian Herrera
+18|DF|ESP|Sergio Escudero
+19|FW|ESP|Luismi Cruz
+20|MF|ESP|José Ángel
+21|MF|ESP|Mario Soriano
+22|FW|ESP|Stoichkov
+23|DF|ESP|Ximo Navarro
+25|GK|ESP|Álvaro Fernández
+28|FW|SEN|Alioune Mané
+
+Elche
+1|GK|ARG|Matías Dituro
+2|DF|ESP|Buba Sangaré
+4|DF|ESP|Bambo Diaby
+5|MF|ARG|Federico Redondo
+6|DF|ESP|Pedro Bigas
+7|MF|ESP|Yago Santiago
+8|MF|ESP|Marc Aguado
+9|FW|ARG|Ezequiel Ponce
+10|MF|ARG|Facundo Buonanotte
+11|MF|ESP|Germán Valera
+12|MF|ESP|Gonzalo Villar
+14|FW|ESP|Fer Niño
+16|MF|POR|Martim Neto
+17|MF|ESP|Josan
+19|MF|COD|Grady Diangana
+20|FW|ESP|Tete Morente
+21|FW|CHI|Lucas Cepeda
+23|DF|ESP|Víctor Chust
+24|FW|ARG|Abiel Osorio
+26|DF|CRO|Matía Barzić
+29|MF|MAR|Ali Houary
+43|GK|ESP|Alejandro Iturbe
+
+Espanyol
+1|GK|ESP|Ángel Fortuño
+4|MF|ESP|Urko González de Zárate
+5|DF|GER|Clemens Riedel
+6|DF|URU|Leandro Cabrera
+7|FW|ESP|Javi Puado
+8|MF|ESP|Edu Expósito
+9|FW|ESP|Roberto Fernández
+10|MF|ESP|Pol Lozano
+11|FW|ESP|Pere Milla
+13|GK|SRB|Marko Dmitrović
+17|FW|ESP|Jofre Carreras
+18|FW|ESP|Marcos Fernández
+19|FW|ESP|Kike García
+21|DF|ESP|Roger Hinojo
+22|MF|ESP|Álex Calatrava
+23|DF|MAR|Omar El Hilali
+24|FW|ENG|Tyrhys Dolan
+26|MF|ESP|Rafel Bauzà
+27|DF|FRA|Adama Timera
+32|DF|ESP|José Ángel López
+
+Getafe
+1|GK|CZE|Jiří Letáček
+2|DF|TOG|Dakonam Djené
+3|DF|ESP|Davinchi
+4|DF|GEO|Saba Sazonov
+5|DF|MAR|Abdel Abqar
+6|MF|ESP|Mario Martín
+7|FW|ESP|Juanmi
+8|MF|SRB|Nemanja Gudelj
+9|FW|ESP|Borja Mayoral
+10|FW|URU|Martín Satriano
+11|MF|ESP|Ramon Terrats
+13|GK|ESP|David Soria
+14|DF|ESP|Dani Carvajal
+15|DF|URU|Sebastián Boselli
+16|MF|ESP|Francho Serrano
+17|DF|ESP|Kiko Femenía
+19|FW|TUR|Enes Ünal
+20|FW|ESP|Iván Azón
+22|DF|COL|Johan Mojica
+23|MF|BEL|Orel Mangala
+24|DF|ARG|Zaid Romero
+—|MF|NGR|Christantus Uche
+27|FW|GAM|Ebrahima Drammeh
+
+Levante
+1|GK|ESP|Pablo Campos
+4|DF|ESP|Adrián de la Fuente
+5|DF|ESP|Unai Elgezabal
+7|FW|ESP|Roger Brugué
+8|MF|ESP|Jon Ander Olasagasti
+9|FW|ESP|Iván Romero
+16|MF|HON|Kervin Arriaga
+17|DF|ESP|Víctor García
+19|FW|ESP|Carlos Espí
+20|MF|ESP|Oriol Rey
+21|FW|CMR|Karl Etta Eyong
+22|DF|GER|Jeremy Toljan
+24|MF|ESP|Carlos Álvarez
+27|MF|ESP|Paco Cortés
+28|DF|PAN|Martín Krug
+29|DF|ESP|Nacho Pérez
+30|MF|ESP|Pablo Rosón
+32|GK|ESP|Alejandro Primo
+33|MF|ESP|Joan Ruiz
+35|DF|GHA|Huseini Nakoha
+55|MF|ISR|Tay Abed
+
+Málaga
+1|GK|ESP|Alfonso Herrero
+2|MF|SWE|Jens Cajuste
+3|DF|ESP|Carlos Puga
+4|DF|ESP|Einar Galilea
+5|DF|ESP|Álex Pastor
+6|MF|ESP|Ramón
+7|FW|MAR|Haitam
+8|MF|ESP|Carlos Dotor
+9|FW|ESP|Chupete
+10|MF|ESP|David Larrubia
+11|FW|ESP|Joaquín Muñoz
+12|DF|ESP|José Salinas
+13|GK|ESP|Carlos López
+14|MF|ESP|Rafa
+15|DF|ESP|Ángel Recio
+16|DF|ESP|Diego Murillo
+17|FW|ESP|Eneko Jauregi
+18|MF|ESP|Pablo Martínez
+19|FW|ESP|Juan Cruz
+20|DF|ESP|Fernando Calero
+21|FW|ESP|Adrián Niño
+22|MF|ESP|Dani Lorenzo
+23|MF|ESP|Izan Merino
+24|FW|ESP|Julen Lobete
+25|DF|ESP|Juan Berrocal
+
+Osasuna
+1|GK|ESP|Sergio Herrera
+5|DF|ESP|Jorge Herrando
+6|MF|ESP|Lucas Torró
+7|MF|ESP|Jon Moncayola
+8|MF|ESP|Iker Muñoz
+9|FW|ESP|Raúl García
+10|MF|ESP|Aimar Oroz
+11|FW|ESP|Kike Barja
+13|GK|ESP|Aitor Fernández
+14|MF|ESP|Rubén García
+15|DF|ESP|Diego Rico
+16|MF|ESP|Moi Gómez
+17|FW|CRO|Ante Budimir
+18|FW|ESP|Raúl Moro
+19|DF|FRA|Valentin Rosier
+20|FW|FRA|Romain Del Castillo
+21|MF|BEL|Jonathan Dubasin
+22|DF|CMR|Enzo Boyomo
+23|DF|ESP|Abel Bretones
+24|DF|ESP|Alejandro Catena
+26|MF|ESP|Mauro Echegoyen
+27|DF|ESP|Iñigo Arguibide
+29|MF|ESP|Asier Osambela
+31|GK|ESP|Rafa Fernández
+
+Racing Santander
+1|GK|ESP|Jokin Ezkieta
+2|DF|ESP|Álvaro Mantilla
+3|DF|ESP|Mario García
+4|DF|ESP|Manu Hernando
+5|DF|ESP|Javi Castro
+6|MF|ESP|Íñigo Sainz-Maza
+7|FW|GEO|Giorgi Guliashvili
+8|MF|ESP|Aritz Aldasoro
+9|FW|ESP|Juan Carlos Arana
+10|MF|ESP|Iñigo Vicente
+11|FW|ESP|Andrés Martín
+12|FW|ESP|Asier Villalibre
+13|GK|SWE|Simon Eriksson
+14|MF|SEN|Maguette Gueye
+15|MF|ESP|Marco Sangalli
+16|DF|URU|Facundo González
+17|FW|ESP|Jaime Mata
+19|MF|COL|Gustavo Puerta
+20|FW|GAM|Suleiman Camara
+21|DF|ESP|Pablo Ramón
+23|MF|ESP|Damián Rodríguez
+27|FW|ESP|Manex Lozano
+32|DF|ESP|Jorge Salinas
+
+Rayo Vallecano
+1|GK|ESP|Dani Cárdenas
+2|DF|ROU|Andrei Rațiu
+4|MF|ESP|Pedro Díaz
+5|DF|ITA|Luiz Felipe
+6|MF|SEN|Pathé Ciss
+7|MF|ESP|Isi Palazón
+8|MF|ARG|Óscar Trejo
+9|FW|BRA|Alemão
+10|FW|ESP|Sergio Camello
+11|FW|ANG|Randy Nteka
+13|GK|ARG|Augusto Batalla
+14|FW|ESP|Carlos Martín
+15|MF|ESP|Gerard Gumbau
+16|DF|GHA|Abdul Mumin
+17|MF|ESP|Unai López
+18|MF|ESP|Álvaro García
+19|FW|ESP|Jorge de Frutos
+20|DF|ALB|Iván Balliu
+21|FW|ESP|Fran Pérez
+22|DF|URU|Alfonso Espino
+23|MF|ESP|Óscar Valentín
+24|DF|FRA|Florian Lejeune
+29|MF|ESP|Diego Méndez
+
+Real Betis
+1|GK|ESP|Álvaro Valles
+2|DF|ESP|Héctor Bellerín
+3|DF|ESP|Diego Llorente
+4|DF|BRA|Natan
+5|DF|ESP|Marc Bartra
+6|MF|URU|Facundo Bernal
+7|FW|BRA|Antony
+8|MF|ESP|Pablo Fornals
+9|FW|COL|Cucho Hernández
+10|FW|MAR|Abde Ezzalzouli
+11|DF|ESP|Fran García
+12|DF|ESP|Ángel Ortiz
+14|FW|ESP|Iker Losada
+15|MF|MEX|Álvaro Fidalgo
+16|DF|ARG|Valentín Gómez
+17|MF|ESP|Rodrigo Riquelme
+18|MF|COL|Nelson Deossa
+19|FW|IRL|Troy Parrott
+20|MF|ARG|Giovanni Lo Celso
+21|MF|ESP|Marc Roca
+22|MF|ESP|Isco
+23|DF|DOM|Junior Firpo
+24|FW|ESP|Aitor Ruibal
+25|MF|ESP|Dani Ceballos
+
+Real Madrid
+1|GK|BEL|Thibaut Courtois
+2|DF|ESP|Raúl Asencio
+3|DF|BRA|Éder Militão
+4|DF|ESP|Dean Huijsen
+5|MF|ENG|Jude Bellingham
+6|MF|FRA|Eduardo Camavinga
+7|FW|BRA|Vinícius Júnior
+8|MF|URU|Federico Valverde
+9|FW|BRA|Endrick
+10|FW|FRA|Kylian Mbappé
+11|FW|BRA|Rodrygo
+12|DF|ENG|Trent Alexander-Arnold
+13|GK|UKR|Andriy Lunin
+14|MF|FRA|Aurélien Tchouaméni
+15|MF|TUR|Arda Güler
+16|DF|FRA|Ibrahima Konaté
+17|DF|ESP|Marc Cucurella
+18|DF|ESP|Álvaro Carreras
+20|MF|POR|Bernardo Silva
+21|FW|MAR|Brahim Díaz
+22|DF|GER|Antonio Rüdiger
+23|DF|FRA|Ferland Mendy
+24|DF|NED|Denzel Dumfries
+25|FW|CIV|Yan Diomande
+27|MF|ESP|Thiago Pitarch
+
+Real Sociedad
+1|GK|ESP|Álex Remiro
+2|DF|VEN|Jon Aramburu
+3|DF|ESP|Aihen Muñoz
+4|MF|ESP|Jon Gorrotxategi
+5|DF|ESP|Igor Zubeldia
+7|FW|ESP|Ander Barrenetxea
+8|MF|ESP|Beñat Turrientes
+9|FW|ISL|Orri Óskarsson
+10|FW|ESP|Mikel Oyarzabal
+11|FW|POR|Gonçalo Guedes
+13|GK|ESP|Unai Marrero
+14|MF|JPN|Takefusa Kubo
+15|MF|ESP|Pablo Marín
+16|DF|ESP|Jon Pacheco
+17|MF|ESP|Sergio Gómez
+18|MF|ESP|Carlos Soler
+19|DF|SEN|Mamadou Sarr
+20|DF|ESP|Álvaro Odriozola
+21|MF|VEN|Yangel Herrera
+23|MF|RUS|Arsen Zakharyan
+24|MF|CRO|Luka Sučić
+31|DF|ESP|Jon Martín
+—|DF|ESP|Héctor Fort
+
+Sevilla
+1|GK|GRE|Odysseas Vlachodimos
+2|DF|ESP|Juan Iglesias
+3|DF|ESP|Julio Díaz
+4|DF|ESP|Kike Salas
+5|DF|ESP|Andrés Castrín
+6|MF|FRA|Lucien Agoumé
+7|FW|ESP|Alfon González
+8|MF|GEO|Giorgi Kochorashvili
+9|FW|SCO|Robbie Ure
+10|MF|ESP|Peque Fernández
+11|FW|SUI|Rubén Vargas
+12|DF|SEN|Arouna Sangante
+13|GK|ESP|Fran González
+16|FW|ESP|Isaac Romero
+17|DF|CHI|Gabriel Suazo
+18|MF|ESP|Jon Guridi
+21|FW|NGA|Chidera Ejuke
+22|DF|ESP|José Ángel Carmona
+23|DF|BRA|Marcão
+27|MF|ESP|Nico Guillén
+28|MF|ESP|Manu Bueno
+
+Valencia
+1|GK|MKD|Stole Dimitrievski
+2|MF|ARG|Guido Rodríguez
+3|DF|ESP|José Copete
+4|DF|GUI|Mouctar Diakhaby
+5|DF|ESP|César Tárrega
+6|FW|NGA|Umar Sadiq
+7|FW|NED|Arnaut Danjuma
+8|MF|ESP|Javi Guerra
+9|FW|ESP|Hugo Duro
+11|FW|ESP|Luis Rioja
+12|DF|NED|Justin de Haas
+13|GK|ESP|Cristian Rivero
+14|DF|ESP|José Gayà
+15|MF|MLI|Aliou Dieng
+16|FW|ESP|Diego López
+17|MF|ESP|Sergi Canós
+18|MF|ESP|Pepelu
+19|FW|ESP|Dani Raba
+20|DF|GLP|Dimitri Foulquier
+21|DF|ESP|Jesús Vázquez
+22|DF|ESP|Arnau Martínez
+23|MF|SUI|Filip Ugrinić
+24|DF|ARG|Pablo Maffeo
+39|MF|JPN|Ryūnosuke Satō
+
+Villarreal
+1|GK|BRA|Luiz Júnior
+2|DF|CPV|Logan Costa
+3|DF|USA|Alex Freeman
+5|MF|SEN|Alassane Diatta
+6|DF|ESP|Pau Navarro
+7|FW|ESP|Gerard Moreno
+8|DF|ARG|Juan Foyth
+9|FW|GEO|Georges Mikautadze
+10|MF|ESP|Alberto Moleiro
+11|FW|MAR|Ilias Akhomach
+12|DF|POR|Renato Veiga
+13|GK|ESP|Rubén Gómez
+14|MF|ESP|Santi Comesaña
+15|DF|URU|Santiago Mouriño
+16|MF|ESP|Carlos Maciá
+17|MF|CAN|Tajon Buchanan
+18|MF|SEN|Pape Gueye
+19|FW|CIV|Nicolas Pépé
+20|DF|ESP|Carlos Romero
+21|FW|CAN|Tani Oluwaseyi
+22|FW|ESP|Ayoze Pérez
+23|DF|ESP|Sergi Cardona
+24|MF|CAN|Nathan Saliba
+25|GK|HUN|Péter Gulácsi
+

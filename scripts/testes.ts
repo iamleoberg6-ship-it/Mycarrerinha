@@ -13,7 +13,7 @@ import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../sr
 import { mundo } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
-import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo } from "../src/jogo.js";
+import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave } from "../src/jogo.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
@@ -303,15 +303,32 @@ teste("Relíquias: primeiro gol, hat-trick, prêmios; vão para a casa e não se
   assert.equal(premiosDaTemporada(new RNG("y"), { ano: 2028, idade: 25, clubeId: "FLA", clubeNome: "x", cores: [], numero: "9", jogos: 30, gols: 2, assist: 1, nota: 6.4, titulo: false, base: 0, golsBase: 0, notaBase: 0, temporadasCheias: 3 }).length, 0);
 });
 
-teste("Mundo: 5 ligas, clubes-paródia com elenco nomeado e sempre os mesmos", () => {
+teste("Mundo: 13 ligas reais em paródia, elencos completos e sempre os mesmos", () => {
   const w = mundo(pacote);
-  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARA1", "BRA1", "BRA2", "EUR1", "EUR2"]);
+  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "ENG1", "ENG2", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "NED1", "POR1"]);
+  assert.equal(Object.keys(w.clube).length, 266);
+  const nomes = w.ligas.filter((l) => l.id !== "BRA1").flatMap((l) => l.clubes.flatMap((c) => c.elenco.map((j) => j.nome)));
+  assert.equal(new Set(nomes).size, nomes.length, "nomes de jogadores repetidos");
+  for (const c of Object.values(w.clube)) {
+    const n = (p: string) => c.elenco.filter((j) => j.posicao === p).length;
+    assert.ok(n("GOL") >= 2 && n("ZAG") >= 3 && n("LAT") >= 2 && n("ATA") >= 2, `posições em ${c.id}`);
+  }
   for (const l of w.ligas) {
     assert.ok(l.clubes.length % 2 === 0 && l.clubes.length >= 18, l.id);
     for (const c of l.clubes) { assert.ok(w.info[c.id]?.estadio && w.info[c.id].cores.length >= 2, c.id); assert.ok(c.elenco.length >= 20 && c.elenco.every((j) => !/^[A-Z]{3}-\d/.test(j.nome)), c.id); }
   }
   const forca = (id: string) => w.liga[id].clubes.reduce((a, c) => a + c.forca, 0) / w.liga[id].clubes.length;
-  assert.ok(forca("EUR1") > forca("EUR2") && forca("EUR2") > forca("BRA2"));
+  assert.ok(forca("ENG1") > forca("ENG2") && forca("ESP1") > forca("ESP2") && forca("BRA1") > forca("BRA2") && forca("ENG1") > forca("BRA1"));
+});
+
+teste("Mundo: save antigo (ligas genéricas) migra para os clubes reais", () => {
+  const r = criarJogador({ nome: "Antigo", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "antigo" });
+  const dados = { resultado: r, aparencia: {}, clube: "FLA" };
+  const s = novoJogo(pacote, dados, "FLA", "antigo");
+  s.carreira.clubeId = "E1-RMD"; s.carreira.ligaId = "EUR1"; s.carreira.ordem = ["E1-RMD", "E1-BAR"];
+  assert.ok(migrarSave(pacote, s));
+  assert.equal(s.carreira.clubeId, "ES-RMA"); assert.equal(s.carreira.ligaId, "ESP1"); assert.equal(s.carreira.ordem.length, 20);
+  assert.equal(migrarSave(pacote, s), false);
 });
 
 teste("Mercado: transferência para outra liga, empréstimo, renovação, agente e passe livre", () => {
@@ -326,24 +343,24 @@ teste("Mercado: transferência para outra liga, empréstimo, renovação, agente
   for (let k = 0; k < 4; k++) { c.semana = k; semanaDoMercado(pacote, s, new RNG(`t${k}`), eventos); }
   assert.ok(m.propostas.length > 0, "nenhuma proposta para um jogador de nível 74");
   // aceitar uma proposta de outra liga muda liga, tabela e calendário
-  const destino = w.liga.EUR2.clubes[3];
-  const p: PropostaSave = { id: "x1", tipo: "livre", clubeId: destino.id, ligaId: "EUR2", salario: 90000, anos: 3, taxa: 0, luvas: 100000, papel: "titular", interesse: 0.8, expira: 999 };
+  const destino = w.liga.FRA1.clubes[3];
+  const p: PropostaSave = { id: "x1", tipo: "livre", clubeId: destino.id, ligaId: "FRA1", salario: 90000, anos: 3, taxa: 0, luvas: 100000, papel: "titular", interesse: 0.8, expira: 999 };
   m.propostas = [p]; c.semana = 22;
   const saldo0 = s.casa.saldo;
   assert.ok(aceitar(pacote, s, "x1").ok);
-  assert.equal(c.ligaId, "EUR2"); assert.equal(c.clubeId, destino.id); assert.equal(c.ordem.length, 18);
-  assert.ok(c.tabela.every((t) => w.clube[t.clube].ligaId === "EUR2") && c.tabela.some((t) => t.j > 0), "tabela da liga nova com as rodadas já jogadas");
+  assert.equal(c.ligaId, "FRA1"); assert.equal(c.clubeId, destino.id); assert.equal(c.ordem.length, 18);
+  assert.ok(c.tabela.every((t) => w.clube[t.clube].ligaId === "FRA1") && c.tabela.some((t) => t.j > 0), "tabela da liga nova com as rodadas já jogadas");
   assert.ok(s.casa.saldo > saldo0, "luvas na conta");
   assert.equal(m.transferencias.at(-1)!.para, destino.id);
   // empréstimo: volta ao fim da temporada
-  m.propostas = [{ id: "x2", tipo: "emprestimo", clubeId: w.liga.EUR2.clubes[10].id, ligaId: "EUR2", salario: c.salario, anos: 0, taxa: 0, luvas: 0, papel: "titular", interesse: 0.7, expira: 999 }];
+  m.propostas = [{ id: "x2", tipo: "emprestimo", clubeId: w.liga.FRA1.clubes[10].id, ligaId: "FRA1", salario: c.salario, anos: 0, taxa: 0, luvas: 0, papel: "titular", interesse: 0.7, expira: 999 }];
   assert.ok(aceitar(pacote, s, "x2").ok);
-  assert.equal(c.clubeId, w.liga.EUR2.clubes[10].id);
+  assert.equal(c.clubeId, w.liga.FRA1.clubes[10].id);
   c.temporada++; eventos = [];
   fimDaTemporadaNoMercado(pacote, s, eventos);
   assert.equal(c.clubeId, destino.id, "voltou do empréstimo");
   // renovação muda contrato
-  m.propostas = [{ id: "x3", tipo: "renovacao", clubeId: c.clubeId, ligaId: "EUR2", salario: 150000, anos: 4, taxa: 0, luvas: 0, papel: "titular", interesse: 0.8, expira: 999 }];
+  m.propostas = [{ id: "x3", tipo: "renovacao", clubeId: c.clubeId, ligaId: "FRA1", salario: 150000, anos: 4, taxa: 0, luvas: 0, papel: "titular", interesse: 0.8, expira: 999 }];
   assert.ok(aceitar(pacote, s, "x3").ok); assert.equal(c.anosContrato, 4); assert.equal(c.salario, 150000);
   // agente: superagente exige fama ou nível
   c.fama = 0; for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 60;

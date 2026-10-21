@@ -1,0 +1,479 @@
+Académico de Viseu
+1|GK|ESP|Marcos Lavín
+2|DF|GRE|Nikos Michelis
+3|DF|ESP|Miguel Ángel Brau
+5|DF|BRA|Pedro Barcelos
+6|MF|POR|André Ceitil
+7|MF|POR|Luís Silva
+8|MF|TUR|Cihan Kahraman
+9|FW|MAR|Mohamed Bouldini
+10|FW|CRC|Álvaro Zamora
+12|GK|ESP|Juan Soriano
+14|MF|GER|Soufiane Messeguem
+17|FW|ESP|Valery Fernández
+18|MF|ARG|Cristian Ferreira
+21|DF|POR|Tomás Domingos
+22|MF|ESP|Nils Mortimer
+29|MF|CRO|Andro Babić
+31|FW|BRA|João Guilherme
+33|FW|BRA|André Clóvis
+41|DF|FRA|Anthony Correia
+44|DF|POR|Rúben Pereira
+45|MF|ESP|Alejandro Mestanza
+47|FW|CIV|Lorougnon Gohi
+55|MF|POR|Tomás Silva
+57|DF|POR|Gu Costa
+58|GK|BRA|Matheus Sampaio
+
+Alverca
+1|GK|FRA|Noah Raveyre
+2|DF|MAR|Nabil Touaizi
+3|DF|HON|Julián Martínez
+4|DF|GAM|Yaya Bojang
+5|MF|GHA|Sabit Abdulai
+6|MF|CIV|Davy Gui
+7|MF|ANG|André Vidigal
+8|MF|POR|Vasco Moreira
+9|FW|POR|Vivaldo Semedo
+10|FW|POR|Chiquinho
+11|MF|BEL|Cédric Nuozzi
+12|DF|NGA|Isaac James
+14|DF|FRA|Steven Baseya
+15|DF|BEL|Ikker Julian
+18|MF|MAR|Zakaria Kassary
+20|DF|POR|Diogo Spencer
+21|DF|ESP|Sergi Gómez
+22|FW|BRA|Figueiredo
+23|GK|POR|André Paulo
+24|DF|ENG|Mofe Jemide
+25|MF|BRA|Ian Luccas
+27|DF|ESP|Toni Tamarit
+30|MF|MTN|Abderrahmane Soumaré
+31|GK|BRA|Matheus Mendes
+
+Arouca
+1|GK|SVK|Jakub Vinarčík
+3|DF|ESP|José Fontán
+4|DF|POR|Diogo Monteiro
+5|DF|SRB|Boris Popović
+6|MF|NED|Espen van Ee
+7|MF|FRA|Naïs Djouahra
+8|MF|JPN|Taichi Fukui
+9|FW|FRA|Fally Mayulu
+10|MF|ESP|Pablo Gozálbez
+11|FW|ESP|Miguel Puche
+12|GK|URU|Ignacio de Arruabarrena
+14|MF|KOR|Lee Hyun-ju
+15|DF|ESP|Javi Sánchez
+17|FW|ESP|Iván Barbero
+18|DF|UKR|Orest Lebedenko
+19|FW|URU|Alfonso Trezza
+21|MF|ESP|Mateo Flores
+23|FW|URU|Dylan Nandín
+24|FW|URU|Brian Mansilla
+28|DF|POR|Tiago Esgaio
+37|DF|ESP|Mario Climent
+71|GK|POR|Martim Duarte
+77|FW|KOR|Park Si-hoo
+87|FW|POR|Batata
+89|MF|POR|Pedro Santos
+
+Benfica
+1|GK|UKR|Anatoliy Trubin
+2|DF|FRA|Clément Lenglet
+3|DF|AUS|Alessandro Circati
+5|MF|ARG|Enzo Barrenechea
+6|DF|DEN|Alexander Bah
+8|MF|NOR|Fredrik Aursnes
+10|MF|UKR|Heorhiy Sudakov
+11|FW|BEL|Dodi Lukébakio
+13|MF|POL|Jakub Kamiński
+14|FW|GRE|Vangelis Pavlidis
+16|MF|POR|Manu Silva
+18|MF|LUX|Leandro Barreiro
+21|FW|NOR|Andreas Schjelderup
+22|FW|COL|Jhon Durán
+24|GK|POR|Samuel Soares
+25|FW|ARG|Gianluca Prestianni
+26|DF|SWE|Samuel Dahl
+27|FW|POR|Rafa Silva
+30|MF|ARG|Claudio Echeverri
+33|DF|BRA|Gabriel Índio
+34|DF|MAR|Souffian El Karouani
+36|MF|POR|João Palhinha
+44|DF|POR|Tomás Araújo
+50|GK|POR|Diogo Ferreira
+58|DF|POR|Daniel Banjaqui
+
+Braga
+1|GK|CZE|Lukáš Horníček
+2|DF|ESP|Víctor Gómez
+4|DF|MLI|Sikou Niakaté
+5|DF|POR|Leonardo Lelo
+6|MF|BRA|Vitor Carvalho
+8|MF|POR|João Moutinho
+9|FW|MAR|Amine El Ouazzani
+11|FW|LBN|Samy Merheg
+12|GK|POR|Tiago Sá
+14|DF|SWE|Gustaf Lagerbielke
+15|DF|POR|Paulo Oliveira
+17|MF|BRA|Gabriel Moscardo
+18|FW|ESP|Pau Víctor
+20|MF|CIV|Mario Dorgeles
+21|FW|POR|Ricardo Horta
+23|MF|BIH|Denis Huseinbašić
+26|DF|GER|Bright Arrey-Mbi
+29|MF|FRA|Jean-Baptiste Gorby
+34|MF|TUR|Demir Tıknaz
+36|GK|MAR|Alaa Bellaarouch
+37|DF|BIH|Adrian Barišić
+39|FW|ESP|Fran Navarro
+41|DF|POR|Yanis da Rocha
+50|MF|POR|Diego Rodrigues
+77|FW|ESP|Gabri Martínez
+
+Casa Pia
+1|GK|CRC|Patrick Sequeira
+3|DF|ANG|Khaly
+4|DF|POR|João Goulart
+5|DF|POR|Abdu Conté
+8|MF|POR|Gabi
+9|FW|POR|Henrique Araújo
+10|FW|POR|Rochinha
+11|MF|BEL|Mo Salah
+16|MF|ESP|Selvi Clua
+17|FW|FRA|Evans Maurin
+18|DF|POR|André Geraldes
+19|DF|URU|Kevin Prieto
+20|FW|GAM|Alassana Jatta
+21|FW|MAR|Aymen Zouin
+22|GK|POR|Daniel Azevedo
+24|MF|COL|Seba Pérez
+27|DF|BRA|Kaique Rocha
+29|FW|FRA|Jérémy Livolant
+31|GK|POR|André Gomes
+44|DF|BRA|Lipe
+59|MF|POR|Abdu Dafé
+70|MF|POR|João Rego
+75|DF|POR|Pedro Rosas
+77|MF|BEL|Benjamin Pauwels
+80|MF|GHA|Lawrence Ofori
+
+Estoril
+1|GK|ESP|Joel Robles
+2|DF|ESP|Ricard Sánchez
+3|DF|ESP|Fernando Medrano
+4|DF|POR|Ferro
+5|DF|BEL|Antef Tsoungui
+7|FW|POR|André Lacximicant
+8|MF|POR|Xeka
+10|MF|SCO|Jordan Holsgrove
+11|FW|ENG|Khayon Edwards
+12|MF|POR|João Carvalho
+14|FW|MAR|Yanis Begraoui
+15|DF|ESP|Ismael Sierra
+16|GK|SVN|Martin Turk
+17|FW|POR|Peixinho
+18|DF|POR|Gonçalo Costa
+19|DF|POR|Tiago Parente
+22|DF|POR|Pedro Carvalho
+23|GK|POR|Diogo Dias
+42|DF|POR|Jordan Arnolin
+44|MF|FRA|Milan Robin
+80|MF|POR|Luís Gomes
+90|MF|POR|Tiago Brito
+98|DF|CPV|Fabrício Garcia
+99|FW|ALG|Rafik Guitane
+
+Estrela da Amadora
+3|DF|FRA|Lucas Mincarelli
+4|DF|BRA|Bernardo Schappo
+5|DF|SRB|Stefan Leković
+6|MF|SWE|Kevin Höög Jansson
+8|MF|BRA|Robinho
+10|FW|ROU|Ianis Stoica
+11|FW|URU|Rodrigo Dudok
+14|MF|CRO|Lovro Zvonarek
+17|DF|GNB|Jefferson Encada
+18|MF|MNE|Vuk Pavicevic
+19|MF|ESP|Joan Jordán
+21|DF|GER|Max Scholze
+22|GK|POR|David Grilo
+24|GK|BRA|Léo Linck
+28|MF|FRA|Tom Moustier
+30|DF|BRA|Luan Patrick
+37|FW|PUR|Leandro Antonetti
+39|MF|CIV|Eddy Doué
+49|FW|BEL|René Mitongo
+51|GK|POR|Diogo Pinto
+55|DF|POR|Rafa Soares
+71|MF|FRA|Emerson Vanga
+72|FW|BRA|Henrique Poniewas
+78|MF|POR|Santiago Serra
+
+Famalicão
+1|GK|RUS|Ivan Zlobin
+2|DF|BRA|Gustavo Garcia
+3|DF|ECU|Leo Realpe
+4|DF|NED|Finn van Breemen
+5|DF|SUI|Leny Meyer
+6|MF|NED|Tom van de Looi
+7|FW|BRA|Sorriso
+8|MF|ESP|Marcos Peña
+9|FW|NGA|Umar Abubakar
+10|MF|POR|Pedro Santos
+11|FW|ESP|Óscar Aranda
+14|MF|POR|Mathias De Amorim
+15|DF|GNB|Víctor Rofino
+17|DF|POR|Rodrigo Pinheiro
+18|FW|SUI|Roméo Beney
+19|MF|POR|Paulo Moreira
+21|MF|HUN|Tamás Szűcs
+22|GK|BRA|Gabriel Cabral
+23|FW|POR|Gil Dias
+24|MF|FRA|Mathis Jangéal
+25|GK|MNE|Lazar Carević
+28|DF|ANG|Pedro Bondo
+30|DF|SRB|Vojin Serafimović
+36|DF|BRA|Matheus Mattara
+70|FW|GRE|Georgios Koutsias
+
+Gil Vicente
+1|GK|SWE|André Picornell
+2|DF|POR|José Silva
+3|DF|ESP|Antonio Espigares
+4|DF|FRA|Marvin Elimbi
+6|MF|POR|Zé Carlos
+7|FW|FRA|Tidjany Touré
+8|MF|CIV|Mohamed Bamba
+9|FW|BRA|Walace França
+10|MF|ESP|Santi García
+11|FW|POR|Joelson Fernandes
+12|MF|DEN|Andreas Lausen
+17|FW|ESP|Sergio Bermejo
+19|MF|BRA|Guilherme Gomes
+20|MF|POR|Gil Martins
+23|FW|ESP|Héctor Hernández
+26|DF|BRA|Weverson
+27|FW|URU|Agustín Moreira
+30|GK|BRA|Lucão
+32|MF|URU|Martín Fernández
+39|DF|ANG|Jonathan Buatu
+44|GK|POR|Tiago Ferreira
+45|DF|CPV|David Moreira
+47|DF|POR|Ricardo Esgaio
+77|FW|BRA|Murilo Costa
+82|MF|POR|Gonçalo Maia
+
+Marítimo
+1|GK|POR|Gonçalo Tabuaço
+2|DF|BRA|Igor Julião
+3|DF|ENG|Nathanael Ogbeta
+4|DF|POR|Rafael Fernandes
+5|DF|POR|Nilton Varela
+6|MF|POR|Rodrigo Andrade
+7|FW|VEN|Enrique Zauner
+8|MF|SUI|Maxime Dominguez
+9|FW|POR|José Melro
+10|MF|ESP|Martín Tejón
+11|FW|MAR|Simo Bouzaidi
+12|FW|CGO|Mons Bassouamina
+13|GK|ESP|Alfonso Pastor
+14|MF|POR|Raphael Guzzo
+15|DF|POR|Tomás Tavares
+16|MF|POR|Francisco Silva
+17|FW|ESP|Adrián Butzke
+18|MF|BIH|Vladan Danilović
+20|FW|POR|Francisco Gomes
+21|MF|NGA|Ibrahim Alani
+22|DF|HUN|Gábor Szalai
+23|DF|POR|Paulo Henrique
+25|MF|ESP|Yellu Santiago
+27|FW|GER|Samuel Bamba
+30|GK|ESP|Fran Vieites
+
+Moreirense
+1|GK|BRA|Aranha
+2|DF|POR|Leandro
+4|DF|BRA|Kevyn Monteiro
+7|MF|POR|Manuel Mendonça
+8|MF|SRB|Mateja Stjepanović
+9|FW|MTQ|Alexandre Parsemain
+10|FW|POR|Kiko Bondoso
+11|FW|BRA|Landerson
+13|GK|POR|André Ferreira
+17|DF|ESP|Álvaro Martínez
+19|FW|POR|Tiago Andrade
+20|MF|POR|João Veloso
+21|MF|ESP|Rodri
+23|MF|ENG|Nile John
+25|MF|POR|Afonso Assis
+26|DF|BRA|Maracás
+27|DF|POR|Kiko
+30|MF|ENG|Jimi Gower
+31|DF|BRA|Pedro Jesus
+32|DF|BRA|Janderson
+44|MF|ESP|Michael Dacosta
+65|MF|BRA|Guilherme Liberato
+66|DF|GNB|Gilberto Batista
+76|DF|POR|Dinis Pinto
+77|FW|ENG|Koby Mottoh
+
+Nacional
+1|GK|ITA|Renato Marin
+2|DF|ECU|Daniel de la Cruz
+5|DF|POR|José Gomes
+6|MF|BRA|Matheus Dias
+7|MF|DEN|Markus Jensen
+8|MF|ESP|Miguel Baeza
+9|FW|ECU|Allen Obando
+10|FW|BRA|Daniel Júnior
+11|FW|CYP|Stavros Gavriil
+12|FW|KOR|Song Min-kyu
+13|GK|POR|João Gonçalves
+14|DF|CPV|Ivanildo Fernandes
+15|MF|TUN|Chiheb Labidi
+17|FW|BOL|Fernando Nava
+20|FW|POR|Matchoi Djaló
+21|MF|FRA|William Kokolo
+22|MF|POR|Filipe Soares
+23|MF|BRA|Mateus Iseppe
+26|MF|POR|Joel Silva
+28|MF|BRA|Igor Liziero
+29|FW|CMR|Njoya Abdel
+30|MF|POR|Martim Watts
+31|MF|CMR|Danel Dongmo
+33|DF|POR|Francisco Gonçalves
+34|DF|BRA|Léo Santos
+
+Porto
+4|DF|POL|Jakub Kiwior
+5|DF|POL|Jan Bednarek
+6|DF|ENG|Chris Smalling
+7|FW|BRA|William Gomes
+8|MF|DEN|Victor Froholdt
+9|FW|ESP|Samu Aghehowa
+10|MF|ESP|Gabri Veiga
+11|FW|BRA|Pepê
+12|DF|NGA|Zaidu Sanusi
+13|MF|DOM|Pablo Rosario
+14|GK|POR|Cláudio Ramos
+15|MF|POR|Vasco Sousa
+16|MF|KOR|Hwang In-beom
+17|FW|ESP|Borja Sainz
+18|DF|ARG|Nehuén Pérez
+19|FW|POR|André Silva
+20|DF|POR|Alberto Costa
+21|DF|CRO|Dominik Prpić
+22|MF|ARG|Alan Varela
+24|GK|POR|João Costa
+29|FW|MEX|Santiago Giménez
+33|DF|BRA|Souza
+37|FW|BRA|Gabriel Mec
+42|MF|CIV|Seko Fofana
+50|GK|POR|João Afonso
+
+Rio Ave
+1|GK|POL|Cezary Miszta
+5|DF|GRE|Andreas Ntoi
+6|DF|ENG|Nelson Abbey
+7|FW|BRA|Diogo Bezerra
+8|MF|BRA|Ryan Guilherme
+9|FW|GNB|Tamble Monteiro
+10|MF|CRC|Brandon Aguilera
+11|FW|ESP|Jalen Blesa
+13|DF|FRA|Julien Lomboto
+14|DF|CZE|Jakub Brabec
+17|DF|GRE|Marios Vrousai
+20|DF|POR|João Tomé
+22|GK|CRC|Kevin Chamorro
+23|DF|ARG|Francisco Petrasso
+24|DF|POR|Pedro Amaral
+25|FW|BRA|Rafael Lobato
+27|FW|ARG|Tobías Medina
+30|FW|SVK|Roland Galčík
+39|DF|BRA|Gustavo Mancha
+44|MF|HUN|Tamás Nikitscher
+54|MF|GRE|Georgios Liavas
+67|FW|BRA|Samuel Alves
+70|MF|SEN|Antoine Wenck
+77|FW|CRO|Dario Špikić
+
+Santa Clara
+1|GK|BRA|Lucas França
+4|DF|POR|Pedro Pacheco
+5|DF|BRA|Guilherme Romão
+6|MF|POR|Pedro Ferreira
+7|FW|BRA|Fernando
+8|MF|CPV|Djé Tavares
+9|FW|POR|Gonçalo Paciência
+10|FW|BRA|Brenner Lucas
+11|FW|BRA|Welinton Torrão
+12|GK|BRA|Neneca
+17|MF|POR|João Vasconcelos
+18|FW|POR|Afonso Duarte
+20|MF|POR|Tiago Ribeiro
+21|DF|POR|Emanuel Moreira
+22|MF|BRA|Vitinho
+25|MF|POR|Fredy
+32|DF|BRA|MT
+37|MF|BRA|Rildo
+41|MF|BRA|Dani Borges
+42|DF|BRA|Lucas Soares
+55|GK|BRA|Cadu Neves
+70|FW|BRA|Vinícius Lopes
+73|FW|BRA|Léo Jacó
+85|DF|POR|Kamika
+
+Sporting CP
+1|GK|POR|Rui Silva
+4|MF|DEN|Silas Andersen
+5|MF|ESP|Sergi Altimira
+6|DF|BEL|Zeno Debast
+7|FW|GRE|Fotis Ioannidis
+8|MF|POR|João Simões
+9|FW|POR|Rafael Nel
+10|FW|MOZ|Geny Catamo
+11|DF|POR|Nuno Santos
+13|DF|GRE|Georgios Vagiannidis
+17|MF|URU|Rodrigo Zalazar
+18|DF|MAR|Moncef Zekri
+19|FW|AUS|Nestory Irankunda
+20|FW|URU|Maximiliano Araújo
+21|MF|BRA|Pedro Lima
+22|DF|ESP|Iván Fresneda
+25|DF|POR|Gonçalo Inácio
+28|FW|ENG|Jesse Derry
+30|GK|BRA|Kaique Pereira
+31|FW|BRA|Luis Guilherme
+41|GK|BRA|Diego Callai
+55|DF|SEN|Ibrahima Ba
+58|MF|POR|Flávio Gonçalves
+72|DF|POR|Eduardo Quaresma
+
+Vitória de Guimarães
+2|DF|POR|Miguel Maga
+4|DF|ESP|Óscar Rivas
+5|DF|FRA|Ahmed Sidibé
+6|MF|SRB|Matija Mitrović
+7|FW|FRA|Oumar Camara
+8|MF|POR|Gonçalo Nogueira
+11|FW|BRA|Gustavo Silva
+13|DF|POR|João Mendes
+15|DF|COL|Yeimar Mosquera
+16|MF|ANG|Beni Mukendi
+17|MF|POR|Miguel Nogueira
+18|FW|CPV|Telmo Arcanjo
+19|MF|SWE|Victor Andersson
+20|MF|POR|Samu
+22|GK|COL|Juan Castillo
+23|DF|ROU|Tony Strata
+24|FW|SEN|Alioune Ndoye
+28|DF|BRA|Thiago Balieiro
+29|FW|CIV|Patrick Ouotro
+44|MF|BFA|Lohann Doucet
+48|GK|POL|Oliwier Zych
+80|MF|POR|Rica Rocha
+82|DF|POR|Francisco Dias
+98|GK|BRA|Lucas Furtado
+

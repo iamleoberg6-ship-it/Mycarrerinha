@@ -1,0 +1,449 @@
+Augsburg
+1|GK|GER|Finn Dahmen
+2|DF|GER|Calvin Brackelmann
+4|MF|FRA|Han-Noah Massengo
+5|DF|FRA|Chrislain Matsima
+6|DF|NED|Jeffrey Gouweleeuw
+7|DF|KOR|Seol Young-woo
+8|MF|GER|Sima Suso
+9|FW|POR|Rodrigo Ribeiro
+10|MF|GER|Mert Kömür
+11|FW|AUT|Michael Gregoritsch
+14|MF|GER|Yannik Keitel
+15|FW|BEN|Steve Mounié
+16|DF|GER|Hennes Behrens
+18|MF|GER|Tim Breithaupt
+19|MF|GER|Robin Fellhauer
+20|MF|FRA|Alexis Claude-Maurice
+21|MF|GER|Arijon Ibrahimović
+22|GK|CRO|Nediljko Labrović
+23|FW|GER|Faik Sakar
+27|DF|GER|Marius Wolf
+30|MF|GER|Anton Kade
+32|MF|SUI|Fabian Rieder
+35|DF|SLE|Juma Bah
+
+Union Berlin
+1|GK|DEN|Frederik Rønnow
+3|DF|GER|Andrik Markgraf
+4|DF|BEL|Zeno Van Den Bosch
+5|DF|GER|Marvin Friedrich
+6|MF|GER|Aljoscha Kemlein
+7|FW|SCO|Oliver Burke
+8|MF|TUN|Rani Khedira
+9|FW|TUR|Livan Burcu
+10|FW|GER|Ilyas Ansah
+11|MF|KOR|Jeong Woo-yeong
+13|MF|HUN|András Schäfer
+14|DF|AUT|Leopold Querfeld
+15|DF|GER|Tom Rothe
+18|DF|CRO|Josip Juranović
+19|MF|GER|Janik Haberer
+21|MF|GER|Tim Skarke
+23|FW|SRB|Andrej Ilić
+24|MF|DEN|Robert Skov
+25|GK|GER|Carl Klaus
+27|FW|CRO|Marin Ljubičić
+28|DF|AUT|Christopher Trimmel
+39|DF|GHA|Derrick Köhn
+
+Werder Bremen
+1|GK|EST|Karl Hein
+2|DF|BEL|Olivier Deman
+3|DF|POL|Oskar Wójcik
+4|DF|GER|Niklas Stark
+5|DF|GER|Amos Pieper
+6|MF|DEN|Jens Stage
+8|DF|GER|Mitchell Weiser
+9|FW|GER|Keke Topp
+10|FW|GER|Niclas Füllkrug
+11|FW|GER|Justin Njinmah
+13|DF|BRA|Arthur
+14|MF|BEL|Senne Lynen
+15|MF|NED|Ludovit Reis
+16|DF|SEN|Moussa N'Diaye
+17|FW|AUT|Marco Grüll
+18|MF|TUR|Eren Dinkçi
+20|MF|ESP|Chuki
+21|FW|POL|Dawid Kownacki
+22|DF|ARG|Julián Malatini
+23|MF|POL|Dariusz Stalmach
+25|GK|GER|Markus Kolke
+26|FW|SUI|Cedric Itten
+27|DF|NGA|Felix Agu
+28|MF|FRA|Skelly Alvero
+
+Borussia Dortmund
+1|GK|SUI|Gregor Kobel
+3|DF|GER|Waldemar Anton
+4|DF|GER|Nico Schlotterbeck
+5|DF|ALG|Ramy Bensebaini
+7|MF|ENG|Jobe Bellingham
+8|MF|GER|Felix Nmecha
+9|FW|GUI|Serhou Guirassy
+14|FW|GER|Maximilian Beier
+17|MF|AUT|Carney Chukwuemeka
+18|MF|ENG|Ethan Nwaneri
+19|MF|GRE|Konstantinos Karetsas
+20|MF|AUT|Marcel Sabitzer
+21|FW|POR|Fábio Silva
+22|DF|FRA|Joane Gadou
+23|MF|GER|Emre Can
+24|DF|SWE|Daniel Svensson
+25|MF|NED|Joey Veerman
+26|DF|NOR|Julian Ryerson
+28|MF|ECU|Justin Lerma
+30|GK|GER|Patrick Drewes
+33|GK|GER|Alexander Meyer
+36|DF|BRA|Kauã Prates
+
+Elversberg
+1|GK|GER|Frank Lehmann
+2|DF|THA|Nicholas Mickelson
+3|DF|FRA|Florian Le Joncour
+4|DF|GER|Luis Seifert
+6|MF|GUI|Amara Condé
+7|MF|GER|Maurice Krattenmacher
+8|MF|POL|Łukasz Poręba
+11|MF|GER|Jason Çeka
+12|GK|GER|Elias Etringer
+15|MF|GER|Raif Adam
+16|FW|GER|Luca Pfeiffer
+17|MF|GER|Frederik Schmahl
+19|DF|GER|Lukas Pinckert
+20|GK|AUT|Nicolas Kristof
+21|DF|GER|Lasse Günther
+24|FW|GER|Luca Schnellbacher
+25|MF|BUL|Lukas Petkov
+26|DF|GER|Luca Sirch
+29|MF|GER|Tom Zimmerschied
+30|DF|GHA|Jan Gyamerah
+31|DF|GER|Maximilian Rohr
+39|MF|USA|Cole Campbell
+42|FW|FRA|David Mokwa
+
+Eintracht Frankfurt
+1|GK|GER|Noah Atubolu
+2|DF|GER|Elias Baum
+4|DF|GER|Robin Koch
+5|DF|BRA|Otávio
+6|MF|DEN|Oscar Højlund
+7|FW|GER|Ansgar Knauff
+8|MF|ALG|Farès Chaïbi
+9|FW|GER|Jonathan Burkardt
+11|FW|MAR|Younes Ebnoutalib
+15|MF|GER|Noël Aséko
+19|FW|FRA|Jean-Mattéo Bahoya
+20|FW|JPN|Ritsu Dōan
+22|DF|USA|Timothy Chandler
+25|MF|NGA|Raphael Onyedika
+26|DF|JPN|Keita Kosugi
+27|FW|GER|Mario Götze
+29|FW|MAR|Ayoube Amaimouni
+33|GK|GER|Jens Grahl
+34|DF|GER|Nnamdi Collins
+39|GK|BIH|Amil Šiljević
+
+Freiburg
+3|DF|AUT|Philipp Lienhart
+5|DF|GER|Anthony Jung
+6|MF|GER|Patrick Osterhage
+7|FW|GER|Derry Scherhant
+8|MF|GER|Maximilian Eggestein
+9|FW|GER|Lucas Höler
+11|MF|GHA|Daniel-Kofi Kyereh
+14|MF|JPN|Yuito Suzuki
+17|DF|GER|Lukas Kübler
+19|MF|GER|Niklas Beste
+21|GK|GER|Florian Müller
+22|FW|BFA|Cyriaque Irié
+24|GK|GER|Jannik Huth
+26|FW|GER|Maximilian Philipp
+27|MF|GER|Nicolas Höfler
+28|DF|GER|Matthias Ginter
+29|DF|GER|Philipp Treu
+30|DF|GER|Christian Günter
+31|FW|CRO|Igor Matanović
+32|MF|ITA|Vincenzo Grifo
+33|DF|FRA|Jordy Makengo
+
+Hamburger SV
+1|GK|POR|Daniel Heuer Fernandes
+2|DF|FRA|William Mikelbrencis
+6|MF|BEL|Albert Sambi Lokonga
+7|FW|FRA|Jean-Luc Dompé
+8|MF|LBY|Daniel Elfadli
+12|GK|NOR|Sander Tangvik
+14|FW|FRA|Rayan Philippe
+15|FW|DEN|Yussuf Poulsen
+17|DF|COM|Warmed Omari
+18|FW|GAM|Bakery Jatta
+21|MF|GER|Nicolai Remberg
+23|MF|DEN|Albert Grønbæk
+24|MF|ARG|Nicolás Capaldo
+25|DF|NGA|Jordan Torunarigha
+28|DF|SUI|Miro Muheim
+37|DF|GER|Louis Lemke
+38|FW|NOR|Alexander Røssing-Lelesiit
+40|GK|GER|Hannes Hermann
+45|FW|POR|Fábio Baldé
+
+Hoffenheim
+1|GK|GER|Oliver Baumann
+2|DF|CZE|Robin Hranáč
+4|DF|GER|Sean Dulić
+5|DF|TUR|Ozan Kabak
+7|MF|KVX|Leon Avdullahu
+8|MF|AUT|Patrick Wimmer
+9|FW|GER|Max Moerstedt
+10|FW|CZE|Adam Hložek
+11|FW|KVX|Fisnik Asllani
+13|DF|BRA|Bernardo
+14|FW|DEN|Adam Daghim
+15|DF|FRA|Valentin Gendrey
+17|MF|BEL|Nathan De Cat
+18|MF|NED|Wouter Burger
+19|FW|GER|Tim Lemperle
+21|DF|KVX|Albian Hajdari
+22|MF|AUT|Alexander Prass
+24|FW|SUI|Alessandro Vogt
+27|FW|CRO|Andrej Kramarić
+28|DF|JPN|Kōki Machida
+32|MF|GER|Cajetan Lenz
+34|DF|CZE|Vladimír Coufal
+
+Köln
+1|GK|GER|Marvin Schwäbe
+2|DF|SUI|Joël Schmied
+3|DF|CRO|Borna Sosa
+4|DF|GER|Timo Hübers
+5|MF|GER|Tom Krauß
+6|MF|TUN|Ellyes Skhiri
+7|FW|GER|Luca Waldschmidt
+8|MF|ISL|Ísak Jóhannesson
+9|FW|GER|Ragnar Ache
+10|MF|GER|Said El Mala
+11|FW|ENG|Reigan Heskey
+14|DF|GHA|Gideon Mensah
+15|FW|BIH|Imad Rondić
+17|MF|BEL|Alessio Castro-Montes
+19|FW|GER|Malek El Mala
+20|GK|GER|Ron-Robert Zieler
+21|GK|FRA|Martin James
+22|DF|ENG|Jahmai Simpson-Pusey
+23|MF|AUS|Paul Okon-Engstler
+24|DF|GEO|Luka Lochoshvili
+27|FW|NED|Thijs Dallinga
+28|DF|NOR|Sebastian Sebulonsen
+29|MF|GER|Jan Thielmann
+30|FW|GER|Marius Bülter
+31|MF|POR|Gil Neves
+
+Bayer Leverkusen
+1|GK|NED|Mark Flekken
+2|DF|ARG|Facundo Medina
+3|DF|ESP|Miguel Gutiérrez
+4|DF|ENG|Jarell Quansah
+5|DF|FRA|Loïc Badé
+6|MF|ARG|Equi Fernández
+7|MF|GER|Jonas Hofmann
+8|MF|GER|Robert Andrich
+9|FW|POR|Afonso Moreira
+10|FW|USA|Malik Tillman
+11|FW|FRA|Martin Terrier
+12|DF|BFA|Edmond Tapsoba
+13|DF|BRA|Arthur
+14|FW|CZE|Patrik Schick
+15|DF|GER|Tim Oermann
+16|DF|FRA|Axel Tape
+17|DF|ESP|Lucas Vázquez
+18|MF|GER|Kennet Eichhorn
+22|FW|NGA|Victor Boniface
+23|FW|NGA|Nathan Tella
+24|MF|ESP|Aleix García
+28|GK|GER|Janis Blaswich
+30|MF|ALG|Ibrahim Maza
+35|FW|CMR|Christian Kofane
+
+Mainz 05
+1|GK|GER|Alexander Schwolow
+2|DF|AUT|Phillipp Mwene
+3|DF|PER|Fabio Gruber
+4|DF|AUT|Stefan Posch
+5|MF|GER|Eric Martel
+6|MF|JPN|Kaishū Sano
+7|MF|KOR|Lee Jae-sung
+8|MF|GER|Paul Nebel
+9|FW|GER|Phillip Tietz
+10|MF|GER|Nadiem Amiri
+11|FW|GHA|Ransford-Yeboah Königsdörffer
+13|MF|KOR|Hong Hyun-seok
+14|FW|DEN|William Bøving
+15|MF|USA|Lennard Maloney
+16|DF|GER|Stefan Bell
+17|FW|GER|Benedict Hollerbach
+19|DF|FRA|Anthony Caci
+20|MF|FIN|Otto Ruoppi
+21|DF|GER|Danny da Costa
+22|FW|GER|Marco Richter
+23|FW|SUR|Sheraldo Becker
+24|MF|JPN|Sōta Kawasaki
+25|DF|NOR|Andreas Hanche-Olsen
+26|FW|COD|Silas
+
+Bayern de Munique
+1|GK|GER|Manuel Neuer
+2|DF|FRA|Dayot Upamecano
+3|DF|KOR|Kim Min-jae
+4|DF|GER|Jonathan Tah
+6|MF|GER|Joshua Kimmich
+7|FW|GER|Serge Gnabry
+8|MF|GER|Tom Bischof
+9|FW|ENG|Harry Kane
+10|MF|GER|Jamal Musiala
+11|DF|GER|Nathaniel Brown
+14|FW|COL|Luis Díaz
+17|FW|FRA|Michael Olise
+19|DF|CAN|Alphonso Davies
+21|DF|JPN|Hiroki Itō
+23|DF|FRA|Sacha Boey
+26|GK|GER|Sven Ulreich
+27|MF|AUT|Konrad Laimer
+30|DF|GER|Cassiano Kiala
+34|MF|MAR|Ismael Saibari
+
+Paderborn
+1|GK|GER|Markus Schubert
+2|DF|GER|Ruben Müller
+3|DF|GER|Jonah Sticker
+4|DF|GER|Nyamekye Awortwie-Grant
+5|MF|USA|Santiago Castañeda
+6|MF|GER|Tom Baack
+7|MF|GER|Oliver Batista Meier
+8|MF|BIH|Luka Đurić
+9|FW|FRA|Rayan Philippe
+11|FW|GER|Sven Michel
+15|GK|GER|Nahuel Noll
+17|DF|GER|Laurin Curda
+18|FW|GER|Marvin Pieringer
+19|FW|GER|Albert Millgramm
+20|DF|GER|Felix Götze
+21|DF|GER|Jano ter Horst
+22|MF|GER|Mattes Hansen
+23|MF|PHI|Raphael Obermair
+24|DF|GER|Niklas Mohr
+25|DF|GER|Tjark Scheller
+26|MF|GER|Sebastian Klaas
+27|FW|GER|Steffen Tigges
+28|MF|GER|Laurin Ulrich
+29|DF|GER|Clemens Lippmann
+30|FW|GER|Stefano Marino
+
+Schalke 04
+1|GK|GER|Loris Karius
+4|DF|TUR|Hasan Kuruçay
+5|DF|GER|Timo Becker
+6|MF|GER|Ron Schallenberg
+7|FW|KOR|Hwang Hee-chan
+8|DF|GER|Robin Gosens
+9|FW|MLI|Moussa Sylla
+10|FW|BIH|Edin Džeko
+11|FW|FRA|Bryan Lasme
+13|MF|JPN|Satoshi Tanaka
+14|MF|GER|Janik Bachmann
+15|FW|DEN|Emil Højlund
+17|DF|SUI|Adrian Gantenbein
+19|FW|TUR|Kenan Karaman
+20|FW|AUT|Junior Adamu
+21|MF|AUT|Dejan Ljubičić
+22|GK|GER|Kevin Müller
+23|MF|MAR|Soufiane El-Faouzi
+24|MF|ALG|Adil Aouchiche
+25|DF|BIH|Nikola Katić
+27|MF|GER|Finn Porath
+29|MF|CMR|Junior Dina Ebimbe
+33|DF|GER|Vitalie Becker
+36|GK|GER|Johannes Siebeking
+38|MF|GER|Luca Vozar
+
+VfB Stuttgart
+1|GK|GER|Fabian Bredlow
+2|DF|BEL|Ameen Al-Dakhil
+3|DF|NED|Ramon Hendriks
+4|DF|GER|Josha Vagnoman
+6|MF|GER|Angelo Stiller
+7|DF|GER|Maximilian Mittelstädt
+8|FW|POR|Tiago Tomás
+9|FW|BIH|Ermedin Demirović
+10|MF|GER|Chris Führich
+11|MF|MAR|Bilal El Khannouss
+14|DF|SUI|Luca Jaquez
+15|DF|GER|Pascal Stenzel
+16|MF|TUR|Atakan Karazor
+17|FW|GER|Justin Diehl
+18|FW|GER|Jamie Leweling
+19|MF|GER|Noah Darvich
+20|DF|SUI|Leonidas Stergiou
+21|GK|GER|Stefan Drljača
+22|DF|FRA|Lorenz Assignon
+23|DF|FRA|Dan-Axel Zagadou
+24|DF|GER|Jeff Chabot
+25|FW|ECU|Jeremy Arévalo
+26|FW|GER|Deniz Undav
+27|FW|ALG|Badredine Bouanani
+28|MF|DEN|Nikolas Nartey
+
+RB Leipzig
+1|GK|NOR|Ørjan Nyland
+2|DF|FRA|Abdoul Koné
+3|DF|FRA|Maxime Estève
+4|DF|HUN|Willi Orbán
+6|MF|NED|Ezechiel Banzuzi
+7|FW|NOR|Antonio Nusa
+8|MF|GER|Assan Ouédraogo
+9|FW|ESP|Marc Guiu
+10|MF|GER|Brajan Gruda
+11|FW|BEL|Johan Bakayoko
+13|MF|AUT|Nicolas Seiwald
+14|MF|AUT|Christoph Baumgartner
+16|DF|GER|Lukas Klostermann
+17|DF|GER|Ridle Baku
+18|FW|NGA|Suleman Sani
+20|MF|GER|Rocco Reitz
+21|MF|MAR|Neil El Aynaoui
+22|DF|GER|David Raum
+23|DF|FRA|Castello Lukeba
+25|GK|GER|Leopold Zingerle
+26|GK|BEL|Maarten Vandevoordt
+27|FW|FRA|Tidiam Gomis
+28|FW|FRA|Christopher Nkunku
+30|MF|SRB|Andrija Maksimović
+35|DF|GER|Max Finkgräfe
+
+Borussia Mönchengladbach
+1|GK|GER|Moritz Nicolas
+2|DF|ITA|Fabio Chiarodia
+3|FW|SWE|Isac Lidberg
+4|DF|IDN|Kevin Diks
+5|DF|POL|Jan Leszczyński
+6|DF|JPN|Kō Itakura
+7|MF|AUT|Kevin Stöger
+8|MF|GER|Enzo Leopold
+9|MF|FRA|Franck Honorat
+10|MF|GER|Florian Neuhaus
+11|FW|GER|Tim Kleindienst
+14|DF|JPN|Daiki Hashioka
+16|MF|GER|Philipp Sander
+17|MF|KOR|Jens Castrop
+18|FW|JPN|Shūto Machino
+19|FW|GER|Nicolas Kühn
+20|DF|GER|David Herold
+21|GK|GER|Tobias Sippel
+22|DF|UKR|Yukhym Konoplya
+25|MF|GER|Robin Hack
+26|DF|GER|Lukas Ullrich
+27|MF|GER|Fritz Fleck
+29|DF|USA|Joe Scally
+33|GK|GER|Daniel Batz
+34|MF|GER|Mathieu Nguefack
+

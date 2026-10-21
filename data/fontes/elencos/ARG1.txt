@@ -1,0 +1,762 @@
+Aldosivi
+2|DF|ARG|Leonardo Sigali
+4|DF|ARG|Rodrigo González
+5|MF|ARG|Nicolás Linares
+8|MF|ARG|Martín García
+9|FW|ARG|Nicolás Cordero
+10|MF|ARG|Nico Gaitán
+13|DF|ARG|Braian Cufré
+14|DF|ARG|Elías López
+15|MF|ARG|Francisco Perruzzi
+17|DF|ARG|Federico Laurelli
+18|FW|ARG|Andrés Chávez
+19|MF|ARG|Lucas Castro
+23|GK|ARG|Ignacio Chicco
+25|DF|ARG|Néstor Breitenbruch
+27|FW|ARG|Tomás Fernández
+29|FW|SVN|Andrés Vombergar
+32|DF|ARG|Joaquín Pombo
+33|DF|ARG|Nicolás Zalazar
+42|GK|ARG|Lucas Acosta
+
+Argentinos Juniors
+1|GK|ARG|Agustín Mangiaut
+3|DF|ARG|Luciano Sánchez
+4|DF|ARG|Érik Godoy
+6|DF|ARG|Román Riquelme
+7|FW|ARG|Lautaro Giaccone
+8|MF|ARG|Lucas Gómez
+9|FW|ARG|Gastón Verón
+10|MF|ARG|Alan Lescano
+11|MF|ARG|Nicolás Oroz
+12|GK|ARG|Gonzalo Siri
+14|DF|ARG|Kevin Coronel
+16|DF|ARG|Francisco Álvarez
+18|FW|ARG|Leandro Fernández
+20|DF|ARG|Sebastián Prieto
+21|MF|ARG|Gabriel Florentín
+24|MF|ARG|Federico Fattori
+26|DF|ARG|Claudio Bravo
+27|FW|ARG|Tomás Molina
+28|MF|ARG|Joaquín Gho
+29|MF|ARG|Emiliano Viveros
+30|FW|CHI|Iván Morales
+33|MF|ARG|Enzo Pérez
+34|FW|ARG|Matías Giménez
+35|GK|ARG|Valentín Catalán
+36|MF|ARG|Gastón Bouhier
+
+Atlético Tucumán
+1|GK|ARG|Cristian Lucchetti
+2|DF|ARG|Bruno Bianchi
+3|DF|ARG|Fernando Evangelista
+4|DF|ARG|Nicolás Romat
+5|MF|ARG|Nery Leyes
+6|DF|ARG|Franco Sbuttoni
+7|FW|ARG|Luis Rodríguez
+8|DF|ARG|Guillermo Acosta
+9|FW|ARG|Fernando Zampedri
+10|FW|ARG|Leandro González
+11|FW|ARG|Cristian Menéndez
+13|GK|ARG|Franco Pizzicanella
+14|MF|ARG|Dante Ibarra
+15|DF|ARG|Gastón Iturrieta
+16|DF|PAR|Enrique Meza
+17|MF|ARG|Jorge Soldati
+18|DF|ARG|Nahuel Sosa
+19|FW|ECU|Juan Govea
+20|DF|ARG|Jorge Molina
+21|MF|COL|Miguel Julio
+22|MF|ARG|Franco Quiroga
+25|MF|ARG|David Valdez
+26|FW|ARG|Gonzalo Ontivero
+27|DF|ARG|Ignacio Canuto
+
+Banfield
+1|GK|ARG|Facundo Sanguinetti
+2|DF|COL|Danilo Arboleda
+4|DF|ARG|Juan Luis Alfaro
+5|MF|ARG|Santiago Esquivel
+6|DF|ARG|Nicolás Meriano
+7|FW|ARG|Lisandro Piñero
+8|MF|ARG|Lautaro Ríos
+9|FW|ARG|Bruno Sepúlveda
+10|MF|ARG|Lautaro Gómez
+11|MF|ARG|Favio Álvarez
+12|DF|ARG|Marcos López
+13|DF|ARG|Brandon Oviedo
+14|DF|ARG|Sergio Vittor
+16|FW|URU|Mauro Méndez
+17|FW|ARG|Tiziano Perrotta
+18|MF|ARG|Federico Medina
+19|DF|ARG|Nicolás Colazo
+20|MF|ARM|Tomás Adoryán
+21|MF|ARG|Lautaro Villegas
+23|MF|ARG|Lucas Palavecino
+24|MF|ARG|Santiago López García
+25|GK|ARG|Gino Santilli
+26|DF|ARG|Mateo Mendizabal
+27|DF|SYR|Ignacio Abraham
+
+Belgrano
+2|DF|ARG|Alexis Maldonado
+3|DF|ARG|Adrián Spörle
+5|MF|ARG|Santiago Longo
+9|FW|ARG|Lucas Passerini
+10|MF|ARM|Lucas Zelarayán
+11|MF|ARG|Francisco González Metilli
+13|DF|ARG|Álvaro Ocampo
+14|DF|ARG|Leonardo Morales
+16|DF|URU|Federico Ricca
+17|DF|ARG|Lisandro López
+20|MF|ARG|Franco Vázquez
+21|MF|ARG|Adrián Sánchez
+22|FW|ARG|Nicolás Fernández
+23|GK|ARG|Manuel Vicentini
+24|MF|ARG|Emiliano Rigoni
+25|GK|URU|Thiago Cardozo
+26|DF|PAR|Alcides Benítez
+28|GK|ARG|Matías Daniele
+29|FW|ARG|Agustín Melano
+30|MF|ARG|Gonzalo Zelarayán
+32|MF|ARG|Julián Mavilla
+37|FW|ARG|Lautaro Gutiérrez
+42|FW|ARG|Jeremías Lucco
+
+Boca Juniors
+1|GK|COL|Álvaro Montero
+2|DF|ARG|Lautaro Di Lollo
+3|DF|ARG|Lautaro Blanco
+4|DF|ARG|Nicolás Figal
+5|MF|ARG|Leandro Paredes
+6|MF|ARG|Rodrigo Battaglia
+7|MF|CHI|Carlos Palacios
+8|MF|ARG|Tomás Belmonte
+9|FW|ARG|Milton Giménez
+10|MF|ARG|Tomás Aranda
+11|FW|PAR|Ángel Romero
+12|GK|ARG|Leandro Brey
+13|GK|ARG|Javier García
+15|MF|CHI|Williams Alarcón
+16|FW|URU|Miguel Merentiel
+17|DF|URU|Leandro Lozano
+18|MF|ARG|Milton Delgado
+19|FW|ARG|Leonel Flores
+20|MF|ARG|Alan Velasco
+21|MF|ARG|Kevin Zenón
+22|MF|COL|Sebastián Villa
+23|MF|ARG|Camilo Rey Domenech
+24|DF|ARG|Dylan Gorosito
+25|MF|ARG|Santiago Ascacíbar
+26|DF|ARG|Marco Pellegrino
+
+Defensa y Justicia
+1|GK|ARG|Marcos Ledesma
+2|DF|ARG|Samuel Lucero
+6|DF|SYR|Emiliano Amor
+7|FW|ARG|Abiel Osorio
+8|MF|CHI|César Pérez
+9|FW|URU|Luciano González
+10|MF|ARG|Aarón Molinas
+11|MF|ARG|Éver Banega
+12|GK|ARG|Facundo Quintana
+15|MF|ARG|Santiago Sosa
+16|DF|ARG|Ayrton Portillo
+17|FW|ARG|Agustín Hausch
+18|MF|ARG|Santiago Toloza
+19|FW|ARG|David Barbona
+20|MF|ARG|Rubén Botta
+21|DF|PAR|David Martínez
+22|GK|URU|Cristopher Fiermarín
+23|MF|ARG|Mateo Aguiar
+24|FW|URU|Juan Gutiérrez
+25|FW|ARG|Facundo Altamira
+
+Deportivo Riestra
+1|GK|ARG|Ignacio Arce
+4|DF|COL|Yeison Murillo
+5|DF|ARG|Pedro Ramírez
+6|DF|ARG|Miguel Barbieri
+7|FW|URU|Antony Alonso
+8|FW|ARG|Nicolás Benegas
+9|FW|ARG|Jonathan Herrera
+10|FW|ARG|Alexander Díaz
+11|FW|NGA|Johnson Nsumoh
+12|GK|ARG|Iván López
+13|DF|ARG|Rodrigo Gallo
+14|MF|ARG|Pablo Monje
+15|DF|ARG|Nicolás Sansotre
+16|MF|ARG|Nicolás Watson
+17|DF|ARG|Manuel Aiello
+19|DF|ARG|Juan Randazzo
+20|MF|ARG|Matías García
+21|FW|ARG|José María Ingratti
+22|DF|ARG|Cristian Paz
+23|MF|ARG|Mateo Ramírez
+24|DF|ARG|Facundo Miño
+25|MF|ARG|Patricio Madero
+27|MF|ARG|Jonatan Goitía
+
+Barracas Central
+2|DF|ARG|Nicolás Capraro
+4|DF|ARG|Damián Martínez
+5|MF|ARG|Dardo Miloc
+6|DF|ARG|Rodrigo Insúa
+7|FW|ARG|Juan Barbieri
+8|MF|ARG|Tomás Porra
+10|MF|ARG|Iván Tapia
+13|DF|ARG|Rafael Barrios
+15|DF|URU|Yonatthan Rak
+16|MF|ARG|Iván Guaraz
+17|DF|ARG|Elías Pereyra
+18|MF|ARG|Manuel Duarte
+19|MF|ARG|Carlos Arce
+20|FW|URU|Jhonatan Candia
+21|FW|ARG|Lucas Gamba
+23|FW|PUR|Wilfredo Rivera
+25|MF|COL|Yeison Gordillo
+28|MF|PAR|Rodrigo Bogarín
+30|GK|ARG|Marcelo Miño
+32|DF|ARG|Fernando Tobio
+34|FW|ARG|Nicolás Orsini
+35|MF|ARG|Esteban Rolón
+37|DF|ARG|Gastón Campi
+38|GK|ARG|Juan Pablo Insúa
+
+Central Córdoba (SdE)
+1|GK|ARG|Alan Aguerre
+2|DF|ARG|Alejandro Maciel
+3|DF|ARG|Leonardo Marchi
+5|MF|ARG|Tiago Cravero
+6|DF|ARG|Facundo Mansilla
+7|FW|ARG|Diego Barrera
+8|MF|ARG|Fernando Juárez
+9|FW|ARG|Lucas Varaldo
+10|MF|ARG|Marco Iacobellis
+11|MF|ARG|Horacio Tijanovich
+12|GK|ARG|Máximo Alvarez
+13|DF|ARG|José Gómez
+17|DF|ARG|Yuri Casermeiro
+18|MF|ARG|Lucas González
+19|FW|ARG|Ezequiel Naya
+20|DF|ARG|Fernando Martínez
+21|DF|COL|Felipe Aguilar
+22|MF|ARG|Matías Vera
+23|DF|PAR|Darío Cáceres
+25|GK|ARG|Javier Vallejos
+26|DF|ARG|Lucas Bernabéu
+27|FW|URU|Michael Santos
+28|FW|ARG|Leonardo Sequeira
+29|FW|ARG|Joaquín Flores
+33|DF|ARG|Santiago Moyano
+
+Estudiantes (LP)
+1|GK|ARG|Fabricio Iacovich
+4|DF|ARG|Santiago Núñez
+7|MF|ARG|José Sosa
+8|MF|URU|Gabriel Neves
+9|FW|ARG|Guido Carrillo
+10|FW|URU|Tiago Palacios
+12|GK|ARG|Rodrigo Borzone
+13|DF|ARG|Gastón Benedetti
+14|DF|ARG|Leandro González Pírez
+15|DF|PAR|Santiago Arzamendia
+16|GK|URU|Fernando Muslera
+17|FW|ARG|Joaquín Tobio Burgos
+18|FW|COL|Edwuin Cetré
+19|FW|ARG|Adolfo Gaich
+20|DF|ARG|Eric Meza
+21|MF|ARG|Ezequiel Piovi
+22|MF|ARG|Alexis Castro
+24|DF|ARG|Tomás Palacios
+26|DF|ARG|Ramiro Funes Mori
+27|FW|ARG|Lucas Alario
+28|FW|ARG|Brian Aguirre
+29|FW|ARG|Fabricio Pérez
+31|MF|ARG|Baltasar Rodríguez
+32|FW|ARG|Joaquín Correa
+34|MF|COL|Miguel Monsalve
+
+Estudiantes (RC)
+1|GK|ARG|Lucas Bruera
+2|DF|ARG|Gonzalo Maffini
+3|DF|ARG|Lucas Baños
+4|DF|ARG|Valentín Fenoglio
+5|MF|ARG|Alejandro Cabrera
+6|DF|ARG|Juan Antonini
+7|FW|ARG|Lucas González
+8|MF|ARG|Siro Rosané
+9|FW|PAR|Javier Ferreira
+10|MF|ARG|Tomás González
+11|FW|ARG|Martín Garnerone
+12|GK|ARG|Francisco Gualtieri
+13|MF|ARG|Francisco Romero
+14|DF|ARG|Gonzalo González
+16|FW|COL|Yeison Moreno
+17|MF|ARG|Gabriel Alanís
+19|MF|ARG|Nicolás Talpone
+21|DF|ARG|Matías Ruiz Díaz
+22|FW|ARG|Mauro Valiente
+23|DF|ARG|Fernando Rodríguez
+27|MF|ARG|Juan Garro
+28|DF|ARG|Facundo Cobos
+29|DF|ARG|Agustín Quiroga
+30|DF|ARG|Sergio Ojeda
+
+Gimnasia (LP)
+1|GK|ARG|Máximo Cabrera
+4|DF|ARG|Renzo Giampaoli
+5|MF|ARG|Ignacio Miramón
+6|DF|ARG|Diego Mastrángelo
+7|FW|ARG|Manuel Panaro
+8|MF|ARG|Nacho Fernández
+9|FW|ARG|Ivo Mammini
+10|MF|ARG|Nicolás Barros Schelotto
+11|FW|ARG|Jeremías Merlo
+12|GK|IRL|Patricio Schroeder
+13|DF|ARG|Germán Conti
+14|DF|ARG|Gonzalo Errecalde
+15|DF|ARG|Alejo Gelsomino
+16|MF|ARG|Augusto Max
+18|MF|ARG|Mateo Seoane
+20|FW|COL|Juan Pérez
+21|DF|URU|Enzo Martínez
+22|DF|ARG|Matías Melluso
+23|GK|ARG|Nelson Insfrán
+24|DF|ARG|Pedro Silva Torrejón
+25|DF|ARG|Alexis Steimbach
+26|FW|ARG|Franco Torres
+
+Gimnasia (M)
+1|GK|ARG|Santiago Roggero
+2|DF|ARG|Diego Mondino
+3|DF|ARG|Matías Recalde
+4|DF|ARG|Ezequiel Muñoz
+5|MF|ARG|Nahuel Barboza
+6|DF|ARG|Imanol González
+7|FW|ARG|Luciano Cingolani
+9|FW|ARG|Nicolás Ferreyra
+10|FW|ARG|Nicolás Romano
+11|FW|ARG|Santiago Rodríguez
+15|FW|ARG|Ulises Sánchez
+17|FW|ARG|Ignacio Sabatini
+18|FW|ARG|Juan Pablo Álvarez
+19|MF|ARG|Julián Ceballos
+20|MF|ARG|Tomás Ortiz
+21|MF|ARG|Fermín Antonini
+22|DF|PAR|Juan Franco
+23|GK|ARG|César Rigamonti
+24|DF|ARG|Franco Saavedra
+25|MF|ARG|Martín Úbeda
+26|FW|ARG|Facundo Lencioni
+27|FW|PAR|Blas Armoa
+28|MF|ARG|Tomás O'Connor
+29|FW|ITA|Agustín Módica
+
+Huracán
+1|GK|ECU|Hernán Galíndez
+2|DF|SUI|Lucas Blondel
+3|DF|ARG|Lucas Carrizo
+4|DF|ARG|Federico Vera
+6|DF|ARG|Fabio Pereyra
+7|FW|COL|Óscar Cortés
+8|MF|CHI|Leonardo Gil
+9|FW|ECU|Jordy Caicedo
+10|MF|PAR|Óscar Romero
+11|MF|ARG|Thaiel Peralta
+15|MF|URU|Facundo Waller
+17|FW|ARG|Juan Bisanz
+19|DF|ARG|Leandro Lescano
+20|MF|ARG|Emmanuel Ojeda
+21|DF|ARG|Hugo Nervo
+22|DF|ARG|Daniel Zabala
+25|DF|ARG|César Ibáñez
+27|GK|ARG|Nazareno Durán
+32|GK|ARG|Sebastián Meza
+33|FW|CHI|Bruno Barticciotto
+34|DF|ARG|Ignacio Campo
+41|MF|ARG|Lautaro Mora
+
+Independiente
+1|GK|ARG|Joaquín Blázquez
+3|DF|ARG|Milton Valenzuela
+4|DF|COL|Santiago Arias
+5|MF|URU|Rodrigo Fernández Cedrés
+6|DF|ARG|Nicolás Freire
+7|FW|ARG|Santiago Montiel
+8|MF|CHI|Lautaro Millán
+9|FW|PAR|Gabriel Ávalos
+10|MF|CHI|Luciano Cabral
+11|MF|ARG|Federico Mancuello
+12|GK|ARG|Mateo Morro
+13|DF|ARG|Juan Fedorco
+16|MF|ARG|Mateo Pérez Curci
+19|FW|URU|Matías Abaldo
+22|DF|ARG|Facundo Zabala
+23|MF|ARG|Iván Marcone
+25|FW|ARG|Ignacio Pussetto
+26|DF|ARG|Kevin Lomónaco
+28|FW|CHI|Maximiliano Gutiérrez
+29|DF|ARG|Leonardo Godoy
+30|MF|ARG|Tomás Parmo
+33|GK|ARG|Rodrigo Rey
+36|DF|ARG|Sebastián Valdez
+
+Independiente Rivadavia
+2|DF|URU|Leonard Costa
+5|MF|ARG|Tomás Bottari
+6|DF|ARG|Santiago Cena
+7|FW|ARG|Victorio Ramis
+8|MF|ARG|Leonel Bucca
+9|FW|PAR|Álex Arce
+10|MF|ARG|Matías Fernández
+11|MF|ARG|Gonzalo Ríos
+13|DF|ARG|Alejo Osella
+22|FW|COL|Sebastián Villa
+23|MF|ARG|Tomás Muro
+25|MF|PAR|José Florentín
+27|MF|ARG|Diego Crego
+30|GK|ARG|Nicolás Bolcato
+34|MF|ARG|Stefano Moreyra
+36|DF|ARG|Ezequiel Bonifacio
+40|DF|PAR|Iván Villalba
+42|DF|ARG|Sheyko Studer
+43|FW|ARG|Fabrizio Sartori
+
+Instituto
+2|DF|ARG|Hernán de la Fuente
+3|DF|ARG|Diego Sosa
+5|MF|ARG|Franco Moyano
+6|DF|ARG|Fernando Alarcón
+7|FW|CHI|Nicolás Guerra
+8|FW|ARG|Jonás Acevedo
+9|FW|ARG|Facundo Suárez
+10|MF|ARG|Alex Luna
+11|FW|URU|Matias Fonseca
+13|MF|ARG|Juan Ignacio Méndez
+14|MF|PAR|Wilder Viera
+15|MF|ARG|Matías Gallardo
+17|FW|ARG|Matías Tissera
+19|FW|URU|Lucas Sanseviero
+20|FW|COL|Jhon Córdoba
+21|MF|ARG|Jeremías Lázaro
+22|DF|ARG|Agustín Massaccesi
+23|DF|ARG|Andrés Meli
+26|DF|ARG|Leonel Mosevich
+29|GK|ARG|Marcos Ledesma
+30|DF|ARG|Jonatan Galván
+35|GK|ARG|Emanuel Sittaro
+
+Lanús
+1|GK|ARG|Franco Petroli
+2|DF|ARG|Luciano Romero
+3|DF|ARG|Nicolás Morgantini
+4|DF|URU|Gonzalo Pérez
+5|MF|ARG|Felipe Peña Biafore
+6|DF|ARG|Sasha Marcich
+8|MF|ARG|Franco Watson
+10|MF|ARG|Marcelino Moreno
+11|FW|ARG|Eduardo Salvio
+13|DF|PAR|José Canale
+15|MF|COL|Raúl Loaiza
+16|MF|CHI|Matías Sepúlveda
+17|MF|ARG|Agustín Medina
+18|FW|ARG|Jeremías Chavero
+19|FW|COL|Yoshan Valois
+20|FW|PAR|Allan Wlk
+22|DF|ARG|Alexis González
+23|MF|ARG|Ramiro Carrera
+24|DF|ARG|Carlos Izquierdoz
+26|GK|ARG|Nahuel Losada
+27|MF|ARG|Facundo Sánchez
+28|DF|ARG|Octavio Ontivero
+30|MF|ARG|Agustín Cardozo
+33|DF|ARG|Tomás Guidara
+35|DF|PAR|Ronaldo Dejesús
+
+Platense
+1|GK|ARG|Brian Bustos
+3|DF|ARG|Tomás Silva
+4|DF|ARG|Agustín Lagos
+5|MF|ARG|Iván Gómez
+6|DF|ARG|Eugenio Raggio
+7|FW|ARG|Guido Mainero
+8|MF|ARG|Marcos Portillo
+9|FW|ARG|Tomás Nasif
+10|MF|ARG|Franco Zapiola
+11|FW|URU|Agustín Ocampo
+12|DF|ARG|Jonathan Bay
+13|DF|ARG|Ignacio Vázquez
+15|MF|ARG|Maximiliano Amarfil
+16|MF|ARG|Mauro Luna Diale
+17|MF|ARG|Felipe Bussio
+18|FW|ARG|Bautista Merlini
+19|FW|PAR|Héctor Bobadilla
+20|GK|ARG|Matías Borgogno
+21|FW|ARG|Augusto Lotti
+22|GK|ARG|Nicolás Sumavil
+23|MF|ARG|Leonardo Heredia
+24|MF|URU|Martín Barrios
+25|DF|ARG|Juan Ignacio Saborido
+26|MF|ARG|Pablo Ferreira
+27|MF|ARG|Santiago Dalmasso
+
+Racing
+1|GK|ARG|Francisco Gómez
+2|DF|ARG|Matías Pérez
+3|DF|ARG|Marco Di Césare
+4|DF|ARG|Ezequiel Cannavo
+5|MF|ARG|Matías Kranevitter
+6|DF|ARG|Marcos Rojo
+7|FW|COL|Duván Vergara
+8|MF|ARG|Alan Forneris
+9|FW|ARG|Adrián Martínez
+10|MF|USA|Matko Miljević
+11|MF|ARG|Matías Zaracho
+14|DF|ARG|Juan Barinaga
+16|MF|CHI|Ulises Ortegoza
+17|FW|ARG|Tomás Conechny
+18|DF|URU|Alfonso Espino
+19|DF|ARG|Ignacio Rodríguez
+20|MF|ARG|Gastón Lodico
+21|FW|ARG|Valentín Carboni
+22|FW|ARG|Elías Torres
+23|DF|ARG|Nazareno Colombo
+24|MF|ARG|Adrián Fernández
+25|GK|ARG|Facundo Cambeses
+30|GK|ARG|Matías Tagliamonte
+32|FW|ARG|Lautaro Díaz
+33|MF|ARG|Leonel Pérez
+
+River Plate
+2|DF|ARG|Tobías Ramírez
+3|DF|ARG|Francisco Ortega
+5|DF|ARG|Juan Carlos Portillo
+6|MF|ARG|Aníbal Moreno
+8|MF|URU|Mauro Arambarri
+9|FW|ARG|Sebastián Driussi
+10|FW|ARG|Ángel Correa
+13|DF|ARG|Lautaro Rivero
+19|FW|COL|Rafael Santos Borré
+20|DF|URU|Giovanni González
+21|DF|ARG|Marcos Acuña
+23|MF|ARG|Thiago Almada
+24|MF|ARG|Juan Cruz Meza
+25|FW|ARG|Lautaro Pereyra
+26|MF|ARG|Tomás Galván
+28|DF|ARG|Lucas Martínez Quarta
+29|DF|ARG|Gonzalo Montiel
+30|DF|ARG|Nicolás Otamendi
+31|DF|ARG|Facundo González
+32|FW|ARG|Agustín Ruberto
+33|GK|ARG|Ezequiel Centurión
+41|GK|ARG|Santiago Beltrán
+44|MF|ARG|Lucas Silva
+50|MF|ARG|Tobías Andrada
+57|GK|ARG|Jeremías Martinet
+
+Rosario Central
+1|GK|ARG|Jorge Broun
+2|DF|ARG|Carlos Quintana
+3|DF|PAR|Agustín Sández
+4|DF|ARG|Ulises Ciccioli
+5|MF|ARG|Franco Ibarra
+6|DF|ARG|Juan Cruz Komar
+8|MF|COL|Jáminton Campaz
+9|FW|ARG|Alejo Véliz
+10|MF|ARG|Santiago Segovia
+11|FW|ARG|Ángel Di María
+13|DF|ARG|Gastón Ávila
+15|DF|URU|Facundo Mallo
+16|DF|PAR|Enzo Giménez
+18|MF|ARG|Julián Fernández
+20|MF|CHI|Vicente Pizarro
+22|FW|ARG|Enzo Copetti
+23|GK|ARG|Conan Ledesma
+24|DF|ARG|Juan Giménez
+26|MF|ARG|Giovanni Cantizano
+27|FW|ARG|Gaspar Duarte
+28|MF|ARG|Pol Fernández
+29|FW|ARG|Marco Ruben
+31|MF|ARG|Federico Navarro
+32|DF|ARG|Emanuel Coronel
+33|DF|ARG|Alexis Soto
+
+San Lorenzo
+1|GK|ARG|Mateo Clemente
+3|DF|ARG|Teo Rodríguez Pagano
+4|DF|COL|Jhohan Romaña
+5|MF|ARG|Ignacio Perruzzi
+6|DF|URU|Mathías De Ritis
+7|FW|ARG|Ezequiel Cerutti
+8|MF|ARG|Manuel Insaurralde
+9|FW|ARG|Alexis Cuello
+10|MF|ARG|Facundo Gulli
+11|FW|ARG|Matías Reali
+13|MF|ARG|Juan Rattalino
+14|FW|ARG|Agustín Ladstatter
+15|MF|ARG|Mauricio Cardillo
+16|DF|URU|Guzmán Corujo
+18|FW|COL|Diego Herazo
+19|FW|ARG|Luciano Vietto
+20|GK|ARG|Facundo Altamirano
+22|FW|ARG|Branco Salinardi
+23|DF|ARG|Gastón Hernández
+24|MF|ARG|Nicolás Tripichio
+25|GK|ARG|José Devecchi
+28|MF|ARG|Nahuel Barrios
+30|DF|ARG|Nahuel Arias
+
+Talleres
+1|GK|ARG|Santino Barbi
+2|DF|ARG|Timoteo Chamorro
+3|DF|PAR|Alexandro Maidana
+4|DF|CHI|Matías Catalán
+5|MF|ARG|Matías Galarza
+7|FW|COL|Diego Valoyes
+10|MF|ARG|Giovanni Baroni
+11|FW|ARG|Valentín Depietri
+13|DF|ARG|Valentín Fascendini
+17|FW|URU|Agustín Álvarez
+19|MF|ARG|Franco Cristaldo
+20|DF|ARG|Augusto Schott
+21|MF|ARG|Matías Gómez
+23|DF|ARG|Gabriel Báez
+24|FW|ARG|Ignacio Alastra
+26|MF|ARG|Mateo Cáceres
+32|GK|ARG|Ezequiel Unsain
+36|FW|ARG|Emiliano Chiavassa
+37|FW|BRA|Rick
+44|DF|ARG|Santiago Fernández
+49|FW|ARG|Valentín Dávila
+77|FW|PAR|Ronaldo Martínez
+
+Tigre
+2|DF|ARG|Joaquín Laso
+3|DF|ARG|Nahuel Banegas
+4|DF|ARG|Valentín Moreno
+5|MF|ARG|Bruno Leyes
+7|MF|ARG|Simón Rivero
+8|DF|ARG|Martín Garay
+10|MF|ARG|Jabes Saralegui
+11|MF|ARG|Tiago Serrago
+12|GK|ARG|Felipe Zenobio
+15|DF|ARG|Ángelo Marchese
+16|MF|ARG|Nicolás Dubersarsky
+17|DF|CHI|Guillermo Soto
+18|FW|ARG|Manuel Fernández
+19|FW|PAR|Alfio Oviedo
+20|DF|ARG|Alan Barrionuevo
+21|MF|ARG|Sebastián Medina
+22|FW|ARG|Santiago López
+23|DF|ARG|Gonzalo Requena
+24|DF|ARG|Federico Álvarez
+25|MF|ARG|Ian Subiabre
+26|GK|ARG|Lautaro Morales
+28|MF|ARG|Gonzalo Martínez
+29|FW|ARG|Ignacio Russo
+
+Newell's Old Boys
+2|DF|ARG|Ian Glavinovich
+3|DF|ARG|Martín Luciano
+4|DF|ARG|Alejo Montero
+5|MF|ARG|Luca Regiardo
+6|DF|ARG|Martín Ortega
+8|MF|ARG|David Sotelo
+9|FW|URU|Matías Cóccaro
+10|MF|ARG|Valentino Acuña
+15|MF|USA|Alan Soñora
+17|DF|ARG|Lautaro Giannetti
+18|FW|ARG|Mateo García
+19|MF|ARG|Jerónimo Gómez Mattar
+20|MF|ARG|Facundo Guch
+21|GK|CHI|Gabriel Arias
+22|DF|ARG|Oscar Salomón
+24|DF|ARG|Franco Escobar
+25|DF|ARG|Bruno Cabrera
+26|MF|ARG|Rodrigo Herrera
+29|MF|ARG|Marcelo Esponda
+30|GK|ARG|Josué Reinatti
+34|DF|ARG|Valentino Torrente
+36|FW|ARG|Francisco Scarpeccio
+39|FW|ARG|Thomas Rios
+
+Sarmiento
+1|GK|ECU|Javier Burrai
+2|DF|ARG|Juan Manuel Insaurralde
+3|DF|ARG|Lucas Suárez
+4|DF|ARG|Juan Manuel Cabrera
+5|MF|ARG|Manuel García
+6|DF|ARG|Gastón Arturia
+7|FW|ARG|Pablo Magnín
+8|MF|ARG|Santiago Salle
+9|FW|ARG|Diego Churín
+10|FW|COL|Jhon Rentería
+11|MF|ARG|Jonathan Gómez
+12|GK|ARG|Thyago Ayala
+13|FW|URU|Joaquín Ardáiz
+14|MF|ARG|Mauricio Martínez
+15|MF|ARG|Cristian Zabala
+16|FW|PAR|Ulises Delgado
+17|DF|ARG|Jeremías Vallejos
+18|MF|PAR|Osmar Giménez
+19|FW|ARG|Julián Contrera
+22|FW|ARG|Gastón González
+25|MF|ARG|Carlos Villalba
+26|FW|ARG|Yair Arismendi
+27|FW|PAR|Junior Marabel
+29|DF|ARG|Thiago Santamaría
+30|MF|ARG|Manuel Mónaco
+
+Vélez Sarsfield
+1|GK|ARG|Tomás Marchiori
+2|DF|ARG|Emanuel Mammana
+3|DF|ARG|Elías Gómez
+4|DF|ARG|Joaquín García
+5|MF|CHI|Claudio Baeza
+6|DF|ARG|Aarón Quirós
+7|FW|ARG|Imanol Machuca
+8|MF|ARG|Lucas Robertone
+9|FW|ARG|Braian Romero
+10|MF|CHI|Diego Valdés
+11|MF|ARG|Matías Pellegrini
+14|FW|URU|Rodrigo Piñeiro
+15|FW|ARG|Dilan Godoy
+16|DF|ARG|Lisandro Magallán
+17|FW|ARG|Álex Verón
+18|DF|ARG|Simón Escobar
+19|DF|PAR|Leo Cristaldo
+21|DF|ARG|Jano Gordon
+22|MF|ARG|Manuel Lanzini
+23|FW|ARG|Florián Monzón
+29|MF|ARG|Rodrigo Aliendro
+32|DF|ARG|Thiago Silvero
+34|GK|ARG|Álvaro Busso
+35|FW|ARG|Matías Arias
+
+Unión
+2|DF|URU|Maizon Rodríguez
+3|DF|ARG|Claudio Corvalán
+4|DF|URU|Emiliano Álvarez
+5|MF|ARG|Lucas Menossi
+7|FW|ARG|Franco Fragapane
+8|MF|ARG|Nicolás Palavecino
+9|FW|ARG|Agustín Colazo
+11|DF|ARG|Mateo Del Blanco
+12|DF|ARG|Bruno Pittón
+19|FW|ARG|Marcelo Estigarribia
+20|MF|ARG|Julián Palacios
+21|GK|ARG|Matías Mansilla
+22|MF|ARG|Brahian Cuello
+23|MF|ARG|Augusto Solari
+24|MF|ARG|Rafael Profini
+25|FW|ARG|Cristian Tarragona
+26|DF|ARG|Juan Pablo Ludueña
+27|MF|ARG|Enzo Roldán
+28|GK|ARG|Federico Gomes Gerth
+29|FW|ARG|Diego Díaz
+30|MF|ARG|Mauro Pittón
+31|FW|ARG|Misael Aguirre
+32|DF|ARG|Nicolás Paz
+35|DF|ARG|Lautaro Vargas
+

@@ -1,0 +1,247 @@
+liga	real	id	nome	apelido	cor1	cor2	padrao	forca	fClube	estadio
+ENG1	Arsenal	EN-ARS	Arsenau	Canhoneiros	#EF0107	#FFFFFF	centro	86	1.35	Emirates Arena
+ENG1	Aston Villa	EN-AVL	Aston Vila	Villans	#670E36	#95BFE5	centro	79	1.1	Vila Parque
+ENG1	Bournemouth	EN-BOU	Bornemute	Cerejas	#DA291C	#000000	listrasV	74	0.85	Corte do Dean
+ENG1	Brentford	EN-BRE	Brentiforde	Abelhas	#E30613	#FFFFFF	listrasV	74	0.85	Arena Comunitária
+ENG1	Brighton & Hove Albion	EN-BHA	Braiton	Gaivotas	#0057B8	#FFFFFF	listrasV	76	0.95	Estádio de Falmer
+ENG1	Chelsea	EN-CHE	Chelsi	Blues	#034694	#FFFFFF	lisa	81	1.35	Stamforde Bridge
+ENG1	Coventry City	EN-COV	Coventri	Celestes	#6CACE4	#FFFFFF	lisa	71	0.7	Arena de Coventri
+ENG1	Crystal Palace	EN-CRY	Palácio de Cristal	Águias	#1B458F	#C4122E	listrasV	75	0.9	Parque Selhurste
+ENG1	Everton	EN-EVE	Evertão	Toffees	#003399	#FFFFFF	lisa	74	0.95	Doca de Bramley
+ENG1	Fulham	EN-FUL	Fulão	Cottagers	#FFFFFF	#000000	lisa	74	0.85	Cabana Craven
+ENG1	Hull City	EN-HUL	Hull Tigre	Tigres	#F5A12D	#000000	listrasV	69	0.6	Estádio do Rio Hull
+ENG1	Ipswich Town	EN-IPS	Ipisuiche	Tratores	#0044A9	#FFFFFF	lisa	70	0.65	Estrada Portmane
+ENG1	Leeds United	EN-LEE	Lids Unido	Pavões	#FFFFFF	#1D428A	lisa	73	0.85	Estrada Ellande
+ENG1	Liverpool	EN-LIV	Liverpul	Reds	#C8102E	#F6EB61	lisa	85	1.4	Anfilde
+ENG1	Manchester City	EN-MCI	Manchester Celeste	Cidadãos	#6CABDD	#FFFFFF	lisa	85	1.5	Estádio da Cidade
+ENG1	Manchester United	EN-MUN	Manchester Vermelho	Diabos Vermelhos	#DA291C	#FFFFFF	lisa	80	1.4	Old Traforte
+ENG1	Newcastle United	EN-NEW	Newcastel	Urracas	#000000	#FFFFFF	listrasV	80	1.25	Parque São Jaime
+ENG1	Nottingham Forest	EN-NFO	Notingã Floresta	Floresta	#DD0000	#FFFFFF	lisa	76	0.95	Campo da Cidade
+ENG1	Sunderland	EN-SUN	Sanderlande	Gatos Pretos	#EB172B	#FFFFFF	listrasV	71	0.75	Estádio da Luzinha Inglesa
+ENG1	Tottenham Hotspur	EN-TOT	Tottenhão	Esporas	#FFFFFF	#132257	lisa	79	1.3	Arena do Norte
+ENG2	Birmingham City	EN-BIR	Birmingã	Azuis	#0000FF	#FFFFFF	lisa	69	0.7	Santo André
+ENG2	Blackburn Rovers	EN-BLB	Blackburno	Riversiders	#009EE0	#FFFFFF	faixaH	66	0.55	Parque Ewude
+ENG2	Bolton Wanderers	EN-BOL	Bolton Andarilhos	Trotters	#FFFFFF	#263C7E	lisa	64	0.45	Estádio Comunitário de Bolton
+ENG2	Bristol City	EN-BRC	Bristol Robin	Robins	#E21A23	#FFFFFF	lisa	67	0.55	Portão Ashton
+ENG2	Burnley	EN-BUR	Burnlei	Clarets	#6C1D45	#99D6EA	centro	70	0.7	Charneca Turfe
+ENG2	Cardiff City	EN-CAR	Cardife	Bluebirds	#0070B5	#FFFFFF	lisa	66	0.55	Estádio de Cardife
+ENG2	Charlton Athletic	EN-CHA	Charltão	Addicks	#D4021D	#FFFFFF	lisa	64	0.45	O Vale
+ENG2	Derby County	EN-DER	Dérbi Condado	Carneiros	#FFFFFF	#000000	lisa	65	0.5	Parque do Orgulho
+ENG2	Lincoln City	EN-LIN	Lincolne	Imps	#D3171E	#FFFFFF	listrasV	62	0.4	Banco Sincil
+ENG2	Middlesbrough	EN-MID	Midelsbro	Boro	#E11B22	#FFFFFF	lisa	68	0.65	Estádio da Ribeira
+ENG2	Millwall	EN-MIL	Moinho Wall	Leões	#001D5E	#FFFFFF	lisa	66	0.5	A Toca
+ENG2	Norwich City	EN-NOR	Noritche	Canários	#FFF200	#00A650	lisa	67	0.6	Estrada Carrow
+ENG2	Portsmouth	EN-POR	Portismute	Pompey	#001489	#FFFFFF	lisa	65	0.5	Parque Fratton
+ENG2	Preston North End	EN-PNE	Preston Norte	Lilywhites	#FFFFFF	#001F5B	lisa	65	0.5	Vale Profundo
+ENG2	Queens Park Rangers	EN-QPR	Rainhas Park	Hoops	#1D5BA4	#FFFFFF	listrasH	65	0.5	Estrada Loftus
+ENG2	Sheffield United	EN-SHU	Sheffielde Unido	Blades	#EE2737	#FFFFFF	listrasV	68	0.65	Alameda Bramall
+ENG2	Southampton	EN-SOU	Sauthampton	Santos	#D71920	#FFFFFF	listrasV	69	0.7	Santa Maria
+ENG2	Stoke City	EN-STK	Estoque	Oleiros	#E03A3E	#FFFFFF	listrasV	66	0.55	Estádio da Aposta
+ENG2	Swansea City	EN-SWA	Suonsi	Cisnes	#FFFFFF	#000000	lisa	65	0.5	Estádio da Liberdade Galesa
+ENG2	Watford	EN-WAT	Uotforde	Vespas	#FBEE23	#ED2127	lisa	66	0.55	Estrada do Vicariato
+ENG2	West Bromwich Albion	EN-WBA	West Bromiche	Baggies	#122F67	#FFFFFF	listrasV	67	0.6	Os Espinheiros
+ENG2	West Ham United	EN-WHU	West Ram	Martelos	#7A263A	#1BB1E7	lisa	72	0.95	Estádio de Londres
+ENG2	Wolverhampton Wanderers	EN-WOL	Lobos de Wolverrampton	Lobos	#FDB913	#231F20	lisa	71	0.85	Molinó
+ENG2	Wrexham	EN-WRE	Récsam	Dragões Vermelhos	#D71920	#FFFFFF	lisa	66	0.65	Hipódromo Galês
+ESP1	Alavés	ES-ALA	Alavês	Babazorros	#0761AF	#FFFFFF	listrasV	72	0.65	Mendizorrota
+ESP1	Athletic Bilbao	ES-ATH	Atlético Bilbau	Leões	#EE2523	#FFFFFF	listrasV	79	0.95	San Mamede
+ESP1	Atlético Madrid	ES-ATM	Atlético Madrilenho	Colchoneros	#CB3524	#FFFFFF	listrasV	82	1.3	Metropolitano
+ESP1	Barcelona	ES-BAR	Barcelova	Blaugrana	#A50044	#004D98	listrasV	86	1.45	Camp Novo
+ESP1	Celta Vigo	ES-CEL	Celta de Vigu	Celestes	#8AC3EE	#FFFFFF	lisa	75	0.75	Balaídez
+ESP1	Deportivo A Coruña	ES-DEP	Deportivo Corunha	Superdepor	#0060A9	#FFFFFF	listrasV	72	0.65	Riazora
+ESP1	Elche	ES-ELC	Elxe	Franjiverdes	#FFFFFF	#05642C	faixaH	71	0.6	Martínez Valério
+ESP1	Espanyol	ES-ESP	Espanhol	Periquitos	#007FC8	#FFFFFF	listrasV	72	0.7	Estádio de Cornelhá
+ESP1	Getafe	ES-GET	Getafê	Azulones	#005999	#FFFFFF	lisa	72	0.65	Coliseu Sul
+ESP1	Levante	ES-LEV	Levantino	Granotas	#B4053F	#004F9F	listrasV	70	0.6	Cidade de Valência
+ESP1	Málaga	ES-MAL	Málega	Boquerones	#0080C8	#FFFFFF	listrasV	70	0.6	La Rosalinda
+ESP1	Osasuna	ES-OSA	Osasunha	Rojillos	#D91A21	#0A346F	lisa	73	0.65	El Sadarzinho
+ESP1	Racing Santander	ES-RAC	Racing Santanderino	Verdiblancos	#FFFFFF	#00843D	lisa	70	0.55	El Sardineiro
+ESP1	Rayo Vallecano	ES-RAY	Raio Vallecano	Franjirrojos	#FFFFFF	#E53027	faixa	73	0.6	Vallecas de Bairro
+ESP1	Real Betis	ES-BET	Bétis Real	Verdiblancos	#00954C	#FFFFFF	listrasV	77	0.9	La Cartuxa
+ESP1	Real Madrid	ES-RMA	Real Madrigal	Merengue	#FFFFFF	#C9A14A	lisa	86	1.5	Estádio Bernabé
+ESP1	Real Sociedad	ES-RSO	Real Sociedade	Txuri-urdin	#0067B1	#FFFFFF	listrasV	76	0.85	Anoetinha
+ESP1	Sevilla	ES-SEV	Sevilha Andaluz	Nervionenses	#FFFFFF	#D20A11	lisa	75	0.9	Sánchez Pizarrán
+ESP1	Valencia	ES-VAL	Valência Morcego	Che	#FFFFFF	#000000	lisa	75	0.9	Mestalha
+ESP1	Villarreal	ES-VIL	Villareal Amarelo	Submarino	#FFE667	#005187	lisa	78	0.95	Estádio da Louça
+ESP2	Albacete	ES-ALB	Albacetê	Queso Mecánico	#FFFFFF	#C8102E	lisa	64	0.4	Carlos Belmontão
+ESP2	Almería	ES-ALM	Almeria	Indálicos	#EE1119	#FFFFFF	listrasV	67	0.55	Estádio Mediterrâneo
+ESP2	Andorra	ES-AND	Andorra Pirenaica	Tricolores	#0037A5	#FEDF00	faixaH	63	0.5	Novo Estádio Encamp
+ESP2	Burgos	ES-BUR	Burgôs	Blanquinegros	#FFFFFF	#000000	lisa	63	0.4	El Plantinho
+ESP2	Cádiz	ES-CAD	Cádix	Submarino Amarelo	#FFE500	#0045A5	lisa	65	0.5	Nova Mirandilha
+ESP2	Castellón	ES-CAS	Castelhão	Orelluts	#000000	#FFFFFF	listrasV	63	0.4	Castália
+ESP2	Celta Fortuna	ES-CEB	Celta Fortuna	Celestinhos	#8AC3EE	#FFFFFF	lisa	60	0.3	Balaídez B
+ESP2	Ceuta	ES-CEU	Ceuta Africana	Caballas	#FFFFFF	#000000	lisa	61	0.35	Alfonso Muruve
+ESP2	Córdoba	ES-COR	Córdova	Califas	#FFFFFF	#006B3F	listrasV	63	0.45	Novo Arcanjo
+ESP2	Eibar	ES-EIB	Eibarra	Armeiros	#003DA5	#A50044	listrasV	64	0.45	Ipuruá
+ESP2	Eldense	ES-ELD	Eldense Azul	Deportivistas	#0055A4	#E30613	lisa	60	0.3	Pepico Amado
+ESP2	Girona	ES-GIR	Gerona	Blanquivermells	#E30613	#FFFFFF	listrasV	68	0.6	Montilívio
+ESP2	Granada	ES-GRA	Granadino	Nazaríes	#E30613	#FFFFFF	listrasH	65	0.5	Los Carmenes
+ESP2	Las Palmas	ES-LPA	Las Palmeiras	Amarillos	#FFE400	#0057A8	lisa	66	0.55	Grã Canária
+ESP2	Leganés	ES-LEG	Leganês	Pepineros	#FFFFFF	#0055A4	listrasV	65	0.5	Butarquinho
+ESP2	Mallorca	ES-MLL	Malhorca	Bermellones	#E20613	#000000	lisa	68	0.6	Son Moixe
+ESP2	Oviedo	ES-OVI	Ovieto	Carbayones	#0066B3	#FFFFFF	lisa	65	0.5	Carlos Tartierre
+ESP2	Real Sociedad B	ES-RSB	Real Sociedade B	Sanse	#0067B1	#FFFFFF	listrasV	60	0.3	Zubietinha
+ESP2	Sabadell	ES-SAB	Sabadelo	Arlequinados	#0055A4	#FFFFFF	faixa	61	0.35	Nova Creu Alta
+ESP2	Sporting Gijón	ES-SPG	Sporting Gijonês	Rojiblancos	#D2001F	#FFFFFF	listrasV	65	0.5	El Molinão
+ESP2	Tenerife	ES-TEN	Tenerifenho	Chicharreros	#FFFFFF	#0055A4	lisa	63	0.45	Heliodoro Rodrigues
+ESP2	Valladolid	ES-VLL	Valhadolide	Pucela	#5B2A86	#FFFFFF	listrasV	66	0.55	José Zorrilha
+ITA1	Atalanta	IT-ATA	Atalanta Bergamasca	Deusa	#1E71B8	#000000	listrasV	79	0.95	Arena de Bérgamo
+ITA1	Bologna	IT-BOL	Bolonha	Rossoblù	#A21C26	#1A2F48	listrasV	76	0.8	Renato Dall'Arra
+ITA1	Cagliari	IT-CAG	Cálhari	Isolani	#A2001D	#002350	faixa	70	0.55	Domus Sarda
+ITA1	Como	IT-COM	Como Lariano	Lariani	#0050A0	#FFFFFF	lisa	77	1.1	Sinigalha
+ITA1	Fiorentina	IT-FIO	Fiorentina Viola	Viola	#482E92	#FFFFFF	lisa	75	0.85	Artêmio Franco
+ITA1	Frosinone	IT-FRO	Frosinona	Canarini	#FFE200	#0055A4	lisa	68	0.45	Benito Estirpe
+ITA1	Genoa	IT-GEN	Gênova Grifone	Grifone	#A2001D	#002350	faixaH	71	0.6	Luigi Ferrari
+ITA1	Inter	IT-INT	Internazionale Milanesa	Nerazzurri	#0068A8	#000000	listrasV	83	1.3	San Ciro
+ITA1	Juventus	IT-JUV	Juventudo	Velha Senhora	#000000	#FFFFFF	listrasV	81	1.3	Estádio de Turim
+ITA1	Lazio	IT-LAZ	Lazio Celeste	Biancocelesti	#87D8F7	#FFFFFF	lisa	75	0.85	Olímpico de Roma
+ITA1	Lecce	IT-LEC	Lece	Giallorossi	#FFE200	#E30613	listrasV	69	0.45	Via do Mar
+ITA1	Milan	IT-MIL	Milão Rossonero	Diavolo	#FB090B	#000000	listrasV	80	1.25	San Ciro
+ITA1	Monza	IT-MON	Monza Brianzola	Brianzoli	#E30613	#FFFFFF	faixaH	69	0.55	Briantêo
+ITA1	Napoli	IT-NAP	Napole	Partenopei	#12A0D7	#FFFFFF	lisa	81	1.15	Estádio Diego
+ITA1	Parma	IT-PAR	Parmesão	Crociati	#FFFFFF	#FFD200	centro	70	0.6	Ênio Tardini
+ITA1	Roma	IT-ROM	Roma Giallorossa	Lobos	#8E1F2F	#F0BC42	lisa	78	1.1	Olímpico de Roma
+ITA1	Sassuolo	IT-SAS	Sassuolo Neroverde	Neroverdi	#00A752	#000000	listrasV	70	0.6	Estádio da Cerâmica
+ITA1	Torino	IT-TOR	Turim Grená	Granata	#8A1E03	#FFFFFF	lisa	72	0.7	Olímpico Grande Turim
+ITA1	Udinese	IT-UDI	Udinense	Friulani	#000000	#FFFFFF	listrasV	71	0.6	Friúli
+ITA1	Venezia	IT-VEN	Veneza Lagunar	Lagunari	#000000	#F6851F	faixaH	68	0.5	Pier Luigi Pensso
+GER1	Augsburg	DE-AUG	Augsburgo	Fuggerstädter	#BA3733	#FFFFFF	lisa	71	0.65	Arena WW
+GER1	Union Berlin	DE-FCU	União Berlim	Eisern	#EB1923	#FFFFFF	lisa	72	0.65	Velha Casa do Guarda
+GER1	Werder Bremen	DE-SVW	Verder Brema	Werderaner	#1D9053	#FFFFFF	centro	72	0.7	Estádio do Weser
+GER1	Borussia Dortmund	DE-BVB	Borússia Dortmundo	Aurinegros	#FDE100	#000000	lisa	81	1.25	Muralha Amarela
+GER1	Elversberg	DE-ELV	Elversbergue	Elv	#000000	#FFFFFF	lisa	67	0.4	Estádio da Floresta Imperial
+GER1	Eintracht Frankfurt	DE-SGE	Frankfurt Águia	Águias	#000000	#E1000F	lisa	77	0.95	Waldestádio
+GER1	Freiburg	DE-SCF	Friburgo	Breisgau	#000000	#E2001A	lisa	74	0.75	Parque Europa
+GER1	Hamburger SV	DE-HSV	Hamburguês	Dinossauros	#FFFFFF	#0A3F86	lisa	71	0.75	Estádio do Parque Popular
+GER1	Hoffenheim	DE-TSG	Hoffenhaim	Kraichgauer	#1C63B7	#FFFFFF	lisa	74	0.8	Arena Reno-Neckar
+GER1	Köln	DE-KOE	Colônia Bode	Bodes	#FFFFFF	#ED1C24	lisa	71	0.7	Estádio Energia do Reno
+GER1	RB Leipzig	DE-RBL	Leipzig Touro Vermelho	Touros	#FFFFFF	#DD0741	lisa	79	1.1	Arena do Touro
+GER1	Bayer Leverkusen	DE-B04	Bayer Leverkusena	Farmacêuticos	#E32221	#000000	lisa	79	1.05	FarmArena
+GER1	Mainz 05	DE-M05	Mogúncia 05	Carnavalescos	#C3141E	#FFFFFF	lisa	72	0.65	Arena Mewe
+GER1	Borussia Mönchengladbach	DE-BMG	Gladebaque	Potros	#FFFFFF	#000000	lisa	73	0.75	Parque Borússia
+GER1	Bayern	DE-FCB	Bayern Munike	Bávaros	#DC052D	#FFFFFF	lisa	86	1.5	Allianza Arena
+GER1	Paderborn	DE-SCP	Paderborna	Paderbornenses	#005EA8	#000000	lisa	67	0.4	Arena Casa Deluxe
+GER1	Schalke 04	DE-S04	Schalque 04	Azuis Reais	#004D9D	#FFFFFF	lisa	70	0.75	Arena Veltinha
+GER1	VfB Stuttgart	DE-VFB	Estugarda	Suábios	#FFFFFF	#E32219	faixaH	77	0.9	Estádio do Neckar
+FRA1	Angers	FR-ANG	Angê	Scoïstes	#000000	#FFFFFF	listrasV	67	0.45	Raymond Copa
+FRA1	Auxerre	FR-AUX	Ausserre	Ajistes	#FFFFFF	#0055A4	lisa	67	0.45	Abade Deschamps
+FRA1	Brest	FR-BRE	Bréste	Piratas	#E30613	#FFFFFF	lisa	70	0.55	Francis-Le Blé
+FRA1	Le Havre	FR-HAV	Le Avre	Ciel et Marine	#77C0E6	#002B5C	faixaH	66	0.45	Estádio Oceano
+FRA1	Le Mans	FR-LEM	Le Mãs	Manceaux	#E30613	#FFE400	listrasV	64	0.4	Marie-Marvinga
+FRA1	Lens	FR-LEN	Lense	Sang et Or	#FFE600	#E30613	listrasV	75	0.7	Bollaert
+FRA1	Lille	FR-LIL	Lille Dogue	Dogues	#E01E13	#20325F	lisa	76	0.85	Pierre-Moreau
+FRA1	Lorient	FR-LOR	Loriã	Merlus	#F58220	#000000	lisa	67	0.45	Le Mustoir
+FRA1	Lyon	FR-LYO	Lyon Leonês	Gones	#FFFFFF	#DA001A	faixaH	77	0.95	Parque Leonês
+FRA1	Marseille	FR-OM	Olympique Marselhês	Foceenses	#FFFFFF	#2FAEE0	lisa	78	1.0	Velódromo
+FRA1	Monaco	FR-ASM	Mônaco Principesco	Monegascos	#E31B23	#FFFFFF	faixa	77	1.1	Estádio Luís Segundo
+FRA1	Nice	FR-NIC	Nissa	Aiglons	#E30613	#000000	listrasV	73	0.8	Arena Riviera
+FRA1	Paris FC	FR-PFC	Paris Futebol Clube	Parisienses do Sul	#1B2A5B	#FFFFFF	lisa	72	0.85	Jean-Bouan
+FRA1	Paris Saint-Germain	FR-PSG	Paris São Germano	Parisienses	#004170	#DA291C	centro	85	1.5	Parque dos Príncipes
+FRA1	Rennes	FR-REN	Renes	Rouge et Noir	#E30613	#000000	faixaH	74	0.75	Parque Roazone
+FRA1	Strasbourg	FR-STR	Estrasburgo	Racingmen	#009FE3	#FFFFFF	lisa	74	0.85	La Meinaú
+FRA1	Toulouse	FR-TOU	Tolosa	Violets	#5B2A86	#FFFFFF	lisa	70	0.55	Estádio de Tolosa
+FRA1	Troyes	FR-TRO	Troia Francesa	Troyens	#003D7C	#FFFFFF	lisa	65	0.4	Estádio do Aube
+POR1	Académico de Viseu	PT-ACV	Académico Viseense	Viriatos	#000000	#FFFFFF	lisa	63	0.3	Fontelinho
+POR1	Alverca	PT-ALV	Alvercá	Ribatejanos	#E30613	#FFFFFF	lisa	64	0.4	Complexo de Alvercá
+POR1	Arouca	PT-ARO	Aroucá	Arouquenses	#FFE400	#0055A4	lisa	65	0.35	Municipal Aroucano
+POR1	Benfica	PT-SLB	Benfiga	Águias	#E83030	#FFFFFF	lisa	79	1.05	Estádio da Luzinha
+POR1	Braga	PT-SCB	Braga Guerreira	Arsenalistas	#E30613	#FFFFFF	lisa	73	0.7	Municipal da Pedreira
+POR1	Casa Pia	PT-CPI	Casa Pia Lisboeta	Gansos	#000000	#FFFFFF	lisa	64	0.35	Pina Manica
+POR1	Estoril	PT-EST	Estorilense	Canarinhos	#FFE400	#0055A4	listrasV	65	0.4	Coimbra da Mota
+POR1	Estrela da Amadora	PT-EAM	Estrela Amadorense	Tricolores	#E30613	#006B3F	faixaH	63	0.3	José Gomes Estrela
+POR1	Famalicão	PT-FAM	Famalicense	Famalicenses	#0055A4	#FFFFFF	lisa	67	0.45	Municipal Famalicense
+POR1	Gil Vicente	PT-GIL	Gil Vicentino	Galos	#E30613	#0055A4	lisa	66	0.4	Cidade de Barcelinhos
+POR1	Marítimo	PT-MAR	Marítimo Insular	Leões do Almirante	#006B3F	#E30613	listrasV	63	0.35	Estádio dos Barreirinhos
+POR1	Moreirense	PT-MOR	Moreirense Cónego	Cónegos	#006B3F	#FFFFFF	lisa	64	0.35	Comendador Joaquim
+POR1	Nacional	PT-NAC	Nacional Madeirense	Alvinegros	#000000	#FFFFFF	listrasV	63	0.35	Estádio da Choupana
+POR1	Porto	PT-FCP	Portu	Dragões	#00428C	#FFFFFF	listrasV	78	1.0	Estádio do Dragão
+POR1	Rio Ave	PT-RAV	Rio Avense	Vilacondenses	#006B3F	#FFFFFF	listrasV	64	0.4	Estádio dos Arquinhos
+POR1	Santa Clara	PT-SCL	Santa Clara Açoriana	Açorianos	#E30613	#FFFFFF	lisa	65	0.4	São Miguelzinho
+POR1	Sporting CP	PT-SCP	Sporting Lisboeta	Leões	#008057	#FFFFFF	listrasH	79	1.0	Alvaladinho
+POR1	Vitória de Guimarães	PT-VSC	Vitória Vimaranense	Conquistadores	#FFFFFF	#000000	lisa	68	0.5	Dom Afonso Henriques
+NED1	ADO Den Haag	NL-ADO	ADO Haia	Cegonhas	#FFE400	#00843D	lisa	64	0.4	Estádio da Haia
+NED1	Ajax	NL-AJA	Ájax Amsterdã	Filhos dos Deuses	#FFFFFF	#D2122E	centro	77	0.95	Arena Johan
+NED1	AZ	NL-AZ	AZ Alcmar	Cheeseheads	#DB0021	#FFFFFF	lisa	73	0.7	Estádio Afásio
+NED1	Cambuur	NL-CAM	Cambur	Leeuwarders	#FFE400	#0055A4	listrasV	63	0.35	Estádio da Gaiola
+NED1	Excelsior	NL-EXC	Excelsiór	Kralingers	#E30613	#000000	lisa	63	0.35	Woudestão
+NED1	Feyenoord	NL-FEY	Feyenorde	Roterdameses	#E30613	#FFFFFF	centro	76	0.9	De Kuipinha
+NED1	Fortuna Sittard	NL-FOR	Fortuna Sittarde	Fortunezen	#FFE400	#00843D	lisa	64	0.4	Estádio da Fortuna
+NED1	Go Ahead Eagles	NL-GAE	Vai Águias	Deventenaren	#E30613	#FFE400	faixaH	66	0.4	O Ninho da Águia
+NED1	Groningen	NL-GRO	Groninga	Trots van het Noorden	#FFFFFF	#00843D	lisa	65	0.45	Euroburgo
+NED1	Heerenveen	NL-HEE	Herenvém	Superfriezen	#0055A4	#FFFFFF	listrasV	66	0.45	Abe Lenstrão
+NED1	NEC	NL-NEC	NEC Nimega	Nijmegenaren	#E30613	#00843D	faixaH	67	0.45	Estádio do Goffert
+NED1	PEC Zwolle	NL-PEC	PEC Zuole	Blauwvingers	#0055A4	#FFFFFF	lisa	64	0.4	Parque Zuole
+NED1	PSV	NL-PSV	PSV Eindhovense	Camponeses	#ED1C24	#FFFFFF	listrasV	77	0.95	Arena da Lâmpada
+NED1	Sparta Rotterdam	NL-SPA	Esparta Roterdã	Kasteelheren	#E30613	#FFFFFF	listrasV	65	0.4	O Castelo
+NED1	Telstar	NL-TEL	Telestar	Witte Leeuwen	#FFFFFF	#0055A4	lisa	62	0.3	Estádio de Velsen
+NED1	Twente	NL-TWE	Tuente	Tukkers	#E30613	#FFFFFF	lisa	71	0.6	Veste de Grolsche
+NED1	Utrecht	NL-UTR	Utreque	Domstedelingen	#E30613	#FFFFFF	lisa	70	0.55	Galgenvarde
+NED1	Willem II	NL-WIL	Guilherme II	Tricolores	#E30613	#0055A4	listrasV	63	0.35	Estádio Rei Guilherme
+KSA1	Al-Ahli	SA-AHL	Al-Ahli Jidá	Os Reais	#00843D	#FFFFFF	lisa	79	1.5	Joia Brilhante
+KSA1	Al-Ettifaq	SA-ETT	Al-Ettifaque	Comandantes	#00843D	#C8102E	lisa	71	1.0	Estádio Príncipe Mohamed
+KSA1	Al-Fateh	SA-FAT	Al-Fateh	Conquistadores	#00843D	#1C3F94	lisa	68	0.85	Estádio Príncipe Abdullah
+KSA1	Al-Fayha	SA-FAY	Al-Fayha	Laranjas	#F08A24	#1C3F94	lisa	67	0.8	Cidade Esportiva de Majmaá
+KSA1	Al-Hazem	SA-HAZ	Al-Hazme	Tempestade	#F08A24	#000000	lisa	65	0.7	Estádio do Hazme
+KSA1	Al-Hilal	SA-HIL	Al-Hilaal	O Líder	#0047BB	#FFFFFF	lisa	81	1.5	Arena do Reino
+KSA1	Al-Ittihad	SA-ITT	Al-Ittihade	Tigres	#FCE300	#000000	listrasV	78	1.5	Cidade Esportiva Rei Abdullah
+KSA1	Al-Khaleej	SA-KHA	Al-Khaleej	Gaivotas	#00843D	#FCE300	listrasV	67	0.8	Estádio de Saihat
+KSA1	Al-Kholood	SA-KHO	Al-Kholood	Imortais	#5B2C83	#FFFFFF	lisa	65	0.75	Estádio de Al-Rass
+KSA1	Al-Nassr	SA-NAS	Al-Nasir	Cavaleiros de Najd	#FCE300	#1C3F94	lisa	78	1.5	Parque Al-Awwal
+KSA1	Al-Qadsiah	SA-QAD	Al-Qadisiya	Cavaleiros do Leste	#C8102E	#FCE300	lisa	77	1.35	Estádio de Khobar
+KSA1	Al-Riyadh	SA-RIY	Al-Riyadh	Escola	#1C3F94	#C8102E	lisa	65	0.75	Estádio Príncipe Turki
+KSA1	Al-Shabab	SA-SHA	Al-Shabaab	Leões Brancos	#FFFFFF	#000000	faixaH	72	1.1	Estádio Príncipe Khalid
+KSA1	Al-Taawoun	SA-TAA	Al-Taawon	Lâmpada	#FCE300	#1C3F94	lisa	69	0.95	Cidade Esportiva de Buraidá
+KSA1	Neom	SA-NEO	Neom do Futuro	Futuristas	#1A1A1A	#C9A14A	lisa	72	1.3	Cidade Esportiva de Tabuk
+KSA1	Abha	SA-ABH	Abha da Montanha	Montanheses	#00843D	#FFFFFF	lisa	66	0.8	Cidade Esportiva Príncipe Sultan
+KSA1	Al-Faisaly	SA-FAI	Al-Faisali	Âmbar	#F08A24	#000000	lisa	66	0.8	Estádio de Harmá
+KSA1	Al-Diriyah	SA-DIR	Al-Diriá	Herdeiros	#7A1F3D	#E3B341	lisa	70	1.2	Estádio de Diriá
+ARG1	Aldosivi	AR-ALD	Aldossivi	Tiburón	#FFE400	#006B3F	listrasV	64	0.35	José María Minela
+ARG1	Argentinos Juniors	AR-ARG	Argentinos Juniores	Bicho	#E30613	#FFFFFF	lisa	69	0.5	Estádio Dieguito
+ARG1	Atlético Tucumán	AR-TUC	Atlético Tucumano	Decano	#76B6E4	#FFFFFF	listrasV	66	0.45	Monumental José Ferro
+ARG1	Banfield	AR-BAN	Banfielde	Taladro	#00843D	#FFFFFF	listrasV	66	0.45	Florêncio Sola
+ARG1	Barracas Central	AR-BAR	Barracas Centrais	Guapo	#E30613	#FFFFFF	listrasV	65	0.4	Chiqui Tapinha
+ARG1	Belgrano	AR-BEL	Belgrão	Pirata	#76B6E4	#FFFFFF	lisa	68	0.5	Gigante de Alberdi
+ARG1	Boca Juniors	AR-BOC	Boca Juniores	Xeneize	#0033A0	#FFD700	faixaH	74	0.85	La Bombonheira
+ARG1	Central Córdoba	AR-CCO	Central Cordobês	Ferroviário	#000000	#FFFFFF	listrasV	64	0.35	Madre de Cidades
+ARG1	Defensa y Justicia	AR-DYJ	Defesa e Justiça	Halcón	#FFE400	#00843D	faixaH	67	0.45	Norberto Tomaguelo
+ARG1	Deportivo Riestra	AR-RIE	Deportivo Riestrinha	Malevo	#000000	#FFFFFF	lisa	64	0.35	Guillermo Lassa
+ARG1	Estudiantes	AR-EST	Estudantes da Prata	Pincha	#E30613	#FFFFFF	listrasV	70	0.55	Jorge Luis Hirsche
+ARG1	Estudiantes de Río Cuarto	AR-ERC	Estudantes do Rio Quarto	Celeste	#76B6E4	#FFFFFF	lisa	63	0.3	Antônio Candine
+ARG1	Gimnasia La Plata	AR-GLP	Ginástica da Prata	Lobo	#FFFFFF	#002B5C	faixaH	66	0.45	O Bosque
+ARG1	Gimnasia Mendoza	AR-GME	Ginástica Mendocina	Lobo Mendocino	#000000	#FFFFFF	listrasV	63	0.3	Víctor Legrotalha
+ARG1	Huracán	AR-HUR	Furacão Portenho	Globo	#FFFFFF	#E30613	lisa	68	0.5	Tomás Adolfo Ducó
+ARG1	Independiente	AR-IND	Independente	Rei de Copas	#E30613	#FFFFFF	lisa	71	0.65	Libertadores da América
+ARG1	Independiente Rivadavia	AR-IRV	Independente Rivadávia	Lepra Mendocina	#0055A4	#FFFFFF	lisa	66	0.4	Bautista Garganta
+ARG1	Instituto	AR-INS	Instituto Cordobês	La Gloria	#E30613	#FFFFFF	listrasV	65	0.4	Juan Domingo Peronzinho
+ARG1	Lanús	AR-LAN	Lanúsio	Granate	#7B1E3A	#FFFFFF	lisa	70	0.55	La Fortaleza
+ARG1	Newell's Old Boys	AR-NOB	Newells Velhos Garotos	Leprosos	#E30613	#000000	faixa	67	0.5	Marcelo Bielsinha
+ARG1	Platense	AR-PLA	Platense Calamar	Calamar	#FFFFFF	#5C3317	faixaH	66	0.4	Cidade de Vicente López
+ARG1	Racing	AR-RAC	Racing Avellaneda	Academia	#76B6E4	#FFFFFF	listrasV	72	0.75	El Cilindrinho
+ARG1	River Plate	AR-RIV	River Prata	Millonarios	#FFFFFF	#E30613	faixa	75	0.95	Monumental de Núñez
+ARG1	Rosario Central	AR-ROS	Rosário Central	Canalla	#0055A4	#FFE400	listrasV	70	0.6	Gigante do Arroio
+ARG1	San Lorenzo	AR-SLO	São Lourenço	Ciclón	#0033A0	#E30613	listrasV	68	0.5	Nuevo Gasômetro
+ARG1	Sarmiento	AR-SAR	Sarmentinho	Verde	#00843D	#FFFFFF	lisa	63	0.3	Eva Peronzinha
+ARG1	Talleres	AR-TAL	Talheres	La T	#002B5C	#FFFFFF	listrasV	69	0.55	Mario Alberto Kempinho
+ARG1	Tigre	AR-TIG	Tigre do Norte	Matador	#0055A4	#E30613	faixaH	66	0.45	José Delagiovana
+ARG1	Unión	AR-UNI	União Santafesina	Tatengue	#E30613	#FFFFFF	listrasV	66	0.4	Quinze de Abril
+ARG1	Vélez Sarsfield	AR-VEL	Vélez Sarsfielde	Fortín	#FFFFFF	#0055A4	centro	70	0.55	José Amalfitâni
+BRA2	América Mineiro	AME	Coelho Mineiro	Coelho	#006437	#000000	listrasH	65	0.65	Independencinha
+BRA2	Athletic	ATH	Esquadrão de São João	Esquadrão	#000000	#FFFFFF	listrasV	61	0.45	Arena del-Rei
+BRA2	Atlético Goianiense	ACG	Dragão Goiano	Dragão	#E2231A	#000000	listrasV	63	0.6	Antônio Acióli
+BRA2	Avaí	AVA	Leão da Ilha Catarinense	Leão	#00529F	#FFFFFF	listrasV	62	0.55	Ressaquinha
+BRA2	Botafogo-SP	BFC	Pantera de Ribeirão	Pantera	#C8102E	#FFFFFF	faixa	60	0.45	Santa Cruzinha
+BRA2	Ceará	CEA	Vovô Alvinegro	Vovô	#000000	#FFFFFF	listrasV	65	0.75	Castelão do Norte
+BRA2	CRB	CRB	Galo da Pajuçara	Galo	#C8102E	#FFFFFF	listrasH	61	0.5	Rei Pelezinho
+BRA2	Criciúma	CRI	Tigre do Carvão	Tigre	#FDD100	#000000	listrasV	62	0.55	Heriberto Hulso
+BRA2	Cuiabá	CUI	Dourado Pantaneiro	Dourado	#FDD100	#006437	lisa	63	0.6	Arena Pantanosa
+BRA2	Fortaleza	FOR	Leão do Pici	Tricolor do Pici	#1C3F94	#E2231A	faixaH	66	0.8	Arena do Pici
+BRA2	Goiás	GOI	Verdão Goiano	Esmeraldino	#006437	#FFFFFF	lisa	63	0.6	Serrinha Verde
+BRA2	Juventude	JUV	Papo Serrano	Papo	#006437	#FFFFFF	lisa	63	0.6	Alfredo Jaconinho
+BRA2	Londrina	LON	Tubarão do Café	Tubarão	#5DADE2	#FFFFFF	lisa	60	0.45	Estádio do Cafezinho
+BRA2	Náutico	NAU	Timbu Alvirrubro	Timbu	#C8102E	#FFFFFF	listrasV	61	0.5	Aflitinhos
+BRA2	Novorizontino	NOV	Tigre do Vale	Novorizontino	#FDD100	#000000	lisa	63	0.55	Jorjinho
+BRA2	Operário Ferroviário	OPE	Fantasma Ferroviário	Fantasma	#000000	#FFFFFF	lisa	61	0.5	Germano Krugo
+BRA2	Ponte Preta	PON	Ponte Pretinha	Macaca	#000000	#FFFFFF	listrasV	61	0.55	Moisés Lucarello
+BRA2	São Bernardo	SBE	Tigre do ABC	Bernô	#FDD100	#000000	lisa	59	0.4	Primeiro de Maio
+BRA2	Sport	SPT	Leão do Recife	Leão da Ilha	#000000	#C8102E	listrasH	65	0.75	Ilha do Recreio
+BRA2	Vila Nova	VNO	Tigrão Colorado	Tigrão	#C8102E	#FFFFFF	lisa	61	0.45	Onésio Brasileirinho

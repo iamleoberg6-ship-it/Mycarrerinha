@@ -2,9 +2,10 @@
 // e troca de agente. As fórmulas de interesse, valor e salário vêm de mercado.ts.
 import { RNG, clamp } from "./rng.js";
 import { AGENTES, CAMBIO, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
-import { novaTabela, registrar, tabelaTurnoReturno, type Clube, type Liga, type PacoteDados } from "./liga.js";
+import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
-import { mundo, infoClube, LIGA_INFO } from "./mundo.js";
+import { mundo, infoClube } from "./mundo.js";
+import { infoLiga } from "./ligas.js";
 import { alojamentosDoClube, imovelAtual, mudar, nomeImovel, IMOVEL } from "./casa.js";
 import { SEMANAS_PRE, SEMANAS_TEMPORADA, ANO_INICIAL, clubeCasa, ligaAtual, noticia, ovr, type Carreira, type Save } from "./jogo.js";
 
@@ -51,7 +52,7 @@ export interface InfoAgente { nome: string; quem: string; texto: string; requisi
 export const AGENTE_INFO: Record<TipoAgente, InfoAgente> = {
   pai: { nome: "Família", quem: "Seu pai cuida de tudo", texto: "Não cobra nada, mas não conhece ninguém fora do Brasil e negocia mal." },
   iniciante: { nome: "Agente iniciante", quem: "Rodrigo Prates", texto: "Cobra 5% do salário. Contatos só no Brasil, negociação razoável." },
-  experiente: { nome: "Agente experiente", quem: "Márcia Valente", texto: "Cobra 8%. Abre portas na Europa Média e no Golfo, consegue salários melhores.", requisito: { fama: 12, ovr: 64 } },
+  experiente: { nome: "Agente experiente", quem: "Márcia Valente", texto: "Cobra 8%. Abre portas na Argentina, em Portugal, na Holanda, nas segundas divisões da Inglaterra e da Espanha e no Golfo; consegue salários melhores.", requisito: { fama: 12, ovr: 64 } },
   top: { nome: "Superagente", quem: "Vítor Alencar", texto: "Cobra 10%. Fala com qualquer clube do mundo e arranca os melhores contratos.", requisito: { fama: 30, ovr: 72 } },
 };
 const HABILIDADE_AGENTE: Record<TipoAgente, number> = { pai: 0, iniciante: 0.1, experiente: 0.2, top: 0.3 };
@@ -119,7 +120,7 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   // 2. empréstimo: garoto com poucos minutos
   const minutos = c.stats.jogos + (c.semana < 6 ? c.historico.at(-1)?.jogos ?? 0 : 0);
   if (!m.emprestimo && j.idade <= 22 && papelNoClube(clube, s) === "reserva" && minutos < (c.semana < 6 ? 12 : 6) && !m.propostas.some((p) => p.tipo === "emprestimo") && rng.chance(0.45)) {
-    const destinos = w.ligas.filter((x) => x.nivel >= l.nivel && LIGA_INFO[x.id].regiao === LIGA_INFO[l.id].regiao || x.id === "BRA2").flatMap((x) => x.clubes)
+    const destinos = w.ligas.filter((x) => x.nivel >= l.nivel && infoLiga(x.id).regiao === infoLiga(l.id).regiao || x.id === "BRA2").flatMap((x) => x.clubes)
       .filter((x) => x.id !== c.clubeId && papelNoClube(x, s) === "titular" && x.forca <= clube.forca);
     if (destinos.length) {
       const d = rng.pick(destinos.sort((a, b) => b.forca - a.forca).slice(0, 5));
@@ -137,13 +138,13 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   for (const p of cand.slice(0, rng.chance(0.25) ? 2 : 1)) {
     const prop = paraSave(pacote, s, p);
     m.propostas.push(prop);
-    eventos.push(`Proposta nova: o ${p.clube.nome} (${LIGA_INFO[p.liga.id].curto}) quer você.`);
+    eventos.push(`Proposta nova: o ${p.clube.nome} (${infoLiga(p.liga.id).curto}) quer você.`);
     noticia(s, "clube", "Proposta na mesa", `O ${p.clube.nome} fez uma proposta por ${j.apelido}${prop.taxa ? `: € ${(prop.taxa / 1e6).toFixed(1)} mi ao ${clube.nome}` : ""}.`);
   }
 }
 
 /** O Golfo compra jogador pronto: a partir dos 24 anos, ou estrela. */
-const golfoQuer = (p: Proposta, s: Save) => p.liga.id !== "ARA1" || s.jogador.idade >= 24 || ovr(s.jogador) >= 76;
+const golfoQuer = (p: Proposta, s: Save) => p.liga.id !== "KSA1" || s.jogador.idade >= 24 || ovr(s.jogador) >= 76;
 
 function paraSave(pacote: PacoteDados, s: Save, p: Proposta): PropostaSave {
   const m = mercadoDe(s.carreira), livre = !p.taxa;
@@ -211,7 +212,7 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
     return { ok: true, msg: `Contrato renovado por ${p.anos} anos.` };
   }
   if (p.tipo === "emprestimo") {
-    m.emprestimo = { origem: c.clubeId, ligaOrigem: c.ligaId ?? "BRA1", ordemOrigem: c.ordem, ate: c.temporada };
+    m.emprestimo = { origem: c.clubeId, ligaOrigem: infoLiga(c.ligaId).id, ordemOrigem: c.ordem, ate: c.temporada };
     mudarDeClube(pacote, s, destino, "emprestimo", 0);
     m.propostas = m.propostas.filter((x) => x.tipo === "renovacao");
     return { ok: true, msg: `Emprestado ao ${destino.nome} até o fim da temporada.` };
@@ -221,7 +222,7 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
     if (p.travada && !forcar) return { ok: false, msg: `O ${origem.nome} não liberou. Você pode forçar a saída.` };
     if (!p.travada) {
       const importancia = (papelNoClube(origem, s) === "titular" ? 1.35 : 1.0) * (m.listaTransferencia ? 0.8 : 1) * (c.anosContrato >= 3 ? 1.1 : 1);
-      const vm = valorMercado(ovr(s.jogador), s.jogador.idade, c.anosContrato, w.liga[c.ligaId ?? "BRA1"].fLiga);
+      const vm = valorMercado(ovr(s.jogador), s.jogador.idade, c.anosContrato, w.liga[infoLiga(c.ligaId).id].fLiga);
       const prop = { taxa: p.taxa, orcamento: p.taxa * 1.4 } as Proposta;
       if (!clubeAceitaVenda(rngAcao(s, "venda", id), prop, vm, importancia)) {
         p.travada = true;
@@ -252,7 +253,7 @@ function receberLuvas(s: Save, luvas: number) {
 
 /** Troca de clube no meio da carreira: liga, tabela, técnico novo, moradia. */
 export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo: TipoProposta, taxa: number, ordemFixa?: string[]) {
-  const c = s.carreira, m = mercadoDe(c), w = mundo(pacote), de = c.clubeId, ligaDe = c.ligaId ?? "BRA1";
+  const c = s.carreira, m = mercadoDe(c), w = mundo(pacote), de = c.clubeId, ligaDe = infoLiga(c.ligaId).id;
   c.clubeId = destino.id; c.ligaId = destino.ligaId;
   if (destino.ligaId !== ligaDe) {
     const l = w.liga[destino.ligaId], rng = new RNG(`${s.semente}|tabela|${c.temporada}|${destino.ligaId}`);
@@ -267,7 +268,7 @@ export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo:
   const cc = clubeCasa(pacote, destino.id);
   s.casa.clube = cc;
   if (imovelAtual(s.casa).categoria === "alojamento") mudar(s.casa, alojamentosDoClube(cc)[0], "alugar", c.salario);
-  const ano = ANO_INICIAL + c.temporada, ligaNome = LIGA_INFO[destino.ligaId].curto;
+  const ano = ANO_INICIAL + c.temporada, ligaNome = infoLiga(destino.ligaId).curto;
   const titulo = tipo === "emprestimo" ? `Emprestado ao ${destino.nome}` : tipo === "livre" ? `${s.jogador.apelido} acerta com o ${destino.nome}` : `${s.jogador.apelido} é do ${destino.nome}`;
   noticia(s, "clube", titulo, `${tipo === "transferencia" ? `Negócio de € ${(taxa / 1e6).toFixed(1)} mi. ` : ""}${ligaNome}, ${ano}. ${tipo === "emprestimo" ? "Volta no fim da temporada." : `Contrato de ${c.anosContrato} anos, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`}${imovelAtual(s.casa).categoria === "alojamento" ? ` Mora em: ${nomeImovel(s.casa, IMOVEL[s.casa.imovel])}.` : ""}`);
 }
@@ -279,8 +280,8 @@ function embaralhar(rng: RNG, ids: string[]): string[] {
 }
 /** Tabela de uma liga nova com as rodadas que já aconteceram nesta temporada. */
 function tabelaAteAgora(rng: RNG, l: Liga, c: Carreira) {
-  const t = novaTabela(l), feitas = Math.max(0, Math.min(2 * (c.ordem.length - 1), c.semana - SEMANAS_PRE));
-  const rodadas = tabelaTurnoReturno(c.ordem.length);
+  const t = novaTabela(l), feitas = Math.max(0, Math.min(rodadasDaLiga(c.ordem.length).length, c.semana - SEMANAS_PRE));
+  const rodadas = rodadasDaLiga(c.ordem.length);
   const forca = (id: string) => l.clubes.find((x) => x.id === id)!.forca;
   for (let r = 0; r < feitas; r++) for (const [a, b] of rodadas[r]) {
     const casa = c.ordem[a], fora = c.ordem[b], [gc, gf] = simularPlacar(rng, forca(casa), forca(fora));
@@ -334,7 +335,7 @@ export function decidirAutomatico(pacote: PacoteDados, s: Save) {
     if (p.tipo === "renovacao") { if (!p.negociada) negociar(pacote, s, p.id); if (m.propostas.includes(p)) aceitar(pacote, s, p.id); continue; }
     if (p.tipo === "emprestimo") { aceitar(pacote, s, p.id); return; }
     const atual = w.clube[c.clubeId], novo = w.clube[p.clubeId], papelAtual = papelNoClube(atual, s);
-    const nivelAtual = w.liga[c.ligaId ?? "BRA1"].nivel, nivelNovo = w.liga[p.ligaId].nivel, idade = s.jogador.idade;
+    const nivelAtual = w.liga[infoLiga(c.ligaId).id].nivel, nivelNovo = w.liga[p.ligaId].nivel, idade = s.jogador.idade;
     const sobeDeLiga = nivelNovo < nivelAtual && p.papel !== "reserva";
     const melhora = sobeDeLiga || (p.papel === "titular" && papelAtual !== "titular" && nivelNovo <= nivelAtual + 1) || (novo.forca >= atual.forca + 3 && p.papel !== "reserva" && nivelNovo <= nivelAtual)
       || (idade >= 28 && p.salario >= c.salario * 2 && p.papel !== "reserva");

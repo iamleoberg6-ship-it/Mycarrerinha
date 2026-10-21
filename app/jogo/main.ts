@@ -9,9 +9,11 @@ import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
+  migrarSave,
 } from "../../src/jogo";
 import { SITUACAO } from "../../src/lances";
-import { infoClube, mundo, LIGA_INFO } from "../../src/mundo";
+import { infoClube, mundo } from "../../src/mundo";
+import { infoLiga } from "../../src/ligas";
 import { AGENTE_INFO, NOME_PAPEL, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, type PropostaSave } from "../../src/transferencias";
 import { AGENTES, type TipoAgente } from "../../src/mercado";
 import { svgFoto, APARENCIA_PADRAO, type Aparencia } from "../criacao/avatar";
@@ -30,6 +32,7 @@ const NOME_AT: Record<Atributo, string> = { VEL: "Velocidade", RES: "Resistênci
 const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"];
 
 let save: Save | null = ler<Save>(CHAVE_SAVE);
+if (save && migrarSave(pacote, save)) gravar(CHAVE_SAVE, save);
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
 let aba: "tabela" | "jogador" | "noticias" | "casa" | "mercado" = "tabela";
@@ -93,8 +96,8 @@ function telaSemana(s: Save): string {
   const pos = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const tagCls = escPrev === "titular" ? "titular" : escPrev === "banco" || escPrev === "base" ? "banco" : escPrev === "semJogo" ? "" : "ruim";
   const jogoHtml = jogo ? `<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(nomeDe(jogo.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(jogo.fora))}</span>${escudo(jogo.fora)}</div></div>
-      <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(LIGA_INFO[c.ligaId ?? "BRA1"].curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
-    : c.semana < SEMANAS_PRE ? `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>` : `<p class="sub">A ${esc(LIGA_INFO[c.ligaId ?? "BRA1"].curto)} já terminou. Semana de treino até o fim do calendário.</p>`;
+      <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(infoLiga(c.ligaId).curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
+    : c.semana < SEMANAS_PRE ? `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>` : `<p class="sub">A ${esc(infoLiga(c.ligaId).curto)} já terminou. Semana de treino até o fim do calendário.</p>`;
   const previsao = escPrev === "semJogo" ? "" : `<div><span class="tag ${tagCls}">${escPrev === "base" ? `Jogo da base (${categoriaBase(j.idade)})` : `Previsão: ${NOME_ESCALACAO[escPrev].toLowerCase()}`}</span></div>`;
   const focos: [Grupo, string][] = [["fisico", "Físico"], ["tecnico", "Técnico"], ["tatico", "Tático"]];
   const ints: [Intensidade, string][] = [["leve", "Leve"], ["normal", "Normal"], ["alta", "Puxado"]];
@@ -130,7 +133,7 @@ function telaSemana(s: Save): string {
 
 function abaTabela(s: Save): string {
   const t = ordenar(s.carreira.tabela);
-  return `<p class="rotulo" style="margin-bottom:6px">${esc(LIGA_INFO[s.carreira.ligaId ?? "BRA1"].nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+  return `<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
 
 function abaJogador(s: Save): string {
@@ -149,7 +152,7 @@ const milhoes = (euros: number) => `€ ${(euros / 1e6).toLocaleString("pt-BR", 
 const NOME_TIPO: Record<PropostaSave["tipo"], string> = { transferencia: "Transferência", livre: "Sem custo", emprestimo: "Empréstimo", renovacao: "Renovação" };
 function abaMercado(s: Save): string {
   const c = s.carreira, j = s.jogador, m = mercadoDe(c), w = mundo(pacote), meu = w.clube[c.clubeId], jan = janelaAberta(c);
-  const ligaNome = LIGA_INFO[c.ligaId ?? "BRA1"].curto, papel = papelNoClube(meu, s);
+  const ligaNome = infoLiga(c.ligaId).curto, papel = papelNoClube(meu, s);
   const aviso = msgMercado ? `<p class="msg-mercado ${msgMercado.ok ? "ok" : "nao"}">${esc(msgMercado.texto)}</p>` : "";
   msgMercado = undefined;
   const contrato = `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${esc(meu.nome)}</h2><span class="sub">${esc(ligaNome)} · força ${Math.round(meu.forca)} · você é ${NOME_PAPEL[papel].toLowerCase()}</span></div></div>
@@ -162,7 +165,7 @@ function abaMercado(s: Save): string {
       ? `<button class="botao" data-prop="${p.id}" data-op="forcar">Forçar a saída</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Desistir</button>`
       : `<button class="botao" data-prop="${p.id}" data-op="aceitar">${p.tipo === "renovacao" ? "Renovar" : p.tipo === "emprestimo" ? "Aceitar o empréstimo" : "Aceitar"}</button>${!p.negociada && p.tipo !== "emprestimo" ? `<button class="botao sec" data-prop="${p.id}" data-op="negociar">Pedir mais (agente)</button>` : ""}<button class="botao sec" data-prop="${p.id}" data-op="recusar">Recusar</button>`;
     return `<div class="oferta" style="--c1:${info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0]}"><div class="faixa"></div><div class="corpo">
-      <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(LIGA_INFO[p.ligaId].curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)}</span></div></div>
+      <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(infoLiga(p.ligaId).curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)}</span></div></div>
       <div class="linha-info"><span class="tag ${p.papel === "titular" ? "titular" : p.papel === "rotacao" ? "banco" : "ruim"}">${NOME_TIPO[p.tipo]} · ${NOME_PAPEL[p.papel].toLowerCase()}</span></div>
       <div class="kv"><span>Salário</span><b>${dinheiro(p.salario)}/mês <small class="${delta >= 0 ? "pos" : "neg"}">${delta >= 0 ? "+" : "−"}${dinheiro(Math.abs(delta))}</small></b>${p.anos ? `<span>Contrato</span><b>${p.anos} anos</b>` : `<span>Duração</span><b>Até o fim da temporada</b>`}${p.luvas ? `<span>Luvas</span><b>${dinheiro(p.luvas)}</b>` : ""}${p.taxa ? `<span>Pagam ao ${esc(meu.nome)}</span><b>${milhoes(p.taxa)}</b>` : ""}</div>
       ${p.travada ? `<p class="sub" style="color:var(--neg)">O ${esc(meu.nome)} não quer vender. Forçar a saída desgasta a relação com o técnico e com a torcida.</p>` : p.negociada ? `<p class="sub">O agente já negociou essa.</p>` : ""}
@@ -170,7 +173,7 @@ function abaMercado(s: Save): string {
   };
   const props = m.propostas.length ? `<div class="ofertas">${m.propostas.map(card).join("")}</div>` : `<p class="sub">${jan ? "Nenhuma proposta por enquanto. Elas chegam ao longo da janela; jogar bem e ter um bom agente ajudam." : "Fora da janela de transferências. Jogue bem: os clubes estão olhando."}</p>`;
   const agentes = (Object.keys(AGENTE_INFO) as TipoAgente[]).map((t) => {
-    const a = AGENTE_INFO[t], atual = c.agente === t, pode = podeContratarAgente(s, t), alcance = AGENTES[t].ligas === "todas" ? "Todas as ligas" : (AGENTES[t].ligas as string[]).map((x) => LIGA_INFO[x]?.curto ?? x).join(", ");
+    const a = AGENTE_INFO[t], atual = c.agente === t, pode = podeContratarAgente(s, t), alcance = AGENTES[t].ligas === "todas" ? "Todas as ligas" : (AGENTES[t].ligas as string[]).map((x) => infoLiga(x).curto).join(", ");
     return `<div class="agente${atual ? " atual" : ""}"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span><p class="sub" style="margin:2px 0">${esc(a.texto)}</p><small class="sub">Alcance: ${esc(alcance)}</small></div>
       ${atual ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Contratar</button>${pode.ok ? "" : `<small class="sub">${esc(pode.msg)}</small>`}`}</div>`;
   }).join("");

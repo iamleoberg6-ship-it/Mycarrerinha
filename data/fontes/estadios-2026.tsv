@@ -1,0 +1,247 @@
+liga	clube	cidade	estadio	capacidade
+ENG1	Arsenal	London	Emirates Stadium	60704
+ENG1	Aston Villa	Birmingham	Villa Park	36887
+ENG1	Bournemouth	Bournemouth	Dean Court	12357
+ENG1	Brentford	London	Brentford Community Stadium	17250
+ENG1	Brighton & Hove Albion	Brighton	Falmer Stadium	32176
+ENG1	Chelsea	London	Stamford Bridge	40044
+ENG1	Coventry City	Coventry	Coventry Building Society Arena	32609
+ENG1	Crystal Palace	London	Selhurst Park	25194
+ENG1	Everton	Liverpool	Hill Dickinson Stadium	52769
+ENG1	Fulham	London	Craven Cottage	28107
+ENG1	Hull City	Hull	MKM Stadium	24983
+ENG1	Ipswich Town	Ipswich	Portman Road	30056
+ENG1	Leeds United	Leeds	Elland Road	37633
+ENG1	Liverpool	Liverpool	Anfield	61276
+ENG1	Manchester City	Manchester	City of Manchester Stadium	61038
+ENG1	Manchester United	Manchester	Old Trafford	74158
+ENG1	Newcastle United	Newcastle	St James' Park	52729
+ENG1	Nottingham Forest	Nottingham	City Ground	31212
+ENG1	Sunderland	Sunderland	Stadium of Light	48095
+ENG1	Tottenham Hotspur	London	Tottenham Hotspur Stadium	62850
+ENG2	Birmingham City	Birmingham	St Andrew's	29409
+ENG2	Blackburn Rovers	Blackburn	Ewood Park	31367
+ENG2	Bolton Wanderers	Bolton	Toughsheet Community Stadium	28723
+ENG2	Bristol City	Bristol	Ashton Gate	26462
+ENG2	Burnley	Burnley	Turf Moor	21990
+ENG2	Cardiff City	Cardiff	Cardiff City Stadium	33280
+ENG2	Charlton Athletic	London	The Valley	27111
+ENG2	Derby County	Derby	Pride Park Stadium	33597
+ENG2	Lincoln City	Lincoln	Sincil Bank	11400
+ENG2	Middlesbrough	Middlesbrough	Riverside Stadium	34742
+ENG2	Millwall	London	The Den	20146
+ENG2	Norwich City	Norwich	Carrow Road	27359
+ENG2	Portsmouth	Portsmouth	Fratton Park	20867
+ENG2	Preston North End	Preston	Deepdale	23408
+ENG2	Queens Park Rangers	London	Loftus Road	18439
+ENG2	Sheffield United	Sheffield	Bramall Lane	32050
+ENG2	Southampton	Southampton	St Mary's Stadium	32384
+ENG2	Stoke City	Stoke-on-Trent	bet365 Stadium	30089
+ENG2	Swansea City	Swansea	Swansea.com Stadium	21088
+ENG2	Watford	Watford	Vicarage Road	22200
+ENG2	West Bromwich Albion	West Bromwich	The Hawthorns	26850
+ENG2	West Ham United	London	London Stadium	62500
+ENG2	Wolverhampton Wanderers	Wolverhampton	Molineux Stadium	31750
+ENG2	Wrexham	Wrexham	Racecourse Ground	10771
+ESP1	Alavés	Vitoria-Gasteiz	Mendizorrotza	19840
+ESP1	Athletic Bilbao	Bilbao	San Mamés	53289
+ESP1	Atlético Madrid	Madrid	Metropolitano	70692
+ESP1	Barcelona	Barcelona	Camp Nou	105000
+ESP1	Celta Vigo	Vigo	Balaídos	24870
+ESP1	Deportivo A Coruña	A Coruña	Riazor	32660
+ESP1	Elche	Elche	Martínez Valero	31388
+ESP1	Espanyol	Cornellà de Llobregat	RCDE Stadium	37776
+ESP1	Getafe	Getafe	Coliseum	16500
+ESP1	Levante	Valencia	Ciutat de València	26354
+ESP1	Málaga	Málaga	La Rosaleda	30044
+ESP1	Osasuna	Pamplona	El Sadar	23576
+ESP1	Racing Santander	Santander	El Sardinero	22308
+ESP1	Rayo Vallecano	Madrid	Vallecas	14500
+ESP1	Real Betis	Sevilla	La Cartuja	70000
+ESP1	Real Madrid	Madrid	Bernabéu	83186
+ESP1	Real Sociedad	San Sebastián	Anoeta	39313
+ESP1	Sevilla	Sevilla	Ramón Sánchez-Pizjuán	43883
+ESP1	Valencia	Valencia	Mestalla	49430
+ESP1	Villarreal	Villarreal	Estadio de la Cerámica	23008
+ESP2	Albacete	Albacete	Carlos Belmonte	17524
+ESP2	Almería	Almería	Estadio de Almería	15000
+ESP2	Andorra	Encamp	Nou Estadi Encamp	5108
+ESP2	Burgos	Burgos	El Plantío	12194
+ESP2	Cádiz	Cádiz	Nuevo Mirandilla	20724
+ESP2	Castellón	Castellón	Castàlia	15500
+ESP2	Celta Fortuna	Vigo	Balaídos	24870
+ESP2	Ceuta	Ceuta	Alfonso Murube	6500
+ESP2	Córdoba	Córdoba	Nuevo Arcángel	20989
+ESP2	Eibar	Eibar	Ipurua	8164
+ESP2	Eldense	Elda	Pepico Amat	5776
+ESP2	Girona	Girona	Montilivi	14624
+ESP2	Granada	Granada	Los Cármenes	19189
+ESP2	Las Palmas	Las Palmas	Gran Canaria	32392
+ESP2	Leganés	Leganés	Butarque	14422
+ESP2	Mallorca	Palma	Son Moix	23142
+ESP2	Oviedo	Oviedo	Carlos Tartiere	30500
+ESP2	Real Sociedad B	San Sebastián	Zubieta	4000
+ESP2	Sabadell	Sabadell	Nova Creu Alta	11908
+ESP2	Sporting Gijón	Gijón	El Molinón	29371
+ESP2	Tenerife	Santa Cruz de Tenerife	Heliodoro Rodríguez López	22824
+ESP2	Valladolid	Valladolid	José Zorrilla	27618
+ITA1	Atalanta	Bergamo	Gewiss Stadium	23439
+ITA1	Bologna	Bologna	Renato Dall'Ara	38279
+ITA1	Cagliari	Cagliari	Unipol Domus	16416
+ITA1	Como	Como	Giuseppe Sinigaglia	13602
+ITA1	Fiorentina	Firenze	Artemio Franchi	43118
+ITA1	Frosinone	Frosinone	Benito Stirpe	16227
+ITA1	Genoa	Genova	Luigi Ferraris	33205
+ITA1	Inter	Milano	San Siro	75710
+ITA1	Juventus	Torino	Allianz Stadium	41507
+ITA1	Lazio	Roma	Stadio Olimpico	70634
+ITA1	Lecce	Lecce	Via del Mare	30354
+ITA1	Milan	Milano	San Siro	75710
+ITA1	Monza	Monza	Brianteo	17102
+ITA1	Napoli	Napoli	Diego Armando Maradona	54732
+ITA1	Parma	Parma	Ennio Tardini	22352
+ITA1	Roma	Roma	Stadio Olimpico	70634
+ITA1	Sassuolo	Reggio Emilia	Mapei Stadium	21515
+ITA1	Torino	Torino	Olimpico Grande Torino	28177
+ITA1	Udinese	Udine	Friuli	25132
+ITA1	Venezia	Venezia	Pier Luigi Penzo	12048
+GER1	Augsburg	Augsburg	WWK Arena	30660
+GER1	Union Berlin	Berlin	An der Alten Försterei	22012
+GER1	Werder Bremen	Bremen	Weserstadion	42100
+GER1	Borussia Dortmund	Dortmund	Westfalenstadion	81365
+GER1	Elversberg	Spiesen-Elversberg	Waldstadion an der Kaiserlinde	10000
+GER1	Eintracht Frankfurt	Frankfurt	Waldstadion	59500
+GER1	Freiburg	Freiburg	Europa-Park Stadion	34700
+GER1	Hamburger SV	Hamburg	Volksparkstadion	57000
+GER1	Hoffenheim	Sinsheim	Rhein-Neckar-Arena	30150
+GER1	Köln	Köln	RheinEnergieStadion	49698
+GER1	RB Leipzig	Leipzig	Red Bull Arena	47800
+GER1	Bayer Leverkusen	Leverkusen	BayArena	30210
+GER1	Mainz 05	Mainz	MEWA Arena	33305
+GER1	Borussia Mönchengladbach	Mönchengladbach	Borussia-Park	54057
+GER1	Bayern	München	Allianz Arena	75000
+GER1	Paderborn	Paderborn	Home Deluxe Arena	15000
+GER1	Schalke 04	Gelsenkirchen	Veltins-Arena	62271
+GER1	VfB Stuttgart	Stuttgart	Neckarstadion	60058
+FRA1	Angers	Angers	Raymond Kopa	18752
+FRA1	Auxerre	Auxerre	Abbé Deschamps	21379
+FRA1	Brest	Brest	Francis-Le Blé	15931
+FRA1	Le Havre	Le Havre	Stade Océane	25178
+FRA1	Le Mans	Le Mans	Marie-Marvingt	25000
+FRA1	Lens	Lens	Bollaert-Delelis	37705
+FRA1	Lille	Lille	Pierre-Mauroy	50186
+FRA1	Lorient	Lorient	Le Moustoir	18890
+FRA1	Lyon	Lyon	Groupama Stadium	59186
+FRA1	Marseille	Marseille	Vélodrome	67394
+FRA1	Monaco	Monaco	Louis II	18523
+FRA1	Nice	Nice	Allianz Riviera	35624
+FRA1	Paris FC	Paris	Jean-Bouin	20000
+FRA1	Paris Saint-Germain	Paris	Parc des Princes	47926
+FRA1	Rennes	Rennes	Roazhon Park	29778
+FRA1	Strasbourg	Strasbourg	La Meinau	29230
+FRA1	Toulouse	Toulouse	Stadium de Toulouse	33150
+FRA1	Troyes	Troyes	Stade de l'Aube	20400
+POR1	Académico de Viseu	Viseu	Fontelo	6912
+POR1	Alverca	Alverca	Complexo FC Alverca	6932
+POR1	Arouca	Arouca	Municipal de Arouca	5000
+POR1	Benfica	Lisboa	Estádio da Luz	68100
+POR1	Braga	Braga	Municipal de Braga	30286
+POR1	Casa Pia	Lisboa	Pina Manique	7000
+POR1	Estoril	Estoril	António Coimbra da Mota	5094
+POR1	Estrela da Amadora	Amadora	José Gomes	9288
+POR1	Famalicão	Famalicão	Municipal de Famalicão	5186
+POR1	Gil Vicente	Barcelos	Cidade de Barcelos	12046
+POR1	Marítimo	Funchal	Estádio do Marítimo	10600
+POR1	Moreirense	Moreira de Cónegos	Comendador Joaquim de Almeida Freitas	6150
+POR1	Nacional	Funchal	Estádio da Madeira	5200
+POR1	Porto	Porto	Estádio do Dragão	50033
+POR1	Rio Ave	Vila do Conde	Estádio dos Arcos	5300
+POR1	Santa Clara	Ponta Delgada	São Miguel	12500
+POR1	Sporting CP	Lisboa	José Alvalade	52095
+POR1	Vitória de Guimarães	Guimarães	D. Afonso Henriques	30029
+NED1	ADO Den Haag	Den Haag	Cars Jeans Stadion	15000
+NED1	Ajax	Amsterdam	Johan Cruyff Arena	55865
+NED1	AZ	Alkmaar	AFAS Stadion	19478
+NED1	Cambuur	Leeuwarden	Kooi Stadion	15000
+NED1	Excelsior	Rotterdam	Woudestein	4500
+NED1	Feyenoord	Rotterdam	De Kuip	47500
+NED1	Fortuna Sittard	Sittard	Fortuna Sittard Stadion	12000
+NED1	Go Ahead Eagles	Deventer	De Adelaarshorst	10000
+NED1	Groningen	Groningen	Euroborg	22550
+NED1	Heerenveen	Heerenveen	Abe Lenstra Stadion	26100
+NED1	NEC	Nijmegen	Goffertstadion	12650
+NED1	PEC Zwolle	Zwolle	MAC3PARK stadion	14000
+NED1	PSV	Eindhoven	Philips Stadion	35000
+NED1	Sparta Rotterdam	Rotterdam	Het Kasteel	11026
+NED1	Telstar	Velsen	BUKO Stadion	5338
+NED1	Twente	Enschede	De Grolsch Veste	30205
+NED1	Utrecht	Utrecht	Galgenwaard	23750
+NED1	Willem II	Tilburg	Koning Willem II Stadion	15220
+KSA1	Al-Ahli	Jeddah	King Abdullah Sports City	60342
+KSA1	Al-Ettifaq	Dammam	Prince Mohamed bin Fahd Stadium	12984
+KSA1	Al-Fateh	Al-Mubarraz	Prince Abdullah bin Jalawi Stadium	11851
+KSA1	Al-Fayha	Majmaah	Majmaah Sports City	6843
+KSA1	Al-Hazem	Ar Rass	Al-Hazem Club Stadium	5100
+KSA1	Al-Hilal	Riyadh	Kingdom Arena	26090
+KSA1	Al-Ittihad	Jeddah	King Abdullah Sports City	60342
+KSA1	Al-Khaleej	Saihat	Prince Mohamed bin Fahd Stadium	22042
+KSA1	Al-Kholood	Ar Rass	Al-Hazem Club Stadium	5100
+KSA1	Al-Nassr	Riyadh	Al-Awwal Park	26004
+KSA1	Al-Qadsiah	Khobar	Prince Saud bin Jalawi Stadium	22042
+KSA1	Al-Riyadh	Riyadh	Prince Turki bin Abdulaziz Stadium	18063
+KSA1	Al-Shabab	Riyadh	Prince Khalid bin Sultan Stadium	13537
+KSA1	Al-Taawoun	Buraidah	King Abdullah Sports City Buraidah	30180
+KSA1	Neom	Tabuk	King Khalid Sport City	12000
+KSA1	Abha	Abha	Prince Sultan bin Abdulaziz Sports City	20000
+KSA1	Al-Faisaly	Harmah	Al-Majma'ah Sports City	7000
+KSA1	Al-Diriyah	Diriyah	Prince Turki bin Abdulaziz Stadium	15000
+ARG1	Aldosivi	Mar del Plata	José María Minella	35180
+ARG1	Argentinos Juniors	Buenos Aires	Diego Armando Maradona	25000
+ARG1	Atlético Tucumán	San Miguel de Tucumán	Monumental José Fierro	32700
+ARG1	Banfield	Banfield	Florencio Sola	21820
+ARG1	Barracas Central	Buenos Aires	Claudio Chiqui Tapia	4400
+ARG1	Belgrano	Córdoba	Julio César Villagra	30000
+ARG1	Boca Juniors	Buenos Aires	La Bombonera	54000
+ARG1	Central Córdoba	Santiago del Estero	Único Madre de Ciudades	34000
+ARG1	Defensa y Justicia	Florencio Varela	Norberto Tomaghello	12000
+ARG1	Deportivo Riestra	Buenos Aires	Guillermo Laza	3000
+ARG1	Estudiantes	La Plata	Jorge Luis Hirschi	30000
+ARG1	Estudiantes de Río Cuarto	Río Cuarto	Antonio Candini	12000
+ARG1	Gimnasia La Plata	La Plata	Juan Carmelo Zerillo	26544
+ARG1	Gimnasia Mendoza	Mendoza	Víctor Legrotaglie	11000
+ARG1	Huracán	Buenos Aires	Tomás Adolfo Ducó	48314
+ARG1	Independiente	Avellaneda	Libertadores de América	52853
+ARG1	Independiente Rivadavia	Mendoza	Bautista Gargantini	24000
+ARG1	Instituto	Córdoba	Juan Domingo Perón	26535
+ARG1	Lanús	Lanús	Néstor Díaz Pérez	47090
+ARG1	Newell's Old Boys	Rosario	Marcelo Bielsa	38095
+ARG1	Platense	Vicente López	Ciudad de Vicente López	22530
+ARG1	Racing	Avellaneda	El Cilindro	55880
+ARG1	River Plate	Buenos Aires	Monumental	83196
+ARG1	Rosario Central	Rosario	Gigante de Arroyito	41654
+ARG1	San Lorenzo	Buenos Aires	Pedro Bidegain	39494
+ARG1	Sarmiento	Junín	Eva Perón	19000
+ARG1	Talleres	Córdoba	Mario Alberto Kempes	57000
+ARG1	Tigre	Victoria	José Dellagiovanna	26282
+ARG1	Unión	Santa Fe	15 de Abril	22852
+ARG1	Vélez Sarsfield	Buenos Aires	José Amalfitani	49540
+BRA2	América Mineiro	Belo Horizonte	Independência	23018
+BRA2	Athletic	São João del-Rei	Arena Sicredi	6000
+BRA2	Atlético Goianiense	Goiânia	Antônio Accioly	12500
+BRA2	Avaí	Florianópolis	Ressacada	17826
+BRA2	Botafogo-SP	Ribeirão Preto	Santa Cruz	29292
+BRA2	Ceará	Fortaleza	Castelão	57876
+BRA2	CRB	Maceió	Rei Pelé	17126
+BRA2	Criciúma	Criciúma	Heriberto Hülse	19225
+BRA2	Cuiabá	Cuiabá	Arena Pantanal	44000
+BRA2	Fortaleza	Fortaleza	Castelão	57876
+BRA2	Goiás	Goiânia	Serrinha	14450
+BRA2	Juventude	Caxias do Sul	Alfredo Jaconi	19924
+BRA2	Londrina	Londrina	Estádio do Café	31000
+BRA2	Náutico	Recife	Aflitos	22856
+BRA2	Novorizontino	Novo Horizonte	Jorge Ismael de Biasi	16000
+BRA2	Operário Ferroviário	Ponta Grossa	Germano Krüger	10632
+BRA2	Ponte Preta	Campinas	Moisés Lucarelli	19728
+BRA2	São Bernardo	São Bernardo do Campo	1º de Maio	15159
+BRA2	Sport	Recife	Ilha do Retiro	32983
+BRA2	Vila Nova	Goiânia	Onésio Brasileiro Alvarenga	6500

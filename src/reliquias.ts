@@ -2,7 +2,7 @@
 // Este arquivo diz o que existe, como cada uma é desbloqueada e com que cara ela fica.
 import type { RNG } from "./rng.js";
 import type { Reliquia } from "./casa.js";
-import { LIGA_INFO } from "./mundo.js";
+import { LIGA_INFO } from "./ligas.js";
 
 export type Grupo = "Camisas" | "Bolas" | "Troféus";
 export interface Conquista {

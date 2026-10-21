@@ -3,12 +3,13 @@
 import { RNG, clamp } from "./rng.js";
 import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos, type Grupo, type Intensidade, type Participacao, type Posicao } from "./atributos.js";
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
-import { ligaDoPacote, tabelaTurnoReturno, novaTabela, registrar, ordenar, type Clube, type Liga, type LinhaTabela, type PacoteDados } from "./liga.js";
+import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube, type Liga, type LinhaTabela, type PacoteDados } from "./liga.js";
 import { salarioMensal, AGENTES, seguidoresDaFama, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
-import { mundo, infoClube, LIGA_INFO } from "./mundo.js";
+import { mundo, infoClube, idClube } from "./mundo.js";
+import { infoLiga } from "./ligas.js";
 import { semanaDoMercado, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
@@ -56,8 +57,38 @@ export function liga(pacote: PacoteDados): Liga {
   return ligaCache.liga;
 }
 /** A liga em que o jogador está agora. */
-export const ligaAtual = (pacote: PacoteDados, s: Save): Liga => mundo(pacote).liga[s.carreira.ligaId ?? "BRA1"];
-export const nRodadas = (c: Carreira) => 2 * (c.ordem.length - 1);
+export const ligaAtual = (pacote: PacoteDados, s: Save): Liga => mundo(pacote).liga[infoLiga(s.carreira.ligaId).id];
+/** Saves de antes das ligas reais: clubes e ligas antigas viram os equivalentes atuais. Devolve true se mudou algo. */
+export function migrarSave(pacote: PacoteDados, s: Save): boolean {
+  const c = s.carreira, w = mundo(pacote);
+  const existe = (id: string) => !!w.clube[id];
+  if (existe(c.clubeId) && (c.ligaId ?? "BRA1") === w.info[c.clubeId].ligaId && c.ordem.every(existe)) return false;
+  c.clubeId = idClube(c.clubeId);
+  if (!existe(c.clubeId)) c.clubeId = "FLA";
+  c.ligaId = w.info[c.clubeId].ligaId;
+  const l = w.liga[c.ligaId];
+  if (c.ordem.length !== l.clubes.length || !c.ordem.every((id) => existe(idClube(id)) && w.info[idClube(id)].ligaId === c.ligaId)) {
+    c.ordem = l.clubes.map((x) => x.id);
+    c.tabela = novaTabela(l);
+  } else {
+    c.ordem = c.ordem.map(idClube);
+    for (const t of c.tabela) t.clube = idClube(t.clube);
+  }
+  const m = c.mercado;
+  if (m) {
+    m.propostas = m.propostas.filter((p) => existe(idClube(p.clubeId))).map((p) => ({ ...p, clubeId: idClube(p.clubeId), ligaId: w.info[idClube(p.clubeId)].ligaId }));
+    for (const t of m.transferencias) { t.de = idClube(t.de); t.para = idClube(t.para); }
+    if (m.emprestimo) {
+      m.emprestimo.origem = idClube(m.emprestimo.origem);
+      if (!existe(m.emprestimo.origem)) m.emprestimo = undefined;
+      else { const lo = w.liga[w.info[m.emprestimo.origem].ligaId]; m.emprestimo.ligaOrigem = lo.id; m.emprestimo.ordemOrigem = lo.clubes.map((x) => x.id); }
+    }
+  }
+  if (c.jogosPorClube) c.jogosPorClube = Object.fromEntries(Object.entries(c.jogosPorClube).map(([k, v]) => [idClube(k), v]));
+  s.casa.clube = clubeCasa(pacote, c.clubeId);
+  return true;
+}
+export const nRodadas = (c: Carreira) => rodadasDaLiga(c.ordem.length).length;
 export const clubeDe = (l: Liga, id: string) => l.clubes.find((c) => c.id === id)!;
 export function clubeCasa(pacote: PacoteDados, id: string): ClubeCasa {
   const c = infoClube(pacote, id);
@@ -140,7 +171,7 @@ export function noticia(s: Save, tipo: Noticia["tipo"], titulo: string, texto: s
 // ------------------------------------------------------------------ calendário
 export interface Jogo { casa: string; fora: string }
 export function jogosDaRodada(c: Carreira, rodada: number): Jogo[] {
-  return tabelaTurnoReturno(c.ordem.length)[rodada].map(([a, b]) => ({ casa: c.ordem[a], fora: c.ordem[b] }));
+  return rodadasDaLiga(c.ordem.length)[rodada].map(([a, b]) => ({ casa: c.ordem[a], fora: c.ordem[b] }));
 }
 export function jogoDaSemana(s: Save): (Jogo & { rodada: number; souCasa: boolean; adversario: string }) | undefined {
   const c = s.carreira;
@@ -410,7 +441,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       const totPro = (k: "jogos" | "gols") => c.stats[k] + c.historico.reduce((a, h) => a + h[k], 0);
       const ganhos = reliquiasDaPartida({
         tipo: partida.tipo, ano: ANO_INICIAL + c.temporada, semana: c.semana, adversario: clubeCasa(pacote, jogo.adversario).apelido, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
-        padrao: infoClube(pacote, c.clubeId).padrao, ligaId: c.ligaId ?? "BRA1",
+        padrao: infoClube(pacote, c.clubeId).padrao, ligaId: infoLiga(c.ligaId).id,
         placar: `${meusGols} × ${golsAdv}`, gols, minutos, jogosPro: totPro("jogos"), golsPro: totPro("gols"),
         jogosBase: c.stats.base + c.historico.reduce((a, h) => a + h.base, 0), golsBase: c.stats.baseGols + c.historico.reduce((a, h) => a + (h.baseGols ?? 0), 0),
         jogosNoClube: c.jogosPorClube?.[c.clubeId] ?? 0,
@@ -505,7 +536,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   // premiação: troféus que vão para a casa
   const cc = clubeCasa(pacote, c.clubeId), ev: string[] = [];
   const premios = premiosDaTemporada(rngDe(s, "premios"), { ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
-    padrao: infoClube(pacote, c.clubeId).padrao, ligaCurto: LIGA_INFO[c.ligaId ?? "BRA1"].curto, recemContratado: c.chegadaClube === c.temporada,
+    padrao: infoClube(pacote, c.clubeId).padrao, ligaCurto: infoLiga(c.ligaId).curto, recemContratado: c.chegadaClube === c.temporada,
     jogos: r.jogos, gols: r.gols, assist: r.assist, nota: r.nota, titulo, base: r.base, golsBase: c.stats.baseGols, notaBase: media(c.stats.baseNotas ?? []),
     temporadasCheias: c.historico.filter((h) => h.jogos >= 15).length });
   receberReliquias(s, premios, ev);

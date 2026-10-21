@@ -1,0 +1,309 @@
+Al-Ahli
+1|GK|KSA|Abdulrahman Al-Sanbi
+2|DF|KSA|Zakaria Hawsawi
+3|DF|BRA|Roger Ibañez
+5|DF|KSA|Mohammed Sulaiman
+6|MF|FRA|Valentin Atangana
+7|FW|POR|Francisco Trincão
+8|MF|ARM|Eduard Spertsyan
+9|FW|KSA|Firas Al-Buraikan
+11|MF|KSA|Meshal Al-Mutairi
+13|FW|BRA|Galeno
+15|DF|KSA|Saeed Baattiah
+16|GK|SEN|Édouard Mendy
+17|FW|ENG|Ivan Toney
+20|MF|BRA|Matheus Gonçalves
+21|FW|KSA|Abdullah Radif
+23|MF|KSA|Ibrahim Azzam
+24|DF|GAM|Abubacarr Sedi Kinteh
+25|MF|KSA|Faisal Fallatah
+27|DF|KSA|Ali Majrashi
+28|DF|TUR|Merih Demiral
+29|DF|KSA|Mohammed Abdulrahman
+30|MF|KSA|Ziyad Al-Johani
+31|DF|KSA|Saad Balobaid
+46|DF|KSA|Rayan Hamed
+47|MF|KSA|Saleh Abu Al-Shamat
+
+Al-Hilal
+2|DF|KSA|Mohammed Mahzari
+3|DF|SEN|Kalidou Koulibaly
+4|DF|TUR|Yusuf Akçiçek
+6|MF|KSA|Nasser Al-Dawsari
+7|FW|BRA|Gabriel Martinelli
+8|MF|POR|Rúben Neves
+11|FW|ENG|Ollie Watkins
+17|GK|KSA|Mohammed Al-Rubaie
+18|MF|KSA|Murad Hawsawi
+19|DF|FRA|Théo Hernandez
+22|MF|SRB|Sergej Milinković-Savić
+24|DF|KSA|Moteb Al-Harbi
+27|MF|KSA|Sultan Mandash
+28|MF|KSA|Mohamed Kanno
+29|FW|KSA|Salem Al-Dawsari
+31|DF|KSA|Rayan Al-Ghamdi
+33|GK|KSA|Mohammed Al-Owais
+37|GK|MAR|Yassine Bounou
+38|FW|NED|Crysencio Summerville
+44|DF|KSA|Saad Al-Mutairi
+55|DF|KSA|Mishal Al-Dawood
+70|MF|FRA|Saïmon Bouabré
+72|MF|KSA|Sabri Dahal
+73|DF|KSA|Mohammed Al-Sarnoukh
+
+Neom
+1|GK|POL|Marcin Bułka
+2|DF|KSA|Mohammed Al-Breik
+4|DF|KSA|Khalifah Al-Dawsari
+5|DF|SEN|Malang Sarr
+6|MF|KSA|Abbas Al-Hassan
+7|FW|GRE|Georgios Masouras
+9|FW|KSA|Abdulaziz Al-Othman
+10|MF|ALG|Saïd Benrahma
+11|FW|FRA|Alexandre Lacazette
+14|MF|KSA|Khalil Al-Absi
+15|MF|KSA|Abdulmalik Al-Oyayari
+18|MF|KSA|Alaa Al-Hejji
+19|DF|JOR|Mohannad Abu Taha
+22|MF|KSA|Ahmed Al-Anzi
+23|MF|ARG|Valentín Vada
+24|MF|KSA|Abdulaziz Noor
+27|DF|KSA|Islam Hawsawi
+33|GK|KSA|Abdulrahman Dagriri
+44|DF|FRA|Nathan Zézé
+55|DF|KSA|Mohammed Waleed
+61|MF|KSA|Yahya Gharawi
+70|FW|KSA|Haroune Camara
+72|MF|CIV|Amadou Koné
+75|DF|KSA|Khalid Al-Rammah
+81|GK|POR|Luís Maximiano
+
+Al-Khaleej
+1|GK|KSA|Mohammed Al Ibrahim
+2|DF|KSA|Hamad Al-Jayzani
+3|DF|KSA|Mohammed Al-Khabrani
+4|DF|MLI|Kiki Kouyaté
+5|DF|POR|Pedro Rebocho
+7|FW|NOR|Joshua King
+8|MF|EQG|Omar Mascarell
+9|FW|GAM|Musa Barrow
+10|MF|NCL|Angelo Fulgini
+11|MF|KSA|Saleh Al-Amri
+12|MF|KSA|Majed Kanabah
+13|DF|KSA|Ahmed Assiri
+14|DF|KSA|Ali Al-Shaafi
+15|MF|KSA|Mansour Hamzi
+16|MF|KSA|Bader Munshi
+17|DF|KSA|Abdullah Al-Hafith
+18|MF|KSA|Nawaf Al-Sadi
+19|MF|POR|Miguel Crespo
+23|MF|KSA|Rakan Al-Kaabi
+24|MF|KSA|Ali Abdulrouf
+25|DF|KSA|Hamed Al-Zahri
+28|MF|KSA|Hussain Al-Eisa
+29|DF|KSA|Raed Al-Shanqiti
+30|GK|LUX|Anthony Moris
+39|DF|KSA|Saeed Al Hamsal
+
+Al-Kholood
+3|DF|LTU|Edgaras Utkus
+6|MF|ENG|John Buckley
+7|DF|KSA|Sultan Al-Shehri
+10|MF|ESP|Iker Kortajarena
+14|MF|KSA|Ibrahim Barabaa
+15|DF|KSA|Ramzi Solan
+17|MF|ENG|Adam Berry
+18|FW|ARG|Ramiro Enrique
+21|DF|KSA|Rashid Al-Mutairi
+22|GK|FRA|Julien Domingues
+27|FW|KSA|Abdullah Al Ajyan
+38|DF|SUR|Shaquille Pinas
+39|MF|KSA|Abdulrahman Al-Dawsari
+46|MF|KSA|Abdulaziz Al-Aliwa
+48|GK|KSA|Muhannad Al-Yahya
+70|MF|KSA|Muhammad Sawan
+0|GK|KSA|Hamed Al-Shanqiti
+0|DF|KSA|Abdulrahman Al-Obaid
+0|MF|KSA|Mohammed Al-Rashidi
+0|MF|GUI|Seydouba Cissé
+0|MF|KSA|Yaseen Al-Zubaidi
+0|FW|GNB|Coba da Costa
+0|FW|BRA|Guga
+
+Abha
+0|FW|BEL|Michy Batshuayi
+0|FW|CMR|Georges-Kévin Nkoudou
+0|DF|CUW|Juriën Gaari
+0|FW|FRA|Alimami Gory
+0|DF|FRA|Loreintz Rosier
+0|MF|FRA|Nabil Fekir
+0|FW|GUF|Donovan Léon
+0|DF|SEN|Abdou Diallo
+0|MF|ARG|Mateo Borrell
+
+Al-Diriyah
+0|DF|ALB|Berat Djimsiti
+0|FW|ALG|Adil Boulbina
+0|GK|BIH|Nikola Vasilj
+0|DF|COD|Chancel Mbemba
+0|MF|FRA|Enzo Millot
+0|MF|SEN|Idrissa Gueye
+0|MF|ESP|Óscar Rodríguez
+0|FW|URU|Darwin Núñez
+0|DF|POR|Mathys De Carvalho
+0|FW|SEN|Clayton Diandy
+
+Al-Ettifaq
+0|DF|BRA|Pedro Henrique
+0|FW|FRA|Moussa Dembélé
+0|MF|KOS|Bersant Celina
+0|DF|SCO|Jack Hendry
+0|GK|SVK|Marek Rodák
+0|MF|SVK|Ondrej Duda
+0|MF|ESP|Álvaro Medrán
+0|FW|SWE|Jordan Larsson
+0|MF|CIV|Abdoulaye Kanté
+87|DF|KSA|Bilal Al-Dawaa
+14|MF|KSA|Abdullah Al-Bishi
+20|MF|KSA|Mohammed Al-Kadi
+27|FW|KSA|Abdulhakim Maghfori
+35|DF|KSA|Abdulrahman Sahhari
+58|MF|KSA|Mohammed Al-Eisa
+
+Al-Faisaly
+0|MF|BRA|Andrei Girotto
+0|DF|BRA|Flávio Medeiros
+0|FW|CMR|Christian Bassogog
+0|FW|COD|Théo Bongonda
+0|DF|GNB|Alexandre Mendy
+0|DF|SEN|Abdoulaye Seck
+0|GK|ESP|Fernando Pacheco
+0|MF|ESP|Jaime Seoane
+0|MF|GAB|André-Jordy Ella
+
+Al-Fateh
+0|MF|COM|Zaydou Youssouf
+0|GK|CRO|Adrian Šemper
+0|FW|CIV|Wilfried Kanga
+0|DF|MAR|Marwane Saâdane
+0|MF|MAR|Mourad Batna
+0|MF|ROU|Mihai Lixandru
+0|FW|SVK|Lukáš Haraslín
+0|DF|TOG|Kennedy Boateng
+0|FW|BRA|Sorriso
+0|DF|CPV|Jefferson Ramos
+0|MF|FRA|Ali Alamine
+0|FW|MAR|Hossam Essadak
+24|DF|KSA|Mahmoud Al-Burayh
+37|MF|KSA|Nasser Balais
+78|MF|KSA|Abdulaziz Al-Dabas
+98|FW|KSA|Ammar Al-Hudaybi
+
+Al-Fayha
+0|MF|BRA|Hugo Moura
+0|FW|BRA|Lázaro
+0|DF|GAM|Omar Colley
+0|MF|GNB|Alfa Semedo
+0|GK|PAN|Orlando Mosquera
+0|DF|POR|Paulo Oliveira
+0|FW|ESP|Jason
+0|FW|ZAM|Fashion Sakala
+0|DF|BRA|Yago Souza
+
+Al-Hazem
+0|FW|ALG|Amir Sayoud
+0|MF|ALG|Sofiane Bendebka
+0|FW|ANG|Afimico Pululu
+0|GK|CZE|Jindřich Staněk
+0|MF|GUI|Mory Konaté
+0|DF|NED|Elton Acolatse
+0|FW|RWA|Bonheur Mugisha
+0|DF|TUN|Mohamed Amine Ben Hamida
+0|DF|GUI|Aboubacar Bah
+0|MF|MLI|Aboubacar Diakité
+
+Al-Ittihad
+0|MF|ALG|Houssem Aouar
+0|MF|COL|Richard Ríos
+0|FW|MAR|Youssef En-Nesyri
+0|MF|NED|Georginio Wijnaldum
+0|FW|NED|Steven Bergwijn
+0|DF|POR|Danilo Pereira
+0|MF|SEN|Dion Lopy
+0|GK|SRB|Predrag Rajković
+0|FW|NGA|George Ilenikhena
+0|FW|POR|Roger Fernandes
+0|DF|SRB|Jan-Carlo Simić
+0|DF|KSA|Hassan Kadesh
+0|MF|KSA|Abdulrahman Al-Obaid
+0|FW|KSA|Abdullah Al-Sahli
+
+Al-Nassr
+0|FW|BRA|Ângelo Gabriel
+0|GK|BRA|Bento
+0|FW|FRA|Kingsley Coman
+0|DF|FRA|Mohamed Simakan
+7|FW|POR|Cristiano Ronaldo
+0|FW|POR|João Félix
+0|MF|POR|Samú Costa
+0|FW|SEN|Sadio Mané
+25|DF|KSA|Nawaf Al-Jadaani
+36|DF|KSA|Abdullah Al-Rashidi
+0|DF|KSA|Sultan Al-Ghannam
+0|DF|KSA|Nawaf Boushal
+0|MF|KSA|Abdullah Al-Khaibari
+0|MF|KSA|Ayman Yahya
+0|GK|KSA|Raghed Al-Najjar
+
+Al-Qadsiah
+0|GK|BEL|Koen Casteels
+0|MF|GER|Julian Weigl
+0|FW|GHA|Christopher Bonsu Baah
+0|FW|ITA|Mateo Retegui
+0|FW|MEX|Julián Quiñones
+0|MF|NED|Tijjani Reijnders
+0|DF|ESP|Nacho
+0|DF|URU|Gastón Álvarez
+0|MF|FRA|Mahamadou Sangaré
+0|FW|CIV|Ali Badra Diabaté
+0|DF|KSA|Jehad Thakri
+
+Al-Riyadh
+0|DF|ALG|Victor Lekhal
+0|GK|CAN|Milan Borjan
+0|FW|EGY|Trézéguet
+0|FW|FRA|Teddy Okou
+0|MF|GHA|Bernard Mensah
+0|MF|POR|Leandro Antunes
+0|FW|SEN|Mamadou Sylla
+0|DF|URU|Rodrigo Abascal
+0|FW|ARG|Luca Ramirez
+
+Al-Shabab
+0|FW|BEL|Yannick Carrasco
+0|FW|COL|Roger Martínez
+0|DF|CRO|Tin Jedvaj
+0|MF|ENG|Josh Brownhill
+0|MF|FRA|Yacine Adli
+0|MF|GHA|Thomas Partey
+0|FW|POR|Daniel Podence
+0|GK|SEN|Mory Diaw
+0|FW|SEN|Mamadou Thierno Barry
+0|DF|SRB|Lazar Stojanović
+0|DF|KSA|Mohammed Al-Shwirekh
+0|MF|KSA|Abdullah Matuq
+
+Al-Taawoun
+0|MF|ALB|Nedim Bajrami
+0|DF|ALG|Zineddine Belaïd
+0|GK|BRA|Mailson
+0|MF|BUL|Marin Petkov
+0|FW|CIV|Parfait Guiagon
+0|MF|LBR|Oscar Dorley
+0|FW|MAR|Abderrazak Hamdallah
+0|MF|NED|Aschraf El Mahdioui
+0|DF|ECU|Jair Collahuazo
+0|DF|SEN|Mustapha Samb
+0|DF|KSA|Waleed Al-Ahmad
+0|MF|KSA|Fahad Al-Jumayah
+

@@ -11,7 +11,7 @@ export type TipoAgente = "pai" | "iniciante" | "experiente" | "top";
 export const AGENTES: Record<TipoAgente, { comissao: number; bonus: number; alcance: number; ligas: string[] | "todas" }> = {
   pai: { comissao: 0, bonus: -0.1, alcance: 1.0, ligas: ["BRA1", "BRA2"] },
   iniciante: { comissao: 0.05, bonus: 0, alcance: 1.0, ligas: ["BRA1", "BRA2"] },
-  experiente: { comissao: 0.08, bonus: 0.1, alcance: 1.5, ligas: ["BRA1", "BRA2", "EUR2", "ARA1"] },
+  experiente: { comissao: 0.08, bonus: 0.1, alcance: 1.5, ligas: ["BRA1", "BRA2", "ARG1", "POR1", "NED1", "ENG2", "ESP2", "KSA1"] },
   top: { comissao: 0.1, bonus: 0.2, alcance: 2.0, ligas: "todas" },
 };
 

@@ -1,0 +1,478 @@
+Atalanta
+3|DF|CIV|Odilon Kossounou
+4|DF|SWE|Isak Hien
+5|DF|NED|Mitchel Bakker
+6|MF|USA|Yunus Musah
+7|FW|GHA|Kamaldeen Sulemana
+8|MF|CRO|Mario Pašalić
+9|FW|ITA|Gianluca Scamacca
+10|MF|SRB|Lazar Samardžić
+13|MF|BRA|Éderson
+15|MF|NED|Marten de Roon
+16|DF|ITA|Raoul Bellanova
+17|MF|BEL|Charles De Ketelaere
+18|FW|ITA|Giacomo Raspadori
+19|DF|ALB|Berat Djimsiti
+23|DF|BIH|Sead Kolašinac
+29|GK|ITA|Marco Carnesecchi
+31|GK|ITA|Francesco Rossi
+42|DF|ITA|Giorgio Scalvini
+47|DF|ITA|Lorenzo Bernasconi
+57|GK|ITA|Marco Sportiello
+59|MF|POL|Nicola Zalewski
+77|DF|ITA|Davide Zappacosta
+90|FW|MNE|Nikola Krstović
+
+Bologna
+1|GK|POL|Łukasz Skorupski
+2|DF|SWE|Emil Holm
+3|DF|BEL|Arthur Theate
+4|MF|ITA|Tommaso Pobega
+5|DF|NOR|Eivind Helland
+6|MF|CRO|Nikola Moro
+7|FW|ITA|Riccardo Orsolini
+8|MF|ARG|Mikel Amondarain
+9|FW|UKR|Artem Dovbyk
+10|MF|ITA|Federico Bernardeschi
+11|FW|ENG|Jonathan Rowe
+14|DF|NOR|Torbjørn Heggem
+16|DF|ITA|Nicolò Casale
+17|MF|MAR|Oussama El Azzouzi
+19|MF|SCO|Lewis Ferguson
+20|DF|ITA|Nadir Zortea
+21|MF|DEN|Jens Odgaard
+25|GK|ITA|Massimo Pessina
+28|FW|ITA|Nicolò Cambiaghi
+29|DF|ITA|Lorenzo De Silvestri
+33|DF|ESP|Juan Miranda
+41|DF|CZE|Martin Vitík
+91|FW|ITA|Roberto Piccoli
+
+Cagliari
+1|GK|ITA|Elia Caprile
+2|DF|POR|Zé Pedro
+3|DF|ITA|Riyad Idrissi
+4|MF|SUI|Alessandro Romano
+6|MF|ENG|Harry Winks
+8|MF|FRA|Michel Ndary Adopo
+9|FW|ESP|Kevin Carlos
+10|MF|ITA|Jacopo Fazzini
+12|GK|ALB|Alen Sherri
+14|MF|ITA|Alessandro Deiola
+15|DF|URU|Juan Rodríguez
+17|MF|ITA|Mattia Felici
+18|FW|ZAM|Kingstone Mutandwa
+19|FW|FRA|Yael Trepy
+21|MF|ITA|Nicolò Cavuoti
+22|DF|ITA|Raphael Kofler
+24|DF|ITA|Giuseppe Aurelio
+26|DF|COL|Yerry Mina
+27|MF|ZAM|Joseph Liteta
+29|FW|ITA|Gennaro Borrelli
+31|FW|SEN|Paul Mendy
+33|DF|SVK|Adam Obert
+
+Como
+1|GK|FRA|Jean Butez
+2|DF|GER|Marc-Oliver Kempf
+3|DF|ESP|Álex Valle
+4|DF|ESP|Jacobo Ramón
+5|MF|ARG|Máximo Perrone
+6|MF|ESP|Luis Milla
+7|MF|FRA|Lucas Da Cunha
+8|MF|FRA|Maxence Caqueret
+9|FW|GRE|Anastasios Douvikas
+10|MF|ARG|Nico Paz
+11|FW|SEN|Assane Diao
+13|DF|ITA|Alberto Dossena
+16|DF|BRA|Kaiki Bruno
+17|FW|ESP|Jesús Rodríguez
+18|DF|ITA|Edoardo Goldaniga
+20|MF|CRO|Martin Baturina
+21|MF|ITA|Samuele Ricci
+22|GK|ITA|Mauro Vigorito
+27|DF|BRA|Yan Couto
+28|DF|CRO|Ivan Smolčić
+42|FW|NED|Jayden Addai
+90|FW|ITA|Moise Kean
+
+Fiorentina
+2|DF|BRA|Dodô
+3|DF|ROU|Radu Drăgușin
+4|MF|ITA|Marco Brescianini
+5|DF|CRO|Marin Pongračić
+6|DF|ITA|Luca Ranieri
+14|MF|FRA|Arthur Atta
+17|DF|POR|João Mário
+19|GK|ITA|Luca Lezzerini
+20|DF|ESP|Álex Jiménez
+23|FW|GNB|Beto
+25|FW|SWE|Alieu Njie
+27|MF|ITA|Cher Ndour
+28|FW|POR|Pedro Gonçalves
+30|FW|ARG|Franco Mastantuono
+32|FW|ARG|Mateo Pellegrino
+33|DF|BRA|Viery
+42|MF|CIV|Christ Inao Oulaï
+43|GK|ESP|David de Gea
+44|MF|ITA|Nicolò Fagioli
+53|GK|DEN|Oliver Christensen
+65|DF|ITA|Fabiano Parisi
+
+Frosinone
+2|DF|ITA|Giorgio Cittadini
+3|DF|ITA|Gabriele Calvani
+4|MF|CIV|Ben Lhassine Kone
+5|DF|ITA|Wisdom Amey
+7|FW|ALG|Farès Ghedjemis
+9|FW|ITA|Antonio Raimondo
+10|MF|AUT|Romano Schmid
+11|FW|ROU|Daniel Bîrligea
+12|GK|ITA|Matteo Pisseri
+14|MF|ITA|Giacomo Calò
+17|FW|GEO|Giorgi Kvernadze
+20|DF|GAB|Anthony Oyono
+22|GK|ITA|Lorenzo Palmisani
+24|FW|ITA|Alessio Zerbin
+25|DF|NGA|Kevin Akpoguma
+27|MF|AUT|Florian Grillitsch
+30|DF|ITA|Ilario Monterisi
+34|MF|MAR|Anouar El Azzouzi
+71|DF|SRB|Aleksa Terzić
+73|MF|ITA|Patrizio Masini
+
+Genoa
+1|GK|NED|Justin Bijlow
+2|DF|ALB|Mario Mitaj
+3|DF|NED|Kingsley Ehizibue
+4|MF|BRA|Alex Amorim
+5|DF|NOR|Leo Østigård
+8|MF|ITA|Tommaso Baldanzi
+9|FW|POR|Vitinha
+10|FW|BRA|Júnior Messias
+11|MF|SUI|Ethan Meichtry
+16|DF|ENG|Cody Drameh
+17|FW|AUT|Elias Havel
+18|FW|MNE|Milutin Osmajić
+20|DF|ITA|Stefano Sabelli
+22|DF|MEX|Johan Vásquez
+25|MF|CIV|Hamed Traorè
+27|DF|ITA|Alessandro Marcandalli
+29|FW|ITA|Lorenzo Colombo
+32|MF|DEN|Morten Frendrup
+34|DF|DEN|Sebastian Otoa
+39|GK|ITA|Daniele Sommariva
+77|MF|ISL|Mikael Egill Ellertsson
+
+Juventus
+1|GK|POL|Kamil Grabara
+2|DF|TUR|Zeki Çelik
+3|DF|BRA|Bremer
+4|DF|ITA|Federico Gatti
+5|MF|ITA|Manuel Locatelli
+6|DF|ENG|Lloyd Kelly
+7|FW|POR|Francisco Conceição
+8|MF|NED|Teun Koopmeiners
+9|FW|FRA|Randal Kolo Muani
+10|FW|TUR|Kenan Yıldız
+11|FW|KOS|Edon Zhegrova
+12|MF|BRA|Douglas Luiz
+13|FW|CIV|Jérémie Boga
+14|FW|POL|Arkadiusz Milik
+15|DF|FRA|Pierre Kalulu
+17|MF|BIH|Kerim Alajbegović
+18|FW|ITA|Jeff Ekhator
+19|MF|FRA|Khéphren Thuram
+20|DF|ITA|Andrea Cambiaso
+22|MF|USA|Weston McKennie
+23|GK|ITA|Carlo Pinsoglio
+24|DF|ITA|Daniele Rugani
+25|GK|ITA|Guglielmo Vicario
+26|DF|COL|Jhon Lucumí
+27|FW|GER|Nick Woltemade
+
+Lazio
+2|DF|FRA|Samuel Gigot
+3|DF|ITA|Luca Pellegrini
+4|DF|ESP|Patric
+5|DF|NED|Danilho Doekhi
+6|MF|ITA|Nicolò Rovella
+7|MF|NGA|Fisayo Dele-Bashiru
+9|FW|ITA|Andrea Pinamonti
+10|MF|ITA|Mattia Zaccagni
+11|FW|DEN|Gustav Isaksen
+13|DF|ITA|Alessio Romagnoli
+14|FW|NED|Tijjani Noslin
+16|MF|ITA|Davide Frattesi
+17|DF|POR|Nuno Tavares
+19|FW|SEN|Boulaye Dia
+20|FW|SRB|Petar Ratkov
+21|MF|MAR|Reda Belahyane
+22|FW|ITA|Matteo Cancellieri
+23|DF|ESP|Alfonso Pedraza
+24|MF|NED|Kenneth Taylor
+25|DF|DEN|Oliver Provstgaard
+29|MF|ITA|Manuel Lazzari
+32|MF|ITA|Danilo Cataldi
+
+Inter
+1|GK|ESP|Josep Martínez
+12|GK|ITA|Raffaele Di Gennaro
+49|GK|ITA|Ivan Provedel
+6|DF|ENG|John Stones
+25|DF|SUI|Manuel Akanji
+28|DF|FRA|Benjamin Pavard
+30|DF|BRA|Carlos Augusto
+31|DF|GER|Yann Aurel Bisseck
+32|DF|ITA|Federico Dimarco
+95|DF|ITA|Alessandro Bastoni
+99|DF|ENG|Djed Spence
+5|MF|SRB|Aleksandar Stanković
+7|MF|POL|Piotr Zieliński
+8|MF|CRO|Petar Sučić
+11|MF|BRA|Luis Henrique
+17|MF|FRA|Andy Diouf
+20|MF|TUR|Hakan Çalhanoğlu
+22|MF|ARM|Henrikh Mkhitaryan
+23|MF|ITA|Nicolò Barella
+9|FW|FRA|Marcus Thuram
+10|FW|ARG|Lautaro Martínez
+14|FW|CIV|Ange-Yoan Bonny
+94|FW|ITA|Pio Esposito
+
+Lecce
+1|GK|ITA|Marco Bleve
+2|DF|FRA|Ali Dembélé
+3|DF|IRL|Corrie Ndaba
+4|DF|ANG|Kialonda Gaspar
+5|DF|GER|Jamil Siebert
+7|FW|SWE|Amar Fatah
+8|MF|TOG|Sadik Fofana
+9|FW|SRB|Nikola Štulić
+10|MF|ALB|Medon Berisha
+11|FW|NIG|Konan N'Dri
+14|MF|MAR|Youssef Maleh
+16|MF|ISR|Omri Gandelman
+17|DF|POR|Danilo Veiga
+18|DF|FRA|Gaby Jean
+20|MF|SRB|Ivan Ilić
+22|FW|ESP|Paco Esteban
+25|DF|ITA|Antonino Gallo
+28|MF|NED|Olaf Gorter
+29|MF|MLI|Lassana Coulibaly
+30|GK|ITA|Wladimiro Falcone
+34|MF|DEN|Hjalte Lærke
+44|DF|POR|Tiago Gabriel
+
+Milan
+1|GK|ITA|Pietro Terracciano
+2|DF|ECU|Pervis Estupiñán
+5|DF|BEL|Koni De Winter
+8|MF|ENG|Ruben Loftus-Cheek
+9|FW|POR|Gonçalo Ramos
+11|MF|USA|Christian Pulisic
+12|MF|FRA|Adrien Rabiot
+13|DF|FRA|Sankhoun Diawara
+14|MF|CRO|Luka Modrić
+16|GK|FRA|Mike Maignan
+20|MF|ENG|Omari Hutchinson
+21|MF|NGA|Samuel Chukwueze
+22|FW|BEL|Diego Moreira
+23|DF|ENG|Fikayo Tomori
+30|MF|SUI|Ardon Jashari
+31|DF|SRB|Strahinja Pavlović
+33|DF|ITA|Davide Bartesaghi
+34|DF|ESP|Mario Gila
+42|DF|ITA|Filippo Terracciano
+46|DF|ITA|Matteo Gabbia
+56|MF|BEL|Alexis Saelemaekers
+73|FW|ITA|Francesco Camarda
+
+Monza
+—|GK|ITA|Semuel Pizzignacco
+—|GK|SEN|Demba Thiam
+—|DF|BUL|Valentin Antov
+—|DF|ITA|Samuele Birindelli
+—|DF|SWE|Arvid Brorsson
+—|DF|ITA|Andrea Carboni
+—|DF|ITA|Filippo Delli Carri
+—|DF|ITA|Lorenzo Lucchesi
+—|DF|ITA|Luca Ravanelli
+—|MF|BRA|Paulo Azzi
+—|MF|ITA|Leonardo Colombo
+—|MF|ITA|Andrea Colpani
+—|MF|ITA|Nicolas Galazzi
+—|MF|BRA|Hernani
+—|MF|ITA|Matteo Pessina
+—|FW|SEN|Keita Baldé
+—|FW|ITA|Patrick Ciurria
+—|FW|ITA|Patrick Cutrone
+—|FW|ENG|Omari Forson
+—|FW|POR|Dany Mota
+—|FW|ITA|Andrea Petagna
+
+Napoli
+1|GK|ITA|Alex Meret
+2|DF|ITA|Costantino Favasuli
+4|DF|ITA|Alessandro Buongiorno
+5|DF|FRA|Benoît Badiashile
+6|MF|SCO|Billy Gilmour
+7|FW|BRA|David Neres
+8|MF|SCO|Scott McTominay
+11|MF|BEL|Kevin De Bruyne
+13|DF|KOS|Amir Rrahmani
+16|DF|ESP|Rafa Marín
+17|DF|URU|Mathías Olivera
+19|FW|DEN|Rasmus Højlund
+20|FW|ITA|Lorenzo Lucca
+21|FW|ITA|Matteo Politano
+22|DF|ITA|Giovanni Di Lorenzo
+23|FW|BRA|Giovane
+26|MF|ITA|Antonio Vergara
+27|FW|BRA|Alisson Santos
+31|DF|NED|Sam Beukema
+32|GK|SRB|Vanja Milinković-Savić
+37|DF|ITA|Leonardo Spinazzola
+68|MF|SVK|Stanislav Lobotka
+70|FW|NED|Noa Lang
+
+Parma
+3|DF|SEN|Abdoulaye Ndiaye
+4|MF|SUI|Vincent Sierro
+5|DF|ARG|Lautaro Valenti
+7|FW|ESP|Ousmane Diallo
+8|MF|USA|Benjamin Cremaschi
+9|FW|ARG|David Romero
+10|MF|ESP|Adrián Bernabé
+11|FW|SWE|Pontus Almqvist
+14|DF|ITA|Emanuele Valeri
+15|DF|ITA|Enrico Delprato
+16|MF|BEL|Mandela Keita
+19|FW|MLI|El Bilal Touré
+20|FW|CRO|Matija Frigan
+23|FW|FRA|Nesta Elphege
+27|DF|SUI|Sascha Britschgi
+29|DF|ARG|Franco Carboni
+30|GK|ITA|Giovanni Daffara
+32|MF|ARG|Christian Ordóñez
+34|DF|BRA|Diego Carlos
+37|DF|ARG|Mariano Troilo
+40|GK|ITA|Edoardo Corvi
+41|MF|ITA|Hans Nicolussi Caviglia
+
+Roma
+2|DF|NED|Devyne Rensch
+3|DF|GRE|Konstantinos Koulierakis
+4|MF|ITA|Bryan Cristante
+5|DF|CIV|Evan Ndicka
+7|MF|ITA|Lorenzo Pellegrini
+9|FW|ARG|Santiago Castro
+14|FW|NED|Donyell Malen
+17|MF|FRA|Manu Koné
+18|FW|ARG|Matías Soulé
+20|DF|ARG|Nahuel Molina
+21|FW|ARG|Paulo Dybala
+22|DF|ESP|Mario Hermoso
+23|DF|ITA|Gianluca Mancini
+26|DF|ARG|Leonardo Balerdi
+43|DF|BRA|Wesley
+61|MF|ITA|Niccolò Pisilli
+86|MF|POR|Rodrigo Mora
+87|DF|ITA|Daniele Ghilardi
+95|GK|ITA|Pierluigi Gollini
+99|GK|SRB|Mile Svilar
+32|GK|COL|Devis Vásquez
+
+Sassuolo
+3|DF|SCO|Josh Doig
+5|DF|GNB|Fali Candé
+6|DF|POL|Sebastian Walukiewicz
+7|FW|AUS|Cristian Volpato
+8|MF|ITA|Andrea Ghion
+9|FW|SCO|Kieron Bowie
+10|FW|ITA|Domenico Berardi
+11|MF|ITA|Daniel Boloca
+12|GK|ITA|Giacomo Satalino
+15|DF|CRO|Duje Ćaleta-Car
+16|DF|BEL|Fedde Leysen
+18|MF|SRB|Nemanja Matić
+19|FW|DEN|Laurs Skjellerup
+20|DF|BEL|Ignace Van Der Brempt
+21|DF|IDN|Jay Idzes
+22|GK|ITA|Lorenzo Nyarko
+25|FW|ARG|Benja Domínguez
+26|DF|NED|Cas Odenthal
+33|DF|ESP|Rafa Obrador
+35|MF|ITA|Luca Lipani
+42|MF|NOR|Kristian Thorstvedt
+45|FW|FRA|Armand Laurienté
+
+Torino
+2|DF|SCO|Nathan Patterson
+3|DF|ITA|Cristiano Biraghi
+5|DF|SUI|Eray Cömert
+6|MF|TUR|Emirhan İlkhan
+7|FW|MAR|Zakaria Aboukhlal
+8|MF|ITA|Rolando Mandragora
+9|FW|ITA|Pietro Pellegri
+10|MF|CRO|Nikola Vlašić
+13|DF|SUI|Ricardo Rodriguez
+17|FW|CRO|Sandro Kulenović
+18|FW|ARG|Giovanni Simeone
+19|FW|SCO|Ché Adams
+22|MF|ITA|Cesare Casadei
+23|DF|EQG|Saúl Coco
+26|GK|ITA|Diego Mascardi
+28|MF|NED|Kian Fitz-Jim
+44|DF|ALB|Ardian Ismajli
+45|DF|ALG|Rafik Belghali
+66|MF|LTU|Gvidas Gineitis
+81|GK|URU|Franco Israel
+91|FW|COL|Duván Zapata
+
+Udinese
+4|MF|SVN|Sandi Lovrić
+5|DF|AUT|David Alaba
+6|MF|ESP|Oier Zarraga
+7|FW|SEN|Idrissa Gueye
+8|MF|SWE|Jesper Karlström
+9|FW|ENG|Keinan Davis
+10|FW|ITA|Nicolò Zaniolo
+11|DF|CIV|Hassane Kamara
+13|DF|ITA|Nicolò Bertola
+15|FW|CIV|Vakoun Bayo
+16|DF|GER|Matteo Palma
+20|DF|COL|Juan David Arizala
+23|DF|KVX|Mërgim Vojvoda
+24|MF|POL|Jakub Piotrowski
+27|DF|BEL|Christian Kabasele
+28|DF|FRA|Oumar Solet
+30|MF|GEO|Giorgi Chakvetadze
+32|MF|NED|Jurgen Ekkelenkamp
+38|MF|SCO|Lennon Miller
+40|GK|NGA|Maduka Okoye
+41|GK|POL|Bartosz Mrozek
+
+Venezia
+—|GK|ITA|Matteo Grandi
+—|GK|ITA|Alessandro Plizzari
+—|GK|SRB|Filip Stanković
+—|DF|GER|Armel Bella-Kotchap
+—|DF|CRO|Bartol Franjić
+—|DF|FRA|Antoine Hainaut
+—|DF|SUR|Ridgeciano Haps
+—|DF|LUX|Seid Korać
+—|DF|BEL|Richie Sagrado
+—|DF|BEL|Joël Schingtienne
+—|DF|CRO|Marin Šverko
+—|DF|ITA|Michael Venturi
+—|MF|CRO|Toma Bašić
+—|MF|ISL|Bjarki Bjarkason
+—|MF|NOR|Emil Bohinen
+—|MF|USA|Gianluca Busio
+—|MF|ITA|Mattia Compagnon
+—|MF|ITA|Matteo Dagasso
+—|MF|GHA|Alfred Duncan
+—|MF|ITA|Nunzio Lella
+—|MF|ESP|Kike Pérez
+

@@ -1,0 +1,465 @@
+Angers
+1|GK|POR|Anthony Lopes
+2|DF|HAI|Carlens Arcus
+4|DF|MLI|Ousmane Camara
+6|MF|FRA|Louis Mouton
+7|FW|CTA|Usman Simbakoli
+8|MF|NED|Branco van den Boomen
+9|FW|FRA|Prosper Peter
+10|FW|MAR|Amine Sbaï
+11|FW|CMR|Harouna Djibirin
+14|MF|MAR|Yassin Belkhdim
+16|GK|FRA|Melvin Zinga
+17|DF|FRA|Joseph Kalulu
+18|FW|GAB|Jim Allevinah
+19|FW|MAR|Amine El Ouazzani
+20|DF|FRA|Marius Louër
+21|DF|MTN|Jordan Lefort
+24|DF|FRA|Emmanuel Biumla
+26|FW|FRA|Anthony Bermont
+27|DF|FRA|Lilian Raolisoa
+34|DF|FRA|Maël Gernigon
+36|MF|FRA|Bané Diatta
+40|GK|MLI|Oumar Pona
+93|MF|ALG|Haris Belkebla
+
+Auxerre
+1|GK|FRA|Paul Nardi
+3|FW|GLP|Rémy Labeau Lascary
+4|DF|COD|Axel Tuanzebe
+5|MF|FRA|Kévin Danois
+8|MF|FRA|Naouirou Ahamada
+9|FW|ENG|Cameron Archer
+11|FW|NED|Eros Maddy
+13|DF|FRA|Telli Siwe
+15|DF|CGO|Christ Makosso
+17|MF|FRA|Pierre Ekwah
+18|MF|SEN|Assane Dioussé
+19|FW|CMR|Danny Namaso
+20|DF|CIV|Sinaly Diomandé
+22|DF|NOR|Fredrik Oppegård
+23|GK|MTN|Mamadou Diop
+24|DF|SUI|Bryan Okoh
+27|DF|FRA|Lamine Sy
+28|MF|FRA|Romain Faivre
+29|DF|GHA|Marvin Senaya
+31|FW|FRA|Ryan Rodin
+32|FW|CMR|Rayan Mandengue
+34|MF|FRA|Lamfia Dioubaté
+35|DF|FRA|Elikya Legros
+36|MF|FRA|Tidiane Devernois
+37|GK|FRA|Louis Mezerette
+
+Brest
+1|GK|NOR|Egil Selvik
+2|DF|FRA|Bradley Locko
+4|DF|FRA|Gautier Lloris
+5|DF|FRA|Brendan Chardonnet
+6|MF|MLI|Mamady Diambou
+7|MF|BEL|Joseph Nonge
+8|MF|FRA|Hugo Magnetti
+9|FW|SEN|Pathé Mboup
+10|FW|FRA|Giovani Versini
+11|FW|FRA|Axel Camblan
+13|MF|FRA|Joris Chotard
+16|GK|FRA|Noé Poillion
+17|FW|GNB|Mama Baldé
+18|DF|FRA|Justin Bourgault
+19|FW|FRA|Ludovic Ajorque
+20|DF|CIV|Luck Zogbé
+21|FW|FRA|Ibrahim Kanté
+23|MF|MLI|Kamory Doumbia
+24|MF|SEN|Samba Diop
+29|MF|FRA|Lucas Tousart
+30|GK|FRA|Mathieu Patouillet
+70|DF|FRA|Kenny Lala
+71|DF|FRA|Raphaël Le Guen
+
+Le Havre
+5|DF|ALG|Ahmed Touba
+6|MF|FRA|Junior Mwanga
+7|MF|MAR|Amir Richardson
+9|FW|NGA|Josh Maja
+10|MF|SUI|Felix Mambimbi
+12|DF|DEN|Elias Jelert
+14|MF|SEN|Rassoul Ndiaye
+15|DF|JPN|Ayumu Seko
+17|MF|JPN|Kaito Mizuta
+19|FW|FRA|Joan Tincres
+20|DF|FRA|Djibril Ouziad
+23|DF|FRA|Vincent Sasso
+24|MF|CIV|Guy-Noël Zohouri
+25|FW|TAN|Mbwana Samatta
+26|MF|FRA|Simon Ebonog
+27|FW|FRA|Enzo Koffi
+29|DF|FRA|Stephan Zagadou
+30|FW|JPN|Sōta Nakamura
+32|DF|FRA|Timothée Pembélé
+38|FW|FRA|Rayan Fofana
+44|MF|FRA|Ismaïl Bouneb
+50|GK|FRA|Paul Argney
+77|GK|COD|Lionel Mpasi
+78|MF|FRA|Daren Mosengo
+
+Le Mans
+1|GK|FRA|Ewan Hatfout
+5|DF|MTQ|Harold Voyer
+6|MF|CTA|Edwin Quarshie
+7|FW|ALG|Billal Brahimi
+8|MF|FRA|Alexandre Lauray
+9|FW|FRA|Antoine Rabillard
+10|MF|FRA|Jean Vercruysse
+11|MF|ALG|Adil Bourabaa
+12|DF|BRA|João Almeida
+13|FW|SEN|Habib Diallo
+14|FW|CTA|Louis Mafouta
+15|DF|FRA|Noa Boissé
+16|DF|ESP|Raúl Torrente
+17|DF|FRA|Samuel Yohou
+18|DF|FRA|Lucas Buades
+19|DF|FRA|Djibril Sidibé
+20|FW|FRA|William Harhouz
+21|DF|FRA|Théo Eyoum
+22|DF|FRA|Lucas Calodat
+23|MF|FRA|Daouda Traoré
+25|FW|SEN|Dame Gueye
+26|DF|FRA|Rayan Bamba
+27|MF|FRA|Martin Rossignol
+28|FW|FRA|Erwan Colas
+29|MF|FRA|Lucas Bretelle
+
+Lens
+1|GK|FRA|Régis Gurtner
+2|DF|FRA|Ruben Aguilar
+3|DF|POL|Maik Nawrocki
+4|DF|BIH|Nidal Čelik
+5|MF|MNE|Andrija Bulatović
+6|DF|AUT|Samson Baidoo
+7|FW|FRA|Florian Sotoca
+8|MF|ALG|Yacine Titraoui
+9|FW|BEL|Thorgan Hazard
+10|MF|FRA|Florian Thauvin
+11|FW|FRA|Odsonne Édouard
+13|DF|ECU|Jhoanner Chávez
+14|DF|FRA|Matthieu Udol
+16|GK|FRA|Mathieu Gorgelin
+19|FW|SEN|Abdallah Sima
+20|DF|FRA|Jean-Clair Todibo
+21|MF|MLI|Amadou Haidara
+22|MF|POL|Michał Skóraś
+23|DF|KSA|Saud Abdulhamid
+24|DF|FRA|Jonathan Gradit
+25|DF|FRA|Ismaëlo Ganiou
+27|MF|FRA|Michaël Cuisance
+28|FW|COD|Junior Kadile
+29|FW|CRO|Franjo Ivanović
+31|DF|MLI|Souleymane Sagnan
+
+Lille
+1|GK|TUR|Berke Özer
+2|DF|SUI|Loun Srdanovic
+3|DF|BEL|Nathan Ngoy
+4|DF|BRA|Alexsandro
+6|MF|ALG|Nabil Bentaleb
+7|FW|FRA|Dilane Bakwa
+8|FW|FRA|Ethan Mbappé
+9|FW|FRA|Olivier Giroud
+10|MF|ISL|Hákon Haraldsson
+11|FW|MAR|Osame Sahraoui
+12|GK|PAR|Orlando Gill
+14|MF|DEN|Maurits Kjærgaard
+15|DF|FRA|Romain Perraud
+16|GK|BEL|Arnaud Bodart
+17|MF|COD|Ngal'ayel Mukau
+18|FW|JPN|Ayase Ueda
+19|FW|TUR|Başar Önal
+21|MF|FRA|Benjamin André
+22|DF|POR|Tiago Santos
+23|DF|FRA|Tanguy Nianzou
+24|DF|IDN|Calvin Verdonk
+26|DF|FRA|Isaac Cossier
+28|FW|FRA|Gaëtan Perrin
+29|FW|MAR|Hamza Igamane
+35|FW|FRA|Soriba Diaoune
+
+Lorient
+1|GK|FRA|Benjamin Leroy
+2|DF|FRA|Alec Georgen
+3|DF|TUN|Montassar Talbi
+5|DF|SEN|Formose Mendy
+7|MF|FRA|Bandiougou Fadiga
+8|MF|GLP|Noah Cadiou
+9|FW|CIV|Mohamed Bamba
+10|FW|DEN|Isak Jensen
+11|MF|FRA|Théo Le Bris
+15|FW|BEN|Aiyegun Tosin
+17|MF|FRA|Jean-Victor Makengo
+18|FW|FRA|Ibrahima Baldé
+19|FW|SEN|Souleymane Faye
+20|DF|GUI|Dembo Sylla
+21|GK|SEN|Bingourou Kamara
+23|MF|POR|Daniel Semedo
+30|DF|SVN|Srđan Kuzmić
+32|DF|GHA|Nathaniel Adjei
+33|MF|FRA|Gabin Bernardeau
+38|GK|SUI|Yvon Mvogo
+42|FW|CIV|Mamadou Koné
+43|DF|BFA|Arsène Kouassi
+55|DF|ITA|Nosa Edward Obaretin
+62|MF|CMR|Arthur Avom
+72|MF|COD|Noah Mbamba
+
+Lyon
+1|GK|SVK|Dominik Greif
+2|MF|DEN|Mads Bidstrup
+3|DF|ARG|Nicolás Tagliafico
+6|MF|USA|Tanner Tessmann
+7|FW|GHA|Ernest Nuamah
+8|MF|FRA|Corentin Tolisso
+10|MF|CZE|Pavel Šulc
+11|FW|JPN|Keito Nakamura
+13|DF|SUI|Zachary Athekame
+16|DF|BRA|Abner
+17|FW|BEL|Loïs Openda
+18|MF|FRA|Khalis Merah
+19|DF|SEN|Moussa Niakhaté
+20|DF|AUT|Felix Bacher
+21|DF|NED|Ruben Kluivert
+22|DF|ANG|Clinton Mata
+23|MF|ENG|Tyler Morton
+24|FW|BEL|Julien Duranville
+25|GK|FRA|Justin Bengui
+26|FW|ALG|Kaïl Boudache
+32|FW|ENG|Alejandro Gomes Rodríguez
+40|GK|FRA|Rémy Descamps
+76|DF|BFA|Mohamed Ouédraogo
+85|DF|FRA|Noham Kamara
+
+Marseille
+1|GK|NED|Jeffrey de Lange
+4|DF|ENG|CJ Egan-Riley
+6|MF|NGA|Tochukwu Nnadi
+7|MF|ENG|Angel Gomes
+8|MF|ALG|Himad Abdelli
+9|FW|ALG|Amine Gouiri
+11|FW|FRA|Neal Maupay
+13|DF|CAN|Derek Cornelius
+14|FW|BRA|Igor Paixão
+18|DF|CIV|Bamo Meïté
+19|MF|CTA|Geoffrey Kondogbia
+21|DF|MAR|Nayef Aguerd
+22|FW|USA|Timothy Weah
+23|MF|DEN|Pierre-Emile Højbjerg
+25|DF|SUI|Ulisses Garcia
+29|FW|CMR|Faris Moumbagna
+33|DF|ITA|Emerson Palmieri
+40|GK|BEL|Jelle Van Neck
+43|MF|FRA|Tadjidine Mmadi
+48|MF|FRA|Keyliane Abdallah
+77|MF|MAR|Amine Harit
+92|GK|FRA|Théo Vermot
+
+Monaco
+1|GK|FIN|Lukas Hradecky
+2|DF|BRA|Vanderson
+3|DF|ENG|Eric Dier
+4|DF|NED|Jordan Teze
+6|MF|SUI|Denis Zakaria
+7|FW|FRA|Mathys Detourbet
+9|FW|USA|Folarin Balogun
+10|MF|RUS|Aleksandr Golovin
+11|FW|FRA|Matthis Abline
+13|DF|FRA|Christian Mawissa
+14|FW|DEN|Mika Biereth
+15|MF|SEN|Lamine Camara
+16|GK|SUI|Philipp Köhn
+17|MF|BEL|Stanis Idumbo
+18|MF|JPN|Takumi Minamino
+19|MF|FRA|Pape Cabral
+20|DF|POR|Flávio Nazinho
+22|DF|GHA|Mohammed Salisu
+28|MF|FRA|Mamadou Coulibaly
+29|FW|GER|Paris Brunner
+31|FW|ESP|Ansu Fati
+37|MF|FRA|Edan Diop
+40|GK|FRA|Jules Stawiecki
+44|DF|BEL|Samuel Nibombé
+
+Nice
+2|DF|TUN|Ali Abdi
+5|DF|EGY|Mohamed Abdelmonem
+6|MF|ALG|Hicham Boudaoui
+7|FW|FRA|Gauthier Hein
+8|MF|FRA|Morgan Sanson
+10|FW|MAR|Sofiane Diop
+14|FW|NGA|Victor Orakpo
+19|MF|FRA|Laurent Abergel
+21|FW|SWE|Isak Jansson
+22|MF|GUI|Issiaga Camara
+23|GK|SEN|Yehvann Diouf
+28|MF|BEL|Axel Witsel
+29|FW|CMR|Nathan Ngoumou
+33|DF|SEN|Antoine Mendy
+34|MF|FRA|Nassim Laarej
+35|MF|FRA|Xavier Mandza
+36|DF|CGO|Brad Mantsounga
+39|MF|FRA|Djibril Coulibaly
+44|FW|FRA|Zoumana Diallo
+55|DF|BDI|Youssouf Ndayishimiye
+60|GK|FRA|Martin Ponsot
+64|DF|CAN|Moïse Bombito
+77|GK|ALG|Teddy Boulhendi
+84|DF|MAR|Hamza Koutoune
+87|MF|FRA|Everton Pereira
+
+Paris FC
+1|GK|GER|Kevin Trapp
+3|DF|FRA|Emmanuel Mbemba
+4|MF|FRA|Vincent Marchetti
+5|DF|SEN|Moustapha Mbow
+6|DF|BRA|Otávio
+7|MF|FRA|Pablo Pagis
+8|MF|CIV|Patrick Zabi
+9|FW|MLI|Lassine Sinayoko
+10|MF|ALG|Ilan Kebbal
+11|FW|CIV|Jean-Philippe Krasso
+14|DF|MLI|Hamari Traoré
+15|FW|ITA|Luca Koleosho
+16|GK|FRA|Obed Nkambadio
+17|MF|MLI|Adama Camara
+18|FW|FRA|Omar Sissoko
+19|DF|FRA|Nhoa Sangui
+21|MF|FRA|Maxime Lopez
+23|MF|FRA|Rudy Matondo
+25|DF|FRA|Yoan Koré
+27|FW|NGA|Moses Simon
+28|DF|BEL|Thibault De Smet
+31|DF|ALG|Samir Chergui
+33|MF|FRA|Pierre Lees-Melou
+42|DF|ITA|Diego Coppola
+93|FW|FRA|Jonathan Ikoné
+
+Paris Saint-Germain
+2|DF|MAR|Achraf Hakimi
+4|DF|BRA|Lucas Beraldo
+5|DF|BRA|Marquinhos
+6|DF|UKR|Illia Zabarnyi
+7|FW|GEO|Khvicha Kvaratskhelia
+8|MF|ESP|Fabián Ruiz
+9|FW|ESP|Ferran Torres
+10|FW|FRA|Ousmane Dembélé
+11|MF|FRA|Maghnes Akliouche
+12|DF|FRA|Lucas Digne
+14|FW|FRA|Désiré Doué
+16|GK|ITA|Alessandro Longoni
+17|MF|POR|Vitinha
+21|DF|FRA|Lucas Hernandez
+22|FW|BEL|Mika Godts
+24|MF|FRA|Senny Mayulu
+25|DF|POR|Nuno Mendes
+27|MF|ESP|Dro Fernández
+30|GK|FRA|Lucas Chevalier
+33|MF|FRA|Warren Zaïre-Emery
+39|GK|RUS|Matvey Safonov
+47|FW|FRA|Quentin Ndjantou
+51|DF|ECU|Willian Pacho
+87|MF|POR|João Neves
+
+Rennes
+4|DF|ENG|Charlie Cresswell
+5|DF|POR|Gonçalo Oliveira
+6|MF|FRA|Djaoui Cissé
+9|FW|FRA|Esteban Lepaul
+10|MF|FRA|Ludovic Blas
+11|FW|JOR|Musa Al-Taamari
+12|FW|ESP|Eliezer Mayenda
+14|DF|USA|Bryan Reynolds
+16|GK|FRA|Nicolas Lemaître
+17|MF|POL|Sebastian Szymański
+18|DF|CMR|Aboubakar Nagida
+21|MF|FRA|Valentin Rongier
+22|FW|SEN|Boulaye Dia
+24|DF|FRA|Anthony Rouault
+26|DF|FRA|Quentin Merlin
+28|MF|FRA|Adrien Thomasson
+30|GK|FRA|Brice Samba
+36|DF|GHA|Alidu Seidu
+45|MF|FRA|Mahdi Camara
+48|DF|MAR|Abdelhamid Aït Boudlal
+60|GK|ALG|Kilian Belazzoug
+70|FW|FRA|Arnaud Nordin
+90|FW|SEN|Issa Soumaré
+
+Strasbourg
+1|GK|SWE|Karl-Johan Johnsson
+2|DF|IRL|Andrew Omobamidele
+3|DF|ENG|Ben Chilwell
+6|DF|FRA|Ismaël Doukouré
+7|FW|BEL|Diego Moreira
+8|MF|POL|Maxi Oyedele
+9|FW|ARG|Joaquín Panichelli
+11|FW|SWE|Sebastian Nanasi
+17|MF|FRA|Mathis Amougou
+19|MF|PAR|Julio Enciso
+20|FW|CIV|Martial Godo
+22|DF|CIV|Guéla Doué
+24|DF|DEN|Lucas Høgsberg
+27|FW|ENG|Sam Amo-Ameyaw
+29|MF|MAR|Samir El Mourabet
+32|MF|ARG|Valentín Barco
+42|FW|CIV|Abdoul Ouattara
+50|GK|FRA|Stefan Bajic
+80|FW|MAR|Gessime Yassine
+0|MF|POR|Diogo Sousa
+
+Toulouse
+2|DF|DEN|Rasmus Nicolaisen
+3|DF|USA|Mark McKenzie
+5|DF|FRA|Seny Koumbassa
+6|MF|FRA|Alexis Vossah
+7|FW|ARG|Julián Vignolo
+8|MF|DEN|Thomas Jørgensen
+9|FW|ARG|Santiago Hidalgo
+11|FW|SWE|Sion Oppong
+12|DF|CIV|Christ Tapé
+13|FW|CAN|Jacen Russell-Rowe
+14|MF|CAN|Niko Sigur
+15|MF|NOR|Aron Dønnum
+16|GK|FRA|Guillaume Restes
+17|MF|GHA|Abu Francis
+19|DF|GER|David Odogu
+20|FW|DEN|Casper Tengstedt
+22|DF|ALG|Rafik Messali
+23|MF|VEN|Cristian Cásseres
+30|GK|COM|Naïme Saïd Mchindra
+31|MF|GER|Niklas Schmidt
+37|FW|FRA|Ilyas Azizi
+49|MF|FRA|Aymen Amaaouch
+60|GK|FRA|Mathys Niflore
+94|DF|FRA|Ismaïl Diallo
+
+Troyes
+1|GK|FRA|Zacharie Boucher
+2|DF|FRA|Lucas Maronnier
+3|DF|FRA|Anis Ouzenadji
+4|DF|CIV|Junior Diaz
+5|DF|ITA|Paolo Gozzi
+6|DF|FRA|Adrien Monfray
+7|FW|GUI|Kandet Diawara
+8|MF|SEN|Mouhamed Diop
+9|FW|FRA|Jérémy Le Douaron
+10|MF|FRA|Merwan Ifnaoui
+11|MF|FRA|Iron Gomis
+14|DF|COM|Ismaël Boura
+17|MF|FRA|Antoine Mille
+20|FW|FRA|Renaud Ripart
+22|MF|FRA|Hugo Picard
+23|FW|FRA|Timothé Nkada
+26|MF|FRA|Alexandre Phliponeau
+29|MF|TOG|Dermane Karim
+31|DF|FRA|Noah Donkor
+33|GK|AUS|Patrick Beach
+34|FW|FRA|Ibrahim Traoré
+37|FW|FRA|Christ Batola
+39|FW|CIV|Yacouba Koné
+

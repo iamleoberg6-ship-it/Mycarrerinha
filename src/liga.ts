@@ -117,6 +117,12 @@ export function tabelaTurnoReturno(n: number): [number, number][][] {
   return [...rodadas, ...rodadas.map((j) => j.map(([a, b]) => [b, a] as [number, number]))];
 }
 
+/** Rodadas da liga: turno e returno até 20 clubes; acima disso, turno único (provisório, até o calendário com jogos no meio da semana). */
+export function rodadasDaLiga(n: number): [number, number][][] {
+  const t = tabelaTurnoReturno(n);
+  return n <= 20 ? t : t.slice(0, n - 1);
+}
+
 export interface LinhaTabela {
   clube: string; j: number; v: number; e: number; d: number; gp: number; gc: number; pts: number;
 }
