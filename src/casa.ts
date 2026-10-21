@@ -487,11 +487,18 @@ export function estruturaDoClube(c: ClubeCasa): number {
 }
 export function alojamentosDoClube(clube?: ClubeCasa): string[] {
   if (!clube) return [...ALOJ_POR_NIVEL.slice(1), "aloj-familia"];
+  if (/^(V|HS|NC)-/.test(clube.id)) return ["aloj-familia"]; // várzea (casa dos pais), colégio e universidade nos EUA
   return [ALOJ_POR_NIVEL[estruturaDoClube(clube)], "aloj-familia"];
 }
 export function nomeImovel(e: EstadoCasa, m: Imovel): string {
   if (m.categoria !== "alojamento" || !e.clube) return m.nome;
   const n = e.clube.nome;
+  if (m.id === "aloj-familia") {
+    if (e.clube.id.startsWith("V-")) return "Casa dos pais";
+    if (e.clube.id.startsWith("HS-")) return "Casa de família anfitriã em Miami";
+    if (e.clube.id.startsWith("NC-")) return `Dormitório da universidade (${n})`;
+    if (e.clube.id.startsWith("US-")) return `Casa da família perto do CT do ${e.clube.apelido}`;
+  }
   return ({ "aloj-familia": `Casa de família indicada pelo ${e.clube.apelido}`, "aloj-kitnet": `Kitnet paga pelo ${n}`, "aloj-vila": `Alojamento coletivo do ${n}`,
     "aloj-ct": `Alojamento do ${n}`, "aloj-individual": `Quarto individual no CT do ${n}`, "aloj-elite": `Residência de atletas do ${n}` } as Record<string, string>)[m.id] ?? m.nome;
 }

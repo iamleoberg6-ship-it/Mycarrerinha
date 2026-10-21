@@ -8,8 +8,8 @@ import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
-import { mundo, infoClube, idClube } from "./mundo.js";
-import { infoLiga } from "./ligas.js";
+import { mundo, infoClube, idClube, ligaDoClube } from "./mundo.js";
+import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
 import { estrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
 import { estatisticasEstimadas, type EstatEstimada } from "./perfil-jogador.js";
@@ -19,6 +19,7 @@ import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinio
 import { alvoSeguidores, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
 import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from "./identidade.js";
 import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
+import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
 import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
@@ -34,7 +35,7 @@ export interface Jogador {
   familiaridade?: Familiaridade;
 }
 export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number; baseNotas?: number[] }
-export interface ResumoTemporada { ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
+export interface ResumoTemporada { fase?: Fase; ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
 /** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
 export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" };
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
@@ -62,6 +63,8 @@ export interface Carreira {
   torcida?: number;
   /** relacionamento com outros jogadores */
   relacoes?: EstadoRelacoes;
+  /** fase amadora ou de academia (várzea, academia nos EUA, high school, universidade) e os convites do caminho */
+  fase?: Fase; caminho?: EstadoCaminho;
   /** treino de posição em andamento e sugestão do técnico */
   treinoPosicao?: Posicao; sugestaoPos?: { pos: Posicao; aceita?: boolean };
   /** maior reputação que teve com a torcida de cada clube */
@@ -132,7 +135,7 @@ export const ovrEm = (j: Jogador, p: Posicao) => calcOvr(j.at, p) - penalidade(f
 export const forma = (c: Carreira) => (c.formaUlt.length ? c.formaUlt.reduce((a, b) => a + b, 0) / c.formaUlt.length : 6.5);
 
 // ------------------------------------------------------------------ início
-export interface DadosCriacao { resultado: ResultadoCriacao; aparencia: unknown; clube: string | null; perfil?: string; decisao?: string | null }
+export interface DadosCriacao { resultado: ResultadoCriacao; aparencia: unknown; clube: string | null; perfil?: string; decisao?: string | null; caminho?: Caminho; cidade?: string }
 export interface OfertaBase { clubeId: string; nome: string; apelido: string; cores: string[]; forca: number; estrutura: number; nomeEstrutura: string; moradia: string; fila: number; texto: string; cultura: Cultura; nomeCultura: string }
 
 /** Três clubes oferecem vaga na base. Promessa de clube grande recebe convites dos grandes; os outros, de clubes menores. */
@@ -158,6 +161,27 @@ export function ofertasDeBase(pacote: PacoteDados, d: DadosCriacao): OfertaBase[
   });
 }
 
+/** Ofertas de início para cada caminho: base (Série A), várzea da cidade, academia da liga americana ou colégio nos EUA. */
+export function ofertasDoCaminho(pacote: PacoteDados, d: DadosCriacao, caminho: Caminho, cidade = "SP"): OfertaBase[] {
+  if (caminho === "base") return ofertasDeBase(pacote, d);
+  const w = mundo(pacote), r = d.resultado, rng = new RNG(`ofertas|${caminho}|${cidade}|${r.escolhas.nome}|${r.potencial}`);
+  const ligaId = caminho === "varzea" ? `VAR-${cidade}` : caminho === "eua_academia" ? "USA1" : "USA-HS";
+  const pool = w.liga[ligaId].clubes.filter((c) => !["US-TOR", "US-VAN", "US-MTL"].includes(c.id)); // academia nos EUA (sem os clubes do Canadá)
+  const escolhidos: Clube[] = [];
+  while (escolhidos.length < 3 && pool.length) escolhidos.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
+  return escolhidos.map((c) => {
+    const cc = clubeCasa(pacote, c.id), info = w.info[c.id];
+    const fila = c.elenco.filter((j) => j.posicao === r.escolhas.posicao).length;
+    const texto = caminho === "varzea" ? `Time de bairro ${NA_CIDADE[cidade]}. Terrão, marmanjo e olheiro na beira do campo de vez em quando. Você mora com a família.`
+      : caminho === "eua_academia" ? `A família se muda para ${info.cidade}. Academia de clube da liga americana: quem se destaca assina contrato homegrown já aos 15.`
+      : `Colégio em Miami, com time de futebol e aulas em inglês. Depois, bolsa numa universidade e o draft.`;
+    return { clubeId: c.id, nome: c.nome, apelido: cc.apelido, cores: cc.cores, forca: Math.round(c.forca), estrutura: caminho === "eua_academia" ? 4 : caminho === "eua_escola" ? 3 : 1,
+      nomeEstrutura: caminho === "varzea" ? "Campo de terra" : caminho === "eua_academia" ? "Academia profissional" : "Estrutura de colégio americano",
+      moradia: caminho === "varzea" ? "Casa dos pais" : caminho === "eua_academia" ? `Casa da família em ${info.cidade}` : "Casa de família anfitriã",
+      fila, texto, cultura: 3 as Cultura, nomeCultura: caminho === "varzea" ? "Time de bairro" : caminho === "eua_academia" ? "Academia" : "Colégio" };
+  });
+}
+
 export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, sementeFixa?: string): Save {
   const r = d.resultado, e = r.escolhas, perfil = definirPerfil(r);
   const ef: EfeitosPerfil = { ...perfil.efeitos };
@@ -168,28 +192,38 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
   }
   const pers = { ...r.personalidade, profissionalismo: clamp(r.personalidade.profissionalismo + (ef.profissionalismo ?? 0), 1, 20) };
   const semente = sementeFixa ?? `${e.nome}|${r.potencial}|${Date.now() % 100000}`;
-  const l = liga(pacote), rng = new RNG(semente);
+  const caminho: Caminho = d.caminho ?? "base", fase = FASE_INICIAL[caminho];
+  const l = caminho === "base" ? liga(pacote) : ligaDoClube(pacote, clubeId), rng = new RNG(semente);
   const jogador: Jogador = {
-    nome: e.nome, apelido: e.apelido || e.nome.split(" ")[0], posicao: e.posicao, pais: e.pais, nacionalidade: r.nacionalidade, idade: 16,
+    nome: e.nome, apelido: e.apelido || e.nome.split(" ")[0], posicao: e.posicao, pais: e.pais, nacionalidade: r.nacionalidade, idade: IDADE_INICIAL[caminho],
     at: { ...r.atributos }, pot: r.potencial, faixaPot: r.faixaPotencial, personalidade: pers, tracos: r.tracos, perfilId: perfil.id, perfilNome: perfil.nome,
     aparencia: d.aparencia, numero: String(rng.int(26, 49)), familia: e.familia,
     alturaCm: e.alturaCm, pe: e.pe, visual: { ...VISUAL_PADRAO, tatuagens: {}, fisico: fisicoInicial(r.atributos) },
   };
+  // quem começa antes dos 16 ainda tem uns anos de desenvolvimento pela frente
+  const anosAntes = 16 - jogador.idade;
+  if (anosAntes > 0) for (const k of ATRIBUTOS) jogador.at[k] = clamp(Math.round(jogador.at[k] - 2.2 * anosAntes), 15, 99);
   const ordem = l.clubes.map((c) => c.id);
   for (let i = ordem.length - 1; i > 0; i--) { const j = rng.int(0, i); [ordem[i], ordem[j]] = [ordem[j], ordem[i]]; }
   const fama = ef.fama ?? 0;
   const carreira: Carreira = {
-    clubeId, salario: 3000, anosContrato: 2, formacao: true, agente: ef.agente ?? "pai",
+    clubeId, salario: fase ? 0 : 3000, anosContrato: fase ? 4 : 2, formacao: true, agente: ef.agente ?? "pai",
+    ...(caminho === "base" ? {} : { ligaId: l.id, fase, caminho: { convites: [], seq: 0, temporadasFase: 0, cidade: d.cidade } }),
     moral: 62, fama, seguidores: Math.round((ef.seguidores ?? 0) + 300), cansaco: 0, lesao: 0, relTecnico: clamp(50 + (ef.relTecnico ?? 0), 0, 100), formaUlt: [],
     bonusEvolucao: ef.bonusEvolucao ?? 0, patrocinioMensal: ef.patrocinioMensal ?? 0, mesesPatrocinio: ef.mesesPatrocinio ?? 0, pressao: ef.pressao ?? 0,
     vidaNoturna: r.vidaNoturnaInicial + (ef.vidaNoturna ?? 0), exposicao: ef.exposicao ?? 0,
     temporada: 0, semana: 0, ordem, tabela: novaTabela(l), stats: statsVazias(), historico: [],
   };
   const cc = clubeCasa(pacote, clubeId);
-  const casa = novoEstado(r.dinheiroInicial, alojamentosDoClube(cc)[0], cc);
+  const casa = novoEstado(r.dinheiroInicial, fase ? "aloj-familia" : alojamentosDoClube(cc)[0], cc);
   const save: Save = { versao: 1, semente, jogador, carreira, casa, noticias: [] };
   const c = clubeDe(l, clubeId);
-  noticia(save, "clube", `Bem-vindo ao ${c.nome}`, `${jogador.apelido} assina com a base do ${c.nome}. Mora em: ${nomeImovel(casa, IMOVEL[casa.imovel])}. Ajuda de custo de R$ 3.000 por mês.`);
+  if (!fase) noticia(save, "clube", `Bem-vindo ao ${c.nome}`, `${jogador.apelido} assina com a base do ${c.nome}. Mora em: ${nomeImovel(casa, IMOVEL[casa.imovel])}. Ajuda de custo de R$ 3.000 por mês.`);
+  else noticia(save, "clube", fase === "varzea" ? `${jogador.apelido} no ${c.nome}` : fase === "academia" ? `De mudança para os EUA` : `Primeiro dia no colégio`,
+    fase === "varzea" ? `Aos ${jogador.idade} anos, ${jogador.apelido} começa no ${c.nome}, na várzea ${DA_CIDADE[d.cidade ?? "SP"]}. Sem salário: a família banca. Jogando bem, aparece olheiro.`
+    : fase === "academia" ? `A família de ${jogador.apelido} se muda para ${infoClube(pacote, clubeId).cidade}. Ele entra na academia do ${c.nome}, aos ${jogador.idade} anos.`
+    : `${jogador.apelido} começa o high school no ${c.nome}, em Miami, aos ${jogador.idade} anos. Aulas em inglês de manhã, treino à tarde.`);
+  void CAMINHOS;
   if (perfil.evento) noticia(save, "vida", perfil.evento.titulo, dec ? dec.resultado : perfil.evento.texto);
   return save;
 }
@@ -236,6 +270,7 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   if (j.idade <= 19) {
     // garoto da base em grande fase ganha chance de ficar no banco do profissional
     const sub = chanceSubir(c.clubeId);
+    if (faseAmadora(c)) return "banco"; // várzea, colégio e universidade: não existe time de base
     if (forma(c) >= sub.formaMin && c.relTecnico >= 60 && rngDe(s, "relacionado").chance(sub.chance)) return "banco";
     return "base";
   }
@@ -294,6 +329,7 @@ export function decisaoPosJogo(s: Save, p: Partida, resultados: ResultadoDecisao
   return { min: 90, ...montarDecisao(rng, sit, ctx, { ...p.nomes, marco: String(ctx.jogosPro + 1) }) };
 }
 
+const ROTULO_FASE: Record<Fase, string> = { varzea: "na várzea", colegial: "pelo colégio", universidade: "pela universidade", academia: "na academia" };
 /** Categoria da base pela idade. */
 export const categoriaBase = (idade: number) => (idade <= 17 ? "sub-17" : "sub-20");
 /** Força dos times da base (sub-17/20) a partir da força do profissional. */
@@ -306,17 +342,18 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   const esc = escalacao(pacote, s, prev.cansaco);
   if (esc === "lesionado" || esc === "fora" || esc === "suspenso") return { tipo: "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: clubeDe(l, jogo.casa).nome, nomeFora: clubeDe(l, jogo.fora).nome, souCasa: jogo.souCasa, entrada: 0, saida: 0, golsCasa: 0, golsFora: 0, lances: [], decisoes: [], base: { gols: 0, assist: 0, nota: 0 }, fAdv: 0, nomes: {}, ctx: contextoPadrao(), abertura: "", narracao: [] };
   const rng = rngDe(s, "partida");
-  const base = esc === "base";
+  // várzea, colégio e universidade contam como jogos "de formação" (não são profissionais), mas com os times como são
+  const amador = faseAmadora(c), base = esc === "base" || amador;
   const meuClube = clubeDe(l, c.clubeId), adv = clubeDe(l, jogo.adversario);
   let fCasa = clubeDe(l, jogo.casa).forca, fFora = clubeDe(l, jogo.fora).forca;
   const ovrEf = ovr(j) * (0.92 + (0.08 * prev.moral) / 100) * (prev.cansaco > 70 ? 0.9 : 1);
-  if (base) { fCasa = forcaBase(fCasa); fFora = forcaBase(fFora); }
+  if (base && !amador) { fCasa = forcaBase(fCasa); fFora = forcaBase(fFora); }
   const meuF = jogo.souCasa ? fCasa : fFora, advF = jogo.souCasa ? fFora : fCasa;
   const entrada = esc === "banco" ? (rng.chance(0.6) ? rng.int(55, 80) : 91) : 0;
   const saida = esc === "titular" && prev.cansaco > 75 ? rng.int(60, 75) : 90;
   const minutos = Math.max(0, Math.min(90, saida) - entrada);
   if (minutos > 0 && (esc === "titular" || base)) {
-    const bonus = (ovrEf - (base ? meuF + 4 : meuClube.forca)) / 11;
+    const bonus = (ovrEf - (base && !amador ? meuF + 4 : meuClube.forca)) / 11;
     if (jogo.souCasa) fCasa += bonus; else fFora += bonus;
   }
   const [gc, gf] = simularPlacar(rng, fCasa, fFora);
@@ -340,8 +377,8 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   const cp = (id: string) => infoClube(pacote, id);
   const classico = cp(jogo.casa).cidade === cp(jogo.fora).cidade || [jogo.casa, jogo.fora].sort().join("-") in CLASSICOS_EXTRA;
   const chuva = rngN.chance(0.14);
-  const elMeu = elencoDe(meuClube, base), elAdv = elencoDe(adv, base);
-  const estadio = base ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
+  const elMeu = elencoDe(meuClube, base && !amador), elAdv = elencoDe(adv, base && !amador);
+  const estadio = base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
   const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(c.clubeId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao });
   const posTab = posicaoNaTabela(undefined, s), reta = c.semana >= SEMANAS_PRE + 28;
   const jogosPro = c.stats.jogos + c.historico.reduce((acc, h) => acc + h.jogos, 0);
@@ -363,7 +400,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   lances.sort((x, y) => x.min - y.min);
   for (const x of lances) x.texto = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv);
   const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida }, nomes, elMeu, elAdv);
-  const cat = categoriaBase(j.idade), nomeC = base ? `${clubeDe(l, jogo.casa).nome} ${cat}` : clubeDe(l, jogo.casa).nome, nomeF = base ? `${clubeDe(l, jogo.fora).nome} ${cat}` : clubeDe(l, jogo.fora).nome;
+  const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeDe(l, jogo.casa).nome}${suf}`, nomeF = `${clubeDe(l, jogo.fora).nome}${suf}`;
   void adv;
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa,
     entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF,
@@ -431,6 +468,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   let resumoPartida: ResumoSemana["partida"];
   const jogo = jogoDaSemana(s);
   let placarMeuJogo: [number, number] | undefined;
+  let notaSemana = 0;
   if (partida?.escalacao === "suspenso") { c.suspensao = 0; eventos.push("Cumpriu suspensão."); }
   if (partida && jogo && partida.escalacao !== "lesionado" && partida.escalacao !== "fora" && partida.escalacao !== "suspenso") {
     let gc = partida.golsCasa, gf = partida.golsFora, gols = partida.base.gols, assist = partida.base.assist, nota = partida.base.nota;
@@ -468,6 +506,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     if (partida.tipo === "profissional") placarMeuJogo = [gc, gf];
     resumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo };
     if (minutos > 0) {
+      notaSemana = nota;
       const pro = partida.tipo === "profissional";
       participacao = pro ? (partida.escalacao === "titular" ? "titular" : "entrou") : "base";
       if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota);
@@ -497,7 +536,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       if (l2) { c.lesao = l2.semanas; eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
       const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
       noticia(s, "jogo", `${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
-        `${res[0].toUpperCase() + res.slice(1)}${pro ? "" : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: jogo.casa, fora: jogo.fora, gc, gf });
+        `${res[0].toUpperCase() + res.slice(1)}${pro ? "" : faseAmadora(c) ? ` ${ROTULO_FASE[c.fase!]}` : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: jogo.casa, fora: jogo.fora, gc, gf });
     } else if (partida.escalacao === "banco") { c.moral = clamp(c.moral - 1, 0, 100); eventos.push("Ficou no banco o jogo todo."); }
   } else if (partida?.escalacao === "fora") { c.moral = clamp(c.moral - 3, 0, 100); eventos.push("Não foi relacionado para o jogo."); }
 
@@ -540,7 +579,8 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   let dinheiro: ResumoSemana["dinheiro"];
   if (c.semana % 4 === 3) {
     const pat = fecharMesPatrocinios(s, eventos);
-    const liquido = salarioLiquido(c) + pat, g = gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
+    // várzea, academia, colégio e universidade: a família paga o custo de vida
+    const liquido = salarioLiquido(c) + pat, g = c.fase ? { itens: [], total: 0 } : gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
     const { aluguel } = fecharMes(s.casa, liquido - g.total);
     if (c.mesesPatrocinio > 0) c.mesesPatrocinio--; else c.patrocinioMensal = 0;
     dinheiro = { salario: Math.round(liquido), aluguel, gastos: g.total };
@@ -553,8 +593,9 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   c.semana++;
   let fim: ResumoTemporada | undefined;
   if (c.semana >= SEMANAS_TEMPORADA) fim = fimDeTemporada(pacote, s, eventos);
-  // 7. mercado: propostas da janela, renovação, empréstimo
+  // 7. mercado: propostas da janela, renovação, empréstimo; nos caminhos de formação, olheiros e convites
   semanaDoMercado(pacote, s, rngDe(s, "mercado"), eventos);
+  semanaDoCaminho(pacote, s, notaSemana, notaSemana > 0, eventos);
   // 8. patrocinadores: proposta vence em 4 semanas; marcas novas aparecem conforme a fama
   if (c.propPatrocinio && semanaAbsJogo(c) >= c.propPatrocinio.expira) { eventos.push(`A proposta da ${MARCA[c.propPatrocinio.marca]?.nome ?? "marca"} expirou.`); c.propPatrocinio = undefined; }
   if (!c.propPatrocinio && (c.patrocinios?.length ?? 0) < 4) {
@@ -818,7 +859,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   const posicao = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const titulo = posicao === 1 && c.stats.jogos >= 10;
   const notas = c.stats.notas, media = (x: number[]) => (x.length ? +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(2) : 0);
-  const r: ResumoTemporada = { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`), ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols };
+  const r: ResumoTemporada = { ...(c.fase ? { fase: c.fase } : {}), ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`), ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols };
   // premiação: troféus que vão para a casa
   const cc = clubeCasa(pacote, c.clubeId), ev: string[] = [];
   const premios = premiosDaTemporada(rngDe(s, "premios"), { ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
@@ -834,7 +875,9 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   c.tabela = novaTabela(l); c.stats = statsVazias();
   const clube = clubeDe(l, c.clubeId);
-  if (c.formacao && j.idade >= 18) {
+  if (c.fase) { c.anosContrato = Math.max(1, c.anosContrato); fimDeTemporadaDoCaminho(pacote, s, eventos); }
+  if (c.fase) { /* várzea, academia, colégio e universidade: a passagem é pelos convites */ }
+  else if (c.formacao && j.idade >= 18) {
     c.formacao = false; c.anosContrato = 3;
     c.salario = Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama }));
     noticia(s, "clube", "Primeiro contrato profissional", `${j.apelido} assina por 3 anos: R$ ${c.salario.toLocaleString("pt-BR")} por mês.`);
@@ -857,7 +900,7 @@ export function planoAutomatico(s: Save): Plano {
 }
 /** Joga uma semana inteira sem interface, escolhendo a primeira opção de cada decisão. */
 export function semanaAutomatica(pacote: PacoteDados, s: Save, decidirMercado = true): ResumoSemana {
-  if (decidirMercado) decidirAutomatico(pacote, s);
+  if (decidirMercado) { decidirAutomatico(pacote, s); decidirCaminhoAutomatico(pacote, s); }
   if (s.carreira.propPatrocinio) aceitarPatrocinio(s, "fixo");
   if (s.carreira.evento) resolverEvento(pacote, s, EVENTO[s.carreira.evento]?.opcoes[0].id ?? "");
   const plano = planoAutomatico(s), p = prepararPartida(pacote, s, plano);

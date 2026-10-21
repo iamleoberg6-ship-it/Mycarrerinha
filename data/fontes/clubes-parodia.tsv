@@ -245,3 +245,53 @@ BRA2	Ponte Preta	PON	Ponte Pretinha	Macaca	#000000	#FFFFFF	listrasV	61	0.55	Mois
 BRA2	São Bernardo	SBE	Tigre do ABC	Bernô	#FDD100	#000000	lisa	59	0.4	Primeiro de Maio
 BRA2	Sport	SPT	Leão do Recife	Leão da Ilha	#000000	#C8102E	listrasH	65	0.75	Ilha do Recreio
 BRA2	Vila Nova	VNO	Tigrão Colorado	Tigrão	#C8102E	#FFFFFF	lisa	61	0.45	Onésio Brasileirinho
+USA1	Inter Miami	US-MIA	Inter Maiami	Garças	#F7B5CD	#231F20	lisa	74	1.45	Novo Estádio de Maiami
+USA1	LAFC	US-LAF	Los Anjos FC	Ouro Negro	#000000	#C39E6D	lisa	74	1.35	Arena BMW de Los Anjos
+USA1	LA Galaxy	US-LAG	LA Galáxia	Galáxia	#FFFFFF	#00245D	faixa	70	1.25	Parque Dignidade
+USA1	Atlanta United	US-ATL	Atlanta Unida	Cinco Listras	#80000A	#000000	listrasV	70	1.2	Arena Mercedária
+USA1	Austin FC	US-AUS	Ostin FC	Verdes	#00B140	#000000	lisa	68	1.0	Estádio Q3
+USA1	CF Montréal	US-MTL	CF Montreau	Bleu-Noir	#000000	#0033A1	listrasV	66	0.9	Estádio Saputinho
+USA1	Charlotte FC	US-CLT	Charlote FC	Coroa	#1A85C8	#000000	lisa	70	1.05	Estádio Banco da América
+USA1	Chicago Fire	US-CHI	Chicago Fogo	Fogo	#9A1B1F	#FFFFFF	faixaH	68	1.05	Campo do Soldado
+USA1	Colorado Rapids	US-COL	Colorado Corredeiras	Rápidos	#862633	#8BB8E8	lisa	67	0.9	Parque da Loja de Esportes
+USA1	Columbus Crew	US-CLB	Columbus Trupe	Amarelos	#FEDD00	#000000	lisa	70	1.0	Campo Milagre Verde
+USA1	D.C. United	US-DCU	D.C. Unidos	Águias	#000000	#EF3E42	faixa	66	0.9	Campo Áudio
+USA1	FC Cincinnati	US-CIN	FC Cincinati	Laranjas	#003087	#FE5000	listrasV	71	1.05	Estádio TQ
+USA1	FC Dallas	US-DAL	FC Dálas	Touros	#E81F3E	#2A4076	faixaH	67	0.95	Estádio Toyoto
+USA1	Houston Dynamo	US-HOU	Houston Dínamo	Dínamo	#FF6B00	#101820	lisa	67	0.95	Estádio Concha
+USA1	Minnesota United	US-MIN	Minesota Unida	Mergulhões	#8CD2F4	#231F20	lisa	69	0.95	Campo Aliança
+USA1	Nashville SC	US-NSH	Náxvil SC	Coiotes	#ECE83A	#1F1646	lisa	70	1.0	Parque Geode
+USA1	New England Revolution	US-NER	Nova Inglaterra Revolução	Revs	#0A2240	#CE0E2D	lisa	67	1.0	Estádio Lâmina
+USA1	New York City FC	US-NYC	Nova Iorque City	Cidadãos	#6CACE4	#041E42	lisa	69	1.1	Estádio do Bronx
+USA1	New York Red Bulls	US-NYR	NY Touros Rubros	Touros	#FFFFFF	#ED1E36	centro	68	1.05	Arena de Harrison
+USA1	Orlando City	US-ORL	Orlândia City	Leões	#633492	#FDE192	lisa	71	1.15	Estádio Inter-Co
+USA1	Philadelphia Union	US-PHI	Filadélfia União	Union	#071B2C	#B19B69	lisa	70	1.0	Parque Subara
+USA1	Portland Timbers	US-POR	Portland Lenhadores	Lenhadores	#00482B	#D69A00	lisa	68	1.0	Parque da Providência
+USA1	Real Salt Lake	US-RSL	Real Lago Salgado	Reais	#B30838	#013A81	lisa	66	0.9	Campo América Primeiro
+USA1	San Diego FC	US-SDF	São Diego FC	Ondas	#000000	#697A7C	lisa	71	1.05	Estádio Snapdragão
+USA1	San Jose Earthquakes	US-SJE	São José Terremotos	Quakes	#0067B1	#000000	lisa	68	0.9	Parque PayPau
+USA1	Seattle Sounders	US-SEA	Seattle Sondadores	Sounders	#5D9741	#005595	lisa	70	1.15	Campo Lúmen
+USA1	Sporting Kansas City	US-SKC	Sporting Kansas	Sporting	#91B0D5	#002F65	lisa	65	0.9	Parque Sporting
+USA1	St. Louis City	US-STL	São Luís City	City	#DD004A	#0A1E2C	lisa	66	0.95	Parque Energizado
+USA1	Toronto FC	US-TOR	Torontô FC	Reds	#B81137	#455560	lisa	68	1.1	Campo BMO
+USA1	Vancouver Whitecaps	US-VAN	Vancúver Ondas Brancas	Caps	#FFFFFF	#00245E	faixa	72	1.05	Praça BC
+BRA3	Paysandu	C-PAY	Papão da Curuzu	Papão	#00A0E2	#FFFFFF	listrasV	61	0.4	Curuzuzinha
+BRA3	Guarani	C-GUA	Bugre de Campinas	Bugre	#006B3F	#FFFFFF	lisa	60	0.4	Brinco de Prata
+BRA3	Santa Cruz	C-SCR	Cobra Coral do Recife	Cobra Coral	#E2231A	#000000	listrasH	59	0.4	Arrudinha
+BRA3	Figueirense	C-FIG	Furacão do Estreito	Furacão	#000000	#FFFFFF	listrasV	59	0.35	Scarpellinho
+BRA3	Amazonas	C-AMZ	Onça Amazonense	Onça	#FFD100	#000000	listrasV	60	0.35	Zamithinho
+BRA3	Volta Redonda	C-VRE	Voltaço do Aço	Voltaço	#F7D117	#FFFFFF	lisa	59	0.3	Raulino de Aço
+BRA3	Botafogo-PB	C-BPB	Belo da Paraíba	Belo	#000000	#FFFFFF	listrasV	58	0.3	Almeidinha
+BRA3	Brusque	C-BRU	Quadricolor do Vale	Quadricolor	#E2231A	#FFFFFF	faixaH	58	0.3	Augusto Baurinho
+BRA3	Caxias	C-CAX	Grená da Serra	Grená	#7A1E2E	#FFFFFF	lisa	57	0.3	Centenarinho
+BRA3	Confiança	C-CON	Dragão Proletário	Dragão	#0047AB	#FFFFFF	lisa	57	0.25	Batistinha
+BRA3	Ferroviária	C-FER	Locomotiva Grená	Ferrinha	#8B1A1A	#FFFFFF	lisa	59	0.3	Fonte Brilhante
+BRA3	Ituano	C-ITU	Galo de Itu	Galo de Itu	#E2231A	#000000	listrasV	59	0.3	Novelli Juniorzinho
+BRA3	Inter de Limeira	C-INL	Leão da Paulista	Leão	#000000	#FFFFFF	listrasV	57	0.25	Limeirão
+BRA3	Maringá	C-MAR	Dogão Maringaense	Dogão	#000000	#FFFFFF	lisa	57	0.25	Willie Davizinho
+BRA3	Ypiranga-RS	C-YPI	Canarinho de Erechim	Canarinho	#FFD100	#006B3F	lisa	57	0.25	Colosso do Lago
+BRA3	Anápolis	C-ANA	Galo da Comarca	Galo	#E2231A	#FFFFFF	lisa	56	0.25	Jonas Duartinho
+BRA3	Barra-SC	C-BAR	Tubarão de Camboriú	Tubarão	#003DA5	#FFFFFF	lisa	56	0.25	Arena da Barra
+BRA3	Floresta	C-FLO	Lobo da Floresta	Lobo	#00843D	#FFFFFF	lisa	56	0.2	Felipe Santiaguinho
+BRA3	Itabaiana	C-ITA	Tremendão Serrano	Tremendão	#0047AB	#E2231A	listrasV	56	0.2	Mendonção
+BRA3	Maranhão	C-MAC	Bode Gregório	Bode	#003DA5	#E2231A	faixaH	55	0.2	Nhozinho Santinho

@@ -8,10 +8,11 @@ import { VAGAS_433 } from "./partida.js";
 export const CAMBIO = 6.0; // R$ por euro, fixo no MVP
 
 export type TipoAgente = "pai" | "iniciante" | "experiente" | "top";
+const BRASIL = ["BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`)];
 export const AGENTES: Record<TipoAgente, { comissao: number; bonus: number; alcance: number; ligas: string[] | "todas" }> = {
-  pai: { comissao: 0, bonus: -0.1, alcance: 1.0, ligas: ["BRA1", "BRA2"] },
-  iniciante: { comissao: 0.05, bonus: 0, alcance: 1.0, ligas: ["BRA1", "BRA2"] },
-  experiente: { comissao: 0.08, bonus: 0.1, alcance: 1.5, ligas: ["BRA1", "BRA2", "ARG1", "POR1", "NED1", "ENG2", "ESP2", "KSA1"] },
+  pai: { comissao: 0, bonus: -0.1, alcance: 1.0, ligas: BRASIL },
+  iniciante: { comissao: 0.05, bonus: 0, alcance: 1.0, ligas: BRASIL },
+  experiente: { comissao: 0.08, bonus: 0.1, alcance: 1.5, ligas: [...BRASIL, "ARG1", "POR1", "NED1", "ENG2", "ESP2", "KSA1", "USA1"] },
   top: { comissao: 0.1, bonus: 0.2, alcance: 2.0, ligas: "todas" },
 };
 
@@ -37,17 +38,17 @@ export function valorMercado(ovr: number, idade: number, anosContrato: number, f
 /** Maior salário mensal (R$) que um clube de fClube 1,0 paga em cada liga. O Golfo paga muito acima de todo mundo. */
 const TETO_LIGA: Record<string, number> = {
   ENG1: 5.5e6, ESP1: 4.2e6, ITA1: 3.2e6, GER1: 3.4e6, FRA1: 2.8e6, POR1: 0.9e6, NED1: 0.8e6, BRA1: 1.0e6, ARG1: 0.35e6,
-  KSA1: 14e6, ENG2: 0.7e6, ESP2: 0.25e6, BRA2: 0.2e6,
+  KSA1: 14e6, ENG2: 0.7e6, ESP2: 0.25e6, BRA2: 0.2e6, USA1: 1.6e6, BRA3: 0.06e6, BRA4: 0.025e6,
 };
 /** Teto salarial do clube: o que a folha aguenta pagar para um único jogador. */
 export function tetoSalarial(clube: Clube, liga: Liga): number {
-  return (TETO_LIGA[liga.id] ?? 0.5e6) * Math.pow(clube.fClube, 1.6);
+  return (TETO_LIGA[liga.id] ?? TETO_LIGA[liga.id.slice(0, 4)] ?? 0.5e6) * Math.pow(clube.fClube, 1.6);
 }
 
 /** Salário mensal em reais: valor de mercado, prestígio e agente, até o teto da folha do clube. */
 export function salarioMensal(o: { ovr: number; idade: number; liga: Liga; clube: Clube; agente: TipoAgente; fama: number; formacao?: boolean }): number {
   const vm = valorMercado(o.ovr, o.idade, 3, o.liga.fLiga);
-  const piso = o.formacao ? 3000 : 8000;
+  const piso = o.formacao ? (o.liga.nivel >= 5 ? 1500 : 3000) : o.liga.id.startsWith("BRA4") ? 2500 : o.liga.id === "BRA3" ? 5000 : 8000;
   const base = Math.max(piso, (0.1 * vm * o.clube.fClube * CAMBIO * o.liga.fSalario) / 12);
   const pedido = base * (1 + AGENTES[o.agente].bonus) * (1 + o.fama / 200);
   return Math.max(piso, Math.min(pedido, tetoSalarial(o.clube, o.liga)));
@@ -60,9 +61,9 @@ export function filaNaPosicao(clube: Clube, pos: Posicao, ovr: number): number {
 
 // ---------- Interesse dos clubes ----------
 
-const LINGUA: Record<string, string> = { BRA: "pt", POR: "pt", ANG: "pt", ARG: "es", URU: "es", COL: "es", ESP: "es", CHI: "es", PAR: "es", ECU: "es", PER: "es", VEN: "es", BOL: "es", ENG: "en", FRA: "fr", ITA: "it", GER: "de", NED: "nl", KSA: "ar", NGA: "en", GHA: "en", SEN: "fr", JPN: "ja", KOR: "ko" };
+const LINGUA: Record<string, string> = { USA: "en", CAN: "en", MEX: "es", BRA: "pt", POR: "pt", ANG: "pt", ARG: "es", URU: "es", COL: "es", ESP: "es", CHI: "es", PAR: "es", ECU: "es", PER: "es", VEN: "es", BOL: "es", ENG: "en", FRA: "fr", ITA: "it", GER: "de", NED: "nl", KSA: "ar", NGA: "en", GHA: "en", SEN: "fr", JPN: "ja", KOR: "ko" };
 const SUL_AMERICANOS = new Set(["BRA", "ARG", "URU", "COL", "CHI", "PAR", "ECU", "PER", "VEN", "BOL"]);
-export const LINGUA_DA_LIGA: Record<string, string> = { EUR: "es", BRA: "pt", ARA: "ar" };
+export const LINGUA_DA_LIGA: Record<string, string> = { EUR: "es", BRA: "pt", ARA: "ar", USA: "en" };
 
 export interface PerfilMercado {
   ovr: number;

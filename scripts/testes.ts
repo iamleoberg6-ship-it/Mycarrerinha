@@ -20,6 +20,8 @@ import { MARCAS, MARCA, ofertasDaMarca, marcaInteressada } from "../src/marcas.j
 import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave, resolverEvento } from "../src/jogo.js";
 import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSemana, melhoresAmigos, ovr as ovrJ, ovrEm } from "../src/jogo.js";
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
+import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
+import { ofertasDoCaminho } from "../src/jogo.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
@@ -310,10 +312,14 @@ teste("Relíquias: primeiro gol, hat-trick, prêmios; vão para a casa e não se
   assert.equal(premiosDaTemporada(new RNG("y"), { ano: 2028, idade: 25, clubeId: "FLA", clubeNome: "x", cores: [], numero: "9", jogos: 30, gols: 2, assist: 1, nota: 6.4, titulo: false, base: 0, golsBase: 0, notaBase: 0, temporadasCheias: 3 }).length, 0);
 });
 
-teste("Mundo: 13 ligas reais em paródia, elencos completos e sempre os mesmos", () => {
+teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS e ligas amadoras", () => {
   const w = mundo(pacote);
-  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "ENG1", "ENG2", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "NED1", "POR1"]);
-  assert.equal(Object.keys(w.clube).length, 266);
+  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "ENG1", "ENG2", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "NED1", "POR1", "USA1"]);
+  assert.equal(w.amadoras.length, 10);
+  assert.equal(Object.keys(w.clube).length, 516);
+  assert.equal(w.liga.USA1.clubes.length, 30); assert.equal(w.liga.BRA3.clubes.length, 20);
+  assert.equal("ABCDEFGH".split("").reduce((a, g) => a + w.liga[`BRA4${g}`].clubes.length, 0), 96);
+  assert.ok(w.clube["US-MIA"].elenco.some((j) => j.nome === "Lionel Mesi" && j.ovr >= 85), "o craque da liga americana");
   const nomes = w.ligas.filter((l) => l.id !== "BRA1").flatMap((l) => l.clubes.flatMap((c) => c.elenco.map((j) => j.nome)));
   assert.equal(new Set(nomes).size, nomes.length, "nomes de jogadores repetidos");
   for (const c of Object.values(w.clube)) {
@@ -321,11 +327,12 @@ teste("Mundo: 13 ligas reais em paródia, elencos completos e sempre os mesmos",
     assert.ok(n("GOL") >= 2 && n("ZAG") >= 3 && n("LAT") >= 2 && n("ATA") >= 2, `posições em ${c.id}`);
   }
   for (const l of w.ligas) {
-    assert.ok(l.clubes.length % 2 === 0 && l.clubes.length >= 18, l.id);
+    assert.ok(l.clubes.length % 2 === 0 && l.clubes.length >= (l.id.startsWith("BRA4") ? 12 : 18), l.id);
     for (const c of l.clubes) { assert.ok(w.info[c.id]?.estadio && w.info[c.id].cores.length >= 2, c.id); assert.ok(c.elenco.length >= 20 && c.elenco.every((j) => !/^[A-Z]{3}-\d/.test(j.nome)), c.id); }
   }
   const forca = (id: string) => w.liga[id].clubes.reduce((a, c) => a + c.forca, 0) / w.liga[id].clubes.length;
   assert.ok(forca("ENG1") > forca("ENG2") && forca("ESP1") > forca("ESP2") && forca("BRA1") > forca("BRA2") && forca("ENG1") > forca("BRA1"));
+  assert.ok(forca("BRA2") > forca("BRA3") && forca("BRA3") > forca("BRA4G") && forca("BRA4G") > forca("VAR-SP"), "pirâmide brasileira");
 });
 
 teste("Mundo: save antigo (ligas genéricas) migra para os clubes reais", () => {
@@ -451,7 +458,7 @@ teste("Mercado: transferência para outra liga, empréstimo, renovação, agente
 teste("Estrelas espalhadas por todas as ligas, craques de verdade no topo", () => {
   const est = estrelas(pacote), w = mundo(pacote);
   assert.ok(est[0].ovr >= 88 && est.filter((e) => e.ovr >= 85).length >= 15);
-  for (const l of w.ligas) {
+  for (const l of w.ligas.filter((x) => !x.id.startsWith("BRA4"))) {
     const n = est.filter((e) => w.info[e.clubeId].ligaId === l.id).length;
     assert.ok(n >= Math.floor(l.clubes.length / 2) - 2, `${l.id}: ${n} estrelas para ${l.clubes.length} clubes`);
   }
@@ -498,6 +505,57 @@ teste("Treino de posição: ponta vira centroavante mais rápido do que zagueiro
   for (let k = 0; k < 20; k++) semanaAutomatica(pacote, s);
   assert.ok(familiaridadeDe(j).ATA! > antes + 30, `ATA ${antes} → ${familiaridadeDe(j).ATA}`);
   assert.ok(mudarPosicao(s, "ATA").ok); assert.equal(j.posicao, "ATA");
+});
+
+teste("Caminhos: várzea aos 14, família paga as contas e olheiro leva para a base", () => {
+  const r = criarJogador({ nome: "Varzeano", pais: "BRA", familia: "humilde", formacao: "rua", alturaCm: 175, pe: "direito", posicao: "PON", semente: "varzea" });
+  assert.deepEqual(caminhosDisponiveis("BRA", "humilde"), ["base", "varzea"]);
+  assert.ok(caminhosDisponiveis("ARG", "rica").includes("eua_escola") && !caminhosDisponiveis("ARG", "rica").includes("varzea"));
+  const d = { resultado: r, aparencia: {}, clube: "FLA", caminho: "varzea" as const, cidade: "RJ" };
+  const of = ofertasDoCaminho(pacote, d, "varzea", "RJ");
+  assert.ok(of.length === 3 && of.every((o) => o.clubeId.startsWith("V-RJ")));
+  const s = novoJogo(pacote, d, of[0].clubeId, "varzea");
+  assert.equal(s.jogador.idade, 14); assert.equal(s.carreira.fase, "varzea"); assert.equal(s.carreira.salario, 0); assert.equal(s.carreira.ligaId, "VAR-RJ");
+  assert.ok(ovrJ(s.jogador) < r.ovr, "aos 14 ainda é menos desenvolvido");
+  const saldo = s.casa.saldo;
+  for (let k = 0; k < 8; k++) semanaAutomatica(pacote, s, false);
+  assert.equal(s.casa.saldo, saldo, "a família banca a várzea");
+  let convite = false;
+  for (let k = 0; k < 40 * 3 && s.carreira.fase === "varzea"; k++) { if (caminhoDe(s.carreira).convites.length) convite = true; semanaAutomatica(pacote, s); }
+  assert.ok(convite, "apareceu convite de peneira");
+  assert.ok(!s.carreira.fase && s.carreira.formacao && mundo(pacote).info[s.carreira.clubeId].ligaId.startsWith("BRA"), "foi para a base de um clube profissional");
+});
+
+teste("Caminhos: high school, universidade e draft da liga americana", () => {
+  const r = criarJogador({ nome: "Colegial", pais: "BRA", familia: "rica", formacao: "academia", alturaCm: 182, pe: "direito", posicao: "MEI", semente: "colegial" });
+  const d = { resultado: r, aparencia: {}, clube: "PAL", caminho: "eua_escola" as const };
+  const s = novoJogo(pacote, d, ofertasDoCaminho(pacote, d, "eua_escola")[0].clubeId, "colegial"), c = s.carreira;
+  assert.equal(s.jogador.idade, 15); assert.equal(c.ligaId, "USA-HS"); assert.equal(s.casa.imovel, "aloj-familia");
+  while (s.jogador.idade < 18) semanaAutomatica(pacote, s, false);
+  const unis = caminhoDe(c).convites.filter((x) => x.tipo === "universidade");
+  assert.equal(unis.length, 3, "três bolsas no fim do colégio");
+  assert.ok(aceitarConvite(pacote, s, unis[0].id).ok);
+  assert.equal(c.fase, "universidade"); assert.equal(c.ligaId, "USA-NCAA");
+  for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = Math.max(s.jogador.at[k], 66);
+  s.jogador.pot = 82;
+  for (let k = 0; k < 40 * 2; k++) semanaAutomatica(pacote, s, false);
+  const dr = caminhoDe(c).convites.find((x) => x.tipo === "draft");
+  assert.ok(dr && dr.pick! <= 30 && mundo(pacote).info[dr.clubeId].ligaId === "USA1", "escolhido no draft");
+  assert.ok(aceitarConvite(pacote, s, dr!.id).ok);
+  assert.ok(!c.fase && !c.formacao && c.ligaId === "USA1" && c.salario >= 40000, "profissional na liga americana");
+});
+
+teste("Caminhos: academia nos EUA e contrato homegrown antes dos 18", () => {
+  const r = criarJogador({ nome: "Homegrown", pais: "ENG", familia: "rica", formacao: "academia", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "homegrown" });
+  const d = { resultado: r, aparencia: {}, clube: null, caminho: "eua_academia" as const };
+  const s = novoJogo(pacote, d, "US-PHI", "homegrown"), c = s.carreira;
+  assert.equal(c.fase, "academia"); assert.ok(c.formacao);
+  for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 64;
+  for (let k = 0; k < 40; k++) semanaAutomatica(pacote, s, false);
+  const hg = caminhoDe(c).convites.find((x) => x.tipo === "homegrown");
+  assert.ok(hg && s.jogador.idade === 15, "homegrown aos 15");
+  aceitarConvite(pacote, s, hg!.id);
+  assert.ok(!c.formacao && c.clubeId === "US-PHI" && c.salario >= 40000);
 });
 
 console.log(`\n${ok} testes passaram`);

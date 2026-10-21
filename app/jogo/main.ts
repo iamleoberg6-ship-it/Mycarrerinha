@@ -9,7 +9,7 @@ import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
-  agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
+  ofertasDoCaminho, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
 } from "../../src/jogo";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
@@ -22,6 +22,8 @@ import { TRACOS, PAISES } from "../../src/dna";
 import { valorMercado } from "../../src/mercado";
 import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao, visualDe, tatuagemVisivel, type AreaTatuagem, type Fisico, type RoupaCasual } from "../../src/visual";
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
+import { CAMINHOS, NOME_FASE, caminhosDisponiveis, cidadeDaVarzea, caminhoDe, aceitarConvite, recusarConvite, type Caminho } from "../../src/caminhos";
+import { CIDADES_VARZEA, DA_CIDADE } from "../../src/ligas";
 import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, type AcaoRel, type Relacao } from "../../src/relacoes";
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
@@ -51,6 +53,7 @@ if (save && migrarSave(pacote, save)) gravar(CHAVE_SAVE, save);
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
 let aba: "tabela" | "jogador" | "noticias" | "casa" | "mercado" | "amigos" = "tabela";
+let caminhoSel: Caminho = "base", cidadeSel: string | undefined, msgConvite: { texto: string; ok: boolean } | undefined;
 let msgRel: { texto: string; ok: boolean } | undefined, msgPos: { texto: string; ok: boolean } | undefined;
 let msgMercado: { texto: string; ok: boolean } | undefined;
 const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, plano); };
@@ -93,24 +96,31 @@ function render() {
 
 function telaInicio(): string {
   return `<header class="marca"><strong>Mycarrerinha</strong><span>Carreira</span></header>
-    <h1>Sua carreira começa aos 16.</h1>
-    <p class="sub" style="font-size:16px">Crie o jogador, escolha o clube que vai te formar e jogue semana a semana: treino, descanso, família, redes, o jogo de domingo e a casa que você vai montando com o salário.</p>
+    <h1>Sua carreira começa na base, na várzea ou nos EUA.</h1>
+    <p class="sub" style="font-size:16px">Crie o jogador, escolha por onde começar e jogue semana a semana: treino, descanso, família, redes, o jogo de domingo e a casa que você vai montando com o salário.</p>
     <a class="botao grande" href="criacao.html">Criar meu jogador</a>
     <button class="botao sec" data-acao="exemplo">Começar com um jogador de exemplo</button>`;
 }
 
 function telaOfertas(d: DadosCriacao): string {
-  const of = ofertasDeBase(pacote, d), r = d.resultado;
+  const r = d.resultado, disp = caminhosDisponiveis(r.escolhas.pais, r.escolhas.familia);
+  if (!disp.includes(caminhoSel)) caminhoSel = "base";
+  const cidade = cidadeSel ?? cidadeDaVarzea(pacote, d.clube);
+  const of = ofertasDoCaminho(pacote, d, caminhoSel, cidade);
+  const titulo = caminhoSel === "base" ? "Três clubes querem você na base." : caminhoSel === "varzea" ? `Três times da várzea ${DA_CIDADE[cidade]} querem você.` : caminhoSel === "eua_academia" ? "Três academias da liga americana abrem as portas." : "Três colégios nos EUA aceitam você.";
   return `<header class="marca"><strong>Mycarrerinha</strong><span>Primeira decisão</span></header>
     <p class="rotulo">${esc(r.escolhas.nome)} · ${NOME_POS[r.escolhas.posicao]} · OVR ${r.ovr}</p>
-    <h1>Três clubes querem você na base.</h1>
-    <p class="sub">A estrutura do clube decide onde você mora. A fila na posição e a cultura do clube decidem quando você chega ao profissional.</p>
+    ${disp.length > 1 ? `<p class="rotulo" style="margin-top:6px">Por onde começar</p><div class="caminhos">${disp.map((k) => `<button class="caminho${caminhoSel === k ? " ativo" : ""}" data-caminho="${k}"><b>${esc(CAMINHOS[k].nome)}</b><small>Começa aos ${CAMINHOS[k].idade}</small></button>`).join("")}</div>
+      <p class="sub">${esc(CAMINHOS[caminhoSel].texto)}</p>` : ""}
+    ${caminhoSel === "varzea" ? `<div class="chips" style="flex-wrap:wrap;margin-bottom:8px">${Object.entries(CIDADES_VARZEA).map(([k, n]) => `<button class="chip${k === cidade ? " ativo" : ""}" data-cidade="${k}">${esc(n)}</button>`).join("")}</div>` : ""}
+    <h1>${esc(titulo)}</h1>
+    ${caminhoSel === "base" ? `<p class="sub">A estrutura do clube decide onde você mora. A fila na posição e a cultura do clube decidem quando você chega ao profissional.</p>` : ""}
     <div class="ofertas">${of.map((o) => `<div class="oferta" style="--c1:${o.cores[0].toUpperCase() === "#FFFFFF" ? o.cores[1] : o.cores[0]}"><div class="faixa"></div><div class="corpo">
       <div style="display:flex;gap:10px;align-items:center">${escudo(o.clubeId)}<h2>${esc(o.nome)}</h2></div>
       <p class="sub">${esc(o.texto)}</p>
-      <div class="linha-info"><span>Estrutura ${estrelas(o.estrutura)} ${o.nomeEstrutura.toLowerCase()}</span><span>Força do elenco <b>${o.forca}</b></span><span>Na sua posição: <b>${o.fila}</b> no elenco profissional</span><span>Base: <b>${esc(o.nomeCultura.toLowerCase())}</b></span></div>
+      <div class="linha-info"><span>Estrutura ${estrelas(o.estrutura)} ${o.nomeEstrutura.toLowerCase()}</span><span>Força do elenco <b>${o.forca}</b></span><span>Na sua posição: <b>${o.fila}</b> no elenco${caminhoSel === "base" ? " profissional" : ""}</span>${caminhoSel === "base" ? `<span>Base: <b>${esc(o.nomeCultura.toLowerCase())}</b></span>` : ""}</div>
       <p class="sub">Moradia: ${esc(o.moradia)}</p>
-      <button class="botao" data-assinar="${o.clubeId}">Assinar com o ${esc(o.apelido)}</button></div></div>`).join("")}</div>
+      <button class="botao" data-assinar="${o.clubeId}">${caminhoSel === "base" ? `Assinar com o ${esc(o.apelido)}` : caminhoSel === "varzea" ? `Jogar no ${esc(o.nome)}` : caminhoSel === "eua_academia" ? `Ir para a academia` : `Estudar no ${esc(o.nome)}`}</button></div></div>`).join("")}</div>
     <a class="sub" href="criacao.html" style="text-align:center">Criar outro jogador</a>`;
 }
 
@@ -130,7 +140,7 @@ function telaSemana(s: Save): string {
   return `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}</span></header>
   <section class="painel card-jogador" data-acao="perfil" role="button" tabindex="0" aria-label="Abrir o perfil do jogador">
     <div class="jogador"><div class="foto">${foto(s)}</div>
-      <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
+      <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.fase ? ` (${NOME_FASE[c.fase].toLowerCase().replace("eua", "EUA")})` : c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
       <div class="ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span></div></div>
     <div class="barras">${barra("Moral", c.moral, 100, "#74D394")}${barra("Cansaço", c.cansaco, 100, c.cansaco > 60 ? "#EC7D69" : "#E3B341")}${barra("Forma", forma(c), 10, "#6FB7E0", forma(c).toFixed(1))}${barra("Técnico", c.relTecnico, 100, "#B9A3E8")}</div>
     <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${c.fama.toFixed(1)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
@@ -140,6 +150,7 @@ function telaSemana(s: Save): string {
   ${cardAnuncio(s)}
   ${cardPatrocinio(s)}
   ${cardEvento(s)}
+  ${cardConvites(s)}
   ${cardSugestao(s)}
   ${cardCraque(s)}
   ${nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"}. Ver no Mercado.</small></span></button>` : ""}
@@ -253,6 +264,19 @@ function tendencia(s: Save): string {
   const alvo = alvoDeSeguidores(pacote, s), seg = s.carreira.seguidores;
   return alvo > seg * 1.05 ? "subindo ↑" : alvo < seg * 0.95 ? "caindo ↓" : "estável";
 }
+// ------------------------------------------------------------------ caminhos: convites de peneira, bolsa, draft
+const ROTULO_CONVITE = { peneira: "Peneira", profissional: "Contrato profissional", universidade: "Bolsa de estudos", draft: "Draft", homegrown: "Homegrown" } as const;
+function cardConvites(s: Save): string {
+  const cs = caminhoDe(s.carreira).convites;
+  const msg = msgConvite ? `<p class="msg-mercado ${msgConvite.ok ? "ok" : "nao"}">${esc(msgConvite.texto)}</p>` : "";
+  msgConvite = undefined;
+  if (!cs.length) return msg ? `<section class="painel">${msg}</section>` : "";
+  return `<section class="painel convites"><p class="rotulo">${cs.length === 1 ? "Um convite" : `${cs.length} convites`} · escolha um caminho</p>${msg}
+    ${cs.map((cv) => { const info = infoClube(pacote, cv.clubeId), li = infoLiga(info.ligaId);
+      return `<div class="convite">${escudo(cv.clubeId)}<div><span class="tag">${ROTULO_CONVITE[cv.tipo]}</span><b>${esc(cv.titulo)}</b><small>${esc(li.curto)} · força ${Math.round(info.forca)}</small><p class="sub">${esc(cv.texto)}</p>
+        <div class="ferr-botoes"><button class="botao peq" data-convite="${cv.id}" data-op="aceitar">${cv.tipo === "universidade" ? "Aceitar a bolsa" : cv.tipo === "peneira" ? "Ir à peneira" : "Assinar"}</button><button class="botao sec peq" data-convite="${cv.id}" data-op="recusar">${cv.tipo === "draft" ? "Recusar e seguir estudando" : "Recusar"}</button></div></div></div>`; }).join("")}</section>`;
+}
+
 // ------------------------------------------------------------------ posições
 const ICONE_POS: Record<string, string> = { ZAG: "🛡️", LAT: "↔️", VOL: "⚓", MEI: "🎯", PON: "⚡", ATA: "⚽" };
 function blocoTreinoPosicao(s: Save): string {
@@ -355,7 +379,8 @@ function abaMercado(s: Save): string {
   msgMercado = undefined;
   const contrato = `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${esc(meu.nome)}</h2><span class="sub">${esc(ligaNome)} · força ${Math.round(meu.forca)} · você é ${NOME_PAPEL[papel].toLowerCase()}</span></div></div><p class="sub" style="margin-top:8px"><b>${esc(NOME_CULTURA[culturaBase(c.clubeId)])}.</b> ${esc(TEXTO_CULTURA[culturaBase(c.clubeId)])}</p>
     <div class="kv" style="margin-top:8px"><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b>${m.emprestimo ? `<span>Empréstimo</span><b>Volta ao ${esc(nomeDe(m.emprestimo.origem))} no fim da temporada</b>` : ""}<span>Mercado</span><b>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : `Fechado · próxima: ${esc(proximaJanela(c))}`}</b></div>
-    ${c.formacao || j.idade < 18 ? `<p class="sub" style="margin-top:8px">Na base você ainda não pode ser negociado. O primeiro contrato profissional chega aos 18.</p>` : m.emprestimo ? "" :
+    ${c.fase ? `<p class="sub" style="margin-top:8px">${c.fase === "varzea" ? "Na várzea, o caminho é o olheiro: jogue bem e os convites de peneira aparecem na tela da semana." : c.fase === "academia" ? "Na academia, o clube pode te oferecer contrato homegrown no fim da temporada, a partir dos 15 anos." : c.fase === "colegial" ? "No colégio, as universidades oferecem bolsa no fim do último ano." : "Na universidade, a partir do segundo ano você entra no draft da liga americana no fim da temporada."}</p>`
+      : c.formacao || j.idade < 18 ? `<p class="sub" style="margin-top:8px">Na base você ainda não pode ser negociado. O primeiro contrato profissional chega aos 18.</p>` : m.emprestimo ? "" :
       `<div style="margin-top:10px">${m.listaTransferencia
         ? `<p class="sub">Você pediu para ser negociado${m.destinoSaida && m.destinoSaida !== "qualquer" ? ` (clubes ${esc(ONDE_DESTINO[m.destinoSaida])})` : ""}. O agente procura clubes nas janelas.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="ficar">Tirar o pedido de saída</button></div>`
         : `<p class="sub" style="margin-bottom:6px"><b>Pedir para ser negociado</b>: pedir um mercado específico faz o agente ir atrás de clubes de lá, mas vaza na imprensa e piora a relação com técnico e torcida.</p>
@@ -641,11 +666,12 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
     const dados = ler<DadosCriacao>(CHAVE_JOGADOR)!;
+    dados.caminho = caminhoSel; dados.cidade = caminhoSel === "varzea" ? cidadeSel ?? cidadeDaVarzea(pacote, dados.clube) : undefined;
     save = novoJogo(pacote, dados, d.assinar); plano = planoPadrao(); salvar(); render(); window.scrollTo(0, 0);
   } else if (d.foco) { plano.foco = d.foco as Grupo; salvar(); render(); }
   else if (d.int) { plano.intensidade = d.int as Intensidade; salvar(); render(); }
@@ -673,6 +699,12 @@ document.addEventListener("click", (ev) => {
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.trofeu && save) { trofeuAberto = trofeuAberto === d.trofeu ? undefined : d.trofeu; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
+  else if (d.caminho) { caminhoSel = d.caminho as Caminho; render(); }
+  else if (d.cidade) { cidadeSel = d.cidade; render(); }
+  else if (d.convite && save) {
+    const rr = d.op === "aceitar" ? aceitarConvite(pacote, save, d.convite) : recusarConvite(pacote, save, d.convite);
+    msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
   else if (d.rel && save) {
     const r = agirRelacao(pacote, save, d.rel, d.op as AcaoRel); msgRel = { texto: r.msg, ok: r.ok };
     if (d.op === "camisa" && aba !== "amigos") msgRel = undefined;

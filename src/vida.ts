@@ -6,16 +6,20 @@ import { infoLiga } from "./ligas.js";
 /** Quanto o clube projeta um jogador nas redes (0,2 = clube pequeno de segunda divisão; 2 = gigante mundial). */
 const VIS_LIGA: Record<string, number> = {
   ENG1: 1.25, ESP1: 1.15, ITA1: 0.95, GER1: 0.9, FRA1: 0.85, BRA1: 0.9, POR1: 0.65, NED1: 0.55, KSA1: 0.6, ARG1: 0.7, ENG2: 0.45, ESP2: 0.3, BRA2: 0.4,
+  USA1: 0.8, BRA3: 0.25, BRA4: 0.15,
 };
 const VIS_CLUBE: Record<string, number> = {
   "ES-RMA": 2.0, "ES-BAR": 2.0, "EN-MUN": 1.85, "EN-LIV": 1.7, "EN-MCI": 1.65, "EN-CHE": 1.55, "EN-ARS": 1.55, "FR-PSG": 1.7, "DE-FCB": 1.6, "IT-JUV": 1.45,
   "IT-MIL": 1.35, "IT-INT": 1.3, "DE-BVB": 1.25, "ES-ATM": 1.2, "EN-TOT": 1.2, "SA-NAS": 1.4, "SA-HIL": 1.0, "SA-ITT": 0.95, "SA-AHL": 0.9,
   FLA: 1.35, COR: 1.15, PAL: 1.05, SPA: 1.0, SAN: 1.05, VAS: 0.95, CAM: 0.9, GRE: 0.9, INT: 0.9, CRU: 0.9, BOT: 0.9, FLU: 0.85,
+  "US-MIA": 1.5, "US-LAF": 1.05, "US-LAG": 1.05,
   "AR-BOC": 1.3, "AR-RIV": 1.25, "PT-SLB": 1.0, "PT-FCP": 0.95, "PT-SCP": 0.9, "NL-AJA": 1.0, "IT-NAP": 1.1, "IT-ROM": 1.05,
 };
 export function visibilidade(clubeId: string, ligaId: string | undefined, fClube: number): number {
   if (VIS_CLUBE[clubeId]) return VIS_CLUBE[clubeId];
-  return clamp((VIS_LIGA[infoLiga(ligaId).id] ?? 0.6) * (0.55 + 0.45 * fClube), 0.2, 1.6);
+  const li = infoLiga(ligaId);
+  if (li.amador) return 0.12;
+  return clamp((VIS_LIGA[li.id] ?? VIS_LIGA[li.id.slice(0, 4)] ?? 0.6) * (0.55 + 0.45 * fClube), 0.1, 1.6);
 }
 
 // ------------------------------------------------------------------ seguidores
@@ -46,7 +50,7 @@ export function saltoTransferencia(seg: number, alvoNovo: number): number {
 
 // ------------------------------------------------------------------ impostos
 /** Alíquota efetiva sobre o salário de jogador, por país da liga. O Golfo não cobra imposto de renda. */
-const IMPOSTO: Record<string, number> = { BRA: 0.275, ARG: 0.35, ENG: 0.45, ESP: 0.47, ITA: 0.43, GER: 0.45, FRA: 0.45, POR: 0.28, NED: 0.45, KSA: 0 };
+const IMPOSTO: Record<string, number> = { BRA: 0.275, ARG: 0.35, ENG: 0.45, ESP: 0.47, ITA: 0.43, GER: 0.45, FRA: 0.45, POR: 0.28, NED: 0.45, KSA: 0, USA: 0.37 };
 export const aliquota = (ligaId: string | undefined) => IMPOSTO[infoLiga(ligaId).pais] ?? 0.275;
 export function imposto(salario: number, ligaId: string | undefined): number {
   return aliquota(ligaId) * Math.max(0, salario - 5000);
@@ -79,7 +83,7 @@ export const PADRAO_INICIAL: PadraoVida = { alimentacao: 0, lazer: 1, familia: 0
 export const ITENS_VIDA: ItemVida[] = ["alimentacao", "lazer", "familia"];
 
 /** Morar fora custa mais caro. */
-const CUSTO_REGIAO: Record<string, number> = { BRA: 1, SUL: 0.8, EUR: 1.6, ARA: 1.3 };
+const CUSTO_REGIAO: Record<string, number> = { BRA: 1, SUL: 0.8, EUR: 1.6, ARA: 1.3, NAM: 1.8 };
 export const fCustoVida = (ligaId: string | undefined) => CUSTO_REGIAO[infoLiga(ligaId).regiao] ?? 1;
 
 /** Equipe pessoal (assessor de imprensa, segurança, personal, advogado): cresce com a fama, em % do salário. */

@@ -17,9 +17,9 @@ SAIDA = os.path.join(RAIZ, "data", "mundo-2026.json")
 ANO = 2026
 
 # ordem de prioridade quando o mesmo jogador aparece em dois clubes (fica no primeiro)
-ORDEM = ["ENG1", "ESP1", "ITA1", "GER1", "FRA1", "KSA1", "POR1", "NED1", "ENG2", "ESP2", "ARG1", "BRA2"]
+ORDEM = ["ENG1", "ESP1", "ITA1", "GER1", "FRA1", "KSA1", "POR1", "NED1", "ENG2", "ESP2", "ARG1", "BRA2", "USA1", "BRA3"]
 PAIS_LIGA = {"ENG1": "ENG", "ENG2": "ENG", "ESP1": "ESP", "ESP2": "ESP", "ITA1": "ITA", "GER1": "GER", "FRA1": "FRA",
-             "POR1": "POR", "NED1": "NED", "KSA1": "KSA", "ARG1": "ARG", "BRA2": "BRA"}
+             "POR1": "POR", "NED1": "NED", "KSA1": "KSA", "ARG1": "ARG", "BRA2": "BRA", "USA1": "USA", "BRA3": "BRA"}
 ALIAS = {"Bayern de Munique": "Bayern", "Central Córdoba (SdE)": "Central Córdoba", "Estudiantes (LP)": "Estudiantes",
          "Estudiantes (RC)": "Estudiantes de Río Cuarto", "Gimnasia (LP)": "Gimnasia La Plata", "Gimnasia (M)": "Gimnasia Mendoza"}
 NAC_FIX = {"NGR": "NGA", "GBS": "GNB", "SLO": "SVN", "DRC": "COD", "CAF": "CTA", "GUF": "FRA", "GLP": "FRA", "MTQ": "FRA", "NCL": "FRA", "?": ""}
@@ -105,7 +105,18 @@ ESTRELAS = {
     "Guglielmo Vicario": (83, 1996), "Franco Mastantuono": (79, 2007), "Nicolás Paz": (81, 2004),
     # Bundesliga
     "Ferran Torres": (81, 2000), "Mohamed Simakan": (80, 2000), "Ângelo Gabriel": (77, 2004), "Bento": (79, 1999), "Samú Costa": (79, 2000),
-    "Tom Bischof": (80, 2005), "Gregor Kobel": (86, 1997), "Nico Schlotterbeck": (84, 1999), "Serhou Guirassy": (85, 1996), "Jobe Bellingham": (79, 2005),
+    "Tom Bischof": (80, 2005),
+    # MLS
+    "Lionel Messi": (86, 1987), "Luis Suárez": (78, 1987), "Rodrigo De Paul": (81, 1994), "Casemiro": (80, 1992), "Son Heung-min": (84, 1992),
+    "Hugo Lloris": (78, 1986), "Denis Bouanga": (79, 1994), "Antoine Griezmann": (83, 1991), "Thomas Müller": (80, 1989), "Marco Reus": (76, 1989),
+    "Timo Werner": (77, 1996), "Wilfried Zaha": (76, 1992), "Hirving Lozano": (77, 1995), "Riqui Puig": (77, 1999), "Alexis Sánchez": (74, 1988),
+    "Evander": (78, 1998), "Kévin Denkey": (76, 2000), "Hany Mukhtar": (77, 1995), "Sam Surridge": (76, 1998), "Anders Dreyer": (78, 1998),
+    "Eric Maxim Choupo-Moting": (74, 1989), "Emil Forsberg": (76, 1991), "Carles Gil": (76, 1992), "Ryan Gauld": (76, 1995),
+    "Breel Embolo": (77, 1997), "Miguel Almirón": (76, 1994), "Aleksei Miranchuk": (76, 1995), "Sergi Roberto": (74, 1992), "Hugo Cuypers": (75, 1997),
+    "Petar Musa": (76, 1998), "Josh Sargent": (75, 2000), "Cavan Sullivan": (71, 2009), "Pedro de la Vega": (76, 2001), "Diego Luna": (75, 2003),
+    "Brian White": (74, 1996), "Matt Turner": (75, 1994), "Roman Bürki": (74, 1990), "Brais Méndez": (76, 1997),
+    "Wessam Abou Ali": (75, 1999), "Martín Ojeda": (75, 1998), "Dejan Joveljić": (74, 1999), "Andre Blake": (74, 1990), "Angus Gunn": (74, 1996),
+    "Kyōgo Furuhashi": (74, 1995), "Telasco Segovia": (75, 2003), "Tai Baribo": (74, 1998), "Sergio Reguilón": (75, 1996), "Eric Bailly": (73, 1994), "Gregor Kobel": (86, 1997), "Nico Schlotterbeck": (84, 1999), "Serhou Guirassy": (85, 1996), "Jobe Bellingham": (79, 2005),
 }
 # posição detalhada conhecida (a heurística por número erra em alguns)
 POSICAO = {
@@ -122,6 +133,10 @@ POSICAO = {
     "Bukayo Saka": "PON", "Raphinha": "PON", "Ousmane Dembélé": "ATA", "Khvicha Kvaratskhelia": "PON", "Michael Olise": "PON",
     "Kylian Mbappé": "ATA", "Erling Haaland": "ATA", "Harry Kane": "ATA", "Cristiano Ronaldo": "ATA", "Lautaro Martínez": "ATA",
     "Viktor Gyökeres": "ATA", "Alexander Isak": "ATA", "Julián Álvarez": "ATA", "Désiré Doué": "PON", "Sadio Mané": "PON",
+    "Lionel Messi": "MEI", "Luis Suárez": "ATA", "Rodrigo De Paul": "MEI", "Casemiro": "VOL", "Son Heung-min": "PON", "Denis Bouanga": "PON",
+    "Antoine Griezmann": "MEI", "Thomas Müller": "MEI", "Timo Werner": "PON", "Wilfried Zaha": "PON", "Hirving Lozano": "PON", "Riqui Puig": "MEI",
+    "Evander": "MEI", "Kévin Denkey": "ATA", "Hany Mukhtar": "MEI", "Sam Surridge": "ATA", "Anders Dreyer": "PON", "Carles Gil": "MEI",
+    "Ryan Gauld": "MEI", "Cavan Sullivan": "MEI", "Emil Forsberg": "MEI", "Petar Musa": "ATA", "Josh Sargent": "ATA",
 }
 # corrige chaves com espaço extra (duplicatas de digitação)
 ESTRELAS = {k.strip(): v for k, v in ESTRELAS.items()}
@@ -218,15 +233,28 @@ NOMES = {
     "POR": (["João", "Diogo", "Rúben", "Tiago", "Gonçalo", "Nuno", "Bernardo", "Rafael", "Francisco"], ["Silva", "Fernandes", "Gonçalves", "Pereira", "Costa", "Mendes", "Lopes", "Carvalho", "Dias"]),
     "NED": (["Daan", "Sem", "Luuk", "Bram", "Joey", "Thijs", "Stefan", "Kevin"], ["de Jong", "Bakker", "Visser", "Smit", "de Vries", "Mulder", "Dekker", "van Beek"]),
     "ARG": (["Nicolás", "Lautaro", "Julián", "Rodrigo", "Enzo", "Thiago", "Facundo", "Matías", "Gonzalo"], ["Fernández", "González", "Rodríguez", "Gómez", "Díaz", "Álvarez", "Romero", "Sosa", "Acosta"]),
+    "USA": (["Jake", "Tyler", "Brandon", "Kyle", "Austin", "Cole", "Ryan", "Logan", "Mason", "Ethan", "Caden", "Diego", "Owen", "Luca", "Nico", "Malik", "Jaden", "Isaiah"],
+            ["Johnson", "Miller", "Davis", "Anderson", "Thompson", "Harris", "Martinez", "Clark", "Lewis", "Walker", "Young", "Allen", "Hernandez", "King", "Scott", "Green", "Baker", "Adams", "Nelson", "Carter", "Mitchell", "Roberts", "Turner", "Parker", "Reyes", "Brooks"]),
     "KSA": (["Mohammed", "Abdullah", "Salem", "Fahad", "Saud", "Nasser", "Yasser", "Faisal", "Hassan", "Turki", "Sami", "Ziyad", "Rayan", "Khalid", "Majed", "Ali"],
             ["Al-Dosari", "Al-Shahrani", "Al-Faraji", "Al-Ghamidi", "Al-Qahtani", "Al-Harbi", "Al-Otaibi", "Al-Mutairi", "Al-Zahrani", "Al-Maliki", "Al-Amri", "Al-Anazi", "Al-Shammari", "Al-Subaie"]),
 }
+
+
+NOMES["BRX"] = (NOMES["BRA"][0] + ["João", "Miguel", "Arthur", "Davi", "Heitor", "Bernardo", "Samuel", "Enzo", "Murilo", "Guilherme", "Nicolas", "Henrique", "Ryan", "Eduardo", "Otávio", "Kauã", "Erick", "Cauã", "Breno", "Leandro", "Marcos", "Fábio", "Júnior", "Robson", "Jefferson", "Anderson", "Wellington", "Alisson", "Everton", "Jonathan", "Danilo", "Márcio", "Cleiton", "Edson", "Paulo", "Valdir", "Tiago", "Juliano", "Patrick", "Emerson"],
+                 NOMES["BRA"][1] + ["Nascimento", "Cardoso", "Melo", "Correia", "Dias", "Monteiro", "Mendes", "Freitas", "Vieira", "Batista", "Lopes", "Fernandes", "Nunes", "Soares", "Machado", "Cavalcanti", "Rezende", "Pinto", "Farias", "Campos", "Andrade", "Sales", "Brito", "Xavier", "Queiroz", "Bezerra", "Macedo", "Santana", "Porto", "Assis", "Siqueira", "Tavares", "Coelho", "Ramos", "Matos", "Leite", "Guimarães", "Prado", "Fonseca", "Medeiros"])
+NOMES["USX"] = (NOMES["USA"][0] + ["Aiden", "Liam", "Noah", "Elijah", "Carter", "Hunter", "Wyatt", "Chase", "Bryce", "Gavin", "Landon", "Connor", "Dylan", "Evan", "Julian", "Marco", "Mateo", "Andre", "Xavier", "Trey", "Zach", "Dominic", "Sebastian", "Javier"],
+                 NOMES["USA"][1] + ["Hall", "Wright", "Lopez", "Hill", "Campbell", "Phillips", "Evans", "Collins", "Stewart", "Morris", "Rogers", "Reed", "Cook", "Morgan", "Bell", "Murphy", "Bailey", "Rivera", "Cooper", "Richardson", "Cox", "Howard", "Ward", "Torres", "Peterson", "Gray", "Ramirez", "Watson", "Sanders", "Price", "Bennett", "Wood", "Barnes", "Ross", "Henderson", "Coleman", "Jenkins", "Perry", "Powell", "Long", "Patterson", "Hughes", "Flores", "Washington", "Butler", "Simmons", "Foster", "Bryant"])
 
 
 def nome_gerado(pais: str, semente: str, usados: set) -> str:
     ps, ss = NOMES.get(pais, NOMES["ENG"])
     for t in range(50):
         n = f"{ps[h(semente, t, 'p') % len(ps)]} {ss[h(semente, t, 's') % len(ss)]}"
+        if n not in usados:
+            usados.add(n)
+            return n
+    for t in range(200):
+        n = f"{ps[h(semente, t, 'p2') % len(ps)]} {ss[h(semente, t, 's2') % len(ss)]} {ss[h(semente, t, 's3') % len(ss)]}"
         if n not in usados:
             usados.add(n)
             return n
@@ -296,20 +324,118 @@ def ler_elencos(liga):
     return blocos
 
 
+# ---------------------------------------------------------------- clubes menores e amadores
+UF_ORDEM = ["AC", "RO", "AM", "RR", "AP", "PA", "TO", "MA", "PI", "CE", "RN", "PB", "PE", "AL", "SE", "BA", "MT", "MS", "GO", "DF", "MG", "ES", "RJ", "SP", "PR", "SC", "RS"]
+REGIAO_UF = {**{u: "Norte" for u in ["AC", "RO", "AM", "RR", "AP", "PA", "TO"]}, **{u: "Nordeste" for u in ["MA", "PI", "CE", "RN", "PB", "PE", "AL", "SE", "BA"]},
+             **{u: "Centro-Oeste" for u in ["MT", "MS", "GO", "DF"]}, **{u: "Sudeste" for u in ["MG", "ES", "RJ", "SP"]}, **{u: "Sul" for u in ["PR", "SC", "RS"]}}
+# várzea: bairros por cidade (os clubes são inventados)
+VARZEA = {
+    "SP": ("São Paulo", ["Capão Redondo", "Brasilândia", "Itaquera", "Grajaú", "Cidade Tiradentes", "Heliópolis", "Parelheiros", "Jardim Ângela", "Vila Prudente", "Perus"]),
+    "RJ": ("Rio de Janeiro", ["Rocinha", "Maré", "Cidade de Deus", "Realengo", "Pavuna", "Irajá", "Penha", "Jacarezinho", "Rio das Pedras", "Vigário Geral"]),
+    "BH": ("Belo Horizonte", ["Venda Nova", "Barreiro", "Serra", "Pampulha", "Cabana", "Taquaril", "Lindéia", "Primeiro de Maio", "Alípio de Melo", "Jardim Leblon"]),
+    "POA": ("Porto Alegre", ["Restinga", "Lomba do Pinheiro", "Rubem Berta", "Partenon", "Sarandi", "Cruzeiro", "Bom Jesus", "Vila Jardim", "Belém Novo", "Humaitá"]),
+    "SSA": ("Salvador", ["Liberdade", "Cajazeiras", "Pituaçu", "Uruguai", "São Caetano", "Itapuã", "Pernambués", "Sussuarana", "Periperi", "Lobato"]),
+    "REC": ("Recife", ["Ibura", "Casa Amarela", "Água Fria", "Brasília Teimosa", "Coque", "Jordão", "Nova Descoberta", "Várzea", "Afogados", "Peixinhos"]),
+    "FOR": ("Fortaleza", ["Bom Jardim", "Pirambu", "Barra do Ceará", "Messejana", "Mucuripe", "Jangurussu", "Conjunto Ceará", "Granja Portugal", "Lagamar", "Serrinha"]),
+    "CWB": ("Curitiba", ["Boqueirão", "CIC", "Sítio Cercado", "Cajuru", "Tatuquara", "Bairro Alto", "Uberaba", "Pinheirinho", "Santa Felicidade", "Xaxim"]),
+}
+PREFIXOS_VARZEA = ["União do", "Leões do", "Unidos do", "Juventude do", "Estrela do", "Grêmio do", "Real", "Esporte Clube", "Comercial do", "Ousados do", "Calangos do", "Primavera do"]
+CORES_VARZEA = [("#E2231A", "#FFFFFF"), ("#003DA5", "#FFFFFF"), ("#00843D", "#FFFFFF"), ("#000000", "#FFFFFF"), ("#FFD100", "#003DA5"), ("#7A1E2E", "#FFFFFF"),
+                ("#F58220", "#000000"), ("#6A3FA0", "#FFFFFF"), ("#000000", "#E2231A"), ("#00843D", "#FFD100")]
+ESCOLAS_EUA = ["Coral Bay High", "Biscayne Prep", "Everglades High", "Ocean Drive Prep", "Key Largo Academy", "Brickell Prep", "Sunrise High", "Palmetto Ridge High", "Weston Lakes Prep", "Bayview Academy"]
+UNIVERSIDADES = [("Wake Floresta", "Diáconos", "#9E7E38", "#000000", 58), ("Estanforde", "Cardeais", "#8C1515", "#FFFFFF", 57), ("UCLÁ", "Ursos", "#2D68C4", "#F2A900", 57),
+                 ("Indiana Fazendeiros", "Hoosiers", "#990000", "#FFFFFF", 56), ("Clemsom", "Tigres", "#F56600", "#522D80", 57), ("Marylândia", "Tartarugas", "#E03A3E", "#FFD520", 55),
+                 ("Virgínia Cavaleiros", "Cavaleiros", "#232D4B", "#F84C1E", 56), ("Georgetaum", "Hoyas", "#041E42", "#8D817B", 56), ("Duque", "Diabos Azuis", "#012169", "#FFFFFF", 54),
+                 ("Carolina do Norte", "Calcanhares", "#7BAFD4", "#FFFFFF", 55), ("Kentaki", "Gatos Selvagens", "#0033A0", "#FFFFFF", 53), ("Oregão", "Patos", "#154733", "#FEE123", 52),
+                 ("Notre Dama", "Irlandeses", "#0C2340", "#C99700", 55), ("Siracusa", "Laranjas", "#F76900", "#000E54", 54)]
+
+
+def montar_elenco(cid, liga, pais, forca, jogs, idades=None, minimo_tam=24, piso=42):
+    """Completa posições, sorteia idade e OVR (média dos titulares = força) e dá os nomes."""
+    global TOTAL_REAIS, TOTAL_GERADOS
+    posicoes(jogs)
+    minimo = {"GOL": 3, "ZAG": 4, "LAT": 3, "VOL": 3, "MEI": 3, "PON": 3, "ATA": 2}
+    for pos, mn in minimo.items():
+        for t in range(max(0, mn - sum(1 for j in jogs if j["pos"] == pos))):
+            jogs.append({"num": 0, "g": "", "pos": pos, "nac": pais, "real": None, "gerado": True})
+    while len(jogs) < minimo_tam:
+        jogs.append({"num": 0, "g": "", "pos": ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA"][len(jogs) % 6], "nac": pais, "real": None, "gerado": True})
+    for k, j in enumerate(jogs):
+        semente = j["real"] or f"{cid}-{k}"
+        est_ = ESTRELAS.get(j["real"] or "")
+        if est_:
+            j["idade"] = ANO - est_[1]; j["ovr"] = est_[0]; j["estrela"] = True
+            continue
+        num = j["num"]
+        if idades:
+            idade = idades[0] + h(semente, "id") % (idades[1] - idades[0] + 1)
+        elif j.get("gerado"):
+            idade = 17 + h(semente, "id") % 6
+        elif num >= 30 and num not in (33, 44, 77, 99, 90, 70):
+            idade = 18 + h(semente, "id") % 5
+        elif 1 <= num <= 11:
+            idade = 21 + h(semente, "id") % 14
+        else:
+            idade = 18 + h(semente, "id") % 16
+        if j["pos"] == "GOL" and idade < 24 and num in (1, 12, 13, 25) and not idades:
+            idade += 6
+        desloc = 1 if 1 <= num <= 11 else -2 if num == 0 and not j.get("gerado") else -3 if num <= 29 else -6
+        if j["pos"] == "GOL" and num != 1: desloc -= 4
+        if liga == "KSA1": desloc += 3 if j["nac"] not in ("KSA", "") else -2
+        if j.get("gerado"): desloc = -7 if not idades else (2 if k % 2 == 0 else -4)
+        if not idades:
+            if idade <= 20: desloc -= 4
+            elif idade >= 33: desloc -= 1
+        j["idade"] = idade
+        j["ovr_base"] = forca + desloc + normal(semente, "ovr") * 2.6
+    for it in range(4):
+        for j in jogs:
+            if "ovr_base" in j:
+                j["ovr"] = max(piso, min(91, forca + 3, round(j["ovr_base"])))
+        gols = sorted([j["ovr"] for j in jogs if j["pos"] == "GOL"], reverse=True)
+        linha = sorted([j["ovr"] for j in jogs if j["pos"] != "GOL"], reverse=True)
+        top = linha[:10] + [gols[0] if gols else 55]
+        delta = forca - sum(top) / len(top)
+        if abs(delta) < 0.3: break
+        for j in jogs:
+            if "ovr_base" in j: j["ovr_base"] += delta
+    for k, j in enumerate(jogs):
+        if j.get("gerado"):
+            j["nome"] = nome_gerado(j["nac"] if j["nac"] in NOMES else pais, f"{cid}-{k}", USADOS)
+            TOTAL_GERADOS += 1
+        else:
+            j["nome"] = parodia(j["real"], USADOS)
+            TOTAL_REAIS += 1
+    jogs.sort(key=lambda j: (["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"].index(j["pos"]), -j["ovr"]))
+    nac = lambda x: {"BRX": "BRA", "USX": "USA"}.get(x, x)
+    return [[j["nome"], j["pos"], j["ovr"], j["idade"], nac(j["nac"] or pais), j["num"], 1 if j.get("gerado") else 0] for j in jogs]
+
+
+def clube_json(cid, nome, apelido, cidade, estadio, capacidade, cores, padrao, forca, fclube, elenco, extra=None):
+    d = {"id": cid, "nome": nome, "apelido": apelido, "cidade": cidade, "estadio": estadio, "capacidade": capacidade,
+         "cores": cores, "padrao": padrao, "forca": forca, "fClube": fclube, "elenco": elenco}
+    if extra: d.update(extra)
+    return d
+
+
+TOTAL_REAIS = TOTAL_GERADOS = 0
+USADOS: set = set()
+
+
 def main():
+    global USADOS
     clubes_tsv = ler_tsv(os.path.join(FONTES, "clubes-parodia.tsv"))
     estadios = {(r["liga"], r["clube"]): r for r in ler_tsv(os.path.join(FONTES, "estadios-2026.tsv"))}
     pacote = json.load(open(os.path.join(RAIZ, "data", "pacote-brasil-serie-a-v0.3.json"), encoding="utf-8"))
     reais_vistos = {j["inspirado_em"] for j in pacote["jogadores"] if j.get("inspirado_em")}
-    usados = {j["nome"] for j in pacote["jogadores"]}  # paródias já existentes na Série A
+    USADOS |= {j["nome"] for j in pacote["jogadores"]}  # paródias já existentes na Série A
     avisos = []
-    saida = {"versao": "2026.1", "gerado_em": "2026-10-21",
-             "aviso": "Clubes, estádios e jogadores em paródia, inspirados nos elencos de out/2026 (Wikipédia). Idades e OVR são estimativas. Escudos não são reproduzidos.",
+    saida = {"versao": "2026.2", "gerado_em": "2026-10-21",
+             "aviso": "Clubes, estádios e jogadores em paródia, inspirados nos elencos de out/2026 (Wikipédia). Idades e OVR são estimativas. Série D, várzea, colégios e universidades são gerados. Escudos não são reproduzidos.",
              "ligas": []}
     por_liga = {}
     for r in clubes_tsv:
         por_liga.setdefault(r["liga"], []).append(r)
-    total_reais = total_gerados = 0
     for liga in ORDEM:
         elencos = ler_elencos(liga)
         pais = PAIS_LIGA[liga]
@@ -322,7 +448,6 @@ def main():
             est = estadios.get((liga, r["real"]))
             if not est:
                 avisos.append(f"{liga}: sem estádio para {r['real']}")
-            forca = int(r["forca"])
             jogs = []
             for j in elencos.get(r["real"], []):
                 if j["real"] in reais_vistos:
@@ -331,79 +456,63 @@ def main():
                 jogs.append(j)
             if not elencos.get(r["real"]):
                 avisos.append(f"{liga}: {r['real']} sem elenco real (gerado)")
-            posicoes(jogs)
-            # completa as posições que faltam
-            minimo = {"GOL": 3, "ZAG": 4, "LAT": 3, "VOL": 3, "MEI": 3, "PON": 3, "ATA": 2}
-            for pos, mn in minimo.items():
-                falta = mn - sum(1 for j in jogs if j["pos"] == pos)
-                for t in range(max(0, falta)):
-                    jogs.append({"num": 0, "g": "", "pos": pos, "nac": pais, "real": None, "gerado": True})
-            while len(jogs) < 24:
-                pos = ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA"][len(jogs) % 6]
-                jogs.append({"num": 0, "g": "", "pos": pos, "nac": pais, "real": None, "gerado": True})
-            # idade, OVR e nome
-            for k, j in enumerate(jogs):
-                semente = j["real"] or f"{r['id']}-{k}"
-                est_ = ESTRELAS.get(j["real"] or "")
-                if est_:
-                    j["idade"] = ANO - est_[1]
-                    j["ovr"] = est_[0]
-                    j["estrela"] = True
-                    continue
-                num = j["num"]
-                if j.get("gerado"):
-                    idade = 17 + h(semente, "id") % 6
-                elif num >= 30 and num not in (33, 44, 77, 99, 90, 70):
-                    idade = 18 + h(semente, "id") % 5
-                elif 1 <= num <= 11:
-                    idade = 21 + h(semente, "id") % 14
-                else:
-                    idade = 18 + h(semente, "id") % 16
-                if j["pos"] == "GOL" and idade < 24 and num in (1, 12, 13, 25):
-                    idade += 6
-                desloc = 1 if 1 <= num <= 11 else -2 if num == 0 and not j.get("gerado") else -3 if num <= 29 else -6
-                if j["pos"] == "GOL" and num != 1: desloc -= 4  # goleiro reserva
-                if liga == "KSA1": desloc += 3 if j["nac"] not in ("KSA", "") else -2  # estrangeiros carregam o time
-                if j.get("gerado"): desloc = -7
-                if idade <= 20: desloc -= 4
-                elif idade >= 33: desloc -= 1
-                j["idade"] = idade
-                j["ovr_base"] = forca + desloc + normal(semente, "ovr") * 2.6
-            # acerta a média dos titulares para bater a força do clube
-            for it in range(4):
-                for j in jogs:
-                    if "ovr_base" in j:
-                        j["ovr"] = max(42, min(91, forca + 3, round(j["ovr_base"])))
-                gols = sorted([j["ovr"] for j in jogs if j["pos"] == "GOL"], reverse=True)
-                linha = sorted([j["ovr"] for j in jogs if j["pos"] != "GOL"], reverse=True)
-                top = linha[:10] + [gols[0] if gols else 55]
-                media = sum(top) / len(top)
-                delta = forca - media
-                if abs(delta) < 0.3: break
-                for j in jogs:
-                    if "ovr_base" in j: j["ovr_base"] += delta
-            for k, j in enumerate(jogs):
-                if j.get("gerado"):
-                    j["nome"] = nome_gerado(j["nac"] if j["nac"] in NOMES else pais, f"{r['id']}-{k}", usados)
-                    total_gerados += 1
-                else:
-                    j["nome"] = parodia(j["real"], usados)
-                    total_reais += 1
-            jogs.sort(key=lambda j: (["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"].index(j["pos"]), -j["ovr"]))
-            clubes_out.append({
-                "id": r["id"], "nome": r["nome"], "apelido": r["apelido"],
-                "cidade": (est or {}).get("cidade", ""), "estadio": r["estadio"],
-                "capacidade": int((est or {}).get("capacidade") or 0),
-                "cores": [r["cor1"], r["cor2"]], "padrao": r["padrao"], "forca": forca, "fClube": float(r["fClube"]),
-                # [nome, posição, ovr, idade, nacionalidade, número, gerado]
-                "elenco": [[j["nome"], j["pos"], j["ovr"], j["idade"], j["nac"] or pais, j["num"], 1 if j.get("gerado") else 0] for j in jogs],
-            })
+            elenco = montar_elenco(r["id"], liga, pais, int(r["forca"]), jogs, piso=42 if liga != "BRA3" else 40)
+            clubes_out.append(clube_json(r["id"], r["nome"], r["apelido"], (est or {}).get("cidade", ""), r["estadio"], int((est or {}).get("capacidade") or 0),
+                                         [r["cor1"], r["cor2"]], r["padrao"], int(r["forca"]), float(r["fClube"]), elenco))
         saida["ligas"].append({"id": liga, "clubes": clubes_out})
+
+    # Série D: 96 clubes em 8 grupos regionais de 12 (gerados)
+    sd = ler_tsv(os.path.join(FONTES, "clubes-serie-d.tsv"))
+    sd.sort(key=lambda r: (UF_ORDEM.index(r["uf"]), r["real"]))
+    for g in range(8):
+        grupo = sd[g * 12:(g + 1) * 12]
+        clubes_out = []
+        for r in grupo:
+            cid = "D-" + re.sub(r"[^A-Z]", "", sem_acento(r["real"]).upper())[:6] + r["uf"]
+            forca = int(r["forca"])
+            cap = 3000 + h(cid, "cap") % 12 * 1000
+            elenco = montar_elenco(cid, "BRA4", "BRX", forca, [], idades=(18, 34), minimo_tam=23, piso=36)
+            clubes_out.append(clube_json(cid, r["nome"], r["apelido"], r["cidade"], f"Estádio Municipal de {r['cidade']}", cap, [r["cor1"], r["cor2"]], r["padrao"],
+                                         forca, round(0.08 + (forca - 44) * 0.012, 3), elenco, {"uf": r["uf"]}))
+        regioes = [REGIAO_UF[r["uf"]] for r in grupo]
+        regiao = max(set(regioes), key=regioes.count)
+        saida["ligas"].append({"id": f"BRA4{'ABCDEFGH'[g]}", "regiao": regiao, "clubes": clubes_out})
+
+    # várzea: 10 clubes por cidade, força 36–45
+    for sigla, (cidade, bairros) in VARZEA.items():
+        clubes_out = []
+        for k, bairro in enumerate(bairros):
+            cid = f"V-{sigla}-{k}"
+            pref = PREFIXOS_VARZEA[h(cid, "pref") % len(PREFIXOS_VARZEA)]
+            nome = f"{pref} {bairro}" if pref in ("Real", "Esporte Clube") else f"{pref} {bairro}".replace(" do ", " da " if bairro.split()[0] in ("Vila", "Cidade", "Lomba", "Brasília", "Água", "Casa", "Nova", "Barra", "Serra", "Penha", "Maré", "Restinga", "Cruzeiro", "Liberdade", "Várzea", "Granja", "Serrinha", "Cabana", "Pampulha", "Pavuna", "Rocinha", "Lindéia") else " do ")
+            forca = 36 + h(cid, "f") % 10
+            c1, c2 = CORES_VARZEA[h(cid, "cor") % len(CORES_VARZEA)]
+            elenco = montar_elenco(cid, "VAR", "BRX", forca, [], idades=(16, 37), minimo_tam=20, piso=28)
+            clubes_out.append(clube_json(cid, nome, bairro, cidade, f"Campo do {bairro}" if not bairro.startswith(("Vila", "Cidade")) else f"Campão da {bairro}", 0, [c1, c2],
+                                         ["lisa", "listrasV", "faixaH", "faixa"][h(cid, "pad") % 4], forca, 0.02, elenco))
+        saida["ligas"].append({"id": f"VAR-{sigla}", "cidade": cidade, "clubes": clubes_out})
+
+    # EUA: colegial (14–17) e universitário (18–22)
+    clubes_out = []
+    for k, nome in enumerate(ESCOLAS_EUA):
+        cid = f"HS-{k}"
+        forca = 40 + h(cid, "f") % 7
+        c1, c2 = CORES_VARZEA[h(cid, "cor") % len(CORES_VARZEA)]
+        elenco = montar_elenco(cid, "HS", "USX", forca, [], idades=(14, 17), minimo_tam=20, piso=30)
+        clubes_out.append(clube_json(cid, nome, nome.split()[0], "Miami", f"Campo do {nome}", 2000, [c1, c2], "lisa", forca, 0.02, elenco))
+    saida["ligas"].append({"id": "USA-HS", "clubes": clubes_out})
+    clubes_out = []
+    for k, (nome, apelido, c1, c2, forca) in enumerate(UNIVERSIDADES):
+        cid = f"NC-{k}"
+        elenco = montar_elenco(cid, "NCAA", "USX", forca, [], idades=(18, 22), minimo_tam=24, piso=38)
+        clubes_out.append(clube_json(cid, nome, apelido, "", f"Campo Universitário de {nome}", 5000, [c1, c2], "lisa", forca, 0.05, elenco))
+    saida["ligas"].append({"id": "USA-NCAA", "clubes": clubes_out})
+
     with open(SAIDA, "w", encoding="utf-8") as f:
         json.dump(saida, f, ensure_ascii=False, separators=(",", ":"))
     for a in avisos:
         print("aviso:", a)
-    print(f"ok: {sum(len(l['clubes']) for l in saida['ligas'])} clubes, {total_reais} jogadores paródia, {total_gerados} gerados, {os.path.getsize(SAIDA)//1024} KB")
+    print(f"ok: {sum(len(l['clubes']) for l in saida['ligas'])} clubes, {TOTAL_REAIS} jogadores paródia, {TOTAL_GERADOS} gerados, {os.path.getsize(SAIDA)//1024} KB")
 
 
 if __name__ == "__main__":

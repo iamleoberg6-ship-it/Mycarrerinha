@@ -234,6 +234,17 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 .rel-barra { display: block; height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; } .rel-barra i { display: block; height: 100%; }
 .rel-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0 48px; } .rel-acoes .chip { padding: 5px 10px; font-size: 12px; }
 @media (max-width: 420px) { .pos-linha { grid-template-columns: 100px 1fr 34px 24px 76px; font-size: 12px; } .rel-nivel { width: 86px; } .rel-acoes { margin-left: 0; } }
+
+/* caminhos e convites */
+.caminhos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 6px 0 8px; }
+.caminho { text-align: left; background: var(--campo-2); border: 1px solid var(--linha); color: var(--giz); border-radius: 12px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; font: inherit; }
+.caminho b { font-size: 14px; } .caminho small { color: var(--giz-2); font-size: 12px; }
+.caminho.ativo { border-color: var(--ouro); box-shadow: inset 0 0 0 1px var(--ouro); }
+.convites .convite { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--linha); }
+.convites .convite:first-of-type { border-top: 0; }
+.convite .escudo { width: 30px; height: 34px; flex: none; margin-top: 2px; }
+.convite > div { flex: 1; min-width: 0; display: grid; gap: 3px; } .convite b { font-size: 15px; } .convite small { color: var(--giz-2); font-size: 12px; }
+.convite .tag { justify-self: start; }
 </style>
 </head>
 <body>

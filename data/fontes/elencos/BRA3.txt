@@ -1,0 +1,355 @@
+Paysandu
+1|GK|BRA|Jean Drosny
+2|DF|BRA|Edílson
+3|DF|URU|Yeferson Quintana
+4|DF|BRA|Iarley
+5|MF|BRA|Henrico
+6|DF|BRA|Luccão
+8|MF|BRA|Caio Mello
+9|FW|BRA|Ítalo
+10|MF|BRA|Marcinho
+11|FW|BRA|Danilo Peu
+12|GK|BRA|Gabriel Mesquita
+14|DF|BRA|Bruno Bispo
+15|DF|BRA|Castro
+17|MF|BRA|Henrique Salomoni
+18|DF|BRA|Davizinho
+19|FW|BRA|Thayllon
+20|MF|BRA|Matheus Capixaba
+21|FW|BRA|Miguel Ângelo
+23|MF|BRA|Brian
+29|DF|BRA|Cauã Dias
+31|DF|URU|Facundo Bonifazi
+36|FW|BRA|Klayvert
+40|GK|BRA|Levi
+75|FW|BRA|Kleiton Pego
+77|DF|BRA|Luciano Taboca
+96|MF|BRA|Matheus Vargas
+99|MF|BRA|Lucas Cardoso
+
+Guarani
+1|GK|BRA|Caíque França
+12|GK|BRA|Mateus Claus
+2|DF|BRA|Edson Rogério
+3|DF|BRA|Jonathan Costa
+4|DF|BRA|Maurício Antônio
+14|DF|BRA|Rafael Donato
+13|DF|BRA|Raphael Rodrigues
+6|DF|BRA|Emerson Barbosa
+22|DF|BRA|Renan Castro
+5|MF|BRA|Ralf
+8|MF|BRA|Carlos Eduardo
+16|MF|BRA|Igor Pereira
+18|MF|BRA|Nathan Melo
+15|MF|BRA|Willian Farias
+10|MF|ARG|Diego Torres
+20|MF|BRA|João Paulo
+7|FW|BRA|Dentinho
+9|FW|BRA|Guilherme Cachoeira
+11|FW|BRA|Guilherme Parede
+19|FW|BRA|Hebert
+17|FW|BRA|Kewen
+29|FW|BRA|Lucca
+27|FW|BRA|Mirandinha
+
+Santa Cruz
+1|GK|BRA|Thiago Coelho
+2|DF|BRA|Thiago Ennes
+3|DF|BRA|Eurico
+4|DF|BRA|William Alves
+5|MF|BRA|Pedro Favela
+6|DF|BRA|Alex Ruan
+7|MF|BRA|Fabinho
+8|MF|BRA|Arilson
+9|FW|BRA|Matheus Cadorini
+10|FW|BRA|Cassiano Bouzon
+11|MF|BRA|Matheus Melo
+12|GK|BRA|Rokenedy
+13|DF|BRA|Matheus Vinícius
+15|MF|BRA|Andrey
+17|FW|BRA|Ronald
+18|MF|BRA|Willian Júnior
+19|FW|BRA|Renato
+20|MF|BRA|Patrick Allan
+23|FW|BRA|Tiago Marques
+25|GK|BRA|Gabriel Souza
+28|FW|BRA|Eron
+31|DF|BRA|Zé Mário
+37|FW|BRA|Everaldo
+
+Figueirense
+2|DF|BRA|Léo Maia
+3|DF|BRA|Leonan
+4|DF|BRA|Anderson Conceição
+5|MF|BRA|Renan Areias
+6|DF|BRA|Arthur Henrique
+7|MF|BRA|Raynan
+8|MF|BRA|Dudu
+11|FW|BRA|Arthur Martins
+12|GK|BRA|Fabrício
+14|MF|BRA|Breno
+17|FW|BRA|Mailson
+19|FW|BRA|João Marcos
+21|FW|BRA|Thyerry
+22|DF|BRA|Vitor Ricardo
+23|GK|BRA|Antônio
+25|DF|BRA|Jhonnathan
+26|MF|BRA|Léo Renz
+28|MF|BRA|Rafinha Potiguar
+70|FW|BRA|Igor Bolt
+77|MF|BRA|João Choco
+82|FW|BRA|Zé Carlos
+88|FW|BRA|Silvinho
+99|FW|BRA|Emerson Galego
+
+Amazonas
+1|GK|BRA|João Lopes
+2|DF|BRA|Rafael Monteiro
+3|DF|BRA|Léo Coelho
+4|DF|BRA|Iverton
+5|MF|COL|Larry Vásquez
+6|DF|BRA|Fabiano
+8|MF|BRA|Jhonny Lucas
+9|FW|BRA|Luan Silva
+10|MF|BRA|Rafael Tavares
+11|FW|ARG|Joaquín Torres
+12|GK|BRA|Zé Carlos
+13|MF|URU|Santiago Viera
+14|DF|ARG|Iván Alvariño
+15|DF|EQG|Carlos Akapo
+17|MF|BRA|Guilherme Xavier
+19|FW|BRA|Henrique Almeida
+20|FW|BRA|William Barbio
+22|FW|URU|Diego Zabala
+27|MF|ARG|Nicolás Linares
+30|DF|COL|Nilson Castrillón
+37|MF|PAR|Diego Torres
+55|MF|BRA|Phillipe Guimarães
+77|MF|BRA|Robertinho
+94|DF|DEN|Riza Durmisi
+
+Volta Redonda
+1|GK|BRA|Avelino
+2|DF|BRA|Wellington Silva
+3|DF|BRA|Gabriel Pinheiro
+4|DF|BRA|Fabrício
+5|MF|BRA|Bruno Barra
+6|DF|BRA|Sanchez
+7|FW|BRA|João Pedro
+9|FW|BRA|Ítalo
+10|MF|BRA|Patrick
+11|FW|BRA|Marcos Vinícius
+13|DF|BRA|Jhonny
+14|MF|BRA|Chay
+15|DF|BRA|Lucas Adell
+16|MF|BRA|Raí
+17|FW|BRA|Vitinho Lopes
+18|MF|BRA|Dener
+20|FW|BRA|Marquinhos
+23|FW|BRA|Matheus Lucas
+24|MF|BOL|Lucas Chávez
+26|DF|BRA|Caio Roque
+27|FW|BRA|Ygor Catatau
+32|GK|BRA|Yago Oliveira
+99|FW|BRA|Kayke
+
+Botafogo-PB
+1|GK|BRA|Saulo
+2|DF|BRA|Lucas Lopes
+3|DF|BRA|Reniê
+4|DF|BRA|Wendel Lomar
+5|MF|BRA|Marcelo Gama
+6|DF|BRA|Sidcley
+7|FW|BRA|Rafinha
+8|MF|BRA|Bruno Leite
+9|FW|BRA|Danilo Mariotto
+10|MF|BRA|Antonio Falcão
+11|FW|BRA|Gustavo Ramos
+12|GK|BRA|Wallace
+13|DF|BRA|Diego Ferreira
+14|MF|BRA|Igor Maduro
+16|FW|BRA|Henrique Dourado
+17|MF|BRA|Kawan
+19|FW|BRA|Rodrigo Alves
+20|MF|BRA|Thallyson
+22|DF|BRA|Erick
+25|FW|BRA|Dayvison Moskito
+26|MF|BRA|João Pedro Iseppe
+27|DF|BRA|Evandro
+55|MF|BRA|Caio Garcia
+
+Brusque
+1|GK|BRA|Matheus Nogueira
+8|MF|BRA|Biel
+15|DF|BRA|Alex Paulino
+16|DF|BRA|Roberto
+18|MF|BRA|João Vithor
+90|FW|BRA|Álvaro
+12|GK|BRA|Paulo Gianezini
+3|DF|BRA|Alisson Cassiano
+4|DF|COL|Frank Salas
+6|DF|BRA|Rafael Milhorim
+2|DF|BRA|João Félix
+13|DF|BRA|Raimar
+5|MF|BRA|Gazão
+10|MF|BRA|Pedro Medeiros
+20|MF|BRA|Lucas de Sá
+7|FW|BRA|Adrianinho
+9|FW|NGA|Udeh Clinton
+11|FW|BRA|Olávio
+19|FW|BRA|Luizão
+17|FW|BRA|Petterson Novaes
+
+Caxias
+1|GK|BRA|Marcelo Dal Soler
+12|GK|BRA|Léo Lang
+3|DF|CHI|Andrés Robles
+2|DF|BRA|Joílson
+4|DF|BRA|Maurício
+13|DF|BRA|Carlos Henrique
+6|DF|BRA|Ronei
+14|DF|BRA|Windson
+22|DF|BRA|Roberto
+10|MF|BRA|Yann Rolim
+8|MF|BRA|Wellington Reis
+5|MF|BRA|Breno Santos
+20|MF|BRA|Tomas Bastos
+16|MF|BRA|Zanelatto
+18|MF|BRA|Matheus Nunes
+9|FW|BRA|Gustavo Nescau
+11|FW|BRA|Calyson
+7|FW|BRA|Jhonatan Ribeiro
+19|FW|BRA|Andrew
+17|FW|BRA|Vitor Feijão
+
+Confiança
+1|GK|BRA|Careca
+2|DF|BRA|Gedeílson
+3|DF|BRA|Vinícius Santana
+4|DF|BRA|Adalberto
+5|DF|BRA|Isaque Gavioli
+6|DF|BRA|Lucas Sampaio
+7|MF|BRA|Álvaro
+8|MF|BRA|Jhemerson
+9|FW|BRA|Neto Berola
+10|MF|BRA|Rafael Vila
+11|FW|BRA|Willians Santana
+12|GK|BRA|Rafael Santos
+15|MF|BRA|Danilo Pires
+16|MF|BRA|Fernando Medeiros
+19|FW|BRA|Lohan
+20|MF|BRA|Ítalo Melo
+21|MF|BRA|Matheusinho
+22|DF|BRA|Caíque Sá
+27|FW|BRA|Tiago Reis
+29|DF|PAR|Nery Bareiro
+
+Ferroviária
+1|GK|BRA|Léo Wall
+2|DF|BRA|Lucas Rodrigues
+3|DF|BRA|Erik
+4|DF|BRA|Guilherme Ferreira
+5|MF|BRA|Ricardinho
+6|DF|BRA|Rhuan
+7|FW|BRA|Fábio Soares
+8|MF|BRA|Alencar
+9|FW|BRA|Denilson Silva
+10|MF|BRA|Albano
+11|FW|BRA|Vitor Barreto
+13|DF|BRA|Gustavo Medina
+14|MF|BRA|Jhonatan Garcia
+15|MF|BRA|Fernandinho
+16|MF|BRA|Vinícius Meireles
+17|FW|BRA|Mateus Cantarelli
+18|MF|BRA|Rafael Carrilho
+19|FW|BRA|Thiago
+20|MF|BRA|David Souza
+22|DF|BRA|Felipe Rodrigues
+24|GK|BRA|Igor
+25|FW|BRA|Vinícius Faria
+36|FW|BRA|Douglas Skilo
+
+Ituano
+1|GK|BRA|Jefferson Paulino
+12|GK|BRA|Wesley
+2|DF|BRA|Claudinho
+3|DF|BRA|Guilherme Mariano
+4|DF|BRA|Nathan
+13|DF|BRA|Pedro Libardoni
+6|DF|BRA|Guilherme Lazaroni
+14|DF|BRA|Léo Duarte
+22|DF|BRA|Marcinho
+5|MF|BRA|Gabriel Falcão
+8|MF|BRA|Eduardo Person
+15|MF|BRA|José Aldo
+16|MF|BRA|Lipe
+10|MF|BRA|Thonny Anderson
+20|MF|BRA|Miqueias
+7|FW|BRA|Bruno Alves
+9|FW|BRA|Salatiel
+11|FW|BRA|Leozinho
+19|FW|BRA|Zé Eduardo
+17|FW|BRA|Vinícius Paiva
+
+Inter de Limeira
+1|GK|BRA|André Luiz
+2|DF|BRA|Felipe Albuquerque
+4|DF|BRA|Roberto Rosa
+5|MF|BRA|Flávio
+6|DF|BRA|Leocovick
+7|MF|BRA|Rhuan Silveira
+8|MF|SEN|Iba Ly
+9|FW|BRA|Rafael Silva
+11|FW|BRA|Alex Sandro
+12|GK|BRA|Igo Gabriel
+13|DF|BRA|Eduardo
+15|MF|BRA|Marlon
+16|MF|BRA|Juninho
+17|FW|BRA|Pablo
+18|FW|ECU|Ronie Carrillo
+19|MF|BRA|Bernardo
+20|FW|BRA|Ruan Ribeiro
+21|MF|BRA|Lucas Buchecha
+22|DF|BRA|JP Galvão
+26|DF|BRA|Juan Tavares
+34|DF|BRA|Carlão
+
+Maringá
+1|GK|BRA|Dheimison
+2|DF|BRA|Marcos Vinícius
+3|DF|BRA|Gustavo Vilar
+5|MF|BRA|João Denoni
+6|DF|BRA|Guilherme Martinelli
+8|FW|BRA|Alemão
+9|FW|BRA|Bruno Lopes
+10|FW|BRA|Leandrinho
+11|FW|BRA|Robertinho
+12|GK|BRA|Filipe
+13|DF|BRA|Caio Filipe
+14|DF|BRA|Max Miller
+15|MF|BRA|Parrudo
+17|FW|BRA|Iago Santana
+18|MF|BRA|Matheus Bianqui
+22|DF|BRA|Michel
+23|MF|BRA|Everton Morelli
+25|MF|BRA|Júlio Pacato
+29|FW|BRA|Wesley Di Maria
+37|MF|BRA|Serginho
+
+Ypiranga-RS
+1|GK|BRA|Allan
+12|GK|BRA|Pablo
+2|DF|BRA|Felix
+3|DF|BRA|Guilherme Guedes
+4|DF|BRA|Heitor
+6|DF|BRA|Islan
+13|DF|BRA|Henrique Pedrozo
+5|MF|BRA|Clayton
+8|MF|BRA|Lorran
+10|MF|BRA|Mossoró
+16|MF|BRA|Yohan
+7|FW|BRA|Vinicius Fabião
+9|FW|BRA|Mazola
+11|FW|BRA|Netto
+17|FW|BRA|Vini Peixoto
+19|FW|BRA|Gabriel Rossetto

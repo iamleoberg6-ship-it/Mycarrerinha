@@ -1,0 +1,97 @@
+real	uf	cidade	nome	apelido	cor1	cor2	padrao	forca
+Independência	AC	Rio Branco	Independência Acreana	Tricolor de Aço	#E2231A	#FFFFFF	faixaH	48
+Galvez	AC	Rio Branco	Imperador do Acre	Imperador	#0047AB	#FFFFFF	lisa	47
+Humaitá	AC	Porto Acre	Tourão do Acre	Tourão	#00843D	#FFFFFF	lisa	46
+Porto Velho	RO	Porto Velho	Portuário do Madeira	Portuário	#003DA5	#FFFFFF	lisa	47
+Guaporé	RO	Rolim de Moura	Guaporé Rondoniense	Guaporé	#00843D	#FFFFFF	lisa	46
+Nacional	AM	Manaus	Naça Amazonense	Naça	#003DA5	#FFFFFF	lisa	50
+Manaus	AM	Manaus	Gavião do Norte	Gavião	#000000	#FFD100	listrasV	52
+Manauara	AM	Manaus	Manauara Cidade	Manauara	#E2231A	#FFFFFF	lisa	48
+GAS	RR	Boa Vista	Grêmio de Boa Vista	GAS	#0047AB	#E2231A	listrasV	45
+Monte Roraima	RR	Boa Vista	Monte Roraimense	Monte	#00843D	#FFFFFF	lisa	44
+São Raimundo-RR	RR	Boa Vista	Mundão de Roraima	Mundão	#0047AB	#FFFFFF	lisa	45
+Trem	AP	Macapá	Locomotiva do Amapá	Trem	#FFD100	#000000	faixa	45
+Oratório	AP	Macapá	Oratório Amapaense	Oratório	#00843D	#FFFFFF	lisa	44
+Tuna Luso	PA	Belém	Lusa do Pará	Lusa	#E2231A	#00843D	lisa	53
+Águia de Marabá	PA	Marabá	Azulão de Marabá	Azulão	#003DA5	#FFFFFF	lisa	53
+Araguaína	TO	Araguaína	Touro do Norte	Touro	#000000	#E2231A	lisa	47
+Tocantinópolis	TO	Tocantinópolis	Tocantinense	TEC	#003DA5	#FFFFFF	lisa	46
+Imperatriz	MA	Imperatriz	Cavalo de Aço	Cavalo	#003DA5	#FFFFFF	lisa	50
+IAPE	MA	São Luís	IAPE Maranhense	IAPE	#E2231A	#000000	lisa	46
+Moto Club	MA	São Luís	Moto Clube Ludovicense	Papão	#E2231A	#000000	listrasV	52
+Sampaio Corrêa	MA	São Luís	Bolívia Querida	Tubarão	#FFD100	#00843D	faixa	54
+Piauí	PI	Teresina	Enxuga Rato do Piauí	Enxuga Rato	#E2231A	#FFFFFF	lisa	47
+Fluminense-PI	PI	Teresina	Tricolor de Teresina	Flu Piauiense	#7A1E2E	#00843D	lisa	47
+Altos	PI	Altos	Jacaré de Altos	Jacaré	#00843D	#FFFFFF	lisa	50
+Parnahyba	PI	Parnaíba	Tubarão do Litoral	Parnahyba	#000000	#FFFFFF	listrasV	48
+Tirol	CE	Fortaleza	Tirol Cearense	Tirol	#003DA5	#FFFFFF	lisa	46
+Ferroviário	CE	Fortaleza	Ferrão Cearense	Ferrão	#E2231A	#000000	faixa	54
+Maracanã	CE	Maracanaú	Alviceleste de Maracanaú	Maracanã	#6CACE4	#FFFFFF	lisa	48
+Iguatu	CE	Iguatu	Azulão do Centro-Sul	Azulão	#003DA5	#FFFFFF	lisa	47
+Atlético-CE	CE	Fortaleza	Atlético Cearense	Atlético	#E2231A	#000000	listrasV	47
+Laguna	RN	Tibau do Sul	Laguna Potiguar	Laguna	#003DA5	#FFFFFF	lisa	46
+América-RN	RN	Natal	Mecão Potiguar	Mecão	#E2231A	#FFFFFF	lisa	53
+ABC	RN	Natal	Alvinegro de Natal	Mais Querido	#000000	#FFFFFF	lisa	56
+Sousa	PB	Sousa	Dinossauro do Sertão	Dinossauro	#FFD100	#000000	lisa	47
+Serra Branca	PB	Serra Branca	Serrano Paraibano	Serra Branca	#003DA5	#FFFFFF	lisa	45
+Treze	PB	Campina Grande	Galo da Borborema	Galo	#000000	#FFFFFF	listrasV	53
+Central	PE	Caruaru	Patativa de Caruaru	Patativa	#000000	#FFFFFF	listrasV	50
+Maguary	PE	Bonito	Maguary Pernambucano	Maguary	#00843D	#FFFFFF	lisa	46
+Decisão	PE	Goiana	Decisão de Goiana	Decisão	#003DA5	#FFFFFF	lisa	46
+Retrô	PE	Camaragibe	Fênix de Camaragibe	Fênix	#FFFFFF	#000000	lisa	54
+ASA	AL	Arapiraca	Fantasma do Agreste	Fantasma	#000000	#FFFFFF	lisa	52
+CSE	AL	Palmeira dos Índios	Tricolor do Sertão Alagoano	CSE	#E2231A	#00843D	lisa	47
+CSA	AL	Maceió	Azulão do Mutange	Azulão	#003DA5	#FFFFFF	lisa	56
+Lagarto	SE	Lagarto	Verdão do Agreste Sergipano	Lagarto	#00843D	#FFFFFF	lisa	46
+Sergipe	SE	Aracaju	Gipão Sergipano	Gipão	#E2231A	#FFFFFF	lisa	50
+Atlético-BA	BA	Alagoinhas	Carcará de Alagoinhas	Carcará	#E2231A	#FFFFFF	lisa	48
+Jacuipense	BA	Riachão do Jacuípe	Leão do Sisal	Jacuipense	#E2231A	#FFFFFF	listrasV	49
+Porto-BA	BA	Porto Seguro	Porto Baiano	Porto	#003DA5	#FFFFFF	lisa	46
+Juazeirense	BA	Juazeiro	Cancão de Fogo	Cancão	#E2231A	#000000	lisa	49
+Primavera-MT	MT	Primavera do Leste	Fantasma do Leste	Primavera	#E2231A	#FFFFFF	lisa	47
+Mixto-MT	MT	Cuiabá	Tigre Mixtense	Tigre	#000000	#FFFFFF	listrasV	49
+Luverdense	MT	Lucas do Rio Verde	Verdão do Norte	Luverdense	#00843D	#FFFFFF	lisa	50
+União Rondonópolis	MT	Rondonópolis	Colorado de Rondonópolis	União	#E2231A	#FFFFFF	lisa	47
+Operário VG	MT	Várzea Grande	Tricolor da Várzea	Operário	#E2231A	#000000	faixa	47
+Operário-MS	MS	Campo Grande	Galo da Capital Morena	Galo	#000000	#FFFFFF	listrasV	50
+Ivinhema	MS	Ivinhema	Ivinhema Pantaneiro	Ivinhema	#003DA5	#FFFFFF	lisa	46
+CRAC	GO	Catalão	Leão do Sul Goiano	Leão	#E2231A	#FFFFFF	lisa	49
+Abecat	GO	Ouvidor	Abecat Goiano	Abecat	#0047AB	#FFFFFF	lisa	46
+Inhumas	GO	Inhumas	Dragão de Inhumas	Inhumas	#00843D	#FFFFFF	lisa	46
+Aparecidense	GO	Aparecida de Goiânia	Camaleão Goiano	Camaleão	#003DA5	#FFFFFF	lisa	51
+Goiatuba	GO	Goiatuba	Azulão de Goiatuba	Goiatuba	#003DA5	#FFD100	lisa	47
+Capital	DF	Paranoá	Capital Candango	Capital	#000000	#FFD100	lisa	49
+Gama	DF	Gama	Periquito do Planalto	Periquito	#00843D	#FFFFFF	lisa	52
+Ceilândia	DF	Ceilândia	Gato Preto do Cerrado	Gato Preto	#000000	#FFFFFF	lisa	50
+Brasiliense	DF	Taguatinga	Jacaré do Planalto	Jacaré	#FFD100	#00843D	lisa	51
+Rio Branco-ES	ES	Cariacica	Capa-Preta Capixaba	Capa-Preta	#000000	#FFFFFF	listrasV	48
+Vitória-ES	ES	Vitória	Alvianil Capixaba	Vitória	#003DA5	#FFFFFF	lisa	48
+Real Noroeste	ES	Águia Branca	Real Capixaba	Real	#E2231A	#000000	lisa	47
+Betim	MG	Betim	Betinense	Betim	#FFD100	#000000	lisa	48
+Democrata GV	MG	Governador Valadares	Pantera do Vale	Pantera	#000000	#FFFFFF	lisa	48
+Uberlândia	MG	Uberlândia	Verdão do Triângulo	Uberlândia	#00843D	#FFFFFF	lisa	50
+Tombense	MG	Tombos	Gavião de Tombos	Gavião	#E2231A	#FFFFFF	lisa	55
+Pouso Alegre	MG	Pouso Alegre	Dragão do Sul de Minas	Dragão	#E2231A	#000000	lisa	49
+Madureira	RJ	Rio de Janeiro	Tricolor Suburbano	Madura	#FFD100	#003DA5	faixaH	52
+America-RJ	RJ	Rio de Janeiro	Mequinha Carioca	Mequinha	#E2231A	#FFFFFF	lisa	50
+Maricá	RJ	Maricá	Tsunami de Maricá	Maricá	#003DA5	#FFFFFF	lisa	50
+Nova Iguaçu	RJ	Nova Iguaçu	Laranja da Baixada	Laranja	#F58220	#FFFFFF	lisa	53
+Portuguesa-RJ	RJ	Rio de Janeiro	Lusa da Ilha	Lusa Carioca	#E2231A	#00843D	lisa	50
+Sampaio Corrêa-RJ	RJ	Saquarema	Sampaio Saquaremense	Sampaio	#E2231A	#FFD100	lisa	48
+Portuguesa	SP	São Paulo	Lusa do Canindé	Lusa	#E2231A	#00843D	faixaH	56
+Velo Clube	SP	Rio Claro	Rubro-Verde de Rio Claro	Velo	#E2231A	#00843D	lisa	52
+Noroeste	SP	Bauru	Norusca de Bauru	Norusca	#E2231A	#FFFFFF	lisa	52
+XV de Piracicaba	SP	Piracicaba	Nhô Quim	XV	#000000	#FFFFFF	listrasV	52
+Água Santa	SP	Diadema	Netuno do ABC	Netuno	#003DA5	#FFFFFF	lisa	51
+Azuriz	PR	Pato Branco	Azuriz Paranaense	Azuriz	#003DA5	#FFFFFF	lisa	51
+São Joseense	PR	São José dos Pinhais	Águia Joseense	São Joseense	#E2231A	#FFFFFF	lisa	48
+Cianorte	PR	Cianorte	Leão do Vale	Cianorte	#003DA5	#FFFFFF	lisa	50
+Cascavel	PR	Cascavel	Serpente do Oeste	Cascavel	#FFD100	#000000	lisa	50
+Joinville	SC	Joinville	Tricolor de Joinvile	JEC	#E2231A	#000000	listrasV	54
+Santa Catarina	SC	Rio do Sul	Santa Catarina Clube	Santa	#003DA5	#FFFFFF	lisa	49
+Blumenau	SC	Blumenau	Blumenauense	Blumenau	#003DA5	#FFFFFF	lisa	48
+Marcílio Dias	SC	Itajaí	Marinheiro de Itajaí	Marinheiro	#E2231A	#003DA5	listrasV	51
+Brasil de Pelotas	RS	Pelotas	Xavante de Pelotas	Xavante	#E2231A	#000000	listrasV	53
+São Luiz	RS	Ijuí	Leão de Ijuí	São Luiz	#E2231A	#FFFFFF	lisa	50
+Guarany de Bagé	RS	Bagé	Índio da Campanha	Guarany	#E2231A	#FFFFFF	listrasV	49
+São José-RS	RS	Porto Alegre	Zequinha Gaúcho	Zequinha	#003DA5	#FFFFFF	lisa	51

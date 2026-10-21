@@ -13,14 +13,15 @@ interface ClubeJson { id: string; nome: string; apelido: string; cidade: string;
 const DADOS = dados as unknown as { ligas: { id: string; clubes: ClubeJson[] }[] };
 
 // ------------------------------------------------------------------ montagem
-export interface Mundo { ligas: Liga[]; liga: Record<string, Liga>; clube: Record<string, Clube>; info: Record<string, InfoClube> }
+/** ligas: só as profissionais (mercado, estrelas); amadoras: várzea, colegial e universitário. liga/clube/info têm todas. */
+export interface Mundo { ligas: Liga[]; amadoras: Liga[]; liga: Record<string, Liga>; clube: Record<string, Clube>; info: Record<string, InfoClube> }
 let cache: { pacote: PacoteDados; m: Mundo } | undefined;
 
 const ligaDe = (li: InfoLiga, clubes: Clube[]): Liga => ({ id: li.id, nome: li.nome, pais: li.pais, nivel: li.nivel, fLiga: li.fLiga, fSalario: li.fSalario, rebaixados: li.rebaixados, clubes });
 
 export function mundo(pacote: PacoteDados): Mundo {
   if (cache?.pacote === pacote) return cache.m;
-  const ligas: Liga[] = [], info: Record<string, InfoClube> = {};
+  const ligas: Liga[] = [], amadoras: Liga[] = [], info: Record<string, InfoClube> = {};
   const json = Object.fromEntries(DADOS.ligas.map((l) => [l.id, l]));
   for (const li of LIGAS) {
     if (li.id === "BRA1") {
@@ -35,9 +36,10 @@ export function mundo(pacote: PacoteDados): Mundo {
       info[c.id] = { id: c.id, nome: c.nome, apelido: c.apelido, cores: c.cores, forca: c.forca, cidade: c.cidade, estadio: c.estadio, capacidade: c.capacidade, padrao: c.padrao, ligaId: li.id, pais: li.pais };
       return { id: c.id, nome: c.nome, ligaId: li.id, forca: c.forca, fClube: c.fClube, elenco, pais: li.pais };
     });
-    ligas.push(ligaDe(li, clubes));
+    (li.amador ? amadoras : ligas).push(ligaDe(li, clubes));
   }
-  const m: Mundo = { ligas, liga: Object.fromEntries(ligas.map((l) => [l.id, l])), clube: Object.fromEntries(ligas.flatMap((l) => l.clubes.map((c) => [c.id, c]))), info };
+  const todas = [...ligas, ...amadoras];
+  const m: Mundo = { ligas, amadoras, liga: Object.fromEntries(todas.map((l) => [l.id, l])), clube: Object.fromEntries(todas.flatMap((l) => l.clubes.map((c) => [c.id, c]))), info };
   cache = { pacote, m };
   return m;
 }

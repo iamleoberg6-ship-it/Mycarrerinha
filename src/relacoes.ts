@@ -25,7 +25,7 @@ export function estrelas(pacote: PacoteDados): Estrela[] {
   for (const l of w.ligas) {
     const fortes = [...l.clubes].sort((a, b) => b.forca - a.forca).slice(0, Math.ceil(l.clubes.length / 2));
     for (const c of l.clubes) for (const j of c.elenco) if (j.ovr >= 85) add(j, c);
-    for (const c of fortes) { const melhor = [...c.elenco].sort((a, b) => b.ovr - a.ovr)[0]; if (melhor && melhor.ovr >= 64) add(melhor, c); }
+    for (const c of fortes) { const melhor = [...c.elenco].sort((a, b) => b.ovr - a.ovr)[0]; if (melhor && melhor.ovr >= (l.nivel >= 5 ? 58 : 64)) add(melhor, c); }
   }
   lista.sort((a, b) => b.ovr - a.ovr);
   cacheEstrelas = { pacote, lista };
