@@ -7,15 +7,19 @@ import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias } from "../../src/casa";
 import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
-  ofertasDeBase, ovr, planoPadrao, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
+  ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
 } from "../../src/jogo";
 import { SITUACAO } from "../../src/lances";
+import { infoClube, mundo, LIGA_INFO } from "../../src/mundo";
+import { AGENTE_INFO, NOME_PAPEL, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, type PropostaSave } from "../../src/transferencias";
+import { AGENTES, type TipoAgente } from "../../src/mercado";
 import { svgFoto, APARENCIA_PADRAO, type Aparencia } from "../criacao/avatar";
 import { svgComodo } from "../casa/iso";
 
 const pacote = pacoteJson as unknown as PacoteDados;
-const L = liga(pacote);
+void liga;
+const nomeDe = (id: string) => infoClube(pacote, id).nome;
 const CHAVE_SAVE = "mycarrerinha:save", CHAVE_JOGADOR = "mycarrerinha:jogador", CHAVE_PLANO = "mycarrerinha:plano";
 const ler = <T>(k: string): T | null => { try { return JSON.parse(localStorage.getItem(k) ?? "null") as T | null; } catch { return null; } };
 const gravar = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem armazenamento */ } };
@@ -28,7 +32,8 @@ const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"];
 let save: Save | null = ler<Save>(CHAVE_SAVE);
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
-let aba: "tabela" | "jogador" | "noticias" | "casa" = "tabela";
+let aba: "tabela" | "jogador" | "noticias" | "casa" | "mercado" = "tabela";
+let msgMercado: { texto: string; ok: boolean } | undefined;
 const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, plano); };
 
 // ------------------------------------------------------------------ peças visuais
@@ -82,14 +87,15 @@ function telaOfertas(d: DadosCriacao): string {
 }
 
 function telaSemana(s: Save): string {
-  const c = s.carreira, j = s.jogador, clube = clubeDe(L, c.clubeId), jogo = jogoDaSemana(s);
+  const c = s.carreira, j = s.jogador, clube = clubeDe(ligaAtual(pacote, s), c.clubeId), jogo = jogoDaSemana(s);
+  const nProp = mercadoDe(c).propostas.length, jan = janelaAberta(c);
   const prev = previaPlano(s, plano), escPrev = escalacao(pacote, s, prev.cansaco);
   const pos = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const tagCls = escPrev === "titular" ? "titular" : escPrev === "banco" || escPrev === "base" ? "banco" : escPrev === "semJogo" ? "" : "ruim";
-  const jogoHtml = jogo ? `<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(clubeDe(L, jogo.casa).nome)}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(clubeDe(L, jogo.fora).nome)}</span>${escudo(jogo.fora)}</div></div>
-      <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>Rodada <b>${jogo.rodada + 1}</b> de 38</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
-    : `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>`;
-  const previsao = escPrev === "semJogo" ? "" : `<div><span class="tag ${tagCls}">${escPrev === "base" ? "Jogo da base (sub-17)" : `Previsão: ${NOME_ESCALACAO[escPrev].toLowerCase()}`}</span></div>`;
+  const jogoHtml = jogo ? `<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(nomeDe(jogo.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(jogo.fora))}</span>${escudo(jogo.fora)}</div></div>
+      <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(LIGA_INFO[c.ligaId ?? "BRA1"].curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
+    : c.semana < SEMANAS_PRE ? `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>` : `<p class="sub">A ${esc(LIGA_INFO[c.ligaId ?? "BRA1"].curto)} já terminou. Semana de treino até o fim do calendário.</p>`;
+  const previsao = escPrev === "semJogo" ? "" : `<div><span class="tag ${tagCls}">${escPrev === "base" ? `Jogo da base (${categoriaBase(j.idade)})` : `Previsão: ${NOME_ESCALACAO[escPrev].toLowerCase()}`}</span></div>`;
   const focos: [Grupo, string][] = [["fisico", "Físico"], ["tecnico", "Técnico"], ["tatico", "Tático"]];
   const ints: [Intensidade, string][] = [["leve", "Leve"], ["normal", "Normal"], ["alta", "Puxado"]];
   const acoesDisp = (Object.keys(ACOES) as Acao[]).filter((a) => a !== "video" || jogo);
@@ -103,6 +109,7 @@ function telaSemana(s: Save): string {
   </section>
 
   <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${jogoHtml}${previsao}</section>
+  ${nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"}. Ver no Mercado.</small></span></button>` : ""}
 
   <section class="painel grupo-plano" aria-label="Plano da semana">
     <p class="rotulo">Treino do clube</p>
@@ -116,14 +123,14 @@ function telaSemana(s: Save): string {
   </section>
   <button class="botao grande" data-acao="jogar">${jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
 
-  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
-  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : abaCasa(s)}</section>
-  <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador.</p><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></details>`;
+  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
+  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : abaCasa(s)}</section>
+  <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
 }
 
 function abaTabela(s: Save): string {
   const t = ordenar(s.carreira.tabela);
-  return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(clubeDe(L, x.clube).nome)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+  return `<p class="rotulo" style="margin-bottom:6px">${esc(LIGA_INFO[s.carreira.ligaId ?? "BRA1"].nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
 
 function abaJogador(s: Save): string {
@@ -135,6 +142,43 @@ function abaJogador(s: Save): string {
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
     ${c.historico.length ? `<p class="rotulo" style="margin-top:16px">Carreira</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">Nota</th></tr></thead><tbody>${c.historico.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.nota || "–"}</td></tr>`).join("")}</tbody></table>` : ""}`;
+}
+
+// ------------------------------------------------------------------ mercado
+const milhoes = (euros: number) => `€ ${(euros / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+const NOME_TIPO: Record<PropostaSave["tipo"], string> = { transferencia: "Transferência", livre: "Sem custo", emprestimo: "Empréstimo", renovacao: "Renovação" };
+function abaMercado(s: Save): string {
+  const c = s.carreira, j = s.jogador, m = mercadoDe(c), w = mundo(pacote), meu = w.clube[c.clubeId], jan = janelaAberta(c);
+  const ligaNome = LIGA_INFO[c.ligaId ?? "BRA1"].curto, papel = papelNoClube(meu, s);
+  const aviso = msgMercado ? `<p class="msg-mercado ${msgMercado.ok ? "ok" : "nao"}">${esc(msgMercado.texto)}</p>` : "";
+  msgMercado = undefined;
+  const contrato = `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${esc(meu.nome)}</h2><span class="sub">${esc(ligaNome)} · força ${Math.round(meu.forca)} · você é ${NOME_PAPEL[papel].toLowerCase()}</span></div></div>
+    <div class="kv" style="margin-top:8px"><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b>${m.emprestimo ? `<span>Empréstimo</span><b>Volta ao ${esc(nomeDe(m.emprestimo.origem))} no fim da temporada</b>` : ""}<span>Mercado</span><b>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : `Fechado · próxima: ${esc(proximaJanela(c))}`}</b></div>
+    ${c.formacao || j.idade < 18 ? `<p class="sub" style="margin-top:8px">Na base você ainda não pode ser negociado. O primeiro contrato profissional chega aos 18.</p>` : m.emprestimo ? "" :
+      `<div class="ferr-botoes" style="margin-top:10px">${m.listaTransferencia ? `<button class="botao sec peq" data-acao="ficar">Tirar o pedido de saída</button><span class="sub">Você pediu para ser negociado.</span>` : `<button class="botao sec peq" data-acao="sair">Pedir para ser negociado</button>`}</div>`}`;
+  const card = (p: PropostaSave) => {
+    const info = infoClube(pacote, p.clubeId), cl = w.clube[p.clubeId], delta = p.salario - c.salario;
+    const botoes = p.travada
+      ? `<button class="botao" data-prop="${p.id}" data-op="forcar">Forçar a saída</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Desistir</button>`
+      : `<button class="botao" data-prop="${p.id}" data-op="aceitar">${p.tipo === "renovacao" ? "Renovar" : p.tipo === "emprestimo" ? "Aceitar o empréstimo" : "Aceitar"}</button>${!p.negociada && p.tipo !== "emprestimo" ? `<button class="botao sec" data-prop="${p.id}" data-op="negociar">Pedir mais (agente)</button>` : ""}<button class="botao sec" data-prop="${p.id}" data-op="recusar">Recusar</button>`;
+    return `<div class="oferta" style="--c1:${info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0]}"><div class="faixa"></div><div class="corpo">
+      <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(LIGA_INFO[p.ligaId].curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)}</span></div></div>
+      <div class="linha-info"><span class="tag ${p.papel === "titular" ? "titular" : p.papel === "rotacao" ? "banco" : "ruim"}">${NOME_TIPO[p.tipo]} · ${NOME_PAPEL[p.papel].toLowerCase()}</span></div>
+      <div class="kv"><span>Salário</span><b>${dinheiro(p.salario)}/mês <small class="${delta >= 0 ? "pos" : "neg"}">${delta >= 0 ? "+" : "−"}${dinheiro(Math.abs(delta))}</small></b>${p.anos ? `<span>Contrato</span><b>${p.anos} anos</b>` : `<span>Duração</span><b>Até o fim da temporada</b>`}${p.luvas ? `<span>Luvas</span><b>${dinheiro(p.luvas)}</b>` : ""}${p.taxa ? `<span>Pagam ao ${esc(meu.nome)}</span><b>${milhoes(p.taxa)}</b>` : ""}</div>
+      ${p.travada ? `<p class="sub" style="color:var(--neg)">O ${esc(meu.nome)} não quer vender. Forçar a saída desgasta a relação com o técnico e com a torcida.</p>` : p.negociada ? `<p class="sub">O agente já negociou essa.</p>` : ""}
+      <div class="ferr-botoes">${botoes}</div></div></div>`;
+  };
+  const props = m.propostas.length ? `<div class="ofertas">${m.propostas.map(card).join("")}</div>` : `<p class="sub">${jan ? "Nenhuma proposta por enquanto. Elas chegam ao longo da janela; jogar bem e ter um bom agente ajudam." : "Fora da janela de transferências. Jogue bem: os clubes estão olhando."}</p>`;
+  const agentes = (Object.keys(AGENTE_INFO) as TipoAgente[]).map((t) => {
+    const a = AGENTE_INFO[t], atual = c.agente === t, pode = podeContratarAgente(s, t), alcance = AGENTES[t].ligas === "todas" ? "Todas as ligas" : (AGENTES[t].ligas as string[]).map((x) => LIGA_INFO[x]?.curto ?? x).join(", ");
+    return `<div class="agente${atual ? " atual" : ""}"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span><p class="sub" style="margin:2px 0">${esc(a.texto)}</p><small class="sub">Alcance: ${esc(alcance)}</small></div>
+      ${atual ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Contratar</button>${pode.ok ? "" : `<small class="sub">${esc(pode.msg)}</small>`}`}</div>`;
+  }).join("");
+  const hist = m.transferencias.length ? `<p class="rotulo" style="margin-top:16px">Transferências</p><div class="kv">${m.transferencias.map((t) => `<span>${2026 + t.temporada}</span><b>${esc(nomeDe(t.de))} → ${esc(nomeDe(t.para))}${t.tipo === "emprestimo" ? " (empréstimo)" : t.taxa ? ` · ${milhoes(t.taxa)}` : t.tipo === "livre" ? " (de graça)" : ""}</b>`).join("")}</div>` : "";
+  return `${aviso}<p class="rotulo">Seu contrato</p>${contrato}
+    <p class="rotulo" style="margin-top:16px">Propostas</p>${props}
+    <p class="rotulo" style="margin-top:16px">Agente</p><div style="display:flex;flex-direction:column;gap:8px">${agentes}</div>${hist}
+    <p class="sub" style="margin-top:12px">Janelas: semanas ${JANELAS.map((x) => `${x.ini + 1}–${x.fim + 1}`).join(" e ")} de cada temporada.</p>`;
 }
 
 function abaNoticias(s: Save): string {
@@ -184,7 +228,7 @@ function abrirJogo() {
   p.decisoes.forEach((d) => fila.push({ min: d.min, decisao: d }));
   fila.sort((a, b) => a.min - b.min || (a.decisao ? 1 : 0) - (b.decisao ? 1 : 0));
   fila.push({ min: 90, fim: true, html: "Fim de jogo." });
-  $("telaJogo").innerHTML = `<div class="placar"><p class="rotulo" style="text-align:center;margin-bottom:6px">${p.tipo === "base" ? "Sub-17" : rotuloSemana(save.carreira)}</p>
+  $("telaJogo").innerHTML = `<div class="placar"><p class="rotulo" style="text-align:center;margin-bottom:6px">${p.tipo === "base" ? categoriaBase(save.jogador.idade).replace("s", "S") : rotuloSemana(save.carreira)}</p>
     <div class="linha"><div class="time">${escudo(p.casa)}<span>${esc(p.nomeCasa)}</span></div><div class="gols" id="gols">0 × 0</div><div class="time dir"><span>${esc(p.nomeFora)}</span>${escudo(p.fora)}</div></div>
     <div class="min" id="minuto">0'</div></div>
     <div class="lances" id="lances"></div><div class="rodape" id="rodapeJogo"><button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button></div>`;
@@ -295,7 +339,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -304,7 +348,12 @@ document.addEventListener("click", (ev) => {
   } else if (d.foco) { plano.foco = d.foco as Grupo; salvar(); render(); }
   else if (d.int) { plano.intensidade = d.int as Intensidade; salvar(); render(); }
   else if (d.dia) { plano.acoes[+d.dia] = d.a as Acao; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
-  else if (d.aba) { aba = d.aba as typeof aba; render(); }
+  else if (d.aba) { aba = d.aba as typeof aba; render(); if (b.classList.contains("aviso-mercado")) document.querySelector(".abas")?.scrollIntoView({ behavior: "smooth" }); }
+  else if (d.prop && save) {
+    const r = d.op === "aceitar" ? aceitar(pacote, save, d.prop) : d.op === "forcar" ? aceitar(pacote, save, d.prop, true) : d.op === "negociar" ? negociar(pacote, save, d.prop) : recusar(pacote, save, d.prop);
+    msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render();
+    if (r.ok && (d.op === "aceitar" || d.op === "forcar")) window.scrollTo({ top: 0, behavior: "smooth" });
+  } else if (d.agente && save) { const r = trocarAgente(save, d.agente as TipoAgente); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.decidir) decidir(+d.decidir, d.op!);
   else switch (d.acao) {
     case "exemplo": {
@@ -313,6 +362,19 @@ document.addEventListener("click", (ev) => {
       render(); break;
     }
     case "jogar": abrirJogo(); break;
+    case "sair": case "ficar": if (save) { const r = pedirParaSair(save, d.acao === "sair"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); } break;
+    case "pular": if (save) {
+      // atalho de teste: o jogo segue no automático (sem mexer no mercado) até abrir a próxima janela com você profissional
+      const c = save.carreira;
+      let n = 0, saiu = !janelaAberta(c);
+      while (n < 60) {
+        semanaAutomatica(pacote, save, false); n++;
+        const jan = janelaAberta(c);
+        if (!jan) saiu = true;
+        else if (saiu && save.jogador.idade >= 18 && !c.formacao && (mercadoDe(c).propostas.length || c.semana >= jan.fim)) break;
+      }
+      plano = planoPadrao(); aba = "mercado"; msgMercado = { texto: `${n} semanas simuladas.`, ok: true }; salvar(); render(); window.scrollTo(0, 0);
+    } break;
     case "acelerar": clearTimeout(timer); avancar(); break;
     case "fimjogo": fecharSemana(); break;
     case "proxima": ($("dlgResumo") as HTMLDialogElement).close(); window.scrollTo(0, 0); break;

@@ -90,8 +90,8 @@ h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; 
 .cel.ativo { background: var(--ouro); border-color: var(--ouro); }
 .cel.ativo::after { background: var(--tinta); width: 12px; height: 12px; }
 
-.abas { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 4px; gap: 4px; }
-.abas button { background: none; border: 0; border-radius: 9px; padding: 9px 4px; font-weight: 600; font-size: 14px; color: var(--giz-2); cursor: pointer; }
+.abas { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 4px; gap: 4px; }
+.abas button { background: none; border: 0; border-radius: 9px; padding: 9px 2px; font-weight: 600; font-size: 12.5px; color: var(--giz-2); cursor: pointer; }
 .abas button.ativo { background: var(--ouro); color: var(--tinta); }
 table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 th { text-align: left; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--giz-2); font-weight: 600; padding: 6px 4px; }
@@ -99,6 +99,13 @@ td { padding: 7px 4px; border-top: 1px solid var(--linha); }
 td.n, th.n { text-align: right; }
 tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--ouro-claro); }
 .atrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
+.aviso-mercado { display: flex; gap: 12px; align-items: center; text-align: left; cursor: pointer; border-color: var(--ouro); color: var(--giz); font: inherit; width: 100%; }
+.aviso-mercado > span:first-child { font-size: 26px; } .aviso-mercado small { display: block; color: var(--giz-2); font-size: 13px; margin-top: 2px; }
+.msg-mercado { padding: 10px 12px; border-radius: 10px; font-weight: 600; margin-bottom: 10px; } .msg-mercado.ok { background: #1F4D33; color: #BFF0D0; } .msg-mercado.nao { background: #4D2420; color: #F6C2B8; }
+.ferr-botoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.agente { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; background: var(--campo-2); }
+.agente.atual { border-color: var(--ouro); } .agente > div { flex: 1 1 220px; }
+.kv small.pos { color: var(--pos); } .kv small.neg { color: var(--neg); }
 .noticia { border-left: 3px solid var(--linha); padding: 4px 0 4px 12px; }
 .noticia.jogo { border-color: var(--ouro); } .noticia.polemica, .noticia.lesao { border-color: var(--neg); } .noticia.dinheiro { border-color: var(--pos); }
 .noticia strong { display: block; } .noticia small { color: var(--giz-2); font-size: 12px; }

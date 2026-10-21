@@ -1,24 +1,29 @@
 // Narração da partida: quem é quem em campo (nomes do elenco), como saiu cada gol e os lances
 // de ambiente entre as decisões. Só texto: não muda placar nem nota.
 import type { RNG } from "./rng.js";
-import type { PacoteDados } from "./liga.js";
+import type { Clube, JogadorNPC } from "./liga.js";
 import type { Posicao } from "./atributos.js";
 import { preencher } from "./lances/base.js";
 
-interface JogadorPacote { clube: string; nome: string; posicao: string; idade_aprox: number; ovr_estimado: number }
 type Elenco = Record<Posicao | "GOL", string[]>;
 
 const SUFIXOS = new Set(["Júnior", "Junior", "Jr.", "Filho", "Neto", "Sobrinho", "Segundo"]);
 /** Nome de narração: o último nome, ou os dois últimos quando termina em Júnior/Filho/Neto. */
-export const nomeCurto = (n: string) => { const p = n.trim().split(/\s+/); return p.length > 1 && SUFIXOS.has(p[p.length - 1]) ? p.slice(-2).join(" ") : p[p.length - 1]; };
+const PARTICULAS = new Set(["de", "van", "von", "da", "do", "dos", "das", "di", "del", "der"]);
+export const nomeCurto = (n: string) => {
+  const p = n.trim().split(/\s+/);
+  if (p.length > 1 && SUFIXOS.has(p[p.length - 1])) return p.slice(-2).join(" ");
+  if (p.length > 2 && PARTICULAS.has(p[p.length - 2])) return p.slice(-2).join(" ");
+  return p[p.length - 1];
+};
 
 /** Elenco por posição, do melhor para o pior. Na base, só os mais novos (quando há gente suficiente). */
-export function elencoDe(pacote: PacoteDados, clubeId: string, base: boolean): Elenco {
-  const todos = (pacote.jogadores as unknown as JogadorPacote[]).filter((j) => j.clube === clubeId);
-  const novos = todos.filter((j) => j.idade_aprox <= 21);
+export function elencoDe(clube: Clube, base: boolean): Elenco {
+  const todos = clube.elenco;
+  const novos = todos.filter((j) => j.idade <= 21);
   const lista = base && novos.length >= 11 ? novos : todos;
   const el: Elenco = { GOL: [], ZAG: [], LAT: [], VOL: [], MEI: [], PON: [], ATA: [] };
-  const porPos = (l: JogadorPacote[]) => { const r: Partial<Elenco> = {}; for (const j of [...l].sort((a, b) => b.ovr_estimado - a.ovr_estimado)) (r[j.posicao as keyof Elenco] ??= []).push(nomeCurto(j.nome)); return r; };
+  const porPos = (l: JogadorNPC[]) => { const r: Partial<Elenco> = {}; for (const j of [...l].sort((a, b) => b.ovr - a.ovr)) (r[j.posicao as keyof Elenco] ??= []).push(nomeCurto(j.nome)); return r; };
   const daLista = porPos(lista), deTodos = porPos(todos);
   // posição sem ninguém entre os novos: usa o elenco inteiro; sem ninguém no elenco: um nome de camisa
   for (const k of Object.keys(el) as (keyof Elenco)[]) el[k] = daLista[k]?.length ? daLista[k]! : deTodos[k]?.length ? deTodos[k]! : [`Camisa ${({ GOL: 1, ZAG: 4, LAT: 2, VOL: 5, MEI: 10, PON: 7, ATA: 9 } as Record<string, number>)[k]}`];
@@ -132,7 +137,7 @@ function escolher(rng: RNG, lista: Modelo[], c: CtxNarracao): Modelo {
 /** Abertura do jogo e lances de ambiente espalhados pelos 90 minutos. */
 export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco): { abertura: string; linhas: LinhaNarracao[] } {
   const extras = () => ({ ...nomes, m1: umDe(rng, [...elMeu.MEI, ...elMeu.PON, ...elMeu.ATA, ...elMeu.VOL], 8), a1: umDe(rng, [...elAdv.ATA, ...elAdv.MEI, ...elAdv.PON, ...elAdv.VOL], 8), a2: umDe(rng, [...elAdv.PON, ...elAdv.MEI, ...elAdv.ATA].reverse(), 5) });
-  const abertura = preencher(rng.pick(c.base ? ["Bola rolando no CT.", "Começa o jogo da base.", "Bola rolando no sub-17."] :
+  const abertura = preencher(rng.pick(c.base ? ["Bola rolando no CT.", "Começa o jogo da base.", "Bola rolando na base."] :
     c.classico ? ["É clássico! Bola rolando no {estadio}.", "Começa o clássico. O {estadio} está lotado e barulhento."] :
     ["Bola rolando no {estadio}.", "Começa o jogo no {estadio}.", "O juiz apita e a bola rola no {estadio}."]), nomes) + (c.chuva ? " Chove forte." : "");
   const linhas: LinhaNarracao[] = [];

@@ -2,6 +2,7 @@
 // Este arquivo diz o que existe, como cada uma é desbloqueada e com que cara ela fica.
 import type { RNG } from "./rng.js";
 import type { Reliquia } from "./casa.js";
+import { LIGA_INFO } from "./mundo.js";
 
 export type Grupo = "Camisas" | "Bolas" | "Troféus";
 export interface Conquista {
@@ -39,7 +40,7 @@ export const CONQUISTAS: Conquista[] = [
   { chave: "trofeu-sub21", tipo: "trofeu", grupo: "Troféus", nome: "Melhor jogador sub-21", dica: "Seja o melhor da liga com até 21 anos.", repetivel: true },
   { chave: "trofeu-artilheiro-base", tipo: "trofeu", grupo: "Troféus", nome: "Artilheiro do sub-17", dica: "Seja o maior goleador da base.", repetivel: true },
   { chave: "trofeu-craque-base", tipo: "trofeu", grupo: "Troféus", nome: "Craque do sub-17", dica: "Seja o melhor jogador da base na temporada.", repetivel: true },
-  { chave: "trofeu-contratacao", tipo: "trofeu", grupo: "Troféus", nome: "Melhor contratação", dica: "Brilhe na primeira temporada depois de uma transferência.", emBreve: true, repetivel: true },
+  { chave: "trofeu-contratacao", tipo: "trofeu", grupo: "Troféus", nome: "Melhor contratação", dica: "Brilhe na primeira temporada depois de uma transferência.", repetivel: true },
 ];
 export const CONQUISTA: Record<string, Conquista> = Object.fromEntries(CONQUISTAS.map((c) => [c.chave, c]));
 
@@ -51,16 +52,18 @@ const PADRAO_CAMISA: Record<string, string> = {
 };
 export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa";
 /** As bolas mudam de competição para competição e de ano para ano. */
-const BOLAS: Record<string, [string, string][]> = {
-  serieA: [["#2E7D4F", "#F2B705"], ["#1F3A5F", "#E3B341"], ["#C0392B", "#1F3A5F"], ["#18A0A8", "#F08A24"], ["#6A3FA0", "#F2B705"]],
-  base: [["#262626", "#262626"], ["#1B98E0", "#262626"], ["#C0392B", "#262626"]],
+const BOLA_BASE: [string, string][] = [["#262626", "#262626"], ["#1B98E0", "#262626"], ["#C0392B", "#262626"]];
+/** competição: id da liga (BRA1, EUR1...) ou "base". */
+export const coresDaBola = (competicao: string, ano: number): [string, string] => {
+  const l = competicao === "base" ? BOLA_BASE : (LIGA_INFO[competicao === "serieA" ? "BRA1" : competicao]?.bolas ?? LIGA_INFO.BRA1.bolas);
+  return l[ano % l.length];
 };
-export const coresDaBola = (competicao: "serieA" | "base", ano: number): [string, string] => { const l = BOLAS[competicao]; return l[ano % l.length]; };
 export const OURO: [string, string] = ["#E3B341", "#9A7420"], PRATA: [string, string] = ["#CDD3D8", "#7D868D"];
 
 // ------------------------------------------------------------------ desbloqueio
 export interface DadosPartida {
   tipo: "profissional" | "base"; ano: number; semana: number; adversario: string; clubeId: string; clubeNome: string; cores: string[]; numero: string;
+  padrao?: string; ligaId?: string;
   placar: string; gols: number; minutos: number;
   /** totais depois deste jogo */
   jogosPro: number; golsPro: number; jogosBase: number; golsBase: number; jogosNoClube: number;
@@ -71,11 +74,11 @@ export interface Ganho { conquista: string; reliquia: Reliquia }
 
 const camisa = (chave: string, id: string, nome: string, legenda: string, d: DadosPartida, numero = d.numero): Ganho => ({
   conquista: chave,
-  reliquia: { id: `rel-camisa-${id}`, chave, tipo: "camisa", nome, legenda, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: padraoCamisa(d.clubeId), numero },
+  reliquia: { id: `rel-camisa-${id}`, chave, tipo: "camisa", nome, legenda, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: d.padrao ?? padraoCamisa(d.clubeId), numero },
 });
 const bola = (chave: string, id: string, nome: string, legenda: string, d: DadosPartida): Ganho => ({
   conquista: chave,
-  reliquia: { id: `rel-bola-${id}`, chave, tipo: "bola", nome, legenda, ano: d.ano, cores: coresDaBola(d.tipo === "base" ? "base" : "serieA", d.ano), modelo: d.tipo === "base" ? "base" : "serieA" },
+  reliquia: { id: `rel-bola-${id}`, chave, tipo: "bola", nome, legenda, ano: d.ano, cores: coresDaBola(d.tipo === "base" ? "base" : d.ligaId ?? "BRA1", d.ano), modelo: d.tipo === "base" ? "base" : d.ligaId ?? "BRA1" },
 });
 
 const MARCAS_JOGOS = [100, 200, 300, 400, 500, 600], MARCAS_GOLS = [50, 100, 150, 200, 250, 300, 400, 500];
@@ -113,6 +116,9 @@ export function reliquiasDaPartida(d: DadosPartida, tem: (id: string) => boolean
 
 export interface DadosTemporada {
   ano: number; idade: number; clubeId: string; clubeNome: string; cores: string[]; numero: string;
+  padrao?: string; ligaCurto?: string;
+  /** primeira temporada no clube depois de uma transferência */
+  recemContratado?: boolean;
   jogos: number; gols: number; assist: number; nota: number; titulo: boolean;
   base: number; golsBase: number; notaBase: number;
   /** temporadas anteriores com 15+ jogos no profissional */
@@ -123,13 +129,13 @@ const trofeu = (chave: string, nome: string, legenda: string, ano: number, model
 
 /** Premiação do fim da temporada. Os outros jogadores da liga não são simulados um a um: a régua de cada prêmio é sorteada em volta da marca típica. */
 export function premiosDaTemporada(rng: RNG, d: DadosTemporada): Ganho[] {
-  const g: Ganho[] = [], liga = "Série A";
+  const g: Ganho[] = [], liga = d.ligaCurto ?? "Série A";
   const alvoGols = Math.max(13, Math.round(rng.normal(18, 3))), alvoAssist = Math.max(7, Math.round(rng.normal(10, 2)));
   const ruido = (sd: number) => Math.max(-sd, Math.min(sd * 1.5, rng.normal(0, sd)));
   const alvoCraque = 7.25 + ruido(0.12), alvoSelecao = 6.95 + ruido(0.08);
   if (d.titulo) {
     g.push(trofeu("trofeu-campeao", `Taça de campeão ${d.ano}`, `${d.clubeNome} · ${liga} ${d.ano}`, d.ano, "taca", OURO));
-    g.push({ conquista: "camisa-titulo", reliquia: { id: `rel-camisa-titulo-${d.ano}`, chave: "camisa-titulo", tipo: "camisa", nome: `Camisa do título ${d.ano}`, legenda: `${d.clubeNome} campeão · ${d.ano}`, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: padraoCamisa(d.clubeId), numero: d.numero } });
+    g.push({ conquista: "camisa-titulo", reliquia: { id: `rel-camisa-titulo-${d.ano}`, chave: "camisa-titulo", tipo: "camisa", nome: `Camisa do título ${d.ano}`, legenda: `${d.clubeNome} campeão · ${d.ano}`, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: d.padrao ?? padraoCamisa(d.clubeId), numero: d.numero } });
   }
   if (d.jogos >= 15 && d.gols >= alvoGols) g.push(trofeu("trofeu-artilheiro", `Artilheiro ${d.ano}`, `${d.gols} gols · ${liga} ${d.ano}`, d.ano, "chuteira", OURO));
   if (d.jogos >= 15 && d.assist >= alvoAssist) g.push(trofeu("trofeu-garcom", `Rei das assistências ${d.ano}`, `${d.assist} assistências · ${liga} ${d.ano}`, d.ano, "prato", OURO));
@@ -137,6 +143,7 @@ export function premiosDaTemporada(rng: RNG, d: DadosTemporada): Ganho[] {
   if (d.jogos >= 22 && d.nota >= alvoSelecao) g.push(trofeu("trofeu-selecao", `Seleção do campeonato ${d.ano}`, `${liga} ${d.ano}`, d.ano, "placa", OURO));
   if (d.idade <= 21 && d.jogos >= 15 && d.nota >= 6.75 && d.temporadasCheias === 0) g.push(trofeu("trofeu-revelacao", `Revelação ${d.ano}`, `${d.idade} anos · ${liga} ${d.ano}`, d.ano, "estrela", OURO));
   if (d.idade <= 21 && d.jogos >= 18 && d.nota >= 7.0 + ruido(0.08)) g.push(trofeu("trofeu-sub21", `Melhor sub-21 ${d.ano}`, `${liga} ${d.ano}`, d.ano, "estrela", PRATA));
+  if (d.recemContratado && d.jogos >= 20 && d.nota >= 6.9 + ruido(0.08)) g.push(trofeu("trofeu-contratacao", `Melhor contratação ${d.ano}`, `${d.clubeNome} · ${liga} ${d.ano}`, d.ano, "placa", PRATA));
   if (d.base >= 15 && d.golsBase >= Math.max(12, Math.round(rng.normal(17, 3)))) g.push(trofeu("trofeu-artilheiro-base", `Artilheiro do sub-17 ${d.ano}`, `${d.golsBase} gols · Sub-17 ${d.ano}`, d.ano, "chuteira", PRATA));
   if (d.base >= 20 && d.notaBase >= 7.45 + Math.max(-0.1, Math.min(0.15, rng.normal(0, 0.1)))) g.push(trofeu("trofeu-craque-base", `Craque do sub-17 ${d.ano}`, `Nota média ${d.notaBase.toFixed(2)} · Sub-17 ${d.ano}`, d.ano, "bola", PRATA));
   return g;

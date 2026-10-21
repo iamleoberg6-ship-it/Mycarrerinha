@@ -746,6 +746,7 @@ function camisaQuadro(p: "esq" | "dir", pos: number, r: Reliquia | undefined): s
     case "listrasH": for (let z = 2.55; z < 4.05; z += 0.3) padrao += Q(pos - 0.8, pos + 0.8, z, z + 0.15); break;
     case "faixa": padrao += poli([P(pos - 0.5, 3.95), P(pos - 0.2, 4.05), P(pos + 0.5, 2.85), P(pos + 0.5, 2.5), P(pos + 0.3, 2.5)], sh(c2), 0); break;
     case "faixaH": padrao += Q(pos - 0.8, pos + 0.8, 3.1, 3.4); break;
+    case "centro": padrao += Q(pos - 0.16, pos + 0.16, 2.4, 4.1); break;
     default: padrao += Q(pos - 0.8, pos - 0.5, 3.4, 3.62) + Q(pos + 0.5, pos + 0.8, 3.4, 3.62);
   }
   sv += `<clipPath id="${id}"><path d="${caminho(forma)}"/></clipPath>${poli(forma, sh(c1), 0)}<g clip-path="url(#${id})">${padrao}</g>${poli(forma, "none", 1.1)}`;
