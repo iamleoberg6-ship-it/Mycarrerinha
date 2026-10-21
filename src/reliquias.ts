@@ -1,0 +1,143 @@
+// Relíquias: camisas, bolas e troféus que a carreira vai liberando e que viram enfeite da casa.
+// Este arquivo diz o que existe, como cada uma é desbloqueada e com que cara ela fica.
+import type { RNG } from "./rng.js";
+import type { Reliquia } from "./casa.js";
+
+export type Grupo = "Camisas" | "Bolas" | "Troféus";
+export interface Conquista {
+  chave: string; tipo: Reliquia["tipo"]; grupo: Grupo; nome: string; dica: string;
+  /** pode ser ganha mais de uma vez (cada hat-trick, cada título, cada temporada premiada) */
+  repetivel?: boolean;
+  /** ainda não existe no jogo (seleção, transferências) */
+  emBreve?: boolean;
+}
+
+export const CONQUISTAS: Conquista[] = [
+  { chave: "camisa-estreia-base", tipo: "camisa", grupo: "Camisas", nome: "Camisa da estreia na base", dica: "Jogue sua primeira partida na base." },
+  { chave: "camisa-estreia", tipo: "camisa", grupo: "Camisas", nome: "Camisa da estreia como profissional", dica: "Estreie no time profissional." },
+  { chave: "camisa-primeiro-gol", tipo: "camisa", grupo: "Camisas", nome: "Camisa do primeiro gol", dica: "Marque seu primeiro gol como profissional." },
+  { chave: "camisa-clube", tipo: "camisa", grupo: "Camisas", nome: "Camisa de cada clube", dica: "Faça 10 jogos como profissional por um clube.", repetivel: true },
+  { chave: "camisa-jogo", tipo: "camisa", grupo: "Camisas", nome: "Camisa de jogo marcante", dica: "Chegue a 100, 200, 300... jogos como profissional.", repetivel: true },
+  { chave: "camisa-titulo", tipo: "camisa", grupo: "Camisas", nome: "Camisa do título", dica: "Seja campeão da liga jogando pelo menos 10 partidas.", repetivel: true },
+  { chave: "camisa-selecao", tipo: "camisa", grupo: "Camisas", nome: "Camisa da estreia pela seleção", dica: "Seja convocado e estreie pela seleção.", emBreve: true },
+  { chave: "bola-gol-base", tipo: "bola", grupo: "Bolas", nome: "Bola do primeiro gol na base", dica: "Marque seu primeiro gol na base." },
+  { chave: "bola-estreia", tipo: "bola", grupo: "Bolas", nome: "Bola da estreia", dica: "Estreie no time profissional." },
+  { chave: "bola-primeiro-gol", tipo: "bola", grupo: "Bolas", nome: "Bola do primeiro gol", dica: "Marque seu primeiro gol como profissional." },
+  { chave: "bola-hattrick", tipo: "bola", grupo: "Bolas", nome: "Bola do hat-trick", dica: "Faça três gols num jogo.", repetivel: true },
+  { chave: "bola-marca", tipo: "bola", grupo: "Bolas", nome: "Bola de gol marcante", dica: "Chegue a 50, 100, 150... gols como profissional.", repetivel: true },
+  { chave: "bola-bicicleta", tipo: "bola", grupo: "Bolas", nome: "Bola do gol de bicicleta", dica: "Faça um gol de bicicleta." },
+  { chave: "bola-olimpico", tipo: "bola", grupo: "Bolas", nome: "Bola do gol olímpico", dica: "Faça um gol direto do escanteio." },
+  { chave: "bola-meio-campo", tipo: "bola", grupo: "Bolas", nome: "Bola do gol do meio de campo", dica: "Marque do meio de campo." },
+  { chave: "bola-falta", tipo: "bola", grupo: "Bolas", nome: "Bola do primeiro gol de falta", dica: "Faça um gol de falta." },
+  { chave: "bola-cavadinha", tipo: "bola", grupo: "Bolas", nome: "Bola da cavadinha", dica: "Converta um pênalti de cavadinha." },
+  { chave: "trofeu-campeao", tipo: "trofeu", grupo: "Troféus", nome: "Taça de campeão", dica: "Seja campeão da liga jogando pelo menos 10 partidas.", repetivel: true },
+  { chave: "trofeu-craque", tipo: "trofeu", grupo: "Troféus", nome: "Craque do campeonato", dica: "Termine a temporada como o melhor jogador da liga.", repetivel: true },
+  { chave: "trofeu-artilheiro", tipo: "trofeu", grupo: "Troféus", nome: "Artilheiro do campeonato", dica: "Seja o maior goleador da liga.", repetivel: true },
+  { chave: "trofeu-garcom", tipo: "trofeu", grupo: "Troféus", nome: "Rei das assistências", dica: "Dê mais assistências que todo mundo na liga.", repetivel: true },
+  { chave: "trofeu-selecao", tipo: "trofeu", grupo: "Troféus", nome: "Seleção do campeonato", dica: "Esteja entre os melhores da temporada na sua posição.", repetivel: true },
+  { chave: "trofeu-revelacao", tipo: "trofeu", grupo: "Troféus", nome: "Revelação do campeonato", dica: "Brilhe na sua primeira temporada completa como profissional, até 21 anos." },
+  { chave: "trofeu-sub21", tipo: "trofeu", grupo: "Troféus", nome: "Melhor jogador sub-21", dica: "Seja o melhor da liga com até 21 anos.", repetivel: true },
+  { chave: "trofeu-artilheiro-base", tipo: "trofeu", grupo: "Troféus", nome: "Artilheiro do sub-17", dica: "Seja o maior goleador da base.", repetivel: true },
+  { chave: "trofeu-craque-base", tipo: "trofeu", grupo: "Troféus", nome: "Craque do sub-17", dica: "Seja o melhor jogador da base na temporada.", repetivel: true },
+  { chave: "trofeu-contratacao", tipo: "trofeu", grupo: "Troféus", nome: "Melhor contratação", dica: "Brilhe na primeira temporada depois de uma transferência.", emBreve: true, repetivel: true },
+];
+export const CONQUISTA: Record<string, Conquista> = Object.fromEntries(CONQUISTAS.map((c) => [c.chave, c]));
+
+// ------------------------------------------------------------------ aparência
+/** Desenho da camisa de cada clube (paródia: só cores e padrão). */
+const PADRAO_CAMISA: Record<string, string> = {
+  FLA: "listrasH", FLU: "listrasV", BOT: "listrasV", VAS: "faixa", GRE: "listrasV", CAM: "listrasV", BAH: "listrasH", VIT: "listrasH", CAP: "listrasH",
+  SPA: "faixaH", SAN: "lisa", PAL: "lisa", COR: "lisa", INT: "lisa", CRU: "lisa", CFC: "lisa", RBB: "lisa", MIR: "lisa", REM: "lisa", CHA: "lisa",
+};
+export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa";
+/** As bolas mudam de competição para competição e de ano para ano. */
+const BOLAS: Record<string, [string, string][]> = {
+  serieA: [["#2E7D4F", "#F2B705"], ["#1F3A5F", "#E3B341"], ["#C0392B", "#1F3A5F"], ["#18A0A8", "#F08A24"], ["#6A3FA0", "#F2B705"]],
+  base: [["#262626", "#262626"], ["#1B98E0", "#262626"], ["#C0392B", "#262626"]],
+};
+export const coresDaBola = (competicao: "serieA" | "base", ano: number): [string, string] => { const l = BOLAS[competicao]; return l[ano % l.length]; };
+export const OURO: [string, string] = ["#E3B341", "#9A7420"], PRATA: [string, string] = ["#CDD3D8", "#7D868D"];
+
+// ------------------------------------------------------------------ desbloqueio
+export interface DadosPartida {
+  tipo: "profissional" | "base"; ano: number; semana: number; adversario: string; clubeId: string; clubeNome: string; cores: string[]; numero: string;
+  placar: string; gols: number; minutos: number;
+  /** totais depois deste jogo */
+  jogosPro: number; golsPro: number; jogosBase: number; golsBase: number; jogosNoClube: number;
+  /** golaços vindos das decisões: situação/opção com resultado ótimo */
+  golacos: string[];
+}
+export interface Ganho { conquista: string; reliquia: Reliquia }
+
+const camisa = (chave: string, id: string, nome: string, legenda: string, d: DadosPartida, numero = d.numero): Ganho => ({
+  conquista: chave,
+  reliquia: { id: `rel-camisa-${id}`, chave, tipo: "camisa", nome, legenda, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: padraoCamisa(d.clubeId), numero },
+});
+const bola = (chave: string, id: string, nome: string, legenda: string, d: DadosPartida): Ganho => ({
+  conquista: chave,
+  reliquia: { id: `rel-bola-${id}`, chave, tipo: "bola", nome, legenda, ano: d.ano, cores: coresDaBola(d.tipo === "base" ? "base" : "serieA", d.ano), modelo: d.tipo === "base" ? "base" : "serieA" },
+});
+
+const MARCAS_JOGOS = [100, 200, 300, 400, 500, 600], MARCAS_GOLS = [50, 100, 150, 200, 250, 300, 400, 500];
+const GOLACOS: Record<string, [string, string]> = {
+  "escanteioAtaque/bicicleta": ["bola-bicicleta", "Bola do gol de bicicleta"], "batedorEscanteio/olimpico": ["bola-olimpico", "Bola do gol olímpico"],
+  "chuteMeioCampo/chutar": ["bola-meio-campo", "Bola do gol do meio de campo"], "faltaPerigosa/barreira": ["bola-falta", "Bola do primeiro gol de falta"],
+  "faltaPerigosa/rasteiro": ["bola-falta", "Bola do primeiro gol de falta"], "penalti/cavadinha": ["bola-cavadinha", "Bola da cavadinha"],
+};
+
+/** O que um jogo libera. `tem` diz se uma relíquia já existe (para não repetir). */
+export function reliquiasDaPartida(d: DadosPartida, tem: (id: string) => boolean): Ganho[] {
+  const g: Ganho[] = [], contra = `${d.tipo === "base" ? "Sub-17 · " : ""}${d.placar} contra o ${d.adversario}`;
+  const add = (x: Ganho) => { if (!tem(x.reliquia.id) && !g.some((y) => y.reliquia.id === x.reliquia.id)) g.push(x); };
+  if (d.minutos <= 0) return g;
+  if (d.tipo === "base") {
+    if (d.jogosBase === 1) add(camisa("camisa-estreia-base", "estreia-base", "Camisa da estreia na base", `${d.clubeNome} · ${contra} · ${d.ano}`, d));
+    if (d.gols > 0 && d.golsBase === d.gols) add(bola("bola-gol-base", "gol-base", "Bola do primeiro gol na base", `${contra} · ${d.ano}`, d));
+  } else {
+    if (d.jogosPro === 1) {
+      add(camisa("camisa-estreia", "estreia", "Camisa da estreia", `${d.clubeNome} · ${contra} · ${d.ano}`, d));
+      add(bola("bola-estreia", "estreia", "Bola da estreia", `${contra} · ${d.ano}`, d));
+    }
+    if (d.gols > 0 && d.golsPro === d.gols) {
+      add(camisa("camisa-primeiro-gol", "primeiro-gol", "Camisa do primeiro gol", `${d.clubeNome} · ${contra} · ${d.ano}`, d));
+      add(bola("bola-primeiro-gol", "primeiro-gol", "Bola do primeiro gol", `${contra} · ${d.ano}`, d));
+    }
+    if (d.jogosNoClube === 10) add(camisa("camisa-clube", `clube-${d.clubeId}`, `Camisa do ${d.clubeNome}`, `10 jogos pelo clube · ${d.ano}`, d));
+    for (const m of MARCAS_JOGOS) if (d.jogosPro === m) add(camisa("camisa-jogo", `jogo-${m}`, `Camisa do jogo ${m}`, `${d.clubeNome} · ${contra} · ${d.ano}`, d, String(m)));
+    for (const m of MARCAS_GOLS) if (d.golsPro >= m && d.golsPro - d.gols < m) add(bola("bola-marca", `gol-${m}`, `Bola do gol ${m}`, `${contra} · ${d.ano}`, d));
+  }
+  if (d.gols >= 3) add(bola("bola-hattrick", `hattrick-${d.ano}-${d.semana}`, d.gols >= 4 ? `Bola dos ${d.gols} gols` : "Bola do hat-trick", `${d.gols} gols · ${contra} · ${d.ano}`, d));
+  for (const x of d.golacos) { const k = GOLACOS[x]; if (k) add(bola(k[0], k[0].slice(5), k[1], `${contra} · ${d.ano}`, d)); }
+  return g;
+}
+
+export interface DadosTemporada {
+  ano: number; idade: number; clubeId: string; clubeNome: string; cores: string[]; numero: string;
+  jogos: number; gols: number; assist: number; nota: number; titulo: boolean;
+  base: number; golsBase: number; notaBase: number;
+  /** temporadas anteriores com 15+ jogos no profissional */
+  temporadasCheias: number;
+}
+const trofeu = (chave: string, nome: string, legenda: string, ano: number, modelo: string, cores: [string, string]): Ganho =>
+  ({ conquista: chave, reliquia: { id: `rel-trofeu-${chave.slice(7)}-${ano}`, chave, tipo: "trofeu", nome, legenda, ano, cores, modelo } });
+
+/** Premiação do fim da temporada. Os outros jogadores da liga não são simulados um a um: a régua de cada prêmio é sorteada em volta da marca típica. */
+export function premiosDaTemporada(rng: RNG, d: DadosTemporada): Ganho[] {
+  const g: Ganho[] = [], liga = "Série A";
+  const alvoGols = Math.max(13, Math.round(rng.normal(18, 3))), alvoAssist = Math.max(7, Math.round(rng.normal(10, 2)));
+  const ruido = (sd: number) => Math.max(-sd, Math.min(sd * 1.5, rng.normal(0, sd)));
+  const alvoCraque = 7.25 + ruido(0.12), alvoSelecao = 6.95 + ruido(0.08);
+  if (d.titulo) {
+    g.push(trofeu("trofeu-campeao", `Taça de campeão ${d.ano}`, `${d.clubeNome} · ${liga} ${d.ano}`, d.ano, "taca", OURO));
+    g.push({ conquista: "camisa-titulo", reliquia: { id: `rel-camisa-titulo-${d.ano}`, chave: "camisa-titulo", tipo: "camisa", nome: `Camisa do título ${d.ano}`, legenda: `${d.clubeNome} campeão · ${d.ano}`, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: padraoCamisa(d.clubeId), numero: d.numero } });
+  }
+  if (d.jogos >= 15 && d.gols >= alvoGols) g.push(trofeu("trofeu-artilheiro", `Artilheiro ${d.ano}`, `${d.gols} gols · ${liga} ${d.ano}`, d.ano, "chuteira", OURO));
+  if (d.jogos >= 15 && d.assist >= alvoAssist) g.push(trofeu("trofeu-garcom", `Rei das assistências ${d.ano}`, `${d.assist} assistências · ${liga} ${d.ano}`, d.ano, "prato", OURO));
+  if (d.jogos >= 25 && d.nota >= alvoCraque) g.push(trofeu("trofeu-craque", `Craque do campeonato ${d.ano}`, `Nota média ${d.nota.toFixed(2)} · ${liga} ${d.ano}`, d.ano, "bola", OURO));
+  if (d.jogos >= 22 && d.nota >= alvoSelecao) g.push(trofeu("trofeu-selecao", `Seleção do campeonato ${d.ano}`, `${liga} ${d.ano}`, d.ano, "placa", OURO));
+  if (d.idade <= 21 && d.jogos >= 15 && d.nota >= 6.75 && d.temporadasCheias === 0) g.push(trofeu("trofeu-revelacao", `Revelação ${d.ano}`, `${d.idade} anos · ${liga} ${d.ano}`, d.ano, "estrela", OURO));
+  if (d.idade <= 21 && d.jogos >= 18 && d.nota >= 7.0 + ruido(0.08)) g.push(trofeu("trofeu-sub21", `Melhor sub-21 ${d.ano}`, `${liga} ${d.ano}`, d.ano, "estrela", PRATA));
+  if (d.base >= 15 && d.golsBase >= Math.max(12, Math.round(rng.normal(17, 3)))) g.push(trofeu("trofeu-artilheiro-base", `Artilheiro do sub-17 ${d.ano}`, `${d.golsBase} gols · Sub-17 ${d.ano}`, d.ano, "chuteira", PRATA));
+  if (d.base >= 20 && d.notaBase >= 7.45 + Math.max(-0.1, Math.min(0.15, rng.normal(0, 0.1)))) g.push(trofeu("trofeu-craque-base", `Craque do sub-17 ${d.ano}`, `Nota média ${d.notaBase.toFixed(2)} · Sub-17 ${d.ano}`, d.ano, "bola", PRATA));
+  return g;
+}

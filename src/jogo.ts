@@ -9,7 +9,8 @@ import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
-import { novoEstado, fecharMes, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
+import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
+import { ganharReliquia, novoEstado, fecharMes, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
 // ------------------------------------------------------------------ tipos
 export interface Jogador {
@@ -17,8 +18,8 @@ export interface Jogador {
   at: Atributos; pot: number; faixaPot: [number, number]; personalidade: PersonalidadeDNA; tracos: TracoId[];
   perfilId: string; perfilNome: string; aparencia: unknown; numero: string; familia: string;
 }
-export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number }
-export interface ResumoTemporada { ano: number; idade: number; clube: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number }
+export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number; baseNotas?: number[] }
+export interface ResumoTemporada { ano: number; idade: number; clube: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao" }
 export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
@@ -26,6 +27,8 @@ export interface Carreira {
   suspensao?: number;
   /** lances já vividos: os recentes aparecem menos, os inéditos mais */
   memoria?: Memoria;
+  /** jogos como profissional por clube (camisa de cada clube) */
+  jogosPorClube?: Record<string, number>;
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
@@ -190,7 +193,7 @@ export interface Partida {
   /** nomes do elenco usados nos textos, contexto do jogo e narração de ambiente */
   nomes: Record<string, string>; ctx: Contexto; abertura: string; narracao: LinhaNarracao[];
 }
-export interface ResultadoDecisao extends Efeito { min: number; nivel: Nivel; situacao: string }
+export interface ResultadoDecisao extends Efeito { min: number; nivel: Nivel; situacao: string; opcao?: string }
 /** Decisão extra que a tela abre quando o jogador marca pela primeira vez no jogo: como comemorar. */
 export function decisaoComemoracao(s: Save, p: Partida, min: number): Decisao {
   return { min, ...montarDecisao(rngDe(s, "comemoracao", min), COMEMORACAO, { ...p.ctx, min, jaFezGol: (s.carreira.stats.gols + s.carreira.historico.reduce((a, h) => a + h.gols, 0)) > 0 }, p.nomes) };
@@ -292,7 +295,7 @@ export function resolverDecisao(s: Save, p: Partida, d: Decisao, opcaoId: string
   const hab = habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op);
   const rng = rngDe(s, "decisao", d.situacao, d.min, opcaoId);
   const nivel = sortearNivel(rng, hab, nivelAdversario(p), op);
-  return { ...resolverEfeito(rng, op, nivel, { ...p.nomes, marco: String((p.ctx?.jogosPro ?? 0) + 1) }), min: d.min, nivel, situacao: d.situacao };
+  return { ...resolverEfeito(rng, op, nivel, { ...p.nomes, marco: String((p.ctx?.jogosPro ?? 0) + 1) }), min: d.min, nivel, situacao: d.situacao, opcao: opcaoId };
 }
 /** Melhor opção pela nota esperada (só para a política automática; a tela não mostra nada disso). */
 export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
@@ -386,7 +389,19 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       const pro = partida.tipo === "profissional";
       participacao = pro ? (partida.escalacao === "titular" ? "titular" : "entrou") : "base";
       if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota); }
-      else { c.stats.base++; c.stats.baseGols += gols; }
+      else { c.stats.base++; c.stats.baseGols += gols; (c.stats.baseNotas ??= []).push(nota); }
+      if (pro) { c.jogosPorClube ??= {}; c.jogosPorClube[c.clubeId] = (c.jogosPorClube[c.clubeId] ?? 0) + 1; }
+      // relíquias do jogo: estreia, primeiro gol, hat-trick, golaços, marcas
+      const meusGols = partida.souCasa ? gc : gf, golsAdv = partida.souCasa ? gf : gc, cc = clubeCasa(pacote, c.clubeId);
+      const totPro = (k: "jogos" | "gols") => c.stats[k] + c.historico.reduce((a, h) => a + h[k], 0);
+      const ganhos = reliquiasDaPartida({
+        tipo: partida.tipo, ano: ANO_INICIAL + c.temporada, semana: c.semana, adversario: clubeCasa(pacote, jogo.adversario).apelido, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
+        placar: `${meusGols} × ${golsAdv}`, gols, minutos, jogosPro: totPro("jogos"), golsPro: totPro("gols"),
+        jogosBase: c.stats.base + c.historico.reduce((a, h) => a + h.base, 0), golsBase: c.stats.baseGols + c.historico.reduce((a, h) => a + (h.baseGols ?? 0), 0),
+        jogosNoClube: c.jogosPorClube?.[c.clubeId] ?? 0,
+        golacos: decisoes.filter((d) => d.nivel === 0 && d.meu === "gol" && d.min <= foraMin).map((d) => `${d.situacao}/${d.opcao}`),
+      }, (id) => (s.casa.reliquias ?? []).some((r) => r.id === id));
+      receberReliquias(s, ganhos, eventos);
       c.formaUlt = [...c.formaUlt.slice(-4), nota];
       c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
       c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5), 0, 100);
@@ -454,12 +469,29 @@ function posicaoNaTabela(fixa: number | undefined, s: Save): number {
   return ordenar(s.carreira.tabela).findIndex((t) => t.clube === s.carreira.clubeId) + 1;
 }
 
+/** Coloca as relíquias ganhas na casa e conta na semana e nas notícias. */
+function receberReliquias(s: Save, ganhos: Ganho[], eventos: string[]) {
+  for (const g of ganhos) {
+    const r = ganharReliquia(s.casa, g.reliquia);
+    if (!r.ok) continue;
+    eventos.push(`Relíquia nova: ${r.msg}`);
+    noticia(s, "vida", g.reliquia.tipo === "trofeu" ? g.reliquia.nome : `Relíquia: ${g.reliquia.nome}`, `${g.reliquia.legenda}. Já faz parte da coleção de ${s.jogador.apelido}.`);
+  }
+}
+
 function fimDeTemporada(pacote: PacoteDados, s: Save): ResumoTemporada {
   const l = liga(pacote), c = s.carreira, j = s.jogador;
   const posicao = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const titulo = posicao === 1 && c.stats.jogos >= 10;
-  const notas = c.stats.notas;
-  const r: ResumoTemporada = { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: notas.length ? +(notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(2) : 0, posicao, titulo, base: c.stats.base };
+  const notas = c.stats.notas, media = (x: number[]) => (x.length ? +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(2) : 0);
+  const r: ResumoTemporada = { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols };
+  // premiação: troféus que vão para a casa
+  const cc = clubeCasa(pacote, c.clubeId), ev: string[] = [];
+  const premios = premiosDaTemporada(rngDe(s, "premios"), { ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
+    jogos: r.jogos, gols: r.gols, assist: r.assist, nota: r.nota, titulo, base: r.base, golsBase: c.stats.baseGols, notaBase: media(c.stats.baseNotas ?? []),
+    temporadasCheias: c.historico.filter((h) => h.jogos >= 15).length });
+  receberReliquias(s, premios, ev);
+  r.premios = premios.filter((g) => g.reliquia.tipo === "trofeu").map((g) => g.reliquia.nome);
   c.historico.push(r);
   if (titulo) c.fama = clamp(c.fama + 5, 0, 100);
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);

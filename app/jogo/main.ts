@@ -4,7 +4,7 @@ import type { PacoteDados } from "../../src/liga";
 import { ordenar } from "../../src/liga";
 import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from "../../src/atributos";
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
-import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro } from "../../src/casa";
+import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias } from "../../src/casa";
 import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
@@ -26,6 +26,7 @@ const NOME_AT: Record<Atributo, string> = { VEL: "Velocidade", RES: "Resistênci
 const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"];
 
 let save: Save | null = ler<Save>(CHAVE_SAVE);
+if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
 let aba: "tabela" | "jogador" | "noticias" | "casa" = "tabela";
 const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, plano); };
@@ -142,10 +143,14 @@ function abaNoticias(s: Save): string {
 
 function abaCasa(s: Save): string {
   const m = imovelAtual(s.casa), ef = efeitosDaCasa(s.casa).total;
-  const c0 = m.comodos[0];
+  const rels = s.casa.reliquias ?? [];
+  // mostra o cômodo com mais relíquias, se houver
+  const conta = (id: string) => s.casa.objetos.filter((o) => o.comodo === id && o.item.startsWith("rel-")).length;
+  const c0 = [...m.comodos].sort((a, b) => conta(b.id) - conta(a.id))[0];
   return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><div><p class="rotulo">Onde você mora</p><h2>${esc(nomeImovel(s.casa, m))}</h2></div><div class="ovr"><strong style="font-size:32px">${conforto(s.casa)}</strong><span>Conforto</span></div></div>
     <div class="casa-mini" style="margin-top:10px">${svgComodo(s.casa, c0.id)}</div>
     <p class="sub" style="margin-top:10px">A casa entra na semana: recuperação ${sinal(ef.recuperacao)}, moral ${sinal(ef.moral)}, proteção contra lesão ${sinal(ef.lesao)}%, evolução ${sinal(ef.evolucao)}%, fama ${sinal(ef.fama)}.</p>
+    <p class="sub" style="margin-top:6px">${rels.length ? `Coleção: <b>${rels.length}</b> ${rels.length === 1 ? "relíquia" : "relíquias"}. Mais recente: ${esc(rels[rels.length - 1].nome)}.` : "Camisas, bolas e troféus que você conquistar em campo aparecem aqui para enfeitar a casa."}</p>
     <a class="botao" href="casa.html" style="margin-top:12px;width:100%">Entrar em casa</a>`;
 }
 
@@ -278,7 +283,7 @@ function mostrarResumo(r: ResumoSemana) {
       ${p.minutos > 0 ? `<div style="display:flex;gap:18px;align-items:flex-end"><div><div class="grande-num">${p.nota.toFixed(1)}</div><span class="rotulo">Nota</span></div><div class="kv" style="flex:1"><span>Minutos</span><b>${p.minutos}</b><span>Gols</span><b>${p.gols}</b><span>Assistências</span><b>${p.assist}</b></div></div>` : `<p class="sub">Você não entrou em campo.</p>`}</section>`
     : `<section class="painel"><p class="rotulo">${r.rotulo}</p><p class="sub">${esc(NOME_ESCALACAO[r.escalacao])}${r.escalacao === "semJogo" ? ": semana de treinos." : "."}</p></section>`;
   const fim = r.fimDeTemporada ? `<section class="painel" style="border-color:var(--ouro)"><p class="rotulo">Fim da temporada ${r.fimDeTemporada.ano}</p><h2 style="margin:4px 0">${esc(r.fimDeTemporada.clube)} em ${r.fimDeTemporada.posicao}º${r.fimDeTemporada.titulo ? " · CAMPEÃO!" : ""}</h2>
-      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b><span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div><p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
+      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b><span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
   $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${partidaHtml}${fim}
     <section class="painel"><div style="display:flex;justify-content:space-between;align-items:flex-end"><div><p class="rotulo">OVR</p><div class="grande-num">${Math.round(r.ovrDepois)}</div></div><span class="delta ${r.ovrDepois - r.ovrAntes > 0 ? "pos" : ""}">${sinal(r.ovrDepois - r.ovrAntes, 2)}</span></div>
       <p class="sub" style="margin-top:6px">Mais evoluíram: ${r.ganhos.map(([a, v]) => `${NOME_AT[a]} ${sinal(v, 2)}`).join(" · ")}</p></section>

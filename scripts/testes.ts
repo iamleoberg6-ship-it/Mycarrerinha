@@ -9,6 +9,8 @@ import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
+import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
+import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo } from "../src/jogo.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
@@ -144,7 +146,7 @@ teste("Casa: imóveis válidos, inclusos cabem, catálogo completo", () => {
       const r = REVEST[c[l].id]; assert.ok(r && r.ambientes.includes(c.ambiente) && c[l].cor < r.cores.length, `${m.id}.${c.id} ${l}`);
     }
   }
-  for (const tipo of Object.keys(TIPOS)) assert.ok(CATALOGO.some((i) => i.tipo === tipo), `sem produto: ${tipo}`);
+  for (const tipo of Object.keys(TIPOS)) if (TIPOS[tipo as keyof typeof TIPOS].categoria !== "conquistas") assert.ok(CATALOGO.some((i) => i.tipo === tipo), `sem produto: ${tipo}`);
   for (const it of CATALOGO) { assert.ok(it.preco > 0 && it.cores.length > 0, it.id); if (it.aVenda) assert.ok(Object.values(it.efeitos).some((v) => v !== 0), `${it.id} sem efeito`); }
   assert.equal(new Set(CATALOGO.map((i) => i.id)).size, CATALOGO.length);
   console.log(`   ${IMOVEIS.length} imóveis, ${CATALOGO.length} itens, ${REVESTIMENTOS.length} revestimentos`);
@@ -275,6 +277,28 @@ teste("Lances: catálogo completo, sem marcador vazio e sem repetir a mesma situ
     }
     assert.ok(Object.keys(s.carreira.memoria?.vistos ?? {}).length > 0, "memória de lances vazia");
   }
+});
+
+teste("Relíquias: primeiro gol, hat-trick, prêmios; vão para a casa e não se vendem", () => {
+  const d: DadosPartida = { tipo: "profissional", ano: 2027, semana: 5, adversario: "Galo", clubeId: "FLA", clubeNome: "CR Flamingo", cores: ["#C8102E", "#000000"], numero: "29",
+    placar: "3 × 1", gols: 3, minutos: 90, jogosPro: 1, golsPro: 3, jogosBase: 20, golsBase: 8, jogosNoClube: 1, golacos: ["escanteioAtaque/bicicleta"] };
+  const g = reliquiasDaPartida(d, () => false), chaves = g.map((x) => x.conquista);
+  for (const k of ["camisa-estreia", "bola-estreia", "camisa-primeiro-gol", "bola-primeiro-gol", "bola-hattrick", "bola-bicicleta"]) assert.ok(chaves.includes(k), k);
+  assert.equal(reliquiasDaPartida({ ...d, jogosPro: 2, golsPro: 5, gols: 2, golacos: [] }, () => false).length, 0, "segundo jogo comum não libera nada");
+  for (const x of g) assert.ok(CONQUISTAS.some((c) => c.chave === x.conquista), x.conquista);
+  const e = novoEstado(0, "casa-cond");
+  for (const x of g) assert.ok(ganharReliquia(e, x.reliquia).ok);
+  assert.equal(ganharReliquia(e, g[0].reliquia).ok, false, "não repete");
+  const naCasa = e.objetos.filter((o) => ehReliquia(o.item));
+  assert.equal(naCasa.length + e.deposito.length, g.length);
+  for (const o of naCasa) { assert.ok(cabe(e, o)); assert.equal(vender(e, o.uid).ok, false); assert.equal(trocarCor(e, o.uid, 1).ok, false); }
+  // um save recarregado (JSON) volta a reconhecer as relíquias
+  const copia = JSON.parse(JSON.stringify(e)); registrarReliquias(copia);
+  assert.ok(efeitosDaCasa(copia).total.moral >= Math.min(TETO.moral, naCasa.length));
+  const p = premiosDaTemporada(new RNG("x"), { ano: 2028, idade: 20, clubeId: "FLA", clubeNome: "CR Flamingo", cores: ["#C8102E", "#000000"], numero: "9",
+    jogos: 34, gols: 30, assist: 15, nota: 7.8, titulo: true, base: 0, golsBase: 0, notaBase: 0, temporadasCheias: 0 }).map((x) => x.conquista);
+  for (const k of ["trofeu-campeao", "camisa-titulo", "trofeu-artilheiro", "trofeu-garcom", "trofeu-craque", "trofeu-selecao", "trofeu-revelacao", "trofeu-sub21"]) assert.ok(p.includes(k), k);
+  assert.equal(premiosDaTemporada(new RNG("y"), { ano: 2028, idade: 25, clubeId: "FLA", clubeNome: "x", cores: [], numero: "9", jogos: 30, gols: 2, assist: 1, nota: 6.4, titulo: false, base: 0, golsBase: 0, notaBase: 0, temporadasCheias: 3 }).length, 0);
 });
 
 console.log(`\n${ok} testes passaram`);

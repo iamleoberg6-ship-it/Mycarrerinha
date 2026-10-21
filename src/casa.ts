@@ -24,10 +24,10 @@ export const ESTILOS: Record<Estilo, InfoEstilo> = {
 // ------------------------------------------------------------------ tipos de móvel
 export type Ambiente = "interno" | "externo" | "garagem";
 export type Camada = "chao" | "tapete" | "parede" | "piscina";
-export type Categoria = "dormir" | "sala" | "cozinha" | "banheiro" | "lazer" | "treino" | "decoracao" | "externo" | "garagem";
+export type Categoria = "dormir" | "sala" | "cozinha" | "banheiro" | "lazer" | "treino" | "decoracao" | "externo" | "garagem" | "conquistas";
 export const CATEGORIAS: Record<Categoria, string> = {
   dormir: "Quarto", sala: "Sala", cozinha: "Cozinha", banheiro: "Banheiro", lazer: "Lazer", treino: "Treino",
-  decoracao: "Decoração", externo: "Área externa", garagem: "Garagem",
+  decoracao: "Decoração", externo: "Área externa", garagem: "Garagem", conquistas: "Conquistas",
 };
 export type TipoMovel =
   | "beliche" | "cama" | "criado" | "armario" | "comoda" | "rede"
@@ -38,7 +38,8 @@ export type TipoMovel =
   | "esteira" | "pesos" | "maca" | "gelo"
   | "tapete" | "planta" | "quadro" | "escultura" | "trofeus"
   | "piscina" | "espreguicadeira" | "churrasqueira" | "mesaExterna" | "trave" | "jacuzzi" | "fogueira"
-  | "carro" | "moto" | "mesa";
+  | "carro" | "moto" | "mesa"
+  | "camisaRel" | "bolaRel" | "trofeuRel";
 
 interface InfoTipo { nome: string; categoria: Categoria; w: number; d: number; camada: Camada; ambientes: Ambiente[]; base: number; efeito: Partial<Efeitos>; corDe: "tecido" | "madeira" | "metal"; encosta?: boolean; comodos: TipoComodo[]; instalacao?: boolean }
 const I: Ambiente[] = ["interno"], E: Ambiente[] = ["externo"], IE: Ambiente[] = ["interno", "externo"], G: Ambiente[] = ["garagem"];
@@ -91,6 +92,10 @@ export const TIPOS: Record<TipoMovel, InfoTipo> = {
   carro: t("Carro", "garagem", 4, 7, 0, { moral: 1 }, "metal", { ambientes: G }),
   moto: t("Moto", "garagem", 2, 4, 0, { moral: 1 }, "metal", { ambientes: G }),
   mesa: t("Escrivaninha", "sala", 3, 2, 400, { moral: 1 }, "madeira", { encosta: true }),
+  // relíquias: ganhas em campo, nunca à venda
+  camisaRel: t("Camisa emoldurada", "conquistas", 2, 0, 0, { moral: 1 }, "tecido", { camada: "parede", ambientes: [...I, ...G] }),
+  bolaRel: t("Bola no expositor", "conquistas", 1, 1, 0, { moral: 1 }, "tecido", { ambientes: [...IE, ...G] }),
+  trofeuRel: t("Troféu", "conquistas", 1, 1, 0, { moral: 1 }, "metal", { ambientes: [...IE, ...G] }),
 };
 
 // Onde cada tipo pode ficar. Instalações (hidráulica e obra) só entram, saem ou mudam de lugar em imóvel próprio.
@@ -109,6 +114,8 @@ const ONDE: Record<TipoMovel, TipoComodo[]> = {
   trofeus: ["sala", "trofeus", "escritorio", "jogos"],
   piscina: ["externo"], espreguicadeira: ["externo"], churrasqueira: ["externo"], mesaExterna: ["externo"], trave: ["externo"], jacuzzi: ["externo", "banheiro"], fogueira: ["externo"],
   carro: ["garagem"], moto: ["garagem"],
+  // relíquias vão em qualquer cômodo
+  camisaRel: [...INTERNOS, "cozinha", "banheiro", "garagem"], bolaRel: [...INTERNOS, "cozinha", "banheiro", "garagem", "externo"], trofeuRel: [...INTERNOS, "cozinha", "banheiro", "garagem", "externo"],
 };
 for (const [k, v] of Object.entries(ONDE)) TIPOS[k as TipoMovel].comodos = v;
 for (const k of ["vaso", "pia", "chuveiro", "banheira", "bancada", "piscina", "jacuzzi"] as TipoMovel[]) TIPOS[k].instalacao = true;
@@ -117,10 +124,25 @@ export const NOME_COMODO: Record<TipoComodo, string> = {
   academia: "academia", jogos: "sala de jogos", trofeus: "sala de troféus", externo: "área externa", garagem: "garagem",
 };
 
+/** "no quarto", "na sala"... */
+export const noComodo = (t: TipoComodo) => `${t === "quarto" || t === "escritorio" || t === "banheiro" ? "no" : "na"} ${NOME_COMODO[t]}`;
+
 // ------------------------------------------------------------------ catálogo
 export interface Item {
   id: string; tipo: TipoMovel; estilo: Estilo; forma: number; nivel: number; nome: string;
   preco: number; efeitos: Partial<Efeitos>; cores: string[]; aVenda: boolean;
+  /** só nas relíquias: o que foi conquistado, quando e com que cara */
+  rel?: Reliquia;
+}
+/** Lembrança conquistada na carreira: camisa, bola ou troféu. Vive no save e vira item da casa. */
+export interface Reliquia {
+  id: string; chave: string; tipo: "camisa" | "bola" | "trofeu";
+  nome: string; legenda: string; ano: number;
+  /** camisa: cores do clube; bola: cores da bola da competição; troféu: metal (ouro, prata, bronze) */
+  cores: [string, string];
+  /** camisa: lisa, listras, faixa, metade · bola: desenho da competição · troféu: taca, bola, chuteira, estrela, placa, prato */
+  modelo: string;
+  numero?: string;
 }
 const MULT = [0, 1, 5, 22, 90];
 const redondo = (v: number) => { if (v < 100) return Math.round(v / 10) * 10; const p = 10 ** (Math.floor(Math.log10(v)) - 1); return Math.round(v / p) * p; };
@@ -221,7 +243,22 @@ for (const [tipo, linhas] of Object.entries(PRODUTOS) as [TipoMovel, Linha[]][])
     CATALOGO.push({ id, tipo, estilo, forma, nivel, nome, preco, efeitos, cores: o.cores ?? ESTILOS[estilo][info.corDe], aVenda: o.venda ?? tipo !== "beliche" });
   });
 }
-export const ITENS: Record<string, Item> = Object.fromEntries(CATALOGO.map((i) => [i.id, i]));
+const TIPO_REL: Record<Reliquia["tipo"], TipoMovel> = { camisa: "camisaRel", bola: "bolaRel", trofeu: "trofeuRel" };
+export const itemDaReliquia = (r: Reliquia): Item => ({
+  id: r.id, tipo: TIPO_REL[r.tipo], estilo: "basico", forma: 1, nivel: 2, nome: r.nome, preco: 0,
+  efeitos: { ...TIPOS[TIPO_REL[r.tipo]].efeito }, cores: [r.cores[0], r.cores[1]], aVenda: false, rel: r,
+});
+/** Itens do catálogo e relíquias registradas. Relíquia ainda não registrada (save recém-aberto) vira um genérico, sem quebrar nada. */
+export const ITENS: Record<string, Item> = new Proxy(Object.fromEntries(CATALOGO.map((i) => [i.id, i])) as Record<string, Item>, {
+  get(alvo, k) {
+    if (typeof k !== "string" || alvo[k] || !k.startsWith("rel-")) return alvo[k as string];
+    const tipo = (k.split("-")[1] ?? "bola") as Reliquia["tipo"];
+    return itemDaReliquia({ id: k, chave: k, tipo: TIPO_REL[tipo] ? tipo : "bola", nome: "Relíquia", legenda: "", ano: 0, cores: ["#E3B341", "#F4F1EA"], modelo: "" });
+  },
+});
+/** Coloca as relíquias do save no registro de itens (chamar ao abrir um save). */
+export function registrarReliquias(e: EstadoCasa) { for (const r of e.reliquias ?? []) ITENS[r.id] = itemDaReliquia(r); }
+export const ehReliquia = (itemId: string) => itemId.startsWith("rel-");
 export const itemPorNome = (nome: string) => CATALOGO.find((i) => i.nome === nome)!;
 
 // ------------------------------------------------------------------ revestimentos de parede e piso
@@ -436,6 +473,8 @@ export interface EstadoCasa {
   objetos: Objeto[]; deposito: Guardado[];
   acabamentos: Record<string, { parede: Acabamento; piso: Acabamento }>; // "imovel.comodo"
   mes: number; seq: number;
+  /** camisas, bolas e troféus conquistados (podem estar na casa ou no depósito) */
+  reliquias?: Reliquia[];
 }
 export type Resultado = { ok: true; msg: string; uid?: string; comodo?: string } | { ok: false; msg: string };
 
@@ -627,11 +666,28 @@ export function tirarDoDeposito(e: EstadoCasa, uid: string, comodo: string): Res
   return { ok: false, msg: "Não tem espaço para esse item nesta casa." };
 }
 
+/** Uma relíquia nova vai direto para a casa: sala de troféus, sala, quarto... ou depósito, se não couber. */
+export function ganharReliquia(e: EstadoCasa, r: Reliquia): Resultado {
+  e.reliquias ??= [];
+  if (e.reliquias.some((x) => x.id === r.id)) return { ok: false, msg: "Já conquistada." };
+  e.reliquias.push(r); ITENS[r.id] = itemDaReliquia(r);
+  const uid = novoUid(e), ordem: TipoComodo[] = ["trofeus", "sala", "escritorio", "jogos", "kitnet", "quarto"];
+  const cs = [...imovelAtual(e).comodos].sort((a, b) => (ordem.indexOf(a.tipo) + 1 || 99) - (ordem.indexOf(b.tipo) + 1 || 99));
+  for (const c of cs) {
+    if (!TIPOS[ITENS[r.id].tipo].comodos.includes(c.tipo)) continue;
+    const lugar = acharLugar(e, r.id, c.id, uid);
+    if (lugar) { e.objetos.push({ ...lugar, cor: 0 }); return { ok: true, msg: `${r.nome}, já ${noComodo(c.tipo)}.`, uid, comodo: c.id }; }
+  }
+  e.deposito.push({ uid, item: r.id, cor: 0 });
+  return { ok: true, msg: `${r.nome}, guardada no depósito (falta espaço na casa).`, uid };
+}
+
 export const VALOR_REVENDA = 0.3;
 export function vender(e: EstadoCasa, uid: string): Resultado {
   const i = e.objetos.findIndex((x) => x.uid === uid), j = e.deposito.findIndex((x) => x.uid === uid);
   const ref = i >= 0 ? e.objetos[i] : e.deposito[j];
   if (!ref || (i >= 0 && travado(e, e.objetos[i]))) return { ok: false, msg: "Esse é do imóvel e não é seu para vender." };
+  if (ehReliquia(ref.item)) return { ok: false, msg: "Relíquia não se vende: é a sua história." };
   if (i >= 0 && instalacao(ref.item) && !ehDono(e)) return { ok: false, msg: "Instalação só sai em imóvel próprio." };
   if (i >= 0 && e.objetos[i].incluso) e.removidos.push(ref.uid);
   if (i >= 0) e.objetos.splice(i, 1); else e.deposito.splice(j, 1);
@@ -644,6 +700,7 @@ export const precoTrocaCor = (itemId: string) => Math.max(20, redondo(ITENS[item
 export function trocarCor(e: EstadoCasa, uid: string, cor: number): Resultado {
   const o = e.objetos.find((x) => x.uid === uid);
   if (!o || travado(e, o)) return { ok: false, msg: "Esse não dá para trocar a cor." };
+  if (ehReliquia(o.item)) return { ok: false, msg: "Relíquia fica do jeito que foi conquistada." };
   if (o.cor === cor) return { ok: false, msg: "Já está dessa cor." };
   const p = precoTrocaCor(o.item);
   if (e.saldo < p) return { ok: false, msg: `Falta ${dinheiro(p - e.saldo)} para a reforma.` };

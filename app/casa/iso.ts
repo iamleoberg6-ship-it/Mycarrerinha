@@ -3,7 +3,7 @@
 // As paredes de trás ficam em x=0 (parede da esquerda) e y=0 (parede da direita); a frente fica aberta.
 import {
   ESTILOS, ITENS, REVEST, TIPOS, acabamento, area, comodoDe, coresDoClube, imovelAtual, travado,
-  type Acabamento, type Comodo, type EstadoCasa, type Imovel, type Item, type Vista,
+  type Acabamento, type Comodo, type EstadoCasa, type Imovel, type Item, type Reliquia, type Vista,
 } from "../../src/casa";
 
 export const A = 14, B = 7, H = 15;
@@ -92,7 +92,7 @@ class Movel {
 }
 
 /** Cores de um móvel: a cor escolhida vai para o material principal; o resto vem do estilo. */
-interface Pal { cor: string; cor2?: string; madeira: string; metal: string; tecido: string; detalhe: string; estilo: Item["estilo"] }
+interface Pal { cor: string; cor2?: string; madeira: string; metal: string; tecido: string; detalhe: string; estilo: Item["estilo"]; rel?: Reliquia }
 function paleta(it: Item, cor: number): Pal {
   const s = ESTILOS[it.estilo], c = it.cores[cor] ?? it.cores[0], de = TIPOS[it.tipo].corDe;
   return { cor: c, madeira: de === "madeira" ? c : s.madeira[0], metal: de === "metal" ? c : s.metal[0], tecido: de === "tecido" ? c : s.tecido[0], detalhe: s.detalhe, estilo: it.estilo };
@@ -670,13 +670,102 @@ const D: Record<string, Desenho> = {
     if (f === 3) for (const u of [0.15, 1.55]) { const sc = m.cx(u, 0.25, 1.6, 1.3, 0.12, 0.85, "#111111"); tela(m, sc, 0.37, u + 0.06, u + 1.24, 1.66, 2.38); }
   },
   quadro() { /* desenhado na parede */ },
+  camisaRel() { /* desenhada na parede */ },
+  bolaRel(m, _f, P) {
+    const ped = m.cx(0.18, 0.18, 0, 0.64, 0.64, 1.75, "#2B2B2B");
+    m.frente(ped, 0.82, 0.28, 0.72, 0.55, 0.85, "#E3B341", 0.7);
+    m.cx(0.12, 0.12, 1.75, 0.76, 0.76, 0.12, "#3A3A3A", 1);
+    const [x, y] = m.p3(0.5, 0.5, 1.87);
+    const r = P.rel, cores = r?.cores ?? ["#262626", "#262626"];
+    m.extra(ped, bolaSvg(x, y - 8, 7, r?.modelo ?? "base", cores) +
+      `<path d="M${f1(x - 10)} ${f1(y)} v-13 a10 10 0 0 1 20 0 v13 Z" fill="#CFE6EE" fill-opacity="0.22" stroke="${TINTA}" stroke-width="1"/>` +
+      `<path d="M${f1(x - 6.5)} ${f1(y - 4)} v-9 a6.5 6.5 0 0 1 4 -6" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="1.3" fill="none"/>`);
+  },
+  trofeuRel(m, _f, P) {
+    const ped = m.cx(0.2, 0.2, 0, 0.6, 0.6, 1.35, "#4A3426");
+    m.frente(ped, 0.8, 0.28, 0.72, 0.45, 0.75, "#E3B341", 0.7);
+    const [x, y] = m.p3(0.5, 0.5, 1.35);
+    m.extra(ped, trofeuSvg(x, y, P.rel?.modelo ?? "taca", P.rel?.cores ?? ["#E3B341", "#9A7420"]));
+  },
 };
+
+// ------------------------------------------------------------------ relíquias
+/** Bola vista de frente: branca com os gomos da competição. */
+function bolaSvg(x: number, y: number, r: number, modelo: string, cores: [string, string] | string[]): string {
+  const id = `bl${++seqJanela}`, c1 = cores[0], c2 = cores[1];
+  let dentro = "";
+  if (modelo === "base") {
+    // a clássica: pentágono no meio e pedaços nas bordas
+    const pent = (cx: number, cy: number, rr: number) => `<path d="${Array.from({ length: 5 }, (_, i) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5; return `${i ? "L" : "M"}${f1(cx + rr * Math.cos(a))} ${f1(cy + rr * Math.sin(a))}`; }).join(" ")} Z" fill="${c1}"/>`;
+    dentro = pent(x, y, r * 0.38) + [0, 1, 2, 3, 4].map((i) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5; return pent(x + r * 1.02 * Math.cos(a), y + r * 1.02 * Math.sin(a), r * 0.36); }).join("");
+  } else {
+    dentro = `<path d="M${f1(x - r)} ${f1(y - r * 0.2)} q${f1(r * 0.9)} ${f1(-r * 0.9)} ${f1(r * 2)} ${f1(-r * 0.3)}" stroke="${c1}" stroke-width="${f1(r * 0.42)}" fill="none"/>` +
+      `<path d="M${f1(x - r)} ${f1(y + r * 0.5)} q${f1(r)} ${f1(r * 0.6)} ${f1(r * 2)} ${f1(-r * 0.2)}" stroke="${c2}" stroke-width="${f1(r * 0.36)}" fill="none"/>` +
+      `<path d="M${f1(x - r * 0.2)} ${f1(y - r)} q${f1(-r * 0.3)} ${f1(r)} ${f1(r * 0.4)} ${f1(r * 2)}" stroke="${c1}" stroke-width="${f1(r * 0.18)}" fill="none" opacity="0.8"/>`;
+  }
+  return `<clipPath id="${id}"><circle cx="${f1(x)}" cy="${f1(y)}" r="${r}"/></clipPath><circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="#F7F5F0"/><g clip-path="url(#${id})">${dentro}</g>` +
+    `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="none" stroke="${TINTA}" stroke-width="1.1"/><circle cx="${f1(x - r * 0.35)}" cy="${f1(y - r * 0.4)}" r="${f1(r * 0.22)}" fill="#FFFFFF" opacity="0.8"/>`;
+}
+
+/** Troféu em cima do pedestal; (x, y) é o centro do tampo. */
+function trofeuSvg(x: number, y: number, modelo: string, cores: [string, string] | string[]): string {
+  const m = cores[0], s = cores[1], lz = claro(m, 0.35), tr = `stroke="${TINTA}" stroke-width="1"`;
+  const base = (w: number, h: number) => `<path d="M${f1(x - w)} ${f1(y)} h${f1(2 * w)} v${f1(-h)} h${f1(-2 * w)} Z" fill="#2B2B2B" ${tr}/>`;
+  switch (modelo) {
+    case "taca": return base(6, 4) +
+      `<path d="M${f1(x - 2)} ${f1(y - 4)} h4 l-1 -6 h-2 Z" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 8)} ${f1(y - 26)} h16 q0 12 -8 16 q-8 -4 -8 -16 Z" fill="${m}" ${tr}/>` +
+      `<path d="M${f1(x - 8)} ${f1(y - 23)} q-6 0 -5 5 q1 4 6 3 M${f1(x + 8)} ${f1(y - 23)} q6 0 5 5 q-1 4 -6 3" stroke="${s}" stroke-width="2" fill="none"/>` +
+      `<path d="M${f1(x - 4)} ${f1(y - 24)} q0 7 3 10" stroke="${lz}" stroke-width="1.6" fill="none"/>`;
+    case "bola": return base(5, 4) + `<path d="M${f1(x - 2.5)} ${f1(y - 4)} h5 l-1 -4 h-3 Z" fill="${s}" ${tr}/>` +
+      `<circle cx="${f1(x)}" cy="${f1(y - 16)}" r="8" fill="${m}" ${tr}/><path d="M${f1(x - 8)} ${f1(y - 16)} q8 -4 16 0 M${f1(x)} ${f1(y - 24)} q-4 8 0 16" stroke="${s}" stroke-width="1" fill="none"/><circle cx="${f1(x - 3)}" cy="${f1(y - 19)}" r="2" fill="${lz}"/>`;
+    case "chuteira": return base(6, 4) +
+      `<path d="M${f1(x - 7)} ${f1(y - 6)} h14 q2 -1 1 -4 q-5 -1 -8 -4 v-9 h-6 v10 q-2 3 -1 7 Z" fill="${m}" ${tr}/>` +
+      `<path d="M${f1(x - 6)} ${f1(y - 6)} v-1 M${f1(x - 2)} ${f1(y - 6)} v-1 M${f1(x + 3)} ${f1(y - 6)} v-1" stroke="${TINTA}" stroke-width="1.6"/>` +
+      `<path d="M${f1(x - 5)} ${f1(y - 21)} v8" stroke="${lz}" stroke-width="1.4"/>`;
+    case "estrela": return base(5, 4) + `<path d="M${f1(x - 1)} ${f1(y - 4)} h2 v-10 h-2 Z" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x)} ${f1(y - 27)} l2.8 6 6.6 0.7 -5 4.4 1.5 6.5 -5.9 -3.4 -5.9 3.4 1.5 -6.5 -5 -4.4 6.6 -0.7 Z" fill="${m}" ${tr}/>`;
+    case "placa": return `<path d="M${f1(x - 7)} ${f1(y)} l2 -24 h10 l2 24 Z" fill="#5A3A26" ${tr}/>` +
+      `<path d="M${f1(x - 3.5)} ${f1(y - 6)} l0.8 -14 h5.4 l0.8 14 Z" fill="${m}" ${tr}/><path d="M${f1(x - 1.5)} ${f1(y - 13)} h3 M${f1(x - 1.5)} ${f1(y - 10)} h3" stroke="${s}" stroke-width="1"/>`;
+    case "prato": return base(4, 4) + `<path d="M${f1(x - 1)} ${f1(y - 4)} h2 v-4 h-2 Z" fill="${s}" ${tr}/>` +
+      `<ellipse cx="${f1(x)}" cy="${f1(y - 17)}" rx="9" ry="9" fill="${m}" ${tr}/><ellipse cx="${f1(x)}" cy="${f1(y - 17)}" rx="6" ry="6" fill="none" stroke="${s}" stroke-width="1.2"/><circle cx="${f1(x - 3)}" cy="${f1(y - 20)}" r="1.8" fill="${lz}"/>`;
+  }
+  return base(5, 4);
+}
+
+/** Camisa emoldurada: padrão e cores do clube, com o seu número. */
+function camisaQuadro(p: "esq" | "dir", pos: number, r: Reliquia | undefined): string {
+  const P = (t: number, z: number) => naParede(p, t, z), c1 = r?.cores[0] ?? "#2E7D4F", c2 = r?.cores[1] ?? "#FFFFFF", sh = (c: string) => (p === "esq" ? escuro(c, 0.08) : c);
+  const t0 = pos - 0.95, t1 = pos + 0.95, z0 = 2.2, z1 = 4.4;
+  let sv = poli(quadParede(p, t0, t1, z0, z1), "#1C1C1C", 1.3) + poli(quadParede(p, t0 + 0.12, t1 - 0.12, z0 + 0.12, z1 - 0.12), sh("#2A2F38"), 0.8);
+  const forma = [P(pos - 0.42, 2.5), P(pos + 0.42, 2.5), P(pos + 0.42, 3.4), P(pos + 0.72, 3.52), P(pos + 0.58, 3.95), P(pos + 0.2, 4.02), P(pos, 3.86), P(pos - 0.2, 4.02), P(pos - 0.58, 3.95), P(pos - 0.72, 3.52), P(pos - 0.42, 3.4)];
+  const id = `cm${++seqJanela}`, Q = (a: number, b: number, za: number, zb: number) => poli(quadParede(p, a, b, za, zb), sh(c2), 0);
+  let padrao = "";
+  switch (r?.modelo) {
+    case "listrasV": for (let t = pos - 0.66; t < pos + 0.72; t += 0.28) padrao += Q(t, t + 0.14, 2.4, 4.1); break;
+    case "listrasH": for (let z = 2.55; z < 4.05; z += 0.3) padrao += Q(pos - 0.8, pos + 0.8, z, z + 0.15); break;
+    case "faixa": padrao += poli([P(pos - 0.5, 3.95), P(pos - 0.2, 4.05), P(pos + 0.5, 2.85), P(pos + 0.5, 2.5), P(pos + 0.3, 2.5)], sh(c2), 0); break;
+    case "faixaH": padrao += Q(pos - 0.8, pos + 0.8, 3.1, 3.4); break;
+    default: padrao += Q(pos - 0.8, pos - 0.5, 3.4, 3.62) + Q(pos + 0.5, pos + 0.8, 3.4, 3.62);
+  }
+  sv += `<clipPath id="${id}"><path d="${caminho(forma)}"/></clipPath>${poli(forma, sh(c1), 0)}<g clip-path="url(#${id})">${padrao}</g>${poli(forma, "none", 1.1)}`;
+  sv += poli([P(pos - 0.2, 4.02), P(pos, 3.86), P(pos + 0.2, 4.02), P(pos, 3.94)], sh(c2), 0.7);
+  // número nas costas... ou no peito: plano da parede, lendo da esquerda para a direita
+  if (r?.numero) {
+    const [ox, oy] = P(pos, 3.05), k = 0.1, bx = p === "dir" ? A * k : A * k, by = p === "dir" ? B * k : -B * k;
+    const tinta = lum(c1) > 0.55 ? "#1C1C1C" : "#FFFFFF", contorno = lum(c1) > 0.55 ? "#FFFFFF" : "#1C1C1C";
+    sv += `<text transform="matrix(${f1(bx)} ${f1(by)} 0 ${f1(H * k)} ${f1(ox)} ${f1(oy)})" font-family="'Barlow Condensed', Arial Narrow, sans-serif" font-weight="800" font-size="5.2" text-anchor="middle" dominant-baseline="middle" fill="${tinta}" stroke="${contorno}" stroke-width="0.35" paint-order="stroke">${r.numero}</text>`;
+  }
+  sv += poli(quadParede(p, pos - 0.3, pos + 0.3, 2.28, 2.42), "#E3B341", 0.6);
+  return sv;
+}
 
 // ------------------------------------------------------------------ quadros (na parede)
 const naParede = (p: "esq" | "dir", t: number, z: number): Pt => (p === "esq" ? pt(0, t, z) : pt(t, 0, z));
 const quadParede = (p: "esq" | "dir", t0: number, t1: number, z0: number, z1: number) => [naParede(p, t0, z0), naParede(p, t1, z0), naParede(p, t1, z1), naParede(p, t0, z1)];
 
 function quadro(p: "esq" | "dir", pos: number, it: Item, cor: string): string {
+  if (it.tipo === "camisaRel") return camisaQuadro(p, pos, it.rel);
   const P = (t: number, z: number) => naParede(p, t, z), f = it.forma;
   if (f === 1) {
     const t0 = pos - 0.7, t1 = pos + 0.7, z0 = 2.3, z1 = 4.2, [cx, cy] = P(pos, 3.45);
@@ -815,6 +904,7 @@ function desenharItem(item: string, cor: number, x: number, y: number, rot: numb
   const it = ITENS[item], t = TIPOS[it.tipo];
   const mv = new Movel(x, y, t.w, t.d, faceDe(rot));
   const P = paleta(it, cor);
+  P.rel = it.rel;
   if (clube) { P.cor = clube[0]; P.cor2 = clube[1].toUpperCase() === "#FFFFFF" ? "#F4F1EA" : clube[1]; }
   D[it.tipo](mv, it.forma, P);
   return mv.render();
@@ -865,7 +955,8 @@ export function svgItem(itemId: string, cor = 0): string {
   const it = ITENS[itemId], t = TIPOS[it.tipo];
   limite = [Infinity, Infinity, -Infinity, -Infinity];
   const corpo = t.camada === "parede" ? quadro("dir", 1.4, it, paleta(it, cor).cor) : desenharItem(itemId, cor, 0, 0, 0);
-  const [x0, y0, x1, y1] = limite; limite = null;
+  let [x0, y0, x1, y1] = limite; limite = null;
+  if (it.tipo === "bolaRel" || it.tipo === "trofeuRel") y0 -= 30; // o que fica em cima do pedestal é desenhado fora da grade
   const pad = 10, lado = Math.max(x1 - x0, y1 - y0) + 2 * pad;
   return `<svg viewBox="${f1((x0 + x1) / 2 - lado / 2)} ${f1((y0 + y1) / 2 - lado / 2)} ${f1(lado)} ${f1(lado)}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${corpo}</svg>`;
 }

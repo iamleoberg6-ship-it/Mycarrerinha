@@ -4,11 +4,12 @@ import {
   CATALOGO, CATEGORIAS, CATEGORIAS_IMOVEL, ESTILOS, IMOVEIS, IMOVEL, ITENS, NOMES_EFEITO, REVEST, REVESTIMENTOS, TETO, TIPOS,
   acabamento, areaM2, bonusDeEstilo, cabe, comodoDe, comprar, conforto, dinheiro, efeitosDaCasa, fecharMes, girar, guardar,
   imovelAtual, mover, mudar, novoEstado, patrimonio, podeMudar, podeReformar, precoAcabamento, precoTrocaCor, reformar,
-  rendaMinima, tirarDoDeposito, trocarCor, vender, VALOR_REVENDA, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
+  rendaMinima, tirarDoDeposito, trocarCor, vender, registrarReliquias, ganharReliquia, ehReliquia, noComodo, VALOR_REVENDA, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
   type Acabamento, type Categoria, type CategoriaImovel, type Efeitos, type Estilo, type EstadoCasa, type Item, type Objeto, type TipoComodo,
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
 import { salarioLiquido, type Save } from "../../src/jogo";
+import { CONQUISTAS, OURO, PRATA, coresDaBola, padraoCamisa, type Grupo } from "../../src/reliquias";
 import { svgComodo, svgFantasma, svgItem, svgRevestimento, telaParaChao } from "./iso";
 
 const FASES = [
@@ -33,15 +34,16 @@ function carregar(): Salvo {
   if (carreira?.casa) return { e: carreira.casa, fase: "carreira", comodo: carreira.casa.imovel ? IMOVEL[carreira.casa.imovel].comodos[0].id : "quarto" };
   try {
     const s = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as Salvo | null;
-    if (s && IMOVEL[s.e.imovel] && s.e.objetos.every((o) => ITENS[o.item])) return s;
+    if (s && IMOVEL[s.e.imovel] && s.e.objetos.every((o) => ITENS[o.item])) { registrarReliquias(s.e); return s; }
   } catch { /* sem armazenamento */ }
   return { e: novoEstado(3000, "aloj-ct", CLUBE_PADRAO), fase: "base", comodo: "quarto" };
 }
 const st = carregar();
+registrarReliquias(st.e);
 const salvar = () => { try { if (carreira) { carreira.casa = st.e; localStorage.setItem(CHAVE_CARREIRA, JSON.stringify(carreira)); } else localStorage.setItem(CHAVE, JSON.stringify(st)); } catch { /* ok */ } };
 const ui = {
   sel: undefined as string | undefined, brilho: undefined as string | undefined,
-  aba: "moveis" as "moveis" | "reforma" | "deposito",
+  aba: "moveis" as "moveis" | "reforma" | "deposito" | "conquistas",
   cat: "auto" as Categoria | "todos" | "auto", estilo: "todos" as Estilo | "todos",
   lugarReforma: "parede" as "parede" | "piso", previa: undefined as { lugar: "parede" | "piso"; ac: Acabamento } | undefined,
   corCompra: {} as Record<string, number>, catImob: "auto" as CategoriaImovel | "auto",
@@ -108,10 +110,16 @@ function renderFerramentas() {
   const it = ITENS[o.item];
   f.hidden = false;
   if (travado(st.e, o)) { const m = imovelAtual(st.e); f.innerHTML = `<div class="ferr-topo"><strong>${esc(it.nome)}</strong><span>Do imóvel</span></div><p class="sub">${m.categoria === "alojamento" ? "É do clube. Fica onde está." : "Veio com o imóvel alugado. Só o dono pode tirar ou trocar."}</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pronto">Pronto</button></div>`; return; }
-  const parede = TIPOS[it.tipo].camada === "parede";
+  const parede = TIPOS[it.tipo].camada === "parede", rel = it.rel;
   const setas = parede ? `<button class="botao sec seta" data-acao="mov" data-d="-1" aria-label="Para a esquerda">‹</button><button class="botao sec seta" data-acao="mov" data-d="1" aria-label="Para a direita">›</button><button class="botao sec peq" data-acao="parede">Outra parede</button>`
     : `<button class="botao sec seta" data-acao="mov" data-dx="-1" data-dy="0" aria-label="Para trás à esquerda">↖</button><button class="botao sec seta" data-acao="mov" data-dx="0" data-dy="-1" aria-label="Para trás à direita">↗</button><button class="botao sec seta" data-acao="mov" data-dx="0" data-dy="1" aria-label="Para a frente à esquerda">↙</button><button class="botao sec seta" data-acao="mov" data-dx="1" data-dy="0" aria-label="Para a frente à direita">↘</button><button class="botao sec peq" data-acao="girar">Girar</button>`;
   const cores = it.cores.length > 1 ? `<div><p class="rotulo" style="margin-bottom:6px">Trocar cor · ${dinheiro(precoTrocaCor(it.id))}</p><div class="cores">${it.cores.map((c, i) => `<button class="amostra${i === o.cor ? " ativa" : ""}" style="background:${c}" data-acao="cor" data-cor="${i}" aria-label="Cor ${i + 1}"></button>`).join("")}</div></div>` : "";
+  if (rel) {
+    f.innerHTML = `<div class="ferr-topo"><strong>${esc(it.nome)}</strong><span>Relíquia · ${textoEfeitos(it.efeitos)}</span></div>
+      <p class="sub">${esc(rel.legenda)}</p>
+      <div class="ferr-botoes">${setas}<button class="botao sec peq" data-acao="guardar">Guardar</button><button class="botao peq" data-acao="pronto">Pronto</button></div>`;
+    return;
+  }
   f.innerHTML = `<div class="ferr-topo"><strong>${esc(it.nome)}</strong><span>${ESTILOS[it.estilo].nome} · ${textoEfeitos(it.efeitos)}</span></div>
     <p class="sub">Arraste na maquete, toque no chão para levar até lá ou use as setas.</p>
     <div class="ferr-botoes">${setas}${o.incluso ? "" : '<button class="botao sec peq" data-acao="guardar">Guardar</button>'}<button class="botao sec peq" data-acao="vender">Vender ${dinheiro(Math.round(it.preco * VALOR_REVENDA))}</button><button class="botao peq" data-acao="pronto">Pronto</button></div>${cores}`;
@@ -123,12 +131,13 @@ function renderPainel() {
   renderSeg();
   if (ui.aba === "moveis") renderCatalogo();
   else if (ui.aba === "reforma") renderReforma();
+  else if (ui.aba === "conquistas") renderConquistas();
   else renderDeposito();
 }
 
 function renderCatalogo() {
   const c = comodoAtual(), cat = ui.cat === "auto" ? CAT_DO_COMODO[c.tipo] : ui.cat;
-  const cats = `<div class="chips">${[["todos", "Todos"], ...Object.entries(CATEGORIAS)].map(([k, n]) => `<button class="chip${k === cat ? " ativo" : ""}" data-cat="${k}">${n}</button>`).join("")}</div>`;
+  const cats = `<div class="chips">${[["todos", "Todos"], ...Object.entries(CATEGORIAS).filter(([k]) => k !== "conquistas")].map(([k, n]) => `<button class="chip${k === cat ? " ativo" : ""}" data-cat="${k}">${n}</button>`).join("")}</div>`;
   const ests = `<div class="chips">${[["todos", "Todos os estilos"], ...Object.entries(ESTILOS).map(([k, v]) => [k, v.nome])].map(([k, n]) => `<button class="chip${k === ui.estilo ? " ativo" : ""}" data-estilo="${k}">${n}</button>`).join("")}</div>`;
   const lista = CATALOGO.filter((i) => i.aVenda && (cat === "todos" || TIPOS[i.tipo].categoria === cat) && (ui.estilo === "todos" || i.estilo === ui.estilo))
     .sort((a, b) => a.tipo.localeCompare(b.tipo) || a.preco - b.preco);
@@ -167,8 +176,49 @@ function renderDeposito() {
   $("painel").innerHTML = g.length ? g.map((x) => {
     const it = ITENS[x.item];
     return `<div class="guardado"><div class="mini">${miniItem(x.item, x.cor)}</div><span><span style="font-weight:600">${esc(it.nome)}</span><br><span class="sub">${TIPOS[it.tipo].nome}</span></span>
-      <button class="botao peq" data-colocar="${x.uid}">Colocar</button><button class="botao sec peq" data-venderdep="${x.uid}">${dinheiro(Math.round(it.preco * VALOR_REVENDA))}</button></div>`;
+      <button class="botao peq" data-colocar="${x.uid}">Colocar</button>${ehReliquia(x.item) ? "" : `<button class="botao sec peq" data-venderdep="${x.uid}">${dinheiro(Math.round(it.preco * VALOR_REVENDA))}</button>`}</div>`;
   }).join("") : `<div class="vazio">Nada guardado. O que você tirar da casa ou não couber na mudança aparece aqui.</div>`;
+}
+
+// ------------------------------------------------------------------ conquistas
+const ICONE_BLOQ: Record<string, string> = { camisa: "👕", bola: "⚽", trofeu: "🏆" };
+function renderConquistas() {
+  const rels = st.e.reliquias ?? [];
+  const onde = (id: string) => {
+    const o = st.e.objetos.find((x) => x.item === id);
+    if (o) return `<button class="botao sec peq" data-ver="${o.uid}">Ver ${esc(noComodo(comodoDe(st.e, o.comodo).tipo))}</button>`;
+    const g = st.e.deposito.find((x) => x.item === id);
+    return g ? `<button class="botao peq" data-colocar="${g.uid}">Colocar na casa</button>` : "";
+  };
+  const feitas = CONQUISTAS.filter((c) => rels.some((r) => r.chave === c.chave)).length, total = CONQUISTAS.filter((c) => !c.emBreve).length;
+  const grupos: Grupo[] = ["Camisas", "Bolas", "Troféus"];
+  let h = `<p class="sub">${feitas} de ${total} conquistas · ${rels.length} ${rels.length === 1 ? "relíquia" : "relíquias"} na coleção. Toda relíquia vai para qualquer cômodo e dá +1 de moral.</p>`;
+  if (!carreira) h += `<div class="ferr-botoes"><button class="botao sec peq" data-acao="exemplos">Liberar relíquias de exemplo</button></div>`;
+  for (const gr of grupos) {
+    const cards: string[] = [];
+    for (const c of CONQUISTAS.filter((x) => x.grupo === gr)) {
+      const minhas = rels.filter((r) => r.chave === c.chave).sort((a, b) => b.ano - a.ano);
+      for (const r of minhas) cards.push(`<div class="op rel"><div class="fig">${miniItem(r.id)}</div><span class="tag">${r.ano}</span><div class="n">${esc(r.nome)}</div><div class="ef" style="color:var(--giz-2)">${esc(r.legenda)}</div>${onde(r.id)}</div>`);
+      if (!minhas.length) cards.push(`<div class="op bloq"><div class="fig"><span style="font-size:34px;filter:grayscale(1);opacity:.35">${ICONE_BLOQ[c.tipo]}</span></div><span class="tag">${c.emBreve ? "Em breve" : "Bloqueada"}</span><div class="n">${esc(c.nome)}</div><div class="ef" style="color:var(--giz-2)">${esc(c.dica)}</div></div>`);
+    }
+    h += `<h3 class="rotulo" style="margin-top:6px">${gr}</h3><div class="grade">${cards.join("")}</div>`;
+  }
+  $("painel").innerHTML = h;
+}
+/** Só no modo de teste: uma coleção de exemplo para ver como fica. */
+function reliquiasDeExemplo() {
+  const clube = st.e.clube ?? CLUBE_PADRAO, cores: [string, string] = [clube.cores[0] ?? "#2E7D4F", clube.cores[1] ?? "#FFFFFF"], ano = 2027;
+  const ex = [
+    { id: "rel-camisa-estreia", chave: "camisa-estreia", tipo: "camisa" as const, nome: "Camisa da estreia", legenda: `${clube.nome} · 2 × 1 contra o Galo · ${ano}`, ano, cores, modelo: padraoCamisa(clube.id), numero: "29" },
+    { id: "rel-bola-primeiro-gol", chave: "bola-primeiro-gol", tipo: "bola" as const, nome: "Bola do primeiro gol", legenda: `1 × 0 contra o Peixe · ${ano}`, ano, cores: coresDaBola("serieA", ano), modelo: "serieA" },
+    { id: "rel-bola-hattrick-exemplo", chave: "bola-hattrick", tipo: "bola" as const, nome: "Bola do hat-trick", legenda: `3 gols · Sub-17 · 4 × 1 contra o Timão · 2026`, ano: 2026, cores: coresDaBola("base", 2026), modelo: "base" },
+    { id: "rel-trofeu-artilheiro-2027", chave: "trofeu-artilheiro", tipo: "trofeu" as const, nome: `Artilheiro ${ano}`, legenda: `21 gols · Série A ${ano}`, ano, cores: OURO, modelo: "chuteira" },
+    { id: "rel-trofeu-campeao-2027", chave: "trofeu-campeao", tipo: "trofeu" as const, nome: `Taça de campeão ${ano}`, legenda: `${clube.nome} · Série A ${ano}`, ano, cores: OURO, modelo: "taca" },
+    { id: "rel-trofeu-craque-base-2026", chave: "trofeu-craque-base", tipo: "trofeu" as const, nome: "Craque do sub-17 2026", legenda: "Nota média 7.62 · Sub-17 2026", ano: 2026, cores: PRATA, modelo: "bola" },
+  ];
+  let n = 0;
+  for (const r of ex) if (ganharReliquia(st.e, r).ok) n++;
+  return { ok: n > 0, msg: n ? `${n} relíquias liberadas.` : "Já estão na coleção." };
 }
 
 // ------------------------------------------------------------------ imobiliária
@@ -287,10 +337,11 @@ cena.addEventListener("click", (ev) => {
 
 // ------------------------------------------------------------------ botões
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-fase],[data-clube],[data-comodo],[data-aba],[data-cat],[data-estilo],[data-corcompra],[data-comprar],[data-acao],[data-lugar],[data-previa],[data-reformar],[data-colocar],[data-venderdep],[data-catimob],[data-mudar],[data-fechar]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-ver],[data-fase],[data-clube],[data-comodo],[data-aba],[data-cat],[data-estilo],[data-corcompra],[data-comprar],[data-acao],[data-lugar],[data-previa],[data-reformar],[data-colocar],[data-venderdep],[data-catimob],[data-mudar],[data-fechar]");
   if (!b) return;
   const d = b.dataset;
-  if (d.fase) { st.fase = d.fase; renderConta(); salvar(); }
+  if (d.ver) { const o = st.e.objetos.find((x) => x.uid === d.ver); if (o) { st.comodo = o.comodo; ui.sel = o.uid; ui.brilho = o.uid; tudo(); $("cena").scrollIntoView({ behavior: "smooth", block: "center" }); } }
+  else if (d.fase) { st.fase = d.fase; renderConta(); salvar(); }
   else if (d.clube) {
     st.e.clube = CLUBES_CASA.find((c) => c.id === d.clube);
     const m = imovelAtual(st.e);
@@ -325,6 +376,7 @@ document.addEventListener("click", (ev) => {
 });
 
 function acao(a: string, d: DOMStringMap) {
+  if (a === "exemplos") { const r = reliquiasDeExemplo(); aviso(r.msg, !r.ok); tudo(); return; }
   const o = objSel(); if (!o && a !== "semprevia") return;
   let r: { ok: boolean; msg: string } = { ok: true, msg: "" };
   switch (a) {
