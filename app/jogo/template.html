@@ -101,6 +101,14 @@ tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--
 .atrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; }
 .aviso-mercado { display: flex; gap: 12px; align-items: center; text-align: left; cursor: pointer; border-color: var(--ouro); color: var(--giz); font: inherit; width: 100%; }
 .aviso-mercado > span:first-child { font-size: 26px; } .aviso-mercado small { display: block; color: var(--giz-2); font-size: 13px; margin-top: 2px; }
+.patro { border-color: var(--ouro); display: flex; flex-direction: column; gap: 10px; }
+.patro-topo { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; } .logo-marca { display: block; border-radius: 8px; }
+.patro-opcoes { display: grid; gap: 8px; }
+.patro-op { text-align: left; font: inherit; color: var(--giz); background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.patro-op:hover { border-color: var(--ouro); } .patro-op b { color: var(--ouro); } .patro-op small { color: var(--giz-2); font-size: 12.5px; }
+.cartaz-grande .cartaz { width: 100%; max-width: 360px; display: block; margin: 0 auto; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.patro-galeria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+.patro-item { display: flex; flex-direction: column; gap: 2px; } .patro-item .cartaz { width: 100%; border-radius: 10px; } .patro-item small { color: var(--giz-2); font-size: 12px; }
 .evento { border-color: #6FB7E0; } .evento h2 { margin: 2px 0 6px; } .evento .ferr-botoes { margin-top: 10px; flex-wrap: wrap; } .evento .botao small { display: block; font-size: 11.5px; opacity: .75; font-weight: 500; }
 .kv b.pos { color: var(--pos); } .kv b.neg { color: var(--neg); }
 .msg-mercado { padding: 10px 12px; border-radius: 10px; font-weight: 600; margin-bottom: 10px; } .msg-mercado.ok { background: #1F4D33; color: #BFF0D0; } .msg-mercado.nao { background: #4D2420; color: #F6C2B8; }

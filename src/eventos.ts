@@ -67,10 +67,6 @@ export const EVENTOS: EventoVida[] = [
     op("ir", "Ir e falar de tudo", "Três horas de conversa e um corte viral sobre a infância.", { fama: 4, engajamento: 15, hype: 0.15 }, { chance: 0.25, resultado: "Uma frase sobre o técnico saiu de contexto e virou manchete.", efeitos: { relTecnico: -8, pressao: 8 } }),
     op("recusar", "Recusar: foco no campo", "O assessor do clube agradeceu. Ninguém mais lembrou.", { relTecnico: 2 }),
   ]),
-  ev("chuteira-patrocinio", ["inicio"], "Marca de chuteira", "Uma marca de chuteira oferece material e um pequeno contrato.", [
-    op("aceitar", "Assinar", "Chuteira personalizada com seu número. E um dinheiro que ajuda.", { patrocinio: { pct: 0.08, piso: 3000, meses: 24 }, fama: 2, moral: 3 }),
-    op("esperar", "Esperar uma marca maior", "O agente acha que vem coisa melhor. Pode vir.", { moral: -1 }),
-  ], { unico: true }),
   ev("faculdade", ["inicio", "estabelecido"], "Faculdade à distância", "Um curso de Administração à distância encaixa na sua rotina, se você abrir mão de algumas folgas.", [
     op("matricular", "Fazer a matrícula", "Aula gravada à noite, prova no sábado. Cansa, mas a cabeça agradece.", { dinheiro: -1200, cansaco: 5, moral: 3, evolucao: 0.01 }),
     op("depois", "Deixar para depois da carreira", "O futebol primeiro. O curso continua lá.", {}),
@@ -87,11 +83,6 @@ export const EVENTOS: EventoVida[] = [
   ev("tv-programa", ["estabelecido", "estrela"], "Convite da TV", "Um programa de auditório de domingo quer você no quadro de talentos.", [
     op("ir", "Ir e dançar no palco", "O Brasil inteiro viu você dançando mal. O Brasil inteiro adorou.", { fama: 5, hype: 0.2, engajamento: 10, cansaco: 5 }),
     op("recusar", "Recusar com educação", "Domingo em casa, com a família.", { moral: 3 }),
-  ]),
-  ev("patrocinio-marca", ["estabelecido"], "Proposta de patrocínio", "Uma marca de bebida esportiva quer você na campanha da temporada.", [
-    op("aceitar", "Assinar a campanha", "Seu rosto no ponto de ônibus e uma diária de gravação por mês.", { patrocinio: { pct: 0.15, piso: 15000, meses: 12 }, fama: 3, cansaco: 5 }),
-    op("negociar", "Pedir mais (agente)", "O agente apertou. A marca topou pagar mais, por menos tempo.", { patrocinio: { pct: 0.22, piso: 20000, meses: 6 }, fama: 2 }, { chance: 0.35, resultado: "A marca desistiu e fechou com um colega de elenco.", efeitos: { moral: -3 } }),
-    op("recusar", "Recusar", "Não quer associar sua imagem a isso. O agente suspirou.", {}),
   ]),
   ev("instituto", ["estabelecido", "estrela"], "Projeto social", "O campinho onde você começou está abandonado. Dá para reformar e montar uma escolinha.", [
     op("fazer", "Bancar a reforma", "Cem crianças com uniforme novo. A foto do primeiro treino rodou o país.", { sal: -3, moral: 8, fama: 4, hype: 0.1 }),

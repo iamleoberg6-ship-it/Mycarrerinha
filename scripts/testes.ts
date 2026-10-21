@@ -16,6 +16,7 @@ import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida }
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
 import { alvoSeguidores, semanaRedes, imposto } from "../src/vida.js";
 import { tetoSalarial } from "../src/mercado.js";
+import { MARCAS, MARCA, ofertasDaMarca, marcaInteressada } from "../src/marcas.js";
 import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave, resolverEvento } from "../src/jogo.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
@@ -361,6 +362,25 @@ teste("Vida: seguidores com teto, imposto por país, teto salarial e eventos for
   assert.ok(vistos >= 8, `poucos eventos: ${vistos}`);
   sv.carreira.evento = "mae-casa"; const saldo = sv.casa.saldo;
   assert.ok(resolverEvento(pacote, sv, "comprar")); assert.ok(sv.casa.saldo < saldo); assert.equal(sv.carreira.evento, undefined);
+});
+
+teste("Patrocínio: marcas por categoria, três modelos de contrato e pagamento com bônus", () => {
+  assert.ok(MARCAS.length >= 30 && new Set(MARCAS.map((m) => m.id)).size === MARCAS.length);
+  const rng = new RNG("patro");
+  const of = ofertasDaMarca(rng, MARCA.nobanco, 60, 5e6);
+  assert.deepEqual(of.map((o) => o.tipo), ["fixo", "desempenho", "longo"]);
+  assert.ok(of[2].meses >= 36 && of[2].luvas > 0 && of[1].bonusGol > 0 && of[0].mensal > of[2].mensal);
+  // exclusividade por categoria e cerveja só para maiores
+  const ativo = [{ ...of[0], marca: "itao", restantes: 5, desde: 2026 }];
+  for (let k = 0; k < 50; k++) { const m = marcaInteressada(new RNG(`m${k}`), 90, 17, ativo, []); assert.ok(m && m.categoria !== "banco" && m.categoria !== "cerveja"); }
+  assert.equal(marcaInteressada(rng, 5, 20, [], [])?.id, "penalte");
+  // na carreira: aparece proposta, aceita e recebe
+  const r = criarJogador({ nome: "Patro", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "patro" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "patro");
+  s.carreira.fama = 70; s.carreira.formacao = false; s.jogador.idade = 22;
+  let achou = false;
+  for (let k = 0; k < 120 && !achou; k++) { semanaAutomatica(pacote, s, false); achou = (s.carreira.patrocinios?.length ?? 0) > 0; }
+  assert.ok(achou, "nenhum patrocinador em 120 semanas com fama 70");
 });
 
 teste("Mercado: transferência para outra liga, empréstimo, renovação, agente e passe livre", () => {

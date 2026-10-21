@@ -10,6 +10,7 @@ import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { mundo, infoClube, idClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
+import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
 import { alvoSeguidores, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
 import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from "./identidade.js";
@@ -47,6 +48,8 @@ export interface Carreira {
   padrao?: PadraoVida;
   /** evento fora de campo esperando decisão, e a temporada em que cada evento apareceu */
   evento?: string; eventosVistos?: Record<string, number>;
+  /** patrocinadores: contratos ativos, proposta na mesa, marcas recusadas na temporada e números do mês para os bônus */
+  patrocinios?: ContratoPatrocinio[]; propPatrocinio?: PropostaPatrocinio; recusadas?: string[]; mesStats?: { gols: number; assist: number; notas8: number };
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
@@ -445,7 +448,8 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     if (minutos > 0) {
       const pro = partida.tipo === "profissional";
       participacao = pro ? (partida.escalacao === "titular" ? "titular" : "entrou") : "base";
-      if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota); }
+      if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota);
+        const ms = (c.mesStats ??= { gols: 0, assist: 0, notas8: 0 }); ms.gols += gols; ms.assist += assist; if (nota >= 8) ms.notas8++; }
       else { c.stats.base++; c.stats.baseGols += gols; (c.stats.baseNotas ??= []).push(nota); }
       if (pro) { c.jogosPorClube ??= {}; c.jogosPorClube[c.clubeId] = (c.jogosPorClube[c.clubeId] ?? 0) + 1; }
       // relíquias do jogo: estreia, primeiro gol, hat-trick, golaços, marcas
@@ -510,7 +514,8 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   // 5. dinheiro no fim do mês
   let dinheiro: ResumoSemana["dinheiro"];
   if (c.semana % 4 === 3) {
-    const liquido = salarioLiquido(c), g = gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
+    const pat = fecharMesPatrocinios(s, eventos);
+    const liquido = salarioLiquido(c) + pat, g = gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
     const { aluguel } = fecharMes(s.casa, liquido - g.total);
     if (c.mesesPatrocinio > 0) c.mesesPatrocinio--; else c.patrocinioMensal = 0;
     dinheiro = { salario: Math.round(liquido), aluguel, gastos: g.total };
@@ -525,7 +530,16 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (c.semana >= SEMANAS_TEMPORADA) fim = fimDeTemporada(pacote, s, eventos);
   // 7. mercado: propostas da janela, renovação, empréstimo
   semanaDoMercado(pacote, s, rngDe(s, "mercado"), eventos);
-  // 8. vida fora de campo: de vez em quando, uma decisão
+  // 8. patrocinadores: proposta vence em 4 semanas; marcas novas aparecem conforme a fama
+  if (c.propPatrocinio && semanaAbsJogo(c) >= c.propPatrocinio.expira) { eventos.push(`A proposta da ${MARCA[c.propPatrocinio.marca]?.nome ?? "marca"} expirou.`); c.propPatrocinio = undefined; }
+  if (!c.propPatrocinio && (c.patrocinios?.length ?? 0) < 4) {
+    const r3 = rngDe(s, "patrocinio");
+    if (r3.chance(0.025 + c.fama / 700)) {
+      const m = marcaInteressada(r3, c.fama, j.idade, c.patrocinios ?? [], c.recusadas ?? []);
+      if (m) { c.propPatrocinio = { marca: m.id, opcoes: ofertasDaMarca(r3, m, c.fama, c.seguidores), expira: semanaAbsJogo(c) + 4 }; eventos.push(`Proposta de patrocínio: ${m.nome}.`); noticia(s, "dinheiro", `${m.nome} quer patrocinar ${j.apelido}`, `A marca mandou três modelos de contrato. A proposta vale por quatro semanas.`); }
+    }
+  }
+  // 9. vida fora de campo: de vez em quando, uma decisão
   if (c.evento && !EVENTO[c.evento]) c.evento = undefined;
   if (!c.evento && c.semana > 0) {
     const r2 = rngDe(s, "evento");
@@ -587,6 +601,41 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   noticia(s, "vida", e.titulo, final);
   return { titulo: e.titulo, texto: final };
 }
+const semanaAbsJogo = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + c.semana;
+/** Paga os patrocínios do mês (fixo + bônus) e encerra os contratos que acabaram. */
+function fecharMesPatrocinios(s: Save, eventos: string[]): number {
+  const c = s.carreira, ms = c.mesStats ?? { gols: 0, assist: 0, notas8: 0 };
+  let total = 0;
+  for (const k of c.patrocinios ?? []) {
+    const b = bonusDoMes(k, ms);
+    total += k.mensal + b;
+    if (b) eventos.push(`Bônus da ${MARCA[k.marca]?.nome}: R$ ${b.toLocaleString("pt-BR")}.`);
+    k.restantes--;
+  }
+  for (const k of (c.patrocinios ?? []).filter((x) => x.restantes <= 0)) noticia(s, "dinheiro", `Fim do contrato com a ${MARCA[k.marca]?.nome}`, `O contrato de ${k.meses} meses terminou. A marca pode voltar a procurar ${s.jogador.apelido}.`);
+  c.patrocinios = (c.patrocinios ?? []).filter((x) => x.restantes > 0);
+  c.mesStats = { gols: 0, assist: 0, notas8: 0 };
+  return total;
+}
+export function aceitarPatrocinio(s: Save, tipo: TipoContrato): ContratoPatrocinio | undefined {
+  const c = s.carreira, p = c.propPatrocinio, o = p?.opcoes.find((x) => x.tipo === tipo);
+  if (!p || !o) return;
+  const k: ContratoPatrocinio = { ...o, marca: p.marca, restantes: o.meses, desde: ANO_INICIAL + c.temporada };
+  (c.patrocinios ??= []).push(k);
+  c.propPatrocinio = undefined;
+  if (o.luvas) s.casa.saldo += o.luvas;
+  c.fama = clamp(c.fama + 1, 0, 100);
+  const m = MARCA[p.marca];
+  noticia(s, "dinheiro", `${s.jogador.apelido} é o novo rosto da ${m.nome}`, `Contrato ${tipo === "fixo" ? "de valor fixo" : tipo === "desempenho" ? "por desempenho" : "de longo prazo"}: ${o.meses} meses, R$ ${o.mensal.toLocaleString("pt-BR")} por mês${o.luvas ? ` e R$ ${o.luvas.toLocaleString("pt-BR")} de luvas` : ""}. "${m.slogan}"`);
+  return k;
+}
+export function recusarPatrocinio(s: Save) {
+  const c = s.carreira;
+  if (!c.propPatrocinio) return;
+  (c.recusadas ??= []).push(c.propPatrocinio.marca);
+  c.propPatrocinio = undefined;
+}
+export const receitaPatrocinios = (c: Carreira) => (c.patrocinios ?? []).reduce((a, k) => a + k.mensal, 0);
 export const padraoDe = (c: Carreira): PadraoVida => (c.padrao ??= { ...PADRAO_INICIAL });
 /** Seguidores que o jogador "deveria" ter no clube atual. */
 export function alvoDeSeguidores(pacote: PacoteDados, s: Save, clubeId = s.carreira.clubeId): number {
@@ -626,7 +675,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   if (titulo) c.fama = clamp(c.fama + 5, 0, 100);
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);
   // nova temporada
-  j.idade++; c.temporada++; c.semana = 0; c.anosContrato--;
+  j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   c.tabela = novaTabela(l); c.stats = statsVazias();
   const clube = clubeDe(l, c.clubeId);
   if (c.formacao && j.idade >= 18) {
@@ -653,6 +702,7 @@ export function planoAutomatico(s: Save): Plano {
 /** Joga uma semana inteira sem interface, escolhendo a primeira opção de cada decisão. */
 export function semanaAutomatica(pacote: PacoteDados, s: Save, decidirMercado = true): ResumoSemana {
   if (decidirMercado) decidirAutomatico(pacote, s);
+  if (s.carreira.propPatrocinio) aceitarPatrocinio(s, "fixo");
   if (s.carreira.evento) resolverEvento(pacote, s, EVENTO[s.carreira.evento]?.opcoes[0].id ?? "");
   const plano = planoAutomatico(s), p = prepararPartida(pacote, s, plano);
   const ds: ResultadoDecisao[] = [];

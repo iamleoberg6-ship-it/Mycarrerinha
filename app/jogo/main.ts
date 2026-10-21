@@ -9,8 +9,10 @@ import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
-  migrarSave, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores,
+  migrarSave, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
 } from "../../src/jogo";
+import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
+import { cartazPatrocinio, logoSvg } from "./poster";
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
 import { SITUACAO } from "../../src/lances";
 import { infoClube, mundo } from "../../src/mundo";
@@ -114,6 +116,7 @@ function telaSemana(s: Save): string {
   </section>
 
   <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${jogoHtml}${previsao}</section>
+  ${cardPatrocinio(s)}
   ${cardEvento(s)}
   ${nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"}. Ver no Mercado.</small></span></button>` : ""}
 
@@ -140,6 +143,22 @@ function abaTabela(s: Save): string {
 }
 
 let msgEvento: { titulo: string; texto: string } | undefined;
+let cartazNovo: ContratoPatrocinio | undefined;
+const cartaz = (s: Save, k: ContratoPatrocinio) => cartazPatrocinio(MARCA[k.marca], foto(s), s.jogador.apelido, s.jogador.numero, k.desde);
+function cardPatrocinio(s: Save): string {
+  if (cartazNovo) {
+    const k = cartazNovo, m = MARCA[k.marca]; cartazNovo = undefined;
+    return `<section class="painel patro"><p class="rotulo">Campanha lançada</p><div class="cartaz-grande">${cartaz(s, k)}</div>
+      <p class="sub">Você é o novo rosto da ${esc(m.nome)}. ${esc(NOME_CONTRATO[k.tipo].nome)} · ${k.meses} meses · ${dinheiro(k.mensal)}/mês${k.luvas ? ` · ${dinheiro(k.luvas)} de luvas` : ""}.</p></section>`;
+  }
+  const p = s.carreira.propPatrocinio, m = p && MARCA[p.marca];
+  if (!p || !m) return "";
+  const det = (o: OfertaPatrocinio) => o.tipo === "desempenho" ? `${dinheiro(o.mensal)}/mês + ${dinheiro(o.bonusGol)} por gol, ${dinheiro(o.bonusAssist)} por assistência, ${dinheiro(o.bonusNota)} por nota 8+` : `${dinheiro(o.mensal)}/mês${o.luvas ? ` + ${dinheiro(o.luvas)} de luvas` : ""}`;
+  return `<section class="painel patro"><p class="rotulo">Proposta de patrocínio · ${esc(NOME_CATEGORIA[m.categoria])}</p>
+    <div class="patro-topo">${logoSvg(m, 34)}<span class="sub">“${esc(m.slogan)}”</span></div>
+    <div class="patro-opcoes">${p.opcoes.map((o) => `<button class="patro-op" data-patro="${o.tipo}"><b>${NOME_CONTRATO[o.tipo].nome}</b><span>${det(o)}</span><small>${o.meses} meses · ${esc(NOME_CONTRATO[o.tipo].texto)}</small></button>`).join("")}</div>
+    <button class="botao sec peq" data-patro="recusar">Recusar a ${esc(m.nome)}</button></section>`;
+}
 const compacto = (n: number) => n >= 1e6 ? `${(n / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: n >= 1e8 ? 0 : 1 })} mi` : n >= 1e4 ? `${Math.round(n / 1e3).toLocaleString("pt-BR")} mil` : n.toLocaleString("pt-BR");
 function cardEvento(s: Save): string {
   if (msgEvento) { const m = msgEvento; msgEvento = undefined; return `<section class="painel evento"><p class="rotulo">Fora de campo · ${esc(m.titulo)}</p><p>${esc(m.texto)}</p></section>`; }
@@ -148,13 +167,19 @@ function cardEvento(s: Save): string {
   return `<section class="painel evento"><p class="rotulo">Fora de campo</p><h2>${esc(e.titulo)}</h2><p class="sub">${esc(e.texto)}</p>
     <div class="ferr-botoes">${e.opcoes.map((o) => `<button class="botao sec" data-evento="${o.id}">${esc(o.rotulo)}${o.custo < 0 ? `<small>${dinheiro(-o.custo)}</small>` : ""}</button>`).join("")}</div></section>`;
 }
+function blocoPatrocinios(s: Save): string {
+  const ks = s.carreira.patrocinios ?? [];
+  if (!ks.length) return `<p class="rotulo" style="margin-top:16px">Patrocinadores</p><p class="sub">Nenhum ainda. As marcas aparecem conforme a sua fama cresce: uma por categoria, até quatro ao mesmo tempo.</p>`;
+  return `<p class="rotulo" style="margin-top:16px">Patrocinadores · ${dinheiro(receitaPatrocinios(s.carreira))}/mês fixos</p>
+    <div class="patro-galeria">${ks.map((k) => `<div class="patro-item">${cartaz(s, k)}<b>${esc(MARCA[k.marca].nome)}</b><small>${esc(NOME_CONTRATO[k.tipo].nome)} · ${dinheiro(k.mensal)}/mês · faltam ${k.restantes} ${k.restantes === 1 ? "mês" : "meses"}</small></div>`).join("")}</div>`;
+}
 function blocoVida(s: Save): string {
   const c = s.carreira, pd = padraoDe(c), g = gastosDoMes(pd, c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
   const ir = c.formacao ? 0 : imposto(c.salario, c.ligaId), ag = AGENTES[c.agente].comissao * c.salario, liq = salarioLiquido(c);
-  const sobra = liq - g.total - (imovelAtual(s.casa).categoria === "alojamento" || ehDono(s.casa) ? 0 : imovelAtual(s.casa).aluguel);
+  const sobra = liq + receitaPatrocinios(c) - g.total - (imovelAtual(s.casa).categoria === "alojamento" || ehDono(s.casa) ? 0 : imovelAtual(s.casa).aluguel);
   const pct = Math.round(100 * aliquota(c.ligaId));
   return `<p class="rotulo" style="margin-top:16px">Dinheiro do mês</p>
-    <div class="kv" style="margin-top:6px"><span>Salário bruto</span><b>${dinheiro(c.salario)}</b>${ir ? `<span>Imposto (${pct}%)</span><b class="neg">−${dinheiro(ir)}</b>` : c.formacao ? "" : `<span>Imposto</span><b>isento no Golfo</b>`}${ag ? `<span>Agente</span><b class="neg">−${dinheiro(ag)}</b>` : ""}${c.patrocinioMensal ? `<span>Patrocínios (${c.mesesPatrocinio} meses)</span><b class="pos">+${dinheiro(c.patrocinioMensal)}</b>` : ""}
+    <div class="kv" style="margin-top:6px"><span>Salário bruto</span><b>${dinheiro(c.salario)}</b>${ir ? `<span>Imposto (${pct}%)</span><b class="neg">−${dinheiro(ir)}</b>` : c.formacao ? "" : `<span>Imposto</span><b>isento no Golfo</b>`}${ag ? `<span>Agente</span><b class="neg">−${dinheiro(ag)}</b>` : ""}${c.patrocinioMensal ? `<span>Campanhas (${c.mesesPatrocinio} meses)</span><b class="pos">+${dinheiro(c.patrocinioMensal)}</b>` : ""}${receitaPatrocinios(c) ? `<span>Patrocinadores (fixo)</span><b class="pos">+${dinheiro(receitaPatrocinios(c))}</b>` : ""}
     ${g.itens.filter((x) => x.valor).map((x) => `<span>${esc(x.nome)}</span><b class="neg">−${dinheiro(x.valor)}</b>`).join("")}
     ${!ehDono(s.casa) && imovelAtual(s.casa).aluguel ? `<span>Aluguel</span><b class="neg">−${dinheiro(imovelAtual(s.casa).aluguel)}</b>` : ""}
     <span><b>Sobra no mês</b></span><b class="${sobra >= 0 ? "pos" : "neg"}">${sobra >= 0 ? "" : "−"}${dinheiro(Math.abs(sobra))}</b></div>
@@ -180,6 +205,7 @@ function abaJogador(s: Save): string {
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
+    ${blocoPatrocinios(s)}
     ${blocoVida(s)}
     ${c.historico.length ? `<p class="rotulo" style="margin-top:16px">Carreira</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">Nota</th></tr></thead><tbody>${c.historico.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.nota || "–"}</td></tr>`).join("")}</tbody></table>` : ""}`;
 }
@@ -379,7 +405,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -395,6 +421,10 @@ document.addEventListener("click", (ev) => {
     if (r.ok && (d.op === "aceitar" || d.op === "forcar")) window.scrollTo({ top: 0, behavior: "smooth" });
   } else if (d.agente && save) { const r = trocarAgente(save, d.agente as TipoAgente); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.decidir) decidir(+d.decidir, d.op!);
+  else if (d.patro && save) {
+    if (d.patro === "recusar") recusarPatrocinio(save); else cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato);
+    salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  }
   else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vida && save) { padraoDe(save.carreira)[d.vida as ItemVida] = +d.nivel!; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else switch (d.acao) {
