@@ -2,7 +2,7 @@
 // Eixos: x vai para a direita-baixo, y para a esquerda-baixo, z para cima. Unidade: um ladrilho de meio metro.
 // As paredes de trás ficam em x=0 (parede da esquerda) e y=0 (parede da direita); a frente fica aberta.
 import {
-  ESTILOS, ITENS, REVEST, TIPOS, acabamento, area, comodoDe, imovelAtual,
+  ESTILOS, ITENS, REVEST, TIPOS, acabamento, area, comodoDe, coresDoClube, imovelAtual, travado,
   type Acabamento, type Comodo, type EstadoCasa, type Imovel, type Item, type Vista,
 } from "../../src/casa";
 
@@ -92,7 +92,7 @@ class Movel {
 }
 
 /** Cores de um móvel: a cor escolhida vai para o material principal; o resto vem do estilo. */
-interface Pal { cor: string; madeira: string; metal: string; tecido: string; detalhe: string; estilo: Item["estilo"] }
+interface Pal { cor: string; cor2?: string; madeira: string; metal: string; tecido: string; detalhe: string; estilo: Item["estilo"] }
 function paleta(it: Item, cor: number): Pal {
   const s = ESTILOS[it.estilo], c = it.cores[cor] ?? it.cores[0], de = TIPOS[it.tipo].corDe;
   return { cor: c, madeira: de === "madeira" ? c : s.madeira[0], metal: de === "metal" ? c : s.metal[0], tecido: de === "tecido" ? c : s.tecido[0], detalhe: s.detalhe, estilo: it.estilo };
@@ -119,7 +119,7 @@ const D: Record<string, Desenho> = {
   beliche(m, _f, P) {
     const pe = (u: number, v: number) => m.cx(u, v, 0, 0.25, 0.25, 4.6, P.madeira);
     pe(0, 0); pe(1.75, 0);
-    for (const [z, cob] of [[0.8, "#2E7D4F"], [3.1, P.cor]] as const) {
+    for (const [z, cob] of [[0.8, P.cor2 ?? "#2E7D4F"], [3.1, P.cor]] as const) {
       m.cx(0.1, 0.1, z, 1.8, 3.8, 0.35, escuro(P.madeira, 0.25)); m.cx(0.15, 0.15, z + 0.35, 1.7, 3.7, 0.4, "#E6E1D3");
       travesseiro(m, 0.3, 0.3, z + 0.75, 1.3); m.cx(0.15, 1.6, z + 0.75, 1.7, 2.25, 0.12, cob);
     }
@@ -688,8 +688,8 @@ function quadro(p: "esq" | "dir", pos: number, it: Item, cor: string): string {
 }
 
 // ------------------------------------------------------------------ paredes, pisos e janelas
-function desenhaParede(p: "esq" | "dir", L: number, hp: number, ac: Acabamento): string {
-  const r = REVEST[ac.id], cor = r.cores[ac.cor] ?? r.cores[0];
+function desenhaParede(p: "esq" | "dir", L: number, hp: number, ac: Acabamento, clube?: [string, string]): string {
+  const r = REVEST[ac.id], cor = clube && r.padrao === "faixa" ? mix(clube[0], "#FFFFFF", 0.84) : r.cores[ac.cor] ?? r.cores[0];
   const sombra = (c: string) => (p === "esq" ? escuro(c, 0.08) : c), base = sombra(cor);
   const Q = (t0: number, t1: number, z0: number, z1: number) => quadParede(p, t0, t1, z0, z1);
   const L2 = (t0: number, z0: number, t1: number, z1: number, c: string, w = 1) => linha(naParede(p, t0, z0), naParede(p, t1, z1), c, w);
@@ -704,7 +704,7 @@ function desenhaParede(p: "esq" | "dir", L: number, hp: number, ac: Acabamento):
   s += poli(Q(0, L, 0, hp), base, 1.6);
   const det = sombra(contraste(cor, 0.12));
   switch (r.padrao) {
-    case "faixa": s += poli(Q(0, L, 2.2, 2.5), sombra("#2E7D4F"), 0.8); break;
+    case "faixa": s += poli(Q(0, L, 2.2, 2.6), sombra(clube ? clube[0] : "#2E7D4F"), 0.8); if (clube) s += poli(Q(0, L, 2.6, 2.75), sombra(clube[1].toUpperCase() === "#FFFFFF" ? "#FFFFFF" : clube[1]), 0.6); break;
     case "listras": for (let t = 0.3; t < L; t += 0.7) s += poli(Q(t, Math.min(L, t + 0.3), 0, hp), det, 0); break;
     case "floral": for (let t = 0.5, i = 0; t < L; t += 0.9, i++) for (let z = 0.5 + (i % 2) * 0.45; z < hp; z += 0.9) { const [x, y] = naParede(p, t, z); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="1.8" fill="${contraste(cor, 0.3)}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="0.7" fill="${lum(cor) > 0.5 ? "#C0392B" : "#F2D98A"}"/>`; } break;
     case "geometrico": { const g = lum(cor) < 0.3 ? "#C9A04A" : contraste(cor, 0.3); for (let t = 0; t < L; t += 0.8) for (let z = 0; z < hp - 0.1; z += 0.8) s += poli([naParede(p, t + 0.4, z), naParede(p, Math.min(L, t + 0.8), z + 0.4), naParede(p, t + 0.4, z + 0.8), naParede(p, t, z + 0.4)], "none", 0, ` stroke="${g}" stroke-width="0.8"`); break; }
@@ -768,14 +768,25 @@ function janela(p: "esq" | "dir", pos: number, larg: number, vista: Vista, id: s
 export const alturaParede = (c: Comodo) => c.alturaParede ?? (c.ambiente === "externo" ? 2.4 : 5.6);
 
 let seqJanela = 0;
-function estrutura(c: Comodo, m: Imovel, ac: { parede: Acabamento; piso: Acabamento }): string {
+/** Escudo do clube pintado na parede: forma de brasão com faixa diagonal e estrela. */
+function escudo(p: "esq" | "dir", pos: number, cores: [string, string]): string {
+  const P = (t: number, z: number) => naParede(p, t, z), s = p === "esq" ? escuro : (c: string) => c;
+  const contorno = [P(pos - 1.1, 4.7), P(pos + 1.1, 4.7), P(pos + 1.1, 3.4), P(pos + 0.6, 2.75), P(pos, 2.45), P(pos - 0.6, 2.75), P(pos - 1.1, 3.4)];
+  const id = `esc${++seqJanela}`;
+  const faixa = poli([P(pos - 1.1, 4.0), P(pos - 0.3, 4.7), P(pos + 0.4, 4.7), P(pos + 1.1, 4.1), P(pos + 1.1, 3.3), P(pos - 1.1, 3.3)], s(cores[1], 0.08), 0);
+  const [ex, ey] = P(pos, 4.05);
+  return `<clipPath id="${id}"><path d="${caminho(contorno)}"/></clipPath>${poli(contorno, s(cores[0], 0.08), 0)}<g clip-path="url(#${id})">${faixa}</g>` +
+    `<path d="M${f1(ex)} ${f1(ey - 6)} l1.8 4 4.2 0.4 -3.2 2.8 1 4.2 -3.8 -2.2 -3.8 2.2 1 -4.2 -3.2 -2.8 4.2 -0.4 Z" fill="${cores[0].toUpperCase() === "#FFFFFF" ? "#E3B341" : "#F6DC8A"}" stroke="${TINTA}" stroke-width="0.8"/>${poli(contorno, "none", 2)}`;
+}
+
+function estrutura(c: Comodo, m: Imovel, ac: { parede: Acabamento; piso: Acabamento }, clube?: [string, string]): string {
   const W = c.w, Dd = c.d, hp = alturaParede(c);
   const corPiso = REVEST[ac.piso.id].cores[ac.piso.cor] ?? "#999";
   let s = poli([pt(0, Dd, 0), pt(W, Dd, 0), pt(W, Dd, -0.7), pt(0, Dd, -0.7)], escuro(corPiso, 0.35), 1.4);
   s += poli([pt(W, 0, 0), pt(W, Dd, 0), pt(W, Dd, -0.7), pt(W, 0, -0.7)], escuro(corPiso, 0.5), 1.4);
   s += `<g data-chao="1">${desenhaPiso(W, Dd, ac.piso)}</g>`;
   if (c.ambiente === "externo") return s + `<g data-parede="esq">${desenhaMuro("esq", Dd, ac.parede)}</g><g data-parede="dir">${desenhaMuro("dir", W, ac.parede)}</g>`;
-  s += `<g data-parede="esq">${desenhaParede("esq", Dd, hp, ac.parede)}</g><g data-parede="dir">${desenhaParede("dir", W, hp, ac.parede)}</g>`;
+  s += `<g data-parede="esq">${desenhaParede("esq", Dd, hp, ac.parede, clube)}</g><g data-parede="dir">${desenhaParede("dir", W, hp, ac.parede, clube)}</g>`;
   s += poli([pt(-ESP, -ESP, hp), pt(0, 0, hp), pt(0, Dd, hp), pt(-ESP, Dd, hp)], "#3B3530", 1.2);
   s += poli([pt(-ESP, -ESP, hp), pt(W, -ESP, hp), pt(W, 0, hp), pt(0, 0, hp)], "#3B3530", 1.2);
   s += poli([pt(-ESP, Dd, -0.7), pt(0, Dd, -0.7), pt(0, Dd, hp), pt(-ESP, Dd, hp)], "#3B3530", 1.2);
@@ -786,16 +797,19 @@ function estrutura(c: Comodo, m: Imovel, ac: { parede: Acabamento; piso: Acabame
     for (let z = 0.5; z < 3.8; z += 0.5) s += linha(pt(t0, 0, z), pt(t1, 0, z), "#6F7673", 1);
   }
   for (const j of c.janelas) s += janela(j.parede, j.pos, j.largura, m.vista, `jn${++seqJanela}`, hp);
+  if (c.escudo && clube) s += escudo(c.escudo.parede, c.escudo.pos, clube);
   return s;
 }
 
 const faceDe = (rot: number): Face => FACES[((rot % 4) + 4) % 4];
 
 /** Desenho de um item numa posição do mundo, sem cômodo em volta. */
-function desenharItem(item: string, cor: number, x: number, y: number, rot: number): string {
+function desenharItem(item: string, cor: number, x: number, y: number, rot: number, clube?: [string, string]): string {
   const it = ITENS[item], t = TIPOS[it.tipo];
   const mv = new Movel(x, y, t.w, t.d, faceDe(rot));
-  D[it.tipo](mv, it.forma, paleta(it, cor));
+  const P = paleta(it, cor);
+  if (clube) { P.cor = clube[0]; P.cor2 = clube[1].toUpperCase() === "#FFFFFF" ? "#F4F1EA" : clube[1]; }
+  D[it.tipo](mv, it.forma, P);
   return mv.render();
 }
 
@@ -805,21 +819,22 @@ export interface OpcoesCena { selecionado?: string; brilho?: string; previa?: Pa
 export function svgComodo(e: EstadoCasa, comodoId: string, o: OpcoesCena = {}): string {
   const m = imovelAtual(e), c = comodoDe(e, comodoId);
   const ac = { ...acabamento(e, comodoId), ...(o.previa ?? {}) };
-  let s = estrutura(c, m, ac);
+  const clube = m.categoria === "alojamento" ? coresDoClube(e.clube) : undefined;
+  let s = estrutura(c, m, ac, clube);
   const parede: string[] = [], planos: string[] = [], moveis: { k: number; svg: string }[] = [];
   for (const ob of e.objetos.filter((x) => x.comodo === comodoId)) {
     const it = ITENS[ob.item], t = TIPOS[it.tipo];
-    const cls = `class="obj${o.selecionado === ob.uid ? " sel" : ""}${o.brilho === ob.uid ? " novo" : ""}${ob.fixo ? " fixo" : ""}" data-uid="${ob.uid}"`;
+    const cls = `class="obj${o.selecionado === ob.uid ? " sel" : ""}${o.brilho === ob.uid ? " novo" : ""}${travado(e, ob) ? " fixo" : ""}" data-uid="${ob.uid}"`;
     if (t.camada === "parede") {
       const sel = o.selecionado === ob.uid ? poli(quadParede(ob.parede!, ob.x - t.w / 2 - 0.15, ob.x + t.w / 2 + 0.15, 2.2, 4.3), "none", 0, ' stroke="#E3B341" stroke-width="2.4"') : "";
-      parede.push(`<g ${cls}>${quadro(ob.parede!, ob.x, it, paleta(it, ob.cor).cor)}${sel}</g>`);
+      parede.push(`<g ${cls}>${quadro(ob.parede!, ob.x, it, clube && ob.incluso ? clube[0] : paleta(it, ob.cor).cor)}${sel}</g>`);
       continue;
     }
     const a = area(ob);
     const chao = [pt(a.x, a.y), pt(a.x + a.w, a.y), pt(a.x + a.w, a.y + a.d), pt(a.x, a.y + a.d)];
     const sombra = t.camada !== "chao" ? "" : poli([pt(a.x + 0.15, a.y + 0.15), pt(a.x + a.w + 0.25, a.y + 0.15), pt(a.x + a.w + 0.25, a.y + a.d + 0.25), pt(a.x + 0.15, a.y + a.d + 0.25)], "#000", 0, ' opacity="0.13"');
     const contorno = o.selecionado === ob.uid ? poli(chao, "#E3B341", 0, ' fill-opacity="0.18" stroke="#E3B341" stroke-width="2.4"') : "";
-    const svg = `<g ${cls}>${sombra}${contorno}${desenharItem(ob.item, ob.cor, a.x, a.y, ob.rot)}</g>`;
+    const svg = `<g ${cls}>${sombra}${contorno}${desenharItem(ob.item, ob.cor, a.x, a.y, ob.rot, clube && ob.incluso && (it.tipo === "beliche" || it.tipo === "cama") ? clube : undefined)}</g>`;
     if (t.camada !== "chao") planos.push(svg); else moveis.push({ k: a.x + a.w / 2 + a.y + a.d / 2, svg });
   }
   moveis.sort((p, q) => p.k - q.k);

@@ -4,9 +4,10 @@ import {
   CATALOGO, CATEGORIAS, CATEGORIAS_IMOVEL, ESTILOS, IMOVEIS, IMOVEL, ITENS, NOMES_EFEITO, REVEST, REVESTIMENTOS, TETO, TIPOS,
   acabamento, areaM2, bonusDeEstilo, cabe, comodoDe, comprar, conforto, dinheiro, efeitosDaCasa, fecharMes, girar, guardar,
   imovelAtual, mover, mudar, novoEstado, patrimonio, podeMudar, podeReformar, precoAcabamento, precoTrocaCor, reformar,
-  rendaMinima, tirarDoDeposito, trocarCor, vender, VALOR_REVENDA,
+  rendaMinima, tirarDoDeposito, trocarCor, vender, VALOR_REVENDA, alojamentosDoClube, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
   type Acabamento, type Categoria, type CategoriaImovel, type Efeitos, type Estilo, type EstadoCasa, type Item, type Objeto, type TipoComodo,
 } from "../../src/casa";
+import { CLUBES_CASA } from "../../src/clubes";
 import { svgComodo, svgFantasma, svgItem, svgRevestimento, telaParaChao } from "./iso";
 
 const FASES = [
@@ -21,14 +22,15 @@ const CAT_DO_COMODO: Record<TipoComodo, Categoria> = {
   academia: "treino", jogos: "lazer", trofeus: "decoracao", externo: "externo", garagem: "garagem",
 };
 
-const CHAVE = "mycarrerinha-casa-v2";
+const CHAVE = "mycarrerinha-casa-v3";
 interface Salvo { e: EstadoCasa; fase: string; comodo: string }
+const CLUBE_PADRAO = CLUBES_CASA.find((c) => c.id === "PAL") ?? CLUBES_CASA[0];
 function carregar(): Salvo {
   try {
     const s = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as Salvo | null;
     if (s && IMOVEL[s.e.imovel] && s.e.objetos.every((o) => ITENS[o.item])) return s;
   } catch { /* sem armazenamento */ }
-  return { e: novoEstado(), fase: "base", comodo: "quarto" };
+  return { e: novoEstado(3000, "aloj-ct", CLUBE_PADRAO), fase: "base", comodo: "quarto" };
 }
 const st = carregar();
 const salvar = () => { try { localStorage.setItem(CHAVE, JSON.stringify(st)); } catch { /* ok */ } };
@@ -70,6 +72,7 @@ function renderConta() {
   const m = imovelAtual(st.e), dono = st.e.proprios.includes(m.id);
   const s = $("saldo"); s.textContent = dinheiro(st.e.saldo); s.classList.toggle("neg", st.e.saldo < 0);
   $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span><span>Mês <b>${st.e.mes + 1}</b></span>`;
+  $("clubes").innerHTML = CLUBES_CASA.map((c) => `<button class="chip${c.id === st.e.clube?.id ? " ativo" : ""}" data-clube="${c.id}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.cores[0]};border:1px solid #0008;margin-right:6px;vertical-align:-1px"></span>${c.nome}</button>`).join("");
   $("fases").innerHTML = FASES.map((f) => `<button class="chip${f.id === st.fase ? " ativo" : ""}" data-fase="${f.id}">${f.nome} · ${dinheiro(f.salario)}</button>`).join("");
 }
 
@@ -77,12 +80,12 @@ function renderCena() {
   const c = comodoAtual(), m = imovelAtual(st.e);
   st.comodo = c.id;
   $("local").textContent = `${CATEGORIAS_IMOVEL[m.categoria].replace(/s$/, "").replace(/õe$/, "ão")} · ${m.local}${st.e.proprios.includes(m.id) ? " · seu" : ""}`;
-  $("imovel").textContent = m.nome;
+  $("imovel").textContent = nomeImovel(st.e, m);
   $("abas").innerHTML = m.comodos.map((x) => `<button class="aba${x.id === c.id ? " ativa" : ""}" data-comodo="${x.id}">${x.nome}</button>`).join("");
   const previa = ui.previa ? { [ui.previa.lugar]: ui.previa.ac } : undefined;
   $("cena").innerHTML = `<div class="conforto"><strong>${conforto(st.e)}</strong><span>Conforto</span></div>${ui.previa ? '<span class="previa-aviso">Prévia</span>' : ""}` +
     svgComodo(st.e, c.id, { selecionado: ui.sel, brilho: ui.brilho, previa });
-  $("cena").classList.toggle("editando", !!objSel() && !objSel()!.fixo);
+  $("cena").classList.toggle("editando", !!objSel() && !travado(st.e, objSel()!));
   ui.brilho = undefined;
   renderFerramentas();
   const { total, bruto } = efeitosDaCasa(st.e);
@@ -98,14 +101,14 @@ function renderFerramentas() {
   if (!o) { f.hidden = true; return; }
   const it = ITENS[o.item];
   f.hidden = false;
-  if (o.fixo) { f.innerHTML = `<div class="ferr-topo"><strong>${esc(it.nome)}</strong><span>Do imóvel</span></div><p class="sub">Esse vem com o lugar e não sai daqui.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pronto">Pronto</button></div>`; return; }
+  if (travado(st.e, o)) { const m = imovelAtual(st.e); f.innerHTML = `<div class="ferr-topo"><strong>${esc(it.nome)}</strong><span>Do imóvel</span></div><p class="sub">${m.categoria === "alojamento" ? "É do clube. Fica onde está." : "Veio com o imóvel alugado. Só o dono pode tirar ou trocar."}</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pronto">Pronto</button></div>`; return; }
   const parede = TIPOS[it.tipo].camada === "parede";
   const setas = parede ? `<button class="botao sec seta" data-acao="mov" data-d="-1" aria-label="Para a esquerda">‹</button><button class="botao sec seta" data-acao="mov" data-d="1" aria-label="Para a direita">›</button><button class="botao sec peq" data-acao="parede">Outra parede</button>`
     : `<button class="botao sec seta" data-acao="mov" data-dx="-1" data-dy="0" aria-label="Para trás à esquerda">↖</button><button class="botao sec seta" data-acao="mov" data-dx="0" data-dy="-1" aria-label="Para trás à direita">↗</button><button class="botao sec seta" data-acao="mov" data-dx="0" data-dy="1" aria-label="Para a frente à esquerda">↙</button><button class="botao sec seta" data-acao="mov" data-dx="1" data-dy="0" aria-label="Para a frente à direita">↘</button><button class="botao sec peq" data-acao="girar">Girar</button>`;
   const cores = it.cores.length > 1 ? `<div><p class="rotulo" style="margin-bottom:6px">Trocar cor · ${dinheiro(precoTrocaCor(it.id))}</p><div class="cores">${it.cores.map((c, i) => `<button class="amostra${i === o.cor ? " ativa" : ""}" style="background:${c}" data-acao="cor" data-cor="${i}" aria-label="Cor ${i + 1}"></button>`).join("")}</div></div>` : "";
   f.innerHTML = `<div class="ferr-topo"><strong>${esc(it.nome)}</strong><span>${ESTILOS[it.estilo].nome} · ${textoEfeitos(it.efeitos)}</span></div>
     <p class="sub">Arraste na maquete, toque no chão para levar até lá ou use as setas.</p>
-    <div class="ferr-botoes">${setas}<button class="botao sec peq" data-acao="guardar">Guardar</button><button class="botao sec peq" data-acao="vender">Vender ${dinheiro(Math.round(it.preco * VALOR_REVENDA))}</button><button class="botao peq" data-acao="pronto">Pronto</button></div>${cores}`;
+    <div class="ferr-botoes">${setas}${o.incluso ? "" : '<button class="botao sec peq" data-acao="guardar">Guardar</button>'}<button class="botao sec peq" data-acao="vender">Vender ${dinheiro(Math.round(it.preco * VALOR_REVENDA))}</button><button class="botao peq" data-acao="pronto">Pronto</button></div>${cores}`;
 }
 
 function renderSeg() { for (const b of $("seg").querySelectorAll<HTMLButtonElement>("button")) { b.classList.toggle("ativo", b.dataset.aba === ui.aba); b.setAttribute("aria-selected", String(b.dataset.aba === ui.aba)); if (b.dataset.aba === "deposito") b.textContent = `Depósito${st.e.deposito.length ? ` (${st.e.deposito.length})` : ""}`; } }
@@ -125,11 +128,12 @@ function renderCatalogo() {
     .sort((a, b) => a.tipo.localeCompare(b.tipo) || a.preco - b.preco);
   const card = (it: Item) => {
     const cor = ui.corCompra[it.id] ?? 0, falta = it.preco - st.e.saldo;
-    const amb = TIPOS[it.tipo].ambientes, aqui = amb.includes(c.ambiente);
-    const destino = aqui ? "" : `<span class="vai">Vai para ${amb.includes("garagem") ? "a garagem" : amb.includes("externo") ? "a área externa" : "um cômodo interno"}</span>`;
+    const motivo = motivoNaoCabe(st.e, it.id), ok = TIPOS[it.tipo].comodos, aqui = ok.includes(c.tipo);
+    const outro = imovelAtual(st.e).comodos.find((x) => ok.includes(x.tipo));
+    const destino = motivo ? `<span class="falta">${esc(motivo)}</span>` : aqui ? "" : `<span class="vai">Vai para: ${esc(outro!.nome)}</span>`;
     const cores = it.cores.length > 1 ? `<div class="cores">${it.cores.map((h, i) => `<button class="amostra peq${i === cor ? " ativa" : ""}" style="background:${h}" data-corcompra="${it.id}" data-cor="${i}" aria-label="Cor ${i + 1}"></button>`).join("")}</div>` : "";
     return `<div class="op"><div class="fig">${miniItem(it.id, cor)}</div><span class="tag">${ESTILOS[it.estilo].nome} · ${TIPOS[it.tipo].nome}</span><div class="n">${esc(it.nome)}</div><div class="p">${dinheiro(it.preco)}</div><div class="ef">${textoEfeitos(it.efeitos)}</div>${cores}${destino}
-      <button class="botao" data-comprar="${it.id}" ${falta > 0 ? "disabled" : ""}>Comprar</button>${falta > 0 ? `<span class="falta">Faltam ${dinheiro(falta)}</span>` : ""}</div>`;
+      <button class="botao" data-comprar="${it.id}" ${falta > 0 || motivo ? "disabled" : ""}>Comprar</button>${falta > 0 && !motivo ? `<span class="falta">Faltam ${dinheiro(falta)}</span>` : ""}</div>`;
   };
   $("painel").innerHTML = cats + ests + (lista.length ? `<div class="grade">${lista.map(card).join("")}</div>` : `<div class="vazio">Nada nesse estilo para essa categoria.</div>`);
 }
@@ -164,8 +168,9 @@ function renderDeposito() {
 // ------------------------------------------------------------------ imobiliária
 const cachePrevia = new Map<string, string>();
 function previaImovel(id: string): string {
-  if (cachePrevia.has(id)) return cachePrevia.get(id)!;
-  const m = IMOVEL[id], e = novoEstado(1e9, id);
+  const chave = `${id}:${st.e.clube?.id}`;
+  if (cachePrevia.has(chave)) return cachePrevia.get(chave)!;
+  const m = IMOVEL[id], e = novoEstado(1e9, id, st.e.clube); e.proprios.push(id);
   const vitrine = m.comodos.find((c) => c.tipo === "externo" && m.categoria !== "kitnet") ?? m.comodos.find((c) => c.tipo === "sala") ?? m.comodos[0];
   const est: Estilo = ({ alojamento: "basico", kitnet: "brasileiro", apartamento: "moderno", casa: "rustico", mansao: "classico" } as const)[m.categoria];
   const nivelMax = { alojamento: 1, kitnet: 1, apartamento: 2, casa: 3, mansao: 4 }[m.categoria];
@@ -178,14 +183,14 @@ function previaImovel(id: string): string {
     feitos.add(it.tipo); comprar(e, it.id, 0, vitrine.id);
   }
   const svg = svgComodo(e, vitrine.id);
-  cachePrevia.set(id, svg);
+  cachePrevia.set(chave, svg);
   return svg;
 }
 
 function renderImobiliaria() {
   const atual = imovelAtual(st.e).categoria, cat = ui.catImob === "auto" ? atual : ui.catImob;
   $("catImob").innerHTML = (Object.entries(CATEGORIAS_IMOVEL) as [CategoriaImovel, string][]).map(([k, n]) => `<button class="chip${k === cat ? " ativo" : ""}" data-catimob="${k}">${n}</button>`).join("");
-  $("imoveis").innerHTML = IMOVEIS.filter((m) => m.categoria === cat).map((m) => {
+  $("imoveis").innerHTML = IMOVEIS.filter((m) => m.categoria === cat && (cat !== "alojamento" || alojamentosDoClube(st.e.clube).includes(m.id))).map((m) => {
     const aqui = m.id === st.e.imovel, dono = st.e.proprios.includes(m.id);
     const alug = podeMudar(st.e, m.id, "alugar", salario()), comp = m.compra ? podeMudar(st.e, m.id, "comprar", salario()) : undefined;
     const acoes = aqui ? `<button class="botao sec" disabled>Você mora aqui</button>`
@@ -193,7 +198,7 @@ function renderImobiliaria() {
       : `<button class="botao" data-mudar="${m.id}" data-modo="alugar" ${alug.ok ? "" : "disabled"}>${m.aluguel ? "Alugar" : "Morar aqui"}</button>${comp ? `<button class="botao sec" data-mudar="${m.id}" data-modo="comprar" ${comp.ok ? "" : "disabled"}>Comprar</button>` : ""}`;
     const motivo = !aqui && !dono && !alug.ok ? `<span class="req">${esc(alug.msg)}</span>` : "";
     return `<div class="morada${aqui ? " atual" : ""}"><div class="vista">${previaImovel(m.id)}</div><div class="txt">
-      <p class="rotulo">${esc(m.local)} · ${areaM2(m)} m² · ${m.comodos.length} ${m.comodos.length > 1 ? "ambientes" : "ambiente"}</p><h2>${esc(m.nome)}</h2><p class="sub">${esc(m.descricao)}</p>
+      <p class="rotulo">${esc(m.local)} · ${areaM2(m)} m² · ${m.comodos.length} ${m.comodos.length > 1 ? "ambientes" : "ambiente"}</p><h2>${esc(nomeImovel(st.e, m))}</h2><p class="sub">${esc(m.descricao)}</p>
       <p class="sub">${m.comodos.map((c) => c.nome).join(" · ")}</p>
       <p class="preco">${m.aluguel ? `Aluguel <b>${dinheiro(m.aluguel)}</b>/mês · renda mínima ${dinheiro(rendaMinima(m))}` : "<b>Pago pelo clube</b>"}${m.compra ? ` · compra <b>${dinheiro(m.compra)}</b>` : ""}</p>
       <div class="acoes">${acoes}${motivo}</div></div></div>`;
@@ -223,7 +228,7 @@ cena.addEventListener("pointerdown", (ev) => {
   const g = (ev.target as Element).closest<SVGGElement>(".obj");
   const o = g ? st.e.objetos.find((x) => x.uid === g.dataset.uid) : undefined;
   const p = pontoSvg(ev); if (!p) return;
-  if (o && o.uid === ui.sel && !o.fixo) {
+  if (o && o.uid === ui.sel && !travado(st.e, o)) {
     const ch = telaParaChao(p.sx, p.sy);
     arrasto = { uid: o.uid, x0: o.x, y0: o.y, inicio: ch, moveu: false, id: ev.pointerId };
     cena.setPointerCapture(ev.pointerId);
@@ -264,7 +269,7 @@ cena.addEventListener("click", (ev) => {
   const g = alvo.closest<SVGGElement>(".obj");
   if (g && g.dataset.uid !== ui.sel) { ui.sel = g.dataset.uid; soCena(); return; }
   if (g) return;
-  const o = objSel(); if (!o || o.fixo) return;
+  const o = objSel(); if (!o || travado(st.e, o)) return;
   const p = pontoSvg(ev as PointerEvent); if (!p) return;
   const t = TIPOS[ITENS[o.item].tipo];
   if (t.camada === "parede") { if (!alvo.closest("[data-parede]")) return; const r = mover(st.e, o.uid, alvoParede(p.sx, p.sy, t.w) as { x: number; y: number }); aviso(r.msg, !r.ok); soCena(); return; }
@@ -276,10 +281,16 @@ cena.addEventListener("click", (ev) => {
 
 // ------------------------------------------------------------------ botões
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-fase],[data-comodo],[data-aba],[data-cat],[data-estilo],[data-corcompra],[data-comprar],[data-acao],[data-lugar],[data-previa],[data-reformar],[data-colocar],[data-venderdep],[data-catimob],[data-mudar],[data-fechar]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-fase],[data-clube],[data-comodo],[data-aba],[data-cat],[data-estilo],[data-corcompra],[data-comprar],[data-acao],[data-lugar],[data-previa],[data-reformar],[data-colocar],[data-venderdep],[data-catimob],[data-mudar],[data-fechar]");
   if (!b) return;
   const d = b.dataset;
   if (d.fase) { st.fase = d.fase; renderConta(); salvar(); }
+  else if (d.clube) {
+    st.e.clube = CLUBES_CASA.find((c) => c.id === d.clube);
+    const m = imovelAtual(st.e);
+    if (m.categoria === "alojamento" && !alojamentosDoClube(st.e.clube).includes(m.id)) { mudar(st.e, alojamentosDoClube(st.e.clube)[0], "alugar", salario()); st.comodo = imovelAtual(st.e).comodos[0].id; ui.sel = undefined; }
+    aviso(`Agora você joga no ${st.e.clube!.nome}.`); tudo();
+  }
   else if (d.comodo) { st.comodo = d.comodo; ui.sel = undefined; ui.previa = undefined; ui.cat = "auto"; tudo(); }
   else if (d.aba) { ui.aba = d.aba as typeof ui.aba; if (ui.aba !== "reforma" && ui.previa) { ui.previa = undefined; renderCena(); } renderPainel(); }
   else if (d.cat) { ui.cat = d.cat as typeof ui.cat; renderCatalogo(); }
@@ -336,6 +347,6 @@ $("fecharMes").addEventListener("click", () => {
 });
 $("imobiliaria").addEventListener("click", () => { ui.catImob = "auto"; renderImobiliaria(); ($("dlgImob") as HTMLDialogElement).showModal(); });
 $("dlgImob").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ($("dlgImob") as HTMLDialogElement).close(); });
-$("recomecar").addEventListener("click", () => { st.e = novoEstado(); st.fase = "base"; st.comodo = "quarto"; ui.sel = undefined; ui.previa = undefined; tudo(); aviso("De volta ao alojamento."); });
-void REVEST;
+$("recomecar").addEventListener("click", () => { st.e = novoEstado(3000, "aloj-ct", st.e.clube ?? CLUBE_PADRAO); st.fase = "base"; st.comodo = "quarto"; ui.sel = undefined; ui.previa = undefined; tudo(); aviso("De volta ao alojamento."); });
+void REVEST; void ehDono; void NOME_COMODO;
 tudo();

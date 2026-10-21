@@ -6,7 +6,8 @@ import { valorMercado, salarioMensal } from "../src/mercado.js";
 import { carregarPacote, ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
 import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
-import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento } from "../src/casa.js";
+import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel } from "../src/casa.js";
+import { CLUBES_CASA } from "../src/clubes.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -193,4 +194,33 @@ teste("Casa: estilo completo dá bônus e conforto cresce", () => {
   assert.ok(conforto(e) > 50, `conforto ${conforto(e)}`);
   const ef = efeitosDaCasa(e); assert.ok(ef.total.moral <= TETO.moral);
 });
+teste("Casa: cada móvel no seu cômodo, instalação só com escritura, alojamento do clube", () => {
+  const e = novoEstado(1e7, "ap-2q");
+  e.saldo = 1e7; mudar(e, "kit-ct", "alugar", 1e6); assert.ok(mudar(e, "ap-2q", "alugar", 1e6).ok);
+  // pia do banheiro não vai para a sala, nem no aluguel
+  assert.ok(motivoNaoCabe(e, "pia-moderno-2-2").includes("próprio"));
+  assert.equal(comprar(e, "pia-moderno-2-2", 0, "banheiro").ok, false);
+  const pia = e.objetos.find((o) => o.item === "pia-basico-1-1")!;
+  assert.ok(travado(e, pia) && !vender(e, pia.uid).ok);
+  // geladeira comprada estando na sala vai para a cozinha
+  const r = comprar(e, "geladeira-basico-2-2", 0, "sala"); assert.ok(r.ok && r.comodo === "cozinha");
+  const g = e.objetos.find((o) => o.uid === r.uid)!;
+  assert.equal(cabe(e, { ...g, comodo: "quarto", x: 5, y: 3 }), false);
+  // dono pode trocar e vender o que veio com o imóvel; o vendido não volta
+  assert.ok(mudar(e, "casa-cond", "comprar", 0).ok);
+  const pia2 = e.objetos.find((o) => o.comodo === "banheiro" && o.item.startsWith("pia"))!;
+  assert.ok(!travado(e, pia2) && vender(e, pia2.uid).ok);
+  assert.ok(comprar(e, "pia-moderno-2-2", 0, "banheiro").ok);
+  mudar(e, "ap-2q", "alugar", 1e6); mudar(e, "casa-cond", "alugar", 0);
+  assert.equal(e.objetos.filter((o) => o.comodo === "banheiro" && o.item.startsWith("pia")).length, 1);
+  assert.equal(comprar(e, "carro-basico-1-1", 0, "sala").comodo, "garagem");
+  // alojamento depende do clube
+  const pal = CLUBES_CASA.find((c) => c.id === "PAL")!, cha = CLUBES_CASA.find((c) => c.forca < 70)!;
+  assert.deepEqual(alojamentosDoClube(pal), ["aloj-ct", "aloj-familia"]);
+  const p = novoEstado(0, "aloj-ct", cha);
+  assert.equal(p.imovel, "aloj-vila");
+  assert.ok(nomeImovel(p, IMOVEIS[0]).includes(cha.nome));
+  assert.equal(mudar(p, "aloj-ct", "alugar", 0).ok, false);
+});
+
 console.log(`\n${ok} testes passaram`);
