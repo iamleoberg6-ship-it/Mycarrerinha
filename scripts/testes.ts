@@ -6,6 +6,7 @@ import { valorMercado, salarioMensal } from "../src/mercado.js";
 import { carregarPacote, ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
 import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
+import { MORADIAS, FORMATO, CATALOGO, areaDoSlot, novoEstado, comprar, mudar, fecharMes, efeitosDaCasa, conforto, vender, instalarGuardado, itemNoSlot } from "../src/casa.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -126,6 +127,57 @@ teste("Perfil: todos os perfis aparecem e a joia rara é rara", () => {
   console.log("   distribuição (%):", JSON.stringify(pct));
   assert.equal(Object.keys(cont).length, 7);
   assert.ok(pct.joia_rara <= 10, "joia rara comum demais");
+});
+
+teste("Casa: todo móvel cabe no cômodo e nenhum se sobrepõe", () => {
+  for (const m of MORADIAS) for (const c of m.comodos) {
+    const ids = new Set<string>();
+    const areas = c.slots.filter((sl) => !FORMATO[sl.tipo].parede && !FORMATO[sl.tipo].plano).map((sl) => ({ sl, a: areaDoSlot(sl) }));
+    for (const sl of c.slots) { assert.ok(!ids.has(sl.id), `${m.id}.${c.id}.${sl.id} repetido`); ids.add(sl.id); }
+    for (const sl of c.slots) {
+      const a = areaDoSlot(sl);
+      if (FORMATO[sl.tipo].parede) { assert.ok(sl.x > 1 && sl.x < (sl.parede === "esq" ? c.d : c.w) - 1, `${m.id}.${c.id}.${sl.id} fora da parede`); continue; }
+      assert.ok(a.x >= 0 && a.y >= 0 && a.x + a.w <= c.w && a.y + a.d <= c.d, `${m.id}.${c.id}.${sl.id} fora do cômodo`);
+    }
+    for (let i = 0; i < areas.length; i++) for (let j = i + 1; j < areas.length; j++) {
+      const p = areas[i].a, q = areas[j].a;
+      const cruza = p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.d && q.y < p.y + p.d;
+      assert.ok(!cruza, `${m.id}.${c.id}: ${areas[i].sl.id} e ${areas[j].sl.id} se sobrepõem`);
+    }
+  }
+  for (const it of CATALOGO) if (it.preco > 0) assert.ok(Object.keys(it.efeitos).length > 0, `${it.id} sem efeito`);
+});
+
+teste("Casa: comprar, guardar, mudar e fechar o mês", () => {
+  const e = novoEstado(10000);
+  assert.equal(comprar(e, "quarto", "beliche", "cama-1").ok, false);
+  assert.ok(comprar(e, "quarto", "tv", "tv-1").ok);
+  assert.ok(comprar(e, "quarto", "tv", "tv-2").ok);
+  assert.deepEqual(e.guardados, ["tv-1"]);
+  assert.equal(e.saldo, 10000 - 1200 - 4500);
+  assert.equal(comprar(e, "quarto", "mesa", "mesa-3").ok, false);
+  const c0 = conforto(e);
+  assert.ok(vender(e, "tv-1").ok && e.guardados.length === 0);
+  e.saldo = 1e6;
+  assert.ok(mudar(e, "apartamento", "alugar").ok);
+  assert.equal(itemNoSlot(e, "quarto", "tv")?.id ?? itemNoSlot(e, "sala", "tv")?.id, "tv-2");
+  assert.ok(!Object.values(e.instalados).includes("beliche-1"));
+  const s0 = e.saldo;
+  fecharMes(e, 50000);
+  assert.equal(e.saldo, s0 + 50000 - 8000);
+  e.saldo = 3e6;
+  assert.ok(mudar(e, "casa", "comprar").ok);
+  const s1 = e.saldo; fecharMes(e, 0); assert.equal(e.saldo, s1);
+  assert.ok(comprar(e, "externa", "piscina", "piscina-1").ok);
+  assert.ok(efeitosDaCasa(e).recuperacao >= 2);
+  // volta para um lugar menor: o que não cabe fica guardado
+  assert.ok(comprar(e, "garagem", "vaga1", "carro-1").ok);
+  assert.ok(mudar(e, "kitnet", "alugar").ok);
+  assert.ok(e.guardados.includes("piscina-1") && e.guardados.includes("carro-1"));
+  assert.ok(mudar(e, "casa", "alugar").ok); // já é dono: volta sem pagar
+  assert.ok(itemNoSlot(e, "externa", "piscina")?.id === "piscina-1");
+  assert.ok(c0 > 0);
+  assert.ok(instalarGuardado(e, "quarto", "cama", "inexistente").ok === false);
 });
 
 console.log(`\n${ok} testes passaram`);
