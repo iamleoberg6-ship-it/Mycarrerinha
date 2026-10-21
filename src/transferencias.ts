@@ -6,6 +6,7 @@ import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type Pacot
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { mundo, infoClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
+import { bonusJovem } from "./identidade.js";
 import { alojamentosDoClube, imovelAtual, mudar, nomeImovel, IMOVEL } from "./casa.js";
 import { SEMANAS_PRE, SEMANAS_TEMPORADA, ANO_INICIAL, clubeCasa, ligaAtual, noticia, ovr, type Carreira, type Save } from "./jogo.js";
 
@@ -75,7 +76,7 @@ export function trocarAgente(s: Save, t: TipoAgente): { ok: boolean; msg: string
 
 // ------------------------------------------------------------------ papel no clube
 export function papelNoClube(clube: Clube, s: Save): Papel {
-  const j = s.jogador, meu = pontuacaoTitular(ovr(j), 6.5, 50, 0);
+  const j = s.jogador, meu = pontuacaoTitular(ovr(j), 6.5, 50, 0) + bonusJovem(clube.id, j.idade);
   const rank = clube.elenco.filter((x) => x.posicao === j.posicao && pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
   const vagas = VAGAS_433[j.posicao];
   return rank < vagas ? "titular" : rank <= vagas + 1 ? "rotacao" : "reserva";

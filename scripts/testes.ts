@@ -13,6 +13,7 @@ import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../sr
 import { mundo } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
+import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
 import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave } from "../src/jogo.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
@@ -329,6 +330,14 @@ teste("Mundo: save antigo (ligas genéricas) migra para os clubes reais", () => 
   assert.ok(migrarSave(pacote, s));
   assert.equal(s.carreira.clubeId, "ES-RMA"); assert.equal(s.carreira.ligaId, "ESP1"); assert.equal(s.carreira.ordem.length, 20);
   assert.equal(migrarSave(pacote, s), false);
+});
+
+teste("Identidade: clube formador dá chance ao jovem, clube comprador não", () => {
+  assert.ok(bonusJovem("SAN", 18) > 0 && bonusJovem("BOT", 18) < 0 && bonusJovem("FLA", 18) === 0);
+  assert.equal(bonusJovem("SAN", 25), 0);
+  assert.ok(bonusJovem("SAN", 20) < bonusJovem("SAN", 19));
+  assert.ok(chanceSubir("PAL").chance > chanceSubir("SA-NAS").chance);
+  for (const id of Object.keys(mundo(pacote).clube)) assert.ok(culturaBase(id) >= 1 && culturaBase(id) <= 5, id);
 });
 
 teste("Mercado: transferência para outra liga, empréstimo, renovação, agente e passe livre", () => {

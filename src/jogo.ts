@@ -10,6 +10,7 @@ import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { mundo, infoClube, idClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
+import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from "./identidade.js";
 import { semanaDoMercado, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
@@ -100,7 +101,7 @@ export const forma = (c: Carreira) => (c.formaUlt.length ? c.formaUlt.reduce((a,
 
 // ------------------------------------------------------------------ início
 export interface DadosCriacao { resultado: ResultadoCriacao; aparencia: unknown; clube: string | null; perfil?: string; decisao?: string | null }
-export interface OfertaBase { clubeId: string; nome: string; apelido: string; cores: string[]; forca: number; estrutura: number; nomeEstrutura: string; moradia: string; fila: number; texto: string }
+export interface OfertaBase { clubeId: string; nome: string; apelido: string; cores: string[]; forca: number; estrutura: number; nomeEstrutura: string; moradia: string; fila: number; texto: string; cultura: Cultura; nomeCultura: string }
 
 /** Três clubes oferecem vaga na base. Promessa de clube grande recebe convites dos grandes; os outros, de clubes menores. */
 export function ofertasDeBase(pacote: PacoteDados, d: DadosCriacao): OfertaBase[] {
@@ -117,8 +118,11 @@ export function ofertasDeBase(pacote: PacoteDados, d: DadosCriacao): OfertaBase[
   return escolhidos.map((c) => {
     const cc = clubeCasa(pacote, c.id), est = estruturaDoClube(cc), alojId = alojamentosDoClube(cc)[0], aloj = { nome: nomeImovel(novoEstado(0, alojId, cc), IMOVEL[alojId]) };
     const fila = c.elenco.filter((j) => j.posicao === d.resultado.escolhas.posicao).length;
-    const texto = c.id === d.clube ? "O clube do seu coração abriu as portas." : est >= 4 ? "Estrutura de primeiro mundo, mas a fila para subir é longa." : est === 1 ? "Clube pobre: a moradia é apertada, mas a chance de jogar no profissional chega cedo." : est === 2 ? "Clube modesto: pouco conforto, caminho mais curto até o profissional." : "Clube organizado, meio do caminho.";
-    return { clubeId: c.id, nome: c.nome, apelido: cc.apelido, cores: cc.cores, forca: Math.round(cc.forca), estrutura: est, nomeEstrutura: ESTRUTURAS[est], moradia: aloj.nome, fila, texto };
+    const cult = culturaBase(c.id);
+    const estrutura = est >= 4 ? "Estrutura de primeiro mundo" : est === 1 ? "Clube pobre, moradia apertada" : est === 2 ? "Clube modesto, pouco conforto" : "Clube organizado";
+    const base = cult >= 5 ? "e aqui se vive de revelar garotos: a chance chega cedo." : cult === 4 ? "e aqui se gosta de lançar jovens." : cult <= 2 ? "mas aqui se prefere contratar pronto: subir vai exigir muito." : est >= 4 ? "mas a fila para subir é longa." : "e quem estiver melhor joga.";
+    const texto = (c.id === d.clube ? "O clube do seu coração abriu as portas. " : "") + `${estrutura}, ${base}`;
+    return { clubeId: c.id, nome: c.nome, apelido: cc.apelido, cores: cc.cores, forca: Math.round(cc.forca), estrutura: est, nomeEstrutura: ESTRUTURAS[est], moradia: aloj.nome, fila, texto, cultura: cult, nomeCultura: NOME_CULTURA[cult] };
   });
 }
 
@@ -191,14 +195,15 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   if (c.semana < SEMANAS_PRE) return "semJogo";
   if (c.suspensao) return "suspenso";
   const clube = clubeDe(ligaAtual(pacote, s), c.clubeId);
-  const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto);
+  const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade);
   const rank = clube.elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
   const vagas = VAGAS_433[j.posicao];
   if (rank < vagas) return "titular";
   if (rank <= vagas + 1) return "banco";
   if (j.idade <= 19) {
     // garoto da base em grande fase ganha chance de ficar no banco do profissional
-    if (forma(c) >= 7.4 && c.relTecnico >= 65 && rngDe(s, "relacionado").chance(0.35)) return "banco";
+    const sub = chanceSubir(c.clubeId);
+    if (forma(c) >= sub.formaMin && c.relTecnico >= 60 && rngDe(s, "relacionado").chance(sub.chance)) return "banco";
     return "base";
   }
   return "fora";
