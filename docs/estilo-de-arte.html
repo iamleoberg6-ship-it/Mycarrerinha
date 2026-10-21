@@ -1,0 +1,153 @@
+<title>Estilos de Arte</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@400;600;700&display=swap">
+<style>
+/* Layout: três retratos do mesmo jogador lado a lado (empilhados no celular), cada um com nome e uma linha sobre o estilo. */
+:root {
+  --campo: #0C1A17; --campo-2: #13261F; --linha: #2B4239; --giz: #EDF2EB; --giz-2: #A3B6AD; --ouro: #E3B341;
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif; --texto: "Barlow", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--campo); color: var(--giz); font-family: var(--texto); font-size: 16px; line-height: 1.5; }
+.pagina { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; display: flex; flex-direction: column; gap: 20px; }
+.capitulo { margin: 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ouro); font-weight: 700; }
+h1 { margin: 0; font-family: var(--display); font-weight: 900; font-size: clamp(32px, 7vw, 48px); line-height: 1; text-transform: uppercase; text-wrap: balance; }
+.sub { margin: 0; color: var(--giz-2); max-width: 60ch; }
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.estilo { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.letra { font-family: var(--display); font-weight: 900; font-size: 15px; letter-spacing: .1em; color: var(--ouro); }
+.estilo h2 { margin: 0; font-family: var(--display); font-weight: 900; font-size: 28px; text-transform: uppercase; line-height: 1; }
+.estilo p { margin: 0; color: var(--giz-2); font-size: 15px; }
+.retrato { border-radius: 12px; overflow: hidden; aspect-ratio: 300 / 360; max-width: 100%; background: #000; }
+.retrato svg, .retrato canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.nota { margin: 0; font-size: 14px; color: var(--giz-2); }
+</style>
+
+<div class="pagina">
+  <p class="capitulo">Mycarrerinha · direção de arte</p>
+  <h1>Estilo escolhido: a mistura</h1>
+  <p class="sub">Traço grosso de quadrinho com sombras em tons. Os outros dois ficam abaixo para comparação.</p>
+  <div class="grade">
+    <article class="estilo"><span class="letra">Escolhido</span><h2>Mistura</h2><p>Traço grosso de quadrinho com as sombras em tons da figurinha e um pouco de hachura.</p><div class="retrato" id="m"></div></article>
+    <article class="estilo"><span class="letra">Estilo A</span><h2>Figurinha</h2><p>Sombra em dois tons e contorno fino, como figurinha de álbum ou card de jogo.</p><div class="retrato" id="a"></div></article>
+    <article class="estilo"><span class="letra">Estilo B</span><h2>Quadrinho</h2><p>Traço de nanquim grosso e sombra feita com hachura, como HQ de esporte.</p><div class="retrato" id="b"></div></article>
+  </div>
+  <p class="nota">Jogador de exemplo: ponta do CR Flamingo, 16 anos, degradê e barba por fazer.</p>
+</div>
+
+<script>
+const PELE = { base: "#A86B45", sombra: "#7E4B2E", luz: "#C5885C", escura: "#5E3520" };
+const CABELO = "#1B1310";
+const CAMISA = { a: "#C8102E", b: "#141414", gola: "#141414" };
+
+// formas comuns (viewBox 300x360)
+const F = {
+  cabeca: "M150 70 C119 70 101 90 100 120 C99 140 101 154 105 168 C109 184 117 197 131 207 C139 213 144 216 150 216 C156 216 161 213 169 207 C183 197 191 184 195 168 C199 154 201 140 200 120 C199 90 181 70 150 70 Z",
+  sombraRosto: "M168 70 C186 92 191 128 187 160 C183 186 171 204 150 216 L215 216 L215 60 Z",
+  orelhaE: "M102 130 C90 125 87 142 91 154 C94 164 101 166 105 161 Z",
+  orelhaD: "M198 130 C210 125 213 142 209 154 C206 164 199 166 195 161 Z",
+  pescoco: "M127 190 L123 240 L177 240 L173 190 Z",
+  sombraPescoco: "M127 194 Q150 226 173 194 L175 222 Q150 238 125 222 Z",
+  tronco: "M0 360 L0 294 C10 270 40 256 76 248 C96 244 106 236 110 221 L150 273 L190 221 C194 236 204 244 224 248 C260 256 290 270 300 294 L300 360 Z",
+  peito: "M110 220 L150 284 L190 220 Z",
+  golaTras: "M110 221 C113 214 128 211 150 211 C172 211 187 214 190 221 L182 224 C179 219 168 217 150 217 C132 217 121 219 118 224 Z",
+  golaFrente: "M110 221 L150 273 L190 221 L182 224 L150 262 L118 224 Z",
+  golaFrisoFrente: "M118 224 L150 262 L182 224",
+  golaContorno: "M110 221 L150 273 L190 221",
+  cabelo: "M100 122 C95 82 118 60 150 60 C182 60 205 82 200 122 C197 108 191 98 183 94 C171 90 161 96 150 94 C139 96 129 90 117 94 C109 98 103 108 100 122 Z",
+  degrade: "M100 122 C99 132 100 142 102 150 L106 150 C105 138 105 128 107 116 Z M200 122 C201 132 200 142 198 150 L194 150 C195 138 195 128 193 116 Z",
+  barba: "M100 138 L106 150 C110 168 117 179 127 183 C133 185 137 184 140.5 182.5 Q150 179.5 159.5 182.5 C163 184 167 185 173 183 C183 179 190 168 194 150 L200 138 L212 240 L88 240 Z M131 195 Q150 190.5 169 195 Q150 208 131 195 Z",
+  sobE: "M113 129 Q126 120 141 124 L140 130 Q126 127 114 134 Z",
+  sobD: "M187 129 Q174 120 159 124 L160 130 Q174 127 186 134 Z",
+  olhoE: "M117 142 Q128 134 140 141 Q128 147 117 142 Z",
+  olhoD: "M183 142 Q172 134 160 141 Q172 147 183 142 Z",
+  nariz: "M141 177 Q145 182 150 180 Q155 182 159 177",
+  narizLado: "M156 142 Q160 160 162 172",
+  boca: "M134 195 Q150 200 166 195",
+  labio: "M138 197 Q150 205 162 197 Q150 201 138 197 Z",
+};
+
+function escudo(x, y, s) {
+  return `<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 0 L24 0 L24 14 Q24 26 12 32 Q0 26 0 14 Z" fill="#141414" stroke="#E3B341" stroke-width="2"/><path d="M5 8 L19 8 M5 14 L19 14 M5 20 L19 20" stroke="#C8102E" stroke-width="3"/></g>`;
+}
+
+const ESTILOS = {
+  a: { tinta: "#2A170D", traco: 1.6, pele: PELE.base, sombra: "tons", fundo: "estadio" },
+  b: { tinta: "#0A0A0A", traco: 3.4, pele: "#B97A50", sombra: "hachura", fundo: "hq" },
+  m: { tinta: "#0A0A0A", traco: 2.8, pele: PELE.base, sombra: "mista", fundo: "estadio" },
+};
+function retrato(estilo) {
+  const E = ESTILOS[estilo];
+  const tinta = E.tinta, traco = E.traco, pele = E.pele;
+  const hq = E.sombra === "hachura", mista = E.sombra === "mista";
+  const sombraFill = hq ? "url(#hachura)" : PELE.sombra;
+  const sombraExtra = mista ? `<path d="${F.sombraRosto}" fill="url(#hachuraLeve)" opacity="0.55"/>` : "";
+  const listras = [];
+  for (let x = -6; x < 300; x += 30) listras.push(`<rect x="${x}" y="220" width="15" height="140" fill="${CAMISA.b}"/>`);
+  const fundo = E.fundo === "hq"
+    ? `<rect width="300" height="360" fill="#F2D24B"/><rect width="300" height="360" fill="url(#pontos)"/>${Array.from({ length: 14 }, (_, i) => { const a = (i / 14) * Math.PI * 2; return `<line x1="150" y1="150" x2="${150 + 300 * Math.cos(a)}" y2="${150 + 300 * Math.sin(a)}" stroke="#0A0A0A" stroke-width="2" opacity="0.18"/>`; }).join("")}`
+    : `<defs><radialGradient id="luz${estilo}" cx="0.5" cy="0.35" r="0.75"><stop offset="0" stop-color="#3B5C50"/><stop offset="1" stop-color="#0E1D18"/></radialGradient></defs><rect width="300" height="360" fill="url(#luz${estilo})"/>${[[40, 60], [262, 48], [70, 110], [236, 120], [24, 180]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="10" fill="#F6E7B9" opacity="0.18"/>`).join("")}`;
+  const defs = `<defs>
+    <pattern id="hachura" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="5" height="5" fill="#B97A50"/><line x1="0" y1="0" x2="0" y2="5" stroke="#0A0A0A" stroke-width="1.6"/></pattern>
+    <pattern id="hachuraLeve" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><line x1="0" y1="0" x2="0" y2="6" stroke="#0A0A0A" stroke-width="0.9" opacity="0.7"/></pattern>
+    <pattern id="pontos" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="4.5" cy="4.5" r="1.8" fill="#E08A1E"/></pattern>
+    <pattern id="barbaPontos" width="3.4" height="3.4" patternUnits="userSpaceOnUse"><circle cx="1.7" cy="1.7" r="0.75" fill="#0A0A0A"/></pattern>
+    <clipPath id="clipCabeca${estilo}"><path d="${F.cabeca}"/></clipPath>
+    <clipPath id="clipTronco${estilo}"><path d="${F.tronco}"/></clipPath>
+  </defs>`;
+  const st = (largura = traco) => `stroke="${tinta}" stroke-width="${largura}" stroke-linejoin="round"`;
+  const barba = hq ? `<path d="${F.barba}" fill="url(#barbaPontos)" fill-rule="evenodd"/>` : mista ? `<path d="${F.barba}" fill="#5A3826" fill-rule="evenodd"/><path d="${F.barba}" fill="url(#barbaPontos)" fill-rule="evenodd" opacity="0.55"/>` : `<path d="${F.barba}" fill="#5C3A26" fill-rule="evenodd"/>`;
+  const luz = hq ? "" : `<path d="M118 100 Q126 92 140 92 Q128 102 124 118 Z" fill="${PELE.luz}"/><ellipse cx="148" cy="172" rx="3" ry="2.2" fill="${PELE.luz}"/>`;
+  const sombraCamisa = hq
+    ? `<path d="M0 300 C20 276 50 262 80 254 L60 360 L0 360 Z" fill="url(#hachuraLeve)"/><path d="M300 300 C280 276 250 262 220 254 L240 360 L300 360 Z" fill="url(#hachuraLeve)"/>`
+    : `<path d="M0 300 C20 276 50 262 80 254 L60 360 L0 360 Z" fill="#000" opacity="0.28"/><path d="M300 300 C280 276 250 262 220 254 L240 360 L300 360 Z" fill="#000" opacity="0.4"/>`;
+  return `<svg viewBox="0 0 300 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Jogador no estilo ${estilo.toUpperCase()}">
+  ${defs}${fundo}
+  <path d="${F.golaTras}" fill="${CAMISA.gola}" stroke="${tinta}" stroke-width="${traco * 0.8}" stroke-linejoin="round"/>
+  <path d="${F.pescoco}" fill="${pele}" ${st()}/>
+  <path d="${F.peito}" fill="${pele}"/>
+  <path d="${F.sombraPescoco}" fill="${sombraFill}"/>
+  <path d="${F.tronco}" fill="${CAMISA.a}"/>
+  <g clip-path="url(#clipTronco${estilo})">${listras.join("")}${sombraCamisa}</g>
+  <path d="${F.tronco}" fill="none" ${st()}/>
+  <path d="${F.golaFrente}" fill="${CAMISA.gola}" stroke="${tinta}" stroke-width="${traco * 0.8}" stroke-linejoin="round"/>
+  <path d="${F.golaFrisoFrente}" fill="none" stroke="#E3B341" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M150 262 L150 273" stroke="${tinta}" stroke-width="1" opacity="0.6"/>
+  ${escudo(196, 286, 1)}
+  <text x="98" y="316" text-anchor="middle" font-family="'Big Shoulders Display','Arial Narrow',sans-serif" font-weight="900" font-size="30" fill="#F2E6C2" stroke="${tinta}" stroke-width="${traco > 2 ? 1.5 : 0.6}">16</text>
+  <path d="${F.orelhaE}" fill="${pele}" ${st()}/><path d="${F.orelhaD}" fill="${hq ? pele : PELE.sombra}" ${st()}/>
+  ${hq ? `<path d="${F.orelhaD}" fill="url(#hachura)"/>` : ""}
+  <path d="${F.cabeca}" fill="${pele}"/>
+  <g clip-path="url(#clipCabeca${estilo})">
+    <path d="${F.sombraRosto}" fill="${sombraFill}"/>
+    ${sombraExtra}
+    ${luz}
+    ${barba}
+    <path d="${F.degrade}" fill="${hq ? "url(#hachura)" : "#3E2A1F"}"/>
+  </g>
+  <path d="${F.cabeca}" fill="none" ${st()}/>
+  <path d="${F.cabelo}" fill="${CABELO}" ${st()}/>
+  ${hq ? `<path d="M118 76 Q134 66 150 68" stroke="#F2D24B" stroke-width="3" fill="none" stroke-linecap="round"/>` : `<path d="M116 78 Q132 66 152 66" stroke="#4A3428" stroke-width="3" fill="none" stroke-linecap="round"/>`}
+  <path d="${F.sobE}" fill="${CABELO}"/><path d="${F.sobD}" fill="${CABELO}"/>
+  <path d="${F.olhoE}" fill="#F4EFE6" ${st(1.2)}/><path d="${F.olhoD}" fill="#F4EFE6" ${st(1.2)}/>
+  <circle cx="129" cy="141" r="4.4" fill="#3B2416"/><circle cx="171" cy="141" r="4.4" fill="#3B2416"/>
+  <circle cx="129" cy="141" r="2" fill="#000"/><circle cx="171" cy="141" r="2" fill="#000"/>
+  <circle cx="130.5" cy="139.4" r="1.1" fill="#fff"/><circle cx="172.5" cy="139.4" r="1.1" fill="#fff"/>
+  <path d="M117 141 Q128 133 140 140" fill="none" stroke="${tinta}" stroke-width="${traco > 2 ? 2.6 : 2}" stroke-linecap="round"/>
+  <path d="M183 141 Q172 133 160 140" fill="none" stroke="${tinta}" stroke-width="${traco > 2 ? 2.6 : 2}" stroke-linecap="round"/>
+  <path d="${F.narizLado}" fill="none" stroke="${traco > 2 ? tinta : PELE.escura}" stroke-width="${traco > 2 ? 2.2 : 1.8}" stroke-linecap="round"/>
+  <path d="${F.nariz}" fill="none" stroke="${traco > 2 ? tinta : PELE.escura}" stroke-width="${traco > 2 ? 2.4 : 2}" stroke-linecap="round"/>
+  <path d="${F.labio}" fill="${hq ? "#9A5638" : "#8E5236"}"/>
+  <path d="${F.boca}" fill="none" stroke="${traco > 2 ? tinta : "#4A2414"}" stroke-width="${traco > 2 ? 2.6 : 2}" stroke-linecap="round"/>
+  ${traco > 2 ? `<path d="M110 160 Q116 170 122 168" stroke="${tinta}" stroke-width="1.6" fill="none"/><path d="M190 160 Q184 170 178 168" stroke="${tinta}" stroke-width="1.6" fill="none"/>` : ""}
+</svg>`;
+}
+
+document.getElementById("a").innerHTML = retrato("a");
+document.getElementById("b").innerHTML = retrato("b");
+
+document.getElementById("m").innerHTML = retrato("m");
+</script>
