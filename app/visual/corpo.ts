@@ -281,6 +281,12 @@ export function svgCorpo(o: OpcoesCorpo): string {
     partes.push(mao(b, g, pele, sombraPele));
   }
 
+  // regata: ombros e peito de pele por cima do começo dos braços (liga braço e tronco), antes da regata
+  if (regata) {
+    const ombros = troncoCamisa(g, false).d;
+    partes.push(contorno(ombros, pele), sombraLado(ombros, 150 + g.peito * 0.15, 150 + g.ombro, 0.3));
+    for (const b of g.bracos) partes.push(`<path d="M${f1(150 + b.lado * (g.peito - 4))} 300 Q${f1(150 + b.lado * (g.peito - 2))} 322 ${f1(150 + b.lado * (g.peito - 8))} 336" stroke="${TINTA}" stroke-width="1.3" fill="none" opacity=".45"/>`);
+  }
   // 5. camisa: mangas e tronco
   const idK = `kt${gradSeq++}`;
   const longa = jogo ? v.manga === "longa" : ["moletom", "social", "jaqueta"].includes(v.casual);
@@ -299,7 +305,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
       partes.push(`<path d="M${f1(fo[0])} ${f1(fo[1])} L${f1(fi[0])} ${f1(fi[1])} L${f1(fi[0] - ux * k)} ${f1(fi[1] - uy * k)} L${f1(fo[0] - ux * k)} ${f1(fo[1] - uy * k)} Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.6" stroke-linejoin="round"/>`);
     }
   });
-  const tronco = regata ? `M128 232 C122 252 ${150 - g.peito + 20} 266 ${150 - g.peito + 12} 316 C${150 - g.peito + 12} 356 ${150 - g.cintura - 4} 384 ${150 - g.cintura - 2} 410 Q${150 - g.quadril + 4} ${camisa.bainha - 24} ${150 - g.quadril + 2} ${camisa.bainha} Q150 ${camisa.bainha + 7} ${150 + g.quadril - 2} ${camisa.bainha} Q${150 + g.quadril - 4} ${camisa.bainha - 24} ${150 + g.cintura + 2} 410 C${150 + g.cintura + 4} 384 ${150 + g.peito - 12} 356 ${150 + g.peito - 12} 316 C${150 + g.peito - 20} 266 178 252 172 232 Q150 246 128 232 Z` : camisa.d;
+  const tronco = regata ? `M126 233 L${150 - g.ombro + 34} 250 C${150 - g.peito + 10} 270 ${150 - g.peito + 4} 296 ${150 - g.peito + 6} 322 C${150 - g.peito + 6} 356 ${150 - g.cintura - 4} 384 ${150 - g.cintura - 2} 410 Q${150 - g.quadril + 4} ${camisa.bainha - 24} ${150 - g.quadril + 2} ${camisa.bainha} Q150 ${camisa.bainha + 7} ${150 + g.quadril - 2} ${camisa.bainha} Q${150 + g.quadril - 4} ${camisa.bainha - 24} ${150 + g.cintura + 2} 410 C${150 + g.cintura + 4} 384 ${150 + g.peito - 6} 356 ${150 + g.peito - 6} 322 C${150 + g.peito - 4} 296 ${150 + g.peito - 10} 270 ${150 + g.ombro - 34} 250 L174 233 Q150 252 126 233 Z` : camisa.d;
   partes.push(`<clipPath id="${idK}t"><path d="${tronco}"/></clipPath>`, contorno(tronco, camisaCor));
   if (jogo) partes.push(`<g clip-path="url(#${idK}t)">${padraoKit(kit, g)}</g>`);
   partes.push(sombraLado(tronco, 150 + g.peito * 0.15, 150 + g.ombro, 0.3));

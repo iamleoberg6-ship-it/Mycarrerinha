@@ -11,7 +11,7 @@ import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstad
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
 import { mundo } from "../src/mundo.js";
-import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, type PropostaSave } from "../src/transferencias.js";
+import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
 import { alvoSeguidores, semanaRedes, imposto } from "../src/vida.js";
@@ -381,6 +381,23 @@ teste("Patrocínio: marcas por categoria, três modelos de contrato e pagamento 
   let achou = false;
   for (let k = 0; k < 120 && !achou; k++) { semanaAutomatica(pacote, s, false); achou = (s.carreira.patrocinios?.length ?? 0) > 0; }
   assert.ok(achou, "nenhum patrocinador em 120 semanas com fama 70");
+});
+
+teste("Mercado: pedir para sair para um mercado específico tira o jogador do Golfo", () => {
+  const r = criarJogador({ nome: "Golfo", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "golfo" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "golfo");
+  const w = mundo(pacote), c = s.carreira, m = mercadoDe(c);
+  s.jogador.idade = 29; c.formacao = false; c.salario = 900000; c.anosContrato = 3; c.fama = 70;
+  for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 78;
+  mudarDeClube(pacote, s, w.clube["SA-AHL"], "transferencia", 20e6); m.transferencias = [];
+  const rel0 = c.relTecnico;
+  assert.ok(pedirParaSair(s, true, "europa").ok); assert.ok(c.relTecnico < rel0 - 8, "pedido com destino pesa mais");
+  for (let k = 0; k < 4; k++) { c.semana = 20 + k; semanaDoMercado(pacote, s, new RNG(`g${k}`), []); }
+  const europa = m.propostas.filter((p) => ["ENG1", "ENG2", "ESP1", "ESP2", "ITA1", "GER1", "FRA1", "POR1", "NED1"].includes(p.ligaId));
+  assert.ok(europa.length > 0, `sem proposta da Europa: ${m.propostas.map((p) => p.ligaId).join(",")}`);
+  m.propostas = []; pedirParaSair(s, false); assert.ok(pedirParaSair(s, true, "casa").ok);
+  for (let k = 0; k < 4; k++) { c.semana = 20 + k; semanaDoMercado(pacote, s, new RNG(`h${k}`), []); }
+  assert.ok(m.propostas.some((p) => p.ligaId.startsWith("BRA")), "sem proposta do Brasil");
 });
 
 teste("Mercado: transferência para outra liga, empréstimo, renovação, agente e passe livre", () => {

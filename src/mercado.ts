@@ -129,36 +129,37 @@ export function orcamentoTransferencias(clube: Clube, liga: Liga): number {
 }
 
 /** Filtros obrigatórios (regras de salto). */
-export function passaFiltros(p: PerfilMercado, clube: Clube, liga: Liga, vm: number, orcamento: number): boolean {
+export function passaFiltros(p: PerfilMercado, clube: Clube, liga: Liga, vm: number, orcamento: number, forcado = false): boolean {
   if (p.clubeAtual && clube.id === p.clubeAtual.id) return false;
   const nAtual = p.ligaAtual.nivel;
   const forcaMin = Math.min(...liga.clubes.map((c) => c.forca));
-  if (liga.nivel < nAtual - 1 && p.ovr < forcaMin) return false; // subida de mais de 1 nível
+  if (liga.nivel < nAtual - 1 && p.ovr < forcaMin - (forcado ? 6 : 0)) return false; // subida de mais de 1 nível
   const altoSalario = liga.fSalario >= 2;
-  if (liga.nivel >= nAtual + 2 && !(p.idade >= 30 || p.pctTitular < 0.3 || altoSalario || !p.clubeAtual)) return false;
+  if (!forcado && liga.nivel >= nAtual + 2 && !(p.idade >= 30 || p.pctTitular < 0.3 || altoSalario || !p.clubeAtual)) return false;
   if (p.ovr > clube.forca + 12) return false; // jogador fora de alcance
   if (p.clubeAtual && vm > orcamento) return false;
   return true;
 }
 
-export function gerarPropostas(rng: RNG, p: PerfilMercado, mundo: Liga[], fama: number): Proposta[] {
+/** forcado: o jogador pediu para ser negociado para esse mercado (ignora o alcance do agente e aceita interesse menor). */
+export function gerarPropostas(rng: RNG, p: PerfilMercado, mundo: Liga[], fama: number, forcado = false): Proposta[] {
   const ag = AGENTES[p.agente];
   const candidatas: Proposta[] = [];
   for (const liga of mundo) {
-    if (ag.ligas !== "todas" && !ag.ligas.includes(liga.id)) continue;
+    if (!forcado && ag.ligas !== "todas" && !ag.ligas.includes(liga.id)) continue;
     for (const clube of liga.clubes) {
       const c = componentesInteresse(p, clube, liga);
-      if (!passaFiltros(p, clube, liga, c.vm, c.orcamento)) continue;
+      if (!passaFiltros(p, clube, liga, c.vm, c.orcamento, forcado)) continue;
       // o Golfo vai atrás de jogador experiente e conhecido; o resto do interesse tem um pouco de acaso (olheiro, técnico, momento)
-      const golfo = liga.fSalario >= 2 && p.idade >= 27 && p.ovr >= 70 ? 0.08 + (p.fama >= 55 ? 0.08 : 0) : 0;
+      const golfo = liga.fSalario >= 2 && p.ligaAtual.fSalario < 2 && p.idade >= 27 && p.ovr >= 70 ? 0.08 + (p.fama >= 55 ? 0.08 : 0) : 0; // quem já está no Golfo não ganha esse empurrão
       const I = 0.3 * c.nivel + 0.25 * c.necessidade + 0.15 * c.vis + 0.15 * c.afinidade + 0.15 * c.custo + golfo + rng.range(-0.08, 0.08);
-      if (I < 0.58) continue;
+      if (I < (forcado ? 0.45 : 0.58)) continue;
       const salario = salarioMensal({ ovr: p.ovr, idade: p.idade, liga, clube, agente: p.agente, fama });
       candidatas.push({ clube, liga, interesse: I, taxa: p.clubeAtual ? c.vm * rng.range(0.9, 1.3) * (1 + (I - 0.6)) : 0, orcamento: c.orcamento, salario, anos: rng.int(2, 5), titularProvavel: c.titular });
     }
   }
   const lambda = ag.alcance * (p.fama + 2 * Math.max(0, p.ovr - 55)) / 40;
-  const n = Math.max(p.clubeAtual ? 0 : 1, rng.poisson(lambda)); // agente livre sempre recebe ao menos a melhor sondagem
+  const n = forcado ? 1 : Math.max(p.clubeAtual ? 0 : 1, rng.poisson(lambda)); // agente livre sempre recebe ao menos a melhor sondagem
   return candidatas.sort((a, b) => b.interesse - a.interesse).slice(0, n);
 }
 

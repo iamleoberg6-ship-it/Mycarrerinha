@@ -31,6 +31,8 @@ export interface DadosMercado {
   emprestimo?: { origem: string; ligaOrigem: string; ordemOrigem: string[]; ate: number };
   /** pediu para ser negociado */
   listaTransferencia?: boolean;
+  /** para onde pediu para ser negociado */
+  destinoSaida?: Destino;
   /** recusou a renovação nesta temporada */
   semRenovacao?: number;
   /** semana absoluta da última troca de agente */
@@ -136,6 +138,23 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   if (m.transferencias.some((t) => t.temporada === c.temporada && t.tipo !== "emprestimo")) return;
   const perfil = perfilDe(pacote, s);
   const chance = 0.45 + (m.listaTransferencia ? 0.25 : 0);
+  // pedido de saída com destino: o agente procura ativamente nesse mercado
+  if (m.listaTransferencia && m.destinoSaida && m.destinoSaida !== "qualquer" && rng.chance(0.6)) {
+    const ligas = ligasDoDestino(m.destinoSaida, j.nacionalidade);
+    const alvo = ligas ? w.ligas.filter((x) => ligas.includes(x.id)) : w.ligas;
+    const minSal = m.destinoSaida === "salario" ? c.salario * 1.25 : 0;
+    const achou = gerarPropostas(rng, perfil, alvo, c.fama, true).filter((p) => p.clube.id !== c.clubeId && !m.propostas.some((x) => x.clubeId === p.clube.id) && p.salario >= minSal);
+    if (!achou.length && m.destinoSaida === "salario") {
+      const ricos = gerarPropostas(rng, perfil, w.ligas.filter((x) => x.fSalario >= 1.3), c.fama, true).filter((p) => p.clube.id !== c.clubeId && p.salario >= minSal);
+      achou.push(...ricos);
+    }
+    if (achou.length) {
+      const p = paraSave(pacote, s, achou[0]);
+      m.propostas.push(p);
+      eventos.push(`Pedido atendido: o ${achou[0].clube.nome} (${infoLiga(achou[0].liga.id).curto}) quer você.`);
+      noticia(s, "clube", "Proposta na mesa", `Depois do pedido de ${j.apelido}, o ${achou[0].clube.nome} fez uma proposta.`);
+    }
+  }
   if (!rng.chance(chance)) return;
   const golfoNaMesa = m.propostas.some((x) => x.ligaId === "KSA1");
   const cand = gerarPropostas(rng, perfil, w.ligas, c.fama).filter((p) => !m.propostas.some((x) => x.clubeId === p.clube.id) && golfoQuer(p, s))
@@ -198,12 +217,36 @@ export function recusar(pacote: PacoteDados, s: Save, id: string): R {
 }
 
 /** Pedir para ser negociado: mais propostas e o clube libera mais fácil, mas o técnico não gosta. */
-export function pedirParaSair(s: Save, sim: boolean): R {
-  const m = mercadoDe(s.carreira);
-  if (m.listaTransferencia === sim) return { ok: false, msg: "" };
-  m.listaTransferencia = sim;
-  if (sim) { s.carreira.relTecnico = clamp(s.carreira.relTecnico - 8, 0, 100); noticia(s, "polemica", "Quer sair", `${s.jogador.apelido} pediu à diretoria para ser negociado.`); return { ok: true, msg: "Pedido feito: o clube vai ouvir propostas. O técnico não gostou." }; }
-  return { ok: true, msg: "Você tirou o pedido de saída." };
+export type Destino = "qualquer" | "casa" | "europa" | "golfo" | "salario";
+export const NOME_DESTINO: Record<Destino, string> = { qualquer: "Qualquer clube", casa: "Voltar para casa", europa: "Europa", golfo: "Golfo", salario: "Ganhar mais" };
+export const ONDE_DESTINO: Record<Destino, string> = { qualquer: "em qualquer lugar", casa: "no seu país", europa: "na Europa", golfo: "no Golfo", salario: "que paguem mais" };
+const PAIS_LIGAS: Record<string, string[]> = { BRA: ["BRA1", "BRA2"], ARG: ["ARG1"], URU: ["ARG1", "BRA1"], ENG: ["ENG1", "ENG2"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1"], GER: ["GER1"], FRA: ["FRA1"], POR: ["POR1"], NED: ["NED1"], KSA: ["KSA1"] };
+/** Ligas que entram no pedido de saída. */
+export function ligasDoDestino(d: Destino, nacionalidade: string): string[] | undefined {
+  if (d === "qualquer" || d === "salario") return undefined;
+  if (d === "golfo") return ["KSA1"];
+  if (d === "europa") return ["ENG1", "ENG2", "ESP1", "ESP2", "ITA1", "GER1", "FRA1", "POR1", "NED1"];
+  return PAIS_LIGAS[nacionalidade] ?? ["BRA1", "ARG1"];
+}
+/** Pedir para ser negociado. Com destino, a notícia vaza: pior com técnico, torcida e diretoria. */
+export function pedirParaSair(s: Save, sim: boolean, destino: Destino = "qualquer"): R {
+  const m = mercadoDe(s.carreira), c = s.carreira, j = s.jogador;
+  if (!sim) { if (!m.listaTransferencia) return { ok: false, msg: "" }; m.listaTransferencia = false; m.destinoSaida = undefined; return { ok: true, msg: "Você tirou o pedido de saída." }; }
+  const ja = m.listaTransferencia;
+  m.listaTransferencia = true; m.destinoSaida = destino;
+  const especifico = destino !== "qualquer";
+  c.relTecnico = clamp(c.relTecnico - (ja ? 2 : 8) - (especifico ? 4 : 0), 0, 100);
+  c.moral = clamp(c.moral - (especifico ? 3 : 1), 0, 100);
+  c.pressao = clamp(c.pressao + (especifico ? 10 : 5), 0, 100);
+  const manchete: Record<Destino, [string, string]> = {
+    qualquer: ["Quer sair", `${j.apelido} pediu à diretoria para ser negociado.`],
+    casa: ["Saudade de casa", `Vazou: ${j.apelido} pediu para ser negociado com um clube do país dele. A torcida não gostou.`],
+    europa: ["Sonho europeu", `Vazou: ${j.apelido} quer jogar na Europa e pediu para o clube ouvir propostas de lá. A torcida chamou de mercenário.`],
+    golfo: ["De olho no Golfo", `Vazou: ${j.apelido} pediu para ser negociado com um clube do Golfo. Nas redes, a torcida não perdoou.`],
+    salario: ["Quer ganhar mais", `Vazou: ${j.apelido} pediu para ser negociado com quem pagar mais. A diretoria ficou irritada.`],
+  };
+  noticia(s, "polemica", manchete[destino][0], manchete[destino][1]);
+  return { ok: true, msg: especifico ? `Pedido feito: o agente vai atrás de clubes ${ONDE_DESTINO[destino]}. Vazou na imprensa: técnico e torcida não gostaram.` : "Pedido feito: o clube vai ouvir propostas. O técnico não gostou." };
 }
 
 export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false): R {
@@ -246,7 +289,7 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
   mudarDeClube(pacote, s, destino, p.tipo, p.taxa);
   receberLuvas(s, p.luvas);
   m.propostas = [];
-  m.listaTransferencia = false;
+  m.listaTransferencia = false; m.destinoSaida = undefined;
   return { ok: true, msg: `Você é jogador do ${destino.nome}!` };
 }
 
