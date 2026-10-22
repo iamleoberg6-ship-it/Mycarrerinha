@@ -54,6 +54,15 @@ export const PAISES: Pais[] = [
   { id: "KOR", nome: "Coreia do Sul", local: "na Coreia do Sul", escola: "JPN_KOR", nacionalidade: "KOR", lingua: "ko", nota: "Fôlego infinito e disciplina de sobra." },
 ];
 
+/** Onde o jogador cresce e começa na base: a primeira divisão do país. Quem nasceu num país sem liga no jogo
+ *  vai com a família, aos 12 anos, para um país vizinho ou de caminho comum. */
+export const LIGA_DA_BASE: Record<PaisId, string> = {
+  BRA: "BRA1", ARG: "ARG1", URU: "ARG1", ESP: "ESP1", NED: "NED1", GER: "GER1", ITA: "ITA1", ENG: "ENG1", FRA: "FRA1",
+  NGA: "ENG1", SEN: "FRA1", GHA: "ENG1", JPN: "GER1", KOR: "GER1",
+};
+/** Para onde a família se mudou (só para quem nasceu num país sem liga no jogo). */
+export const MUDOU_PARA: Partial<Record<PaisId, string>> = { URU: "a Argentina", NGA: "a Inglaterra", SEN: "a França", GHA: "a Inglaterra", JPN: "a Alemanha", KOR: "a Alemanha" };
+
 export interface Formacao {
   id: FormacaoId; nome: string; descricao: string; mods: Mods; pot?: number; pers?: Partial<PersonalidadeDNA>;
   exigeFamilia?: FamiliaId[]; traco?: TracoId;

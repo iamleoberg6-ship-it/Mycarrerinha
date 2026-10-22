@@ -696,4 +696,17 @@ teste("Família escolhida na criação: pai e irmãos do jeito pedido, com lado 
   assert.equal(riscoLesaoFamilia(nv), 1);
 });
 
+teste("Base no país do jogador: espanhol começa na La Lyga, uruguaio na Argentina, brasileiro na Série A", () => {
+  for (const [pais, liga] of [["ESP", "ESP1"], ["URU", "ARG1"], ["JPN", "GER1"], ["BRA", undefined]] as const) {
+    const r = criarJogador({ nome: "Teste Pais", pais, familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "MEI", semente: `base${pais}` });
+    const dados = { resultado: r, aparencia: {}, clube: null };
+    const of = ofertasDeBase(pacote, dados);
+    assert.equal(of.length, 3);
+    const s = novoJogo(pacote, dados, of[0].clubeId, `base${pais}`);
+    assert.equal(s.carreira.ligaId, liga, `${pais}: liga da base`);
+    if (liga) assert.ok(of.every((o) => mundo(pacote).info[o.clubeId].ligaId === liga), `${pais}: ofertas da liga certa`);
+    for (let i = 0; i < 6; i++) semanaAutomatica(pacote, s);
+  }
+});
+
 console.log(`\n${ok} testes passaram`);

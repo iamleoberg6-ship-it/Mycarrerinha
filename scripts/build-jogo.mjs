@@ -9,6 +9,13 @@ async function pagina(entrada, template, saida, carreira) {
   writeFileSync(saida, html);
   console.log(`${saida} (${(html.length / 1024).toFixed(1)} KB)`);
 }
+// clubes do coração da criação: só nome, apelido, cores e padrão das primeiras divisões (sem os elencos do mundo)
+{
+  const m = JSON.parse(readFileSync("data/mundo-2026.json", "utf8"));
+  const ligas = ["ARG1", "ESP1", "NED1", "GER1", "ITA1", "ENG1", "FRA1"];
+  const out = Object.fromEntries(m.ligas.filter((l) => ligas.includes(l.id)).map((l) => [l.id, l.clubes.map((c) => ({ id: c.id, nome: c.nome, apelido: c.apelido, cores: c.cores, padrao: c.padrao, forca: c.forca })).sort((a, b) => b.forca - a.forca)]));
+  writeFileSync("app/criacao/clubes-coracao.json", JSON.stringify(out));
+}
 mkdirSync("dist/jogo", { recursive: true });
 await pagina("app/jogo/main.ts", "app/jogo/template.html", "dist/jogo/index.html", true);
 await pagina("app/criacao/main.ts", "app/criacao/template.html", "dist/jogo/criacao.html", true);

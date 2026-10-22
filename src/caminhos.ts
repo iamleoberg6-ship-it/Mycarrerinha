@@ -35,7 +35,7 @@ export const FASE_INICIAL: Record<Caminho, Fase | undefined> = { base: undefined
 
 export interface InfoCaminho { id: Caminho; nome: string; idade: number; texto: string }
 export const CAMINHOS: Record<Caminho, InfoCaminho> = {
-  base: { id: "base", nome: "Base de clube", idade: 16, texto: "Três clubes da Série A querem você na base. O caminho mais direto." },
+  base: { id: "base", nome: "Base de clube", idade: 16, texto: "Três clubes da primeira divisão querem você na base. O caminho mais direto." },
   varzea: { id: "varzea", nome: "Várzea", idade: 14, texto: "Começa aos 14 no time do bairro, contra marmanjo. Jogando bem, aparece olheiro e chegam convites de peneira, da Série A à Série D." },
   eua_academia: { id: "eua_academia", nome: "EUA: academia da liga americana", idade: 14, texto: "A família se muda para os EUA. Você entra na academia de um clube da liga; se se destacar, assina profissional já aos 15." },
   eua_escola: { id: "eua_escola", nome: "EUA: high school e universidade", idade: 15, texto: "Estuda num colégio americano e joga pelo time da escola. Depois, bolsa numa universidade e, a partir do segundo ano, o draft da liga." },

@@ -9,6 +9,7 @@ import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { mundo, infoClube, idClube, ligaDoClube } from "./mundo.js";
+import { LIGA_DA_BASE, type PaisId } from "./dna.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
 import { estrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
@@ -180,12 +181,24 @@ export interface DadosCriacao { resultado: ResultadoCriacao; aparencia: unknown;
 export interface OfertaBase { clubeId: string; nome: string; apelido: string; cores: string[]; forca: number; estrutura: number; nomeEstrutura: string; moradia: string; fila: number; texto: string; cultura: Cultura; nomeCultura: string }
 
 /** Três clubes oferecem vaga na base. Promessa de clube grande recebe convites dos grandes; os outros, de clubes menores. */
+/** Liga onde a carreira começa na base: a primeira divisão do país do jogador (ou de para onde a família foi). */
+export function ligaDaBase(pacote: PacoteDados, pais: string): Liga {
+  const id = LIGA_DA_BASE[pais as PaisId], w = mundo(pacote);
+  return id && id !== "BRA1" && w.liga[id] ? w.liga[id] : liga(pacote);
+}
 export function ofertasDeBase(pacote: PacoteDados, d: DadosCriacao): OfertaBase[] {
-  const l = liga(pacote), perfil = definirPerfil(d.resultado), rng = new RNG(`ofertas|${d.resultado.escolhas.nome}|${d.resultado.potencial}`);
+  const l = ligaDaBase(pacote, d.resultado.escolhas.pais), perfil = definirPerfil(d.resultado), rng = new RNG(`ofertas|${d.resultado.escolhas.nome}|${d.resultado.potencial}`);
   const min = perfil.efeitos.forcaMinimaClubeInicial;
-  const casas = (pacote.clubes as unknown as { id: string; forca: number }[]);
-  const forcaPacote = (id: string) => casas.find((c) => c.id === id)!.forca;
-  let pool = l.clubes.filter((c) => (min ? forcaPacote(c.id) >= min : forcaPacote(c.id) <= 72));
+  let pool: Clube[];
+  if (l.id === liga(pacote).id) {
+    const casas = (pacote.clubes as unknown as { id: string; forca: number }[]);
+    const forcaPacote = (id: string) => casas.find((c) => c.id === id)!.forca;
+    pool = l.clubes.filter((c) => (min ? forcaPacote(c.id) >= min : forcaPacote(c.id) <= 72));
+  } else {
+    // fora do Brasil: promessa de clube grande vai para o terço de cima da liga; os outros, para os três quartos de baixo
+    const ord = [...l.clubes].sort((a, b) => b.forca - a.forca);
+    pool = min ? ord.slice(0, Math.max(3, Math.ceil(ord.length / 3))) : ord.slice(Math.floor(ord.length / 4));
+  }
   if (pool.length < 3) pool = [...l.clubes];
   const escolhidos: Clube[] = [];
   const coracao = l.clubes.find((c) => c.id === d.clube);
@@ -234,7 +247,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
   const pers = { ...r.personalidade, profissionalismo: clamp(r.personalidade.profissionalismo + (ef.profissionalismo ?? 0), 1, 20) };
   const semente = sementeFixa ?? `${e.nome}|${r.potencial}|${Date.now() % 100000}`;
   const caminho: Caminho = d.caminho ?? "base", fase = FASE_INICIAL[caminho];
-  const l = caminho === "base" ? liga(pacote) : ligaDoClube(pacote, clubeId), rng = new RNG(semente);
+  const l = caminho === "base" ? (liga(pacote).clubes.some((x) => x.id === clubeId) ? liga(pacote) : ligaDoClube(pacote, clubeId)) : ligaDoClube(pacote, clubeId), rng = new RNG(semente);
   const jogador: Jogador = {
     nome: e.nome, apelido: e.apelido || e.nome.split(" ")[0], posicao: e.posicao, pais: e.pais, nacionalidade: r.nacionalidade, idade: IDADE_INICIAL[caminho],
     at: { ...r.atributos }, pot: r.potencial, faixaPot: r.faixaPotencial, personalidade: pers, tracos: r.tracos, perfilId: perfil.id, perfilNome: perfil.nome,
@@ -249,7 +262,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
   const fama = ef.fama ?? 0;
   const carreira: Carreira = {
     clubeId, salario: fase ? 0 : 3000, anosContrato: fase ? 4 : 2, formacao: true, agente: ef.agente ?? "pai",
-    ...(caminho === "base" ? {} : { ligaId: l.id, fase, ...(fase !== "academia" ? { escolhaNumero: "chegada" as const } : {}), caminho: { convites: [], seq: 0, temporadasFase: 0, cidade: d.cidade } }),
+    ...(caminho === "base" ? (l.id === liga(pacote).id ? {} : { ligaId: l.id }) : { ligaId: l.id, fase, ...(fase !== "academia" ? { escolhaNumero: "chegada" as const } : {}), caminho: { convites: [], seq: 0, temporadasFase: 0, cidade: d.cidade } }),
     moral: 62, fama, seguidores: Math.round((ef.seguidores ?? 0) + 300), cansaco: 0, lesao: 0, relTecnico: clamp(50 + (ef.relTecnico ?? 0), 0, 100), formaUlt: [],
     bonusEvolucao: ef.bonusEvolucao ?? 0, patrocinioMensal: ef.patrocinioMensal ?? 0, mesesPatrocinio: ef.mesesPatrocinio ?? 0, pressao: ef.pressao ?? 0,
     vidaNoturna: r.vidaNoturnaInicial + (ef.vidaNoturna ?? 0), exposicao: ef.exposicao ?? 0,

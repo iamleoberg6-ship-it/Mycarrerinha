@@ -1,9 +1,10 @@
 declare const __CARREIRA__: boolean;
 // Tela de criação do jogador em história guiada. Usa o DNA do motor (src/dna.ts).
 // As escolhas não mostram números: o DNA é surpresa até a revelação do card.
+import CLUBES_JSON from "./clubes-coracao.json";
 import { OPCOES_PAI, OPCOES_IRMAOS, type EscolhaPai, type EscolhaIrmaos } from "../../src/familia.js";
 import {
-  PAISES, FORMACOES, FAMILIAS, TRACOS, criarJogador, formacaoPermitida,
+  PAISES, FORMACOES, FAMILIAS, TRACOS, criarJogador, formacaoPermitida, LIGA_DA_BASE, MUDOU_PARA,
   type PaisId, type FamiliaId, type FormacaoId, type Pe, type EscolhasCriacao, type ResultadoCriacao,
 } from "../../src/dna.js";
 import { ATRIBUTOS, GRUPO, peso, type Atributo, type Posicao } from "../../src/atributos.js";
@@ -50,6 +51,13 @@ const CLUBES: ClubeCoracao[] = [
   { id: "REM", nome: "Clube do Remador", apelido: "Leão Azul", camisa: { cor1: "#00205B", cor2: "#FFFFFF", estilo: "lisa" } },
   { id: "CHA", nome: "Chapecoano", apelido: "Verdão do Oeste", camisa: { cor1: "#00843D", cor2: "#FFFFFF", estilo: "lisa" } },
 ];
+/** Clubes do coração: os da primeira divisão onde o jogador cresce (Brasil: a Série A acima). */
+const CLUBES_PAIS = CLUBES_JSON as unknown as Record<string, { id: string; nome: string; apelido: string; cores: string[]; padrao: string }[]>;
+function clubesDoPais(): ClubeCoracao[] {
+  const liga = estado.pais ? LIGA_DA_BASE[estado.pais] : "BRA1";
+  if (!liga || liga === "BRA1" || !CLUBES_PAIS[liga]) return CLUBES;
+  return CLUBES_PAIS[liga].map((c) => ({ id: c.id, nome: c.nome, apelido: c.apelido, camisa: { cor1: c.cores[0], cor2: c.cores[1] ?? "#FFFFFF", estilo: (["lisa", "listrasV", "listrasH", "faixa", "faixaH"].includes(c.padrao) ? c.padrao : "lisa") as Camisa["estilo"] } }));
+}
 const BAIRRO: ClubeCoracao = { id: "", nome: "O time do bairro", apelido: "Sem clube grande", camisa: CAMISA_PADRAO };
 
 const FAMILIA_FRASE: Record<FamiliaId, string> = { humilde: "numa família humilde", media: "numa família de classe média", rica: "numa família rica" };
@@ -90,7 +98,7 @@ const PASSOS = ["Nome", "País", "Família", "Clube", "Formação", "Corpo", "Po
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const pais = () => PAISES.find((p) => p.id === estado.pais);
-const clube = () => (estado.clube === null ? null : CLUBES.find((c) => c.id === estado.clube) ?? BAIRRO);
+const clube = () => (estado.clube === null ? null : clubesDoPais().find((c) => c.id === estado.clube) ?? BAIRRO);
 const altura = (cm: number) => `${(cm / 100).toFixed(2).replace(".", ",")} m`;
 
 function foto(numero?: string, traje: "jogo" | "social" = "jogo"): string {
@@ -153,9 +161,9 @@ function telaPasso(): string {
       <span class="rotulo" style="margin-top:18px;display:block">Irmãos</span>
       <div class="opcoes">${OPCOES_IRMAOS.map((o) => opcao(o.id, "irmaos", o.nome, textoEscolha(o), estado.irmaos === o.id)).join("")}</div>`;
     case 3: {
-      const fora = estado.pais && estado.pais !== "BRA";
-      return `${cab("O clube do coração", "A primeira camisa que você ganhou foi a do…", fora ? "Aos 12 anos, a família se mudou para o Brasil. Foi lá que um time te conquistou." : "Um dia você vai jogar contra ele. Ou por ele.")}
-      <div class="opcoes grade">${[...CLUBES, BAIRRO].map((c) => opcao(c.id || "bairro", "clube", c.nome, c.apelido, estado.clube === c.id, "",
+      const fora = estado.pais ? MUDOU_PARA[estado.pais] : undefined;
+      return `${cab("O clube do coração", "A primeira camisa que você ganhou foi a do…", fora ? `Aos 12 anos, a família se mudou para ${fora}. Foi lá que um time te conquistou.` : "Um dia você vai jogar contra ele. Ou por ele.")}
+      <div class="opcoes grade">${[...clubesDoPais(), BAIRRO].map((c) => opcao(c.id || "bairro", "clube", c.nome, c.apelido, estado.clube === c.id, "",
         `<span class="escudo" style="--c1:${c.camisa.cor1};--c2:${c.camisa.cor2}"></span>`)).join("")}</div>`;
     }
     case 4:
@@ -425,6 +433,7 @@ function ligarEventos() {
 function escolher(grupo: string, id: string) {
   if (grupo === "pais") {
     estado.pais = id as PaisId;
+    if (estado.clube && !clubesDoPais().some((c) => c.id === estado.clube)) estado.clube = null;
     const p = pais()!;
     notificar(`Nascido ${p.local}`, p.nota);
   } else if (grupo === "familia") {
