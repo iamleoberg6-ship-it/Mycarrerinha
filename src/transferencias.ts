@@ -1,6 +1,8 @@
 // Mercado da carreira jogável: janelas, propostas, negociação pelo agente, empréstimo, renovação
 // e troca de agente. As fórmulas de interesse, valor e salário vêm de mercado.ts.
 import { RNG, clamp } from "./rng.js";
+import { paiExJogador } from "./familia.js";
+import { efeitosNamoro } from "./namoro.js";
 import { AGENTES, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
 import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
@@ -60,6 +62,8 @@ export const AGENTE_INFO: Record<TipoAgente, InfoAgente> = {
   top: { nome: "Superagente", quem: "Vítor Alencar", texto: "Cobra 10%. Fala com qualquer clube do mundo e arranca os melhores contratos.", requisito: { fama: 30, ovr: 72 } },
 };
 const HABILIDADE_AGENTE: Record<TipoAgente, number> = { pai: 0, iniciante: 0.1, experiente: 0.2, top: 0.3 };
+/** Habilidade de negociação: o agente, o pai ex-jogador (quando é ele quem cuida) e a namorada agente. */
+export const habilidadeAgente = (s: Save) => HABILIDADE_AGENTE[s.carreira.agente] + (s.carreira.agente === "pai" && paiExJogador(s.carreira.familia) ? 0.1 : 0) + efeitosNamoro(s.carreira.namoro).agente;
 export function podeContratarAgente(s: Save, t: TipoAgente): { ok: boolean; msg: string } {
   const c = s.carreira, r = AGENTE_INFO[t].requisito, m = mercadoDe(c);
   if (c.agente === t) return { ok: false, msg: "Já é o seu agente." };
@@ -199,10 +203,10 @@ export function negociar(pacote: PacoteDados, s: Save, id: string): R {
   if (p.negociada) return { ok: false, msg: "Essa já foi negociada." };
   if (p.tipo === "emprestimo") return { ok: false, msg: "Empréstimo não tem o que negociar." };
   p.negociada = true;
-  const rng = rngAcao(s, "negociar", id), chance = clamp(0.35 + HABILIDADE_AGENTE[s.carreira.agente] + (p.interesse - 0.6), 0.15, 0.85);
+  const rng = rngAcao(s, "negociar", id), chance = clamp(0.35 + habilidadeAgente(s) + (p.interesse - 0.6), 0.15, 0.85);
   const nome = p.tipo === "renovacao" ? `o ${nomeClube(pacote, p.clubeId)}` : `o ${nomeClube(pacote, p.clubeId)}`;
   if (rng.chance(chance)) {
-    const f = 1.06 + HABILIDADE_AGENTE[s.carreira.agente] * 0.3;
+    const f = 1.06 + habilidadeAgente(s) * 0.3 + efeitosNamoro(s.carreira.namoro).luvas * 0.2;
     p.salario = Math.round(Math.min(p.salario * f, Math.max(p.salario, tetoSalarial(mundo(pacote).clube[p.clubeId], mundo(pacote).liga[p.ligaId]) * 1.05))); p.luvas = Math.round(p.luvas * (f + 0.1));
     return { ok: true, msg: `Deu certo: ${nome} subiu o salário para R$ ${p.salario.toLocaleString("pt-BR")}.` };
   }

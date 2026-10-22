@@ -7,6 +7,8 @@ export type Fase = "base" | "inicio" | "estabelecido" | "estrela" | "veterano";
 export interface CtxEvento {
   fase: Fase[]; idade: number; fama: number; salario: number; saldo: number; exterior: boolean; golfo: boolean; titular: boolean;
   nome: string; clube: string; cidade: string; liga: string; temporada: number; seguidores: number;
+  /** família: pai com mais idade, irmão mais novo que joga, irmão profissional, proposta na mesa */
+  paiVelho?: boolean; irmaoJoga?: boolean; irmaoPro?: boolean; proposta?: boolean;
 }
 export interface EfeitoEvento {
   /** dinheiro em R$ (negativo = gasto) ou em salários do jogador (sal) */
@@ -16,6 +18,8 @@ export interface EfeitoEvento {
   evolucao?: number;
   /** patrocínio: fração do salário por mês, por N meses (piso em reais para quem ganha pouco) */
   patrocinio?: { pct: number; piso: number; meses: number };
+  /** família: relação com pai e mãe, com o irmão do evento; potencial do irmão mais novo; o irmão larga o futebol */
+  pais?: number; irmao?: number; irmaoPot?: number; irmaoPara?: boolean;
 }
 export interface OpcaoEvento { id: string; rotulo: string; resultado: string; efeitos: EfeitoEvento; risco?: { chance: number; resultado: string; efeitos: EfeitoEvento } }
 export interface EventoVida {
@@ -164,6 +168,37 @@ export const EVENTOS: EventoVida[] = [
     op("praia", "Praia, e não se fala mais nisso", "O agente riu. Você não.", { moral: 4 }),
   ], { unico: true }),
 ];
+// família (pai, mãe e irmãos sorteados no começo da carreira)
+const TODAS: Fase[] = ["base", "inicio", "estabelecido", "estrela", "veterano"];
+EVENTOS.push(
+  ev("aniversario-mae", TODAS, "Aniversário da sua mãe", "Hoje é aniversário da sua mãe, e o treino do {clube} é à tarde.", [
+    op("festa", "Fazer uma festa surpresa", "A casa encheu de tia, primo e vizinho. Sua mãe chorou no parabéns.", { sal: -0.3, moral: 5, pais: 8 }),
+    op("flores", "Ligar cedo e mandar flores", "Ela mandou foto das flores para o grupo da família inteira.", { dinheiro: -400, moral: 2, pais: 4 }),
+    op("esquecer", "Deixar para depois", "Ela não reclamou. Seu pai reclamou por ela.", { moral: -3, pais: -10 }),
+  ]),
+  ev("pai-saude", TODAS, "Seu pai no hospital", "Seu pai passou mal e ficou internado. Os médicos pedem exames caros.", [
+    op("melhor", "Pagar o melhor hospital", "Ele saiu em uma semana, mandando você voltar a treinar.", { sal: -1.5, moral: 2, pais: 12 }),
+    op("plano", "Pagar um plano de saúde", "Tratamento bom, sem luxo. Ele já está em casa.", { dinheiro: -8000, pais: 6 }),
+    op("publico", "Deixar com o hospital público", "Demorou, mas ele está bem. A família comentou.", { moral: -3, pais: -8 }),
+  ], { quando: (c) => !!c.paiVelho }),
+  ev("irmao-largar", TODAS, "Seu irmão quer largar o futebol", "Seu irmão mais novo cansou de ser cobrado e diz que quer largar a bola para estudar.", [
+    op("convencer", "Convencer a continuar", "Ele voltou para o treino. Sem muita vontade, mas voltou.", { irmao: -4 }),
+    op("escolinha", "Pagar uma escolinha particular", "Treinador novo, chuteira nova. O brilho nos olhos voltou.", { dinheiro: -6000, irmao: 8, irmaoPot: 3 }),
+    op("apoiar", "Apoiar a decisão dele", "Ele vai fazer cursinho. Disse que você é o melhor irmão do mundo.", { irmao: 10, irmaoPara: true }),
+  ], { quando: (c) => !!c.irmaoJoga }),
+  ev("pai-transferencia", ["inicio", "estabelecido", "estrela", "veterano"], "Seu pai quer opinar", "Tem proposta na mesa e seu pai ligou: quer conversar antes de você decidir.", [
+    op("ouvir", "Ouvir o pai com calma", "Ele falou da cidade, do clube e da sua mãe. Você ficou mais tranquilo.", { pais: 6, moral: 2 }),
+    op("sozinho", "Decidir sozinho", "A carreira é sua. Ele entendeu, mas ficou magoado.", { pais: -5 }),
+  ], { quando: (c) => !!c.proposta }),
+  ev("visita-exterior", ["inicio", "estabelecido", "estrela", "veterano"], "Saudade de casa", "A família quer vir passar as férias com você em {cidade}.", [
+    op("pagar", "Pagar as passagens de todo mundo", "Duas semanas de casa cheia e comida de mãe.", { sal: -0.5, moral: 6, pais: 10 }),
+    op("adiar", "Pedir para virem no ano que vem", "Sua mãe disse que tudo bem. Não estava tudo bem.", { pais: -6, moral: -2 }),
+  ], { quando: (c) => c.exterior }),
+  ev("irmao-ajuda", TODAS, "Seu irmão precisa de ajuda", "Seu irmão se machucou e o clube dele não paga a fisioterapia.", [
+    op("pagar", "Pagar a fisioterapia", "Ele voltou a jogar em dois meses e postou agradecendo.", { dinheiro: -12000, irmao: 10 }),
+    op("fisio", "Pedir ajuda ao fisioterapeuta do seu clube", "Seu fisio atendeu ele de graça nas folgas.", { irmao: 6, relTecnico: -1 }),
+  ], { quando: (c) => !!c.irmaoPro }),
+);
 export const EVENTO: Record<string, EventoVida> = Object.fromEntries(EVENTOS.map((e) => [e.id, e]));
 
 export function fasesDe(c: Omit<CtxEvento, "fase">, formacao: boolean): Fase[] {

@@ -8,6 +8,7 @@
 //      liga; quem é escolhido cedo e tem potencial ganha o contrato especial de jovem talento.
 // As fases amadoras (várzea, colegial, universidade) não pagam salário: a família banca o custo de vida.
 import { RNG, clamp } from "./rng.js";
+import { paiTreinador } from "./familia.js";
 import type { Clube, Liga, PacoteDados } from "./liga.js";
 import { mundo, infoClube } from "./mundo.js";
 import { CIDADES_VARZEA, infoLiga } from "./ligas.js";
@@ -137,7 +138,8 @@ export function semanaDoCaminho(pacote: PacoteDados, s: Save, nota: number, jogo
   }
   if (c.fase !== "varzea" || !jogou || e.convites.length >= 3) return;
   const rng = rngDe(s, "olheiro"), n = nivelVisto(s);
-  const p = 0.015 + Math.max(0, nota - 7) * 0.05 + Math.max(0, n - 50) * 0.004;
+  // pai treinador conhece os olheiros da região: eles aparecem mais
+  const p = (0.015 + Math.max(0, nota - 7) * 0.05 + Math.max(0, n - 50) * 0.004) * (paiTreinador(c.familia) ? 1.5 : 1);
   if (!rng.chance(p)) return;
   const cv = s.jogador.idade >= 18 ? conviteProfissional(pacote, s, rng, n >= 56 ? ["BRA3", "BRA4"] : ["BRA4"], "Os olheiros não param de falar de você na várzea.") : convitePeneira(pacote, s, rng);
   if (cv) { eventos.push(`Olheiro na arquibancada: ${cv.titulo.toLowerCase()}!`); noticia(s, "clube", cv.titulo, cv.texto); }

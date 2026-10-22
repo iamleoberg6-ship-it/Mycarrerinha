@@ -21,7 +21,10 @@ import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararP
 import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSemana, melhoresAmigos, ovr as ovrJ, ovrEm } from "../src/jogo.js";
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
-import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance } from "../src/jogo.js";
+import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
+import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia } from "../src/familia.js";
+import { efeitosNamoro, IDADE_MINIMA_APP } from "../src/namoro.js";
+import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
@@ -596,6 +599,80 @@ teste("Número da camisa: únicos no elenco, saídas liberam número, escolha ao
     assert.equal(c.escolhaNumero, "chegada");
     assert.equal(escolherNumero(pacote, s, 10).ok, false, "a 10 é do Mesi");
   }
+});
+
+teste("Família: pai, mãe e irmãos sorteados; irmão mais velho jogador num clube; irmão mais novo vai para a base", () => {
+  let comIrmaoPro = 0, comNovo = 0, treinador = 0, total = 0;
+  for (let i = 0; i < 300; i++) {
+    const f = gerarFamilia(pacote, { semente: `fam${i}`, nome: "Lucas Andrade", pais: i % 3 ? "BRA" : "ARG", origem: ["humilde", "media", "rica"][i % 3], idade: 16, ano: 2026 });
+    total++;
+    assert.ok(f.membros.some((m) => m.id === "pai") && f.membros.some((m) => m.id === "mae"));
+    assert.ok(f.membros.length <= 4);
+    for (const m of f.membros) {
+      assert.ok(m.relacao >= 0 && m.relacao <= 100);
+      if (m.parentesco === "pai" || m.parentesco === "mae") assert.ok(idadeDe(m, 2026) >= 34, "pais adultos");
+      if (m.futebol?.fase === "pro") { comIrmaoPro++; assert.ok(m.futebol.clubeId && mundo(pacote).clube[m.futebol.clubeId], "irmão joga num clube que existe"); assert.ok(idadeDe(m, 2026) >= 18); }
+      if (m.futebol && m.futebol.fase !== "pro") comNovo++;
+    }
+    if (f.membros[0].traco === "treinador") treinador++;
+  }
+  assert.ok(comIrmaoPro > 5 && comIrmaoPro < 80, `irmãos profissionais: ${comIrmaoPro}`);
+  assert.ok(comNovo > 30, `irmãos mais novos que jogam: ${comNovo}`);
+  assert.ok(treinador > 20 && treinador < 90, `pais treinadores: ${treinador}`);
+  // na carreira: sorteada sozinha, ações gastam o limite da semana, indicar o irmão à base
+  const r = criarJogador({ nome: "Lucas Andrade", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "familia-teste" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "familia-teste");
+  const f = familiaDe(pacote, s);
+  assert.ok(agirFamiliaJogo(pacote, s, "mae", "ligar").ok);
+  assert.ok(agirFamiliaJogo(pacote, s, "pai", "ligar").ok);
+  assert.equal(agirFamiliaJogo(pacote, s, "mae", "ligar").ok, false, "só duas por semana");
+  f.membros.push({ id: "irmT", parentesco: "irmao", nome: "Davi Andrade", nasc: 2026 - 15, profissao: "Estudante", relacao: 70, contato: 0, futebol: { fase: "amador", posicao: "MEI", ovr: 50, pot: 92 } });
+  s.carreira.formacao = false; s.carreira.semana = 3; s.carreira.temporada = 0;
+  const ctx = { semanaAbs: 99, ano: 2026, idadeJogador: 18, exterior: false, salario: 20000, saldo: 0, profissional: true, clubeId: "FLA", forcaClube: 78, relTecnico: 70, fama: 30, jogoEmCasa: false, janela: false, temporada: 0 };
+  assert.ok(acoesDe(f.membros.at(-1)!, ctx).includes("indicarBase"));
+  // irmão na base sobe a profissional aos 18 se for bom o bastante
+  const irm = f.membros.at(-1)!; irm.futebol = { fase: "base", posicao: "MEI", ovr: 70, pot: 92, clubeId: "FLA" }; irm.nasc = 2026 - 17;
+  const ev: string[] = []; temporadaFamilia(pacote, f, new RNG2("t"), 2027, "BRA", ev);
+  assert.equal(irm.futebol!.fase, "pro"); assert.ok(ev.some((e) => e.includes("primeiro contrato")));
+  // a semana roda com a família sem quebrar (moral dentro do limite)
+  for (let w = 0; w < 6; w++) semanaAutomatica(pacote, s);
+  assert.ok(s.carreira.moral >= 0 && s.carreira.moral <= 100);
+});
+
+teste("Namoro: app só para maiores; match, encontro, namoro; profissão mexe no jogo; quem some leva fora", () => {
+  const r = criarJogador({ nome: "Rafael Dias", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "PON", semente: "namoro-teste" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "namoro-teste");
+  s.jogador.idade = 17;
+  assert.equal(perfisDaSemana(pacote, s).length, 0, "menor de idade não vê o app");
+  s.jogador.idade = 20; s.carreira.fama = 60; s.casa.saldo = 1e6; s.carreira.salario = 50000;
+  const perfis = perfisDaSemana(pacote, s);
+  assert.equal(perfis.length, 6);
+  assert.ok(perfis.every((p) => p.idade >= IDADE_MINIMA_APP), "todas adultas");
+  let matches = 0;
+  for (let w = 0; w < 8 && !matches; w++) { for (const p of perfisDaSemana(pacote, s).slice()) if (curtirPerfil(pacote, s, p.id, true).match) matches++; s.carreira.semana++; }
+  assert.ok(matches > 0, "com fama alta, sai match");
+  const n = namoroDe(s.carreira), m = n.matches[0];
+  m.relacao = 80; m.conversas = 3;
+  assert.ok(agirNamoroJogo(pacote, s, m.id, "convidar").ok);
+  if (n.par) {
+    n.par.relacao = 95; s.carreira.semana++;
+    agirNamoroJogo(pacote, s, n.par.id, "pedirNamoro");
+    assert.equal(n.par.etapa, "namorando");
+    n.par.profissao = "psicologa"; assert.ok(efeitosNamoro(n).moral > efeitosNamoro({ ...n, par: { ...n.par, profissao: "estudante" } }).moral, "psicóloga dá moral");
+    n.par.profissao = "influencer"; assert.ok(efeitosNamoro(n).fama > 0, "influencer dá fama");
+    n.par.relacao = 6; s.carreira.vidaNoturna = 90;
+    for (let w = 0; w < 4 && n.par; w++) semanaAutomatica(pacote, s);
+    assert.equal(n.par, undefined, "relação fria demais termina");
+    assert.ok(n.ex.length >= 1);
+  }
+});
+
+teste("Busca do celular: qualquer jogador de qualquer clube vira contato", () => {
+  const r = criarJogador({ nome: "Teste Busca", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "busca" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "busca");
+  const cl = mundo(pacote).liga.ENG2.clubes[0], alvo = cl.elenco[5].nome;
+  assert.ok(agirRel2(pacote, s, alvo, "mensagem", cl.id).ok);
+  assert.ok(s.carreira.relacoes!.lista[alvo], "virou contato");
 });
 
 console.log(`\n${ok} testes passaram`);

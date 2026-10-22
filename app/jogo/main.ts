@@ -11,7 +11,10 @@ import {
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
+  familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo,
 } from "../../src/jogo";
+import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
+import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg } from "./poster";
 import { previaTatuagem } from "../visual/corpo";
@@ -25,7 +28,7 @@ import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao,
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
 import { CAMINHOS, NOME_FASE, caminhosDisponiveis, cidadeDaVarzea, caminhoDe, aceitarConvite, recusarConvite, type Caminho } from "../../src/caminhos";
 import { CIDADES_VARZEA, DA_CIDADE } from "../../src/ligas";
-import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, type AcaoRel, type Relacao } from "../../src/relacoes";
+import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, alternarFavorito, type AcaoRel, type Relacao } from "../../src/relacoes";
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
 import { infoClube, mundo } from "../../src/mundo";
@@ -170,8 +173,8 @@ function telaSemana(s: Save): string {
   </section>
   <button class="botao grande" data-acao="jogar">${jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
 
-  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Amigos"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
-  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaAmigos(s) : abaCasa(s)}</section>
+  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Celular"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
+  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaCasa(s)}</section>
   <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
 }
 
@@ -348,11 +351,73 @@ function camisaMini(clubeId: string, numero: number): string {
   const [a, b] = cores(clubeId), c2 = b ?? "#FFFFFF";
   return `<svg class="camisa-mini" viewBox="0 0 40 36" aria-hidden="true"><path d="M12 2 L4 7 L1 15 L7 17 L9 13 L9 34 L31 34 L31 13 L33 17 L39 15 L36 7 L28 2 Q20 7 12 2 Z" fill="${a}" stroke="#0A0A0A" stroke-width="1.6" stroke-linejoin="round"/><text x="20" y="27" text-anchor="middle" font-family="Big Shoulders Display,sans-serif" font-weight="800" font-size="13" fill="${c2}" stroke="#0A0A0A" stroke-width=".6">${numero}</text></svg>`;
 }
-function linhaRel(s: Save, x: Relacao, acoes: AcaoRel[], extra = ""): string {
+function linhaRel(s: Save, x: Relacao, acoes: AcaoRel[], extra = "", clubeBusca?: string): string {
   const e = estrelasDoMundo(pacote).find((k) => k.nome === x.nome), cor = x.nivel >= 80 ? "#E3B341" : x.nivel >= 60 ? "#74D394" : x.nivel >= 40 ? "#6FB7E0" : "#8A968E";
-  return `<div class="rel-linha"><div class="rel-topo">${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><b>${esc(x.nome)}</b>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${esc(nomeDe(x.clubeId))}${extra}</small></div>
+  const conhecido = !!relacoesDe(s.carreira).lista[x.nome], fav = relacoesDe(s.carreira).favoritos?.includes(x.nome);
+  return `<div class="rel-linha"><div class="rel-topo">${conhecido ? `<button class="fav${fav ? " on" : ""}" data-fav="${esc(x.nome)}" aria-label="${fav ? "Tirar dos favoritos" : "Pôr nos favoritos"}" aria-pressed="${!!fav}">★</button>` : ""}${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><b>${esc(x.nome)}</b>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${esc(nomeDe(x.clubeId))}${extra}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloNivel(x.nivel)}</span><span class="rel-barra"><i style="width:${x.nivel}%;background:${cor}"></i></span></div></div>
-    <div class="rel-acoes">${acoes.map((a) => `<button class="chip" data-rel="${esc(x.nome)}" data-op="${a}">${NOME_ACAO_REL[a]}</button>`).join("")}</div></div>`;
+    <div class="rel-acoes">${acoes.map((a) => `<button class="chip" data-rel="${esc(x.nome)}" data-op="${a}"${clubeBusca ? ` data-clube="${clubeBusca}"` : ""}>${NOME_ACAO_REL[a]}</button>`).join("")}</div></div>`;
+}
+
+// ------------------------------------------------------------------ celular: contatos, busca e app de namoro
+let telaCel: "contatos" | "busca" | "match" = "contatos", buscaLiga: string | undefined, buscaClube: string | undefined;
+const iniciais = (nome: string) => nome.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n >= 40 ? "#6FB7E0" : n >= 20 ? "#C9A24D" : "#EC7D69");
+function linhaFam(s: Save, m: Familiar): string {
+  const ctx = ctxFamilia(pacote, s), ano = ANO_INICIAL + s.carreira.temporada, fb = m.futebol, cor = corRelFam(m.relacao);
+  const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${esc(nomeDe(fb.clubeId))}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
+  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome"><b>${esc(m.nome)}</b>${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
+    <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
+    <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
+}
+function abaCelular(s: Save): string {
+  const abas = `<div class="cel-abas" role="tablist">${([["contatos", "Contatos"], ["busca", "Buscar jogador"], ["match", "Match"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
+  const msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
+  msgRel = undefined;
+  return `<div class="celular">${abas}${msg}${telaCel === "busca" ? celBusca(s) : telaCel === "match" ? celMatch(s) : celContatos(s)}</div>`;
+}
+function celContatos(s: Save): string {
+  const c = s.carreira, rr = relacoesDe(c), fam = familiaDe(pacote, s);
+  const favs = (rr.favoritos ?? []).map((n) => rr.lista[n]).filter(Boolean) as Relacao[];
+  const famFeitas = fam.semana === semanaAbsJogo(c) ? fam.feitas.length : 0;
+  return `${favs.length ? `<p class="rotulo">Favoritos</p>${favs.map((x) => linhaRel(s, x, x.companheiro ? ["mensagem", "jantar"] : ["mensagem"])).join("")}` : ""}
+    <p class="rotulo" style="margin-top:${favs.length ? 14 : 0}px">Família <small>· ${MAX_ACOES_FAMILIA - famFeitas} ${MAX_ACOES_FAMILIA - famFeitas === 1 ? "conversa livre" : "conversas livres"} nesta semana</small></p>
+    <p class="sub">Família perto e bem cuidada dá moral. A ajuda mensal (em Jogador › Padrão de vida) aproxima os pais; morar longe e sumir afasta.</p>
+    ${fam.membros.map((m) => linhaFam(s, m)).join("")}
+    <p class="rotulo" style="margin-top:14px">Amigos do futebol</p>${abaAmigos(s)}`;
+}
+function celBusca(s: Save): string {
+  const w = mundo(pacote), rr = relacoesDe(s.carreira);
+  const ligas = w.ligas.map((l) => infoLiga(l.id));
+  const chipsLiga = `<div class="chips" style="flex-wrap:wrap">${ligas.map((l) => `<button class="chip${buscaLiga === l.id ? " ativo" : ""}" data-bliga="${l.id}">${esc(l.curto)}</button>`).join("")}</div>`;
+  if (!buscaLiga || !w.liga[buscaLiga]) return `<p class="sub">Escolha a liga, depois o clube, e ache qualquer jogador.</p>${chipsLiga}`;
+  const l = w.liga[buscaLiga];
+  const chipsClube = `<div class="busca-clubes">${l.clubes.map((cl) => `<button class="busca-clube${buscaClube === cl.id ? " ativo" : ""}" data-bclube="${cl.id}">${escudo(cl.id)}<span>${esc(cl.nome)}</span></button>`).join("")}</div>`;
+  const cl = buscaClube ? w.clube[buscaClube] : undefined;
+  const elenco = cl ? [...cl.elenco].sort((a, b) => b.ovr - a.ovr).map((j) => {
+    const x = rr.lista[j.nome] ?? { nome: j.nome, clubeId: cl.id, nivel: 0, desde: 0 };
+    return linhaRel(s, x, cl.id === s.carreira.clubeId ? ["mensagem", "jantar"] : ["mensagem"], ` · ${NOME_POS[j.posicao] ?? "Goleiro"} · OVR ${j.ovr} · ${j.idade} anos`, cl.id);
+  }).join("") : `<p class="sub">Toque num clube para ver o elenco.</p>`;
+  return `${chipsLiga}<p class="rotulo" style="margin-top:12px">${esc(infoLiga(l.id).nome)}</p>${chipsClube}${cl ? `<p class="rotulo" style="margin-top:12px">Elenco do ${esc(cl.nome)}</p>` : ""}${elenco}`;
+}
+function cartaoPar(p: Par | Perfil, botoes: string, extra = ""): string {
+  const prof = PROFISSOES[p.profissao];
+  return `<div class="perfil-app"><span class="avatar-app">${esc(iniciais(p.nome))}</span><div class="perfil-app-txt"><b>${esc(p.nome.split(" ")[0])}, ${p.idade}</b><small>${esc(prof.nome)} · ${esc(p.cidade)} · ${esc(p.jeito)}</small>
+    <p>“${esc(p.bio)}”</p><small class="efeito-prof">${esc(prof.efeito)}</small>${extra}</div><div class="perfil-app-botoes">${botoes}</div></div>`;
+}
+function celMatch(s: Save): string {
+  if (s.jogador.idade < IDADE_MINIMA_APP) return `<p class="sub">O app de namoro é só a partir dos ${IDADE_MINIMA_APP} anos.</p>`;
+  const c = s.carreira, n = namoroDe(c), par = n.par, ab = semanaAbsJogo(c);
+  const feitas = n.semana === ab ? n.feitas : 0;
+  const acoes = (p: Par) => acoesNamoro(p, ab).map((a) => `<button class="chip${a === "terminar" ? " perigo" : ""}" data-nam="${p.id}" data-op="${a}">${NOME_ACAO_NAMORO[a as AcaoNamoro]}</button>`).join("");
+  const barra = (p: Par) => `<div class="rel-nivel" style="margin-top:6px"><span style="color:${corRelFam(p.relacao)}">${NOME_ETAPA[p.etapa]} · ${Math.round(p.relacao)}</span><span class="rel-barra"><i style="width:${p.relacao}%;background:${corRelFam(p.relacao)}"></i></span></div>`;
+  const parHtml = par ? `<p class="rotulo">${par.etapa === "saindo" ? "Saindo com" : par.etapa === "casados" ? "Sua esposa" : par.etapa === "noivos" ? "Sua noiva" : "Sua namorada"}</p>${cartaoPar(par, "", barra(par))}<div class="rel-acoes" style="margin-left:0">${acoes(par)}</div>
+    <p class="sub" style="margin-top:6px">${MAX_ACOES_NAMORO - feitas} ${MAX_ACOES_NAMORO - feitas === 1 ? "programa livre" : "programas livres"} nesta semana. Sem atenção a relação esfria; vida noturna demais incomoda.</p>` : "";
+  if (par && par.etapa !== "saindo") return parHtml;
+  const perfis = perfisDaSemana(pacote, s);
+  const deck = perfis.length ? perfis.map((p) => cartaoPar(p, `<button class="botao sec peq" data-curtir="${p.id}" data-sim="0">Passar</button><button class="botao peq" data-curtir="${p.id}" data-sim="1">Curtir</button>`, `<small class="sub">Chance de match: ${Math.round(100 * chanceMatch(p, c.fama))}%</small>`)).join("") : `<p class="sub">Acabaram os perfis desta semana. Novos chegam na próxima.</p>`;
+  const matches = n.matches.length ? `<p class="rotulo" style="margin-top:14px">Matches</p>${n.matches.map((m) => `${cartaoPar(m, "", `<small class="sub">${m.conversas} ${m.conversas === 1 ? "conversa" : "conversas"}${m.conversas < 2 ? " · converse mais antes de chamar para sair" : ""}</small>`)}<div class="rel-acoes" style="margin-left:0">${acoes(m)}</div>`).join("")}` : "";
+  return `${parHtml}<p class="rotulo"${par ? ' style="margin-top:14px"' : ""}>Perfis da semana</p><p class="sub">Fama ajuda no match. A profissão dela mexe no seu jogo.</p>${deck}${matches}`;
 }
 function abaAmigos(s: Save): string {
   const c = s.carreira, rr = relacoesDe(c), lista = Object.values(rr.lista), est = estrelasDoMundo(pacote);
@@ -367,7 +432,6 @@ function abaAmigos(s: Save): string {
   const camisas = lista.filter((x) => x.camisa).length;
   return `<div class="amigos-topo"><div><b>${MAX_ACOES_SEMANA - usadas}</b><span>conversas livres nesta semana</span></div><div><b>${lista.filter((x) => x.nivel >= 40).length}</b><span>amigos</span></div><div><b>${camisas}</b><span>camisas trocadas</span></div></div>
     <p class="sub">A convivência no clube cria amizade sozinha; sair com os amigos no tempo livre acelera. Estrelas respondem mais a quem tem fama. Amigo de verdade (Parceiro, 60+) pode te indicar ao clube dele na janela.</p>
-    ${msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : ""}
     <p class="rotulo" style="margin-top:14px">Companheiros de clube</p>
     ${comp.length ? comp.slice(0, 10).map((x) => linhaRel(s, x, ["mensagem", "jantar"])).join("") : `<p class="sub">Jogue algumas semanas para conhecer o elenco.</p>`}
     ${ex.length ? `<p class="rotulo" style="margin-top:14px">Ex-companheiros</p>${ex.slice(0, 8).map((x) => linhaRel(s, x, x.nivel >= 60 && jan ? ["mensagem", "indicacao"] : ["mensagem"])).join("")}` : ""}
@@ -693,7 +757,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -742,8 +806,15 @@ document.addEventListener("click", (ev) => {
     const rr = d.op === "aceitar" ? aceitarConvite(pacote, save, d.convite) : recusarConvite(pacote, save, d.convite);
     msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  else if (d.cel) { telaCel = d.cel as typeof telaCel; render(); }
+  else if (d.fav && save) { alternarFavorito(relacoesDe(save.carreira), d.fav); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.fam && save) { const r = agirFamiliaJogo(pacote, save, d.fam, d.op as AcaoFamilia); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.bliga) { buscaLiga = d.bliga; buscaClube = undefined; render(); }
+  else if (d.bclube) { buscaClube = d.bclube; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.curtir && save) { const r = curtirPerfil(pacote, save, d.curtir, d.sim === "1"); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.nam && save) { const r = agirNamoroJogo(pacote, save, d.nam, d.op as AcaoNamoro); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.rel && save) {
-    const r = agirRelacao(pacote, save, d.rel, d.op as AcaoRel); msgRel = { texto: r.msg, ok: r.ok };
+    const r = agirRelacao(pacote, save, d.rel, d.op as AcaoRel, d.clube); msgRel = { texto: r.msg, ok: r.ok };
     if (d.op === "camisa" && aba !== "amigos") msgRel = undefined;
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }

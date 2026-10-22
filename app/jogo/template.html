@@ -233,6 +233,28 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 .rel-nivel { width: 110px; display: grid; gap: 4px; font-size: 12px; text-align: right; font-weight: 600; }
 .rel-barra { display: block; height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; } .rel-barra i { display: block; height: 100%; }
 .rel-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0 48px; } .rel-acoes .chip { padding: 5px 10px; font-size: 12px; }
+
+/* celular: contatos, busca e app de namoro */
+.celular { display: flex; flex-direction: column; gap: 6px; }
+.cel-abas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 4px; margin-bottom: 8px; }
+.cel-abas button { background: transparent; border: 0; color: var(--giz-2); border-radius: 999px; padding: 8px 6px; font: 600 13px var(--texto); cursor: pointer; }
+.cel-abas button.ativo { background: var(--ouro); color: var(--tinta); }
+.fav { flex: none; background: none; border: 0; color: #4A5A53; font-size: 18px; line-height: 1; padding: 4px; cursor: pointer; align-self: center; }
+.fav.on { color: var(--ouro); }
+.avatar-fam { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--campo-3); border: 2px solid var(--c); color: var(--giz); font: 800 14px var(--display); }
+.busca-clubes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.busca-clube { display: flex; align-items: center; gap: 8px; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 10px; padding: 6px 8px; color: var(--giz); font: 600 13px var(--texto); cursor: pointer; text-align: left; }
+.busca-clube.ativo { border-color: var(--ouro); }
+.busca-clube svg { width: 24px; height: 24px; flex: none; }
+.perfil-app { display: grid; grid-template-columns: 52px 1fr; gap: 10px; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 14px; padding: 10px; margin-top: 8px; }
+.avatar-app { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #C2507A, #7A3FA0); color: #fff; font: 800 18px var(--display); }
+.perfil-app-txt { display: grid; gap: 2px; min-width: 0; }
+.perfil-app-txt p { margin: 4px 0; font-style: italic; color: var(--giz); font-size: 14px; }
+.perfil-app-txt small { color: var(--giz-2); font-size: 12.5px; }
+.efeito-prof { color: var(--ouro-claro) !important; }
+.perfil-app-botoes { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+.perfil-app-botoes:empty { display: none; }
+.chip.perigo { border-color: #8C3A30; color: #F6C2B8; }
 @media (max-width: 420px) { .pos-linha { grid-template-columns: 100px 1fr 34px 24px 76px; font-size: 12px; } .rel-nivel { width: 86px; } .rel-acoes { margin-left: 0; } }
 
 /* caminhos e convites */

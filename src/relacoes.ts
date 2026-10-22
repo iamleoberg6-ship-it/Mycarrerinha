@@ -38,7 +38,13 @@ export const numeroDe = (nome: string) => { let h = 0; for (const ch of nome) h 
 export const ehEstrela = (pacote: PacoteDados, nome: string) => estrelas(pacote).some((e) => e.nome === nome);
 
 // ------------------------------------------------------------------ estado
-export interface EstadoRelacoes { lista: Record<string, Relacao>; semana: number; feitas: string[]; camisaPedida?: string }
+export interface EstadoRelacoes { lista: Record<string, Relacao>; semana: number; feitas: string[]; camisaPedida?: string; favoritos?: string[] }
+/** Favoritos: os contatos de acesso rápido no celular (melhores amigos ou quem você quer perto). */
+export function alternarFavorito(r: EstadoRelacoes, nome: string): boolean {
+  const f = (r.favoritos ??= []), i = f.indexOf(nome);
+  if (i >= 0) { f.splice(i, 1); return false; }
+  f.push(nome); return true;
+}
 export const relacoesDe = (c: { relacoes?: EstadoRelacoes }): EstadoRelacoes => (c.relacoes ??= { lista: {}, semana: -1, feitas: [] });
 
 export function relacao(r: EstadoRelacoes, nome: string, clubeId: string, ano: number, companheiro = false): Relacao {
