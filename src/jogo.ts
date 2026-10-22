@@ -10,6 +10,7 @@ import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { mundo, infoClube, idClube, ligaDoClube } from "./mundo.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
+import { COPAS, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
 import { estrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
@@ -39,7 +40,9 @@ export interface Jogador {
   familiaridade?: Familiaridade;
 }
 export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number; baseNotas?: number[] }
-export interface ResumoTemporada { fase?: Fase; ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
+/** Campanha numa copa continental (na temporada). */
+export interface CampanhaCopa { id: CopaId; nome: string; fase: string; campeao: boolean; jogos: number; gols: number; assist: number }
+export interface ResumoTemporada { copa?: CampanhaCopa; fase?: Fase; ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
 /** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
 export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" };
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
@@ -47,6 +50,10 @@ export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
   suspensao?: number;
+  /** copas continentais da temporada, suspensão na copa, estatísticas na copa, tabela final da temporada passada (vagas)
+   *  e o jogo de quarta já jogado nesta semana (entra no resumo da semana) */
+  copas?: Partial<Record<CopaId, EstadoCopa>>; suspensaoCopa?: number; statsCopa?: { jogos: number; gols: number; assist: number; notas: number[] };
+  tabelaAnterior?: { ligaId: string; ordem: string[] }; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
   ligaId?: string;
   /** propostas, empréstimo, histórico de transferências, agente */
@@ -311,11 +318,12 @@ export type Escalacao = "titular" | "banco" | "base" | "fora" | "lesionado" | "s
 export const NOME_ESCALACAO: Record<Escalacao, string> = {
   titular: "Titular", banco: "No banco", base: "Jogo da base", fora: "Fora dos relacionados", lesionado: "Lesionado", semJogo: "Sem jogo", suspenso: "Suspenso",
 };
-export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carreira.cansaco): Escalacao {
+export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carreira.cansaco, copa = false): Escalacao {
   const c = s.carreira, j = s.jogador;
   if (c.lesao > 0) return "lesionado";
-  if (c.semana < SEMANAS_PRE) return "semJogo";
-  if (c.suspensao) return "suspenso";
+  if (!copa && c.semana < SEMANAS_PRE) return "semJogo";
+  if (copa ? c.suspensaoCopa : c.suspensao) return "suspenso";
+  if (copa) { const e = escalacao(pacote, { ...s, carreira: { ...c, suspensao: 0 } }, cansacoPrevisto); return e === "base" ? "fora" : e; }
   const elenco = elencoAtual(pacote, s);
   const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade);
   const rank = elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
@@ -332,6 +340,34 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   return "fora";
 }
 
+// ------------------------------------------------------------------ copas continentais
+/** As copas da temporada (criadas no começo dela pela tabela final da anterior). */
+export function copasDe(pacote: PacoteDados, s: Save): Partial<Record<CopaId, EstadoCopa>> {
+  const c = s.carreira, w = mundo(pacote);
+  const algum = Object.values(c.copas ?? {})[0];
+  if (c.copas && algum && algum.temporada === c.temporada) return c.copas;
+  const fonte = { ligas: w.liga, tabelaReal: c.tabelaAnterior, semente: s.semente, temporada: c.temporada };
+  const forca = (id: string) => w.clube[id]?.forca ?? 60, pais = (id: string) => w.clube[id]?.pais ?? "";
+  c.copas = Object.fromEntries((Object.keys(COPAS) as CopaId[]).map((id) => [id, novaCopa(id, c.temporada, classificados(fonte, id), forca, pais, regiaoNaCopa, s.semente)]));
+  return c.copas;
+}
+/** Jogo da copa do clube do jogador nesta semana (quarta), se ele é profissional e o clube está na copa. */
+export function jogoCopaDaSemana(pacote: PacoteDados, s: Save): { copa: EstadoCopa; jogo: JogoCopa } | undefined {
+  const c = s.carreira;
+  if (c.fase) return;
+  const r = jogoDoClubeNaSemana(copasDe(pacote, s), c.clubeId, c.semana);
+  return r && r.jogo.gc === undefined ? r : undefined;
+}
+/** Dias da semana (0 = segunda) travados por jogo de copa: só se joga. */
+export function diasTravados(s: Save): number[] {
+  const c = s.carreira;
+  if (c.fase) return [];
+  const r = jogoDoClubeNaSemana(c.copas, c.clubeId, c.semana);
+  return r && (r.jogo.gc === undefined || c.meioSemana?.semana === c.semana) ? [2] : [];
+}
+/** Ações que valem na semana (os dias de jogo não contam). */
+const acoesValidas = (s: Save, p: Plano): Acao[] => { const t = diasTravados(s); return p.acoes.filter((_, i) => !t.includes(i)); };
+
 // ------------------------------------------------------------------ plano da semana
 export type Acao = "treino" | "descanso" | "familia" | "amigos" | "redes" | "video";
 export const ACOES: Record<Acao, { nome: string; efeito: string }> = {
@@ -347,7 +383,7 @@ export const planoPadrao = (): Plano => ({ foco: "tecnico", intensidade: "normal
 
 /** O que o plano faz com cansaço e moral antes do jogo (sem sorteios). */
 export function previaPlano(s: Save, p: Plano) {
-  const casa = efeitosDaCasa(s.casa).total, cont = (a: Acao) => p.acoes.filter((x) => x === a).length;
+  const casa = efeitosDaCasa(s.casa).total, ac = acoesValidas(s, p), cont = (a: Acao) => ac.filter((x) => x === a).length;
   const cansaco = clamp(s.carreira.cansaco + 10 * cont("treino") - 15 * cont("descanso") + 10 * cont("amigos") + (p.intensidade === "alta" ? 10 : p.intensidade === "leve" ? -10 : 0) + 12, 0, 100);
   const moral = clamp(s.carreira.moral + 2 * cont("familia") + 4 * cont("amigos"), 0, 100);
   const evolucao = Math.round(100 * (cont("treino") * 0.1 + (p.intensidade === "alta" ? 0.2 : p.intensidade === "leve" ? -0.2 : 0) + (casa.evolucao + efeitosVida(padraoDe(s.carreira)).evolucao) / 100 + s.carreira.bonusEvolucao));
@@ -360,6 +396,8 @@ export interface Decisao { min: number; titulo: string; texto: string; opcoes: O
 export interface Lance { min: number; lado: "casa" | "fora"; meu?: "gol" | "assist"; texto: string }
 export interface Partida {
   tipo: "profissional" | "base"; escalacao: Escalacao; casa: string; fora: string; nomeCasa: string; nomeFora: string; souCasa: boolean;
+  /** jogo de copa continental (quarta-feira) */
+  copa?: { id: CopaId; jogoId: string; nome: string; rotulo: string; neutro?: boolean };
   entrada: number; saida: number; golsCasa: number; golsFora: number; lances: Lance[]; decisoes: Decisao[];
   base: { gols: number; assist: number; nota: number }; fAdv: number;
   /** nomes do elenco usados nos textos, contexto do jogo e narração de ambiente */
@@ -390,17 +428,23 @@ export const categoriaBase = (idade: number) => (idade <= 17 ? "sub-17" : "sub-2
 /** Força dos times da base (sub-17/20) a partir da força do profissional. */
 const forcaBase = (forcaPro: number) => 46 + (forcaPro - 70) * 0.6;
 
-export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Partida | undefined {
-  const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, jogo = jogoDaSemana(s);
+/** Prepara a partida da semana (domingo, liga) ou, com `copa`, a de quarta pela copa continental. */
+export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa?: { copa: EstadoCopa; jogo: JogoCopa }): Partida | undefined {
+  const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, W = mundo(pacote);
+  const cj = copa?.jogo;
+  const jogo = cj ? { casa: cj.casa, fora: cj.fora, souCasa: cj.casa === c.clubeId, adversario: cj.casa === c.clubeId ? cj.fora : cj.casa } : jogoDaSemana(s);
   if (!jogo) return;
-  const prev = previaPlano(s, plano);
-  const esc = escalacao(pacote, s, prev.cansaco);
-  if (esc === "lesionado" || esc === "fora" || esc === "suspenso") return { tipo: "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: clubeDe(l, jogo.casa).nome, nomeFora: clubeDe(l, jogo.fora).nome, souCasa: jogo.souCasa, entrada: 0, saida: 0, golsCasa: 0, golsFora: 0, lances: [], decisoes: [], base: { gols: 0, assist: 0, nota: 0 }, fAdv: 0, nomes: {}, ctx: contextoPadrao(), abertura: "", narracao: [] };
-  const rng = rngDe(s, "partida");
+  const clubeM = (id: string) => W.clube[idClube(id)] ?? clubeDe(l, id);
+  const infoCopa = copa && cj ? { id: copa.copa.id, jogoId: cj.id, nome: COPAS[copa.copa.id].nome, rotulo: rotuloJogo(cj), ...(cj.neutro ? { neutro: true } : {}) } : undefined;
+  // na quarta, o cansaço é o de segunda e terça; no domingo, o da semana inteira (com o jogo de quarta, se houve)
+  const prev = cj ? previaPlano(s, { ...plano, acoes: plano.acoes.slice(0, 2) }) : previaPlano(s, plano);
+  const esc = escalacao(pacote, s, prev.cansaco, !!cj);
+  if (esc === "lesionado" || esc === "fora" || esc === "suspenso") return { tipo: "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: clubeM(jogo.casa).nome, nomeFora: clubeM(jogo.fora).nome, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}), entrada: 0, saida: 0, golsCasa: 0, golsFora: 0, lances: [], decisoes: [], base: { gols: 0, assist: 0, nota: 0 }, fAdv: 0, nomes: {}, ctx: contextoPadrao(), abertura: "", narracao: [] };
+  const rng = rngDe(s, cj ? `partida-copa-${cj.id}` : "partida");
   // várzea, colégio e universidade contam como jogos "de formação" (não são profissionais), mas com os times como são
-  const amador = faseAmadora(c), base = esc === "base" || amador;
-  const meuClube = clubeDe(l, c.clubeId), adv = clubeDe(l, jogo.adversario);
-  let fCasa = clubeDe(l, jogo.casa).forca, fFora = clubeDe(l, jogo.fora).forca;
+  const amador = !cj && faseAmadora(c), base = !cj && (esc === "base" || amador);
+  const meuClube = clubeM(c.clubeId), adv = clubeM(jogo.adversario);
+  let fCasa = clubeM(jogo.casa).forca, fFora = clubeM(jogo.fora).forca;
   const ovrEf = ovr(j) * (0.92 + (0.08 * prev.moral) / 100) * (prev.cansaco > 70 ? 0.9 : 1);
   if (base && !amador) { fCasa = forcaBase(fCasa); fFora = forcaBase(fFora); }
   const meuF = jogo.souCasa ? fCasa : fFora, advF = jogo.souCasa ? fFora : fCasa;
@@ -428,17 +472,17 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   }
   for (let i = 0; i < golsAdv; i++) lances.push({ min: minutosLivres(), lado: lado(false), texto: "" });
   // quem é quem, contexto do jogo e narração (sorteios próprios: não mexem no placar)
-  const rngN = rngDe(s, "narracao"), rngL = rngDe(s, "lances");
+  const rngN = rngDe(s, cj ? `narracao-${cj.id}` : "narracao"), rngL = rngDe(s, cj ? `lances-${cj.id}` : "lances");
   const cp = (id: string) => infoClube(pacote, id);
-  const classico = cp(jogo.casa).cidade === cp(jogo.fora).cidade || [jogo.casa, jogo.fora].sort().join("-") in CLASSICOS_EXTRA;
+  const classico = !cj && (cp(jogo.casa).cidade === cp(jogo.fora).cidade || [jogo.casa, jogo.fora].sort().join("-") in CLASSICOS_EXTRA);
   const chuva = rngN.chance(0.14);
   const elMeu = elencoDe({ ...meuClube, elenco: elencoAtual(pacote, s) }, base && !amador), elAdv = elencoDe(adv, base && !amador);
-  const estadio = base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
+  const estadio = cj?.neutro ? `estádio da ${NOME_FASE[cj.fase].toLowerCase()}` : base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
   const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(c.clubeId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao });
   const posTab = posicaoNaTabela(undefined, s), reta = c.semana >= SEMANAS_PRE + 28;
   const jogosPro = c.stats.jogos + c.historico.reduce((acc, h) => acc + h.jogos, 0);
   const ctx: Contexto = { pos: j.posicao, min: 0, saldo: 0, base, jaFezGol: false, classico, mandante: jogo.souCasa, reta,
-    briga: base || !reta ? "" : posTab <= 3 ? "titulo" : posTab > c.ordem.length - 4 ? "rebaixamento" : "", fama: c.fama, estreia: !base && jogosPro === 0,
+    briga: cj || base || !reta ? "" : posTab <= 3 ? "titulo" : posTab > c.ordem.length - 4 ? "rebaixamento" : "", fama: c.fama, estreia: !base && jogosPro === 0,
     chuva, idade: j.idade, relTecnico: c.relTecnico, moral: c.moral, jogosPro };
   // decisões dentro do tempo em campo: de uma a três, situações diferentes conforme posição, minuto, placar, contexto e memória
   const nDec = minutos <= 0 ? 0 : minutos < 30 ? 1 : rng.chance(0.25) ? 1 : rng.chance(0.7) ? 2 : 3;
@@ -454,9 +498,9 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   lances.sort((x, y) => x.min - y.min);
   for (const x of lances) x.texto = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv);
   const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida }, nomes, elMeu, elAdv);
-  const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeDe(l, jogo.casa).nome}${suf}`, nomeF = `${clubeDe(l, jogo.fora).nome}${suf}`;
+  const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeM(jogo.casa).nome}${suf}`, nomeF = `${clubeM(jogo.fora).nome}${suf}`;
   void adv;
-  return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa,
+  return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}),
     entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF,
     nomes, ctx, abertura: narr.abertura, narracao: narr.linhas };
 }
@@ -491,8 +535,10 @@ export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
 }
 
 // ------------------------------------------------------------------ fim da semana
+/** Resumo de uma partida do jogador (o da copa traz a competição e a fase). */
+export interface ResumoPartida { nomeCasa: string; nomeFora: string; golsCasa: number; golsFora: number; nota: number; gols: number; assist: number; minutos: number; tipo: Partida["tipo"]; competicao?: string; rotulo?: string; penaltis?: string; escalacao?: Escalacao }
 export interface ResumoSemana {
-  rotulo: string; escalacao: Escalacao; partida?: { nomeCasa: string; nomeFora: string; golsCasa: number; golsFora: number; nota: number; gols: number; assist: number; minutos: number; tipo: Partida["tipo"] };
+  rotulo: string; escalacao: Escalacao; partida?: ResumoPartida; copa?: ResumoPartida;
   ovrAntes: number; ovrDepois: number; ganhos: [Atributo, number][]; moral: [number, number]; cansaco: [number, number]; fama: [number, number];
   dinheiro?: { salario: number; aluguel: number; gastos?: number }; eventos: string[]; posicaoTabela: number; fimDeTemporada?: ResumoTemporada;
 }
@@ -503,13 +549,142 @@ const POLEMICAS = [
   "Uma foto sua na fila do show apareceu no perfil de fofoca na véspera do treino.",
 ];
 
+/** Aplica uma partida do jogador: decisões, nota, estatísticas, moral, torcida, fama, cansaço, lesão, relíquias e notícia.
+ *  Serve para o jogo de domingo (liga) e o de quarta (copa continental). */
+function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes: ResultadoDecisao[], notaExtra: number, intensidadeAlta: boolean, rng: RNG, eventos: string[]):
+  { resumo?: ResumoPartida; participacao: Participacao; nota: number; placar?: [number, number] } {
+  const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, casa = efeitosDaCasa(s.casa).total, copa = partida.copa;
+  const adversario = partida.souCasa ? partida.fora : partida.casa;
+  if (partida.escalacao === "lesionado" || partida.escalacao === "suspenso") return { participacao: "naoJogou", nota: 0 };
+  if (partida.escalacao === "fora") { c.moral = clamp(c.moral - (copa ? 1 : 3), 0, 100); eventos.push(copa ? "Não foi relacionado para o jogo da copa." : "Não foi relacionado para o jogo."); return { participacao: "naoJogou", nota: 0 }; }
+  let gc = partida.golsCasa, gf = partida.golsFora, gols = partida.base.gols, assist = partida.base.assist, nota = partida.base.nota;
+  // expulsão: dois amarelos ou um vermelho tiram o jogador do jogo naquele minuto
+  let amarelos = 0, expulsoMin = 99, saiuMin = 99;
+  const mem: Memoria = c.memoria ?? (c.memoria = { vistos: {}, recentes: [] });
+  for (const d of decisoes) { mem.vistos[d.situacao] = (mem.vistos[d.situacao] ?? 0) + 1; mem.recentes = [...mem.recentes.filter((x) => x !== d.situacao), d.situacao].slice(-MEMORIA_RECENTE); }
+  for (const d of [...decisoes].sort((a, b) => a.min - b.min)) {
+    const pos = SITUACAO[d.situacao]?.momento === "pos";
+    if (!pos && d.min > Math.min(expulsoMin, saiuMin)) continue;
+    if (d.golPro) { if (partida.souCasa) gc++; else gf++; }
+    if (d.golContra) { if (partida.souCasa) gf++; else gc++; }
+    if (d.meu === "gol") gols++; if (d.meu === "assist") assist++;
+    nota += d.nota;
+    if (d.fama) c.fama = clamp(c.fama + d.fama, 0, 100);
+    if (d.moral) c.moral = clamp(c.moral + d.moral, 0, 100);
+    if (d.relTecnico) c.relTecnico = clamp(c.relTecnico + d.relTecnico, 0, 100);
+    if (d.seguidores) c.hype = clamp((c.hype ?? 0) + 2 * d.seguidores, -0.3, 1.5);
+    if (d.lesao) c.lesao = Math.max(c.lesao, d.lesao);
+    if (d.noticia) noticia(s, "polemica", "Repercussão", d.noticia);
+    if (d.amarelo) amarelos++;
+    if (d.vermelho || amarelos >= 2) {
+      expulsoMin = d.min;
+      eventos.push(`${amarelos >= 2 && !d.vermelho ? "Expulso com dois amarelos" : "Cartão vermelho"}${copa ? " na copa" : ""}. Fica fora do próximo jogo${copa ? " da copa" : ""}.`);
+      if (copa) c.suspensaoCopa = 1; else c.suspensao = 1;
+    } else if (d.amarelo) eventos.push(`Levou cartão amarelo${copa ? " na copa" : ""}.`);
+    if (d.sai && !d.vermelho && saiuMin === 99 && expulsoMin === 99) { saiuMin = d.min; eventos.push(`Saiu de campo aos ${d.min} minutos.`); }
+  }
+  const foraMin = Math.min(expulsoMin, saiuMin);
+  if (foraMin < 99) {
+    // tira do jogador os gols e assistências do placar original que vieram depois de ele sair
+    for (const x of partida.lances) if (x.meu && x.min > foraMin) { if (x.meu === "gol") gols--; else assist--; }
+    partida.saida = Math.min(partida.saida, foraMin);
+    if (expulsoMin < 99) nota -= 0.5;
+  }
+  const minutos = Math.max(0, Math.min(90, partida.saida) - partida.entrada);
+  if (minutos > 0) nota = Math.round(clamp(nota + notaExtra, 3, 10) * 10) / 10; else nota = 0;
+  const pro = partida.tipo === "profissional";
+  const placar: [number, number] | undefined = pro ? [gc, gf] : undefined;
+  const resumo: ResumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo, escalacao: partida.escalacao,
+    ...(copa ? { competicao: copa.nome, rotulo: copa.rotulo } : {}) };
+  if (minutos <= 0) {
+    if (partida.escalacao === "banco") { c.moral = clamp(c.moral - 1, 0, 100); eventos.push(copa ? "Ficou no banco o jogo da copa todo." : "Ficou no banco o jogo todo."); }
+    return { resumo, participacao: "naoJogou", nota: 0, placar };
+  }
+  const participacao: Participacao = pro ? (partida.escalacao === "titular" ? "titular" : "entrou") : "base";
+  if (copa) { const sc = (c.statsCopa ??= { jogos: 0, gols: 0, assist: 0, notas: [] }); sc.jogos++; sc.gols += gols; sc.assist += assist; sc.notas.push(nota); }
+  else if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota); }
+  else { c.stats.base++; c.stats.baseGols += gols; (c.stats.baseNotas ??= []).push(nota); }
+  if (pro) { const ms = (c.mesStats ??= { gols: 0, assist: 0, notas8: 0 }); ms.gols += gols; ms.assist += assist; if (nota >= 8) ms.notas8++; }
+  if (pro && !copa) { c.jogosPorClube ??= {}; c.jogosPorClube[c.clubeId] = (c.jogosPorClube[c.clubeId] ?? 0) + 1; }
+  if (!copa) {
+    // relíquias do jogo: estreia, primeiro gol, hat-trick, golaços, marcas
+    const meusGols = partida.souCasa ? gc : gf, golsAdv = partida.souCasa ? gf : gc, cc = clubeCasa(pacote, c.clubeId);
+    const totPro = (k: "jogos" | "gols") => c.stats[k] + c.historico.reduce((a, h) => a + h[k], 0);
+    const ganhos = reliquiasDaPartida({
+      tipo: partida.tipo, ano: ANO_INICIAL + c.temporada, semana: c.semana, adversario: clubeCasa(pacote, adversario).apelido, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
+      padrao: infoClube(pacote, c.clubeId).padrao, ligaId: infoLiga(c.ligaId).id,
+      placar: `${meusGols} × ${golsAdv}`, gols, minutos, jogosPro: totPro("jogos"), golsPro: totPro("gols"),
+      jogosBase: c.stats.base + c.historico.reduce((a, h) => a + h.base, 0), golsBase: c.stats.baseGols + c.historico.reduce((a, h) => a + (h.baseGols ?? 0), 0),
+      jogosNoClube: c.jogosPorClube?.[c.clubeId] ?? 0,
+      golacos: decisoes.filter((d) => d.nivel === 0 && d.meu === "gol" && d.min <= foraMin).map((d) => `${d.situacao}/${d.opcao}`),
+    }, (id) => (s.casa.reliquias ?? []).some((r) => r.id === id));
+    receberReliquias(s, ganhos, eventos);
+  }
+  c.formaUlt = [...c.formaUlt.slice(-4), nota];
+  if (pro) c.torcida = clamp((c.torcida ?? 50) + (nota - 6.5) * (copa ? 2 : 1.5) + gols, 0, 100);
+  c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
+  c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5), 0, 100);
+  const grande = (mundo(pacote).clube[c.clubeId] ?? clubeDe(l, c.clubeId)).forca >= 75 ? 1.5 : 1, vitrine = copa ? 1.5 : 1;
+  c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? vitrine * grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
+  c.cansaco = clamp(c.cansaco + (30 * minutos) / 90, 0, 100);
+  const l2 = sortearLesao(rng, c.cansaco, intensidadeAlta, j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6) * riscoLesaoFamilia(c.familia));
+  if (l2) { c.lesao = Math.max(c.lesao, l2.semanas); eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}${copa ? " no jogo da copa" : ""}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
+  const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
+  noticia(s, "jogo", `${copa ? `${COPAS[copa.id].curto}: ` : ""}${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
+    `${res[0].toUpperCase() + res.slice(1)}${copa ? ` pela ${copa.nome} (${copa.rotulo.toLowerCase()})` : pro ? "" : faseAmadora(c) ? ` ${ROTULO_FASE[c.fase!]}` : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: partida.casa, fora: partida.fora, gc, gf });
+  return { resumo, participacao, nota, placar };
+}
+
+/** Quarta-feira: aplica o jogo da copa do jogador e roda a rodada da copa. Fica guardado para o resumo da semana. */
+export function concluirJogoDaCopa(pacote: PacoteDados, s: Save, plano: Plano, partida: Partida, decisoes: ResultadoDecisao[]): ResumoPartida | undefined {
+  const c = s.carreira, eventos: string[] = [], rng = rngDe(s, "copa-quarta"), info = partida.copa;
+  if (!info) return;
+  if (partida.escalacao === "suspenso") { c.suspensaoCopa = 0; eventos.push("Cumpriu suspensão na copa."); }
+  const r = aplicarPartida(pacote, s, partida, decisoes, previaPlano(s, { ...plano, acoes: plano.acoes.slice(0, 2) }).notaExtra, plano.intensidade === "alta", rng, eventos);
+  const e = copasDe(pacote, s)[info.id]!, w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60;
+  const placar = r.placar ?? (partida.lances.length || partida.entrada ? [partida.golsCasa, partida.golsFora] as [number, number] : undefined);
+  rodarSemana(e, c.semana, forca, rngDe(s, "copa-rodada"), placar ? { id: info.jogoId, gc: placar[0], gf: placar[1] } : undefined);
+  const jg = e.jogos.find((x) => x.id === info.jogoId)!;
+  const resumo: ResumoPartida = r.resumo ?? { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: jg.gc!, golsFora: jg.gf!, nota: 0, gols: 0, assist: 0, minutos: 0, tipo: "profissional", competicao: info.nome, rotulo: info.rotulo, escalacao: partida.escalacao };
+  if (jg.penaltis) { resumo.penaltis = w.info[jg.penaltis]?.nome; eventos.push(`Decisão nos pênaltis: ${w.info[jg.penaltis]?.nome} passou.`); }
+  noticiasDaCopa(pacote, s, e, eventos);
+  c.meioSemana = { semana: c.semana, resumo, participacao: r.participacao, nota: r.nota, eventos };
+  return resumo;
+}
+/** Notícias da rodada da copa: classificação/eliminação do clube do jogador e o campeão. */
+function noticiasDaCopa(pacote: PacoteDados, s: Save, e: EstadoCopa, eventos: string[]) {
+  const c = s.carreira, w = mundo(pacote), nome = (id: string) => w.info[id]?.nome ?? id, meu = e.clubes.includes(c.clubeId);
+  const chave = `${e.temporada}-${e.fase}`, avisos = (c.avisosCopa ??= {});
+  if (avisos[e.id] === chave) return;
+  avisos[e.id] = chave;
+  if (e.fase === "fim" && e.campeao) {
+    noticia(s, "jogo", `${nome(e.campeao)} é campeão da ${COPAS[e.id].nome}`, `${nome(e.campeao)} conquista a ${COPAS[e.id].curto} ${ANO_INICIAL + e.temporada}.`, { k: "trofeu" });
+    if (e.campeao === c.clubeId) eventos.push(`CAMPEÃO DA ${COPAS[e.id].curto.toUpperCase()}!`);
+  } else if (meu && e.fase !== "grupos" && e.fase !== "liga") {
+    const ORDEM = ["grupos", "liga", "playoff", "oitavas", "quartas", "semi", "final", "fim"];
+    const passou = ORDEM.indexOf(e.chegou[c.clubeId]) >= ORDEM.indexOf(e.fase);
+    if (passou) { eventos.push(`${nome(c.clubeId)} classificado: ${NOME_FASE[e.fase].toLowerCase()} da ${COPAS[e.id].curto}.`); noticia(s, "clube", `${COPAS[e.id].curto}: ${nome(c.clubeId)} avança`, `O ${nome(c.clubeId)} está nas ${NOME_FASE[e.fase].toLowerCase()} da ${COPAS[e.id].nome}.`); }
+    else if (avisos[`${e.id}-fora`] !== String(e.temporada)) { avisos[`${e.id}-fora`] = String(e.temporada); eventos.push(`${nome(c.clubeId)} eliminado da ${COPAS[e.id].curto}.`); noticia(s, "clube", `${COPAS[e.id].curto}: fim do sonho`, `O ${nome(c.clubeId)} está fora da ${COPAS[e.id].nome} (${NOME_FASE[e.chegou[c.clubeId]].toLowerCase()}).`); }
+  }
+}
+/** Roda as copas na semana (os jogos que ainda não foram jogados) e dá as notícias. */
+function avancarCopas(pacote: PacoteDados, s: Save, eventos: string[]) {
+  const c = s.carreira, w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60;
+  for (const e of Object.values(copasDe(pacote, s))) {
+    if (!e || !e.jogos.some((x) => x.semana === c.semana && x.gc === undefined)) continue;
+    rodarSemana(e, c.semana, forca, rngDe(s, `copa-rodada-${e.id}`));
+    noticiasDaCopa(pacote, s, e, eventos);
+  }
+}
+
 export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, partida: Partida | undefined, decisoes: ResultadoDecisao[]): ResumoSemana {
   const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, rng = rngDe(s, "semana");
   const casa = efeitosDaCasa(s.casa).total;
   const rotulo = rotuloSemana(c);
   const ovrAntes = ovr(j), atAntes = { ...j.at }, moral0 = c.moral, cansaco0 = c.cansaco, fama0 = c.fama;
   const eventos: string[] = [];
-  const cont = (a: Acao) => plano.acoes.filter((x) => x === a).length;
+  const validas = acoesValidas(s, plano), travados = diasTravados(s);
+  const cont = (a: Acao) => validas.filter((x) => x === a).length;
 
   // 1. a semana fora de campo
   const prev = previaPlano(s, plano);
@@ -522,6 +697,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (cont("amigos")) c.vidaNoturna = clamp(c.vidaNoturna + 2 * cont("amigos"), 0, 100);
   let polemica = false;
   plano.acoes.forEach((a, dia) => {
+    if (travados.includes(dia)) return;
     const risco = a === "amigos" ? (dia === 4 && partida ? 0.1 : 0.05) : a === "redes" ? 0.01 + j.personalidade.temperamento / 400 : 0;
     if (risco && rng.chance(risco)) {
       const t = rng.pick(POLEMICAS);
@@ -532,82 +708,21 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     }
   });
 
-  // 2. o jogo
-  let participacao: Participacao = c.semana < SEMANAS_PRE ? "base" : "naoJogou";
-  let resumoPartida: ResumoSemana["partida"];
+  // 2. o jogo (o de quarta, pela copa, já foi aplicado em concluirJogoDaCopa)
   const jogo = jogoDaSemana(s);
-  let placarMeuJogo: [number, number] | undefined;
-  let notaSemana = 0;
   if (partida?.escalacao === "suspenso") { c.suspensao = 0; eventos.push("Cumpriu suspensão."); }
-  if (partida && jogo && partida.escalacao !== "lesionado" && partida.escalacao !== "fora" && partida.escalacao !== "suspenso") {
-    let gc = partida.golsCasa, gf = partida.golsFora, gols = partida.base.gols, assist = partida.base.assist, nota = partida.base.nota;
-    // expulsão: dois amarelos ou um vermelho tiram o jogador do jogo naquele minuto
-    let amarelos = 0, expulsoMin = 99, saiuMin = 99;
-    const mem: Memoria = c.memoria ?? (c.memoria = { vistos: {}, recentes: [] });
-    for (const d of decisoes) { mem.vistos[d.situacao] = (mem.vistos[d.situacao] ?? 0) + 1; mem.recentes = [...mem.recentes.filter((x) => x !== d.situacao), d.situacao].slice(-MEMORIA_RECENTE); }
-    for (const d of [...decisoes].sort((a, b) => a.min - b.min)) {
-      const pos = SITUACAO[d.situacao]?.momento === "pos";
-      if (!pos && d.min > Math.min(expulsoMin, saiuMin)) continue;
-      if (d.golPro) { if (partida.souCasa) gc++; else gf++; }
-      if (d.golContra) { if (partida.souCasa) gf++; else gc++; }
-      if (d.meu === "gol") gols++; if (d.meu === "assist") assist++;
-      nota += d.nota;
-      if (d.fama) c.fama = clamp(c.fama + d.fama, 0, 100);
-      if (d.moral) c.moral = clamp(c.moral + d.moral, 0, 100);
-      if (d.relTecnico) c.relTecnico = clamp(c.relTecnico + d.relTecnico, 0, 100);
-      if (d.seguidores) c.hype = clamp((c.hype ?? 0) + 2 * d.seguidores, -0.3, 1.5);
-      if (d.lesao) c.lesao = Math.max(c.lesao, d.lesao);
-      if (d.noticia) noticia(s, "polemica", "Repercussão", d.noticia);
-      if (d.amarelo) amarelos++;
-      if (d.vermelho || amarelos >= 2) { expulsoMin = d.min; eventos.push(amarelos >= 2 && !d.vermelho ? "Expulso com dois amarelos. Fica fora do próximo jogo." : "Cartão vermelho. Fica fora do próximo jogo."); c.suspensao = 1; }
-      else if (d.amarelo) eventos.push("Levou cartão amarelo.");
-      if (d.sai && !d.vermelho && saiuMin === 99 && expulsoMin === 99) { saiuMin = d.min; eventos.push(`Saiu de campo aos ${d.min} minutos.`); }
-    }
-    const foraMin = Math.min(expulsoMin, saiuMin);
-    if (foraMin < 99) {
-      // tira do jogador os gols e assistências do placar original que vieram depois de ele sair
-      for (const l of partida.lances) if (l.meu && l.min > foraMin) { if (l.meu === "gol") gols--; else assist--; }
-      partida.saida = Math.min(partida.saida, foraMin);
-      if (expulsoMin < 99) nota -= 0.5;
-    }
-    const minutos = Math.max(0, Math.min(90, partida.saida) - partida.entrada);
-    if (minutos > 0) nota = Math.round(clamp(nota + prev.notaExtra, 3, 10) * 10) / 10; else nota = 0;
-    if (partida.tipo === "profissional") placarMeuJogo = [gc, gf];
-    resumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo };
-    if (minutos > 0) {
-      notaSemana = nota;
-      const pro = partida.tipo === "profissional";
-      participacao = pro ? (partida.escalacao === "titular" ? "titular" : "entrou") : "base";
-      if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota);
-        const ms = (c.mesStats ??= { gols: 0, assist: 0, notas8: 0 }); ms.gols += gols; ms.assist += assist; if (nota >= 8) ms.notas8++; }
-      else { c.stats.base++; c.stats.baseGols += gols; (c.stats.baseNotas ??= []).push(nota); }
-      if (pro) { c.jogosPorClube ??= {}; c.jogosPorClube[c.clubeId] = (c.jogosPorClube[c.clubeId] ?? 0) + 1; }
-      // relíquias do jogo: estreia, primeiro gol, hat-trick, golaços, marcas
-      const meusGols = partida.souCasa ? gc : gf, golsAdv = partida.souCasa ? gf : gc, cc = clubeCasa(pacote, c.clubeId);
-      const totPro = (k: "jogos" | "gols") => c.stats[k] + c.historico.reduce((a, h) => a + h[k], 0);
-      const ganhos = reliquiasDaPartida({
-        tipo: partida.tipo, ano: ANO_INICIAL + c.temporada, semana: c.semana, adversario: clubeCasa(pacote, jogo.adversario).apelido, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
-        padrao: infoClube(pacote, c.clubeId).padrao, ligaId: infoLiga(c.ligaId).id,
-        placar: `${meusGols} × ${golsAdv}`, gols, minutos, jogosPro: totPro("jogos"), golsPro: totPro("gols"),
-        jogosBase: c.stats.base + c.historico.reduce((a, h) => a + h.base, 0), golsBase: c.stats.baseGols + c.historico.reduce((a, h) => a + (h.baseGols ?? 0), 0),
-        jogosNoClube: c.jogosPorClube?.[c.clubeId] ?? 0,
-        golacos: decisoes.filter((d) => d.nivel === 0 && d.meu === "gol" && d.min <= foraMin).map((d) => `${d.situacao}/${d.opcao}`),
-      }, (id) => (s.casa.reliquias ?? []).some((r) => r.id === id));
-      receberReliquias(s, ganhos, eventos);
-      c.formaUlt = [...c.formaUlt.slice(-4), nota];
-      if (pro) c.torcida = clamp((c.torcida ?? 50) + (nota - 6.5) * 1.5 + gols, 0, 100);
-      c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
-      c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5), 0, 100);
-      const grande = clubeDe(l, c.clubeId).forca >= 75 ? 1.5 : 1;
-      c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
-      c.cansaco = clamp(c.cansaco + (30 * minutos) / 90, 0, 100);
-      const l2 = sortearLesao(rng, c.cansaco, plano.intensidade === "alta", j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6) * riscoLesaoFamilia(c.familia));
-      if (l2) { c.lesao = l2.semanas; eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
-      const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
-      noticia(s, "jogo", `${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
-        `${res[0].toUpperCase() + res.slice(1)}${pro ? "" : faseAmadora(c) ? ` ${ROTULO_FASE[c.fase!]}` : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: jogo.casa, fora: jogo.fora, gc, gf });
-    } else if (partida.escalacao === "banco") { c.moral = clamp(c.moral - 1, 0, 100); eventos.push("Ficou no banco o jogo todo."); }
-  } else if (partida?.escalacao === "fora") { c.moral = clamp(c.moral - 3, 0, 100); eventos.push("Não foi relacionado para o jogo."); }
+  const rj = partida && jogo ? aplicarPartida(pacote, s, partida, decisoes, prev.notaExtra, plano.intensidade === "alta", rng, eventos) : undefined;
+  let participacao: Participacao = rj?.participacao ?? (c.semana < SEMANAS_PRE ? "base" : "naoJogou");
+  const resumoPartida = rj?.resumo, placarMeuJogo = rj?.placar;
+  let notaSemana = rj?.nota ?? 0;
+  // semana com jogo de copa: o que aconteceu na quarta entra na evolução e no resumo
+  const quarta = c.meioSemana?.semana === c.semana ? c.meioSemana : undefined;
+  if (quarta) {
+    eventos.unshift(...quarta.eventos);
+    const peso: Record<string, number> = { titular: 4, entrou: 3, base: 2, naoJogou: 1, ferias: 0 };
+    if ((peso[quarta.participacao] ?? 0) > (peso[participacao] ?? 0)) participacao = quarta.participacao;
+    if (!notaSemana) notaSemana = quarta.nota;
+  }
 
   // 3. a rodada da liga
   if (jogo) {
@@ -618,6 +733,9 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       registrar(c.tabela.find((t) => t.clube === g.fora)!, b, a);
     }
   }
+
+  // 3b. a rodada das copas continentais (os jogos de quarta que faltam)
+  avancarCopas(pacote, s, eventos);
 
   // 4. evolução e recuperação
   if (c.lesao > 0 && participacao !== "titular" && participacao !== "entrou") { participacao = "ferias"; }
@@ -673,6 +791,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
 
   // 6. avança
   const ganhos = ATRIBUTOS.map((k) => [k, j.at[k] - atAntes[k]] as [Atributo, number]).sort((x, y) => y[1] - x[1]).slice(0, 3);
+  c.meioSemana = undefined;
   c.semana++;
   let fim: ResumoTemporada | undefined;
   if (c.semana >= SEMANAS_TEMPORADA) fim = fimDeTemporada(pacote, s, eventos);
@@ -737,7 +856,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     }
   }
   return {
-    rotulo, escalacao: partida?.escalacao ?? (c.semana - 1 < SEMANAS_PRE ? "semJogo" : "fora"), partida: resumoPartida,
+    rotulo, escalacao: partida?.escalacao ?? (c.semana - 1 < SEMANAS_PRE ? "semJogo" : "fora"), partida: resumoPartida, ...(quarta ? { copa: quarta.resumo } : {}),
     ovrAntes, ovrDepois: ovr(j), ganhos, moral: [moral0, c.moral], cansaco: [cansaco0, c.cansaco], fama: [fama0, c.fama], dinheiro, eventos,
     posicaoTabela: posicaoNaTabela(fim ? s.carreira.historico.at(-1)!.posicao : undefined, s), fimDeTemporada: fim,
   };
@@ -1016,6 +1135,21 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
     temporadasCheias: c.historico.filter((h) => h.jogos >= 15).length });
   receberReliquias(s, premios, ev);
   r.premios = premios.filter((g) => g.reliquia.tipo === "trofeu").map((g) => g.reliquia.nome);
+  // copa continental: campanha, e o troféu se o clube foi campeão com o jogador em campo
+  const ec = copaDoClube(c.copas, c.clubeId), sc = c.statsCopa;
+  if (ec && sc?.jogos) {
+    const campeao = ec.campeao === c.clubeId;
+    r.copa = { id: ec.id, nome: COPAS[ec.id].nome, fase: campeao ? "Campeão" : NOME_FASE[ec.chegou[c.clubeId]] ?? "", campeao, jogos: sc.jogos, gols: sc.gols, assist: sc.assist };
+    if (campeao && sc.jogos >= 3) {
+      const nomeT = `Taça da ${COPAS[ec.id].curto} ${r.ano}`;
+      receberReliquias(s, [{ conquista: `trofeu-copa-${ec.id}`, reliquia: { id: `rel-trofeu-copa-${ec.id}-${r.ano}`, chave: `trofeu-copa-${ec.id}`, tipo: "trofeu", nome: nomeT, legenda: `${cc.nome} · ${COPAS[ec.id].nome} ${r.ano}`, ano: r.ano, cores: ["#E3B341", "#B8892B"], modelo: "taca" } }], ev);
+      r.premios.push(nomeT);
+      c.fama = clamp(c.fama + 8, 0, 100); c.torcida = clamp((c.torcida ?? 50) + 12, 0, 100);
+    }
+  }
+  // tabela final (vale para as vagas das copas da próxima temporada)
+  c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
+  c.copas = undefined; c.statsCopa = undefined; c.suspensaoCopa = undefined;
   c.historico.push(r);
   if (titulo) { c.fama = clamp(c.fama + 5, 0, 100); c.torcida = clamp((c.torcida ?? 50) + 10, 0, 100); }
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);
@@ -1064,14 +1198,22 @@ export function semanaAutomatica(pacote: PacoteDados, s: Save, decidirMercado = 
   if (s.carreira.evento) resolverEvento(pacote, s, EVENTO[s.carreira.evento]?.opcoes[0].id ?? "");
   { const f = familiaDe(pacote, s), ctx = ctxFamilia(pacote, s), r = rngDe(s, "familia-auto"), antes = s.casa.saldo; familiaAutomatica(f, ctx, r); void antes; }
   namoroAutomatico(namoroDe(s.carreira), ctxNamoro(pacote, s));
-  const plano = planoAutomatico(s), p = prepararPartida(pacote, s, plano);
+  const plano = planoAutomatico(s);
+  // quarta: jogo da copa continental
+  const jc = jogoCopaDaSemana(pacote, s);
+  if (jc) { const pc = prepararPartida(pacote, s, plano, jc); if (pc) concluirJogoDaCopa(pacote, s, plano, pc, decisoesAutomaticas(s, pc)); }
+  const p = prepararPartida(pacote, s, plano);
+  return concluirSemana(pacote, s, plano, p, p ? decisoesAutomaticas(s, p) : []);
+}
+/** Decide os lances de uma partida como a política automática (melhor opção, comemoração, pós-jogo). */
+function decisoesAutomaticas(s: Save, p: Partida): ResultadoDecisao[] {
   const ds: ResultadoDecisao[] = [];
   let fora = 99;
-  for (const d of p?.decisoes ?? []) { if (d.min > fora) break; const r = resolverDecisao(s, p!, d, melhorOpcao(s, p!, d)); ds.push(r); if (r.vermelho || r.sai || ds.filter((x) => x.amarelo).length >= 2) fora = d.min; }
+  for (const d of p.decisoes) { if (d.min > fora) break; const r = resolverDecisao(s, p, d, melhorOpcao(s, p, d)); ds.push(r); if (r.vermelho || r.sai || ds.filter((x) => x.amarelo).length >= 2) fora = d.min; }
   // primeiro gol do jogador no jogo: comemoração, como na tela
-  const golMin = p ? [...p.lances.filter((l) => l.meu === "gol" && l.min <= fora).map((l) => l.min), ...ds.filter((r) => r.meu === "gol").map((r) => r.min)].sort((a, b) => a - b)[0] : undefined;
-  if (p && golMin !== undefined) { const d = decisaoComemoracao(s, p, golMin); ds.push(resolverDecisao(s, p, d, melhorOpcao(s, p, d))); }
-  const pos = p ? decisaoPosJogo(s, p, ds) : undefined;
-  if (p && pos) ds.push(resolverDecisao(s, p, pos, melhorOpcao(s, p, pos)));
-  return concluirSemana(pacote, s, plano, p, ds);
+  const golMin = [...p.lances.filter((l) => l.meu === "gol" && l.min <= fora).map((l) => l.min), ...ds.filter((r) => r.meu === "gol").map((r) => r.min)].sort((a, b) => a - b)[0];
+  if (golMin !== undefined) { const d = decisaoComemoracao(s, p, golMin); ds.push(resolverDecisao(s, p, d, melhorOpcao(s, p, d))); }
+  const pos = decisaoPosJogo(s, p, ds);
+  if (pos) ds.push(resolverDecisao(s, p, pos, melhorOpcao(s, p, pos)));
+  return ds;
 }

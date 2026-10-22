@@ -3,7 +3,8 @@ import { camisaCostas } from "../visual/camisas";
 import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
-import { ordenar } from "../../src/liga";
+import { ordenar, type LinhaTabela } from "../../src/liga";
+import { COPAS, NOME_FASE as NOME_FASE_COPA, rotuloJogo, idaDe, copaDoClube, vencedorSerie, type CopaId, type JogoCopa } from "../../src/copas";
 import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from "../../src/atributos";
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono } from "../../src/casa";
@@ -14,6 +15,7 @@ import {
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
   familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo,
+  copasDe, jogoCopaDaSemana, diasTravados, concluirJogoDaCopa, type ResumoPartida,
 } from "../../src/jogo";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
@@ -51,7 +53,7 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const NOME_POS: Record<string, string> = { ZAG: "Zagueiro", LAT: "Lateral", VOL: "Volante", MEI: "Meia", PON: "Ponta", ATA: "Centroavante" };
 const NOME_AT: Record<Atributo, string> = { VEL: "Velocidade", RES: "Resistência", FOR: "Força", PAS: "Passe", CRU: "Cruzamento", DRI: "Drible", FIN: "Finalização", CAB: "Cabeceio", MAR: "Marcação", VIS: "Visão", POS: "Posicionamento", COM: "Compostura" };
-const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"];
+const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"], FIM_SEMANA = ["Sáb", "Dom"];
 
 let save: Save | null = ler<Save>(CHAVE_SAVE);
 if (save && migrarSave(pacote, save)) gravar(CHAVE_SAVE, save);
@@ -138,6 +140,21 @@ function telaSemana(s: Save): string {
   const prev = previaPlano(s, plano), escPrev = escalacao(pacote, s, prev.cansaco);
   const pos = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const tagCls = escPrev === "titular" ? "titular" : escPrev === "banco" || escPrev === "base" ? "banco" : escPrev === "semJogo" ? "" : "ruim";
+  // quarta-feira: jogo da copa continental
+  copasDe(pacote, s);
+  const jc = jogoCopaDaSemana(pacote, s), travados = diasTravados(s);
+  const prevQ = jc ? previaPlano(s, { ...plano, acoes: plano.acoes.slice(0, 2) }) : undefined, escQ = jc ? escalacao(pacote, s, prevQ!.cansaco, true) : undefined;
+  const copaHtml = jc ? (() => {
+    const j0 = jc.jogo, ida = idaDe(jc.copa, j0), cls = escQ === "titular" ? "titular" : escQ === "banco" ? "banco" : "ruim";
+    return `<p class="rotulo dia-jogo">Quarta · ${esc(COPAS[jc.copa.id].nome)}</p><div class="confronto"><div class="time">${escudo(j0.casa)}<span>${esc(nomeDe(j0.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(j0.fora))}</span>${escudo(j0.fora)}</div></div>
+      <div class="linha-info"><span>${j0.neutro ? "Campo neutro" : j0.casa === c.clubeId ? "Em casa" : "Fora de casa"}</span><span>${esc(rotuloJogo(j0))}</span>${ida ? `<span>Ida: ${esc(nomeDe(ida.casa))} <b>${ida.gc} × ${ida.gf}</b> ${esc(nomeDe(ida.fora))}</span>` : ""}</div>
+      <div><span class="tag ${cls}">Previsão: ${NOME_ESCALACAO[escQ!].toLowerCase()}</span></div><p class="rotulo dia-jogo" style="margin-top:10px">Domingo · ${esc(infoLiga(c.ligaId).curto)}</p>`;
+  })() : (() => {
+    const m = c.meioSemana;
+    if (!m || m.semana !== c.semana) return "";
+    const q = m.resumo;
+    return `<p class="rotulo dia-jogo">Quarta · ${esc(q.competicao ?? "Copa")} · encerrado</p><p style="margin:2px 0 8px;font-size:15px"><b>${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</b>${q.minutos > 0 ? ` <span class="sub">· nota ${q.nota.toFixed(1)}</span>` : ""}${q.penaltis ? ` <span class="sub">· ${esc(q.penaltis)} nos pênaltis</span>` : ""}</p><p class="rotulo dia-jogo">Domingo · ${esc(infoLiga(c.ligaId).curto)}</p>`;
+  })();
   const jogoHtml = jogo ? `<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(nomeDe(jogo.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(jogo.fora))}</span>${escudo(jogo.fora)}</div></div>
       <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(infoLiga(c.ligaId).curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
     : c.semana < SEMANAS_PRE ? `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>` : `<p class="sub">A ${esc(infoLiga(c.ligaId).curto)} já terminou. Semana de treino até o fim do calendário.</p>`;
@@ -154,7 +171,7 @@ function telaSemana(s: Save): string {
     <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${c.fama.toFixed(1)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
   </section>
 
-  <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${jogoHtml}${previsao}</section>
+  <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${copaHtml}${jogoHtml}${previsao}</section>
   ${cardAnuncio(s)}
   ${cardPatrocinio(s)}
   ${cardEvento(s)}
@@ -169,22 +186,61 @@ function telaSemana(s: Save): string {
     <div class="chips" style="flex-wrap:wrap">${focos.map(([k, n]) => `<button class="chip${plano.foco === k ? " ativo" : ""}" data-foco="${k}">${n}</button>`).join("")}<span style="width:8px"></span>${ints.map(([k, n]) => `<button class="chip${plano.intensidade === k ? " ativo" : ""}" data-int="${k}">${n}</button>`).join("")}</div>
     ${blocoTreinoPosicao(s)}
     <p class="rotulo" style="margin-top:6px">Seu tempo livre</p>
-    <div class="grade-semana" role="grid" aria-label="Tempo livre de segunda a sexta">
-      <span></span>${DIAS.map((d, i) => `<span class="cab">${d}${i === 4 && jogo ? "<small>véspera</small>" : ""}</span>`).join("")}
-      ${acoesDisp.map((a) => `<span class="acao">${ACOES[a].nome}<small>${esc(ACOES[a].efeito)}</small></span>${DIAS.map((d, i) => `<button class="cel${plano.acoes[i] === a ? " ativo" : ""}" data-dia="${i}" data-a="${a}" aria-label="${d}: ${ACOES[a].nome}" aria-pressed="${plano.acoes[i] === a}"></button>`).join("")}`).join("")}
+    <div class="grade-semana" role="grid" aria-label="Tempo livre de segunda a domingo">
+      <span></span>${DIAS.map((d, i) => `<span class="cab${travados.includes(i) ? " jogo" : ""}">${d}${travados.includes(i) ? "<small>jogo</small>" : i === 4 && jogo ? "<small>vésp.</small>" : ""}</span>`).join("")}${FIM_SEMANA.map((d, i) => `<span class="cab trav">${d}<small>${jogo ? (i ? "jogo" : "conc.") : "folga"}</small></span>`).join("")}
+      ${acoesDisp.map((a) => `<span class="acao">${ACOES[a].nome}<small>${esc(ACOES[a].efeito)}</small></span>${DIAS.map((d, i) => travados.includes(i) || (c.meioSemana?.semana === c.semana && i < 2) ? `<span class="cel travado" aria-hidden="true"></span>` : `<button class="cel${plano.acoes[i] === a ? " ativo" : ""}" data-dia="${i}" data-a="${a}" aria-label="${d}: ${ACOES[a].nome}" aria-pressed="${plano.acoes[i] === a}"></button>`).join("")}${FIM_SEMANA.map(() => `<span class="cel travado" aria-hidden="true"></span>`).join("")}`).join("")}
     </div>
+    ${travados.length ? `<p class="sub" style="margin-top:6px">Quarta é dia de jogo pela ${esc(COPAS[jc?.copa.id ?? copaDoClube(s.carreira.copas, s.carreira.clubeId)!.id].curto)}: só sobram quatro dias livres. O cansaço da quarta chega no domingo.</p>` : ""}
     <div class="previa"><span>Cansaço no jogo <b>${prev.cansaco}</b></span><span>Moral <b>${prev.moral}</b></span><span>Evolução <b>${sinal(prev.evolucao)}%</b></span>${prev.notaExtra ? `<span>Nota <b>+${prev.notaExtra.toFixed(2)}</b></span>` : ""}</div>
   </section>
-  <button class="botao grande" data-acao="jogar">${jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
+  <button class="botao grande" data-acao="jogar">${jc && escQ !== "lesionado" ? "Ir para o jogo de quarta" : jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
 
   <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Celular"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
   <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaCasa(s)}</section>
   <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
 }
 
+let vistaTabela: "liga" | CopaId = "liga";
+const FASES_MM = ["playoff", "oitavas", "quartas", "semi", "final"];
+function tabelaCopaHtml(t: LinhaTabela[], meu: string, zona?: (i: number) => string) {
+  return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${ordenar(t).map((x, i) => `<tr class="${x.clube === meu ? "meu" : ""} ${zona ? zona(i) : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+}
+function abaCopa(s: Save, id: CopaId): string {
+  const e = copasDe(pacote, s)[id], c = s.carreira;
+  if (!e) return `<p class="sub">Sem copa nesta temporada.</p>`;
+  const meu = c.clubeId, estou = e.clubes.includes(meu);
+  const placar = (j: JogoCopa) => j.gc === undefined ? `<span class="sub">sem. ${j.semana + 1}</span>` : `<b>${j.gc} × ${j.gf}</b>${j.penaltis ? ` <small class="sub">(pên. ${esc(nomeDe(j.penaltis))})</small>` : ""}`;
+  const linhaJogo = (j: JogoCopa) => `<div class="jogo-copa${j.casa === meu || j.fora === meu ? " meu" : ""}"><span>${esc(nomeDe(j.casa))}</span>${placar(j)}<span>${esc(nomeDe(j.fora))}</span></div>`;
+  const meus = e.jogos.filter((j) => j.casa === meu || j.fora === meu);
+  const prox = meus.filter((j) => j.gc === undefined).slice(0, 3);
+  const status = e.campeao ? `Campeão: <b>${esc(nomeDe(e.campeao))}</b>` : `Agora: ${esc(NOME_FASE_COPA[e.fase] ?? e.fase)}`;
+  let tabelas = "";
+  if (id === "UCL" && e.tabelas.Liga) tabelas = `<p class="sub" style="margin:10px 0 4px">1º–8º direto às oitavas · 9º–24º playoff · 25º–36º eliminados</p>${tabelaCopaHtml(e.tabelas.Liga, meu, (i) => i < 8 ? "z-dir" : i < 24 ? "z-play" : "z-fora")}`;
+  else {
+    const nomes = Object.keys(e.tabelas), meuG = nomes.find((k) => e.tabelas[k].some((x) => x.clube === meu));
+    const ordem = meuG ? [meuG, ...nomes.filter((k) => k !== meuG)] : nomes;
+    const zona = id === "LIB" ? (i: number) => (i < 2 ? "z-dir" : "") : (i: number) => (i < 8 ? "z-dir" : "z-fora");
+    tabelas = ordem.map((k, i) => { const h = `<p class="rotulo" style="margin:12px 0 4px">${id === "LIB" ? `Grupo ${k}` : k}</p>${tabelaCopaHtml(e.tabelas[k], meu, zona)}`; return i === 0 ? h : `<details><summary class="sub">${id === "LIB" ? `Grupo ${k}` : k}</summary>${h}</details>`; }).join("");
+  }
+  const mm = FASES_MM.filter((f) => e.jogos.some((j) => j.fase === f)).reverse().map((f) => {
+    const series = [...new Set(e.jogos.filter((j) => j.fase === f).map((j) => j.serie!))];
+    return `<p class="rotulo" style="margin:12px 0 4px">${esc(NOME_FASE_COPA[f])}</p>${series.map((sr) => {
+      const js = e.jogos.filter((j) => j.serie === sr), v = vencedorSerie(e, sr);
+      if (js.length === 1) return `<div class="serie${v ? "" : " aberta"}">${linhaJogo(js[0])}</div>`;
+      const [a, b] = [js[1].casa, js[1].fora], agg = js.every((j) => j.gc !== undefined) ? [js[0].gf! + js[1].gc!, js[0].gc! + js[1].gf!] : undefined;
+      return `<div class="serie${a === meu || b === meu ? " meu" : ""}"><div class="jogo-copa"><span class="${v === a ? "venc" : ""}">${esc(nomeDe(a))}</span>${agg ? `<b>${agg[0]} × ${agg[1]}</b>` : `<span class="sub">ida e volta</span>`}<span class="${v === b ? "venc" : ""}">${esc(nomeDe(b))}</span></div><small class="sub">${js.map((j) => `${esc(nomeDe(j.casa))} ${j.gc ?? "–"}×${j.gf ?? "–"}`).join(" · ")}${js[1].penaltis ? ` · pênaltis: ${esc(nomeDe(js[1].penaltis))}` : ""}</small></div>`;
+    }).join("")}`;
+  }).join("");
+  return `<p class="rotulo" style="margin-bottom:2px">${esc(COPAS[id].nome)}</p><p class="sub" style="margin-bottom:8px">${status}${estou ? ` · ${esc(clubeDe(ligaAtual(pacote, s), meu).nome)}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : " · seu clube não está nesta copa"}</p>
+    ${prox.length ? `<p class="rotulo" style="margin:6px 0 4px">Seus próximos jogos</p>${prox.map((j) => `<div class="jogo-copa meu"><span>${esc(nomeDe(j.casa))}</span><span class="sub">sem. ${j.semana + 1} · ${esc(rotuloJogo(j))}</span><span>${esc(nomeDe(j.fora))}</span></div>`).join("")}` : ""}
+    ${mm}${tabelas}`;
+}
 function abaTabela(s: Save): string {
   const t = ordenar(s.carreira.tabela);
-  return `<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+  const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
+  const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${vistas.map(([k, n]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`).join("")}</div>`;
+  if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
+  return `${chips}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
 
 let msgEvento: { titulo: string; texto: string } | undefined;
@@ -640,8 +696,13 @@ function htmlGol(p: Partida, lado: "casa" | "fora", meu?: "gol" | "assist", text
 
 function abrirJogo() {
   if (!save) return;
-  partida = prepararPartida(pacote, save, plano);
+  // quarta primeiro: jogo da copa continental, se houver
+  const jc = jogoCopaDaSemana(pacote, save);
+  partida = jc ? prepararPartida(pacote, save, plano, jc) : prepararPartida(pacote, save, plano);
   resultados = [];
+  if (jc && partida && (partida.escalacao === "lesionado" || partida.escalacao === "fora" || partida.escalacao === "suspenso" || (partida.escalacao === "banco" && partida.entrada > 90 && partida.lances.length === 0))) {
+    concluirJogoDaCopa(pacote, save, plano, partida, []); partida = undefined; salvar(); abrirJogo(); return;
+  }
   if (!partida || partida.escalacao === "lesionado" || partida.escalacao === "fora" || partida.escalacao === "suspenso" || (partida.escalacao === "banco" && partida.entrada > 90 && partida.lances.length === 0)) { fecharSemana(); return; }
   const p = partida, nome = save.jogador.apelido;
   placar = [0, 0]; minutoAtual = 0; amarelos = 0; expulso = false; comemorou = false; posFeito = false;
@@ -654,7 +715,7 @@ function abrirJogo() {
   p.decisoes.forEach((d) => fila.push({ min: d.min, decisao: d }));
   fila.sort((a, b) => a.min - b.min || (a.decisao ? 1 : 0) - (b.decisao ? 1 : 0));
   fila.push({ min: 90, fim: true, html: "Fim de jogo." });
-  $("telaJogo").innerHTML = `<div class="placar"><p class="rotulo" style="text-align:center;margin-bottom:6px">${p.tipo === "base" ? categoriaBase(save.jogador.idade).replace("s", "S") : rotuloSemana(save.carreira)}</p>
+  $("telaJogo").innerHTML = `<div class="placar"><p class="rotulo" style="text-align:center;margin-bottom:6px">${p.copa ? `${esc(COPAS[p.copa.id].curto)} · ${esc(p.copa.rotulo)}${p.copa.neutro ? " · campo neutro" : ""}` : p.tipo === "base" ? categoriaBase(save.jogador.idade).replace("s", "S") : rotuloSemana(save.carreira)}</p>
     <div class="linha"><div class="time">${escudo(p.casa)}<span>${esc(p.nomeCasa)}</span></div><div class="gols" id="gols">0 × 0</div><div class="time dir"><span>${esc(p.nomeFora)}</span>${escudo(p.fora)}</div></div>
     <div class="min" id="minuto">0'</div></div>
     <div class="lances" id="lances"></div><div class="rodape" id="rodapeJogo"><button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button></div>`;
@@ -662,6 +723,20 @@ function abrirJogo() {
   avancar();
 }
 
+function botaoFimJogo() {
+  return partida?.copa ? `<button class="botao grande" data-acao="fimcopa">Voltar para a semana</button>` : `<button class="botao grande" data-acao="fimjogo">Ver a semana</button>`;
+}
+/** Fim do jogo de quarta: fecha a rodada da copa e volta para a semana (o jogo da liga é no domingo). */
+function fecharJogoDaCopa() {
+  if (!save || !partida?.copa) return;
+  const r = concluirJogoDaCopa(pacote, save, plano, partida, resultados);
+  partida = undefined; resultados = [];
+  salvar();
+  ($("dlgJogo") as HTMLDialogElement).close();
+  render();
+  void r;
+  document.querySelector(".jogo-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
 function atualizarPlacar() { $("gols").textContent = `${placar[0]} × ${placar[1]}`; $("minuto").textContent = `${minutoAtual}'`; }
 function adicionarLance(min: number, html: string, cls = "") {
   const el = document.createElement("div"); el.className = `lance ${cls}`; el.innerHTML = `<span class="m">${min}'</span><span>${html}</span>`;
@@ -672,7 +747,7 @@ function avancar() {
   clearTimeout(timer);
   const item = fila.shift();
   if (!partida || !save) return;
-  if (!item) { $("rodapeJogo").innerHTML = `<button class="botao grande" data-acao="fimjogo">Ver a semana</button>`; return; }
+  if (!item) { $("rodapeJogo").innerHTML = botaoFimJogo(); return; }
   minutoAtual = item.min;
   if (item.decisao) {
     // lance de campo só com o jogador em campo: nada antes de entrar, depois de sair ou de ser expulso
@@ -691,7 +766,7 @@ function avancar() {
     const pos = decisaoPosJogo(save, partida, resultados);
     if (pos) fila.unshift({ min: 90, decisao: pos });
   }
-  if (!fila.length) { $("rodapeJogo").innerHTML = `<button class="botao grande" data-acao="fimjogo">Ver a semana</button>`; return; }
+  if (!fila.length) { $("rodapeJogo").innerHTML = botaoFimJogo(); return; }
   timer = window.setTimeout(avancar, item.gol ? 1100 : 650);
 }
 
@@ -758,9 +833,11 @@ function mostrarResumo(r: ResumoSemana) {
   const partidaHtml = p ? `<section class="painel"><p class="rotulo">${p.tipo === "base" ? "Jogo da base" : "Jogo"}</p><h2 style="margin:4px 0">${esc(p.nomeCasa)} ${p.golsCasa} × ${p.golsFora} ${esc(p.nomeFora)}</h2>
       ${p.minutos > 0 ? `<div style="display:flex;gap:18px;align-items:flex-end"><div><div class="grande-num">${p.nota.toFixed(1)}</div><span class="rotulo">Nota</span></div><div class="kv" style="flex:1"><span>Minutos</span><b>${p.minutos}</b><span>Gols</span><b>${p.gols}</b><span>Assistências</span><b>${p.assist}</b></div></div>` : `<p class="sub">Você não entrou em campo.</p>`}</section>`
     : `<section class="painel"><p class="rotulo">${r.rotulo}</p><p class="sub">${esc(NOME_ESCALACAO[r.escalacao])}${r.escalacao === "semJogo" ? ": semana de treinos." : "."}</p></section>`;
+  const q = r.copa, copaHtml = q ? `<section class="painel"><p class="rotulo dia-jogo">Quarta · ${esc(q.competicao ?? "Copa")}${q.rotulo ? ` · ${esc(q.rotulo)}` : ""}</p><h2 style="margin:4px 0">${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</h2>${q.penaltis ? `<p class="sub">${esc(q.penaltis)} venceu nos pênaltis.</p>` : ""}
+      ${q.minutos > 0 ? `<div class="kv"><span>Nota</span><b>${q.nota.toFixed(1)}</b><span>Minutos</span><b>${q.minutos}</b><span>Gols / assistências</span><b>${q.gols} / ${q.assist}</b></div>` : `<p class="sub">Você não entrou em campo${q.escalacao && q.escalacao !== "banco" && q.escalacao !== "titular" ? ` (${esc(NOME_ESCALACAO[q.escalacao].toLowerCase())})` : ""}.</p>`}</section>` : "";
   const fim = r.fimDeTemporada ? `<section class="painel" style="border-color:var(--ouro)"><p class="rotulo">Fim da temporada ${r.fimDeTemporada.ano}</p><h2 style="margin:4px 0">${esc(r.fimDeTemporada.clube)} em ${r.fimDeTemporada.posicao}º${r.fimDeTemporada.titulo ? " · CAMPEÃO!" : ""}</h2>
-      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b><span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
-  $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${partidaHtml}${fim}
+      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${r.fimDeTemporada.copa ? `<span>${esc(COPAS[r.fimDeTemporada.copa.id].curto)}</span><b>${r.fimDeTemporada.copa.jogos} j · ${r.fimDeTemporada.copa.gols} g · ${esc(r.fimDeTemporada.copa.fase ?? "")}</b>` : ""}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
+  $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${copaHtml}${partidaHtml}${fim}
     <section class="painel"><div style="display:flex;justify-content:space-between;align-items:flex-end"><div><p class="rotulo">OVR</p><div class="grande-num">${Math.round(r.ovrDepois)}</div></div><span class="delta ${r.ovrDepois - r.ovrAntes > 0 ? "pos" : ""}">${sinal(r.ovrDepois - r.ovrAntes, 2)}</span></div>
       <p class="sub" style="margin-top:6px">Mais evoluíram: ${r.ganhos.map(([a, v]) => `${NOME_AT[a]} ${sinal(v, 2)}`).join(" · ")}</p></section>
     <section class="painel kv"><span>Moral</span>${d(r.moral)}<span>Cansaço</span>${d(r.cansaco, 0, true)}<span>Fama</span>${d(r.fama)}${r.dinheiro ? `<span>Salário</span><b class="delta pos">+${dinheiro(r.dinheiro.salario)}</b>${r.dinheiro.aluguel ? `<span>Aluguel</span><b class="delta neg">−${dinheiro(r.dinheiro.aluguel)}</b>` : ""}` : ""}${r.posicaoTabela && !r.fimDeTemporada && save!.carreira.semana > SEMANAS_PRE ? `<span>Clube na tabela</span><b>${r.posicaoTabela}º</b>` : ""}</section>
@@ -771,7 +848,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -818,6 +895,7 @@ document.addEventListener("click", (ev) => {
     const rr = d.op === "aceitar" ? aceitarConvite(pacote, save, d.convite) : recusarConvite(pacote, save, d.convite);
     msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  else if (d.vtab) { vistaTabela = d.vtab as typeof vistaTabela; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.cel) { telaCel = d.cel as typeof telaCel; render(); }
   else if (d.fav && save) { alternarFavorito(relacoesDe(save.carreira), d.fav); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.fam && save) { const r = agirFamiliaJogo(pacote, save, d.fam, d.op as AcaoFamilia); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
@@ -861,6 +939,7 @@ document.addEventListener("click", (ev) => {
     } break;
     case "acelerar": clearTimeout(timer); avancar(); break;
     case "fimjogo": fecharSemana(); break;
+    case "fimcopa": fecharJogoDaCopa(); break;
     case "proxima": ($("dlgResumo") as HTMLDialogElement).close(); window.scrollTo(0, 0); break;
     case "recomecar":
       if (b.dataset.certeza) { try { localStorage.removeItem(CHAVE_SAVE); localStorage.removeItem(CHAVE_PLANO); } catch { /* ok */ } save = null; render(); }

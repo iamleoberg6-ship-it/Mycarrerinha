@@ -28,6 +28,9 @@ import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
+import { COPAS, SEMANAS_COPA, novaCopa, rodarSemana, classificados, regiaoNaCopa, jogoDoClubeNaSemana, type CopaId } from "../src/copas.js";
+import { CONVIDADOS } from "../src/convidados.js";
+import { copasDe, jogoCopaDaSemana, diasTravados, concluirJogoDaCopa, escalacao } from "../src/jogo.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -330,7 +333,7 @@ teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS
   const w = mundo(pacote);
   assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "ENG1", "ENG2", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "NED1", "POR1", "USA1"]);
   assert.equal(w.amadoras.length, 10);
-  assert.equal(Object.keys(w.clube).length, 516);
+  assert.equal(Object.keys(w.clube).length, 516 + CONVIDADOS.length);
   assert.equal(w.liga.USA1.clubes.length, 30); assert.equal(w.liga.BRA3.clubes.length, 20);
   assert.equal("ABCDEFGH".split("").reduce((a, g) => a + w.liga[`BRA4${g}`].clubes.length, 0), 96);
   assert.ok(w.clube["US-MIA"].elenco.some((j) => j.nome === "Lionel Mesi" && j.ovr >= 85), "o craque da liga americana");
@@ -707,6 +710,62 @@ teste("Base no país do jogador: espanhol começa na La Lyga, uruguaio na Argent
     if (liga) assert.ok(of.every((o) => mundo(pacote).info[o.clubeId].ligaId === liga), `${pais}: ofertas da liga certa`);
     for (let i = 0; i < 6; i++) semanaAutomatica(pacote, s);
   }
+});
+
+teste("Copas continentais: formatos, classificados, sem jogo duplo na semana e um campeão", () => {
+  const w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60, pais = (id: string) => w.clube[id]?.pais ?? "";
+  const fonte = { ligas: w.liga, semente: "copas", temporada: 2026 };
+  const esperado: Record<CopaId, { clubes: number; jogos: number }> = { LIB: { clubes: 32, jogos: 125 }, UCL: { clubes: 36, jogos: 189 }, ACL: { clubes: 24, jogos: 119 } };
+  for (const id of Object.keys(COPAS) as CopaId[]) {
+    const cl = classificados(fonte, id);
+    assert.equal(cl.length, esperado[id].clubes, `${id}: classificados`);
+    assert.equal(new Set(cl).size, cl.length, `${id}: clube repetido`);
+    const e = novaCopa(id, 2026, cl, forca, pais, regiaoNaCopa, "copas");
+    const rng = new RNG(`rodar-${id}`);
+    for (let sem = 0; sem < SEMANAS_TEMPORADA; sem++) {
+      rodarSemana(e, sem, forca, rng);
+      for (const c of cl) assert.ok(e.jogos.filter((j) => j.semana === sem && (j.casa === c || j.fora === c)).length <= 1, `${id}: ${c} joga duas vezes na semana ${sem}`);
+    }
+    assert.equal(e.jogos.length, esperado[id].jogos, `${id}: número de jogos`);
+    assert.ok(e.jogos.every((j) => j.gc !== undefined), `${id}: jogo sem resultado`);
+    assert.ok(e.campeao && cl.includes(e.campeao), `${id}: campeão`);
+    const final = e.jogos.filter((j) => j.fase === "final");
+    assert.equal(final.length, 1, `${id}: final em jogo único`); assert.ok(final[0].neutro, `${id}: final em campo neutro`);
+    assert.ok(Object.values(SEMANAS_COPA[id]).flat().every((x) => x >= 2 && x < SEMANAS_TEMPORADA), `${id}: semanas dentro da temporada`);
+  }
+  // Libertadora: grupos sem dois clubes do mesmo país; Champions: 8 rodadas de liga para todo mundo
+  const lib = novaCopa("LIB", 2026, classificados(fonte, "LIB"), forca, pais, regiaoNaCopa, "copas");
+  for (const g of Object.values(lib.tabelas)) { const ps = g.map((x) => pais(x.clube)); assert.equal(new Set(ps).size, ps.length, "país repetido no grupo"); }
+  const ucl = novaCopa("UCL", 2026, classificados(fonte, "UCL"), forca, pais, regiaoNaCopa, "copas");
+  for (const c of ucl.clubes) assert.equal(ucl.jogos.filter((j) => j.fase === "liga" && (j.casa === c || j.fora === c)).length, 8, c);
+});
+
+teste("Semana com jogo de copa: quarta travada, jogo de quarta antes do domingo e temporada fechada com copa", () => {
+  const r = criarJogador({ nome: "Teste Copa", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "copaFLA" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "copaFLA");
+  for (const k of ATRIBUTOS) s.jogador.at[k] = 86;
+  s.jogador.idade = 22; s.carreira.formacao = false;
+  const e = copasDe(pacote, s).LIB!;
+  assert.ok(e.clubes.includes("FLA"), "Flamingo na Libertadora");
+  while (!jogoCopaDaSemana(pacote, s)) { assert.deepEqual(diasTravados(s), []); semanaAutomatica(pacote, s); }
+  assert.deepEqual(diasTravados(s), [2]);
+  const plano = planoPadrao(), jc = jogoCopaDaSemana(pacote, s)!;
+  assert.notEqual(escalacao(pacote, s, 0, true), "base");
+  const p = prepararPartida(pacote, s, plano, jc)!;
+  const cid = jc.copa.id, meu = s.carreira.clubeId;
+  assert.equal(p.copa?.id, cid); assert.ok([p.casa, p.fora].includes(meu));
+  const resumo = concluirJogoDaCopa(pacote, s, plano, p, [])!;
+  assert.equal(resumo.competicao, COPAS[cid].nome);
+  assert.equal(jogoCopaDaSemana(pacote, s), undefined, "jogo de quarta já jogado");
+  assert.deepEqual(diasTravados(s), [2], "quarta segue travada até a semana fechar");
+  const sem = s.carreira.semana, liga = prepararPartida(pacote, s, plano);
+  const rs = concluirSemana(pacote, s, plano, liga, []);
+  assert.equal(rs.copa?.competicao, COPAS[cid].nome); assert.equal(s.carreira.semana, sem + 1); assert.equal(s.carreira.meioSemana, undefined);
+  let fim;
+  for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s).fimDeTemporada;
+  assert.ok(fim?.copa && fim.copa.jogos >= 6, "campanha na copa no fim da temporada");
+  assert.ok(s.carreira.historico.at(-1)!.copa);
+  assert.ok(e.jogos.filter((j) => (j.casa === "FLA" || j.fora === "FLA")).every((j) => jogoDoClubeNaSemana({ LIB: e }, "FLA", j.semana)?.jogo.id === j.id));
 });
 
 console.log(`\n${ok} testes passaram`);

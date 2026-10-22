@@ -80,9 +80,17 @@ h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; 
 .previa { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--giz-2); padding-top: 4px; }
 .previa b { color: var(--giz); }
 .grupo-plano { display: flex; flex-direction: column; gap: 8px; }
-.grade-semana { display: grid; grid-template-columns: 1fr repeat(5, 40px); gap: 4px 4px; align-items: center; }
+.grade-semana { display: grid; grid-template-columns: 1fr repeat(7, 32px); gap: 4px 3px; align-items: center; }
+.grade-semana .cel.travado { display: block; height: 32px; border-radius: 8px; background: repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 4px, transparent 4px 8px); border: 1px dashed var(--linha); }
+.grade-semana .cab.jogo, .grade-semana .cab.trav { color: var(--giz-2); opacity: .9; } .grade-semana .cab.jogo small { color: var(--ouro); }
+.dia-jogo { color: var(--ouro) !important; }
+.jogo-copa { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--linha); }
+.jogo-copa span:last-child { text-align: right; } .jogo-copa > b, .jogo-copa > .sub { text-align: center; }
+.jogo-copa.meu, .serie.meu .jogo-copa { color: var(--ouro-claro); }
+.jogo-copa .venc { font-weight: 700; color: var(--giz); } .serie { padding: 2px 0 6px; } .serie small { display: block; font-size: 11px; }
+tr.z-dir td:first-child { box-shadow: inset 3px 0 0 #74D394; } tr.z-play td:first-child { box-shadow: inset 3px 0 0 #E3B341; } tr.z-fora td { opacity: .7; }
 .grade-semana .cab { text-align: center; font-size: 12px; font-weight: 700; color: var(--giz-2); line-height: 1.1; }
-.grade-semana .cab small { display: block; font-size: 9px; font-weight: 600; color: var(--ouro); text-transform: uppercase; letter-spacing: .04em; }
+.grade-semana .cab small { display: block; font-size: 9px; font-weight: 600; color: var(--ouro); text-transform: uppercase; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 .grade-semana .acao { font-size: 14px; font-weight: 600; line-height: 1.15; padding: 4px 0; }
 .grade-semana .acao small { display: block; font-size: 11px; font-weight: 400; color: var(--giz-2); }
 .cel { width: 40px; height: 36px; border-radius: 10px; border: 1px solid var(--linha); background: var(--campo); cursor: pointer; position: relative; }

@@ -33,6 +33,11 @@ export class RNG {
     return arr[Math.floor(this.next() * arr.length)];
   }
   /** Normal(média, desvio) — Box-Muller */
+  /** Embaralha (Fisher–Yates) e devolve o próprio array. */
+  shuffle<T>(arr: T[]): T[] {
+    for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(this.next() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    return arr;
+  }
   normal(mean = 0, sd = 1): number {
     const u = 1 - this.next();
     const v = this.next();

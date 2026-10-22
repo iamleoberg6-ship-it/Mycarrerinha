@@ -5,6 +5,7 @@ import type { Posicao } from "./atributos.js";
 import { ligaDoPacote, type Clube, type JogadorNPC, type Liga, type PacoteDados } from "./liga.js";
 import { LIGAS, LIGA_INFO, type InfoLiga } from "./ligas.js";
 import dados from "../data/mundo-2026.json";
+import { CONVIDADOS, clubeConvidado } from "./convidados.js";
 
 export { LIGAS, LIGA_INFO, type InfoLiga };
 export interface InfoClube { id: string; nome: string; apelido: string; cores: string[]; forca: number; cidade: string; estadio: string; capacidade: number; padrao: string; ligaId: string; pais: string }
@@ -38,7 +39,12 @@ export function mundo(pacote: PacoteDados): Mundo {
     });
     (li.amador ? amadoras : ligas).push(ligaDe(li, clubes));
   }
-  const todas = [...ligas, ...amadoras];
+  // convidados das copas continentais: entram no mapa de clubes, mas não em ligas/amadoras (fora do mercado e das estrelas)
+  const conv: Clube[] = CONVIDADOS.map((c) => {
+    info[c.id] = { id: c.id, nome: c.nome, apelido: c.apelido, cores: c.cores, forca: c.forca, cidade: c.cidade, estadio: c.estadio, capacidade: 40000, padrao: c.padrao, ligaId: "CONV", pais: c.pais };
+    return clubeConvidado(c);
+  });
+  const todas = [...ligas, ...amadoras, { id: "CONV", nome: "Clubes convidados", pais: "INT", nivel: 3 as const, fLiga: 0.6, fSalario: 0.6, rebaixados: 0, clubes: conv }];
   const m: Mundo = { ligas, amadoras, liga: Object.fromEntries(todas.map((l) => [l.id, l])), clube: Object.fromEntries(todas.flatMap((l) => l.clubes.map((c) => [c.id, c]))), info };
   cache = { pacote, m };
   return m;

@@ -99,7 +99,7 @@ export function estiloDeJogo(at: Atributos, pos: Posicao): { nome: string; texto
 }
 
 // ------------------------------------------------------------------ carreira
-export interface Temporada { ano: number; idade: number; clube: string; clubeId?: string; liga?: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; premios?: string[]; est?: EstatEstimada }
+export interface Temporada { ano: number; idade: number; clube: string; clubeId?: string; liga?: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; premios?: string[]; est?: EstatEstimada; copa?: { nome: string; campeao: boolean; jogos: number; gols: number; assist: number } }
 export interface ResumoClube { clube: string; clubeId?: string; de: number; ate: number; jogos: number; gols: number; assist: number; titulos: number }
 export function clubesDaCarreira(hist: Temporada[]): ResumoClube[] {
   const out: ResumoClube[] = [];
@@ -112,12 +112,14 @@ export function clubesDaCarreira(hist: Temporada[]): ResumoClube[] {
   return out;
 }
 export function totaisDaCarreira(hist: Temporada[]) {
-  const jogos = hist.reduce((a, h) => a + h.jogos, 0), gols = hist.reduce((a, h) => a + h.gols, 0), assist = hist.reduce((a, h) => a + h.assist, 0);
+  // jogos de copa continental contam no total da carreira
+  const jogos = hist.reduce((a, h) => a + h.jogos + (h.copa?.jogos ?? 0), 0), gols = hist.reduce((a, h) => a + h.gols + (h.copa?.gols ?? 0), 0), assist = hist.reduce((a, h) => a + h.assist + (h.copa?.assist ?? 0), 0);
   const nota = jogos ? hist.reduce((a, h) => a + h.nota * h.jogos, 0) / jogos : 0;
   const comEst = hist.filter((h) => h.est && h.jogos);
   const pj = comEst.reduce((a, h) => a + h.jogos, 0);
   const est = pj ? { passe: Math.round(comEst.reduce((a, h) => a + h.est!.passe * h.jogos, 0) / pj), chute: Math.round(comEst.reduce((a, h) => a + h.est!.chute * h.jogos, 0) / pj), drible: +(comEst.reduce((a, h) => a + h.est!.drible * h.jogos, 0) / pj).toFixed(1), desarme: +(comEst.reduce((a, h) => a + h.est!.desarme * h.jogos, 0) / pj).toFixed(1) } : undefined;
-  const titulos = hist.filter((h) => h.titulo).map((h) => ({ ano: h.ano, nome: `Campeão${h.liga ? ` da ${h.liga}` : ""}`, clube: h.clube }));
+  const titulos = [...hist.filter((h) => h.titulo).map((h) => ({ ano: h.ano, nome: `Campeão${h.liga ? ` da ${h.liga}` : ""}`, clube: h.clube })),
+    ...hist.filter((h) => h.copa?.campeao).map((h) => ({ ano: h.ano, nome: `Campeão da ${h.copa!.nome}`, clube: h.clube }))].sort((a, b) => a.ano - b.ano);
   const premios = hist.flatMap((h) => (h.premios ?? []).filter((p) => !/campe/i.test(p)).map((p) => ({ ano: h.ano, nome: p.replace(/\s\d{4}$/, ""), clube: h.clube })));
   return { jogos, gols, assist, nota, est, titulos, premios, temporadas: hist.length };
 }
@@ -126,6 +128,9 @@ export function totaisDaCarreira(hist: Temporada[]) {
 export interface Trofeu { nome: string; modelo: string; cores: [string, string]; vezes: { ano: number; clube: string; liga?: string }[] }
 const OURO: [string, string] = ["#E3B341", "#9A7420"], PRATA: [string, string] = ["#C9CCD1", "#7F8389"];
 const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
+  [/^Taça da Libertadora/, "Copa Libertadora", "taca", OURO],
+  [/^Taça da Champions Asiática/, "Champions Asiática", "taca", OURO],
+  [/^Taça da Champions/, "Champions Ligue", "taca", OURO],
   [/^Taça de campeão/, "Campeão da liga", "taca", OURO],
   [/^Artilheiro do sub-17/, "Artilheiro do sub-17", "chuteira", PRATA],
   [/^Craque do sub-17/, "Craque do sub-17", "bola", PRATA],
