@@ -83,9 +83,6 @@ class Kit:
                 for cp in self.defs[m.group(1)]:
                     c = copy.deepcopy(cp)
                     c.set("style", f"fill:{meio};stroke:{meio};stroke-width:14;stroke-linejoin:round")
-                    if c.get("d"):  # só o contorno de fora: os furos (onde iam boca/nariz do molde) ficam preenchidos
-                        sub = re.search(r"(?<=.)[mM]", c.get("d"))
-                        if sub: c.set("d", c.get("d")[:sub.start()])
                     novo.append(c)
                 pai.insert(list(pai).index(g), novo); pai.remove(g)
         for x in e.iter():  # tira formas soltas que não eram recortes (já estão no desenho de cima)
@@ -191,7 +188,7 @@ def catalogo(svg, bboxes):
     k = Kit(svg, bboxes)
     F = k.faixa
     C = {
-        "base": F("g6282", "g6534"),            # pescoço, orelhas, rosto (sem o peito do kit)
+        "base": F("g6266", "g6534"),            # peito/pescoço, orelhas, rosto
         "cabelo": F("g6676", "path6802"),
         "olho_e": F("path6804", "path6900"), "olho_d": F("path6902", "path6998"),
         "sobr_e": F("g7000", "g7052"), "sobr_d": F("g7068", "g7120"),
@@ -261,9 +258,6 @@ def cabeca(kit_svg, bboxes, rosto="molde", cabelo="molde", olhos="molde", sobr="
               f'<stop offset="1" stop-color="#ffc0a4"/></linearGradient></defs>'
               f'<ellipse cx="4818" cy="1470" rx="450" ry="330" fill="url(#{pref}calota)"/>')
     partes.append(recolorir(calota, tom))
-    partes.append(recolorir(f'<defs><linearGradient id="{pref}miolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7ab8a"/>'
-                            f'<stop offset="1" stop-color="#ee9070"/></linearGradient></defs>'
-                            f'<ellipse cx="4818" cy="1930" rx="370" ry="310" fill="url(#{pref}miolo)"/>', tom))
     add(R[rosto], "r")
     if recorte:  # corta pescoço/peito do kit logo abaixo do queixo (o pescoço do corpo continua)
         q = R[rosto]["queixo"] - 2417

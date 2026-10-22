@@ -73,6 +73,16 @@ export const APARENCIA_PADRAO: Aparencia = {
   formatoSobrancelha: "reta", nariz: "reto", boca: "sorriso", sardas: false, pinta: false, brinco: false,
   roupaSocial: "moletom", corSocial: 1, barba: "nenhuma", corrente: false,
 };
+/** Aparência salva no formato do estilo de arte que foi desfeito (v: 2, tudo por índice) → formato deste boneco. */
+export function aparenciaCompat(x: unknown): Aparencia {
+  const a = (x ?? {}) as Record<string, unknown>;
+  if (a.v !== 2) return { ...APARENCIA_PADRAO, ...(a as Partial<Aparencia>) };
+  const n = (v: unknown, d: number) => (typeof v === "number" && isFinite(v) ? v : d);
+  const CAB: Cabelo[] = ["curto", "franja", "crespo", "longo", "cacheado", "franja", "curto", "raspado", "careca"];
+  const COR = [0, 1, 2, 3, 5, 7, 6, 7, 8, 9];
+  const roupa = ["camiseta", "moletom", "polo", "jaqueta", "camisa", "regata"].includes(String(a.roupaSocial)) ? (a.roupaSocial as RoupaSocial) : a.roupaSocial === "social" ? "camisa" : APARENCIA_PADRAO.roupaSocial;
+  return { ...APARENCIA_PADRAO, pele: Math.min(7, Math.round((n(a.tom, 3) * 7) / 6)), cabelo: CAB[n(a.cabelo, 2)] ?? "curto", corCabelo: COR[n(a.corCabelo, 0)] ?? 0, roupaSocial: roupa, corSocial: n(a.corSocial, 1) };
+}
 export const CAMISA_PADRAO: Camisa = { cor1: "#8C9A94", cor2: "#6F7C77", estilo: "lisa" };
 
 export function escurecer(hex: string, f: number): string {

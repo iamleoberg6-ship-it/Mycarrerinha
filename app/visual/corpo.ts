@@ -52,8 +52,6 @@ const ang = (a: P, b: P) => (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.
 // ------------------------------------------------------------------ geometria do corpo
 // Proporção de figurinha: cabeça grande, corpo atlético em V. Tudo em torno do eixo x = 150.
 const FISICO = {
-  esguio: { ombro: 76, peito: 62, cintura: 52, quadril: 56, braco: 27, antebraco: 23, coxa: 42, panturrilha: 30 },
-  troncudo: { ombro: 96, peito: 86, cintura: 76, quadril: 72, braco: 38, antebraco: 32, coxa: 56, panturrilha: 40 },
   magro: { ombro: 80, peito: 66, cintura: 54, quadril: 58, braco: 29, antebraco: 25, coxa: 44, panturrilha: 32 },
   atletico: { ombro: 88, peito: 74, cintura: 58, quadril: 62, braco: 34, antebraco: 29, coxa: 50, panturrilha: 36 },
   forte: { ombro: 96, peito: 82, cintura: 64, quadril: 66, braco: 40, antebraco: 33, coxa: 56, panturrilha: 40 },
@@ -63,7 +61,7 @@ interface Braco { J: P; E: P; W: P; lado: -1 | 1 }
 interface Perna { H: P; K: P; A: P; lado: -1 | 1 }
 interface Geo extends F { bracos: Braco[]; pernas: Perna[]; bainha: number; altura: number }
 function geometria(v: Visual, alturaCm: number): Geo {
-  const f = FISICO[v.fisico], e = Math.max(-14, Math.min(14, (alturaCm - 178) * 0.8));
+  const f = FISICO[v.fisico] ?? FISICO.atletico, e = Math.max(-14, Math.min(14, (alturaCm - 178) * 0.8));
   const bracos = ([-1, 1] as const).map((lado) => ({ lado, J: [150 + lado * (f.ombro - f.braco * 0.5), 274] as P, E: [150 + lado * (f.ombro - f.braco * 0.28 + 7), 370] as P, W: [150 + lado * (f.ombro - f.braco * 0.2 + 10), 452] as P }));
   const pernas = ([-1, 1] as const).map((lado) => ({ lado, H: [150 + lado * (f.quadril * 0.5 + 2), 458] as P, K: [150 + lado * (f.quadril * 0.5 + 4), 590 + e * 0.5] as P, A: [150 + lado * (f.quadril * 0.5 + 6), 694 + e] as P }));
   return { ...f, bracos, pernas, bainha: 452, altura: 742 + e };
@@ -83,7 +81,7 @@ const pontoPerna = (p: Perna, t: number): P => (t <= 0.53 ? lerp(p.H, p.K, t / 0
 
 // ------------------------------------------------------------------ tatuagens
 /** Desenho da tatuagem centrado em (0,0), cabendo em ~26 × 46 (comprido no sentido do membro, que é o eixo y). */
-export function desenhoTatuagem(id: string): string {
+function desenhoTatuagem(id: string): string {
   const t = `fill="none" stroke="${TINTA_TAT}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"`;
   const est = (x: number, y: number, r: number) => `<path d="${Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r; return `${i ? "L" : "M"}${f1(x + Math.cos(a) * rr)} ${f1(y + Math.sin(a) * rr)}`; }).join(" ")} Z" fill="${TINTA_TAT}" fill-opacity=".85"/>`;
   switch (id) {
@@ -100,7 +98,7 @@ export function desenhoTatuagem(id: string): string {
   }
 }
 /** Fechamento: padrão denso de ondas e flores que cobre o membro inteiro (recortado pelo próprio membro). */
-export function fechamento(d: string, x: number, y: number, h: number): string {
+function fechamento(d: string, x: number, y: number, h: number): string {
   const id = novoId("fc");
   const ondas = Array.from({ length: 9 }, (_, i) => `<path d="M${x - 30} ${y - h / 2 + i * (h / 8)} q10 -8 20 0 t20 0 t20 0" fill="none" stroke="${TINTA_TAT}" stroke-width="1.6" stroke-opacity=".8"/>`).join("");
   const flores = [[-6, -0.25], [7, 0.1], [-4, 0.35]].map(([dx, k]) => `<circle cx="${x + dx}" cy="${y + k * h}" r="6" fill="${TINTA_TAT}" fill-opacity=".75"/><circle cx="${x + dx}" cy="${y + k * h}" r="2.4" fill="#B3263A"/>`).join("");

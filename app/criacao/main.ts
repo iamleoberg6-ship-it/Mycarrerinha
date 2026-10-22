@@ -7,12 +7,11 @@ import {
   type PaisId, type FamiliaId, type FormacaoId, type Pe, type EscolhasCriacao, type ResultadoCriacao,
 } from "../../src/dna.js";
 import { ATRIBUTOS, GRUPO, peso, type Atributo, type Posicao } from "../../src/atributos.js";
-import { CAMISA_PADRAO, type Camisa } from "./avatar.js";
 import {
-  svgFoto, APARENCIA_PADRAO, NOMES_TOM, AMOSTRAS_TOM, NOMES_COR_CABELO, AMOSTRAS_COR_CABELO, NOMES_ROSTO, NOMES_CABELO,
-  NOMES_OLHOS, NOMES_SOBRANCELHA, NOMES_NARIZ, NOMES_BOCA, CORES_CASUAL, NOMES_CASUAL_COR, type Aparencia,
-} from "../visual/personagem.js";
-import { NOME_CASUAL, type RoupaCasual } from "../../src/visual.js";
+  svgFoto, APARENCIA_PADRAO, CAMISA_PADRAO, PELES, CORES_CABELO, NOMES_CABELO_COR, CORES_OLHOS, NOMES_OLHOS, ROSTOS, CABELOS,
+  OLHOS, SOBRANCELHAS, NARIZES, BOCAS, BARBAS, ROUPAS_SOCIAIS, CORES_ROUPA, NOMES_ROUPA,
+  type Aparencia, type Camisa,
+} from "./avatar.js";
 import { definirPerfil, estiloDeJogo, type PerfilCraque } from "../../src/perfil.js";
 import { cenarioCompleto } from "./cenario.js";
 
@@ -206,23 +205,23 @@ function telaPasso(): string {
 
 function painelAparencia(): string {
   const a = estado.aparencia;
-  const lista = (nomes: string[]) => nomes.map((nome, i) => ({ id: String(i), nome }));
-  const cap = (t: string) => t[0].toUpperCase() + t.slice(1);
   switch (estado.aba) {
     case "rosto":
-      return grupoTexto("rosto", "Formato do rosto", lista(NOMES_ROSTO), String(a.rosto)) + grupoCores("tom", "Tom de pele", AMOSTRAS_TOM, a.tom, NOMES_TOM.map(cap));
+      return grupoTexto("rosto", "Formato do rosto", ROSTOS, a.rosto) + grupoCores("pele", "Tom de pele", PELES, a.pele) +
+        `<span class="rotulo">Detalhes</span><div class="pilulas">${([["sardas", "Sardas"], ["pinta", "Pinta"], ["brinco", "Brinco"]] as const).map(([k, n]) =>
+          `<button type="button" class="pilula${a[k] ? " ativa" : ""}" data-grupo="liga" data-id="${k}" aria-pressed="${a[k]}">${n}</button>`).join("")}</div>`;
     case "olhos":
-      return grupoTexto("olhos", "Olhos", lista(NOMES_OLHOS), String(a.olhos)) + grupoTexto("sobrancelha", "Sobrancelha", lista(NOMES_SOBRANCELHA), String(a.sobrancelha))
-        + `<p class="efeito">A sobrancelha acompanha a cor do cabelo.</p>`;
+      return grupoTexto("formatoOlho", "Formato dos olhos", OLHOS, a.formatoOlho) + grupoCores("olhos", "Cor dos olhos", CORES_OLHOS, a.olhos, NOMES_OLHOS) +
+        grupoTexto("formatoSobrancelha", "Sobrancelha", SOBRANCELHAS, a.formatoSobrancelha) +
+        `<label for="sobrancelha" class="rotulo">Espessura da sobrancelha</label><input id="sobrancelha" type="range" min="2" max="5" step="0.5" value="${a.sobrancelha}">`;
     case "nariz":
-      return grupoTexto("nariz", "Nariz", lista(NOMES_NARIZ), String(a.nariz)) + grupoTexto("boca", "Boca", lista(NOMES_BOCA), String(a.boca));
+      return grupoTexto("nariz", "Nariz", NARIZES, a.nariz) + grupoTexto("boca", "Boca", BOCAS, a.boca) + grupoTexto("barba", "Barba", BARBAS, a.barba);
     case "cabelo":
-      return grupoTexto("cabelo", "Corte", lista(NOMES_CABELO), String(a.cabelo)) + grupoCores("corCabelo", "Cor do cabelo", AMOSTRAS_COR_CABELO, a.corCabelo, NOMES_COR_CABELO.map(cap))
-        + `<p class="efeito">Dá para mudar o corte e pintar o cabelo depois, no salão.</p>`;
+      return grupoTexto("cabelo", "Corte", CABELOS, a.cabelo) + grupoCores("corCabelo", "Cor do cabelo", CORES_CABELO, a.corCabelo, NOMES_CABELO_COR);
     case "roupa":
-      return grupoTexto("roupaSocial", "Roupa fora de campo", (Object.keys(NOME_CASUAL) as RoupaCasual[]).map((id) => ({ id, nome: NOME_CASUAL[id] })), a.roupaSocial)
-        + grupoCores("corSocial", "Cor", CORES_CASUAL, a.corSocial, NOMES_CASUAL_COR)
-        + `<p class="efeito">Em campo, você veste o uniforme do clube. A camisa da foto é a do seu clube do coração até assinar o primeiro contrato.</p>`;
+      return grupoTexto("roupaSocial", "Roupa fora de campo", ROUPAS_SOCIAIS, a.roupaSocial) + grupoCores("corSocial", "Cor", CORES_ROUPA, a.corSocial, NOMES_ROUPA) +
+        `<span class="rotulo">Acessório</span><div class="pilulas"><button type="button" class="pilula${a.corrente ? " ativa" : ""}" data-grupo="liga" data-id="corrente" aria-pressed="${a.corrente}">Corrente</button></div>
+        <p class="efeito">Em campo, você veste o uniforme do clube. A camisa da foto é a do seu clube do coração até assinar o primeiro contrato.</p>`;
   }
 }
 
@@ -301,7 +300,7 @@ function telaRevelacao(): string {
         <ul class="tracos">${r.tracos.map((t) => `<li><strong>${TRACOS[t].nome}</strong><span>${TRACOS[t].efeito}</span></li>`).join("")}</ul>
       </section>
       <section class="painel ficha">
-        <div class="larga fora-de-campo"><div class="mini-foto">${foto(undefined, "social")}</div><div><span class="rotulo">Fora de campo</span><strong>${NOME_CASUAL[estado.aparencia.roupaSocial]} ${NOMES_CASUAL_COR[estado.aparencia.corSocial].toLowerCase()}</strong></div></div>
+        <div class="larga fora-de-campo"><div class="mini-foto">${foto(undefined, "social")}</div><div><span class="rotulo">Fora de campo</span><strong>${ROUPAS_SOCIAIS.find((x) => x.id === estado.aparencia.roupaSocial)!.nome} ${NOMES_ROUPA[estado.aparencia.corSocial].toLowerCase()}</strong></div></div>
         <div><span class="rotulo">Altura</span><strong>${altura(e.alturaCm)}</strong></div>
         <div><span class="rotulo">Pé</span><strong>${e.pe[0].toUpperCase() + e.pe.slice(1)}</strong></div>
         <div><span class="rotulo">Dinheiro</span><strong>R$ ${r.dinheiroInicial.toLocaleString("pt-BR")}</strong></div>
@@ -391,6 +390,8 @@ function ligarEventos() {
     $("#altura-valor").textContent = altura(estado.alturaCm);
     $("#altura-efeito").textContent = fraseAltura(estado.alturaCm);
   });
+  const sob = document.getElementById("sobrancelha") as HTMLInputElement | null;
+  sob?.addEventListener("input", () => { estado.aparencia.sobrancelha = Number(sob.value); $(".avatar-grande").innerHTML = foto(undefined, estado.traje); });
   document.querySelectorAll<HTMLButtonElement>("[data-grupo]").forEach((b) => b.addEventListener("click", () => escolher(b.dataset.grupo!, b.dataset.id!)));
   const card = document.getElementById("card");
   const abrir = () => {
@@ -404,7 +405,7 @@ function ligarEventos() {
   card?.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); abrir(); } });
   document.getElementById("exemplo")?.addEventListener("click", () => {
     Object.assign(estado, { pais: "BRA", familia: "humilde", clube: "FLA", formacao: "rua", posicao: "PON", alturaCm: 174, pe: "esquerdo", aparenciaFeita: true });
-    estado.aparencia = { ...estado.aparencia, tom: 4, cabelo: 4, corCabelo: 1, olhos: 0, boca: 1 };
+    estado.aparencia = { ...estado.aparencia, pele: 3, cabelo: "cacheado", corCabelo: 0 };
     gerar(); estado.passo = 8; render(); window.scrollTo(0, 0);
   });
   document.getElementById("sortear")?.addEventListener("click", () => { estado.tentativa++; gerar(); render(); window.scrollTo(0, 0); });
@@ -443,6 +444,7 @@ function escolher(grupo: string, id: string) {
   else if (grupo === "posicao") estado.posicao = id as Posicao;
   else if (grupo === "aba") { estado.aba = id as Estado["aba"]; if (id === "roupa") estado.traje = "social"; }
   else if (grupo === "traje") estado.traje = id as Estado["traje"];
+  else if (grupo === "liga") { const k = id as "sardas" | "pinta" | "brinco" | "corrente"; estado.aparencia[k] = !estado.aparencia[k]; }
   else if (grupo === "decisao") {
     estado.decisao = id;
     const op = estado.perfil?.evento?.opcoes.find((o) => o.id === id);
@@ -450,7 +452,7 @@ function escolher(grupo: string, id: string) {
   }
   else if (grupo.startsWith("ap-")) {
     const chave = grupo.slice(3) as keyof Aparencia;
-    const numerico = chave !== "roupaSocial";
+    const numerico = chave === "pele" || chave === "corCabelo" || chave === "olhos" || chave === "corSocial";
     (estado.aparencia as unknown as Record<string, unknown>)[chave] = numerico ? Number(id) : id;
   }
   render();

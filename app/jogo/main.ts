@@ -19,8 +19,7 @@ import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, 
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg } from "./poster";
-import { previaTatuagem } from "../visual/corpo";
-import { svgCorpo, svgFoto, aparenciaDe, APARENCIA_PADRAO, NOMES_CABELO, NOMES_COR_CABELO, AMOSTRAS_COR_CABELO, CORES_CASUAL as CORES_ROUPA, NOMES_CASUAL_COR as NOMES_ROUPA, type Kit } from "../visual/personagem";
+import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia } from "../visual/cartazes";
 import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
@@ -39,6 +38,7 @@ import { culturaBase, NOME_CULTURA, TEXTO_CULTURA } from "../../src/identidade";
 import { AGENTE_INFO, NOME_PAPEL, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
+import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, aparenciaCompat, type Aparencia } from "../criacao/avatar";
 import { svgComodo } from "../casa/iso";
 
 const pacote = pacoteJson as unknown as PacoteDados;
@@ -55,6 +55,8 @@ const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex"];
 
 let save: Save | null = ler<Save>(CHAVE_SAVE);
 if (save && migrarSave(pacote, save)) gravar(CHAVE_SAVE, save);
+// aparência criada no estilo de arte que foi desfeito: volta para o formato do boneco atual
+if (save && (save.jogador.aparencia as { v?: number } | undefined)?.v === 2) { save.jogador.aparencia = aparenciaCompat(save.jogador.aparencia); gravar(CHAVE_SAVE, save); }
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
 let aba: "tabela" | "jogador" | "noticias" | "casa" | "mercado" | "amigos" = "tabela";
@@ -74,15 +76,15 @@ function escudo(id: string): string {
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const info = infoClube(pacote, clubeId), [a, b] = info.cores;
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
-  return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, marca: mat?.id, chuteira: mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1]] : undefined };
+  return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, chuteira: mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1]] : undefined };
 }
 function corpoDe(s: Save, traje: "jogo" | "casual", clubeId?: string): string {
-  return svgCorpo({ aparencia: s.jogador.aparencia ?? null, visual: visualDe(s.jogador), alturaCm: s.jogador.alturaCm, traje, kit: kitDe(s, clubeId) });
+  return svgCorpo({ aparencia: (s.jogador.aparencia as Partial<Aparencia>) ?? null, visual: visualDe(s.jogador), alturaCm: s.jogador.alturaCm, traje, kit: kitDe(s, clubeId) });
 }
 function foto(s: Save): string {
   const [a, b] = cores(s.carreira.clubeId);
-  const info = infoClube(pacote, s.carreira.clubeId);
-  return svgFoto({ aparencia: s.jogador.aparencia ?? APARENCIA_PADRAO, camisa: { cor1: a, cor2: b ?? "#FFFFFF", estilo: info.padrao }, numero: s.jogador.numero, traje: "jogo", visual: visualDe(s.jogador), marca: kitDe(s).marca });
+  const ap = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) };
+  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: s.jogador.numero, traje: "jogo", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
 }
 const barra = (nome: string, v: number, max = 100, cor?: string, txt?: string) =>
   `<div class="barra">${nome}<b>${txt ?? Math.round(v)}</b><i style="--v:${Math.max(0, Math.min(100, (100 * v) / max))}%${cor ? `;--c:${cor}` : ""}"></i></div>`;
@@ -200,7 +202,7 @@ function cardAnuncio(s: Save): string {
   return `<section class="painel anuncio-card"><p class="rotulo">Anúncio oficial</p><div class="anuncio-grande">${anuncioDe(s, n)}</div><button class="botao sec peq" data-acao="fechar-anuncio" data-chave="${esc(chave)}">Fechar</button></section>`;
 }
 function blocoVisual(s: Save): string {
-  const v = visualDe(s.jogador), ap = aparenciaDe(s.jogador.aparencia), aviso = msgVisual ? `<p class="msg-mercado ${msgVisual.ok ? "ok" : "nao"}">${esc(msgVisual.texto)}</p>` : "";
+  const v = visualDe(s.jogador), aviso = msgVisual ? `<p class="msg-mercado ${msgVisual.ok ? "ok" : "nao"}">${esc(msgVisual.texto)}</p>` : "";
   msgVisual = undefined;
   const chips = <T extends string>(campo: string, opcoes: [T, string][], atual: T) => `<div class="chips" style="flex-wrap:wrap">${opcoes.map(([k, n]) => `<button class="chip${atual === k ? " ativo" : ""}" data-vis="${campo}" data-val="${k}">${esc(n)}</button>`).join("")}</div>`;
   const atualTat = v.tatuagens[areaTat];
@@ -211,8 +213,6 @@ function blocoVisual(s: Save): string {
     <p class="sub" style="margin:12px 0 6px;font-weight:600">Uniforme</p>${chips("manga", [["curta", "Manga curta"], ["longa", "Manga longa"]], v.manga)}${chips("caimento", [["justo", "Justo"], ["largo", "Largo"]], v.caimento)}${chips("meiao", [["alto", "Meião alto"], ["baixo", "Meião baixo"]], v.meiao)}
     <p class="sub" style="margin:12px 0 6px;font-weight:600">Dia a dia</p>${chips("casual", (Object.keys(NOME_CASUAL) as RoupaCasual[]).map((k) => [k, NOME_CASUAL[k]]), v.casual)}${chips("perna", [["bermuda", "Bermuda"], ["calca", "Calça"]], v.perna)}
     <div class="cores-roupa">${CORES_ROUPA.map((c, i) => `<button class="cor${v.corCasual === i ? " ativo" : ""}" style="--c:${c}" data-vis="corCasual" data-val="${i}" aria-label="${esc(NOMES_ROUPA[i])}"></button>`).join("")}</div>
-    <p class="sub" style="margin:12px 0 6px;font-weight:600">Salão</p>${chips("ap:cabelo", NOMES_CABELO.map((n, i) => [String(i), n] as [string, string]), String(ap.cabelo))}
-    <div class="cores-roupa">${AMOSTRAS_COR_CABELO.map((c, i) => `<button class="cor${ap.corCabelo === i ? " ativo" : ""}" style="--c:${c}" data-vis="ap:corCabelo" data-val="${i}" aria-label="${esc(NOMES_COR_CABELO[i])}"></button>`).join("")}</div>
     <p class="rotulo" style="margin-top:16px">Estúdio de tatuagem</p>
     <div class="chips" style="flex-wrap:wrap">${(Object.keys(NOME_AREA) as AreaTatuagem[]).map((a) => `<button class="chip${areaTat === a ? " ativo" : ""}" data-tarea="${a}">${esc(NOME_AREA[a])}${v.tatuagens[a] ? " •" : ""}</button>`).join("")}</div>
     ${atualTat ? `<p class="sub" style="margin-top:8px">${esc(NOME_AREA[areaTat])}: <b>${esc(TATUAGEM[atualTat].nome)}</b>. <button class="botao sec peq" data-tat-remover="${areaTat}">Tirar com laser (${dinheiro(custoRemocao(atualTat))})</button></p>`
@@ -776,6 +776,7 @@ document.addEventListener("click", (ev) => {
   const d = b.dataset;
   if (d.assinar) {
     const dados = ler<DadosCriacao>(CHAVE_JOGADOR)!;
+    dados.aparencia = aparenciaCompat(dados.aparencia);
     dados.caminho = caminhoSel; dados.cidade = caminhoSel === "varzea" ? cidadeSel ?? cidadeDaVarzea(pacote, dados.clube) : undefined;
     save = novoJogo(pacote, dados, d.assinar); plano = planoPadrao(); salvar(); render(); window.scrollTo(0, 0);
   } else if (d.foco) { plano.foco = d.foco as Grupo; salvar(); render(); }
@@ -790,10 +791,6 @@ document.addEventListener("click", (ev) => {
   else if (d.decidir) decidir(+d.decidir, d.op!);
   else if (d.patro && save) {
     if (d.patro === "recusar") recusarPatrocinio(save); else cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato);
-    salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
-  }
-  else if (d.vis?.startsWith("ap:") && save) { // salão: corte e cor do cabelo
-    save.jogador.aparencia = { ...aparenciaDe(save.jogador.aparencia), [d.vis.slice(3)]: +d.val! };
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.vis && save) {
@@ -842,7 +839,7 @@ document.addEventListener("click", (ev) => {
   else switch (d.acao) {
     case "exemplo": {
       const e: EscolhasCriacao = { nome: "Gabriel Souza", apelido: "Gabi", pais: "BRA", familia: "humilde", formacao: "rua", alturaCm: 176, pe: "esquerdo", posicao: "PON", clubeCoracao: "FLA" };
-      gravar(CHAVE_JOGADOR, { resultado: criarJogador(e), aparencia: { ...APARENCIA_PADRAO, cabelo: 4, tom: 4, corCabelo: 1 }, clube: "FLA", perfil: undefined, decisao: null });
+      gravar(CHAVE_JOGADOR, { resultado: criarJogador(e), aparencia: { ...APARENCIA_PADRAO, cabelo: "cacheado", pele: 4 }, clube: "FLA", perfil: undefined, decisao: null });
       render(); break;
     }
     case "jogar": abrirJogo(); break;

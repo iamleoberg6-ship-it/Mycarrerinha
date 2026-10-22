@@ -239,7 +239,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
     nome: e.nome, apelido: e.apelido || e.nome.split(" ")[0], posicao: e.posicao, pais: e.pais, nacionalidade: r.nacionalidade, idade: IDADE_INICIAL[caminho],
     at: { ...r.atributos }, pot: r.potencial, faixaPot: r.faixaPotencial, personalidade: pers, tracos: r.tracos, perfilId: perfil.id, perfilNome: perfil.nome,
     aparencia: d.aparencia, numero: String(rng.int(26, 49)), familia: e.familia,
-    alturaCm: e.alturaCm, pe: e.pe, visual: { ...VISUAL_PADRAO, tatuagens: {}, fisico: fisicoInicial(r.atributos), ...roupaDaAparencia(d.aparencia) },
+    alturaCm: e.alturaCm, pe: e.pe, visual: { ...VISUAL_PADRAO, tatuagens: {}, fisico: fisicoInicial(r.atributos) },
   };
   // quem começa antes dos 16 ainda tem uns anos de desenvolvimento pela frente
   const anosAntes = 16 - jogador.idade;
@@ -893,13 +893,6 @@ export function removerTatuagem(s: Save, area: AreaTatuagem): { ok: boolean; msg
   s.casa.saldo -= custo; delete v.tatuagens[area];
   return { ok: true, msg: `Removida com laser: R$ ${custo.toLocaleString("pt-BR")}.` };
 }
-/** A roupa de fora de campo escolhida na criação vira a roupa casual do dia a dia. */
-function roupaDaAparencia(ap: unknown): Partial<Visual> {
-  const a = (ap ?? {}) as { roupaSocial?: unknown; corSocial?: unknown };
-  const ok = ["camiseta", "regata", "moletom", "social", "jaqueta"].includes(String(a.roupaSocial));
-  return { ...(ok ? { casual: a.roupaSocial as Visual["casual"] } : {}), ...(typeof a.corSocial === "number" ? { corCasual: a.corSocial } : {}) };
-}
-
 function fisicoInicial(at: Record<string, number>): Fisico {
   const vals = Object.values(at), media = vals.reduce((a, b) => a + b, 0) / vals.length;
   return at.FOR >= media + 6 ? "forte" : at.FOR <= media - 6 ? "magro" : "atletico";
