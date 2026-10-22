@@ -22,7 +22,7 @@ import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSeman
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
-import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia } from "../src/familia.js";
+import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
 import { efeitosNamoro, IDADE_MINIMA_APP } from "../src/namoro.js";
 import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
@@ -673,6 +673,27 @@ teste("Busca do celular: qualquer jogador de qualquer clube vira contato", () =>
   const cl = mundo(pacote).liga.ENG2.clubes[0], alvo = cl.elenco[5].nome;
   assert.ok(agirRel2(pacote, s, alvo, "mensagem", cl.id).ok);
   assert.ok(s.carreira.relacoes!.lista[alvo], "virou contato");
+});
+
+teste("Família escolhida na criação: pai e irmãos do jeito pedido, com lado bom e lado ruim", () => {
+  const base = { semente: "esc", nome: "Lucas Andrade", pais: "BRA", origem: "media", idade: 16, ano: 2026 };
+  const t = gerarFamilia(pacote, { ...base, escolha: { pai: "treinador", irmaos: "unico" } });
+  assert.equal(membroFam(t, "pai")!.traco, "treinador");
+  assert.equal(t.membros.length, 2, "filho único: só pai e mãe");
+  assert.equal(riscoLesaoFamilia(t), 1.15, "pai treinador: treino extra em casa, mais lesão");
+  const cobra = semanaFamilia(t, { semanaAbs: 1, exterior: false, padraoFamilia: 1, polemica: false, clubeId: "x", nota: 5.2, ovrJogador: 50 });
+  const tranquilo = semanaFamilia(gerarFamilia(pacote, { ...base, escolha: { pai: "treinador", irmaos: "unico" } }), { semanaAbs: 1, exterior: false, padraoFamilia: 1, polemica: false, clubeId: "x", nota: 7.5, ovrJogador: 50 });
+  assert.ok(cobra.moral < tranquilo.moral && cobra.avisos.length > 0, "jogo ruim: o pai cobra");
+  const ex = gerarFamilia(pacote, { ...base, escolha: { pai: "exJogador", irmaos: "velhoPro" } });
+  assert.equal(membroFam(ex, "pai")!.traco, "exJogador");
+  const irm = ex.membros.find((m) => m.futebol?.fase === "pro")!;
+  assert.ok(irm && irm.futebol!.clubeId && idadeDe(irm, 2026) >= 19, "irmão mais velho profissional num clube do mundo");
+  assert.ok(semanaFamilia(ex, { semanaAbs: 1, exterior: false, padraoFamilia: 1, polemica: false, clubeId: "x", nota: 7, ovrJogador: 45 }).pressao > 0, "a sombra do pai ex-jogador");
+  const nv = gerarFamilia(pacote, { ...base, escolha: { pai: "comum", irmaos: "novoBoleiro" } });
+  assert.equal(membroFam(nv, "pai")!.traco, undefined);
+  const novo = nv.membros.find((m) => m.futebol)!;
+  assert.ok(novo && idadeDe(novo, 2026) < 16 && (novo.futebol!.fase === "amador" || novo.futebol!.fase === "crianca"), "irmão mais novo boleiro");
+  assert.equal(riscoLesaoFamilia(nv), 1);
 });
 
 console.log(`\n${ok} testes passaram`);

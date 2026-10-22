@@ -23,7 +23,7 @@ import { saidasDoClube, gradeDeNumeros, numeroLivre, type Camisa } from "./numer
 import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
-import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, familiaAutomatica, membro, paiTreinador, type EstadoFamilia, type AcaoFamilia, type CtxFamilia } from "./familia.js";
+import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, familiaAutomatica, membro, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
 import { novoNamoro, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, namoroAutomatico, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
@@ -66,8 +66,8 @@ export interface Carreira {
   torcida?: number;
   /** relacionamento com outros jogadores */
   relacoes?: EstadoRelacoes;
-  /** pai, mãe e irmãos (sorteados na primeira semana) e o app de namoro */
-  familia?: EstadoFamilia; namoro?: EstadoNamoro;
+  /** pai, mãe e irmãos (sorteados na primeira semana, ou como escolhido na criação) e o app de namoro */
+  familia?: EstadoFamilia; namoro?: EstadoNamoro; escolhaFamilia?: EscolhaFamilia;
   /** fase amadora ou de academia (várzea, academia nos EUA, high school, universidade) e os convites do caminho */
   fase?: Fase; caminho?: EstadoCaminho;
   /** escolha do número pendente (começo de temporada ou chegada a um clube) e quem saiu do clube nesta temporada */
@@ -176,7 +176,7 @@ function numeroAutomatico(pacote: PacoteDados, s: Save) {
 export const forma = (c: Carreira) => (c.formaUlt.length ? c.formaUlt.reduce((a, b) => a + b, 0) / c.formaUlt.length : 6.5);
 
 // ------------------------------------------------------------------ início
-export interface DadosCriacao { resultado: ResultadoCriacao; aparencia: unknown; clube: string | null; perfil?: string; decisao?: string | null; caminho?: Caminho; cidade?: string }
+export interface DadosCriacao { resultado: ResultadoCriacao; aparencia: unknown; clube: string | null; perfil?: string; decisao?: string | null; caminho?: Caminho; cidade?: string; parentes?: EscolhaFamilia }
 export interface OfertaBase { clubeId: string; nome: string; apelido: string; cores: string[]; forca: number; estrutura: number; nomeEstrutura: string; moradia: string; fila: number; texto: string; cultura: Cultura; nomeCultura: string }
 
 /** Três clubes oferecem vaga na base. Promessa de clube grande recebe convites dos grandes; os outros, de clubes menores. */
@@ -254,6 +254,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
     bonusEvolucao: ef.bonusEvolucao ?? 0, patrocinioMensal: ef.patrocinioMensal ?? 0, mesesPatrocinio: ef.mesesPatrocinio ?? 0, pressao: ef.pressao ?? 0,
     vidaNoturna: r.vidaNoturnaInicial + (ef.vidaNoturna ?? 0), exposicao: ef.exposicao ?? 0,
     temporada: 0, semana: 0, ordem, tabela: novaTabela(l), stats: statsVazias(), historico: [],
+    ...(d.parentes && (d.parentes.pai !== "sortear" || d.parentes.irmaos !== "sortear") ? { escolhaFamilia: d.parentes } : {}),
   };
   const cc = clubeCasa(pacote, clubeId);
   const casa = novoEstado(r.dinheiroInicial, fase ? "aloj-familia" : alojamentosDoClube(cc)[0], cc);
@@ -587,7 +588,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       const grande = clubeDe(l, c.clubeId).forca >= 75 ? 1.5 : 1;
       c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
       c.cansaco = clamp(c.cansaco + (30 * minutos) / 90, 0, 100);
-      const l2 = sortearLesao(rng, c.cansaco, plano.intensidade === "alta", j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6));
+      const l2 = sortearLesao(rng, c.cansaco, plano.intensidade === "alta", j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6) * riscoLesaoFamilia(c.familia));
       if (l2) { c.lesao = l2.semanas; eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
       const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
       noticia(s, "jogo", `${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
@@ -611,8 +612,9 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const vida = efeitosVida(padraoDe(c));
   // família e namoro: a semana deles mexe na moral, no treino e na recuperação
   const fam = familiaDe(pacote, s), cidadeAgora = infoClube(pacote, c.clubeId).cidade;
-  const sf = semanaFamilia(fam, { semanaAbs: semanaAbsJogo(c), exterior: infoLiga(c.ligaId).regiao !== "BRA" && s.jogador.pais === "BRA", padraoFamilia: padraoDe(c).familia, polemica, clubeId: c.clubeId });
+  const sf = semanaFamilia(fam, { semanaAbs: semanaAbsJogo(c), exterior: infoLiga(c.ligaId).regiao !== "BRA" && s.jogador.pais === "BRA", padraoFamilia: padraoDe(c).familia, polemica, clubeId: c.clubeId, nota: notaSemana, ovrJogador: ovr(j) });
   eventos.push(...sf.avisos);
+  if (sf.pressao) c.pressao = clamp(c.pressao + sf.pressao, 0, 100);
   const nam = namoroDe(c), ctxN = ctxNamoro(pacote, s);
   const sn = semanaNamoro(nam, { ...ctxN, mudouDeCidade: nam.par && nam.par.cidadeClube !== cidadeAgora ? cidadeAgora : undefined });
   eventos.push(...sn.avisos);
@@ -793,7 +795,7 @@ export const semanaAbsJogo = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + 
 /** A família da carreira (sorteada na primeira vez; saves antigos ganham a sua). */
 export function familiaDe(pacote: PacoteDados, s: Save): EstadoFamilia {
   const c = s.carreira, j = s.jogador;
-  return (c.familia ??= gerarFamilia(pacote, { semente: s.semente, nome: j.nome, pais: j.pais, origem: j.familia, idade: j.idade - c.temporada, ano: ANO_INICIAL }));
+  return (c.familia ??= gerarFamilia(pacote, { semente: s.semente, nome: j.nome, pais: j.pais, origem: j.familia, idade: j.idade - c.temporada, ano: ANO_INICIAL, escolha: c.escolhaFamilia }));
 }
 export const namoroDe = (c: Carreira): EstadoNamoro => (c.namoro ??= novoNamoro());
 export function ctxFamilia(pacote: PacoteDados, s: Save): CtxFamilia {
@@ -1012,7 +1014,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   if (titulo) { c.fama = clamp(c.fama + 5, 0, 100); c.torcida = clamp((c.torcida ?? 50) + 10, 0, 100); }
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);
   // nova temporada
-  temporadaFamilia(pacote, familiaDe(pacote, s), rngDe(s, "familia-temporada"), ANO_INICIAL + c.temporada + 1, s.jogador.pais, eventos);
+  { const tf = temporadaFamilia(pacote, familiaDe(pacote, s), rngDe(s, "familia-temporada"), ANO_INICIAL + c.temporada + 1, s.jogador.pais, eventos); c.moral = clamp(c.moral + tf.moral, 0, 100); }
   { const tn = temporadaNamoro(namoroDe(c), eventos); if (tn.noticia) noticia(s, "vida", tn.noticia, `Festa para a família e os amigos do futebol.`); }
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   c.tabela = novaTabela(l); c.stats = statsVazias();

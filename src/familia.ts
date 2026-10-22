@@ -64,8 +64,26 @@ const PROF_IRMA = ["Estudante", "Faz faculdade", "Enfermeira", "Professora", "Tr
 
 const POSICOES: Posicao[] = ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA"];
 
+// ------------------------------------------------------------------ escolha na criação (ou sorteio)
+export type EscolhaPai = "sortear" | "comum" | "treinador" | "exJogador";
+export type EscolhaIrmaos = "sortear" | "unico" | "velhoPro" | "novoBoleiro";
+export interface EscolhaFamilia { pai?: EscolhaPai; irmaos?: EscolhaIrmaos }
+/** Cada escolha tem o lado bom e o lado ruim (o texto aparece na criação). */
+export const OPCOES_PAI: { id: EscolhaPai; nome: string; bom: string; ruim: string }[] = [
+  { id: "sortear", nome: "Sortear", bom: "O destino escolhe.", ruim: "" },
+  { id: "comum", nome: "Pai sem ligação com o futebol", bom: "Sem cobrança extra: ele só torce.", ruim: "Não abre portas nem ensina nada de bola." },
+  { id: "treinador", nome: "Pai treinador", bom: "Treino rende mais; na várzea os olheiros aparecem mais.", ruim: "Cobra depois de jogo ruim (moral) e o treino extra em casa aumenta o risco de lesão." },
+  { id: "exJogador", nome: "Pai ex-jogador", bom: "Como seu agente, negocia melhor e conhece gente.", ruim: "A sombra dele: mais pressão, e a imprensa compara quando você vai mal." },
+];
+export const OPCOES_IRMAOS: { id: EscolhaIrmaos; nome: string; bom: string; ruim: string }[] = [
+  { id: "sortear", nome: "Sortear", bom: "Pode vir filho único, um ou dois irmãos.", ruim: "" },
+  { id: "unico", nome: "Filho único", bom: "Toda a atenção da casa em você.", ruim: "Ninguém do futebol na família para ajudar." },
+  { id: "velhoPro", nome: "Irmão mais velho jogador", bom: "É profissional e pode te indicar ao clube dele.", ruim: "Se ele for melhor que você, a comparação pesa na moral." },
+  { id: "novoBoleiro", nome: "Irmão mais novo boleiro", bom: "Dá para indicar à base do seu clube e ele pode virar profissional.", ruim: "Quer atenção: esfria rápido se você some, e se for dispensado você sente." },
+];
+
 // ------------------------------------------------------------------ sorteio
-export interface DadosFamilia { semente: string; nome: string; pais: string; origem: string; idade: number; ano: number }
+export interface DadosFamilia { semente: string; nome: string; pais: string; origem: string; idade: number; ano: number; escolha?: EscolhaFamilia }
 const sobrenomeDe = (nome: string) => { const p = nome.trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : ""; };
 
 /** A família da carreira (sorteada uma vez; saves antigos ganham na primeira semana). */
@@ -78,12 +96,28 @@ export function gerarFamilia(pacote: PacoteDados, d: DadosFamilia): EstadoFamili
   const membros: Familiar[] = [];
   const idadePai = d.idade + rng.int(24, 38), idadeMae = Math.max(d.idade + 18, idadePai + rng.int(-6, 2));
   // pai com passado no futebol: treinador de várzea/escolinha/base ou ex-jogador
-  const r = rng.next(), traco: TracoFamilia | undefined = r < 0.16 ? "treinador" : r < 0.27 ? "exJogador" : undefined;
+  const r = rng.next(), ep = d.escolha?.pai ?? "sortear";
+  const traco: TracoFamilia | undefined = ep === "treinador" ? "treinador" : ep === "exJogador" ? "exJogador" : ep === "comum" ? undefined : r < 0.16 ? "treinador" : r < 0.27 ? "exJogador" : undefined;
   membros.push({ id: "pai", parentesco: "pai", nome: comSob(nomeNovo(hom)), nasc: d.ano - idadePai, relacao: rng.int(55, 75), contato: 0,
     profissao: traco === "treinador" ? (origem === "rica" ? "Treinador da base de um clube" : "Treinador de escolinha") : traco === "exJogador" ? "Ex-jogador, hoje comentarista na rádio" : rng.pick(PROF_PAI[origem]), ...(traco ? { traco } : {}) });
   membros.push({ id: "mae", parentesco: "mae", nome: comSob(nomeNovo(mul)), nasc: d.ano - idadeMae, relacao: rng.int(62, 82), contato: 0, profissao: rng.pick(PROF_MAE[origem]) });
-  // irmãos: 0 (30%), 1 (45%) ou 2 (25%)
-  const nIrm = rng.chance(0.3) ? 0 : rng.chance(0.64) ? 1 : 2;
+  // irmãos: 0 (30%), 1 (45%) ou 2 (25%); escolhidos na criação, vêm do jeito pedido
+  const ei = d.escolha?.irmaos ?? "sortear";
+  if (ei === "velhoPro" || ei === "novoBoleiro") {
+    const r2 = new RNG(`${d.semente}|familia|${ei}`), velho = ei === "velhoPro";
+    const idade = velho ? Math.max(19, d.idade + r2.int(3, 8)) : Math.max(8, d.idade - r2.int(2, 6));
+    const m: Familiar = { id: "irm0", parentesco: "irmao", nome: comSob(nomeNovo(hom)), nasc: d.ano - idade, relacao: r2.int(58, 78), contato: 0, profissao: velho ? "Jogador profissional" : "Estudante" };
+    if (velho) {
+      const ovr = Math.round(clamp(r2.normal(62, 5) + (idade >= 24 ? 3 : 0), 54, 76));
+      m.futebol = { fase: "pro", posicao: r2.pick(POSICOES), ovr, pot: Math.max(ovr, ovr + r2.int(0, 6)), clubeId: clubePara(pacote, r2, ovr, d.pais) };
+    } else {
+      const pot = Math.round(clamp(r2.normal(70, 7), 56, 90));
+      m.futebol = { fase: idade >= 10 ? "amador" : "crianca", posicao: r2.pick(POSICOES), pot, ovr: ovrNaIdade(pot, idade) };
+    }
+    membros.push(m);
+    return { membros, semana: -1, feitas: [] };
+  }
+  const nIrm = ei === "unico" ? 0 : rng.chance(0.3) ? 0 : rng.chance(0.64) ? 1 : 2;
   for (let i = 0; i < nIrm; i++) {
     const velho = rng.chance(0.5), homem = rng.chance(0.55), dif = rng.int(1, 7);
     const idade = Math.max(3, velho ? d.idade + dif : d.idade - dif);
@@ -202,9 +236,13 @@ export function agirFamilia(f: EstadoFamilia, id: string, acao: AcaoFamilia, ctx
 }
 
 // ------------------------------------------------------------------ semana e temporada
-export interface CtxSemanaFam { semanaAbs: number; exterior: boolean; padraoFamilia: number; polemica: boolean; clubeId: string }
+export interface CtxSemanaFam { semanaAbs: number; exterior: boolean; padraoFamilia: number; polemica: boolean; clubeId: string;
+  /** nota do jogo da semana (0 = não jogou) e o OVR do jogador, para cobrança e comparação */
+  nota?: number; ovrJogador?: number }
+/** Pai treinador: treino extra em casa aumenta o risco de lesão. */
+export const riscoLesaoFamilia = (f: EstadoFamilia | undefined) => (membro(f ?? { membros: [], semana: 0, feitas: [] }, "pai")?.traco === "treinador" ? 1.15 : 1);
 /** Relações andam sozinhas: a mesada aproxima, a distância e o sumiço afastam. Devolve o efeito na moral do jogador. */
-export function semanaFamilia(f: EstadoFamilia, ctx: CtxSemanaFam): { moral: number; avisos: string[] } {
+export function semanaFamilia(f: EstadoFamilia, ctx: CtxSemanaFam): { moral: number; avisos: string[]; pressao: number } {
   const avisos: string[] = [];
   for (const m of f.membros) {
     const longe = ctx.semanaAbs - m.contato;
@@ -213,16 +251,33 @@ export function semanaFamilia(f: EstadoFamilia, ctx: CtxSemanaFam): { moral: num
     if (longe > 4) d -= ctx.exterior ? 0.9 : 0.45;
     if (ctx.polemica && m.parentesco === "mae") d -= 4;
     if (m.futebol?.fase === "pro" && m.futebol.clubeId === ctx.clubeId) d += 0.6; // jogam juntos
+    // irmão mais novo boleiro quer atenção: esfria mais rápido
+    if (m.futebol && (m.futebol.fase === "amador" || m.futebol.fase === "base" || m.futebol.fase === "crianca") && ctx.semanaAbs - m.contato > 3) d -= 0.4;
     const antes = m.relacao;
     m.relacao = clamp(m.relacao + d, 0, 100);
     if (antes >= 40 && m.relacao < 40) avisos.push(`${m.nome.split(" ")[0]} anda chateado com a falta de notícias.`);
   }
   const ps = pais(f), media = ps.reduce((a, m) => a + m.relacao, 0) / Math.max(1, ps.length);
-  return { moral: (media - 55) / 12 + (irmaoNoClube(f, ctx.clubeId) ? 1 : 0), avisos };
+  let extra = 0, pressao = 0;
+  const pai = membro(f, "pai"), nota = ctx.nota ?? 0;
+  // lado ruim do pai com passado no futebol
+  if (pai?.traco === "treinador" && nota > 0 && nota < 6) {
+    extra -= 2; pai.relacao = clamp(pai.relacao - 2, 0, 100);
+    avisos.push(`${pai.nome.split(" ")[0]} cobrou o jogo ruim no caminho de volta para casa.`);
+  }
+  if (pai?.traco === "exJogador") {
+    pressao += 0.4;
+    if (nota > 0 && nota < 6) { extra -= 1; pressao += 2; avisos.push(`Na rádio, compararam você com ${pai.nome.split(" ")[0]}: "o pai jogava mais".`); }
+  }
+  // irmão profissional melhor que você: a comparação pesa
+  const irmPro = f.membros.find((m) => m.futebol?.fase === "pro");
+  if (irmPro && ctx.ovrJogador && irmPro.futebol!.ovr > ctx.ovrJogador) extra -= 0.4;
+  return { moral: (media - 55) / 12 + (irmaoNoClube(f, ctx.clubeId) ? 1 : 0) + extra, avisos, pressao };
 }
 
 /** Fim da temporada: os irmãos que jogam evoluem, trocam de clube, sobem da base ou largam. */
-export function temporadaFamilia(pacote: PacoteDados, f: EstadoFamilia, rng: RNG, ano: number, pais: string, eventos: string[]): void {
+export function temporadaFamilia(pacote: PacoteDados, f: EstadoFamilia, rng: RNG, ano: number, pais: string, eventos: string[]): { moral: number } {
+  let moral = 0;
   const w = mundo(pacote);
   for (const m of f.membros) {
     const fb = m.futebol, idade = idadeDe(m, ano), nome = m.nome.split(" ")[0];
@@ -235,7 +290,7 @@ export function temporadaFamilia(pacote: PacoteDados, f: EstadoFamilia, rng: RNG
     if (fb.fase === "base" && idade >= 18) {
       const clube = fb.clubeId ? w.clube[fb.clubeId] : undefined;
       if (clube && fb.ovr >= clube.forca - 14) { fb.fase = "pro"; m.profissao = "Jogador profissional"; eventos.push(`${nome} assinou o primeiro contrato profissional com o ${infoClube(pacote, clube.id).nome}!`); }
-      else { fb.fase = "amador"; fb.clubeId = undefined; eventos.push(`${nome} foi dispensado da base. Ele diz que não vai desistir.`); }
+      else { fb.fase = "amador"; fb.clubeId = undefined; m.relacao = clamp(m.relacao - 8, 0, 100); moral -= 4; eventos.push(`${nome} foi dispensado da base. Ele diz que não vai desistir, mas você sentiu.`); }
     } else if (fb.fase === "pro") {
       fb.ovr = Math.round(clamp(fb.ovr + (idade < 25 ? rng.int(0, 3) : idade <= 29 ? rng.int(-1, 1) : -rng.int(1, 3)), 40, Math.max(fb.pot, fb.ovr)));
       if (idade >= 35 || fb.ovr < 48) { fb.fase = "parou"; fb.clubeId = undefined; m.profissao = "Ex-jogador"; eventos.push(`${nome} pendurou as chuteiras.`); }
@@ -245,6 +300,7 @@ export function temporadaFamilia(pacote: PacoteDados, f: EstadoFamilia, rng: RNG
       }
     }
   }
+  return { moral };
 }
 
 /** Política automática: liga para quem está mais longe. */

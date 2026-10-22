@@ -1,4 +1,7 @@
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
+import { camisaCostas } from "../visual/camisas";
+import { CONQUISTAS } from "../../src/reliquias";
+import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
 import { ordenar } from "../../src/liga";
@@ -581,11 +584,28 @@ function perfilHtml(s: Save): string {
       ${arm.length ? `<div class="armario">${arm.map((x) => `<button class="trofeu-cel${trofeuAberto === x.nome ? " ativo" : ""}" data-trofeu="${esc(x.nome)}" aria-expanded="${trofeuAberto === x.nome}"><svg viewBox="-13 -30 26 32" aria-hidden="true">${trofeuSvg(0, 0, x.modelo, x.cores)}</svg><b>${x.vezes.length}×</b><small>${esc(x.nome)}</small></button>`).join("")}</div>
         ${aberto ? `<div class="trofeu-detalhe"><b>${esc(aberto.nome)}</b>${[...aberto.vezes].sort((a, b) => b.ano - a.ano).map((v) => `<div><span>${v.ano}</span>${esc(v.clube)}${v.liga ? ` · <small>${esc(v.liga)}</small>` : ""}</div>`).join("")}</div>` : `<p class="sub">Toque num troféu para ver as temporadas.</p>`}` : `<p class="sub">Nenhum ainda. A estante da casa está esperando.</p>`}
 
+      ${armarioCamisas(s)}
+
       <p class="rotulo">Temporada a temporada</p>
       <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
     </div>`;
 }
-let trofeuAberto: string | undefined;
+let trofeuAberto: string | undefined, camisaAberta: string | undefined;
+/** Armário de camisas: as especiais, as trocadas com craques e, apagadas, as que ainda faltam. */
+function armarioCamisas(s: Save): string {
+  const minhas = (s.casa.reliquias ?? []).filter((r) => r.tipo === "camisa").sort((a, b) => a.ano - b.ano);
+  const faltam = CONQUISTAS.filter((k) => k.tipo === "camisa" && !minhas.some((r) => r.chave === k.chave));
+  const nomeCostas = (r: Reliquia) => (r.chave === "camisa-troca" ? r.nome.replace(/^Camisa d[eoa] /, "") : s.jogador.apelido);
+  const cel = (id: string, svg: string, rot: string, apagada = false) =>
+    `<button class="camisa-cel${camisaAberta === id ? " ativo" : ""}${apagada ? " apagada" : ""}" data-camisa="${esc(id)}" aria-expanded="${camisaAberta === id}">${svg}<small>${esc(rot)}</small></button>`;
+  const r = minhas.find((x) => x.id === camisaAberta), k = faltam.find((x) => x.chave === camisaAberta);
+  const detalhe = r ? `<div class="trofeu-detalhe"><b>${esc(r.nome)}</b><div>${esc(r.legenda)}</div><small>É uma relíquia: dá para pendurar na parede na aba Casa.</small></div>`
+    : k ? `<div class="trofeu-detalhe"><b>${esc(k.nome)}</b><div>${k.emBreve ? "Em breve." : esc(k.dica)}</div></div>`
+    : `<p class="sub">Toque numa camisa para ver a história dela.</p>`;
+  return `<p class="rotulo">Armário de camisas <small>(${minhas.length} na coleção)</small></p>
+      <div class="armario camisas">${minhas.map((x) => cel(x.id, camisaCostas({ cores: x.cores, modelo: x.modelo, numero: x.numero }, nomeCostas(x)), x.nome.replace(/^Camisa d[aeo] /, ""))).join("")}${faltam.map((x) => cel(x.chave, camisaCostas({ cores: ["#000000", "#000000"], modelo: "lisa" }, "", true), x.nome.replace(/^Camisa d[aeo] /, ""), true)).join("")}</div>
+      ${detalhe}`;
+}
 function abrirPerfil() {
   if (!save) return;
   $("telaPerfil").innerHTML = perfilHtml(save);
@@ -757,7 +777,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -793,6 +813,7 @@ document.addEventListener("click", (ev) => {
     if (rv.ok && d.tat) trajeVisto = tatuagemVisivel(areaTat, visualDe(save.jogador), "jogo") ? "jogo" : "casual";
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
+  else if (d.camisa && save) { camisaAberta = camisaAberta === d.camisa ? undefined : d.camisa; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
   else if (d.trofeu && save) { trofeuAberto = trofeuAberto === d.trofeu ? undefined : d.trofeu; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
   else if ((d.num || d.numManter) && save) {
     const n = d.numManter ? +save.jogador.numero : +d.num!, g = gradeDoClube(pacote, save);

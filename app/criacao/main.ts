@@ -1,6 +1,7 @@
 declare const __CARREIRA__: boolean;
 // Tela de criação do jogador em história guiada. Usa o DNA do motor (src/dna.ts).
 // As escolhas não mostram números: o DNA é surpresa até a revelação do card.
+import { OPCOES_PAI, OPCOES_IRMAOS, type EscolhaPai, type EscolhaIrmaos } from "../../src/familia.js";
 import {
   PAISES, FORMACOES, FAMILIAS, TRACOS, criarJogador, formacaoPermitida,
   type PaisId, type FamiliaId, type FormacaoId, type Pe, type EscolhasCriacao, type ResultadoCriacao,
@@ -77,11 +78,12 @@ interface Estado {
   aparenciaFeita: boolean; tentativa: number; resultado: ResultadoCriacao | null; aberto: boolean;
   aba: "rosto" | "olhos" | "nariz" | "cabelo" | "roupa"; traje: "jogo" | "social";
   perfil: PerfilCraque | null; decisao: string | null;
+  pai: EscolhaPai; irmaos: EscolhaIrmaos;
 }
 const estado: Estado = {
   passo: 0, nome: "Gabriel Souza", apelido: "Gabi", pais: null, familia: null, clube: null, formacao: null, alturaCm: 178,
   pe: "direito", posicao: null, aparencia: { ...APARENCIA_PADRAO }, aparenciaFeita: false, tentativa: 0, resultado: null, aberto: false,
-  aba: "rosto", traje: "jogo", perfil: null, decisao: null,
+  aba: "rosto", traje: "jogo", perfil: null, decisao: null, pai: "sortear", irmaos: "sortear",
 };
 
 let timerNotif = 0;
@@ -111,6 +113,9 @@ function historia(): string {
   if (estado.formacao) t += `, e ${FORMACAO_FRASE[estado.formacao]}`;
   return t + ".";
 }
+
+/** Lado bom e lado ruim de uma escolha de família. */
+const textoEscolha = (o: { bom: string; ruim: string }) => `${esc(o.bom)}${o.ruim ? `<span class="pesam" style="color:var(--neg)">Mas: ${esc(o.ruim)}</span>` : ""}`;
 
 function opcao(id: string, grupo: string, titulo: string, texto: string, ativo: boolean, desabilitado = "", marca = "") {
   return `<button type="button" class="opcao${ativo ? " ativa" : ""}" data-grupo="${grupo}" data-id="${id}" ${desabilitado ? "disabled" : ""} aria-pressed="${ativo}">
@@ -143,7 +148,11 @@ function telaPasso(): string {
       <div class="opcoes grade">${PAISES.map((x) => opcao(x.id, "pais", x.nome, "", estado.pais === x.id, "", `<span class="sigla-pais">${x.nacionalidade}</span>`)).join("")}</div>`;
     case 2:
       return `${cab("A família", "Em casa, a realidade era…")}
-      <div class="opcoes">${FAMILIAS.map((f) => opcao(f.id, "familia", f.nome, f.descricao, estado.familia === f.id)).join("")}</div>`;
+      <div class="opcoes">${FAMILIAS.map((f) => opcao(f.id, "familia", f.nome, f.descricao, estado.familia === f.id)).join("")}</div>
+      <span class="rotulo" style="margin-top:18px;display:block">Seu pai</span>
+      <div class="opcoes">${OPCOES_PAI.map((o) => opcao(o.id, "pai", o.nome, textoEscolha(o), estado.pai === o.id)).join("")}</div>
+      <span class="rotulo" style="margin-top:18px;display:block">Irmãos</span>
+      <div class="opcoes">${OPCOES_IRMAOS.map((o) => opcao(o.id, "irmaos", o.nome, textoEscolha(o), estado.irmaos === o.id)).join("")}</div>`;
     case 3: {
       const fora = estado.pais && estado.pais !== "BRA";
       return `${cab("O clube do coração", "A primeira camisa que você ganhou foi a do…", fora ? "Aos 12 anos, a família se mudou para o Brasil. Foi lá que um time te conquistou." : "Um dia você vai jogar contra ele. Ou por ele.")}
@@ -403,7 +412,7 @@ function ligarEventos() {
   document.getElementById("guardar")?.addEventListener("click", () => {
     const aviso = $("#aviso");
     try {
-      localStorage.setItem("mycarrerinha:jogador", JSON.stringify({ resultado: estado.resultado, aparencia: estado.aparencia, clube: estado.clube, perfil: estado.perfil?.id, decisao: estado.decisao }));
+      localStorage.setItem("mycarrerinha:jogador", JSON.stringify({ resultado: estado.resultado, aparencia: estado.aparencia, clube: estado.clube, perfil: estado.perfil?.id, decisao: estado.decisao, parentes: { pai: estado.pai, irmaos: estado.irmaos } }));
       if (__CARREIRA__) { localStorage.removeItem("mycarrerinha:save"); localStorage.removeItem("mycarrerinha:plano"); location.href = "index.html"; return; }
       aviso.textContent = "Jogador guardado neste navegador. A próxima tela, a primeira semana no clube, vai começar com ele.";
     } catch {
@@ -421,7 +430,9 @@ function escolher(grupo: string, id: string) {
     estado.familia = id as FamiliaId;
     if (estado.formacao && !formacaoPermitida(estado.formacao, estado.familia)) estado.formacao = null;
     notificar(FAMILIAS.find((f) => f.id === id)!.nome, NOTIF_FAMILIA[id as FamiliaId]);
-  } else if (grupo === "clube") {
+  } else if (grupo === "pai") estado.pai = id as EscolhaPai;
+  else if (grupo === "irmaos") estado.irmaos = id as EscolhaIrmaos;
+  else if (grupo === "clube") {
     estado.clube = id === "bairro" ? "" : id;
     const c = clube()!;
     notificar(c.id ? `Torcedor do ${c.apelido}` : "Time do bairro", c.id ? "A camisa já está na foto. Um dia você pode vestir a de verdade." : "Sem clube grande no coração. Livre para vestir qualquer camisa.");
