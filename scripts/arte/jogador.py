@@ -30,32 +30,65 @@ def espelho(meio):
 def lado(pts):  # mesmo contorno nos dois lados (pernas, braços)
     return [(CX + x, y) for x, y in pts], [(CX - x, y) for x, y in pts]
 
-# ---------------- corpo (uma peça: pescoço, tronco, braços, pernas) ----------------
-CORPO_DIR = [
-    (32, 170), (34, 206), (70, 216), (102, 226), (128, 242),
-    # braço: deltoide, bíceps, cotovelo, antebraço, punho, mão (polegar para dentro)
-    (142, 266), (147, 300), (145, 336), (139, 370), (137, 388), (142, 412), (137, 448), (128, 474),
-    (132, 494), (131, 516), (122, 534), (109, 541), (98, 535), (94, 520), (88, 506), (90, 494),
-    (99, 478), (104, 444), (106, 410), (105, 388), (110, 352), (107, 318), (100, 296),
-    # tronco
-    (94, 330), (80, 420), (84, 480), (94, 540),
-    # perna: coxa, joelho, panturrilha, tornozelo, pé
-    (99, 610), (88, 668), (88, 698), (97, 730), (92, 778), (66, 848), (78, 880), (68, 896),
-    (20, 898), (16, 870), (22, 848), (13, 780), (10, 732), (15, 700), (19, 684), (12, 640),
-    (8, 590), (6, 545), (0, 540),
-]
-corpo = cr(espelho([(0, 170)] + CORPO_DIR[:]) , fechado=True)
+# ---------------- corpo paramétrico (uma peça: pescoço, tronco, braços, pernas) ----------------
+# ac: centro do braço | ka: grossura do braço | peito/cintura/quadril: meia-largura | kl: grossura da perna
+# barriga: quanto a camisa estufa | lc: centro da coxa
+TIPOS = {
+    "esguio":         dict(ka=0.90, peito=72, cintura=58, quadril=64, kl=0.78, barriga=0, lc=48),
+    "magro":          dict(ka=0.98, peito=78, cintura=62, quadril=68, kl=0.86, barriga=0, lc=50),
+    "atlético":       dict(ka=1.30, peito=86, cintura=64, quadril=72, kl=1.00, barriga=0, lc=52),
+    "forte":          dict(ka=1.55, peito=96, cintura=74, quadril=80, kl=1.12, barriga=0, lc=54),
+    "pouco atlético": dict(ka=1.14, peito=92, cintura=90, quadril=88, kl=0.98, barriga=10, lc=55),
+    "troncudo":       dict(ka=1.45, peito=106, cintura=96, quadril=92, kl=1.14, barriga=6, lc=57),
+    "pesado":         dict(ka=1.50, peito=114, cintura=112, quadril=104, kl=1.26, barriga=20, lc=62),
+}
+BRACO = [(244, 0.0), (266, 16), (300, 19.5), (336, 19), (372, 15.5), (388, 14.5), (412, 16), (448, 13.5), (474, 11)]
 
-# ---------------- uniforme ----------------
-CAMISA_DIR = [(0, 214), (30, 204), (44, 206), (80, 216), (116, 228), (142, 248), (154, 286), (158, 318),
-              (114, 332), (108, 316), (98, 330), (90, 400), (92, 470), (96, 490), (0, 494)]
-camisa = cr(espelho(CAMISA_DIR), fechado=True)
+def braco(t):
+    """Contorno de fora (de cima p/ baixo) e de dentro (de baixo p/ cima) do braço do lado direito da tela."""
+    k = t["ka"]
+    ac = t["peito"] + 19.5 * k + 5                                   # braço encostado no peito, sem invadir
+    precisa = max(t["cintura"] + t["barriga"] + 14, t["quadril"] + 20)  # mão passa ao lado do quadril/barriga
+    inc = max(-0.02, (precisa + 22 - ac) / 174)
+    cx = lambda y: ac + (y - 300) * inc
+    fora = [(cx(y) + r * t["ka"], y) for y, r in BRACO[1:]]
+    dentro = [(cx(y) - r * t["ka"], y) for y, r in BRACO[2:]][::-1]
+    return fora, dentro, cx
+
+def corpo_pts(t):
+    fora, dentro, cx = braco(t)
+    rw = BRACO[-1][1] * t["ka"]; hx = cx(474)
+    mao = [(hx + rw + 2, 494), (hx + rw + 1, 516), (hx + 8, 534), (hx - 3, 541), (hx - 12, 535), (hx - 16, 520),
+           (hx - 22, 506), (hx - 20, 494), (hx - rw, 478)]
+    axila = cx(300) - 19.5 * t["ka"] - 3
+    tronco = [(axila, 300), (t["peito"], 334), (t["cintura"], 430), (t["quadril"], 485), (t["quadril"] + 8, 540)]
+    lc, kl = t["lc"], t["kl"]
+    perna_fora = [(lc + 44 * kl, 610), (lc + 34 * kl, 668), (lc + 32 * kl, 698), (43 + 32 * kl, 736), (43 + 27 * kl, 784), (64, 848)]
+    pe = [(78, 880), (68, 896), (20, 898), (16, 870)]
+    perna_dentro = [(22, 848), (43 - 25 * kl, 784), (43 - 29 * kl, 736), (lc - 30 * kl, 698), (lc - 32 * kl, 682), (max(6, lc - 40 * kl), 610), (4, 560)]
+    ombro = [(32, 170), (34, 206), (70, 216), ((70 + cx(244)) / 2, 226), (cx(244), 242)]
+    return ombro + fora + mao + dentro + tronco + perna_fora + pe + perna_dentro + [(0, 548)]
+
+def roupa_pts(t):
+    fora, dentro, cx = braco(t)
+    k = t["ka"]
+    manga_fora = [(cx(266) + 16 * k + 3, 268), (cx(300) + 19.5 * k + 3, 300), (cx(322) + 19.5 * k + 3, 324)]
+    manga_dentro = (cx(334) - 19.5 * k - 3, 334)
+    axila = cx(300) - 19.5 * k - 3
+    b = t["barriga"]
+    camisa = [(0, 214), (30, 204), (44, 206), (80, 216), ((80 + cx(244)) / 2 + 4, 226), (cx(244) + 6, 242)] + manga_fora + [
+        manga_dentro, (axila + 2, 318), (t["peito"] + 6, 350), (t["cintura"] + 10 + b, 430), (t["quadril"] + 8 + b * 0.5, 478),
+        (t["quadril"] + 10, 494), (0, 498)]
+    lc, kl = t["lc"], t["kl"]
+    calcao = [(0, 474), (t["quadril"] + 10, 472), (t["quadril"] + 15, 520), (lc + 44 * kl + 10, 604), (lc + 44 * kl + 6, 620),
+              (8, 620), (6, 574), (0, 564)]
+    meiao = [(lc + 32 * kl + 2, 704), (43 + 32 * kl + 2, 736), (43 + 27 * kl + 2, 784), (66, 850),
+             (20, 850), (43 - 25 * kl - 2, 784), (43 - 29 * kl - 2, 736), (lc - 30 * kl - 2, 704)]
+    bainha_manga = (manga_dentro, manga_fora[-1])
+    bainha_calcao = ((8, 616), (lc + 44 * kl + 6, 616))
+    return camisa, calcao, meiao, bainha_manga, bainha_calcao
+
 gola = cr(espelho([(0, 230), (20, 224), (34, 212), (44, 206), (38, 202), (24, 214), (0, 220)]), fechado=True)
-CALCAO_DIR = [(0, 470), (90, 468), (97, 520), (106, 600), (100, 618), (12, 618), (8, 570), (0, 560)]
-calcao = cr(espelho(CALCAO_DIR), fechado=True)
-# meião acompanha a perna (2 de folga): abaixo do joelho até o tornozelo
-MEIAO = [(91, 702), (100, 732), (94, 780), (68, 850), (20, 850), (11, 780), (8, 732), (13, 702)]
-meiao_d, meiao_e = (cr(p, True) for p in lado(MEIAO))
 
 # ---------------- chuteira com marca de patrocinador (paródias) ----------------
 MARCAS = {
@@ -92,112 +125,141 @@ def chuteira(marca, gid):
             f'{cadarco}{logo(marca, m["detalhe"])}<path d="{sola}" fill="{m["sola"]}"/>')
 
 # ---------------- sombras (luz vindo da esquerda) ----------------
-def sombra_membro(pts):
-    return cr(pts, True)
-sombras_pele = [
-    # luz da esquerda: lado de fora do braço da direita da tela e lado de dentro do outro escurecem
-    cr([(CX + 132, 330), (CX + 147, 330), (CX + 145, 340), (CX + 139, 370), (CX + 137, 388), (CX + 142, 412), (CX + 137, 448), (CX + 128, 474),
-        (CX + 118, 474), (CX + 128, 448), (CX + 132, 412), (CX + 126, 388), (CX + 132, 356)], True),
-    cr([(CX - 110, 334), (CX - 104, 334), (CX - 102, 388), (CX - 101, 440), (CX - 98, 476), (CX - 104, 476), (CX - 106, 440), (CX - 108, 388)], True),
-    cr([(CX + 106, 498), (CX + 132, 494), (CX + 124, 532), (CX + 110, 540)], True),
-    cr([(CX - 94, 504), (CX - 90, 516), (CX - 100, 528)], True),
-    # pernas: lado de fora da perna da direita, lado de dentro da outra
-    cr([(CX + 74, 618), (CX + 100, 618), (CX + 88, 668), (CX + 88, 702), (CX + 76, 702), (CX + 76, 668)], True),
-    cr([(CX - 13, 618), (CX - 24, 618), (CX - 22, 690), (CX - 15, 702)], True),
-]
-sombras_camisa = [
-    cr([(CX + 40, 240), (CX + 98, 250), (CX + 92, 300), (CX + 86, 420), (CX + 92, 490), (CX + 56, 490), (CX + 62, 380), (CX + 54, 300)], True),
-    cr([(CX + 116, 262), (CX + 146, 284), (CX + 156, 316), (CX + 118, 324)], True),
-    cr([(CX - 60, 440), (CX - 20, 460), (CX + 10, 452), (CX - 10, 476), (CX - 60, 470)], True),
-]
+def faixa(pts, dx):
+    """Faixa colada a um contorno: o contorno e ele mesmo deslocado dx para dentro."""
+    return cr(pts + [(x - dx, y) for x, y in reversed(pts)], True)
+
+def sombras(t):
+    fora, dentro, cx = braco(t)
+    lc, kl = t["lc"], t["kl"]
+    perna = [(lc + 44 * kl, 618), (lc + 34 * kl, 668), (lc + 32 * kl, 698)]
+    pele = [
+        faixa([(CX + x, y) for x, y in fora[2:]], 11 * t["ka"]),                    # braço da direita, lado de fora
+        faixa([(CX - x, y) for x, y in reversed(dentro[:-1])], -6),                   # braço da esquerda, lado de dentro
+        faixa([(CX + x, y) for x, y in perna], 12 * kl),                               # coxa/joelho
+        faixa([(CX - (lc - 40 * kl), 618), (CX - (lc - 30 * kl), 698)], -8),
+    ]
+    camisa = [
+        cr([(CX + 40, 240), (CX + 98, 250), (CX + t["peito"] - 2, 320), (CX + t["cintura"], 430), (CX + t["quadril"], 492),
+            (CX + t["quadril"] - 34, 492), (CX + t["cintura"] - 24, 380), (CX + 54, 300)], True),
+        cr([(CX + cx(266), 262), (CX + cx(300) + 30 * t["ka"], 300), (CX + cx(320) + 28 * t["ka"], 326), (CX + cx(320) + 2, 328)], True),
+        cr([(CX - 60, 446), (CX - 20, 462), (CX + 10, 456), (CX - 10, 480), (CX - 60, 474)], True),
+    ]
+    return pele, camisa
+
 reflexos_camisa = [
-    cr([(CX - 120, 256), (CX - 96, 246), (CX - 70, 262), (CX - 92, 280), (CX - 118, 290)], True),
-    cr([(CX - 70, 300), (CX - 20, 290), (CX - 30, 360), (CX - 74, 380)], True),
+    cr([(CX - 116, 258), (CX - 94, 246), (CX - 70, 262), (CX - 90, 280), (CX - 112, 290)], True),
+    cr([(CX - 66, 300), (CX - 22, 292), (CX - 30, 360), (CX - 70, 380)], True),
 ]
 
-def tatuagem():
+def tatuagem(t):
     """Tatuagem no antebraço esquerdo do jogador (lado direito da tela): rosa + linhas."""
-    x, y = CX + 121, 424
-    rosa = (f'<g transform="translate({x},{y})" fill="none" stroke="#2b1d3a" stroke-width="1.6" stroke-linecap="round" opacity=".78">'
+    _, _, cx = braco(t)
+    x, y = CX + cx(424) + 2, 424
+    return (f'<g transform="translate({x:.1f},{y})" fill="none" stroke="#2b1d3a" stroke-width="1.6" stroke-linecap="round" opacity=".78">'
             '<path d="M0,-12 C7,-12 9,-4 4,0 C0,3 -6,1 -6,-4 C-6,-9 2,-9 2,-4"/>'
             '<path d="M-9,-8 C-12,0 -6,8 2,7 C9,6 12,-2 9,-10"/>'
             '<path d="M-3,8 C-4,18 -3,30 -1,42"/><path d="M-2,18 C-8,16 -11,20 -12,24 C-6,25 -3,22 -2,18"/>'
             '<path d="M-1,30 C5,27 9,30 10,34 C4,35 0,33 -1,30"/>'
-            '<path d="M-10,-26 L10,-26 M-11,-31 L11,-31" stroke-width="1.2"/>'
-            '</g>')
-    return rosa
+            '<path d="M-10,-26 L10,-26 M-11,-31 L11,-31" stroke-width="1.2"/></g>')
 
-def montar(cabeca_svg, saida, cor="#c8102e", cor2="#8a0a1f", calc="#ffffff", calc2="#c9ccd6", marca="Umbrella"):
-    grad_chut, pe = chuteira(marca, "chut")
+def preparar_cabeca(cabeca_svg):
+    """Cabeça do kit sem a camiseta, recortada no queixo, posicionada no eixo do corpo."""
     cab = ET.parse(cabeca_svg).getroot()
-    # tira camiseta e gola do kit
     tirar = {"g6554", "g6572", "g6592", "g6608", "g6624", "g6644", "g6660", "path6552", "path6570", "path6590", "path6640", "path6642"}
     g10 = cab.find(f".//{{{NS}}}g[@id='g10']")
     for e in list(g10):
         if e.get("id") in tirar: g10.remove(e)
     vb = [float(v) for v in cab.get("viewBox").split()]
     s = 0.088
-    # recorte: cabeça inteira acima do pescoço + coluna do pescoço
     clip = ET.SubElement(cab.find(f"{{{NS}}}defs"), f"{{{NS}}}clipPath", {"id": "recorteCabeca"})
     ET.SubElement(clip, f"{{{NS}}}path", {"d": "M3800,800 H5800 V2380 H5176 L5176,2540 Q4806,2660 4440,2540 L4440,2380 H3800 Z"})
-    g8 = cab.find(f"{{{NS}}}g")
-    cab.remove(g8)
-    wrap = ET.SubElement(cab, f"{{{NS}}}g", {"clip-path": "url(#recorteCabeca)"}); wrap.append(g8)
-    largura = vb[2] * s; alt = vb[3] * s
+    g8 = cab.find(f"{{{NS}}}g"); cab.remove(g8)
+    ET.SubElement(cab, f"{{{NS}}}g", {"clip-path": "url(#recorteCabeca)"}).append(g8)
     queixo = 2405
     cab.set("x", f"{CX - (4806.6 - vb[0]) * s:.1f}"); cab.set("y", f"{188 - (queixo - vb[1]) * s:.1f}")
-    cab.set("width", f"{largura:.1f}"); cab.set("height", f"{alt:.1f}")
+    cab.set("width", f"{vb[2] * s:.1f}"); cab.set("height", f"{vb[3] * s:.1f}")
     cab.attrib.pop("id", None)
-    cab_xml = ET.tostring(cab, encoding="unicode")
+    return ET.tostring(cab, encoding="unicode")
 
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="140 40 320 870" width="640" height="1740">
-<defs>
-  <linearGradient id="pele" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
-    <stop offset="0" stop-color="#ffc8b0"/><stop offset=".45" stop-color="#f7ab8a"/><stop offset="1" stop-color="#ee9070"/></linearGradient>
-  <linearGradient id="camisa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{cor}"/><stop offset="1" stop-color="{cor2}"/></linearGradient>
-  <linearGradient id="calcao" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{calc}"/><stop offset="1" stop-color="{calc2}"/></linearGradient>
-  <linearGradient id="meiao" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{cor}"/><stop offset="1" stop-color="{cor2}"/></linearGradient>
+def corpo_svg(tipo, k="", cor="#c8102e", cor2="#8a0a1f", calc="#ffffff", calc2="#c9ccd6", marca="Umbrella", tatu=True, numero="10"):
+    """Devolve (defs, desenho) do corpo vestido. k: sufixo dos ids (vários corpos no mesmo svg)."""
+    t = TIPOS[tipo]
+    corpo = cr(espelho([(0, 170)] + corpo_pts(t)), fechado=True)
+    cam_p, calc_p, meiao_p, b_manga, b_calcao = roupa_pts(t)
+    camisa = cr(espelho(cam_p), fechado=True)
+    calcao = cr(espelho(calc_p), fechado=True)
+    meiao_d, meiao_e = (cr(p, True) for p in lado(meiao_p))
+    sp, sc = sombras(t)
+    grad_chut, pe = chuteira(marca, "chut" + k)
+    _, _, cx = braco(t)
+    lc, kl = t["lc"], t["kl"]
+    (mx0, my0), (mx1, my1) = b_manga
+    (hx0, hy0), (hx1, hy1) = b_calcao
+    defs = f'''<linearGradient id="pele{k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc8b0"/><stop offset=".45" stop-color="#f7ab8a"/><stop offset="1" stop-color="#ee9070"/></linearGradient>
+  <linearGradient id="camisa{k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{cor}"/><stop offset="1" stop-color="{cor2}"/></linearGradient>
+  <linearGradient id="calcao{k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{calc}"/><stop offset="1" stop-color="{calc2}"/></linearGradient>
   {grad_chut}
-  <linearGradient id="pescoco" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8714d"/><stop offset=".5" stop-color="#ef9372"/><stop offset="1" stop-color="#f6a989"/></linearGradient>
-  <clipPath id="clipCorpo"><path d="{corpo}"/></clipPath>
-  <clipPath id="clipCamisa"><path d="{camisa}"/></clipPath>
-</defs>
-<path d="{corpo}" fill="url(#pele)"/>
-<path d="M{CX-33},176 L{CX+33},176 L{CX+34},214 L{CX-34},214 Z" fill="url(#pescoco)"/>
-<g clip-path="url(#clipCorpo)" fill="#e8714d" opacity=".45">{''.join(f'<path d="{d}"/>' for d in sombras_pele)}</g>
-<g clip-path="url(#clipCorpo)">{tatuagem()}</g>
-<g stroke="#fff" stroke-opacity=".35" stroke-width=".6" fill="none" clip-path="url(#clipCorpo)">
-  <path d="M{CX-138},334 C{CX-138},350 {CX-134},366 {CX-130},380"/><path d="M{CX-134},400 C{CX-134},420 {CX-131},446 {CX-124},470"/>
-  <path d="M{CX+58},748 C{CX+66},770 {CX+70},800 {CX+66},830"/>
-  <path d="M{CX-70},672 C{CX-58},664 {CX-38},664 {CX-28},674"/><path d="M{CX+70},672 C{CX+58},664 {CX+38},664 {CX+28},674"/>
-  <path d="M{CX-60},630 C{CX-62},650 {CX-60},660 {CX-58},664"/></g>
-<g fill="none" stroke="#d9714f" stroke-opacity=".55" stroke-width="1.1" clip-path="url(#clipCorpo)">
-  <path d="M{CX-66},686 C{CX-56},694 {CX-40},694 {CX-30},686"/><path d="M{CX+66},686 C{CX+56},694 {CX+40},694 {CX+30},686"/>
-  <path d="M{CX-126},384 C{CX-120},390 {CX-112},390 {CX-108},386"/><path d="M{CX+126},384 C{CX+120},390 {CX+112},390 {CX+108},386"/>
-  <path d="M{CX-112},346 C{CX-118},352 {CX-122},364 {CX-120},374" stroke-opacity=".3"/></g>
-<path d="{meiao_d}" fill="url(#meiao)"/><path d="{meiao_e}" fill="url(#meiao)"/>
-<g fill="none" stroke="#fff" stroke-width="5" opacity=".92"><path d="M{CX+11},716 C{CX+40},720 {CX+70},720 {CX+95},714"/><path d="M{CX-11},716 C{CX-40},720 {CX-70},720 {CX-95},714"/></g>
-<path d="M{CX+66},726 C{CX+82},740 {CX+82},780 {CX+60},850 L{CX+68},850 C{CX+94},780 {CX+100},740 {CX+91},702 C{CX+82},712 {CX+74},718 {CX+66},726 Z" fill="#000" opacity=".16"/>
-<path d="M{CX-30},740 C{CX-32},770 {CX-30},800 {CX-26},830" stroke="#fff" stroke-opacity=".25" stroke-width="1.6" fill="none"/>
+  <linearGradient id="pescoco{k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8714d"/><stop offset=".5" stop-color="#ef9372"/><stop offset="1" stop-color="#f6a989"/></linearGradient>
+  <clipPath id="clipCorpo{k}"><path d="{corpo}"/></clipPath>
+  <clipPath id="clipCamisa{k}"><path d="{camisa}"/></clipPath>
+  <clipPath id="clipCalcao{k}"><path d="{calcao}"/></clipPath>
+  <clipPath id="clipMeiao{k}"><path d="{meiao_d}"/><path d="{meiao_e}"/></clipPath>'''
+    cotovelo = lambda sx: f'M{CX + sx * (cx(388) + 10 * t["ka"]):.1f},386 C{CX + sx * (cx(388) + 4):.1f},391 {CX + sx * (cx(388) - 4):.1f},391 {CX + sx * (cx(388) - 9 * t["ka"]):.1f},387'
+    joelho = lambda sx: f'M{CX + sx * (lc + 14 * kl):.1f},688 C{CX + sx * (lc + 6):.1f},695 {CX + sx * (lc - 6):.1f},695 {CX + sx * (lc - 14 * kl):.1f},688'
+    desenho = f'''<path d="{corpo}" fill="url(#pele{k})"/>
+<path d="M{CX-33},176 L{CX+33},176 L{CX+34},214 L{CX-34},214 Z" fill="url(#pescoco{k})"/>
+<g clip-path="url(#clipCorpo{k})" fill="#e8714d" opacity=".42">{''.join(f'<path d="{d}"/>' for d in sp)}</g>
+{f'<g clip-path="url(#clipCorpo{k})">{tatuagem(t)}</g>' if tatu else ''}
+<g fill="none" stroke="#d9714f" stroke-opacity=".5" stroke-width="1.1" clip-path="url(#clipCorpo{k})">
+  <path d="{cotovelo(1)}"/><path d="{cotovelo(-1)}"/><path d="{joelho(1)}"/><path d="{joelho(-1)}"/></g>
+<g fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".7" clip-path="url(#clipCorpo{k})">
+  <path d="M{CX - cx(340) - 14 * t["ka"]:.1f},336 C{CX - cx(350) - 15 * t["ka"]:.1f},352 {CX - cx(366) - 12 * t["ka"]:.1f},366 {CX - cx(378) - 10 * t["ka"]:.1f},378"/>
+  <path d="M{CX - (lc + 20 * kl):.1f},630 C{CX - (lc + 22 * kl):.1f},650 {CX - (lc + 21 * kl):.1f},664 {CX - (lc + 19 * kl):.1f},672"/></g>
+<path d="{meiao_d}" fill="url(#camisa{k})"/><path d="{meiao_e}" fill="url(#camisa{k})"/>
+<g clip-path="url(#clipMeiao{k})">
+  <g fill="none" stroke="#fff" stroke-width="5" opacity=".92"><path d="M{CX+4},716 C{CX+40},721 {CX+80},721 {CX+110},714"/><path d="M{CX-4},716 C{CX-40},721 {CX-80},721 {CX-110},714"/></g>
+  <path d="{faixa([(CX + x, y) for x, y in meiao_p[:4]], 9 * kl)}" fill="#000" opacity=".16"/>
+  <path d="M{CX - 43 + 6},744 C{CX - 43 + 8},774 {CX - 43 + 6},804 {CX - 43 + 4},834" stroke="#fff" stroke-opacity=".22" stroke-width="1.6" fill="none"/>
+</g>
 <g transform="translate({CX+43},848)">{pe}</g>
 <g transform="translate({CX-43},848) scale(-1,1)">{pe}</g>
-<path d="{calcao}" fill="url(#calcao)"/>
-<path d="M{CX},560 L{CX},616" stroke="{calc2}" stroke-width="1.2"/>
-<path d="M{CX+58},480 C{CX+70},540 {CX+82},590 {CX+92},616 L{CX+102},616 C{CX+96},560 {CX+92},510 {CX+90},470 Z" fill="#000" opacity=".1"/>
-<path d="M{CX+100},602 L{CX+106},602 L{CX+100},618 L{CX+12},618 L{CX+10},610 Z M{CX-100},602 L{CX-106},602 L{CX-100},618 L{CX-12},618 L{CX-10},610 Z" fill="{cor}"/>
-<path d="{camisa}" fill="url(#camisa)"/>
-<g clip-path="url(#clipCamisa)">
-  <g fill="#000" opacity=".16">{''.join(f'<path d="{d}"/>' for d in sombras_camisa)}</g>
+<path d="{calcao}" fill="url(#calcao{k})"/>
+<g clip-path="url(#clipCalcao{k})">
+  <path d="{faixa([(CX + x, y) for x, y in calc_p[1:5]], 12)}" fill="#000" opacity=".09"/>
+  <path d="M{CX},562 L{CX},620" stroke="{calc2}" stroke-width="1.2"/>
+  <g fill="none" stroke="{cor}" stroke-width="4.5"><path d="M{CX + hx0},{hy0} C{CX + hx0 + 30},{hy0 + 3} {CX + hx1 - 20},{hy1 + 1} {CX + hx1 + 6},{hy1 - 4}"/>
+  <path d="M{CX - hx0},{hy0} C{CX - hx0 - 30},{hy0 + 3} {CX - hx1 + 20},{hy1 + 1} {CX - hx1 - 6},{hy1 - 4}"/></g>
+</g>
+<path d="{camisa}" fill="url(#camisa{k})"/>
+<g clip-path="url(#clipCamisa{k})">
+  <g fill="#000" opacity=".16">{''.join(f'<path d="{d}"/>' for d in sc)}</g>
   <g fill="#fff" opacity=".12">{''.join(f'<path d="{d}"/>' for d in reflexos_camisa)}</g>
-  <path d="M{CX+108},316 L{CX+157},306 L{CX+158},320 L{CX+114},332 Z M{CX-108},316 L{CX-157},306 L{CX-158},320 L{CX-114},332 Z" fill="#fff" opacity=".9"/>
+  <g fill="none" stroke="#fff" stroke-width="7" opacity=".92">
+    <path d="M{CX + mx0 - 2:.1f},{my0 + 3} L{CX + mx1 + 4:.1f},{my1 + 1}"/><path d="M{CX - mx0 + 2:.1f},{my0 + 3} L{CX - mx1 - 4:.1f},{my1 + 1}"/></g>
   <g stroke="#fff" stroke-opacity=".28" stroke-width=".7" fill="none">
-    <path d="M{CX-98},250 C{CX-96},300 {CX-92},360 {CX-88},420"/><path d="M{CX+20},300 C{CX+26},360 {CX+30},420 {CX+30},470"/></g>
+    <path d="M{CX - t["peito"]:.1f},262 C{CX - t["peito"] + 2:.1f},310 {CX - t["peito"] + 6:.1f},370 {CX - t["cintura"]:.1f},430"/><path d="M{CX+20},300 C{CX+26},360 {CX+30},420 {CX+30},470"/></g>
 </g>
 <path d="{gola}" fill="#fff"/>
-<text x="{CX-62}" y="300" font-family="Arial Black, Arial" font-weight="900" font-size="22" fill="#fff" opacity=".95">10</text>
-{cab_xml}
-</svg>'''
-    open(saida, "w").write(svg)
+<text x="{CX - t["peito"] * 0.62:.1f}" y="300" font-family="Arial Black, Arial" font-weight="900" font-size="20" fill="#fff" opacity=".95">{numero}</text>
+<use href="#cabeca" xlink:href="#cabeca"/>'''
+    return defs, desenho
+
+def montar(cabeca_svg, saida, tipo="atlético", **kw):
+    defs, desenho = corpo_svg(tipo, **kw)
+    open(saida, "w").write(f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="130 40 340 870" width="680" height="1740">
+<defs>{defs}<g id="cabeca">{preparar_cabeca(cabeca_svg)}</g></defs>{desenho}</svg>''')
+
+def fila(cabeca_svg, saida, **kw):
+    """Os 7 tipos de corpo lado a lado, do mais magro ao mais pesado."""
+    ordem = ["esguio", "magro", "atlético", "forte", "pouco atlético", "troncudo", "pesado"]
+    partes, todos = [], []
+    for i, tp in enumerate(ordem):
+        d, g = corpo_svg(tp, k=str(i), tatu=(tp in ("forte", "atlético")), **kw); todos.append(d)
+        partes.append(f'<g transform="translate({i * 360},0)">{g}<text x="{CX}" y="935" font-family="Arial" font-size="22" text-anchor="middle" fill="#333">{tp}</text></g>')
+    w = 360 * len(ordem)
+    open(saida, "w").write(f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="120 30 {w + 20} 920" width="{w + 20}" height="920">
+<rect x="120" y="30" width="{w + 20}" height="920" fill="#fff"/><defs>{"".join(todos)}<g id="cabeca">{preparar_cabeca(cabeca_svg)}</g></defs>{"".join(partes)}</svg>''')
 
 def vitrine(saida):
     """As chuteiras de cada marca lado a lado."""
@@ -210,4 +272,5 @@ def vitrine(saida):
 
 if __name__ == "__main__":
     if sys.argv[1] == "--vitrine": vitrine(sys.argv[2])
-    else: montar(sys.argv[1], sys.argv[2], marca=sys.argv[3] if len(sys.argv) > 3 else "Umbrella")
+    elif sys.argv[1] == "--fila": fila(sys.argv[2], sys.argv[3])
+    else: montar(sys.argv[1], sys.argv[2], tipo=sys.argv[3] if len(sys.argv) > 3 else "atlético")
