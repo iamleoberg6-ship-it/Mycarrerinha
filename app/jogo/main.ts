@@ -1,6 +1,5 @@
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
 import { camisaCostas } from "../visual/camisas";
-import { CONQUISTAS } from "../../src/reliquias";
 import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
@@ -591,20 +590,15 @@ function perfilHtml(s: Save): string {
     </div>`;
 }
 let trofeuAberto: string | undefined, camisaAberta: string | undefined;
-/** Armário de camisas: as especiais, as trocadas com craques e, apagadas, as que ainda faltam. */
+/** Armário de camisas: as especiais e as trocadas com craques. */
 function armarioCamisas(s: Save): string {
   const minhas = (s.casa.reliquias ?? []).filter((r) => r.tipo === "camisa").sort((a, b) => a.ano - b.ano);
-  const faltam = CONQUISTAS.filter((k) => k.tipo === "camisa" && !minhas.some((r) => r.chave === k.chave));
+  if (!minhas.length) return `<p class="rotulo">Armário de camisas</p><p class="sub">Nenhuma ainda. A estreia, o primeiro gol e as trocas com craques vêm parar aqui.</p>`;
   const nomeCostas = (r: Reliquia) => (r.chave === "camisa-troca" ? r.nome.replace(/^Camisa d[eoa] /, "") : s.jogador.apelido);
-  const cel = (id: string, svg: string, rot: string, apagada = false) =>
-    `<button class="camisa-cel${camisaAberta === id ? " ativo" : ""}${apagada ? " apagada" : ""}" data-camisa="${esc(id)}" aria-expanded="${camisaAberta === id}">${svg}<small>${esc(rot)}</small></button>`;
-  const r = minhas.find((x) => x.id === camisaAberta), k = faltam.find((x) => x.chave === camisaAberta);
-  const detalhe = r ? `<div class="trofeu-detalhe"><b>${esc(r.nome)}</b><div>${esc(r.legenda)}</div><small>É uma relíquia: dá para pendurar na parede na aba Casa.</small></div>`
-    : k ? `<div class="trofeu-detalhe"><b>${esc(k.nome)}</b><div>${k.emBreve ? "Em breve." : esc(k.dica)}</div></div>`
-    : `<p class="sub">Toque numa camisa para ver a história dela.</p>`;
-  return `<p class="rotulo">Armário de camisas <small>(${minhas.length} na coleção)</small></p>
-      <div class="armario camisas">${minhas.map((x) => cel(x.id, camisaCostas({ cores: x.cores, modelo: x.modelo, numero: x.numero }, nomeCostas(x)), x.nome.replace(/^Camisa d[aeo] /, ""))).join("")}${faltam.map((x) => cel(x.chave, camisaCostas({ cores: ["#000000", "#000000"], modelo: "lisa" }, "", true), x.nome.replace(/^Camisa d[aeo] /, ""), true)).join("")}</div>
-      ${detalhe}`;
+  const r = minhas.find((x) => x.id === camisaAberta);
+  return `<p class="rotulo">Armário de camisas <small>(${minhas.length})</small></p>
+      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " ativo" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}">${camisaCostas({ cores: x.cores, modelo: x.modelo, numero: x.numero }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></button>`).join("")}</div>
+      ${r ? `<div class="trofeu-detalhe"><b>${esc(r.nome)}</b><div>${esc(r.legenda)}</div><small>É uma relíquia: dá para pendurar na parede na aba Casa.</small></div>` : `<p class="sub">Toque numa camisa para ver a história dela.</p>`}`;
 }
 function abrirPerfil() {
   if (!save) return;
