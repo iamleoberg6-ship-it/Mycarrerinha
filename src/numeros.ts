@@ -1,7 +1,6 @@
 // Número da camisa. Ao chegar num clube e no começo de cada temporada o jogador escolhe o número entre os livres.
 // Os números do elenco vêm dos elencos reais; quem não tem número ganha um fixo (preferência da posição, depois sorteio
-// pelo nome). A cada virada de temporada de 2 a 4 jogadores deixam o clube (vendidos, emprestados, fim de contrato):
-// saem do elenco e liberam a camisa.
+// pelo nome). Na virada da temporada o mundo muda (src/evolucao.ts): quem sai libera a camisa e quem chega pega uma livre.
 import { RNG } from "./rng.js";
 import type { Clube } from "./liga.js";
 
@@ -32,27 +31,25 @@ export function numerosDoClube(clube: Clube): Map<string, number> {
   return porNome;
 }
 
-/** Quem deixou o clube na virada da temporada (2 a 4 jogadores; nenhum na primeira). Mais velhos e reservas saem mais. */
-export function saidasDoClube(semente: string, clube: Clube, temporada: number): string[] {
-  if (temporada <= 0 || clube.elenco.length < 16) return [];
-  const rng = new RNG(`${semente}|saidas|${clube.id}|${temporada}`), n = rng.int(2, 4);
-  const peso = (j: Clube["elenco"][number]) => (j.idade >= 31 ? 3 : 1) * (j.ovr < clube.forca - 5 ? 2 : 1) * (j.ovr > clube.forca + 4 ? 1.5 : 1); // craque também é vendido
-  const pool = [...clube.elenco], fora: string[] = [];
-  while (fora.length < n && pool.length) {
-    const total = pool.reduce((a, j) => a + peso(j), 0);
-    let r = rng.next() * total, k = 0;
-    for (; k < pool.length - 1; k++) { r -= peso(pool[k]); if (r <= 0) break; }
-    fora.push(pool.splice(k, 1)[0].nome);
-  }
-  return fora;
+/** O mundo mudou (temporada nova): os números são refeitos a partir do elenco atual. */
+export const limparNumeros = () => cache.clear();
+/** Número livre para quem chega ao clube: o preferido da posição, senão um sorteado. */
+export function numeroParaChegada(clube: Clube, posicao: string, nome: string, evitar: number[] = []): number {
+  const usados = new Set([...numerosDoClube(clube).values(), ...evitar]);
+  const n = (PREF[posicao] ?? []).find((x) => !usados.has(x));
+  if (n !== undefined) return n;
+  for (let t = 0; t < 300; t++) { const x = 2 + (hash(`${nome}|${t}`) % 98); if (!usados.has(x)) return x; }
+  return 99;
 }
 
 /** As 99 camisas do clube: quem usa cada uma, as liberadas por quem saiu e a sua. */
-export function gradeDeNumeros(clube: Clube | undefined, saidas: string[], meuNumero?: string): Camisa[] {
+export function gradeDeNumeros(clube: Clube | undefined, saidas: { nome: string; numero?: number; posicao: string }[], meuNumero?: string): Camisa[] {
   const dono = new Map<number, { nome: string; posicao: string; saiu: boolean }>();
+  // quem saiu na virada da temporada libera a camisa (se ninguém que chegou já pegou)
+  for (const x of saidas) if (x.numero) dono.set(x.numero, { nome: x.nome, posicao: x.posicao, saiu: true });
   if (clube) {
     const nums = numerosDoClube(clube);
-    for (const j of clube.elenco) { const n = nums.get(j.nome); if (n) dono.set(n, { nome: j.nome, posicao: j.posicao, saiu: saidas.includes(j.nome) }); }
+    for (const j of clube.elenco) { const n = nums.get(j.nome); if (n) dono.set(n, { nome: j.nome, posicao: j.posicao, saiu: false }); }
   }
   return Array.from({ length: 99 }, (_, i) => {
     const n = i + 1, d = dono.get(n), meu = String(n) === meuNumero;

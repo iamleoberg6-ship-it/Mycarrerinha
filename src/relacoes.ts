@@ -3,19 +3,19 @@
 // para o clube do amigo.
 import { RNG, clamp } from "./rng.js";
 import type { Clube, JogadorNPC, PacoteDados } from "./liga.js";
-import { mundo } from "./mundo.js";
+import { mundo, versaoMundo } from "./mundo.js";
 
-export interface Relacao { nome: string; clubeId: string; nivel: number; desde: number; companheiro?: boolean; camisa?: boolean; indicacao?: number }
+export interface Relacao { nome: string; clubeId: string; nivel: number; desde: number; companheiro?: boolean; camisa?: boolean; indicacao?: number; aposentado?: boolean }
 export interface Estrela { nome: string; clubeId: string; ovr: number; posicao: string; idade: number; numero: number; fama: number }
 
 export const NIVEIS: [number, string][] = [[80, "Melhor amigo"], [60, "Parceiro"], [40, "Amigo"], [20, "Colega"], [0, "Conhecido"]];
 export const rotuloNivel = (n: number) => NIVEIS.find(([m]) => n >= m)![1];
 
 // ------------------------------------------------------------------ estrelas
-let cacheEstrelas: { pacote: PacoteDados; lista: Estrela[] } | undefined;
+let cacheEstrelas: { pacote: PacoteDados; versao: number; lista: Estrela[] } | undefined;
 /** Estrelas: todo jogador de OVR 85+ e, em cada liga (até a segunda divisão), o craque de cada clube da metade de cima. */
 export function estrelas(pacote: PacoteDados): Estrela[] {
-  if (cacheEstrelas?.pacote === pacote) return cacheEstrelas.lista;
+  if (cacheEstrelas?.pacote === pacote && cacheEstrelas.versao === versaoMundo()) return cacheEstrelas.lista;
   const w = mundo(pacote), lista: Estrela[] = [], vistos = new Set<string>();
   const add = (j: JogadorNPC, c: Clube) => {
     if (vistos.has(j.nome)) return;
@@ -28,7 +28,7 @@ export function estrelas(pacote: PacoteDados): Estrela[] {
     for (const c of fortes) { const melhor = [...c.elenco].sort((a, b) => b.ovr - a.ovr)[0]; if (melhor && melhor.ovr >= (l.nivel >= 5 ? 58 : 64)) add(melhor, c); }
   }
   lista.sort((a, b) => b.ovr - a.ovr);
-  cacheEstrelas = { pacote, lista };
+  cacheEstrelas = { pacote, versao: versaoMundo(), lista };
   return lista;
 }
 const hash = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };

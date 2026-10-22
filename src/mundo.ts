@@ -6,6 +6,9 @@ import { ligaDoPacote, type Clube, type JogadorNPC, type Liga, type PacoteDados 
 import { LIGAS, LIGA_INFO, type InfoLiga } from "./ligas.js";
 import dados from "../data/mundo-2026.json";
 import { CONVIDADOS, clubeConvidado } from "./convidados.js";
+import { RNG } from "./rng.js";
+import { forcaDoElenco } from "./liga.js";
+import { criarBase, nivelBase, virarTemporada, type GruposMundo, type Referencia, type ViradaMundo, type NivelBase } from "./evolucao.js";
 
 export { LIGAS, LIGA_INFO, type InfoLiga };
 export interface InfoClube { id: string; nome: string; apelido: string; cores: string[]; forca: number; cidade: string; estadio: string; capacidade: number; padrao: string; ligaId: string; pais: string }
@@ -47,7 +50,52 @@ export function mundo(pacote: PacoteDados): Mundo {
   const todas = [...ligas, ...amadoras, { id: "CONV", nome: "Clubes convidados", pais: "INT", nivel: 3 as const, fLiga: 0.6, fSalario: 0.6, rebaixados: 0, clubes: conv }];
   const m: Mundo = { ligas, amadoras, liga: Object.fromEntries(todas.map((l) => [l.id, l])), clube: Object.fromEntries(todas.flatMap((l) => l.clubes.map((c) => [c.id, c]))), info };
   cache = { pacote, m };
+  // o mundo de 2026 fica guardado: as temporadas seguintes são calculadas a partir dele (src/evolucao.ts)
+  original = new Map(Object.values(m.clube).map((c) => [c, c.elenco.map((j) => ({ ...j }))]));
+  ref = Object.fromEntries(Object.values(m.clube).map((c) => [c.id, { forca: c.forca, top: forcaDoElenco(c.elenco), tamanho: c.elenco.length, nivel: nivelBase(c.id, info[c.id]?.forca ?? c.forca, c.pais) }]));
+  grupos = { pro: ligas.flatMap((l) => l.clubes), convidados: conv, amadores: amadoras.flatMap((l) => l.clubes), ligas: [...ligas.map((l) => l.clubes), ...amadoras.map((l) => l.clubes), conv] };
+  estado = undefined;
   return m;
+}
+
+// ------------------------------------------------------------------ o mundo ao longo das temporadas
+let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
+let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo } | undefined;
+let versao = 0;
+/** Muda a cada vez que o mundo muda (caches de quem lê o mundo comparam com isto). */
+export const versaoMundo = () => versao;
+
+/** Põe o mundo na temporada t da carreira de semente `semente` (0 = elencos reais de 2026, com as bases sorteadas). */
+export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada: number) {
+  const m = mundo(pacote);
+  if (estado && estado.semente === semente && estado.temporada === temporada) return;
+  if (!estado || estado.semente !== semente || estado.temporada > temporada) {
+    for (const [c, el] of original) { c.elenco = el.map((j) => ({ ...j })); c.forca = ref[c.id].forca; }
+    const usados = new Set(Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)));
+    const base: Record<string, JogadorNPC[]> = {};
+    for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados);
+    estado = { semente, temporada: 0, base, usados };
+  }
+  while (estado.temporada < temporada) { estado.temporada++; estado.virada = virarTemporada(grupos, estado.base, ref, semente, estado.temporada, estado.usados); }
+  versao++; indice = undefined;
+}
+const garantir = (pacote: PacoteDados) => { mundo(pacote); if (!estado) sincronizarMundo(pacote, "", 0); return estado!; };
+/** Os garotos da base do clube (15 a 19 anos), do melhor para o pior. Vazio para quem não tem base (amadores, convidados). */
+export const baseDoClube = (pacote: PacoteDados, id: string): JogadorNPC[] => [...(garantir(pacote).base[idClube(id)] ?? [])].sort((a, b) => b.ovr - a.ovr);
+/** Nível da base do clube (estrutura, cultura, escola do país). */
+export const nivelDaBase = (pacote: PacoteDados, id: string): NivelBase | undefined => { mundo(pacote); return ref[idClube(id)]?.nivel; };
+/** Quem saiu e quem chegou em cada clube na última virada de temporada (vazio na primeira temporada). */
+export const viradaAtual = (pacote: PacoteDados): ViradaMundo => garantir(pacote).virada ?? { saidas: {}, chegadas: {}, destaques: [] };
+let indice: Map<string, { clubeId: string; base: boolean }> | undefined;
+/** Onde joga um jogador hoje (pelo nome): clube, ou base do clube. undefined = aposentado ou sem clube. */
+export function ondeJoga(pacote: PacoteDados, nome: string) {
+  const e = garantir(pacote), m = mundo(pacote);
+  if (!indice) {
+    indice = new Map();
+    for (const c of Object.values(m.clube)) for (const j of c.elenco) indice.set(j.nome, { clubeId: c.id, base: false });
+    for (const [id, b] of Object.entries(e.base)) for (const j of b) indice.set(j.nome, { clubeId: id, base: true });
+  }
+  return indice.get(nome);
 }
 
 /** Padrão das camisas da Série A (só cores e desenho, nada de escudo). */

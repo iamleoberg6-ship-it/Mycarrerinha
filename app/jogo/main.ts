@@ -34,9 +34,11 @@ import { CIDADES_VARZEA, DA_CIDADE } from "../../src/ligas";
 import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, alternarFavorito, type AcaoRel, type Relacao } from "../../src/relacoes";
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
-import { infoClube, mundo } from "../../src/mundo";
+import { infoClube, mundo, baseDoClube, nivelDaBase } from "../../src/mundo";
+import type { JogadorNPC } from "../../src/liga";
+import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
-import { culturaBase, NOME_CULTURA, TEXTO_CULTURA } from "../../src/identidade";
+import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
 import { AGENTE_INFO, NOME_PAPEL, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
@@ -412,13 +414,13 @@ function camisaMini(clubeId: string, numero: number): string {
 function linhaRel(s: Save, x: Relacao, acoes: AcaoRel[], extra = "", clubeBusca?: string): string {
   const e = estrelasDoMundo(pacote).find((k) => k.nome === x.nome), cor = x.nivel >= 80 ? "#E3B341" : x.nivel >= 60 ? "#74D394" : x.nivel >= 40 ? "#6FB7E0" : "#8A968E";
   const conhecido = !!relacoesDe(s.carreira).lista[x.nome], fav = relacoesDe(s.carreira).favoritos?.includes(x.nome);
-  return `<div class="rel-linha"><div class="rel-topo">${conhecido ? `<button class="fav${fav ? " on" : ""}" data-fav="${esc(x.nome)}" aria-label="${fav ? "Tirar dos favoritos" : "Pôr nos favoritos"}" aria-pressed="${!!fav}">★</button>` : ""}${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><b>${esc(x.nome)}</b>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${esc(nomeDe(x.clubeId))}${extra}</small></div>
+  return `<div class="rel-linha"><div class="rel-topo">${conhecido ? `<button class="fav${fav ? " on" : ""}" data-fav="${esc(x.nome)}" aria-label="${fav ? "Tirar dos favoritos" : "Pôr nos favoritos"}" aria-pressed="${!!fav}">★</button>` : ""}${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><b>${esc(x.nome)}</b>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${x.aposentado ? "Aposentado" : esc(nomeDe(x.clubeId))}${extra}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloNivel(x.nivel)}</span><span class="rel-barra"><i style="width:${x.nivel}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoes.map((a) => `<button class="chip" data-rel="${esc(x.nome)}" data-op="${a}"${clubeBusca ? ` data-clube="${clubeBusca}"` : ""}>${NOME_ACAO_REL[a]}</button>`).join("")}</div></div>`;
 }
 
 // ------------------------------------------------------------------ celular: contatos, busca e app de namoro
-let telaCel: "contatos" | "busca" | "match" = "contatos", buscaLiga: string | undefined, buscaClube: string | undefined;
+let telaCel: "contatos" | "busca" | "match" = "contatos", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
 const iniciais = (nome: string) => nome.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n >= 40 ? "#6FB7E0" : n >= 20 ? "#C9A24D" : "#EC7D69");
 function linhaFam(s: Save, m: Familiar): string {
@@ -452,11 +454,16 @@ function celBusca(s: Save): string {
   const l = w.liga[buscaLiga];
   const chipsClube = `<div class="busca-clubes">${l.clubes.map((cl) => `<button class="busca-clube${buscaClube === cl.id ? " ativo" : ""}" data-bclube="${cl.id}">${escudo(cl.id)}<span>${esc(cl.nome)}</span></button>`).join("")}</div>`;
   const cl = buscaClube ? w.clube[buscaClube] : undefined;
-  const elenco = cl ? [...cl.elenco].sort((a, b) => b.ovr - a.ovr).map((j) => {
-    const x = rr.lista[j.nome] ?? { nome: j.nome, clubeId: cl.id, nivel: 0, desde: 0 };
-    return linhaRel(s, x, cl.id === s.carreira.clubeId ? ["mensagem", "jantar"] : ["mensagem"], ` · ${NOME_POS[j.posicao] ?? "Goleiro"} · OVR ${j.ovr} · ${j.idade} anos`, cl.id);
-  }).join("") : `<p class="sub">Toque num clube para ver o elenco.</p>`;
-  return `${chipsLiga}<p class="rotulo" style="margin-top:12px">${esc(infoLiga(l.id).nome)}</p>${chipsClube}${cl ? `<p class="rotulo" style="margin-top:12px">Elenco do ${esc(cl.nome)}</p>` : ""}${elenco}`;
+  const meuClube = cl?.id === s.carreira.clubeId, acoes: AcaoRel[] = meuClube ? ["mensagem", "jantar"] : ["mensagem"];
+  const linha = (j: JogadorNPC, extra = "") => linhaRel(s, rr.lista[j.nome] ?? { nome: j.nome, clubeId: cl!.id, nivel: 0, desde: 0 }, acoes, ` · ${NOME_POS[j.posicao] ?? "Goleiro"} · OVR ${j.ovr} · ${j.idade} anos${extra}`, cl!.id);
+  const base = cl ? baseDoClube(pacote, cl.id) : [], nb = cl ? nivelDaBase(pacote, cl.id) : undefined;
+  const olheiro = (j: JogadorNPC) => { const p = j.pot ?? j.ovr; return p >= 86 ? " · <b style=\"color:var(--ouro)\">joia</b>" : p >= 78 && p - j.ovr >= 10 ? " · promessa" : ""; };
+  const abas = cl && base.length ? `<div class="chips" style="margin-top:10px"><button class="chip${buscaBase ? "" : " ativo"}" data-bbase="0">Profissional</button><button class="chip${buscaBase ? " ativo" : ""}" data-bbase="1">Base (${base.length})</button></div>` : "";
+  const lista = !cl ? `<p class="sub">Toque num clube para ver o elenco.</p>`
+    : buscaBase && base.length ? `<p class="sub" style="margin:8px 0">${esc(ESTRUTURAS[nb!.estrutura])} · ${esc(NOME_CULTURA[nb!.cultura as Cultura])}. ${nb!.cultura >= 4 ? "Sobem vários garotos por temporada." : nb!.cultura <= 2 ? "Garoto só sobe se estiver pronto." : ""}</p>
+        ${[["Sub-17", base.filter((j) => j.idade <= 17)], ["Sub-20", base.filter((j) => j.idade >= 18)]].map(([n, l]) => `<p class="rotulo" style="margin-top:10px">${n}</p>${(l as JogadorNPC[]).map((j) => linha(j, olheiro(j))).join("")}`).join("")}`
+    : [...cl.elenco].sort((a, b) => b.ovr - a.ovr).map((j) => linha(j)).join("");
+  return `${chipsLiga}<p class="rotulo" style="margin-top:12px">${esc(infoLiga(l.id).nome)}</p>${chipsClube}${cl ? `<p class="rotulo" style="margin-top:12px">${buscaBase && base.length ? "Base" : "Elenco"} do ${esc(cl.nome)}</p>` : ""}${abas}${lista}`;
 }
 function cartaoPar(p: Par | Perfil, botoes: string, extra = ""): string {
   const prof = PROFISSOES[p.profissao];
@@ -848,7 +855,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -895,6 +902,7 @@ document.addEventListener("click", (ev) => {
     const rr = d.op === "aceitar" ? aceitarConvite(pacote, save, d.convite) : recusarConvite(pacote, save, d.convite);
     msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  else if (d.bbase) { buscaBase = d.bbase === "1"; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vtab) { vistaTabela = d.vtab as typeof vistaTabela; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.cel) { telaCel = d.cel as typeof telaCel; render(); }
   else if (d.fav && save) { alternarFavorito(relacoesDe(save.carreira), d.fav); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

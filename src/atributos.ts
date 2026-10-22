@@ -82,6 +82,8 @@ export interface ContextoTreino {
   moral: number; // 0–100
   personalTrainer: boolean;
   profissionalismo: number; // 1–20
+  /** estrutura e cultura do clube (0,9 a 1,2; 1 = neutro) */
+  fClube?: number;
 }
 
 export const CALIB = {
@@ -110,7 +112,7 @@ export function evoluirSemana(at: Atributos, pot: number, ctx: ContextoTreino): 
   for (const a of ATRIBUTOS) {
     const g = GRUPO[a];
     const fTreino = (g === ctx.foco ? 1.5 : 0.85) * fInt * (ctx.personalTrainer ? 1.1 : 1);
-    const ganho = CALIB.taxaBase * fIdade(ctx.idade, g) * fTreino * F_JOGO[ctx.participacao] * fMoral * fProf * Math.max(0, 1 - at[a] / pot);
+    const ganho = CALIB.taxaBase * fIdade(ctx.idade, g) * fTreino * F_JOGO[ctx.participacao] * fMoral * fProf * (ctx.fClube ?? 1) * Math.max(0, 1 - at[a] / pot);
     let declinio = 0;
     // o corpo cobra cada vez mais depois dos 33: aos 38, o físico cai quase 6 pontos por temporada
     if (g === "fisico" && ctx.idade >= 29) declinio = ctx.idade >= 36 ? 0.15 : ctx.idade >= 33 ? 0.09 : 0.05;

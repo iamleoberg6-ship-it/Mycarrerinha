@@ -10,7 +10,7 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
-import { mundo } from "../src/mundo.js";
+import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -30,12 +30,14 @@ import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { COPAS, SEMANAS_COPA, novaCopa, rodarSemana, classificados, regiaoNaCopa, jogoDoClubeNaSemana, type CopaId } from "../src/copas.js";
 import { CONVIDADOS } from "../src/convidados.js";
-import { copasDe, jogoCopaDaSemana, diasTravados, concluirJogoDaCopa, escalacao } from "../src/jogo.js";
+import { nivelBase } from "../src/evolucao.js";
+import { copasDe, jogoCopaDaSemana, diasTravados, concluirJogoDaCopa, escalacao, fatorDoClube } from "../src/jogo.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
-const teste = (nome: string, fn: () => void) => { fn(); ok++; console.log("ok -", nome); };
 const pacote = carregarPacote(new URL("../data/pacote-brasil-serie-a-v0.3.json", import.meta.url).pathname);
+// cada teste começa com o mundo de 2026 (as carreiras de outros testes fazem o mundo andar)
+const teste = (nome: string, fn: () => void) => { sincronizarMundo(pacote, "", 0); fn(); ok++; console.log("ok -", nome); };
 const todos = (v: number) => Object.fromEntries(ATRIBUTOS.map((a) => [a, v])) as Atributos;
 
 teste("OVR com todos os atributos iguais é o próprio valor", () => {
@@ -585,10 +587,10 @@ teste("Número da camisa: únicos no elenco, saídas liberam número, escolha ao
   const g = gradeDoClube(pacote, s), ocupado = g.find((x) => x.dono)!, livre = g.find((x) => !x.dono && !x.meu)!;
   assert.equal(escolherNumero(pacote, s, ocupado.numero).ok, false);
   assert.ok(escolherNumero(pacote, s, livre.numero).ok); assert.equal(s.jogador.numero, String(livre.numero));
-  // virada de temporada: saem 2 a 4 jogadores, os números ficam livres e a escolha aparece
+  // virada de temporada: gente sai (aposentadoria, venda, dispensa), os números ficam livres e a escolha aparece
   while (c.temporada === 0) semanaAutomatica(pacote, s);
   const fora = saidasAtuais(pacote, s);
-  assert.ok(fora.length >= 2 && fora.length <= 4);
+  assert.ok(fora.length >= 1);
   assert.ok(elencoAtual(pacote, s).every((j) => !fora.includes(j.nome)));
   assert.ok(gradeDoClube(pacote, s).filter((x) => x.liberado).length >= 1);
   assert.ok(c.escolhaNumero, "começo de temporada: hora de escolher a camisa");
@@ -600,7 +602,8 @@ teste("Número da camisa: únicos no elenco, saídas liberam número, escolha ao
     c.semana = 1;
     assert.ok(aceitar(pacote, s, "n1").ok);
     assert.equal(c.escolhaNumero, "chegada");
-    assert.equal(escolherNumero(pacote, s, 10).ok, false, "a 10 é do Mesi");
+    const dez = gradeDoClube(pacote, s)[9];
+    assert.equal(escolherNumero(pacote, s, 10).ok, !dez.dono, "a 10 só se estiver livre");
   }
 });
 
@@ -766,6 +769,80 @@ teste("Semana com jogo de copa: quarta travada, jogo de quarta antes do domingo 
   assert.ok(fim?.copa && fim.copa.jogos >= 6, "campanha na copa no fim da temporada");
   assert.ok(s.carreira.historico.at(-1)!.copa);
   assert.ok(e.jogos.filter((j) => (j.casa === "FLA" || j.fora === "FLA")).every((j) => jogoDoClubeNaSemana({ LIB: e }, "FLA", j.semana)?.jogo.id === j.id));
+});
+
+teste("Base de cada clube: garotos de 15 a 19 anos, melhores no clube grande e formador, nomes que não são do profissional", () => {
+  sincronizarMundo(pacote, "base", 0);
+  const w = mundo(pacote), nomesPro = new Set(Object.values(w.clube).flatMap((c) => c.elenco.map((j) => j.nome)));
+  const media = (id: string) => { const b = baseDoClube(pacote, id); return b.reduce((a, j) => a + (j.pot ?? 0), 0) / b.length; };
+  for (const l of w.ligas) for (const c of l.clubes) {
+    const b = baseDoClube(pacote, c.id);
+    assert.equal(b.length, 25, c.id);
+    assert.ok(b.every((j) => j.idade >= 15 && j.idade <= 19 && j.base && !nomesPro.has(j.nome) && (j.pot ?? 0) >= j.ovr), c.id);
+  }
+  assert.equal(baseDoClube(pacote, "V-SP-0").length, 0, "várzea não tem base");
+  assert.ok(media("ES-BAR") > media("FLA") && media("FLA") > media("D-GALVEZAC"), "clube maior, base melhor");
+  assert.ok(nivelBase("SAN", 72, "BRA").potMedio > nivelBase("BOT", 72, "BRA").potMedio && nivelBase("SAN", 72, "BRA").maxSobe > nivelBase("BOT", 72, "BRA").maxSobe, "a cultura de base pesa");
+  assert.ok(nivelDaBase(pacote, "ES-BAR")!.fEvolucao > nivelDaBase(pacote, "SA-HIL")!.fEvolucao, "estrutura e cultura: evoluem mais");
+});
+
+teste("Mundo anda: todos envelhecem, jovem evolui, veterano cai ou se aposenta, base sobe, liga não infla, sempre igual", () => {
+  const w = mundo(pacote), pos = (c: { elenco: { posicao: string }[] }, p: string) => c.elenco.filter((j) => j.posicao === p).length;
+  const ref = Object.fromEntries(w.ligas.map((l) => [l.id, l.clubes.reduce((a, c) => a + c.forca, 0) / l.clubes.length]));
+  const todosAntes = Object.values(w.clube).flatMap((c) => c.elenco.map((j) => j.nome));
+  const repetidos = new Set(todosAntes.filter((n, i) => todosAntes.indexOf(n) !== i)); // homônimos dos dados reais
+  const antes = new Map(Object.values(w.clube).flatMap((c) => c.elenco.filter((j) => !repetidos.has(j.nome)).map((j) => [j.nome, { ...j }])));
+  // dois anos: quem tinha 30+ caiu
+  sincronizarMundo(pacote, "anda", 2);
+  let caiu = 0, veteranos = 0;
+  for (const [nome, j0] of antes) {
+    if (j0.idade < 30) continue;
+    const o = ondeJoga(pacote, nome), j = o && w.clube[o.clubeId].elenco.find((x) => x.nome === nome);
+    if (!j) continue;
+    veteranos++; if (j.ovr < j0.ovr) caiu++;
+  }
+  assert.ok(veteranos > 500 && caiu / veteranos > 0.7, `${caiu}/${veteranos}`);
+  sincronizarMundo(pacote, "anda", 6);
+  for (const l of w.ligas) assert.ok(Math.abs(l.clubes.reduce((a, c) => a + c.forca, 0) / l.clubes.length - ref[l.id]) < 1.2, `${l.id} estável`);
+  let cresceu = 0, aposentou = 0;
+  for (const [nome, j0] of antes) {
+    const o = ondeJoga(pacote, nome);
+    if (!o) { if (j0.idade >= 30) aposentou++; continue; }
+    const j = w.clube[o.clubeId].elenco.find((x) => x.nome === nome)!;
+    if (!j) continue;
+    assert.equal(j.idade, j0.idade + 6, nome);
+    if (j0.idade <= 20 && j.ovr > j0.ovr + 3) cresceu++;
+  }
+  assert.ok(cresceu > 300 && aposentou > 1000, `${cresceu} ${aposentou}`);
+  const nomes = Object.values(w.clube).flatMap((c) => c.elenco.map((j) => j.nome)).filter((n) => !repetidos.has(n));
+  assert.equal(new Set(nomes).size, nomes.length, "nomes únicos");
+  for (const c of Object.values(w.clube)) {
+    assert.ok(pos(c, "GOL") >= 2 && pos(c, "ZAG") >= 3 && pos(c, "LAT") >= 2 && pos(c, "ATA") >= 2, c.id);
+    const ns = [...numerosDoClube(c).values()]; assert.equal(new Set(ns).size, ns.length, `números ${c.id}`);
+  }
+  const subiram = Object.values(viradaAtual(pacote).chegadas).flat().filter((x) => x.motivo === "subiu");
+  assert.ok(subiram.length > 100 && subiram.every((x) => x.idade >= 18 && x.idade <= 20));
+  const foto = JSON.stringify(w.clube["ES-BAR"].elenco);
+  sincronizarMundo(pacote, "outra", 6); assert.notEqual(JSON.stringify(w.clube["ES-BAR"].elenco), foto, "outra carreira, outro mundo");
+  sincronizarMundo(pacote, "anda", 6); assert.equal(JSON.stringify(w.clube["ES-BAR"].elenco), foto, "mesma carreira, mesmo mundo");
+});
+
+teste("Carreira na base: jogos e amigos com os garotos da base; o mundo acompanha a temporada; estrutura pesa no treino", () => {
+  const r = criarJogador({ nome: "Teste Base", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 178, pe: "direito", posicao: "MEI", semente: "naBase" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "SAN", "naBase");
+  const garotos = new Set(baseDoClube(pacote, "SAN").map((j) => j.nome.split(" ").pop()!));
+  let p;
+  for (let i = 0; i < 6 && !p; i++) { const pp = prepararPartida(pacote, s, planoPadrao()); if (pp && pp.escalacao === "base") p = pp; else semanaAutomatica(pacote, s); }
+  assert.ok(p, "jogo da base");
+  assert.ok([p!.nomes.goleiro, p!.nomes.meia, p!.nomes.zagMeu].some((n) => garotos.has(n)), "companheiros da base");
+  for (let i = 0; i < 6; i++) semanaAutomatica(pacote, s);
+  const amigos = Object.values(relacoesDe(s.carreira).lista).filter((x) => x.companheiro);
+  assert.ok(amigos.length && amigos.every((x) => baseDoClube(pacote, "SAN").some((j) => j.nome === x.nome)), "amigos da base");
+  while (s.carreira.temporada < 2) semanaAutomatica(pacote, s);
+  assert.equal(JSON.stringify(mundo(pacote).clube.SAN.elenco), (sincronizarMundo(pacote, s.semente, 2), JSON.stringify(mundo(pacote).clube.SAN.elenco)));
+  assert.ok(s.noticias.length > 0);
+  const s2 = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "D-GALVEZAC", "naBase2");
+  assert.ok(fatorDoClube(pacote, s) > 0.9 && fatorDoClube(pacote, s2) < fatorDoClube(pacote, { ...s, carreira: { ...s.carreira, clubeId: "ES-BAR" } }));
 });
 
 console.log(`\n${ok} testes passaram`);

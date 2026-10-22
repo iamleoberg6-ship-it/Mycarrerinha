@@ -10,6 +10,10 @@ export interface JogadorNPC {
   idade: number;
   nacionalidade: string;
   numero?: number;
+  /** potencial (gerado na primeira virada de temporada, ou na criação dos garotos da base) */
+  pot?: number;
+  /** ainda na base do clube */
+  base?: boolean;
 }
 
 export interface Clube {
