@@ -19,6 +19,7 @@ import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinio
 import { alvoSeguidores, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
 import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from "./identidade.js";
 import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
+import { saidasDoClube, gradeDeNumeros, numeroLivre, type Camisa } from "./numeros.js";
 import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
@@ -65,6 +66,8 @@ export interface Carreira {
   relacoes?: EstadoRelacoes;
   /** fase amadora ou de academia (várzea, academia nos EUA, high school, universidade) e os convites do caminho */
   fase?: Fase; caminho?: EstadoCaminho;
+  /** escolha do número pendente (começo de temporada ou chegada a um clube) e quem saiu do clube nesta temporada */
+  escolhaNumero?: "temporada" | "chegada"; saidas?: { clubeId: string; temporada: number; nomes: string[] };
   /** treino de posição em andamento e sugestão do técnico */
   treinoPosicao?: Posicao; sugestaoPos?: { pos: Posicao; aceita?: boolean };
   /** maior reputação que teve com a torcida de cada clube */
@@ -132,6 +135,40 @@ export const familiaridadeDe = (j: Jogador): Familiaridade => (j.familiaridade ?
 /** OVR na posição em que joga, com desconto se ainda não domina a posição. */
 export const ovr = (j: Jogador) => calcOvr(j.at, j.posicao) - penalidade(familiaridadeDe(j)[j.posicao] ?? 100);
 export const ovrEm = (j: Jogador, p: Posicao) => calcOvr(j.at, p) - penalidade(familiaridadeDe(j)[p] ?? 0);
+/** Quem saiu do clube atual no começo desta temporada (libera o número e a vaga). */
+export function saidasAtuais(pacote: PacoteDados, s: Save): string[] {
+  const c = s.carreira;
+  if (c.saidas?.clubeId === c.clubeId && c.saidas.temporada === c.temporada) return c.saidas.nomes;
+  const clube = mundo(pacote).clube[idClube(c.clubeId)];
+  const nomes = clube ? saidasDoClube(s.semente, clube, c.temporada) : [];
+  c.saidas = { clubeId: c.clubeId, temporada: c.temporada, nomes };
+  return nomes;
+}
+/** Elenco do clube atual sem quem já saiu nesta temporada. */
+export function elencoAtual(pacote: PacoteDados, s: Save) {
+  const clube = mundo(pacote).clube[idClube(s.carreira.clubeId)], fora = saidasAtuais(pacote, s);
+  return fora.length ? clube.elenco.filter((j) => !fora.includes(j.nome)) : clube.elenco;
+}
+export function gradeDoClube(pacote: PacoteDados, s: Save): Camisa[] {
+  return gradeDeNumeros(mundo(pacote).clube[idClube(s.carreira.clubeId)], saidasAtuais(pacote, s), s.jogador.numero);
+}
+/** Pode escolher número: profissional ou na várzea/colégio/universidade (na base, o número é o da base). */
+export const escolheNumero = (c: Carreira) => !c.formacao || faseAmadora(c);
+export function escolherNumero(pacote: PacoteDados, s: Save, n: number): { ok: boolean; msg: string } {
+  const g = gradeDoClube(pacote, s), j = s.jogador, c = s.carreira;
+  if (String(n) !== j.numero && !numeroLivre(g, n)) return { ok: false, msg: `A ${n} já tem dono: ${g[n - 1]?.dono}.` };
+  const antes = j.numero;
+  j.numero = String(n); c.escolhaNumero = undefined;
+  if (antes !== j.numero) noticia(s, "clube", `${j.apelido} com a ${n}`, `${j.apelido} vai usar a camisa ${n} no ${infoClube(pacote, c.clubeId).nome}${g[n - 1]?.liberado ? ", que ficou livre com uma saída do elenco" : ""}.`);
+  return { ok: true, msg: antes === j.numero ? `Segue com a ${n}.` : `Agora você é o camisa ${n}.` };
+}
+/** Escolha automática: mantém o número se estiver livre; senão, o primeiro livre que combina com a posição. */
+function numeroAutomatico(pacote: PacoteDados, s: Save) {
+  const g = gradeDoClube(pacote, s), atual = +s.jogador.numero;
+  const pref = ({ ZAG: [4, 3, 14], LAT: [2, 6, 13], VOL: [5, 8, 15], MEI: [10, 8, 20], PON: [7, 11, 17], ATA: [9, 19, 29] } as Record<string, number[]>)[s.jogador.posicao] ?? [];
+  const n = numeroLivre(g, atual) ? atual : [...pref, ...g.map((x) => x.numero)].find((x) => numeroLivre(g, x)) ?? atual;
+  escolherNumero(pacote, s, n);
+}
 export const forma = (c: Carreira) => (c.formaUlt.length ? c.formaUlt.reduce((a, b) => a + b, 0) / c.formaUlt.length : 6.5);
 
 // ------------------------------------------------------------------ início
@@ -208,7 +245,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
   const fama = ef.fama ?? 0;
   const carreira: Carreira = {
     clubeId, salario: fase ? 0 : 3000, anosContrato: fase ? 4 : 2, formacao: true, agente: ef.agente ?? "pai",
-    ...(caminho === "base" ? {} : { ligaId: l.id, fase, caminho: { convites: [], seq: 0, temporadasFase: 0, cidade: d.cidade } }),
+    ...(caminho === "base" ? {} : { ligaId: l.id, fase, ...(fase !== "academia" ? { escolhaNumero: "chegada" as const } : {}), caminho: { convites: [], seq: 0, temporadasFase: 0, cidade: d.cidade } }),
     moral: 62, fama, seguidores: Math.round((ef.seguidores ?? 0) + 300), cansaco: 0, lesao: 0, relTecnico: clamp(50 + (ef.relTecnico ?? 0), 0, 100), formaUlt: [],
     bonusEvolucao: ef.bonusEvolucao ?? 0, patrocinioMensal: ef.patrocinioMensal ?? 0, mesesPatrocinio: ef.mesesPatrocinio ?? 0, pressao: ef.pressao ?? 0,
     vidaNoturna: r.vidaNoturnaInicial + (ef.vidaNoturna ?? 0), exposicao: ef.exposicao ?? 0,
@@ -261,9 +298,9 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   if (c.lesao > 0) return "lesionado";
   if (c.semana < SEMANAS_PRE) return "semJogo";
   if (c.suspensao) return "suspenso";
-  const clube = clubeDe(ligaAtual(pacote, s), c.clubeId);
+  const elenco = elencoAtual(pacote, s);
   const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade);
-  const rank = clube.elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
+  const rank = elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
   const vagas = VAGAS_433[j.posicao];
   if (rank < vagas) return "titular";
   if (rank <= vagas + 1) return "banco";
@@ -377,7 +414,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   const cp = (id: string) => infoClube(pacote, id);
   const classico = cp(jogo.casa).cidade === cp(jogo.fora).cidade || [jogo.casa, jogo.fora].sort().join("-") in CLASSICOS_EXTRA;
   const chuva = rngN.chance(0.14);
-  const elMeu = elencoDe(meuClube, base && !amador), elAdv = elencoDe(adv, base && !amador);
+  const elMeu = elencoDe({ ...meuClube, elenco: elencoAtual(pacote, s) }, base && !amador), elAdv = elencoDe(adv, base && !amador);
   const estadio = base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
   const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(c.clubeId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao });
   const posTab = posicaoNaTabela(undefined, s), reta = c.semana >= SEMANAS_PRE + 28;
@@ -608,7 +645,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   // 9. relações: convivência, redes, túnel do jogo e troca de camisa
   {
     const rr = relacoesDe(c), r4 = rngDe(s, "relacoes"), ano = ANO_INICIAL + c.temporada, clube = mundo(pacote).clube[idClube(c.clubeId)];
-    semanaRelacoes(rr, r4, clube?.elenco ?? [], c.clubeId, ano, cont("amigos"));
+    semanaRelacoes(rr, r4, clube ? elencoAtual(pacote, s) : [], c.clubeId, ano, cont("amigos"));
     const est = estrelas(pacote);
     for (let k = 0; k < cont("redes"); k++) {
       const seguidas = est.filter((e) => (rr.lista[e.nome]?.nivel ?? 0) > 0);
@@ -878,6 +915,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   if (c.fase) { c.anosContrato = Math.max(1, c.anosContrato); fimDeTemporadaDoCaminho(pacote, s, eventos); }
   if (c.fase) { /* várzea, academia, colégio e universidade: a passagem é pelos convites */ }
   else if (c.formacao && j.idade >= 18) {
+    c.escolhaNumero = "chegada"; // sobe para o profissional: escolhe o número no elenco de cima
     c.formacao = false; c.anosContrato = 3;
     c.salario = Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama }));
     noticia(s, "clube", "Primeiro contrato profissional", `${j.apelido} assina por 3 anos: R$ ${c.salario.toLocaleString("pt-BR")} por mês.`);
@@ -889,6 +927,13 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   // mercado: fim de empréstimo e contrato vencido
   fimDaTemporadaNoMercado(pacote, s, eventos);
   contratoVencido(pacote, s, eventos);
+  // quem saiu do elenco libera o número; começo de temporada é hora de escolher a camisa
+  const saidas = saidasAtuais(pacote, s);
+  if (saidas.length) {
+    const g = gradeDoClube(pacote, s), lib = g.filter((x) => x.liberado).map((x) => x.numero);
+    noticia(s, "clube", `Saídas do ${clubeCasa(pacote, c.clubeId).nome}`, `Deixaram o clube: ${saidas.join(", ")}.${lib.length ? ` Camisas livres: ${lib.join(", ")}.` : ""}`);
+  }
+  if (escolheNumero(c) && !c.escolhaNumero) c.escolhaNumero = "temporada";
   return r;
 }
 
@@ -901,6 +946,7 @@ export function planoAutomatico(s: Save): Plano {
 /** Joga uma semana inteira sem interface, escolhendo a primeira opção de cada decisão. */
 export function semanaAutomatica(pacote: PacoteDados, s: Save, decidirMercado = true): ResumoSemana {
   if (decidirMercado) { decidirAutomatico(pacote, s); decidirCaminhoAutomatico(pacote, s); }
+  if (s.carreira.escolhaNumero) numeroAutomatico(pacote, s);
   if (s.carreira.propPatrocinio) aceitarPatrocinio(s, "fixo");
   if (s.carreira.evento) resolverEvento(pacote, s, EVENTO[s.carreira.evento]?.opcoes[0].id ?? "");
   const plano = planoAutomatico(s), p = prepararPartida(pacote, s, plano);

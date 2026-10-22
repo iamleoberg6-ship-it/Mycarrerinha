@@ -1,7 +1,7 @@
 // O jogador de corpo inteiro, no mesmo traço da foto (contorno preto, sombra chapada à direita).
 // A cabeça vem da foto (svgFoto com soCabeca); o resto é desenhado aqui: físico, uniforme do clube (manga curta ou
 // longa, justo ou largo, meião alto ou baixo, chuteira do patrocinador), roupa do dia a dia e tatuagens.
-import { svgFoto, PELES, CORES_ROUPA, escurecer, type Aparencia } from "../criacao/avatar";
+import { svgFoto, PELES, CORES_ROUPA, escurecer, luminancia, type Aparencia } from "../criacao/avatar";
 import type { Visual, AreaTatuagem } from "../../src/visual";
 import { tatuagemVisivel } from "../../src/visual";
 
@@ -135,6 +135,17 @@ function troncoCamisa(g: Geo, largo: boolean): { d: string; bainha: number } {
   const E = lado(-1), D = lado(1);
   const d = `M124 231 C112 238 ${150 - o + 30} 242 ${E.ombro[0]} ${E.ombro[1]} Q${150 - o - 4} 270 ${E.axila[0]} ${E.axila[1]} C${E.axila[0] + 2} 352 ${E.cint[0] - 2} 380 ${E.cint[0]} ${E.cint[1]} Q${E.bainha[0] + 2} ${b - 24} ${E.bainha[0]} ${b} Q150 ${b + 7} ${D.bainha[0]} ${b} Q${D.bainha[0] - 2} ${b - 24} ${D.cint[0]} ${D.cint[1]} C${D.cint[0] + 2} 380 ${D.axila[0] - 2} 352 ${D.axila[0]} ${D.axila[1]} Q${150 + o + 4} 270 ${D.ombro[0]} ${D.ombro[1]} C${150 + o - 30} 242 188 238 176 231 Q150 247 124 231 Z`;
   return { d, bainha: b };
+}
+/** Regata: alças largas sobre os ombros, cava funda e o corpo com a mesma largura da camiseta (cobre o tronco todo). */
+function regataPath(g: Geo, largo: boolean): string {
+  const k = largo ? 8 : 0, o = g.ombro + k * 0.5, pe = g.peito + k, ci = g.cintura + k + (largo ? 6 : 0), q = g.quadril + k, b = g.bainha + (largo ? 16 : 0);
+  // alça larga (uns 3 dedos) e cava mais rasa: a regata segura o ombro em vez de virar um fio
+  const lado = (s: -1 | 1) => ({ golaF: [150 + s * 19, 235], golaO: [150 + s * 24, 238], cava: [150 + s * Math.max(42, o - 20), 246], axila: [150 + s * (pe - 1), 310], cint: [150 + s * (ci + 2), 410], bainha: [150 + s * (q - 2), b] });
+  const E = lado(-1), D = lado(1);
+  return `M${E.golaF[0]} ${E.golaF[1]} L${E.golaO[0]} ${E.golaO[1]} L${E.cava[0]} ${E.cava[1]} C${E.cava[0] - 2} 280 ${E.axila[0] + 10} 296 ${E.axila[0]} ${E.axila[1]}`
+    + ` C${E.axila[0] + 2} 352 ${E.cint[0] - 2} 380 ${E.cint[0]} ${E.cint[1]} Q${E.bainha[0] + 2} ${b - 24} ${E.bainha[0]} ${b} Q150 ${b + 7} ${D.bainha[0]} ${b} Q${D.bainha[0] - 2} ${b - 24} ${D.cint[0]} ${D.cint[1]}`
+    + ` C${D.cint[0] + 2} 380 ${D.axila[0] - 2} 352 ${D.axila[0]} ${D.axila[1]} C${D.axila[0] - 10} 296 ${D.cava[0] + 2} 280 ${D.cava[0]} ${D.cava[1]} L${D.golaO[0]} ${D.golaO[1]} L${D.golaF[0]} ${D.golaF[1]}`
+    + ` Q150 268 ${E.golaF[0]} ${E.golaF[1]} Z`;
 }
 /** Normal de um segmento apontando para fora do corpo. */
 function normalFora(a: P, b: P, lado: -1 | 1): P {
@@ -305,10 +316,16 @@ export function svgCorpo(o: OpcoesCorpo): string {
       partes.push(`<path d="M${f1(fo[0])} ${f1(fo[1])} L${f1(fi[0])} ${f1(fi[1])} L${f1(fi[0] - ux * k)} ${f1(fi[1] - uy * k)} L${f1(fo[0] - ux * k)} ${f1(fo[1] - uy * k)} Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.6" stroke-linejoin="round"/>`);
     }
   });
-  const tronco = regata ? `M126 233 L${150 - g.ombro + 34} 250 C${150 - g.peito + 10} 270 ${150 - g.peito + 4} 296 ${150 - g.peito + 6} 322 C${150 - g.peito + 6} 356 ${150 - g.cintura - 4} 384 ${150 - g.cintura - 2} 410 Q${150 - g.quadril + 4} ${camisa.bainha - 24} ${150 - g.quadril + 2} ${camisa.bainha} Q150 ${camisa.bainha + 7} ${150 + g.quadril - 2} ${camisa.bainha} Q${150 + g.quadril - 4} ${camisa.bainha - 24} ${150 + g.cintura + 2} 410 C${150 + g.cintura + 4} 384 ${150 + g.peito - 6} 356 ${150 + g.peito - 6} 322 C${150 + g.peito - 4} 296 ${150 + g.peito - 10} 270 ${150 + g.ombro - 34} 250 L174 233 Q150 252 126 233 Z` : camisa.d;
+  const tronco = regata ? regataPath(g, largo) : camisa.d;
   partes.push(`<clipPath id="${idK}t"><path d="${tronco}"/></clipPath>`, contorno(tronco, camisaCor));
   if (jogo) partes.push(`<g clip-path="url(#${idK}t)">${padraoKit(kit, g)}</g>`);
   partes.push(sombraLado(tronco, 150 + g.peito * 0.15, 150 + g.ombro, 0.3));
+  if (regata) {
+    // viés: gola e cavas com acabamento, recortado pelo próprio tecido
+    const vies = mistura(camisaCor, luminancia(camisaCor) > 0.5 ? "#000000" : "#FFFFFF", 0.25), o = g.ombro, pe = g.peito;
+    const cx = Math.max(42, o - 20), cava = (l: number) => `M${150 + l * cx} 246 C${150 + l * (cx - 2)} 280 ${150 + l * (pe - 11)} 296 ${150 + l * (pe - 1)} 310`;
+    partes.push(`<g clip-path="url(#${idK}t)" fill="none" stroke="${vies}" stroke-width="4"><path d="M131 235 Q150 268 169 235"/><path d="${cava(-1)}"/><path d="${cava(1)}"/></g>`);
+  }
   // dobras do tecido
   partes.push(`<path d="M${150 - g.peito + 8} 330 Q${150 - g.peito + 20} 344 ${150 - g.cintura + 4} 352 M${150 + g.peito - 8} 330 Q${150 + g.peito - 20} 344 ${150 + g.cintura - 4} 352 M${150 - g.cintura + 6} ${camisa.bainha - 14} Q150 ${camisa.bainha - 4} ${150 + g.cintura - 6} ${camisa.bainha - 14}" stroke="${TINTA}" stroke-width="1.2" fill="none" opacity="${largo ? 0.35 : 0.22}"/>`);
   // gola e detalhes

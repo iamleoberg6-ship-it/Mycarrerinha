@@ -9,7 +9,7 @@ import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
-  ofertasDoCaminho, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
+  ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
 } from "../../src/jogo";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
@@ -53,6 +53,7 @@ if (save && migrarSave(pacote, save)) gravar(CHAVE_SAVE, save);
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
 let aba: "tabela" | "jogador" | "noticias" | "casa" | "mercado" | "amigos" = "tabela";
+let msgNumero: { texto: string; ok: boolean } | undefined, numeroVisto: number | undefined;
 let caminhoSel: Caminho = "base", cidadeSel: string | undefined, msgConvite: { texto: string; ok: boolean } | undefined;
 let msgRel: { texto: string; ok: boolean } | undefined, msgPos: { texto: string; ok: boolean } | undefined;
 let msgMercado: { texto: string; ok: boolean } | undefined;
@@ -150,6 +151,7 @@ function telaSemana(s: Save): string {
   ${cardAnuncio(s)}
   ${cardPatrocinio(s)}
   ${cardEvento(s)}
+  ${cardNumero(s)}
   ${cardConvites(s)}
   ${cardSugestao(s)}
   ${cardCraque(s)}
@@ -264,6 +266,23 @@ function tendencia(s: Save): string {
   const alvo = alvoDeSeguidores(pacote, s), seg = s.carreira.seguidores;
   return alvo > seg * 1.05 ? "subindo ↑" : alvo < seg * 0.95 ? "caindo ↓" : "estável";
 }
+// ------------------------------------------------------------------ número da camisa
+function cardNumero(s: Save): string {
+  const c = s.carreira;
+  if (!c.escolhaNumero) return "";
+  const g = gradeDoClube(pacote, s), clube = infoClube(pacote, c.clubeId), atual = +s.jogador.numero, livreAtual = !g[atual - 1]?.dono;
+  const lib = g.filter((x) => x.liberado), saidas = saidasAtuais(pacote, s);
+  const sel = numeroVisto ? g[numeroVisto - 1] : undefined;
+  const msg = msgNumero ? `<p class="msg-mercado ${msgNumero.ok ? "ok" : "nao"}">${esc(msgNumero.texto)}</p>` : "";
+  msgNumero = undefined;
+  return `<section class="painel numero-card"><p class="rotulo">${c.escolhaNumero === "chegada" ? `Chegada ao ${esc(clube.nome)}` : "Começo de temporada"} · escolha sua camisa</p>
+    <p class="sub">${saidas.length && c.escolhaNumero === "temporada" ? `Saíram do elenco: ${esc(saidas.join(", "))}. ` : ""}${lib.length ? `Camisas liberadas: <b>${lib.map((x) => x.numero).join(", ")}</b>. ` : ""}Toque num número livre para ficar com ele; os ocupados mostram quem usa.</p>${msg}
+    <div class="grade-num">${g.map((x) => `<button class="num${x.dono ? " ocupado" : ""}${x.liberado ? " liberado" : ""}${x.meu ? " meu" : ""}${sel?.numero === x.numero ? " visto" : ""}" data-num="${x.numero}" aria-label="${x.numero}${x.dono ? `, de ${esc(x.dono)}` : ", livre"}">${x.numero}</button>`).join("")}</div>
+    ${sel?.dono ? `<p class="sub" style="margin-top:8px">A <b>${sel.numero}</b> é de ${esc(sel.dono)} (${NOME_POS[sel.posicao ?? ""] ?? "Goleiro"}).</p>` : ""}
+    <div class="legenda-num"><span><i class="num meu"></i>sua</span><span><i class="num liberado"></i>liberada agora</span><span><i class="num ocupado"></i>ocupada</span></div>
+    ${livreAtual ? `<button class="botao sec" data-num-manter="1" style="margin-top:8px">Manter a ${atual}</button>` : `<p class="sub" style="margin-top:8px">A ${atual} já tem dono aqui: escolha outra.</p>`}</section>`;
+}
+
 // ------------------------------------------------------------------ caminhos: convites de peneira, bolsa, draft
 const ROTULO_CONVITE = { peneira: "Peneira", profissional: "Contrato profissional", universidade: "Bolsa de estudos", draft: "Draft", homegrown: "Homegrown" } as const;
 function cardConvites(s: Save): string {
@@ -666,7 +685,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -699,6 +718,12 @@ document.addEventListener("click", (ev) => {
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.trofeu && save) { trofeuAberto = trofeuAberto === d.trofeu ? undefined : d.trofeu; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
+  else if ((d.num || d.numManter) && save) {
+    const n = d.numManter ? +save.jogador.numero : +d.num!, g = gradeDoClube(pacote, save);
+    if (!d.numManter && g[n - 1]?.dono) { numeroVisto = n; const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+    const rr = escolherNumero(pacote, save, n); numeroVisto = undefined;
+    msgEvento = { titulo: "Camisa", texto: rr.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  }
   else if (d.caminho) { caminhoSel = d.caminho as Caminho; render(); }
   else if (d.cidade) { cidadeSel = d.cidade; render(); }
   else if (d.convite && save) {

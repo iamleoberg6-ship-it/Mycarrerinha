@@ -192,7 +192,7 @@ export function aceitarConvite(pacote: PacoteDados, s: Save, id: string): { ok: 
   const w = mundo(pacote), destino = w.clube[cv.clubeId], j = s.jogador;
   e.convites = []; // aceitar um convite encerra os outros
   if (cv.tipo === "homegrown") {
-    c.fase = undefined; c.formacao = false; c.salario = cv.salario; c.anosContrato = cv.anos;
+    c.fase = undefined; c.formacao = false; c.salario = cv.salario; c.anosContrato = cv.anos; c.escolhaNumero = "chegada";
     noticia(s, "clube", "Contrato homegrown", `${j.apelido} assina com o time principal do ${destino.nome} aos ${j.idade} anos: ${cv.anos} anos, R$ ${cv.salario.toLocaleString("pt-BR")} por mês.`, { k: "transferencia", clube: destino.id, tipo: "livre", ate: ANO_INICIAL + c.temporada + cv.anos, taxa: 0 });
     return { ok: true, msg: `Você é profissional do ${destino.nome}!` };
   }

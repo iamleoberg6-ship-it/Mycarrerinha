@@ -80,7 +80,7 @@ export function escurecer(hex: string, f: number): string {
   const c = (v: number) => Math.max(0, Math.min(255, Math.round(v * f)));
   return `#${((1 << 24) | (c((n >> 16) & 255) << 16) | (c((n >> 8) & 255) << 8) | c(n & 255)).toString(16).slice(1)}`;
 }
-const luminancia = (hex: string) => { const n = parseInt(hex.slice(1), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+export const luminancia = (hex: string) => { const n = parseInt(hex.slice(1), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
 const f1 = (n: number) => n.toFixed(1);
 
 // ============================================================================================
@@ -311,15 +311,22 @@ function olho(x: number, espelho: boolean, f: Olho, cor: string, pele: string, s
     ${vinco}</g>`;
 }
 
-function sobrancelhas(f: Sobrancelha, esp: number, cor: string): string {
+function sobrancelhas(f: Sobrancelha, esp: number, cor: string, pele: string): string {
   const d: Record<Sobrancelha, string> = {
     reta: "M113 129 L141 125.5", arqueada: "M113 131 Q127 120 141 125.5", angulada: "M113 131 L132 122.5 L141 125.5",
-    suave: "M113 129 Q127 124 141 126.5", corte: "M113 131 Q119 124.5 125 123.2",
+    suave: "M113 129 Q127 124 141 126.5", corte: "M113 131 Q127 120 141 125.5",
   };
   const larg = 1.6 * esp + 1.5;
   const uma = (t: Sobrancelha) => `<path d="${d[t]}" stroke="${TINTA}" stroke-width="${larg + 2}" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="${d[t]}" stroke="${cor}" stroke-width="${larg}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
-  const esquerda = uma(f) + (f === "corte" ? `<path d="M130 122.6 Q136 122.6 141 125.5" stroke="${TINTA}" stroke-width="${larg + 2}" stroke-linecap="round" fill="none"/><path d="M130 122.6 Q136 122.6 141 125.5" stroke="${cor}" stroke-width="${larg}" stroke-linecap="round" fill="none"/>` : "");
-  return `<g>${esquerda}</g><g transform="translate(300 0) scale(-1 1)">${uma(f === "corte" ? "arqueada" : f)}</g>`;
+  // corte: dois riscos raspados que atravessam a sobrancelha inteira. A máscara abre um vão de verdade: some o pelo e o
+  // contorno, e a pele aparece no meio.
+  if (f === "corte") {
+    const xs = [123, 131.5], risco = (x: number, w: number, cor: string) => `<path d="M${x - 1.6} ${133 + larg / 2} L${x + 1.6} ${117 - larg / 2}" stroke="${cor}" stroke-width="${w}" stroke-linecap="butt"/>`;
+    const mask = `<mask id="corteSobr" maskUnits="userSpaceOnUse" x="100" y="100" width="60" height="50"><rect x="100" y="100" width="60" height="50" fill="#fff"/>${xs.map((x) => risco(x, 3.8, "#000")).join("")}</mask>`;
+    void pele;
+    return `<defs>${mask}</defs><g mask="url(#corteSobr)">${uma(f)}</g><g transform="translate(300 0) scale(-1 1)">${uma("arqueada")}</g>`;
+  }
+  return `<g>${uma(f)}</g><g transform="translate(300 0) scale(-1 1)">${uma(f)}</g>`;
 }
 
 function nariz(n: Nariz, luz: string): string {
@@ -533,7 +540,7 @@ export function svgFoto(o: OpcoesFoto): string {
     a.brinco ? `<circle cx="${150 - wO - 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
   ].join("");
   const rosto = silhueta ? "" : `
-    ${sobrancelhas(a.formatoSobrancelha, a.sobrancelha, corSobr)}
+    ${sobrancelhas(a.formatoSobrancelha, a.sobrancelha, corSobr, pele)}
     ${olho(129, false, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}${olho(171, true, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}
     ${nariz(a.nariz, luzPele)}
     ${boca(a.boca, pele)}

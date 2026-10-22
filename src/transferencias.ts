@@ -323,6 +323,7 @@ export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo:
     c.tabela = tabelaAteAgora(rng, l, c);
   }
   c.relTecnico = clamp(45 + c.fama / 5, 0, 100); c.torcida = 50;
+  if (!c.formacao || c.fase === "varzea" || c.fase === "colegial" || c.fase === "universidade") c.escolhaNumero = "chegada"; // clube novo: escolhe a camisa
   c.suspensao = 0;
   if (tipo !== "emprestimo") c.chegadaClube = c.temporada;
   m.transferencias.push({ temporada: c.temporada, semana: c.semana, de, para: destino.id, tipo, taxa });

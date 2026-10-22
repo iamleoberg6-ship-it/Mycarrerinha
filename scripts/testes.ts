@@ -21,7 +21,8 @@ import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararP
 import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSemana, melhoresAmigos, ovr as ovrJ, ovrEm } from "../src/jogo.js";
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
-import { ofertasDoCaminho } from "../src/jogo.js";
+import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual } from "../src/jogo.js";
+import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
@@ -556,6 +557,35 @@ teste("Caminhos: academia nos EUA e contrato homegrown antes dos 18", () => {
   assert.ok(hg && s.jogador.idade === 15, "homegrown aos 15");
   aceitarConvite(pacote, s, hg!.id);
   assert.ok(!c.formacao && c.clubeId === "US-PHI" && c.salario >= 40000);
+});
+
+teste("Número da camisa: únicos no elenco, saídas liberam número, escolha ao chegar e no começo da temporada", () => {
+  const w = mundo(pacote);
+  for (const c of Object.values(w.clube)) { const ns = [...numerosDoClube(c).values()]; assert.equal(new Set(ns).size, ns.length, c.id); assert.ok(ns.every((n) => n >= 1 && n <= 99), c.id); }
+  assert.equal(numerosDoClube(w.clube["US-MIA"]).get("Lionel Mesi"), 10);
+  const r = criarJogador({ nome: "Camisa", pais: "BRA", familia: "media", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "PON", semente: "camisa" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "camisa"), c = s.carreira;
+  c.formacao = false; s.jogador.idade = 20;
+  const g = gradeDoClube(pacote, s), ocupado = g.find((x) => x.dono)!, livre = g.find((x) => !x.dono && !x.meu)!;
+  assert.equal(escolherNumero(pacote, s, ocupado.numero).ok, false);
+  assert.ok(escolherNumero(pacote, s, livre.numero).ok); assert.equal(s.jogador.numero, String(livre.numero));
+  // virada de temporada: saem 2 a 4 jogadores, os números ficam livres e a escolha aparece
+  while (c.temporada === 0) semanaAutomatica(pacote, s);
+  const fora = saidasAtuais(pacote, s);
+  assert.ok(fora.length >= 2 && fora.length <= 4);
+  assert.ok(elencoAtual(pacote, s).every((j) => !fora.includes(j.nome)));
+  assert.ok(gradeDoClube(pacote, s).filter((x) => x.liberado).length >= 1);
+  assert.ok(c.escolhaNumero, "começo de temporada: hora de escolher a camisa");
+  semanaAutomatica(pacote, s);
+  assert.equal(c.escolhaNumero, undefined, "a política automática escolheu");
+  // chegada: transferência pede escolha
+  {
+    mercadoDe(c).propostas = [{ id: "n1", tipo: "livre", clubeId: "US-MIA", ligaId: "USA1", salario: 50000, anos: 2, taxa: 0, luvas: 0, papel: "reserva", interesse: 0.7, expira: 999 }];
+    c.semana = 1;
+    assert.ok(aceitar(pacote, s, "n1").ok);
+    assert.equal(c.escolhaNumero, "chegada");
+    assert.equal(escolherNumero(pacote, s, 10).ok, false, "a 10 é do Mesi");
+  }
 });
 
 console.log(`\n${ok} testes passaram`);
