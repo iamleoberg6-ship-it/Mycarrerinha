@@ -2,3 +2,4 @@ node_modules/
 *.log
 arte/fontes/
 __pycache__/
+app/visual/arte/

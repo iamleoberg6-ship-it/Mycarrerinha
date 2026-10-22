@@ -1,7 +1,7 @@
 // Visual do jogador de corpo inteiro: físico, uniforme (manga e caimento), roupa do dia a dia e tatuagens.
 // Aqui ficam só os dados e as regras (preço, onde aparece); o desenho fica em app/visual/corpo.ts.
 
-export type Fisico = "magro" | "atletico" | "forte";
+export type Fisico = "esguio" | "magro" | "atletico" | "forte" | "troncudo";
 export type Manga = "curta" | "longa";
 export type Caimento = "justo" | "largo";
 export type Meiao = "alto" | "baixo";
@@ -16,7 +16,7 @@ export interface Visual {
 }
 export const VISUAL_PADRAO: Visual = { fisico: "atletico", manga: "curta", caimento: "justo", meiao: "alto", casual: "camiseta", corCasual: 1, perna: "bermuda", tatuagens: {} };
 
-export const NOME_FISICO: Record<Fisico, string> = { magro: "Magro", atletico: "Atlético", forte: "Forte" };
+export const NOME_FISICO: Record<Fisico, string> = { esguio: "Esguio", magro: "Magro", atletico: "Atlético", forte: "Forte", troncudo: "Troncudo" };
 export const NOME_CASUAL: Record<RoupaCasual, string> = { camiseta: "Camiseta", regata: "Regata", moletom: "Moletom", social: "Camisa social", jaqueta: "Jaqueta jeans" };
 export const NOME_AREA: Record<AreaTatuagem, string> = { pescoco: "Pescoço", antebracoE: "Antebraço esquerdo", antebracoD: "Antebraço direito", pernaE: "Coxa esquerda", pernaD: "Coxa direita" };
 

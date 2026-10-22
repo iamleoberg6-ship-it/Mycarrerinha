@@ -6,7 +6,7 @@ const DISPLAY = "'Big Shoulders Display', 'Barlow', sans-serif", TEXTO = "'Barlo
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 /** Ícone do logo num quadro de 40×40. */
-function simbolo(s: Simbolo, c: string, c2: string, letra: string): string {
+export function simbolo(s: Simbolo, c: string, c2: string, letra: string): string {
   switch (s) {
     case "onda": return `<path d="M3 24 Q11 12 20 22 T37 18" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`;
     case "circulo": return `<circle cx="20" cy="20" r="16" fill="${c}"/><circle cx="20" cy="20" r="9" fill="${c2}"/>`;

@@ -407,7 +407,7 @@ export function cabelo(c: Cabelo, camada: "frente" | "atras"): string {
     case "chanel": cor = suave([[CX - 56, 160], [CX - 56, 74], [CX - 32, 40], [CX, 34], [CX + 32, 40], [CX + 56, 74], [CX + 56, 160], [CX + 44, 160], [CX + 46, 96], [CX + 26, 76], [CX - 26, 76], [CX - 46, 96], [CX - 44, 160]]); traco = fios([`M${CX - 36} 76 L${CX - 30} 100`, `M${CX - 10} 76 L${CX - 8} 98`, `M${CX + 16} 76 L${CX + 14} 98`]); break;
   }
   const formas = cor ? `<path d="${cor}"/>` : "";
-  return peca(base, { cor: formas + (extra.includes("fill=\"#C8102E\"") ? "" : extra), cor2: extra.includes("fill=\"#C8102E\"") ? extra : "", sombra: cor ? `<path d="${cor}" fill="#2B0F05" fill-opacity=".14" transform="translate(5 3)"/>` : "", luz: cor ? brilho : "", traco: (cor ? tracoPath(cor) : "") + (extra && !extra.includes("#C8102E") && c !== "raspado" && c !== "moicano" ? extra.replace(/<(circle|rect)/g, `<$1 fill="none" stroke="${TINTA}" stroke-width="2.4"`) : "") + traco });
+  return peca(base, { cor: formas + (extra.includes("fill=\"#C8102E\"") ? "" : extra), cor2: extra.includes("fill=\"#C8102E\"") ? extra : "", sombra: cor ? `<path d="${cor}" fill="#2B0F05" fill-opacity=".14" transform="translate(5 3)"/>` : "", luz: cor ? brilho : "", traco: (cor ? tracoPath(cor) : "") + (extra && !extra.includes("#C8102E") && c !== "moicano" ? extra.replace(/<(circle|rect)/g, `<$1 fill="none" stroke="${TINTA}" stroke-width="2.4"`) : "") + traco });
 }
 
 // ------------------------------------------------------------------ acessórios
