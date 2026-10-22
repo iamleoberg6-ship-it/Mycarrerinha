@@ -1,6 +1,8 @@
 """Monta o jogador modelo: corpo (uma peça) + cabeça do kit + uniforme + tatuagem.
 uso: python3 -I jogador.py cabeca.svg saida.svg"""
-import sys, re, xml.etree.ElementTree as ET
+import sys, os, re, xml.etree.ElementTree as ET
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pecas import cabeca, recolorir
 
 NS = "http://www.w3.org/2000/svg"
 ET.register_namespace("", NS); ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
@@ -38,9 +40,7 @@ TIPOS = {
     "magro":          dict(ka=0.98, peito=78, cintura=62, quadril=68, kl=0.86, barriga=0, lc=50),
     "atlético":       dict(ka=1.30, peito=86, cintura=64, quadril=72, kl=1.00, barriga=0, lc=52),
     "forte":          dict(ka=1.55, peito=96, cintura=74, quadril=80, kl=1.12, barriga=0, lc=54),
-    "pouco atlético": dict(ka=1.14, peito=92, cintura=90, quadril=88, kl=0.98, barriga=10, lc=55),
     "troncudo":       dict(ka=1.45, peito=106, cintura=96, quadril=92, kl=1.14, barriga=6, lc=57),
-    "pesado":         dict(ka=1.50, peito=114, cintura=112, quadril=104, kl=1.26, barriga=20, lc=62),
 }
 BRACO = [(244, 0.0), (266, 16), (300, 19.5), (336, 19), (372, 15.5), (388, 14.5), (412, 16), (448, 13.5), (474, 11)]
 
@@ -163,26 +163,19 @@ def tatuagem(t):
             '<path d="M-1,30 C5,27 9,30 10,34 C4,35 0,33 -1,30"/>'
             '<path d="M-10,-26 L10,-26 M-11,-31 L11,-31" stroke-width="1.2"/></g>')
 
-def preparar_cabeca(cabeca_svg):
-    """Cabeça do kit sem a camiseta, recortada no queixo, posicionada no eixo do corpo."""
-    cab = ET.parse(cabeca_svg).getroot()
-    tirar = {"g6554", "g6572", "g6592", "g6608", "g6624", "g6644", "g6660", "path6552", "path6570", "path6590", "path6640", "path6642"}
-    g10 = cab.find(f".//{{{NS}}}g[@id='g10']")
-    for e in list(g10):
-        if e.get("id") in tirar: g10.remove(e)
-    vb = [float(v) for v in cab.get("viewBox").split()]
-    s = 0.088
-    clip = ET.SubElement(cab.find(f"{{{NS}}}defs"), f"{{{NS}}}clipPath", {"id": "recorteCabeca"})
-    ET.SubElement(clip, f"{{{NS}}}path", {"d": "M3800,800 H5800 V2380 H5176 L5176,2540 Q4806,2660 4440,2540 L4440,2380 H3800 Z"})
-    g8 = cab.find(f"{{{NS}}}g"); cab.remove(g8)
-    ET.SubElement(cab, f"{{{NS}}}g", {"clip-path": "url(#recorteCabeca)"}).append(g8)
-    queixo = 2405
-    cab.set("x", f"{CX - (4806.6 - vb[0]) * s:.1f}"); cab.set("y", f"{188 - (queixo - vb[1]) * s:.1f}")
-    cab.set("width", f"{vb[2] * s:.1f}"); cab.set("height", f"{vb[3] * s:.1f}")
-    cab.attrib.pop("id", None)
-    return ET.tostring(cab, encoding="unicode")
+KIT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "arte", "fontes", "rosto-masc.svg")
+BBOX = os.environ.get("KIT_BBOX", os.path.join(os.path.dirname(KIT), "rosto-masc-bbox.csv"))
 
-def corpo_svg(tipo, k="", cor="#c8102e", cor2="#8a0a1f", calc="#ffffff", calc2="#c9ccd6", marca="Umbrella", tatu=True, numero="10"):
+def preparar_cabeca(pref="c", **aparencia):
+    """Cabeça montada por peças (pecas.py), com o pescoço do kit cortado no queixo, no eixo do corpo."""
+    g, queixo = cabeca(KIT, BBOX, pref=pref, recorte=True, **aparencia)
+    s = 0.088
+    vx, vy, vw, vh = 3000, 300, 3600, 3000
+    x = CX - (4806.6 - vx) * s; y = 188 - (queixo - 12 - vy) * s
+    return (f'<svg x="{x:.1f}" y="{y:.1f}" width="{vw * s:.1f}" height="{vh * s:.1f}" viewBox="{vx} {vy} {vw} {vh}" overflow="visible">'
+            f'{g}</svg>')
+
+def corpo_svg(tipo, k="", cor="#c8102e", cor2="#8a0a1f", calc="#ffffff", calc2="#c9ccd6", marca="Umbrella", tatu=True, numero="10", tom="padrão", **aparencia):
     """Devolve (defs, desenho) do corpo vestido. k: sufixo dos ids (vários corpos no mesmo svg)."""
     t = TIPOS[tipo]
     corpo = cr(espelho([(0, 170)] + corpo_pts(t)), fechado=True)
@@ -242,24 +235,39 @@ def corpo_svg(tipo, k="", cor="#c8102e", cor2="#8a0a1f", calc="#ffffff", calc2="
 </g>
 <path d="{gola}" fill="#fff"/>
 <text x="{CX - t["peito"] * 0.62:.1f}" y="300" font-family="Arial Black, Arial" font-weight="900" font-size="20" fill="#fff" opacity=".95">{numero}</text>
-<use href="#cabeca" xlink:href="#cabeca"/>'''
+{preparar_cabeca(pref="h" + k + "_", tom=tom, **aparencia)}'''
+    defs = re.sub(r'<linearGradient id="(pele|pescoco)' + k + r'".*?</linearGradient>', lambda m: recolorir(m.group(0), tom), defs, flags=re.S)
+    desenho = P(desenho, tom)
     return defs, desenho
+
+def P(desenho, tom):
+    """Recolore só as cores de pele do corpo (sombras e vincos), sem tocar no uniforme."""
+    for c in ("#e8714d", "#d9714f"):
+        desenho = desenho.replace(f'"{c}"', f'"{recolorir(c, tom)}"')
+    return desenho
 
 def montar(cabeca_svg, saida, tipo="atlético", **kw):
     defs, desenho = corpo_svg(tipo, **kw)
     open(saida, "w").write(f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="130 40 340 870" width="680" height="1740">
-<defs>{defs}<g id="cabeca">{preparar_cabeca(cabeca_svg)}</g></defs>{desenho}</svg>''')
+<defs>{defs}</defs>{desenho}</svg>''')
 
 def fila(cabeca_svg, saida, **kw):
     """Os 7 tipos de corpo lado a lado, do mais magro ao mais pesado."""
-    ordem = ["esguio", "magro", "atlético", "forte", "pouco atlético", "troncudo", "pesado"]
+    ordem = [
+        ("esguio", dict(rosto="rosto 3", cabelo="cabelo 3", cor_cabelo="ruivo", tom="claro", olhos="2", sobr="2", numero="7")),
+        ("magro", dict(rosto="rosto 1", cabelo="cabelo 1", cor_cabelo="loiro", tom="padrão", olhos="3", boca="3", numero="11")),
+        ("atlético", dict(cabelo="molde", cor_cabelo="preto", tom="moreno", tatu=True, numero="10")),
+        ("forte", dict(rosto="rosto 2", cabelo="cabelo 2", cor_cabelo="preto", tom="negro", olhos="4", boca="2", tatu=True, numero="9")),
+        ("troncudo", dict(rosto="rosto 4", cabelo="cabelo 4", cor_cabelo="castanho", tom="pardo", olhos="5", nariz="5", numero="5")),
+    ]
     partes, todos = [], []
-    for i, tp in enumerate(ordem):
-        d, g = corpo_svg(tp, k=str(i), tatu=(tp in ("forte", "atlético")), **kw); todos.append(d)
+    for i, (tp, ap) in enumerate(ordem):
+        ap = {"tatu": False, **ap, **kw}
+        d, g = corpo_svg(tp, k=str(i), **ap); todos.append(d)
         partes.append(f'<g transform="translate({i * 360},0)">{g}<text x="{CX}" y="935" font-family="Arial" font-size="22" text-anchor="middle" fill="#333">{tp}</text></g>')
     w = 360 * len(ordem)
     open(saida, "w").write(f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="120 30 {w + 20} 920" width="{w + 20}" height="920">
-<rect x="120" y="30" width="{w + 20}" height="920" fill="#fff"/><defs>{"".join(todos)}<g id="cabeca">{preparar_cabeca(cabeca_svg)}</g></defs>{"".join(partes)}</svg>''')
+<rect x="120" y="30" width="{w + 20}" height="920" fill="#fff"/><defs>{"".join(todos)}</defs>{"".join(partes)}</svg>''')
 
 def vitrine(saida):
     """As chuteiras de cada marca lado a lado."""
