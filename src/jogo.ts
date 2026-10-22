@@ -425,9 +425,8 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   // decisões dentro do tempo em campo: de uma a três, situações diferentes conforme posição, minuto, placar, contexto e memória
   const nDec = minutos <= 0 ? 0 : minutos < 30 ? 1 : rng.chance(0.25) ? 1 : rng.chance(0.7) ? 2 : 3;
   const decisoes: Decisao[] = [], usadas: string[] = [];
-  const janelas = nDec === 1 ? [[entrada + 3, saida - 2]] : nDec === 2 ? [[Math.max(entrada + 3, 6), 44], [Math.max(entrada + 3, 50), saida - 1]] : [[Math.max(entrada + 3, 6), 32], [Math.max(entrada + 3, 36), 66], [Math.max(entrada + 3, 70), saida - 1]];
-  for (const [lo0, hi0] of janelas) {
-    const lo = Math.min(lo0, hi0), hi = Math.max(lo0, hi0), min = rng.int(lo, hi);
+  for (const [lo, hi] of janelasDeLance(entrada, saida, nDec)) {
+    const min = rng.int(lo, hi);
     const saldo = lances.filter((x) => x.min < min).reduce((acc, x) => acc + (x.lado === lado(true) ? 1 : -1), 0);
     const ctxMin = { ...ctx, min, saldo };
     const sit = ctx.estreia && !decisoes.length ? SITUACAO.estreia : escolherSituacao(rngL, ctxMin, usadas, c.memoria);
@@ -442,6 +441,19 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano): Par
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa,
     entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF,
     nomes, ctx, abertura: narr.abertura, narracao: narr.linhas };
+}
+
+/** Janelas de minuto para os lances do jogador: só com ele em campo (depois de entrar, antes de sair),
+ *  divididas em partes iguais para os lances não se amontoarem. */
+export function janelasDeLance(entrada: number, saida: number, n: number): [number, number][] {
+  const ini = entrada > 0 ? entrada + 2 : 5, fim = Math.min(90, saida) - 1;
+  n = Math.min(n, fim - ini + 1); // poucos minutos em campo: menos lances
+  if (n <= 0) return [];
+  const passo = (fim - ini + 1) / n;
+  return Array.from({ length: n }, (_, i) => {
+    const lo = Math.round(ini + passo * i), hi = Math.max(lo, Math.round(ini + passo * (i + 1)) - 1);
+    return [lo, Math.min(hi, fim)] as [number, number];
+  });
 }
 
 /** Nível do adversário no lance: no profissional o lance já nasce numa situação boa para quem decide. */

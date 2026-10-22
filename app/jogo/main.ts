@@ -596,7 +596,13 @@ function avancar() {
   if (!partida || !save) return;
   if (!item) { $("rodapeJogo").innerHTML = `<button class="botao grande" data-acao="fimjogo">Ver a semana</button>`; return; }
   minutoAtual = item.min;
-  if (item.decisao) { mostrarDecisao(item.decisao); atualizarPlacar(); return; }
+  if (item.decisao) {
+    // lance de campo só com o jogador em campo: nada antes de entrar, depois de sair ou de ser expulso
+    const momento = SITUACAO[item.decisao.situacao]?.momento ?? (item.decisao.situacao === "comemoracao" ? "comemoracao" : "");
+    const deCampo = momento !== "pos" && momento !== "comemoracao";
+    if (deCampo && (expulso || item.min < partida.entrada || item.min > Math.min(90, partida.saida))) { avancar(); return; }
+    mostrarDecisao(item.decisao); atualizarPlacar(); return;
+  }
   if (item.gol) { if (item.gol === "casa") placar[0]++; else placar[1]++; }
   atualizarPlacar();
   adicionarLance(item.min, item.html ?? htmlGol(partida, item.gol!, item.meu, item.texto), item.gol ? "gol" : item.cls ?? "");

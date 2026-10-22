@@ -21,7 +21,7 @@ import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararP
 import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSemana, melhoresAmigos, ovr as ovrJ, ovrEm } from "../src/jogo.js";
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
-import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual } from "../src/jogo.js";
+import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance } from "../src/jogo.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
@@ -279,6 +279,7 @@ teste("Lances: catálogo completo, sem marcador vazio e sem repetir a mesma situ
       if (p && p.decisoes.length) {
         vazio(p.abertura, "abertura"); p.narracao.forEach((l) => vazio(l.texto, "narração")); p.lances.forEach((l) => vazio(l.texto, "gol"));
         assert.equal(new Set(p.decisoes.map((d) => d.situacao)).size, p.decisoes.length, "situação repetida no mesmo jogo");
+        for (const d of p.decisoes) assert.ok(d.min > p.entrada && d.min < Math.min(90, p.saida), `lance aos ${d.min}' fora do tempo em campo (${p.entrada}'–${p.saida}')`);
         const ds = p.decisoes.map((d) => { vazio(d.titulo + d.texto, d.situacao); return resolverDecisao(s, p, d, d.opcoes[w % d.opcoes.length].id); });
         ds.forEach((x) => { vazio(x.texto, x.situacao); if (x.noticia) vazio(x.noticia, x.situacao); });
         const c = decisaoComemoracao(s, p, 30); vazio(c.titulo + c.texto, "comemoração"); assert.ok(c.opcoes.length <= 4);
@@ -289,6 +290,15 @@ teste("Lances: catálogo completo, sem marcador vazio e sem repetir a mesma situ
     }
     assert.ok(Object.keys(s.carreira.memoria?.vistos ?? {}).length > 0, "memória de lances vazia");
   }
+});
+
+teste("Lances só com o jogador em campo: entrou do banco, saiu cansado", () => {
+  for (const [ent, sai] of [[0, 90], [55, 90], [80, 90], [87, 90], [0, 60], [0, 75], [62, 90]]) for (const n of [1, 2, 3]) {
+    const js = janelasDeLance(ent, sai, n);
+    for (const [lo, hi] of js) assert.ok(lo > ent && hi < sai && lo <= hi, `${ent}-${sai} n${n}: [${lo}, ${hi}]`);
+    for (let i = 1; i < js.length; i++) assert.ok(js[i][0] > js[i - 1][1], "janelas sem sobreposição");
+  }
+  assert.equal(janelasDeLance(91, 90, 1).length, 0, "não entrou: nenhum lance");
 });
 
 teste("Relíquias: primeiro gol, hat-trick, prêmios; vão para a casa e não se vendem", () => {
