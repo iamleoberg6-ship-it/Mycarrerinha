@@ -126,6 +126,10 @@ tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--
 .perfil-clube { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; font-size: 14px; } .perfil-clube .escudo { width: 18px; height: 21px; } .perfil-clube small { opacity: .8; }
 .perfil-ovr { text-align: center; color: #FFF; z-index: 1; } .perfil-ovr strong { display: block; font-family: var(--display); font-weight: 900; font-size: 44px; line-height: .9; } .perfil-ovr span { font-size: 11px; letter-spacing: .1em; } .perfil-ovr small { display: block; font-size: 11px; opacity: .85; margin-top: 4px; }
 .perfil-topo > * { z-index: 1; }
+.nome-hist { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted rgba(255,255,255,.35); text-underline-offset: 3px; }
+.hist-topo { display: flex; gap: 12px; align-items: center; padding-right: 40px; } .hist-topo h1 { margin: 2px 0; font-size: 26px; } .hist-topo small { color: var(--giz-2); }
+.hist-topo .ovr { margin-left: auto; text-align: center; } .hist-topo .ovr strong { display: block; font-size: 30px; color: var(--ouro); } .hist-topo .ovr span { font-size: 11px; color: var(--giz-2); }
+table.hist td { vertical-align: middle; } table.hist tr.mudou td { border-top: 1px solid var(--ouro); } .hist-clube { display: flex; align-items: center; gap: 6px; } .hist-clube svg { width: 18px; height: 18px; flex: none; }
 .fechar { position: absolute; top: 8px; right: 10px; background: rgba(0,0,0,.35); color: #FFF; border: 0; width: 32px; height: 32px; border-radius: 50%; font-size: 15px; cursor: pointer; z-index: 2; }
 .perfil-corpo { padding: 16px; display: flex; flex-direction: column; gap: 10px; } .perfil-corpo .rotulo { margin-top: 10px; } .perfil-corpo .rotulo small { text-transform: none; letter-spacing: 0; font-weight: 500; opacity: .8; }
 .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -297,6 +301,7 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 <dialog id="dlgJogo"><div class="tela" id="telaJogo"></div></dialog>
 <dialog id="dlgResumo"><div class="tela" id="telaResumo"></div></dialog>
 <dialog id="dlgPerfil" aria-label="Perfil do jogador"><div class="tela perfil" id="telaPerfil"></div></dialog>
+<dialog id="dlgHist" aria-label="Histórico do jogador"><div class="tela" id="telaHist" style="position:relative;padding:18px 16px"></div></dialog>
 <script>/*__SCRIPT__*/</script>
 </body>
 </html>

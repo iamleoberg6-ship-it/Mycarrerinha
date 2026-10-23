@@ -34,7 +34,7 @@ import { CIDADES_VARZEA, DA_CIDADE } from "../../src/ligas";
 import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, alternarFavorito, type AcaoRel, type Relacao } from "../../src/relacoes";
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
-import { infoClube, mundo, baseDoClube, nivelDaBase } from "../../src/mundo";
+import { infoClube, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga } from "../../src/mundo";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
@@ -414,9 +414,35 @@ function camisaMini(clubeId: string, numero: number): string {
 function linhaRel(s: Save, x: Relacao, acoes: AcaoRel[], extra = "", clubeBusca?: string): string {
   const e = estrelasDoMundo(pacote).find((k) => k.nome === x.nome), cor = x.nivel >= 80 ? "#E3B341" : x.nivel >= 60 ? "#74D394" : x.nivel >= 40 ? "#6FB7E0" : "#8A968E";
   const conhecido = !!relacoesDe(s.carreira).lista[x.nome], fav = relacoesDe(s.carreira).favoritos?.includes(x.nome);
-  return `<div class="rel-linha"><div class="rel-topo">${conhecido ? `<button class="fav${fav ? " on" : ""}" data-fav="${esc(x.nome)}" aria-label="${fav ? "Tirar dos favoritos" : "Pôr nos favoritos"}" aria-pressed="${!!fav}">★</button>` : ""}${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><b>${esc(x.nome)}</b>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${x.aposentado ? "Aposentado" : esc(nomeDe(x.clubeId))}${extra}</small></div>
+  return `<div class="rel-linha"><div class="rel-topo">${conhecido ? `<button class="fav${fav ? " on" : ""}" data-fav="${esc(x.nome)}" aria-label="${fav ? "Tirar dos favoritos" : "Pôr nos favoritos"}" aria-pressed="${!!fav}">★</button>` : ""}${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${x.aposentado ? "Aposentado" : esc(nomeDe(x.clubeId))}${extra}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloNivel(x.nivel)}</span><span class="rel-barra"><i style="width:${x.nivel}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoes.map((a) => `<button class="chip" data-rel="${esc(x.nome)}" data-op="${a}"${clubeBusca ? ` data-clube="${clubeBusca}"` : ""}>${NOME_ACAO_REL[a]}</button>`).join("")}</div></div>`;
+}
+
+// ------------------------------------------------------------------ histórico de qualquer jogador (toca no nome)
+function historicoHtml(s: Save, nome: string): string {
+  const h = historicoDe(pacote, nome), l = h.linhas, ult = l[l.length - 1], onde = ondeJoga(pacote, nome);
+  const rel = relacoesDe(s.carreira).lista[nome];
+  if (!ult) return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button><h1 style="margin-top:8px">${esc(nome)}</h1><p class="sub">Sem registro no mundo.</p>`;
+  const agora = onde ? (onde.base ? `Base do ${nomeDe(onde.clubeId)}` : nomeDe(onde.clubeId)) : h.aposentouEm !== undefined ? `Aposentado em ${ANO_INICIAL + h.aposentouEm}` : "Sem clube";
+  const pico = l.reduce((a, x) => (x.ovr > a.ovr ? x : a), l[0]);
+  const clubes = [...new Set(l.map((x) => x.clubeId))];
+  const tag = onde && ult.idade <= 23 ? (ult.pot >= 86 ? `<span class="tag titular">Joia</span>` : ult.pot >= 78 && ult.pot - ult.ovr >= 8 ? `<span class="tag banco">Promessa</span>` : "") : "";
+  const linhas = [...l].reverse().map((x, i, arr) => {
+    const ant = arr[i + 1], d = ant ? x.ovr - ant.ovr : 0, mudou = ant && ant.clubeId !== x.clubeId;
+    return `<tr${mudou ? ` class="mudou"` : ""}><td>${ANO_INICIAL + x.t}</td><td><span class="hist-clube">${escudo(x.clubeId)}<span>${esc(nomeDe(x.clubeId))}${x.base ? " <small>(base)</small>" : ""}</span></span></td><td class="n">${x.idade}</td><td class="n"><b>${x.ovr}</b>${d ? ` <small class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</small>` : ""}</td></tr>`;
+  }).join("");
+  return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
+    <div class="hist-topo">${onde ? escudo(onde.clubeId) : ""}<div><small>${esc(NOME_POS[ult.posicao] ?? "Goleiro")} · ${ult.idade} anos</small><h1>${esc(nome)}</h1><span class="sub">${esc(agora)}</span></div><div class="ovr"><strong>${ult.ovr}</strong><span>OVR</span></div></div>
+    <div class="linha-info" style="margin:10px 0">${tag}<span>Pico <b>${pico.ovr}</b> em ${ANO_INICIAL + pico.t}</span><span><b>${clubes.length}</b> ${clubes.length === 1 ? "clube" : "clubes"}</span>${rel ? `<span>Relação: <b>${esc(rotuloNivel(rel.nivel))}</b></span>` : ""}</div>
+    <table class="hist"><thead><tr><th>Ano</th><th>Clube</th><th class="n">Idade</th><th class="n">OVR</th></tr></thead><tbody>${linhas}</tbody></table>
+    ${l[0].t === 0 && !l[0].base ? `<p class="sub" style="margin-top:8px">Antes de ${ANO_INICIAL}: carreira fora do registro do jogo.</p>` : ""}`;
+}
+function abrirHistorico(nome: string) {
+  if (!save) return;
+  $("telaHist").innerHTML = historicoHtml(save, nome);
+  const d = $("dlgHist") as HTMLDialogElement;
+  if (!d.open) d.showModal();
 }
 
 // ------------------------------------------------------------------ celular: contatos, busca e app de namoro
@@ -855,7 +881,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -902,6 +928,7 @@ document.addEventListener("click", (ev) => {
     const rr = d.op === "aceitar" ? aceitarConvite(pacote, save, d.convite) : recusarConvite(pacote, save, d.convite);
     msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  else if (d.hist) abrirHistorico(d.hist);
   else if (d.bbase) { buscaBase = d.bbase === "1"; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vtab) { vistaTabela = d.vtab as typeof vistaTabela; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.cel) { telaCel = d.cel as typeof telaCel; render(); }
@@ -931,6 +958,7 @@ document.addEventListener("click", (ev) => {
     case "jogar": abrirJogo(); break;
     case "perfil": abrirPerfil(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
+    case "fechar-hist": ($("dlgHist") as HTMLDialogElement).close(); break;
     case "fechar-anuncio": gravar(CHAVE_ANUNCIO, b.dataset.chave); render(); break;
     case "sair": case "ficar": if (save) { const r = pedirParaSair(save, d.acao === "sair"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); } break;
     case "pular": if (save) {

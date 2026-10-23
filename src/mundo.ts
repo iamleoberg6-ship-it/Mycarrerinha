@@ -60,7 +60,19 @@ export function mundo(pacote: PacoteDados): Mundo {
 
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
-let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo } | undefined;
+let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
+/** Uma temporada na carreira de um jogador do mundo. */
+export interface LinhaHistorico { t: number; clubeId: string; idade: number; ovr: number; pot: number; posicao: string; base: boolean }
+function registrarTemporada(m: Mundo) {
+  const e = estado!, add = (j: JogadorNPC, clubeId: string, base: boolean) => {
+    const l = e.hist.get(j.nome) ?? [];
+    if (!l.length || l[l.length - 1].t !== e.temporada) l.push({ t: e.temporada, clubeId, idade: j.idade, ovr: j.ovr, pot: j.pot ?? j.ovr, posicao: j.posicao, base });
+    e.hist.set(j.nome, l);
+  };
+  for (const c of Object.values(m.clube)) for (const j of c.elenco) add(j, c.id, false);
+  for (const [id, b] of Object.entries(e.base)) for (const j of b) add(j, id, true);
+  for (const lista of Object.values(e.virada?.saidas ?? {})) for (const x of lista) if (x.motivo === "aposentou") e.saiu.set(x.nome, { t: e.temporada, motivo: "aposentou" });
+}
 let versao = 0;
 /** Muda a cada vez que o mundo muda (caches de quem lê o mundo comparam com isto). */
 export const versaoMundo = () => versao;
@@ -74,9 +86,10 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     const usados = new Set(Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)));
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados);
-    estado = { semente, temporada: 0, base, usados };
+    estado = { semente, temporada: 0, base, usados, hist: new Map(), saiu: new Map() };
+    registrarTemporada(m);
   }
-  while (estado.temporada < temporada) { estado.temporada++; estado.virada = virarTemporada(grupos, estado.base, ref, semente, estado.temporada, estado.usados); }
+  while (estado.temporada < temporada) { estado.temporada++; estado.virada = virarTemporada(grupos, estado.base, ref, semente, estado.temporada, estado.usados); registrarTemporada(m); }
   versao++; indice = undefined;
 }
 const garantir = (pacote: PacoteDados) => { mundo(pacote); if (!estado) sincronizarMundo(pacote, "", 0); return estado!; };
@@ -86,6 +99,11 @@ export const baseDoClube = (pacote: PacoteDados, id: string): JogadorNPC[] => [.
 export const nivelDaBase = (pacote: PacoteDados, id: string): NivelBase | undefined => { mundo(pacote); return ref[idClube(id)]?.nivel; };
 /** Quem saiu e quem chegou em cada clube na última virada de temporada (vazio na primeira temporada). */
 export const viradaAtual = (pacote: PacoteDados): ViradaMundo => garantir(pacote).virada ?? { saidas: {}, chegadas: {}, destaques: [] };
+/** Carreira de um jogador do mundo, temporada a temporada (desde 2026 ou desde que entrou na base). */
+export function historicoDe(pacote: PacoteDados, nome: string): { linhas: LinhaHistorico[]; aposentouEm?: number } {
+  const e = garantir(pacote), linhas = e.hist.get(nome) ?? [], ap = e.saiu.get(nome);
+  return { linhas, ...(ap && !ondeJoga(pacote, nome) ? { aposentouEm: ap.t } : {}) };
+}
 let indice: Map<string, { clubeId: string; base: boolean }> | undefined;
 /** Onde joga um jogador hoje (pelo nome): clube, ou base do clube. undefined = aposentado ou sem clube. */
 export function ondeJoga(pacote: PacoteDados, nome: string) {
