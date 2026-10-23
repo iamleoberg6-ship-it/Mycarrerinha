@@ -452,6 +452,14 @@ const ROTULO_FASE: Record<Fase, string> = { varzea: "na várzea", colegial: "pel
 export const categoriaBase = (idade: number) => (idade <= 17 ? "sub-17" : "sub-20");
 /** Força dos times da base (sub-17/20) a partir da força do profissional. */
 const forcaBase = (forcaPro: number) => 46 + (forcaPro - 70) * 0.6;
+/** Na base também tem disputa: se há garotos melhores na posição, na categoria, começa no banco. */
+export function reservaNaBase(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carreira.cansaco): boolean {
+  const c = s.carreira, j = s.jogador;
+  if (!c.formacao || c.fase) return false;
+  const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto);
+  const rank = timeDaBase(pacote, c.clubeId, j.idade).filter((x) => x.posicao === j.posicao && pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
+  return rank >= VAGAS_433[j.posicao];
+}
 /** Força do time da base na categoria (os garotos de verdade); sem base, pela força do profissional. */
 function forcaDaBase(pacote: PacoteDados, clubeId: string, idade: number, forcaPro: number) {
   const t = timeDaBase(pacote, clubeId, idade);
@@ -479,7 +487,8 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const ovrEf = ovr(j) * (0.92 + (0.08 * prev.moral) / 100) * (prev.cansaco > 70 ? 0.9 : 1);
   if (base && !amador) { fCasa = forcaDaBase(pacote, jogo.casa, j.idade, fCasa); fFora = forcaDaBase(pacote, jogo.fora, j.idade, fFora); }
   const meuF = jogo.souCasa ? fCasa : fFora, advF = jogo.souCasa ? fFora : fCasa;
-  const entrada = esc === "banco" ? (rng.chance(0.6) ? rng.int(55, 80) : 91) : 0;
+  const reservaBase = base && !amador && reservaNaBase(pacote, s, prev.cansaco);
+  const entrada = esc === "banco" || reservaBase ? (rng.chance(reservaBase ? 0.7 : 0.6) ? rng.int(55, 80) : 91) : 0;
   const saida = esc === "titular" && prev.cansaco > 75 ? rng.int(60, 75) : 90;
   const minutos = Math.max(0, Math.min(90, saida) - entrada);
   if (minutos > 0 && (esc === "titular" || base)) {
