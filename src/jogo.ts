@@ -8,7 +8,7 @@ import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
-import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase } from "./mundo.js";
+import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
 import { COPAS, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
@@ -1172,7 +1172,9 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   const r: ResumoTemporada = { ...(c.fase ? { fase: c.fase } : {}), ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`), ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols };
   // premiação: troféus que vão para a casa
   const cc = clubeCasa(pacote, c.clubeId), ev: string[] = [];
-  const premios = premiosDaTemporada(rngDe(s, "premios"), { ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
+  const ligaId = infoLiga(c.ligaId).id, artilheiro = rankingDaLiga(pacote, ligaId, 999, "g", 1)[0], garcom = rankingDaLiga(pacote, ligaId, 999, "a", 1)[0];
+  if (artilheiro && !(r.gols >= artilheiro.valor && r.jogos >= 15)) noticia(s, "clube", `${artilheiro.nome} é o artilheiro`, `${artilheiro.nome}, do ${infoClube(pacote, artilheiro.clubeId)?.nome ?? ""}, termina a ${infoLiga(c.ligaId).curto} com ${artilheiro.valor} gols.`);
+  const premios = premiosDaTemporada(rngDe(s, "premios"), { maxGols: artilheiro?.valor, maxAssist: garcom?.valor, ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
     padrao: infoClube(pacote, c.clubeId).padrao, ligaCurto: infoLiga(c.ligaId).curto, recemContratado: c.chegadaClube === c.temporada,
     jogos: r.jogos, gols: r.gols, assist: r.assist, nota: r.nota, titulo, base: r.base, golsBase: c.stats.baseGols, notaBase: media(c.stats.baseNotas ?? []),
     temporadasCheias: c.historico.filter((h) => h.jogos >= 15).length });

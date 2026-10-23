@@ -10,7 +10,7 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
-import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga } from "../src/mundo.js";
+import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -843,6 +843,18 @@ teste("Carreira na base: jogos e amigos com os garotos da base; o mundo acompanh
   assert.ok(s.noticias.length > 0);
   const s2 = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "D-GALVEZAC", "naBase2");
   assert.ok(fatorDoClube(pacote, s) > 0.9 && fatorDoClube(pacote, s2) < fatorDoClube(pacote, { ...s, carreira: { ...s.carreira, clubeId: "ES-BAR" } }));
+});
+
+teste("Estatísticas dos outros: artilharia cresce rodada a rodada, marcas plausíveis, prêmio contra o melhor da liga", () => {
+  sincronizarMundo(pacote, "stats", 0);
+  for (const l of ["ENG1", "BRA1", "ARG1"]) {
+    const meio = rankingDaLiga(pacote, l, 10, "g", 1)[0].valor, fim = rankingDaLiga(pacote, l, 999, "g", 1)[0].valor, a = rankingDaLiga(pacote, l, 999, "a", 1)[0].valor;
+    assert.ok(meio < fim && fim >= 12 && fim <= 40 && a >= 7 && a <= 25, `${l}: ${meio} ${fim} ${a}`);
+  }
+  assert.ok(rankingDaLiga(pacote, "BRA1", 999, "g", 10).every((x) => mundo(pacote).clube[x.clubeId].elenco.some((j) => j.nome === x.nome && j.posicao !== "GOL")));
+  const base = { ano: 2026, idade: 24, clubeId: "FLA", clubeNome: "x", cores: [], numero: "9", jogos: 30, assist: 0, nota: 6.5, titulo: false, base: 0, golsBase: 0, notaBase: 0, temporadasCheias: 3 };
+  const tem = (g: number, max: number) => premiosDaTemporada(new RNG("p"), { ...base, gols: g, maxGols: max }).some((x) => x.conquista === "trofeu-artilheiro");
+  assert.ok(tem(20, 19) && tem(19, 19) && !tem(18, 19));
 });
 
 console.log(`\n${ok} testes passaram`);

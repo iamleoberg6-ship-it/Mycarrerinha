@@ -116,6 +116,8 @@ export function reliquiasDaPartida(d: DadosPartida, tem: (id: string) => boolean
 }
 
 export interface DadosTemporada {
+  /** gols e assistências do melhor da liga entre os outros jogadores */
+  maxGols?: number; maxAssist?: number;
   ano: number; idade: number; clubeId: string; clubeNome: string; cores: string[]; numero: string;
   padrao?: string; ligaCurto?: string;
   /** primeira temporada no clube depois de uma transferência */
@@ -131,7 +133,9 @@ const trofeu = (chave: string, nome: string, legenda: string, ano: number, model
 /** Premiação do fim da temporada. Os outros jogadores da liga não são simulados um a um: a régua de cada prêmio é sorteada em volta da marca típica. */
 export function premiosDaTemporada(rng: RNG, d: DadosTemporada): Ganho[] {
   const g: Ganho[] = [], liga = d.ligaCurto ?? "Série A";
-  const alvoGols = Math.max(13, Math.round(rng.normal(18, 3))), alvoAssist = Math.max(7, Math.round(rng.normal(10, 2)));
+  // a régua é o melhor da liga (as temporadas imaginadas dos outros); sem ela, uma marca típica sorteada
+  const alvoGols = d.maxGols !== undefined ? Math.max(8, d.maxGols) : Math.max(13, Math.round(rng.normal(18, 3)));
+  const alvoAssist = d.maxAssist !== undefined ? Math.max(5, d.maxAssist) : Math.max(7, Math.round(rng.normal(10, 2)));
   const ruido = (sd: number) => Math.max(-sd, Math.min(sd * 1.5, rng.normal(0, sd)));
   const alvoCraque = 7.25 + ruido(0.12), alvoSelecao = 6.95 + ruido(0.08);
   if (d.titulo) {

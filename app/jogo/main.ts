@@ -34,7 +34,8 @@ import { CIDADES_VARZEA, DA_CIDADE } from "../../src/ligas";
 import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, alternarFavorito, type AcaoRel, type Relacao } from "../../src/relacoes";
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
-import { infoClube, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga } from "../../src/mundo";
+import { infoClube, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha } from "../../src/mundo";
+import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
@@ -237,12 +238,27 @@ function abaCopa(s: Save, id: CopaId): string {
     ${prox.length ? `<p class="rotulo" style="margin:6px 0 4px">Seus próximos jogos</p>${prox.map((j) => `<div class="jogo-copa meu"><span>${esc(nomeDe(j.casa))}</span><span class="sub">sem. ${j.semana + 1} · ${esc(rotuloJogo(j))}</span><span>${esc(nomeDe(j.fora))}</span></div>`).join("")}` : ""}
     ${mm}${tabelas}`;
 }
+/** Artilharia e assistências da liga até a rodada atual (os outros imaginados; você com os seus números de verdade). */
+function rankingsHtml(s: Save): string {
+  const c = s.carreira;
+  if (c.fase || c.semana <= SEMANAS_PRE) return "";
+  const feitas = c.semana - SEMANAS_PRE, lid = infoLiga(c.ligaId).id;
+  const lista = (tipo: "g" | "a", rot: string) => {
+    const meu = c.formacao ? 0 : tipo === "g" ? c.stats.gols : c.stats.assist;
+    const l = rankingDaLiga(pacote, lid, feitas, tipo, 10).map((x) => ({ ...x, eu: false }));
+    if (meu > 0) l.push({ nome: s.jogador.apelido, clubeId: c.clubeId, valor: meu, jogos: c.stats.jogos, eu: true });
+    const top = l.sort((a, b) => b.valor - a.valor || Number(b.eu) - Number(a.eu)).slice(0, 10);
+    if (!top.length) return "";
+    return `<p class="rotulo" style="margin:14px 0 6px">${rot}</p><table><tbody>${top.map((x, i) => `<tr class="${x.eu ? "meu" : ""}"><td>${i + 1}</td><td>${x.eu ? `<b>${esc(x.nome)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`}<br><small class="sub">${esc(nomeDe(x.clubeId))} · ${x.jogos} j</small></td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>`;
+  };
+  return lista("g", "Artilharia") + lista("a", "Assistências");
+}
 function abaTabela(s: Save): string {
   const t = ordenar(s.carreira.tabela);
   const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
   const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${vistas.map(([k, n]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`).join("")}</div>`;
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
-  return `${chips}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+  return `${chips}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>` + rankingsHtml(s);
 }
 
 let msgEvento: { titulo: string; texto: string } | undefined;
@@ -426,16 +442,19 @@ function historicoHtml(s: Save, nome: string): string {
   if (!ult) return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button><h1 style="margin-top:8px">${esc(nome)}</h1><p class="sub">Sem registro no mundo.</p>`;
   const agora = onde ? (onde.base ? `Base do ${nomeDe(onde.clubeId)}` : nomeDe(onde.clubeId)) : h.aposentouEm !== undefined ? `Aposentado em ${ANO_INICIAL + h.aposentouEm}` : "Sem clube";
   const pico = l.reduce((a, x) => (x.ovr > a.ovr ? x : a), l[0]);
+  const tot = l.reduce((a, x) => { const st = statsDaLinha(pacote, nome, x); if (!st) return a; const e = x.t === s.carreira.temporada ? statsAte(st, Math.max(0, s.carreira.semana - SEMANAS_PRE), x.liga![4]) : st; return { j: a.j + e.j, g: a.g + e.g, a: a.a + e.a }; }, { j: 0, g: 0, a: 0 });
   const clubes = [...new Set(l.map((x) => x.clubeId))];
   const tag = onde && ult.idade <= 23 ? (ult.pot >= 86 ? `<span class="tag titular">Joia</span>` : ult.pot >= 78 && ult.pot - ult.ovr >= 8 ? `<span class="tag banco">Promessa</span>` : "") : "";
   const linhas = [...l].reverse().map((x, i, arr) => {
     const ant = arr[i + 1], d = ant ? x.ovr - ant.ovr : 0, mudou = ant && ant.clubeId !== x.clubeId;
-    return `<tr${mudou ? ` class="mudou"` : ""}><td>${ANO_INICIAL + x.t}</td><td><span class="hist-clube">${escudo(x.clubeId)}<span>${esc(nomeDe(x.clubeId))}${x.base ? " <small>(base)</small>" : ""}</span></span></td><td class="n">${x.idade}</td><td class="n"><b>${x.ovr}</b>${d ? ` <small class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</small>` : ""}</td></tr>`;
+    const st = statsDaLinha(pacote, nome, x), atual = x.t === s.carreira.temporada, feitas = Math.max(0, s.carreira.semana - SEMANAS_PRE);
+    const e = st ? (atual ? statsAte(st, feitas, x.liga![4]) : st) : undefined;
+    return `<tr${mudou ? ` class="mudou"` : ""}><td>${ANO_INICIAL + x.t}</td><td><span class="hist-clube">${escudo(x.clubeId)}<span>${esc(nomeDe(x.clubeId))}${x.base ? " <small>(base)</small>" : ""}</span></span></td><td class="n">${x.idade}</td><td class="n">${e ? e.j : "–"}</td><td class="n">${e ? e.g : "–"}</td><td class="n">${e ? e.a : "–"}</td><td class="n"><b>${x.ovr}</b>${d ? ` <small class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</small>` : ""}</td></tr>`;
   }).join("");
   return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
     <div class="hist-topo">${onde ? escudo(onde.clubeId) : ""}<div><small>${esc(NOME_POS[ult.posicao] ?? "Goleiro")} · ${ult.idade} anos</small><h1>${esc(nome)}</h1><span class="sub">${esc(agora)}</span></div><div class="ovr"><strong>${ult.ovr}</strong><span>OVR</span></div></div>
-    <div class="linha-info" style="margin:10px 0">${tag}<span>Pico <b>${pico.ovr}</b> em ${ANO_INICIAL + pico.t}</span><span><b>${clubes.length}</b> ${clubes.length === 1 ? "clube" : "clubes"}</span>${rel ? `<span>Relação: <b>${esc(rotuloNivel(rel.nivel))}</b></span>` : ""}</div>
-    <table class="hist"><thead><tr><th>Ano</th><th>Clube</th><th class="n">Idade</th><th class="n">OVR</th></tr></thead><tbody>${linhas}</tbody></table>
+    <div class="linha-info" style="margin:10px 0">${tag}<span>Pico <b>${pico.ovr}</b> em ${ANO_INICIAL + pico.t}</span><span><b>${clubes.length}</b> ${clubes.length === 1 ? "clube" : "clubes"}</span>${tot.j ? `<span><b>${tot.j}</b> jogos · <b>${tot.g}</b> gols · <b>${tot.a}</b> assist.</span>` : ""}${rel ? `<span>Relação: <b>${esc(rotuloNivel(rel.nivel))}</b></span>` : ""}</div>
+    <table class="hist"><thead><tr><th>Ano</th><th>Clube</th><th class="n">Id.</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">OVR</th></tr></thead><tbody>${linhas}</tbody></table>
     ${l[0].t === 0 && !l[0].base ? `<p class="sub" style="margin-top:8px">Antes de ${ANO_INICIAL}: carreira fora do registro do jogo.</p>` : ""}`;
 }
 function abrirHistorico(nome: string) {

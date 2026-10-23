@@ -7,7 +7,9 @@ import { LIGAS, LIGA_INFO, type InfoLiga } from "./ligas.js";
 import dados from "../data/mundo-2026.json";
 import { CONVIDADOS, clubeConvidado } from "./convidados.js";
 import { RNG } from "./rng.js";
-import { forcaDoElenco } from "./liga.js";
+import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
+import { gerarStats, statsAte, type StatsNPC } from "./estatisticas.js";
+import { VAGAS_433 } from "./partida.js";
 import { criarBase, nivelBase, virarTemporada, type GruposMundo, type Referencia, type ViradaMundo, type NivelBase } from "./evolucao.js";
 
 export { LIGAS, LIGA_INFO, type InfoLiga };
@@ -62,7 +64,10 @@ export function mundo(pacote: PacoteDados): Mundo {
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
 let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
 /** Uma temporada na carreira de um jogador do mundo. */
-export interface LinhaHistorico { t: number; clubeId: string; idade: number; ovr: number; pot: number; posicao: string; base: boolean }
+/** `liga`: o que a temporada imaginada precisa (fila na posição, titulares, força do clube, média da liga, rodadas);
+ *  as estatísticas são sorteadas só quando alguém olha (st guarda o resultado). */
+export interface LinhaHistorico { t: number; clubeId: string; idade: number; ovr: number; pot: number; posicao: string; base: boolean; liga?: [number, number, number, number, number]; st?: StatsNPC }
+const VAGAS: Record<string, number> = { GOL: 1, ...VAGAS_433 };
 function registrarTemporada(m: Mundo) {
   const e = estado!, add = (j: JogadorNPC, clubeId: string, base: boolean) => {
     const l = e.hist.get(j.nome) ?? [];
@@ -71,6 +76,18 @@ function registrarTemporada(m: Mundo) {
   };
   for (const c of Object.values(m.clube)) for (const j of c.elenco) add(j, c.id, false);
   for (const [id, b] of Object.entries(e.base)) for (const j of b) add(j, id, true);
+  // o lugar de cada um no time e na liga, para imaginar a temporada dele quando alguém olhar
+  for (const l of [...m.ligas, ...m.amadoras]) {
+    const n = rodadasDaLiga(l.clubes.length).length, media = l.clubes.reduce((a, c) => a + c.forca, 0) / l.clubes.length;
+    for (const c of l.clubes) {
+      const fila: Record<string, JogadorNPC[]> = {};
+      for (const j of [...c.elenco].sort((a, b) => b.ovr - a.ovr)) (fila[j.posicao] ??= []).push(j);
+      for (const [pos, js] of Object.entries(fila)) js.forEach((j, rank) => {
+        const l2 = e.hist.get(j.nome), linha = l2?.[l2.length - 1];
+        if (linha && linha.t === e.temporada && linha.clubeId === c.id) linha.liga = [rank, VAGAS[pos] ?? 1, c.forca, media, n];
+      });
+    }
+  }
   for (const lista of Object.values(e.virada?.saidas ?? {})) for (const x of lista) if (x.motivo === "aposentou") e.saiu.set(x.nome, { t: e.temporada, motivo: "aposentou" });
 }
 let versao = 0;
@@ -103,6 +120,29 @@ export const viradaAtual = (pacote: PacoteDados): ViradaMundo => garantir(pacote
 export function historicoDe(pacote: PacoteDados, nome: string): { linhas: LinhaHistorico[]; aposentouEm?: number } {
   const e = garantir(pacote), linhas = e.hist.get(nome) ?? [], ap = e.saiu.get(nome);
   return { linhas, ...(ap && !ondeJoga(pacote, nome) ? { aposentouEm: ap.t } : {}) };
+}
+/** Temporada imaginada (jogos, gols, assistências, nota) de uma linha do histórico; sempre a mesma para a mesma carreira. */
+export function statsDaLinha(pacote: PacoteDados, nome: string, x: LinhaHistorico): StatsNPC | undefined {
+  if (x.st || !x.liga) return x.st;
+  const [rank, vagas, forca, media, n] = x.liga;
+  x.st = gerarStats(new RNG(`${garantir(pacote).semente}|stats|${x.t}|${nome}`), { nome, posicao: x.posicao as JogadorNPC["posicao"], ovr: x.ovr, idade: x.idade, nacionalidade: "" }, rank, vagas, forca, media, n);
+  return x.st;
+}
+export interface LinhaRanking { nome: string; clubeId: string; valor: number; jogos: number }
+/** Artilharia ou assistências da liga até a rodada `feitas` (os outros jogadores; o do usuário entra na tela). */
+export function rankingDaLiga(pacote: PacoteDados, ligaId: string, feitas: number, tipo: "g" | "a", limite = 10): LinhaRanking[] {
+  const e = garantir(pacote), l = mundo(pacote).liga[ligaId];
+  if (!l) return [];
+  const n = rodadasDaLiga(l.clubes.length).length, lista: LinhaRanking[] = [];
+  for (const c of l.clubes) for (const j of c.elenco) {
+    const h = e.hist.get(j.nome), linha = h?.[h.length - 1];
+    if (!linha || linha.t !== e.temporada || linha.clubeId !== c.id) continue;
+    const st = statsDaLinha(pacote, j.nome, linha);
+    if (!st) continue;
+    const x = statsAte(st, feitas, n);
+    if (x[tipo] > 0) lista.push({ nome: j.nome, clubeId: c.id, valor: x[tipo], jogos: x.j });
+  }
+  return lista.sort((a, b) => b.valor - a.valor || a.jogos - b.jogos).slice(0, limite);
 }
 let indice: Map<string, { clubeId: string; base: boolean }> | undefined;
 /** Onde joga um jogador hoje (pelo nome): clube, ou base do clube. undefined = aposentado ou sem clube. */
