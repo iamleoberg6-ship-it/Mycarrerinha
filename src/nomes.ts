@@ -110,4 +110,4 @@ export function nacionalidadeEstrangeira(rng: RNG, exceto: string): string {
   return l[0][0];
 }
 /** Parte do elenco que vem de fora, por país da liga. */
-export const FATIA_ESTRANGEIRA: Record<string, number> = { ENG: 0.6, ESP: 0.35, ITA: 0.5, GER: 0.45, FRA: 0.35, POR: 0.5, NED: 0.4, KSA: 0.45, BRA: 0.08, ARG: 0.1, USA: 0.45 };
+export const FATIA_ESTRANGEIRA: Record<string, number> = { URU: 0.08, COL: 0.08, CHI: 0.15, PAR: 0.1, ECU: 0.12, TUR: 0.4, MEX: 0.35, ENG: 0.6, ESP: 0.35, ITA: 0.5, GER: 0.45, FRA: 0.35, POR: 0.5, NED: 0.4, KSA: 0.45, BRA: 0.08, ARG: 0.1, USA: 0.45 };

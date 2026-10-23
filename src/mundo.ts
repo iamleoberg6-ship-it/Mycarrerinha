@@ -6,6 +6,7 @@ import { ligaDoPacote, type Clube, type JogadorNPC, type Liga, type PacoteDados 
 import { LIGAS, LIGA_INFO, type InfoLiga } from "./ligas.js";
 import dados from "../data/mundo-2026.json";
 import { CONVIDADOS, clubeConvidado } from "./convidados.js";
+import { CLUBES_EXTRA, clubeExtra } from "./ligas-extra.js";
 import { RNG } from "./rng.js";
 import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
 import { gerarStats, statsAte, type StatsNPC } from "./estatisticas.js";
@@ -29,12 +30,21 @@ export function mundo(pacote: PacoteDados): Mundo {
   if (cache?.pacote === pacote) return cache.m;
   const ligas: Liga[] = [], amadoras: Liga[] = [], info: Record<string, InfoClube> = {};
   const json = Object.fromEntries(DADOS.ligas.map((l) => [l.id, l]));
+  const usadosExtra = new Set([...DADOS.ligas.flatMap((l) => l.clubes.flatMap((c) => c.elenco.map((j) => j[0]))), ...pacote.jogadores.map((j) => j.nome)]);
   for (const li of LIGAS) {
     if (li.id === "BRA1") {
       const l = ligaDoPacote(pacote);
       ligas.push(l);
       type CP = { id: string; nome: string; apelido: string; cores: string[]; forca: number; cidade: string; estadio: { nome: string; capacidade?: number } };
       for (const c of pacote.clubes as unknown as CP[]) info[c.id] = { id: c.id, nome: c.nome, apelido: c.apelido, cores: c.cores, forca: c.forca, cidade: c.cidade, estadio: c.estadio.nome, capacidade: c.estadio.capacidade ?? 0, padrao: PADRAO_BRA1[c.id] ?? "lisa", ligaId: "BRA1", pais: "BRA" };
+      continue;
+    }
+    if (CLUBES_EXTRA[li.id]) {
+      const clubes = CLUBES_EXTRA[li.id].map((c) => {
+        info[c.id] = { id: c.id, nome: c.nome, apelido: c.apelido, cores: c.cores, forca: c.forca, cidade: c.cidade, estadio: c.estadio, capacidade: c.capacidade, padrao: c.padrao, ligaId: li.id, pais: c.pais };
+        return clubeExtra(c, li.id, usadosExtra);
+      });
+      ligas.push(ligaDe(li, clubes));
       continue;
     }
     const clubes: Clube[] = (json[li.id]?.clubes ?? []).map((c) => {

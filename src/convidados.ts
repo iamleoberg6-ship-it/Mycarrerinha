@@ -7,7 +7,7 @@ import type { Clube, JogadorNPC } from "./liga.js";
 
 export interface Convidado { id: string; nome: string; apelido: string; cidade: string; estadio: string; pais: string; cores: string[]; padrao: string; forca: number; regiao: "SUL" | "EUR" | "ASO" | "ASL" }
 
-export const CONVIDADOS: Convidado[] = [
+export const TODOS_CONVIDADOS: Convidado[] = [
   // América do Sul
   { id: "UY-PEN", nome: "CA Peñarolo", apelido: "Carboneros", cidade: "Montevidéu", estadio: "Campeão do Século", pais: "URU", cores: ["#F5C400", "#111111"], padrao: "listrasV", forca: 70, regiao: "SUL" },
   { id: "UY-NAC", nome: "Nacional de Montevidéu", apelido: "Bolsilludos", cidade: "Montevidéu", estadio: "Parque Central", pais: "URU", cores: ["#FFFFFF", "#0B2F7A"], padrao: "lisa", forca: 70, regiao: "SUL" },
@@ -58,6 +58,10 @@ export const CONVIDADOS: Convidado[] = [
   { id: "TH-BUR", nome: "Buriram Unidos", apelido: "Castelo do Trovão", cidade: "Buriram", estadio: "Chang Arena", pais: "THA", cores: ["#0B2F7A", "#F58220"], padrao: "lisa", forca: 62, regiao: "ASL" },
   { id: "MY-JDT", nome: "Johor Tigres do Sul", apelido: "Tigres do Sul", cidade: "Johor Bahru", estadio: "Sultan Ibrahim", pais: "MAS", cores: ["#1C4FA1", "#C8102E"], padrao: "faixaH", forca: 63, regiao: "ASL" },
 ];
+/** Países que ganharam liga própria (src/ligas-extra.ts): os clubes deles jogam a liga e entram nas copas pela tabela. */
+const COM_LIGA = new Set(["URU", "COL", "CHI", "PAR", "ECU", "TUR"]);
+/** Os convidados que seguem sem liga (só copas). */
+export const CONVIDADOS: Convidado[] = TODOS_CONVIDADOS.filter((c) => !COM_LIGA.has(c.pais));
 
 const NOMES: Record<string, [string[], string[]]> = {
   es: [["Matías", "Nicolás", "Agustín", "Facundo", "Sebastián", "Juan", "Diego", "Santiago", "Felipe", "Andrés", "Camilo", "Brian", "Joaquín", "Lucas"],

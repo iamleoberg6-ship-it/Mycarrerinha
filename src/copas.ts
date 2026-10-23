@@ -17,8 +17,8 @@ export const COPAS: Record<CopaId, InfoCopa> = {
 };
 /** Vagas de cada liga (pela tabela final da temporada anterior) e convidados de cada copa. */
 const VAGAS: Record<CopaId, [string, number][]> = {
-  LIB: [["BRA1", 7], ["ARG1", 6]],
-  UCL: [["ENG1", 5], ["ESP1", 5], ["ITA1", 5], ["GER1", 5], ["FRA1", 4], ["POR1", 3], ["NED1", 3]],
+  LIB: [["BRA1", 7], ["ARG1", 6], ["URU1", 3], ["COL1", 3], ["CHI1", 3], ["PAR1", 3], ["ECU1", 3]],
+  UCL: [["ENG1", 5], ["ESP1", 5], ["ITA1", 5], ["GER1", 5], ["FRA1", 4], ["POR1", 3], ["NED1", 3], ["TUR1", 1]],
   ACL: [["KSA1", 4]],
 };
 const REGIAO_CONV: Record<CopaId, string[]> = { LIB: ["SUL"], UCL: ["EUR"], ACL: ["ASO", "ASL"] };
@@ -87,15 +87,24 @@ export function novaCopa(id: CopaId, temporada: number, clubes: string[], forca:
   let n = 0;
   if (id === "LIB") {
     // 4 potes de 8 por força; em cada grupo, um de cada pote, evitando dois do mesmo país
-    const ord = [...clubes].sort((a, b) => forca(b) - forca(a)), potes = [0, 1, 2, 3].map((p) => rng.shuffle(ord.slice(p * 8, p * 8 + 8)));
-    const grupos: string[][] = Array.from({ length: 8 }, () => []);
-    for (const pote of potes) {
-      const sobra = [...pote];
-      for (const g of grupos) {
-        const i = sobra.findIndex((c) => !g.some((x) => paisDe(x) === paisDe(c)));
-        g.push(sobra.splice(i >= 0 ? i : 0, 1)[0]);
+    const ord = [...clubes].sort((a, b) => forca(b) - forca(a));
+    const sortear = () => {
+      const grupos: string[][] = Array.from({ length: 8 }, () => []);
+      let ok = true;
+      for (const pote of [0, 1, 2, 3].map((p) => rng.shuffle(ord.slice(p * 8, p * 8 + 8)))) {
+        const sobra = [...pote];
+        for (const g of rng.shuffle([...grupos])) {
+          const i = sobra.findIndex((c) => !g.some((x) => paisDe(x) === paisDe(c)));
+          if (i < 0) ok = false;
+          g.push(sobra.splice(i >= 0 ? i : 0, 1)[0]);
+        }
       }
-    }
+      return { grupos, ok };
+    };
+    // o sorteio refaz até não ter dois clubes do mesmo país no grupo
+    let sorteio = sortear();
+    for (let k = 0; k < 200 && !sorteio.ok; k++) sorteio = sortear();
+    const grupos = sorteio.grupos;
     grupos.forEach((g, gi) => {
       const nome = "ABCDEFGH"[gi];
       e.tabelas[nome] = g.map(linha);

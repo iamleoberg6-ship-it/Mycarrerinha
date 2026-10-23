@@ -24,7 +24,9 @@ const MINIMO: Record<Pos, number> = { GOL: 2, ZAG: 3, LAT: 2, VOL: 2, MEI: 2, PO
 const ALVO_BASE: Record<Pos, number> = { GOL: 3, ZAG: 5, LAT: 4, VOL: 3, MEI: 4, PON: 3, ATA: 3 };
 const GAP_IDADE: Record<number, number> = { 14: 26, 15: 24, 16: 21, 17: 18, 18: 14, 19: 11 };
 
-const SUL = new Set(["BRA", "ARG"]);
+/** América do Sul: os clubes daqui só contratam sul-americanos */
+const SUL = new Set(["BRA", "ARG", "URU", "COL", "CHI", "PAR", "ECU", "PER", "BOL", "VEN"]);
+const VIZINHOS = ["ARG", "URU", "COL", "CHI", "PAR", "ECU", "BRA"];
 const hash = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
 
 // ------------------------------------------------------------------ nível do clube
@@ -84,7 +86,7 @@ export function gerarJovem(rng: RNG, n: NivelBase, idade: number, posicao: Pos, 
 /** Reforço gerado (quando não há ninguém livre do nível certo): já formado, do país da liga ou de fora. */
 export function gerarReforco(rng: RNG, ovr: number, posicao: Pos, pais: string, usados: Set<string>, idade = 20 + Math.floor(rng.next() ** 1.4 * 12)): JogadorNPC {
   const fora = rng.chance(FATIA_ESTRANGEIRA[pais] ?? 0.3);
-  const nac = fora ? nacionalidadeEstrangeira(rng, pais) : pais === "INT" ? "ENG" : pais;
+  const nac = fora ? (SUL.has(pais) ? rng.pick(VIZINHOS.filter((x) => x !== pais)) : nacionalidadeEstrangeira(rng, pais)) : pais === "INT" ? "ENG" : pais;
   const o = Math.round(clamp(ovr, 35, 92));
   return { nome: gerarNome(rng, nac, usados), posicao, ovr: o, idade, nacionalidade: nac, pot: idade <= 23 ? o + rng.int(2, 8) : o };
 }
@@ -204,7 +206,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     if (!rf) continue;
     for (const j of subiram[c.id] ?? []) chega(c, j, "subiu");
     const nivelAlvo = rf.forca - 3 + (c.forca - rf.forca) * 0.3; // reforço do tamanho do clube
-    const daqui = (x: { de: string }) => paisDe[x.de] === c.pais || (!SUL.has(c.pais) && r.chance(FATIA_ESTRANGEIRA[c.pais] ?? 0.3));
+    const daqui = (x: { de: string }) => paisDe[x.de] === c.pais || (SUL.has(c.pais) ? SUL.has(paisDe[x.de]) && r.chance(0.15) : r.chance(FATIA_ESTRANGEIRA[c.pais] ?? 0.3));
     const reforco = (pos: Pos) => {
       const i = amador || g.convidados.includes(c) ? -1 : livres.findIndex((x) => x.j.posicao === pos && x.j.ovr >= nivelAlvo - 6 && x.j.ovr <= nivelAlvo + 3 && daqui(x));
       if (i >= 0) { const x = livres.splice(i, 1)[0]; chega(c, x.j, "contratado", x.de, 0); return; }

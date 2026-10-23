@@ -333,9 +333,9 @@ teste("Relíquias: primeiro gol, hat-trick, prêmios; vão para a casa e não se
 
 teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS e ligas amadoras", () => {
   const w = mundo(pacote);
-  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "ENG1", "ENG2", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "NED1", "POR1", "USA1"]);
+  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "CHI1", "COL1", "ECU1", "ENG1", "ENG2", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "MEX1", "NED1", "PAR1", "POR1", "TUR1", "URU1", "USA1"]);
   assert.equal(w.amadoras.length, 10);
-  assert.equal(Object.keys(w.clube).length, 516 + CONVIDADOS.length);
+  assert.equal(Object.keys(w.clube).length, 516 + CONVIDADOS.length + 116);
   assert.equal(w.liga.USA1.clubes.length, 30); assert.equal(w.liga.BRA3.clubes.length, 20);
   assert.equal("ABCDEFGH".split("").reduce((a, g) => a + w.liga[`BRA4${g}`].clubes.length, 0), 96);
   assert.ok(w.clube["US-MIA"].elenco.some((j) => j.nome === "Lionel Mesi" && j.ovr >= 85), "o craque da liga americana");
@@ -346,7 +346,7 @@ teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS
     assert.ok(n("GOL") >= 2 && n("ZAG") >= 3 && n("LAT") >= 2 && n("ATA") >= 2, `posições em ${c.id}`);
   }
   for (const l of w.ligas) {
-    assert.ok(l.clubes.length % 2 === 0 && l.clubes.length >= (l.id.startsWith("BRA4") ? 12 : 18), l.id);
+    assert.ok(l.clubes.length % 2 === 0 && l.clubes.length >= (l.id.startsWith("BRA4") || ["URU1", "CHI1", "PAR1", "ECU1"].includes(l.id) ? 12 : 18), l.id);
     for (const c of l.clubes) { assert.ok(w.info[c.id]?.estadio && w.info[c.id].cores.length >= 2, c.id); assert.ok(c.elenco.length >= 20 && c.elenco.every((j) => !/^[A-Z]{3}-\d/.test(j.nome)), c.id); }
   }
   const forca = (id: string) => w.liga[id].clubes.reduce((a, c) => a + c.forca, 0) / w.liga[id].clubes.length;
@@ -703,7 +703,7 @@ teste("Família escolhida na criação: pai e irmãos do jeito pedido, com lado 
 });
 
 teste("Base no país do jogador: espanhol começa na La Lyga, uruguaio na Argentina, brasileiro na Série A", () => {
-  for (const [pais, liga] of [["ESP", "ESP1"], ["URU", "ARG1"], ["JPN", "GER1"], ["BRA", undefined]] as const) {
+  for (const [pais, liga] of [["ESP", "ESP1"], ["URU", "URU1"], ["JPN", "GER1"], ["BRA", undefined]] as const) {
     const r = criarJogador({ nome: "Teste Pais", pais, familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "MEI", semente: `base${pais}` });
     const dados = { resultado: r, aparencia: {}, clube: null };
     const of = ofertasDeBase(pacote, dados);

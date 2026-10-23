@@ -38,6 +38,13 @@ export const LIGAS: InfoLiga[] = [
   { id: "KSA1", nome: "Liga do Golfo", curto: "Golfo", pais: "KSA", regiao: "ARA", divisao: 1, nivel: 3, fLiga: 0.7, fSalario: 2.5, rebaixados: 3, bolas: [["#0E5E3A", "#C9A14A"], ["#7A1F3D", "#E3B341"], ["#1F3A5F", "#C9A14A"]] },
   { id: "ARG1", nome: "Liga Profissional Argentina", curto: "Liga Argentina", pais: "ARG", regiao: "SUL", divisao: 1, nivel: 3, fLiga: 0.6, fSalario: 0.55, rebaixados: 2, bolas: [["#75AADB", "#FFFFFF"], ["#1F3A5F", "#75AADB"], ["#F2B705", "#75AADB"]] },
   { id: "USA1", nome: "Méjor Liga Soccer", curto: "MLS", pais: "USA", regiao: "NAM", divisao: 1, nivel: 3, fLiga: 0.65, fSalario: 1.0, rebaixados: 0, bolas: [["#1F3A5F", "#E03A3E"], ["#FFFFFF", "#1F3A5F"], ["#F2B705", "#1F3A5F"]] },
+  { id: "URU1", nome: "Campeonato Uruguaio", curto: "Liga Uruguaia", pais: "URU", regiao: "SUL", divisao: 1, nivel: 4, fLiga: 0.45, fSalario: 0.3, rebaixados: 2, bolas: [["#6CB4E4", "#FFFFFF"], ["#F5C400", "#111111"]] },
+  { id: "COL1", nome: "Liga Bétpley Colombiana", curto: "Liga Colombiana", pais: "COL", regiao: "SUL", divisao: 1, nivel: 4, fLiga: 0.45, fSalario: 0.3, rebaixados: 2, bolas: [["#F5C400", "#0B3D91"], ["#C8102E", "#F5C400"]] },
+  { id: "CHI1", nome: "Liga de Primeira Chilena", curto: "Liga Chilena", pais: "CHI", regiao: "SUL", divisao: 1, nivel: 4, fLiga: 0.4, fSalario: 0.3, rebaixados: 2, bolas: [["#C8102E", "#0B3D91"], ["#FFFFFF", "#C8102E"]] },
+  { id: "PAR1", nome: "Divisão de Honra Paraguaia", curto: "Liga Paraguaia", pais: "PAR", regiao: "SUL", divisao: 1, nivel: 4, fLiga: 0.35, fSalario: 0.22, rebaixados: 2, bolas: [["#C8102E", "#0B3D91"], ["#FFFFFF", "#0B3D91"]] },
+  { id: "ECU1", nome: "Liga Pro Equatoriana", curto: "Liga Equatoriana", pais: "ECU", regiao: "SUL", divisao: 1, nivel: 4, fLiga: 0.4, fSalario: 0.27, rebaixados: 2, bolas: [["#F5C400", "#0B3D91"], ["#C8102E", "#F5C400"]] },
+  { id: "TUR1", nome: "Süper Lig Turca", curto: "Süper Lig", pais: "TUR", regiao: "EUR", divisao: 1, nivel: 3, fLiga: 0.75, fSalario: 0.8, rebaixados: 4, bolas: [["#C8102E", "#FFFFFF"], ["#0B2F7A", "#F5C400"]] },
+  { id: "MEX1", nome: "Liga MêX", curto: "Liga MX", pais: "MEX", regiao: "NAM", divisao: 1, nivel: 3, fLiga: 0.65, fSalario: 0.7, rebaixados: 0, bolas: [["#0B7A3B", "#FFFFFF"], ["#C8102E", "#0B7A3B"]] },
   { id: "BRA3", nome: "Campeonato Nacional Série C", curto: "Série C", pais: "BRA", regiao: "BRA", divisao: 3, nivel: 5, fLiga: 0.35, fSalario: 0.3, rebaixados: 4, acima: "BRA2", bolas: [["#2E7D4F", "#FFFFFF"], ["#1F3A5F", "#F2B705"]] },
   ...GRUPO_D.map((_, i): InfoLiga => ({
     id: `BRA4${"ABCDEFGH"[i]}`, nome: `Campeonato Nacional Série D · Grupo ${i + 1} (${GRUPO_D[i]})`, curto: `Série D · G${i + 1}`, pais: "BRA", regiao: "BRA", divisao: 4, nivel: 5,
