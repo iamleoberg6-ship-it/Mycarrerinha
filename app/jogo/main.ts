@@ -584,7 +584,7 @@ function janelaHtml(s: Save): string {
     : filtroJanela === "base" ? x.tipo === "base" : x.tipo === "aposentadoria");
   const ordenada = filtroJanela === "base" || filtroJanela === "aposentadorias" ? [...lista].sort((a, b) => b.ovr - a.ovr) : lista;
   const total = todos.filter((x) => x.taxa > 0).reduce((a, x) => a + x.taxa, 0);
-  const clube = (id?: string, fora = "Clube de fora") => id ? `<span class="neg-clube">${escudo(id)}<span>${esc(nomeDe(id))}</span></span>` : `<span class="neg-clube sub">${fora}</span>`;
+  const clube = (id?: string, fora = "Estava sem clube") => id ? `<span class="neg-clube">${escudo(id)}<span>${esc(nomeDe(id))}</span></span>` : `<span class="neg-clube sub">${fora}</span>`;
   const linha = (x: Negocio) => `<div class="negocio${x.de === c.clubeId || x.para === c.clubeId ? " meu" : ""}">
       <div class="neg-topo"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button><span class="neg-valor">${x.taxa ? dinheiro(x.taxa) : esc(NOME_NEGOCIO[x.tipo])}</span></div>
       <small class="sub">${esc(NOME_POS[x.posicao] ?? "Goleiro")} · ${x.idade} anos · OVR ${x.ovr}</small>

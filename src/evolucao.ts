@@ -24,9 +24,34 @@ const MINIMO: Record<Pos, number> = { GOL: 2, ZAG: 3, LAT: 2, VOL: 2, MEI: 2, PO
 const ALVO_BASE: Record<Pos, number> = { GOL: 3, ZAG: 5, LAT: 4, VOL: 3, MEI: 4, PON: 3, ATA: 3 };
 const GAP_IDADE: Record<number, number> = { 14: 26, 15: 24, 16: 21, 17: 18, 18: 14, 19: 11 };
 
-/** América do Sul: os clubes daqui só contratam sul-americanos */
 const SUL = new Set(["BRA", "ARG", "URU", "COL", "CHI", "PAR", "ECU", "PER", "BOL", "VEN"]);
 const VIZINHOS = ["ARG", "URU", "COL", "CHI", "PAR", "ECU", "BRA"];
+// continente de cada nacionalidade (para a afinidade de quem contrata)
+const CONTINENTE: Record<string, string> = {};
+for (const [k, l] of Object.entries({
+  SUL: [...SUL],
+  NAM: ["USA", "CAN", "MEX", "CRC", "PAN", "HON", "JAM", "SLV", "GUA", "HAI", "TRI", "CUW", "SUR", "DOM", "CUB"],
+  AFR: ["SEN", "CIV", "MLI", "GUI", "CMR", "BFA", "COD", "GAB", "TOG", "BEN", "CGO", "CTA", "NGA", "GHA", "SLE", "LBR", "GAM", "KEN", "ZAM", "ZIM", "RSA", "UGA", "TAN", "ANG", "CPV", "GNB", "MOZ", "MAR", "ALG", "TUN", "EGY", "LBY", "EQG", "MTN", "COM", "BDI", "RWA", "NAM"],
+  ASI: ["KSA", "UAE", "QAT", "IRN", "IRQ", "JOR", "SYR", "LBN", "JPN", "KOR", "CHN", "AUS", "THA", "MAS", "IDN", "UZB", "PHI", "SGP", "BAN", "NZL"],
+})) for (const n of l) CONTINENTE[n] = k;
+const continente = (n: string) => CONTINENTE[n] ?? "EUR";
+/**
+ * Afinidade de um clube com um jogador: do mesmo país pesa mais, do mesmo continente menos, do resto do mundo pouco.
+ * Liga que importa muito (Inglaterra, Golfo, Turquia) liga menos para a origem. Quem já joga no país do clube pesa mais.
+ */
+export function afinidade(paisClube: string, nacionalidade: string, paisOrigem?: string): number {
+  const abertura = 0.5 + 2 * (FATIA_ESTRANGEIRA[paisClube] ?? 0.3);
+  let w = nacionalidade === paisClube ? 1 : continente(nacionalidade) === continente(paisClube) ? 0.3 * abertura : 0.07 * abertura;
+  if (paisOrigem === paisClube) w *= 1.6;
+  return w;
+}
+function sortearPeso<T>(rng: RNG, l: T[], peso: (x: T) => number): T | undefined {
+  const ps = l.map(peso), tot = ps.reduce((a, b) => a + b, 0);
+  if (!l.length || tot <= 0) return undefined;
+  let r = rng.next() * tot;
+  for (let i = 0; i < l.length; i++) { r -= ps[i]; if (r <= 0) return l[i]; }
+  return l[l.length - 1];
+}
 const hash = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
 
 // ------------------------------------------------------------------ nível do clube
@@ -131,7 +156,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   const rngDe = (...p: (string | number)[]) => new RNG(`${semente}|mundo|${t}|${meio ? "meio|" : ""}${p.join("|")}`);
   const saidas: Record<string, Movimento[]> = {}, chegadas: Record<string, Movimento[]> = {}, destaques: Movimento[] = [];
   const mov = (j: JogadorNPC, motivo: Movimento["motivo"], extra: Partial<Movimento> = {}): Movimento => ({ nome: j.nome, posicao: j.posicao, numero: j.numero, ovr: j.ovr, idade: j.idade, motivo, ...extra });
-  const sai = (c: Clube, j: JogadorNPC, m: Movimento) => { c.elenco.splice(c.elenco.indexOf(j), 1); (saidas[c.id] ??= []).push(m); };
+  const sai = (c: Clube, j: JogadorNPC, m: Movimento) => { const i = c.elenco.indexOf(j); if (i < 0) return; c.elenco.splice(i, 1); (saidas[c.id] ??= []).push(m); };
   const rTaxa = rngDe("taxas");
   /** taxa da transferência: o valor de mercado do jogador na liga de quem compra, com a negociação no meio */
   const taxa = (j: JogadorNPC, c: Clube) => g.amadores.includes(c) ? 0 : Math.round(valorMercado(j.ovr, j.idade, 3, LIGA_INFO[c.ligaId]?.fLiga ?? 0.6) * rTaxa.range(0.75, 1.3) / 1e4) * 1e4;
@@ -187,11 +212,10 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   vendas.sort((a, b) => b.j.ovr - a.j.ovr || a.j.nome.localeCompare(b.j.nome));
   for (const { j, de } of vendas) {
     const subindo = j.ovr >= de.forca + 5;
-    // quem desce fica no país; para o Brasil e a Argentina só vêm sul-americanos
-    const pode = (c: Clube) => subindo ? (!SUL.has(c.pais) || SUL.has(de.pais)) : c.pais === de.pais;
-    const alvo = porForca.filter((c) => c !== de && c.elenco.length < 32 && pode(c) && (subindo ? c.forca > de.forca && c.forca >= j.ovr - 5 && c.forca <= j.ovr + 1 : c.forca <= j.ovr + 4 && c.forca >= j.ovr - 3));
+    // qualquer clube do mundo do nível certo; a chance de cada um vem da afinidade com o jogador
+    const alvo = porForca.filter((c) => c !== de && c.elenco.length < 32 && (subindo ? c.forca > de.forca && c.forca >= j.ovr - 5 && c.forca <= j.ovr + 1 : c.forca <= j.ovr + 4 && c.forca >= j.ovr - 3));
     if (!alvo.length) { if (!subindo) { sai(de, j, mov(j, "dispensado")); livres.push({ j, de: de.id }); } continue; }
-    const para = r3.pick(alvo);
+    const para = sortearPeso(r3, alvo, (c) => afinidade(c.pais, j.nacionalidade, de.pais))!;
     const t = taxa(j, para);
     sai(de, j, mov(j, "vendido", { para: para.id, taxa: t }));
     chega(para, j, "contratado", de.id, t);
@@ -199,6 +223,15 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   }
 
   const paisDe = Object.fromEntries(todos.map((c) => [c.id, c.pais]));
+  // reservas de cada clube profissional (fora do time titular), por posição: podem ser contratados por outro clube
+  const reservas: Partial<Record<Pos, { j: JogadorNPC; de: Clube }[]>> = {};
+  // só quem sobra além dos titulares e do mínimo da posição (levar um deles nunca desmonta o time)
+  for (const c of g.pro) for (const p of POSICOES) {
+    const fila = c.elenco.filter((j) => j.posicao === p).sort((a, b) => b.ovr - a.ovr);
+    for (const j of fila.slice(Math.max(VAGAS[p], MINIMO[p] + 1))) if (j.idade >= 19) (reservas[p] ??= []).push({ j, de: c });
+  }
+  const tomados = new Set<JogadorNPC>();
+  { const rr = rngDe("reservas"); for (const l of Object.values(reservas)) rr.shuffle(l!); }
   // 4) cada clube recompõe o elenco: quem subiu da base, livres do nível certo, reforços gerados; tamanho de antes
   livres.sort((a, b) => b.j.ovr - a.j.ovr);
   for (const c of todos) {
@@ -206,10 +239,22 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     if (!rf) continue;
     for (const j of subiram[c.id] ?? []) chega(c, j, "subiu");
     const nivelAlvo = rf.forca - 3 + (c.forca - rf.forca) * 0.3; // reforço do tamanho do clube
-    const daqui = (x: { de: string }) => paisDe[x.de] === c.pais || (SUL.has(c.pais) ? SUL.has(paisDe[x.de]) && r.chance(0.15) : r.chance(FATIA_ESTRANGEIRA[c.pais] ?? 0.3));
     const reforco = (pos: Pos) => {
-      const i = amador || g.convidados.includes(c) ? -1 : livres.findIndex((x) => x.j.posicao === pos && x.j.ovr >= nivelAlvo - 6 && x.j.ovr <= nivelAlvo + 3 && daqui(x));
-      if (i >= 0) { const x = livres.splice(i, 1)[0]; chega(c, x.j, "contratado", x.de, 0); return; }
+      if (!amador && !g.convidados.includes(c)) {
+        // procura no mundo: livres e reservas de outros clubes, do nível certo; a afinidade decide quem vem
+        const nivelOk = (j: JogadorNPC) => j.posicao === pos && j.ovr >= nivelAlvo - 6 && j.ovr <= nivelAlvo + 3;
+        const cand: { j: JogadorNPC; de?: Clube; livre?: number }[] = [];
+        for (let i = 0, achados = 0; i < livres.length && achados < 15; i++) if (nivelOk(livres[i].j)) { cand.push({ j: livres[i].j, livre: i }); achados++; }
+        // até 40 candidatos, a partir de um ponto sorteado da lista (a conta fica leve com milhares de reservas no mundo)
+        const lr = reservas[pos] ?? [], ini = Math.floor(r.next() * lr.length);
+        for (let k = 0, achados = 0; k < lr.length && achados < 40; k++) {
+          const o = lr[(ini + k) % lr.length];
+          if (nivelOk(o.j) && o.de !== c && !tomados.has(o.j) && o.de.elenco.includes(o.j)) { cand.push(o); achados++; }
+        }
+        const x = sortearPeso(r, cand, (k) => afinidade(c.pais, k.j.nacionalidade, k.de?.pais ?? paisDe[livres[k.livre!]?.de]) * (k.livre !== undefined ? 1.3 : 1));
+        if (x && x.livre !== undefined) { const l0 = livres.splice(x.livre, 1)[0]; chega(c, l0.j, "contratado", l0.de, 0); return; }
+        if (x && x.de) { tomados.add(x.j); const t = taxa(x.j, c); sai(x.de, x.j, mov(x.j, "vendido", { para: c.id, taxa: t })); chega(c, x.j, "contratado", x.de.id, t); return; }
+      }
       const [i0, i1] = amador ? faixaAmadora(c.id) : [21, 31];
       const nj = gerarReforco(r, nivelAlvo + r.normal(0, 3), pos, c.pais, usados, r.int(i0, i1));
       chega(c, nj, "contratado", undefined, amador ? undefined : taxa(nj, c));
