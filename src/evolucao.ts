@@ -12,6 +12,8 @@ import { culturaBase } from "./identidade.js";
 import { gerarNome, nacionalidadeEstrangeira, FATIA_ESTRANGEIRA } from "./nomes.js";
 import { VAGAS_433 } from "./partida.js";
 import { numerosDoClube, numeroParaChegada, limparNumeros } from "./numeros.js";
+import { valorMercado } from "./mercado.js";
+import { LIGA_INFO } from "./ligas.js";
 
 type Pos = JogadorNPC["posicao"];
 const POSICOES: Pos[] = ["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"];
@@ -86,7 +88,7 @@ export function gerarReforco(rng: RNG, ovr: number, posicao: Pos, pais: string, 
   const o = Math.round(clamp(ovr, 35, 92));
   return { nome: gerarNome(rng, nac, usados), posicao, ovr: o, idade, nacionalidade: nac, pot: idade <= 23 ? o + rng.int(2, 8) : o };
 }
-const nacDaBase = (rng: RNG, pais: string, estrutura: number) => (rng.chance(estrutura >= 5 && pais !== "BRA" && pais !== "ARG" ? 0.2 : 0.08) ? nacionalidadeEstrangeira(rng, pais) : pais);
+const nacDaBase = (rng: RNG, pais: string, estrutura: number) => (rng.chance(SUL.has(pais) ? 0.01 : estrutura >= 5 ? 0.2 : 0.08) ? nacionalidadeEstrangeira(rng, pais) : pais);
 /** Posição que mais falta numa lista (para a base e para os reforços). */
 function posQueFalta(lista: JogadorNPC[], alvo: Record<Pos, number>, rng: RNG): Pos {
   const falta = POSICOES.map((p) => [p, alvo[p] - lista.filter((j) => j.posicao === p).length] as const).sort((a, b) => b[1] - a[1] || rng.next() - 0.5);
@@ -100,7 +102,8 @@ export function criarBase(rng: RNG, n: NivelBase, pais: string, usados: Set<stri
 }
 
 // ------------------------------------------------------------------ virada da temporada
-export interface Movimento { nome: string; posicao: Pos; numero?: number; ovr: number; idade: number; motivo: "aposentou" | "vendido" | "dispensado" | "subiu" | "contratado"; de?: string; para?: string }
+/** `de` ausente num contratado = veio de um clube de fora do jogo. `taxa` 0 = chegou livre. */
+export interface Movimento { nome: string; posicao: Pos; numero?: number; ovr: number; idade: number; motivo: "aposentou" | "vendido" | "dispensado" | "subiu" | "contratado"; de?: string; para?: string; taxa?: number }
 export interface Referencia { forca: number; top: number; tamanho: number; nivel: NivelBase }
 export interface ViradaMundo { saidas: Record<string, Movimento[]>; chegadas: Record<string, Movimento[]>; destaques: Movimento[] }
 export interface GruposMundo { pro: Clube[]; convidados: Clube[]; amadores: Clube[]; ligas: Clube[][] }
@@ -126,9 +129,12 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   const saidas: Record<string, Movimento[]> = {}, chegadas: Record<string, Movimento[]> = {}, destaques: Movimento[] = [];
   const mov = (j: JogadorNPC, motivo: Movimento["motivo"], extra: Partial<Movimento> = {}): Movimento => ({ nome: j.nome, posicao: j.posicao, numero: j.numero, ovr: j.ovr, idade: j.idade, motivo, ...extra });
   const sai = (c: Clube, j: JogadorNPC, m: Movimento) => { c.elenco.splice(c.elenco.indexOf(j), 1); (saidas[c.id] ??= []).push(m); };
-  const chega = (c: Clube, j: JogadorNPC, motivo: Movimento["motivo"], de?: string) => {
+  const rTaxa = rngDe("taxas");
+  /** taxa da transferência: o valor de mercado do jogador na liga de quem compra, com a negociação no meio */
+  const taxa = (j: JogadorNPC, c: Clube) => g.amadores.includes(c) ? 0 : Math.round(valorMercado(j.ovr, j.idade, 3, LIGA_INFO[c.ligaId]?.fLiga ?? 0.6) * rTaxa.range(0.75, 1.3) / 1e4) * 1e4;
+  const chega = (c: Clube, j: JogadorNPC, motivo: Movimento["motivo"], de?: string, valor?: number) => {
     j.numero = numeroParaChegada(c, j.posicao, j.nome, c.elenco.map((x) => x.numero ?? 0)); j.base = undefined;
-    c.elenco.push(j); (chegadas[c.id] ??= []).push(mov(j, motivo, de ? { de } : {}));
+    c.elenco.push(j); (chegadas[c.id] ??= []).push(mov(j, motivo, { ...(de ? { de } : {}), ...(valor !== undefined ? { taxa: valor } : {}) }));
   };
   const todos = [...g.pro, ...g.convidados, ...g.amadores];
   // números fixos antes de mexer (quem não tinha número oficial guarda o que já usava)
@@ -183,8 +189,9 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     const alvo = porForca.filter((c) => c !== de && c.elenco.length < 32 && pode(c) && (subindo ? c.forca > de.forca && c.forca >= j.ovr - 5 && c.forca <= j.ovr + 1 : c.forca <= j.ovr + 4 && c.forca >= j.ovr - 3));
     if (!alvo.length) { if (!subindo) { sai(de, j, mov(j, "dispensado")); livres.push({ j, de: de.id }); } continue; }
     const para = r3.pick(alvo);
-    sai(de, j, mov(j, "vendido", { para: para.id }));
-    chega(para, j, "contratado", de.id);
+    const t = taxa(j, para);
+    sai(de, j, mov(j, "vendido", { para: para.id, taxa: t }));
+    chega(para, j, "contratado", de.id, t);
     if (j.ovr >= 80) destaques.push(mov(j, "vendido", { de: de.id, para: para.id }));
   }
 
@@ -199,9 +206,10 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     const daqui = (x: { de: string }) => paisDe[x.de] === c.pais || (!SUL.has(c.pais) && r.chance(FATIA_ESTRANGEIRA[c.pais] ?? 0.3));
     const reforco = (pos: Pos) => {
       const i = amador || g.convidados.includes(c) ? -1 : livres.findIndex((x) => x.j.posicao === pos && x.j.ovr >= nivelAlvo - 6 && x.j.ovr <= nivelAlvo + 3 && daqui(x));
-      if (i >= 0) { const x = livres.splice(i, 1)[0]; chega(c, x.j, "contratado", x.de); return; }
+      if (i >= 0) { const x = livres.splice(i, 1)[0]; chega(c, x.j, "contratado", x.de, 0); return; }
       const [i0, i1] = amador ? faixaAmadora(c.id) : [21, 31];
-      chega(c, gerarReforco(r, nivelAlvo + r.normal(0, 3), pos, amador ? c.pais : c.pais, usados, r.int(i0, i1)), "contratado");
+      const nj = gerarReforco(r, nivelAlvo + r.normal(0, 3), pos, c.pais, usados, r.int(i0, i1));
+      chega(c, nj, "contratado", undefined, amador ? undefined : taxa(nj, c));
     };
     for (const p of POSICOES) while (c.elenco.filter((j) => j.posicao === p).length < MINIMO[p]) reforco(p);
     while (c.elenco.length < rf.tamanho) reforco(posQueFalta(c.elenco, MINIMO, r));
@@ -215,7 +223,8 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     for (let k = 0; k < 3 && forcaDoElenco(c.elenco) < rf.top - 2; k++) {
       const tit = titulares(c.elenco), pior = [...tit].sort((a, b) => a.ovr - b.ovr)[0];
       if (!pior) break;
-      chega(c, gerarReforco(r, rf.top + 1 + r.normal(0, 2), pior.posicao, c.pais, usados), "contratado");
+      const nj = gerarReforco(r, rf.top + 1 + r.normal(0, 2), pior.posicao, c.pais, usados);
+      chega(c, nj, "contratado", undefined, taxa(nj, c));
       sai(c, pior, mov(pior, "dispensado"));
     }
   }

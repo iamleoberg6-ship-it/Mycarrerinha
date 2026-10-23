@@ -34,7 +34,7 @@ import { CIDADES_VARZEA, DA_CIDADE } from "../../src/ligas";
 import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, alternarFavorito, type AcaoRel, type Relacao } from "../../src/relacoes";
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
-import { infoClube, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha } from "../../src/mundo";
+import { infoClube, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, type Negocio } from "../../src/mundo";
 import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
@@ -567,7 +567,37 @@ function abaJogador(s: Save): string {
 // ------------------------------------------------------------------ mercado
 const milhoes = (euros: number) => `€ ${(euros / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
 const NOME_TIPO: Record<PropostaSave["tipo"], string> = { transferencia: "Transferência", livre: "Sem custo", emprestimo: "Empréstimo", renovacao: "Renovação" };
+// ------------------------------------------------------------------ janela de transferências do mundo
+let vistaMercado: "eu" | "mundo" = "eu", janelaVista: number | undefined, filtroJanela: "todas" | "liga" | "clube" | "base" | "aposentadorias" = "todas";
+const NOME_NEGOCIO: Record<Negocio["tipo"], string> = { transferencia: "", livre: "Livre", exterior: "", base: "Subiu da base", aposentadoria: "Aposentou" };
+function janelaHtml(s: Save): string {
+  const c = s.carreira, anos = janelasFeitas(pacote);
+  if (!anos.length) return `<p class="sub">A primeira janela do mundo abre na virada da temporada: transferências, reforços, garotos que sobem da base e aposentadorias aparecem aqui.</p>`;
+  const t = janelaVista !== undefined && anos.includes(janelaVista) ? janelaVista : anos[0];
+  const lid = infoLiga(c.ligaId).id, naLiga = (id?: string) => !!id && mundo(pacote).info[id]?.ligaId === lid;
+  const todos = janelaDoMundo(pacote, t);
+  const filtros: [typeof filtroJanela, string][] = [["todas", "Maiores"], ["liga", infoLiga(c.ligaId).curto], ["clube", "Meu clube"], ["base", "Da base"], ["aposentadorias", "Aposentadorias"]];
+  const lista = todos.filter((x) => filtroJanela === "todas" ? x.tipo === "transferencia" || x.tipo === "exterior"
+    : filtroJanela === "liga" ? (naLiga(x.de) || naLiga(x.para)) && x.tipo !== "aposentadoria" && x.tipo !== "base"
+    : filtroJanela === "clube" ? x.de === c.clubeId || x.para === c.clubeId
+    : filtroJanela === "base" ? x.tipo === "base" : x.tipo === "aposentadoria");
+  const ordenada = filtroJanela === "base" || filtroJanela === "aposentadorias" ? [...lista].sort((a, b) => b.ovr - a.ovr) : lista;
+  const total = todos.filter((x) => x.taxa > 0).reduce((a, x) => a + x.taxa, 0);
+  const clube = (id?: string, fora = "Clube de fora") => id ? `<span class="neg-clube">${escudo(id)}<span>${esc(nomeDe(id))}</span></span>` : `<span class="neg-clube sub">${fora}</span>`;
+  const linha = (x: Negocio) => `<div class="negocio${x.de === c.clubeId || x.para === c.clubeId ? " meu" : ""}">
+      <div class="neg-topo"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button><span class="neg-valor">${x.taxa ? dinheiro(x.taxa) : esc(NOME_NEGOCIO[x.tipo])}</span></div>
+      <small class="sub">${esc(NOME_POS[x.posicao] ?? "Goleiro")} · ${x.idade} anos · OVR ${x.ovr}</small>
+      <div class="neg-rota">${x.tipo === "aposentadoria" ? `${clube(x.de)} <span class="sub">· último clube</span>` : x.tipo === "base" ? `${clube(x.para)} <span class="sub">· sobe para o profissional</span>` : `${clube(x.de)}<span class="seta">→</span>${clube(x.para)}`}</div></div>`;
+  return `<div class="chips" style="flex-wrap:wrap">${anos.slice(0, 6).map((a) => `<button class="chip${a === t ? " ativo" : ""}" data-janela="${a}">Janela ${ANO_INICIAL + a}</button>`).join("")}</div>
+    <p class="sub" style="margin:8px 0">${todos.filter((x) => x.tipo === "transferencia").length} transferências entre clubes · ${dinheiro(total)} movimentados · ${todos.filter((x) => x.tipo === "aposentadoria").length} aposentadorias</p>
+    <div class="chips" style="flex-wrap:wrap;margin-bottom:8px">${filtros.map(([k, n]) => `<button class="chip${filtroJanela === k ? " ativo" : ""}" data-fjanela="${k}">${esc(n)}</button>`).join("")}</div>
+    ${ordenada.length ? ordenada.slice(0, 40).map(linha).join("") : `<p class="sub">Nada nesta janela.</p>`}${ordenada.length > 40 ? `<p class="sub" style="margin-top:6px">E mais ${ordenada.length - 40}.</p>` : ""}`;
+}
 function abaMercado(s: Save): string {
+  const chips = `<div class="chips" style="margin-bottom:12px"><button class="chip${vistaMercado === "eu" ? " ativo" : ""}" data-vmerc="eu">Minha carreira</button><button class="chip${vistaMercado === "mundo" ? " ativo" : ""}" data-vmerc="mundo">Janela do mundo</button></div>`;
+  return chips + (vistaMercado === "mundo" ? janelaHtml(s) : abaMercadoEu(s));
+}
+function abaMercadoEu(s: Save): string {
   const c = s.carreira, j = s.jogador, m = mercadoDe(c), w = mundo(pacote), meu = w.clube[c.clubeId], jan = janelaAberta(c);
   const ligaNome = infoLiga(c.ligaId).curto, papel = papelNoClube(meu, s);
   const aviso = msgMercado ? `<p class="msg-mercado ${msgMercado.ok ? "ok" : "nao"}">${esc(msgMercado.texto)}</p>` : "";
@@ -900,7 +930,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -948,6 +978,12 @@ document.addEventListener("click", (ev) => {
     msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
   }
   else if (d.hist) abrirHistorico(d.hist);
+  else if (d.vmerc || d.janela || d.fjanela) {
+    if (d.vmerc) vistaMercado = d.vmerc as typeof vistaMercado;
+    if (d.janela) janelaVista = +d.janela;
+    if (d.fjanela) filtroJanela = d.fjanela as typeof filtroJanela;
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  }
   else if (d.bbase) { buscaBase = d.bbase === "1"; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vtab) { vistaTabela = d.vtab as typeof vistaTabela; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.cel) { telaCel = d.cel as typeof telaCel; render(); }

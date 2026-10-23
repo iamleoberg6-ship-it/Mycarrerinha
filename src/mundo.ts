@@ -62,7 +62,7 @@ export function mundo(pacote: PacoteDados): Mundo {
 
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
-let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
+let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
 /** Uma temporada na carreira de um jogador do mundo. */
 /** `liga`: o que a temporada imaginada precisa (fila na posição, titulares, força do clube, média da liga, rodadas);
  *  as estatísticas são sorteadas só quando alguém olha (st guarda o resultado). */
@@ -103,10 +103,10 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     const usados = new Set(Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)));
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados);
-    estado = { semente, temporada: 0, base, usados, hist: new Map(), saiu: new Map() };
+    estado = { semente, temporada: 0, base, usados, viradas: {}, hist: new Map(), saiu: new Map() };
     registrarTemporada(m);
   }
-  while (estado.temporada < temporada) { estado.temporada++; estado.virada = virarTemporada(grupos, estado.base, ref, semente, estado.temporada, estado.usados); registrarTemporada(m); }
+  while (estado.temporada < temporada) { estado.temporada++; estado.virada = estado.viradas[estado.temporada] = virarTemporada(grupos, estado.base, ref, semente, estado.temporada, estado.usados); registrarTemporada(m); }
   versao++; indice = undefined;
 }
 const garantir = (pacote: PacoteDados) => { mundo(pacote); if (!estado) sincronizarMundo(pacote, "", 0); return estado!; };
@@ -128,6 +128,22 @@ export function statsDaLinha(pacote: PacoteDados, nome: string, x: LinhaHistoric
   x.st = gerarStats(new RNG(`${garantir(pacote).semente}|stats|${x.t}|${nome}`), { nome, posicao: x.posicao as JogadorNPC["posicao"], ovr: x.ovr, idade: x.idade, nacionalidade: "" }, rank, vagas, forca, media, n);
   return x.st;
 }
+/** Uma movimentação da janela de transferências do mundo (na virada para a temporada t). */
+export interface Negocio { nome: string; posicao: string; idade: number; ovr: number; tipo: "transferencia" | "livre" | "exterior" | "base" | "aposentadoria"; de?: string; para?: string; taxa: number }
+/** Todas as movimentações da virada para a temporada t (t ≥ 1): transferências, livres, quem veio de fora, quem subiu da base e quem parou. */
+export function janelaDoMundo(pacote: PacoteDados, t: number): Negocio[] {
+  const v = garantir(pacote).viradas[t];
+  if (!v) return [];
+  const l: Negocio[] = [];
+  for (const [para, ch] of Object.entries(v.chegadas)) for (const x of ch) {
+    if (x.motivo === "subiu") l.push({ nome: x.nome, posicao: x.posicao, idade: x.idade, ovr: x.ovr, tipo: "base", para, taxa: 0 });
+    else if (x.taxa !== undefined) l.push({ nome: x.nome, posicao: x.posicao, idade: x.idade, ovr: x.ovr, tipo: !x.de ? "exterior" : x.taxa ? "transferencia" : "livre", de: x.de, para, taxa: x.taxa });
+  }
+  for (const [de, sa] of Object.entries(v.saidas)) for (const x of sa) if (x.motivo === "aposentou") l.push({ nome: x.nome, posicao: x.posicao, idade: x.idade, ovr: x.ovr, tipo: "aposentadoria", de, taxa: 0 });
+  return l.sort((a, b) => b.taxa - a.taxa || b.ovr - a.ovr);
+}
+/** Temporadas que já tiveram janela (para escolher o ano na tela). */
+export const janelasFeitas = (pacote: PacoteDados) => Object.keys(garantir(pacote).viradas).map(Number).sort((a, b) => b - a);
 export interface LinhaRanking { nome: string; clubeId: string; valor: number; jogos: number }
 /** Artilharia ou assistências da liga até a rodada `feitas` (os outros jogadores; o do usuário entra na tela). */
 export function rankingDaLiga(pacote: PacoteDados, ligaId: string, feitas: number, tipo: "g" | "a", limite = 10): LinhaRanking[] {
