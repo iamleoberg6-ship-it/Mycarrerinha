@@ -8,7 +8,7 @@ import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
-import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga } from "./mundo.js";
+import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
 import { COPAS, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
@@ -51,6 +51,8 @@ export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
   suspensao?: number;
+  /** temporada cuja janela do meio do ano (dos outros clubes) já virou notícia */
+  meioNoticiado?: number;
   /** copas continentais da temporada, suspensão na copa, estatísticas na copa, tabela final da temporada passada (vagas)
    *  e o jogo de quarta já jogado nesta semana (entra no resumo da semana) */
   copas?: Partial<Record<CopaId, EstadoCopa>>; suspensaoCopa?: number; statsCopa?: { jogos: number; gols: number; assist: number; notas: number[] };
@@ -153,9 +155,12 @@ export const ovrEm = (j: Jogador, p: Posicao) => calcOvr(j.at, p) - penalidade(f
  *  o save guarda dele: amigos que mudaram de clube ou se aposentaram e a camisa do jogador. */
 export function sincronizar(pacote: PacoteDados, s: Save) {
   const antes = versaoMundo();
-  sincronizarMundo(pacote, s.semente, s.carreira.temporada);
+  sincronizarMundo(pacote, s.semente, s.carreira.temporada, s.carreira.semana);
   if (versaoMundo() === antes) return;
   const c = s.carreira;
+  // fechou a janela do meio do ano: as notícias saem uma vez
+  const meio = janelaDoMeioAtual(pacote);
+  if (meio && c.meioNoticiado !== c.temporada) { c.meioNoticiado = c.temporada; noticiasDaVirada(pacote, s, meio, "meio"); }
   for (const x of Object.values(c.relacoes?.lista ?? {})) {
     const o = ondeJoga(pacote, x.nome);
     if (o) { x.clubeId = o.clubeId; x.aposentado = undefined; } else if (!x.aposentado && mundo(pacote).info[x.clubeId] && !x.nome.startsWith("Camisa")) x.aposentado = true;
@@ -1240,11 +1245,13 @@ export function fatorDoClube(pacote: PacoteDados, s: Save): number {
   return c.formacao ? 0.88 + 0.04 * n.estrutura + 0.02 * n.cultura : 0.92 + 0.03 * n.estrutura;
 }
 /** Notícias da virada: quem subiu da base e quem chegou ao clube, e as aposentadorias e vendas de craques no mundo. */
-function noticiasDaVirada(pacote: PacoteDados, s: Save) {
-  const c = s.carreira, v = viradaAtual(pacote), id = idClube(c.clubeId), nome = (x: string) => infoClube(pacote, x)?.nome ?? x;
+function noticiasDaVirada(pacote: PacoteDados, s: Save, v = viradaAtual(pacote), quando: "virada" | "meio" = "virada") {
+  const c = s.carreira, id = idClube(c.clubeId), nome = (x: string) => infoClube(pacote, x)?.nome ?? x;
   const ch = v.chegadas[id] ?? [], sub = ch.filter((x) => x.motivo === "subiu"), contr = ch.filter((x) => x.motivo === "contratado");
   if (sub.length) noticia(s, "clube", `Da base para o profissional`, `O ${nome(id)} promoveu ${sub.map((x) => `${x.nome} (${x.idade} anos, ${x.posicao === "GOL" ? "goleiro" : x.posicao})`).join(", ")}.`);
-  if (contr.length) noticia(s, "clube", `Reforços do ${nome(id)}`, `Chegaram: ${contr.slice(0, 6).map((x) => `${x.nome}${x.de ? ` (${nome(x.de)})` : ""}`).join(", ")}.`);
+  if (contr.length) noticia(s, "clube", `Reforços do ${nome(id)}${quando === "meio" ? " no meio do ano" : ""}`, `Chegaram: ${contr.slice(0, 6).map((x) => `${x.nome}${x.de ? ` (${nome(x.de)})` : ""}`).join(", ")}.`);
+  const sa = (v.saidas[id] ?? []).filter((x) => x.motivo === "vendido");
+  if (quando === "meio" && sa.length) noticia(s, "clube", `Saídas do ${nome(id)} no meio do ano`, sa.map((x) => `${x.nome} (${nome(x.para!)})`).join(", ") + ".");
   const dest = [...v.destaques].sort((a, b) => b.ovr - a.ovr).slice(0, 3);
   for (const x of dest) {
     if (x.motivo === "aposentou") noticia(s, "clube", `${x.nome} pendura as chuteiras`, `Aos ${x.idade} anos, ${x.nome} anuncia a aposentadoria. Último clube: ${nome(x.de!)}.`);

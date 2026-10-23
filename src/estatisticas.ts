@@ -14,14 +14,14 @@ const ASSIST90: Record<string, number> = { PON: 0.22, MEI: 0.24, ATA: 0.14, LAT:
 const poisson = (rng: RNG, l: number) => { let k = 0, p = Math.exp(-l), s = p; const u = rng.next(); while (u > s && k < 6) { k++; p *= l / k; s += p; } return k; };
 
 /** Temporada inteira de um jogador: `rank` é a posição dele na fila da posição no clube (0 = melhor), `vagas` os titulares. */
-export function gerarStats(rng: RNG, x: JogadorNPC, rank: number, vagas: number, forca: number, mediaLiga: number, n: number): StatsNPC {
+export function gerarStats(rng: RNG, x: JogadorNPC, rank: number, vagas: number, forca: number, mediaLiga: number, n: number, ini = 0, fim = n): StatsNPC {
   const titular = rank < vagas, primeiroReserva = rank === vagas;
   let frac = titular ? rng.range(0.72, 0.94) : primeiroReserva ? rng.range(0.3, 0.6) : rng.range(0.03, 0.28);
   if (x.posicao === "GOL" && !titular) frac *= 0.25;
   if (titular && rng.chance(0.15)) frac *= rng.range(0.5, 0.8); // lesão
-  const jogos = Math.round(n * frac), minutos = titular ? 82 : primeiroReserva ? 50 : 28;
-  const todas = Array.from({ length: n }, (_, i) => i);
-  for (let i = 0; i < jogos; i++) { const k = i + Math.floor(rng.next() * (n - i)); [todas[i], todas[k]] = [todas[k], todas[i]]; }
+  const k0 = fim - ini, jogos = Math.round(k0 * frac), minutos = titular ? 82 : primeiroReserva ? 50 : 28;
+  const todas = Array.from({ length: k0 }, (_, i) => ini + i);
+  for (let i = 0; i < jogos; i++) { const k = i + Math.floor(rng.next() * (k0 - i)); [todas[i], todas[k]] = [todas[k], todas[i]]; }
   const rodadas = todas.slice(0, jogos).sort((a, b) => a - b);
   const q = Math.max(0.4, 1 + (x.ovr - forca) / 25), fT = Math.max(0.5, 1 + (forca - mediaLiga) / 20), m = minutos / 90;
   const gr: number[] = [], ar: number[] = [];

@@ -568,14 +568,15 @@ function abaJogador(s: Save): string {
 const milhoes = (euros: number) => `€ ${(euros / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
 const NOME_TIPO: Record<PropostaSave["tipo"], string> = { transferencia: "Transferência", livre: "Sem custo", emprestimo: "Empréstimo", renovacao: "Renovação" };
 // ------------------------------------------------------------------ janela de transferências do mundo
-let vistaMercado: "eu" | "mundo" = "eu", janelaVista: number | undefined, filtroJanela: "todas" | "liga" | "clube" | "base" | "aposentadorias" = "todas";
+let vistaMercado: "eu" | "mundo" = "eu", janelaVista: string | undefined, filtroJanela: "todas" | "liga" | "clube" | "base" | "aposentadorias" = "todas";
 const NOME_NEGOCIO: Record<Negocio["tipo"], string> = { transferencia: "", livre: "Livre", exterior: "", base: "Subiu da base", aposentadoria: "Aposentou" };
 function janelaHtml(s: Save): string {
   const c = s.carreira, anos = janelasFeitas(pacote);
   if (!anos.length) return `<p class="sub">A primeira janela do mundo abre na virada da temporada: transferências, reforços, garotos que sobem da base e aposentadorias aparecem aqui.</p>`;
-  const t = janelaVista !== undefined && anos.includes(janelaVista) ? janelaVista : anos[0];
+  const chave = (x: { t: number; meio: boolean }) => `${x.t}${x.meio ? "m" : ""}`;
+  const sel = anos.find((x) => chave(x) === janelaVista) ?? anos[0], t = sel.t;
   const lid = infoLiga(c.ligaId).id, naLiga = (id?: string) => !!id && mundo(pacote).info[id]?.ligaId === lid;
-  const todos = janelaDoMundo(pacote, t);
+  const todos = janelaDoMundo(pacote, t, sel.meio);
   const filtros: [typeof filtroJanela, string][] = [["todas", "Maiores"], ["liga", infoLiga(c.ligaId).curto], ["clube", "Meu clube"], ["base", "Da base"], ["aposentadorias", "Aposentadorias"]];
   const lista = todos.filter((x) => filtroJanela === "todas" ? x.tipo === "transferencia" || x.tipo === "exterior"
     : filtroJanela === "liga" ? (naLiga(x.de) || naLiga(x.para)) && x.tipo !== "aposentadoria" && x.tipo !== "base"
@@ -588,7 +589,7 @@ function janelaHtml(s: Save): string {
       <div class="neg-topo"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button><span class="neg-valor">${x.taxa ? dinheiro(x.taxa) : esc(NOME_NEGOCIO[x.tipo])}</span></div>
       <small class="sub">${esc(NOME_POS[x.posicao] ?? "Goleiro")} · ${x.idade} anos · OVR ${x.ovr}</small>
       <div class="neg-rota">${x.tipo === "aposentadoria" ? `${clube(x.de)} <span class="sub">· último clube</span>` : x.tipo === "base" ? `${clube(x.para)} <span class="sub">· sobe para o profissional</span>` : `${clube(x.de)}<span class="seta">→</span>${clube(x.para)}`}</div></div>`;
-  return `<div class="chips" style="flex-wrap:wrap">${anos.slice(0, 6).map((a) => `<button class="chip${a === t ? " ativo" : ""}" data-janela="${a}">Janela ${ANO_INICIAL + a}</button>`).join("")}</div>
+  return `<div class="chips" style="flex-wrap:wrap">${anos.slice(0, 6).map((a) => `<button class="chip${a === sel ? " ativo" : ""}" data-janela="${chave(a)}">${a.meio ? "Meio de" : "Início de"} ${ANO_INICIAL + a.t}</button>`).join("")}</div>
     <p class="sub" style="margin:8px 0">${todos.filter((x) => x.tipo === "transferencia").length} transferências entre clubes · ${dinheiro(total)} movimentados · ${todos.filter((x) => x.tipo === "aposentadoria").length} aposentadorias</p>
     <div class="chips" style="flex-wrap:wrap;margin-bottom:8px">${filtros.map(([k, n]) => `<button class="chip${filtroJanela === k ? " ativo" : ""}" data-fjanela="${k}">${esc(n)}</button>`).join("")}</div>
     ${ordenada.length ? ordenada.slice(0, 40).map(linha).join("") : `<p class="sub">Nada nesta janela.</p>`}${ordenada.length > 40 ? `<p class="sub" style="margin-top:6px">E mais ${ordenada.length - 40}.</p>` : ""}`;
@@ -980,7 +981,7 @@ document.addEventListener("click", (ev) => {
   else if (d.hist) abrirHistorico(d.hist);
   else if (d.vmerc || d.janela || d.fjanela) {
     if (d.vmerc) vistaMercado = d.vmerc as typeof vistaMercado;
-    if (d.janela) janelaVista = +d.janela;
+    if (d.janela) janelaVista = d.janela;
     if (d.fjanela) filtroJanela = d.fjanela as typeof filtroJanela;
     const y = window.scrollY; render(); window.scrollTo(0, y);
   }

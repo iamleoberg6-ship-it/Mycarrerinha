@@ -124,8 +124,9 @@ function faixaAmadora(id: string): [number, number, number] {
  * Leva o mundo da temporada t−1 para t. Muta elencos e bases, devolve quem saiu e quem chegou em cada clube.
  * `ref` guarda o tamanho do clube (força e elenco originais): o clube grande continua grande, com outros nomes.
  */
-export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]>, ref: Record<string, Referencia>, semente: string, t: number, usados: Set<string>): ViradaMundo {
-  const rngDe = (...p: (string | number)[]) => new RNG(`${semente}|mundo|${t}|${p.join("|")}`);
+export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]>, ref: Record<string, Referencia>, semente: string, t: number, usados: Set<string>, meio = false): ViradaMundo {
+  // `meio`: janela do meio do ano. Só o mercado (menos negócios) e a reposição; ninguém envelhece nem sobe da base.
+  const rngDe = (...p: (string | number)[]) => new RNG(`${semente}|mundo|${t}|${meio ? "meio|" : ""}${p.join("|")}`);
   const saidas: Record<string, Movimento[]> = {}, chegadas: Record<string, Movimento[]> = {}, destaques: Movimento[] = [];
   const mov = (j: JogadorNPC, motivo: Movimento["motivo"], extra: Partial<Movimento> = {}): Movimento => ({ nome: j.nome, posicao: j.posicao, numero: j.numero, ovr: j.ovr, idade: j.idade, motivo, ...extra });
   const sai = (c: Clube, j: JogadorNPC, m: Movimento) => { c.elenco.splice(c.elenco.indexOf(j), 1); (saidas[c.id] ??= []).push(m); };
@@ -141,7 +142,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   for (const c of todos) { const nums = numerosDoClube(c); for (const j of c.elenco) j.numero ??= nums.get(j.nome); }
 
   // 1) um ano a mais para todo mundo; aposentadorias
-  for (const c of todos) {
+  for (const c of meio ? [] : todos) {
     const r = rngDe("ano", c.id), tit = titulares(c.elenco), est = ref[c.id]?.nivel.estrutura ?? 2;
     for (const j of [...c.elenco]) evoluirAno(j, r, 0.85 + 0.05 * est + (tit.has(j) ? 0.15 : 0));
     const amador = g.amadores.includes(c), [, , maxIdade] = amador ? faixaAmadora(c.id) : [0, 0, 40];
@@ -159,7 +160,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   // 2) bases: um ano a mais, os melhores sobem, quem passou da idade é dispensado, chega a turma nova
   const livres: { j: JogadorNPC; de: string }[] = [];
   const subiram: Record<string, JogadorNPC[]> = {};
-  for (const c of [...g.pro]) {
+  for (const c of meio ? [] : [...g.pro]) {
     const b = base[c.id];
     if (!b) continue;
     const n = ref[c.id].nivel, r = rngDe("base", c.id);
@@ -177,8 +178,8 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   const vendas: { j: JogadorNPC; de: Clube }[] = [];
   for (const c of g.pro) {
     for (const j of c.elenco) {
-      if (j.idade <= 30 && j.ovr >= c.forca + 5 && r3.chance(0.3)) vendas.push({ j, de: c });
-      else if (j.ovr < c.forca - 6 && r3.chance(0.25)) vendas.push({ j, de: c });
+      if (j.idade <= 30 && j.ovr >= c.forca + 5 && r3.chance(meio ? 0.1 : 0.3)) vendas.push({ j, de: c });
+      else if (j.ovr < c.forca - 6 && r3.chance(meio ? 0.08 : 0.25)) vendas.push({ j, de: c });
     }
   }
   vendas.sort((a, b) => b.j.ovr - a.j.ovr || a.j.nome.localeCompare(b.j.nome));
@@ -229,7 +230,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     }
   }
   // 5) o nível de cada liga fica onde estava: a régua é relativa (craque continua craque, mas a liga não infla)
-  for (const l of g.ligas) {
+  for (const l of meio ? [] : g.ligas) {
     const refs = l.map((c) => ref[c.id]).filter(Boolean);
     if (!refs.length) continue;
     const delta = l.reduce((a, c) => a + forcaDoElenco(c.elenco), 0) / l.length - refs.reduce((a, r) => a + r.top, 0) / refs.length;

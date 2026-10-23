@@ -10,7 +10,7 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
-import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga } from "../src/mundo.js";
+import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -855,6 +855,22 @@ teste("Estatísticas dos outros: artilharia cresce rodada a rodada, marcas plaus
   const base = { ano: 2026, idade: 24, clubeId: "FLA", clubeNome: "x", cores: [], numero: "9", jogos: 30, assist: 0, nota: 6.5, titulo: false, base: 0, golsBase: 0, notaBase: 0, temporadasCheias: 3 };
   const tem = (g: number, max: number) => premiosDaTemporada(new RNG("p"), { ...base, gols: g, maxGols: max }).some((x) => x.conquista === "trofeu-artilheiro");
   assert.ok(tem(20, 19) && tem(19, 19) && !tem(18, 19));
+});
+
+teste("Janela do meio do ano dos outros clubes: fecha na semana 24, quem muda joga a segunda metade no clube novo", () => {
+  sincronizarMundo(pacote, "meio", 0, 10);
+  assert.equal(janelaDoMundo(pacote, 0, true).length, 0, "antes da semana 24 não tem");
+  sincronizarMundo(pacote, "meio", 0, 24);
+  const jan = janelaDoMundo(pacote, 0, true), tr = jan.filter((x) => x.tipo === "transferencia");
+  assert.ok(tr.length > 50 && tr.every((x) => x.taxa > 0 && x.de !== x.para));
+  const x = tr[0], h = historicoDe(pacote, x.nome).linhas.filter((l) => l.t === 0);
+  assert.equal(h.length, 2); assert.equal(h[1].clubeId, x.para);
+  const [a, b] = h.map((l) => statsDaLinha(pacote, x.nome, l)!);
+  assert.ok(a.jr!.every((r) => r < 22) && b.jr!.every((r) => r >= 22), "cada metade no seu clube");
+  sincronizarMundo(pacote, "meio", 0, 10);
+  assert.equal(janelaDoMundo(pacote, 0, true).length, 0, "voltar a semana desfaz");
+  sincronizarMundo(pacote, "meio", 2, 0);
+  assert.ok(janelaDoMundo(pacote, 1, true).length > 0, "temporadas passadas têm a janela do meio");
 });
 
 console.log(`\n${ok} testes passaram`);
