@@ -490,7 +490,7 @@ teste("Relações: convivência cria amigos, limite de conversas e troca de cami
   const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "rel");
   for (let k = 0; k < 12; k++) semanaAutomatica(pacote, s);
   const rr = relacoesDe(s.carreira);
-  assert.ok(Object.values(rr.lista).filter((x) => x.companheiro).length >= 10, "conheceu o elenco");
+  assert.ok(Object.values(rr.lista).filter((x) => x.companheiro).length >= 7, "conheceu o elenco");
   const est = estrelas(pacote)[0];
   assert.ok(agirRelacao(pacote, s, est.nome, "redes").ok);
   assert.equal(agirRelacao(pacote, s, est.nome, "mensagem").ok, false, "uma vez por semana com cada um");

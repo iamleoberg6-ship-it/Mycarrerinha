@@ -7,8 +7,10 @@ import { TODOS_CONVIDADOS } from "./convidados.js";
 import { gerarNome } from "./nomes.js";
 import dados from "../data/ligas-extra.json";
 
-export interface ClubeExtra { id: string; nome: string; apelido: string; cidade: string; estadio: string; capacidade: number; cores: string[]; padrao: string; forca: number; pais: string }
-type Linha = { convidado: string } | Omit<ClubeExtra, "pais">;
+/** jogador real (em paródia): nome, posição, OVR, idade, nacionalidade, número */
+type Real = [string, JogadorNPC["posicao"], number, number, string, number];
+export interface ClubeExtra { id: string; nome: string; apelido: string; cidade: string; estadio: string; capacidade: number; cores: string[]; padrao: string; forca: number; pais: string; elenco?: Real[] }
+type Linha = { convidado: string; elenco?: Real[]; forca?: number } | Omit<ClubeExtra, "pais">;
 const PAIS_DA_LIGA: Record<string, string> = { URU1: "URU", COL1: "COL", CHI1: "CHI", PAR1: "PAR", ECU1: "ECU", TUR1: "TUR", MEX1: "MEX" };
 /** de onde vêm os estrangeiros de cada país (e quanto do elenco eles são) */
 const DE_FORA: Record<string, [number, string[]]> = {
@@ -19,16 +21,16 @@ export const PAISES_COM_LIGA_NOVA = new Set(Object.values(PAIS_DA_LIGA));
 
 /** Os clubes de cada liga nova (com os ex-convidados no lugar). */
 export const CLUBES_EXTRA: Record<string, ClubeExtra[]> = Object.fromEntries(Object.entries((dados as { ligas: Record<string, Linha[]> }).ligas).map(([lid, l]) => [lid, l.map((x): ClubeExtra => {
-  if ("convidado" in x) { const c = TODOS_CONVIDADOS.find((k) => k.id === x.convidado)!; return { id: c.id, nome: c.nome, apelido: c.apelido, cidade: c.cidade, estadio: c.estadio, capacidade: 40000, cores: c.cores, padrao: c.padrao, forca: c.forca, pais: c.pais }; }
+  if ("convidado" in x) { const c = TODOS_CONVIDADOS.find((k) => k.id === x.convidado)!; return { id: c.id, nome: c.nome, apelido: c.apelido, cidade: c.cidade, estadio: c.estadio, capacidade: 40000, cores: c.cores, padrao: c.padrao, forca: x.forca ?? c.forca, pais: c.pais, ...(x.elenco ? { elenco: x.elenco } : {}) }; }
   return { ...x, pais: PAIS_DA_LIGA[lid] };
 })]));
 
-/** Clube de jogo com elenco gerado (24 jogadores, sempre os mesmos). `usados`: nomes que já existem no mundo. */
+/** Clube de jogo: os jogadores reais (se houver) e o resto do elenco gerado até 24, sempre igual. `usados`: nomes que já existem no mundo. */
 export function clubeExtra(c: ClubeExtra, ligaId: string, usados: Set<string>): Clube {
   const rng = new RNG(`liga-extra|${c.id}`), [fatia, vizinhos] = DE_FORA[c.pais] ?? [0.1, []];
   const comp: [JogadorNPC["posicao"], number][] = [["GOL", 3], ["ZAG", 4], ["LAT", 4], ["VOL", 3], ["MEI", 4], ["PON", 3], ["ATA", 3]];
-  const elenco: JogadorNPC[] = [];
-  for (const [pos, n] of comp) for (let i = 0; i < n; i++) {
+  const elenco: JogadorNPC[] = (c.elenco ?? []).map(([nome, posicao, ovr, idade, nacionalidade, numero]) => { usados.add(nome); return { nome, posicao, ovr, idade, nacionalidade, numero }; });
+  for (const [pos, n] of comp) for (let i = elenco.filter((j) => j.posicao === pos).length; i < n; i++) {
     const nac = vizinhos.length && rng.chance(fatia) ? rng.pick(vizinhos) : c.pais;
     const titular = i < (pos === "GOL" || pos === "VOL" || pos === "ATA" ? 1 : 2);
     const idade = titular ? rng.int(21, 33) : rng.chance(0.35) ? rng.int(18, 21) : rng.int(22, 34);
