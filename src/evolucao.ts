@@ -151,7 +151,9 @@ function faixaAmadora(id: string): [number, number, number] {
  * Leva o mundo da temporada t−1 para t. Muta elencos e bases, devolve quem saiu e quem chegou em cada clube.
  * `ref` guarda o tamanho do clube (força e elenco originais): o clube grande continua grande, com outros nomes.
  */
-export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]>, ref: Record<string, Referencia>, semente: string, t: number, usados: Set<string>, meio = false): ViradaMundo {
+/** Agente livre: sem clube desde a temporada `desde`, último clube `de`. */
+export interface AgenteLivre { j: JogadorNPC; de: string; desde: number }
+export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]>, ref: Record<string, Referencia>, semente: string, t: number, usados: Set<string>, meio = false, livres: AgenteLivre[] = []): ViradaMundo {
   // `meio`: janela do meio do ano. Só o mercado (menos negócios) e a reposição; ninguém envelhece nem sobe da base.
   const rngDe = (...p: (string | number)[]) => new RNG(`${semente}|mundo|${t}|${meio ? "meio|" : ""}${p.join("|")}`);
   const saidas: Record<string, Movimento[]> = {}, chegadas: Record<string, Movimento[]> = {}, destaques: Movimento[] = [];
@@ -185,7 +187,18 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   }
 
   // 2) bases: um ano a mais, os melhores sobem, quem passou da idade é dispensado, chega a turma nova
-  const livres: { j: JogadorNPC; de: string }[] = [];
+  const livre = (j: JogadorNPC, de: string) => { j.base = undefined; livres.push({ j, de, desde: t }); };
+  // agentes livres: um ano a mais; quem passou da idade ou ficou tempo demais sem clube para
+  if (!meio) {
+    const r = rngDe("livres");
+    for (const x of [...livres]) {
+      evoluirAno(x.j, r, 0.8);
+      const parar = x.j.idade >= 35 || x.j.ovr < 40 || (x.j.idade >= 32 && r.chance(0.5)) || (t - x.desde >= 2 && r.chance(0.6));
+      if (parar) livres.splice(livres.indexOf(x), 1);
+    }
+    // fim de contrato: alguns veteranos saem (caros para renovar ou sem espaço) e viram agentes livres
+    for (const c of g.pro) for (const j of [...c.elenco]) if (j.idade >= 30 && r.chance(j.ovr < c.forca + 2 ? 0.04 : 0.008)) { sai(c, j, mov(j, "dispensado")); livre(j, c.id); }
+  }
   const subiram: Record<string, JogadorNPC[]> = {};
   for (const c of meio ? [] : [...g.pro]) {
     const b = base[c.id];
@@ -196,7 +209,8 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     const candidatos = b.filter((j) => j.idade >= 18 && (j.ovr >= corte || (n.cultura >= 3 && potDe(j) >= c.forca + 3 && j.ovr >= corte - 4))).sort((a, b2) => b2.ovr + potDe(b2) * 0.5 - (a.ovr + potDe(a) * 0.5));
     subiram[c.id] = candidatos.slice(0, n.maxSobe);
     for (const j of subiram[c.id]) b.splice(b.indexOf(j), 1);
-    for (const j of b.filter((x) => x.idade >= 20)) { b.splice(b.indexOf(j), 1); if (j.ovr >= 48) livres.push({ j: { ...j, base: undefined }, de: c.id }); }
+    // aos 20 a base acaba: quem tem nível de profissional sobe mesmo passando da cota; o resto é dispensado
+    for (const j of b.filter((x) => x.idade >= 20)) { b.splice(b.indexOf(j), 1); if (j.ovr >= corte) subiram[c.id].push(j); else if (j.ovr >= 48) livre(j, c.id); }
     for (let k = 0; k < 5 && b.length < 25; k++) b.push(gerarJovem(r, n, 15, posQueFalta(b, ALVO_BASE, r), nacDaBase(r, c.pais, n.estrutura), usados));
   }
 
@@ -214,7 +228,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     const subindo = j.ovr >= de.forca + 5;
     // qualquer clube do mundo do nível certo; a chance de cada um vem da afinidade com o jogador
     const alvo = porForca.filter((c) => c !== de && c.elenco.length < 32 && (subindo ? c.forca > de.forca && c.forca >= j.ovr - 5 && c.forca <= j.ovr + 1 : c.forca <= j.ovr + 4 && c.forca >= j.ovr - 3));
-    if (!alvo.length) { if (!subindo) { sai(de, j, mov(j, "dispensado")); livres.push({ j, de: de.id }); } continue; }
+    if (!alvo.length) { if (!subindo) { sai(de, j, mov(j, "dispensado")); livre(j, de.id); } continue; }
     const para = sortearPeso(r3, alvo, (c) => afinidade(c.pais, j.nacionalidade, de.pais))!;
     const t = taxa(j, para);
     sai(de, j, mov(j, "vendido", { para: para.id, taxa: t }));
@@ -234,30 +248,54 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   { const rr = rngDe("reservas"); for (const l of Object.values(reservas)) rr.shuffle(l!); }
   // 4) cada clube recompõe o elenco: quem subiu da base, livres do nível certo, reforços gerados; tamanho de antes
   livres.sort((a, b) => b.j.ovr - a.j.ovr);
+  if (livres.length > 2500) livres.splice(2500); // o banco não cresce sem fim: os piores somem do mercado
   for (const c of todos) {
     const rf = ref[c.id], r = rngDe("elenco", c.id), amador = g.amadores.includes(c);
     if (!rf) continue;
     for (const j of subiram[c.id] ?? []) chega(c, j, "subiu");
     const nivelAlvo = rf.forca - 3 + (c.forca - rf.forca) * 0.3; // reforço do tamanho do clube
+    /** Procura um reforço no mundo: reservas que sobram em outros clubes e agentes livres do nível; sem ninguém,
+     *  titulares de clubes menores (compra); depois livres um pouco abaixo; depois um garoto da própria base. */
+    const buscar = (pos: Pos, min: number, max: number): boolean => {
+      const nivelOk = (j: JogadorNPC) => j.posicao === pos && j.ovr >= min && j.ovr <= max;
+      const peso = (nac: string, de?: string) => afinidade(c.pais, nac, de ? paisDe[de] : undefined);
+      const pegarLivre = (k: number) => { const l0 = livres.splice(k, 1)[0]; chega(c, l0.j, "contratado", l0.de, 0); return true; };
+      const comprar = (j: JogadorNPC, de: Clube) => { tomados.add(j); const v = taxa(j, c); sai(de, j, mov(j, "vendido", { para: c.id, taxa: v })); chega(c, j, "contratado", de.id, v); return true; };
+      // 1) reservas sobrando e agentes livres do nível
+      const cand: { j: JogadorNPC; de?: Clube; livre?: number }[] = [];
+      for (let i = 0, n = 0; i < livres.length && n < 15; i++) if (nivelOk(livres[i].j) && livres[i].de !== c.id) { cand.push({ j: livres[i].j, livre: i }); n++; }
+      const lr = reservas[pos] ?? [], ini = Math.floor(r.next() * lr.length);
+      for (let k = 0, n = 0; k < lr.length && n < 40; k++) {
+        const o = lr[(ini + k) % lr.length];
+        if (nivelOk(o.j) && o.de !== c && !tomados.has(o.j) && o.de.elenco.includes(o.j)) { cand.push(o); n++; }
+      }
+      const x = sortearPeso(r, cand, (k) => k.livre !== undefined ? peso(k.j.nacionalidade, livres[k.livre].de) * 1.5 : peso(k.j.nacionalidade, k.de!.id));
+      if (x) return x.livre !== undefined ? pegarLivre(x.livre) : comprar(x.j, x.de!);
+      // 2) titular de um clube menor (o clube grande compra)
+      const tit: { j: JogadorNPC; de: Clube }[] = [];
+      for (const o of g.pro) {
+        if (o === c || o.forca >= c.forca || g.convidados.includes(o)) continue;
+        for (const j of o.elenco) if (nivelOk(j) && !tomados.has(j) && o.elenco.filter((y) => y.posicao === pos).length > MINIMO[pos]) tit.push({ j, de: o });
+        if (tit.length >= 40) break;
+      }
+      const y = sortearPeso(r, tit, (k) => peso(k.j.nacionalidade, k.de.id));
+      if (y) return comprar(y.j, y.de);
+      return false;
+    };
     const reforco = (pos: Pos) => {
       if (!amador && !g.convidados.includes(c)) {
-        // procura no mundo: livres e reservas de outros clubes, do nível certo; a afinidade decide quem vem
-        const nivelOk = (j: JogadorNPC) => j.posicao === pos && j.ovr >= nivelAlvo - 6 && j.ovr <= nivelAlvo + 3;
-        const cand: { j: JogadorNPC; de?: Clube; livre?: number }[] = [];
-        for (let i = 0, achados = 0; i < livres.length && achados < 15; i++) if (nivelOk(livres[i].j)) { cand.push({ j: livres[i].j, livre: i }); achados++; }
-        // até 40 candidatos, a partir de um ponto sorteado da lista (a conta fica leve com milhares de reservas no mundo)
-        const lr = reservas[pos] ?? [], ini = Math.floor(r.next() * lr.length);
-        for (let k = 0, achados = 0; k < lr.length && achados < 40; k++) {
-          const o = lr[(ini + k) % lr.length];
-          if (nivelOk(o.j) && o.de !== c && !tomados.has(o.j) && o.de.elenco.includes(o.j)) { cand.push(o); achados++; }
-        }
-        const x = sortearPeso(r, cand, (k) => afinidade(c.pais, k.j.nacionalidade, k.de?.pais ?? paisDe[livres[k.livre!]?.de]) * (k.livre !== undefined ? 1.3 : 1));
-        if (x && x.livre !== undefined) { const l0 = livres.splice(x.livre, 1)[0]; chega(c, l0.j, "contratado", l0.de, 0); return; }
-        if (x && x.de) { tomados.add(x.j); const t = taxa(x.j, c); sai(x.de, x.j, mov(x.j, "vendido", { para: c.id, taxa: t })); chega(c, x.j, "contratado", x.de.id, t); return; }
+        if (buscar(pos, nivelAlvo - 6, nivelAlvo + 3)) return;
+        // 3) agente livre um pouco abaixo do nível
+        const k = livres.findIndex((x) => x.j.posicao === pos && x.de !== c.id && x.j.ovr >= nivelAlvo - 12 && x.j.ovr < nivelAlvo - 6);
+        if (k >= 0) { const l0 = livres.splice(k, 1)[0]; chega(c, l0.j, "contratado", l0.de, 0); return; }
+        // 4) um garoto da própria base
+        const b = base[c.id]?.filter((j) => j.posicao === pos && j.idade >= 17).sort((a, b2) => b2.ovr - a.ovr)[0];
+        if (b) { base[c.id].splice(base[c.id].indexOf(b), 1); chega(c, b, "subiu"); return; }
       }
-      const [i0, i1] = amador ? faixaAmadora(c.id) : [21, 31];
-      const nj = gerarReforco(r, nivelAlvo + r.normal(0, 3), pos, c.pais, usados, r.int(i0, i1));
-      chega(c, nj, "contratado", undefined, amador ? undefined : taxa(nj, c));
+      // 5) último caso: um jogador sem clube de nível modesto (e de graça); nos amadores, gente nova da idade da liga
+      const [i0, i1] = amador ? faixaAmadora(c.id) : [19, 26];
+      const nj = gerarReforco(r, amador ? nivelAlvo + r.normal(0, 3) : nivelAlvo - 7 + r.normal(0, 2), pos, c.pais, usados, r.int(i0, i1));
+      chega(c, nj, "contratado", undefined, amador ? undefined : 0);
     };
     for (const p of POSICOES) while (c.elenco.filter((j) => j.posicao === p).length < MINIMO[p]) reforco(p);
     while (c.elenco.length < rf.tamanho) reforco(posQueFalta(c.elenco, MINIMO, r));
@@ -265,15 +303,16 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     while (c.elenco.length > rf.tamanho + 3) {
       const cand = [...c.elenco].filter((j) => c.elenco.filter((x) => x.posicao === j.posicao).length > MINIMO[j.posicao]).sort((a, b) => a.ovr - b.ovr || b.idade - a.idade)[0];
       if (!cand) break;
-      sai(c, cand, mov(cand, "dispensado"));
+      sai(c, cand, mov(cand, "dispensado")); if (!amador) livre(cand, c.id);
     }
     // o tamanho do clube se mantém: time que caiu muito vai ao mercado buscar titulares
-    for (let k = 0; k < 3 && forcaDoElenco(c.elenco) < rf.top - 2; k++) {
+    for (let k = 0; !amador && k < 3 && forcaDoElenco(c.elenco) < rf.top - 2; k++) {
       const tit = titulares(c.elenco), pior = [...tit].sort((a, b) => a.ovr - b.ovr)[0];
-      if (!pior) break;
-      const nj = gerarReforco(r, rf.top + 1 + r.normal(0, 2), pior.posicao, c.pais, usados);
-      chega(c, nj, "contratado", undefined, taxa(nj, c));
-      sai(c, pior, mov(pior, "dispensado"));
+      if (!pior || !buscar(pior.posicao, Math.round(rf.top - 1), Math.round(rf.top + 4))) break;
+      // quem perdeu a vaga é vendido para um clube do nível dele (sem comprador, vira agente livre)
+      const destino = sortearPeso(r, g.pro.filter((o) => o !== c && o.elenco.length < 30 && o.forca <= pior.ovr + 3 && o.forca >= pior.ovr - 4), (o) => afinidade(o.pais, pior.nacionalidade, c.pais));
+      if (destino) { const v = taxa(pior, destino); sai(c, pior, mov(pior, "vendido", { para: destino.id, taxa: v })); chega(destino, pior, "contratado", c.id, v); }
+      else { sai(c, pior, mov(pior, "dispensado")); livre(pior, c.id); }
     }
   }
   // 5) o nível de cada liga fica onde estava: a régua é relativa (craque continua craque, mas a liga não infla)

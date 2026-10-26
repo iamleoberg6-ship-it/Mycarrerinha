@@ -10,7 +10,7 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
-import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha } from "../src/mundo.js";
+import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -871,6 +871,16 @@ teste("Janela do meio do ano dos outros clubes: fecha na semana 24, quem muda jo
   assert.equal(janelaDoMundo(pacote, 0, true).length, 0, "voltar a semana desfaz");
   sincronizarMundo(pacote, "meio", 2, 0);
   assert.ok(janelaDoMundo(pacote, 1, true).length > 0, "temporadas passadas têm a janela do meio");
+});
+
+teste("Agentes livres: banco de quem ficou sem clube; contratar de lá é de graça; ninguém aparece do nada com taxa", () => {
+  sincronizarMundo(pacote, "livres", 3);
+  const al = agentesLivres(pacote);
+  assert.ok(al.length > 200 && al.filter((x) => ondeJoga(pacote, x.nome)).length <= 3, "sem clube de verdade (só homônimos)");
+  for (const t of [1, 2, 3]) for (const x of janelaDoMundo(pacote, t)) {
+    if (!x.de && x.tipo !== "base" && x.tipo !== "aposentadoria") assert.ok(x.taxa === 0 && x.ovr <= 75, `${x.nome} veio do nada com taxa ${x.taxa}`);
+    if (x.tipo === "livre") assert.equal(x.taxa, 0);
+  }
 });
 
 console.log(`\n${ok} testes passaram`);

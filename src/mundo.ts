@@ -11,7 +11,7 @@ import { RNG } from "./rng.js";
 import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
 import { gerarStats, statsAte, type StatsNPC } from "./estatisticas.js";
 import { VAGAS_433 } from "./partida.js";
-import { criarBase, nivelBase, virarTemporada, type GruposMundo, type Referencia, type ViradaMundo, type NivelBase } from "./evolucao.js";
+import { criarBase, nivelBase, virarTemporada, type GruposMundo, type Referencia, type ViradaMundo, type NivelBase, type AgenteLivre } from "./evolucao.js";
 
 export { LIGAS, LIGA_INFO, type InfoLiga };
 export interface InfoClube { id: string; nome: string; apelido: string; cores: string[]; forca: number; cidade: string; estadio: string; capacidade: number; padrao: string; ligaId: string; pais: string }
@@ -72,7 +72,7 @@ export function mundo(pacote: PacoteDados): Mundo {
 
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
-let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
+let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
 /** Uma temporada na carreira de um jogador do mundo. */
 /** `liga`: o que a temporada imaginada precisa (fila na posição, titulares, força do clube, média da liga, rodadas);
  *  as estatísticas são sorteadas só quando alguém olha (st guarda o resultado). */
@@ -118,15 +118,15 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     const usados = new Set(Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)));
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados);
-    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, hist: new Map(), saiu: new Map() };
+    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map() };
     registrarTemporada(m);
   }
   const e = estado;
-  const fazerMeio = () => { e.meio[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, true); e.feitoMeio = true; registrarMeio(m); };
+  const fazerMeio = () => { e.meio[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, true, e.livres); e.feitoMeio = true; registrarMeio(m); };
   while (e.temporada < temporada) {
     if (!e.feitoMeio) fazerMeio();
     e.temporada++; e.feitoMeio = false;
-    e.virada = e.viradas[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados); registrarTemporada(m);
+    e.virada = e.viradas[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, false, e.livres); registrarTemporada(m);
   }
   if (comMeio && !e.feitoMeio) fazerMeio();
   versao++; indice = undefined;
@@ -181,11 +181,13 @@ export function janelaDoMundo(pacote: PacoteDados, t: number, meio = false): Neg
   const l: Negocio[] = [];
   for (const [para, ch] of Object.entries(v.chegadas)) for (const x of ch) {
     if (x.motivo === "subiu") l.push({ nome: x.nome, posicao: x.posicao, idade: x.idade, ovr: x.ovr, tipo: "base", para, taxa: 0 });
-    else if (x.taxa !== undefined) l.push({ nome: x.nome, posicao: x.posicao, idade: x.idade, ovr: x.ovr, tipo: !x.de ? "exterior" : x.taxa ? "transferencia" : "livre", de: x.de, para, taxa: x.taxa });
+    else if (x.taxa !== undefined) l.push({ nome: x.nome, posicao: x.posicao, idade: x.idade, ovr: x.ovr, tipo: x.taxa ? (x.de ? "transferencia" : "exterior") : "livre", de: x.de, para, taxa: x.taxa });
   }
   for (const [de, sa] of Object.entries(v.saidas)) for (const x of sa) if (x.motivo === "aposentou") l.push({ nome: x.nome, posicao: x.posicao, idade: x.idade, ovr: x.ovr, tipo: "aposentadoria", de, taxa: 0 });
   return l.sort((a, b) => b.taxa - a.taxa || b.ovr - a.ovr);
 }
+/** O banco de agentes livres agora (sem clube), do melhor para o pior. */
+export const agentesLivres = (pacote: PacoteDados) => garantir(pacote).livres.map((x) => ({ nome: x.j.nome, posicao: x.j.posicao, idade: x.j.idade, ovr: x.j.ovr, de: x.de, desde: x.desde })).sort((a, b) => b.ovr - a.ovr);
 /** Temporadas que já tiveram janela (para escolher o ano na tela). */
 export const janelasFeitas = (pacote: PacoteDados): { t: number; meio: boolean }[] => {
   const e = garantir(pacote);
