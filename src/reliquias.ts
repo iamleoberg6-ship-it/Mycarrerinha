@@ -118,6 +118,8 @@ export function reliquiasDaPartida(d: DadosPartida, tem: (id: string) => boolean
 export interface DadosTemporada {
   /** gols e assistências do melhor da liga entre os outros jogadores */
   maxGols?: number; maxAssist?: number;
+  /** resultado da premiação da liga (comparado com todos os jogadores); sem ele, a régua sorteada de antes */
+  craque?: boolean; naSelecao?: boolean; revelacao?: boolean;
   ano: number; idade: number; clubeId: string; clubeNome: string; cores: string[]; numero: string;
   padrao?: string; ligaCurto?: string;
   /** primeira temporada no clube depois de uma transferência */
@@ -144,9 +146,9 @@ export function premiosDaTemporada(rng: RNG, d: DadosTemporada): Ganho[] {
   }
   if (d.jogos >= 15 && d.gols >= alvoGols) g.push(trofeu("trofeu-artilheiro", `Artilheiro ${d.ano}`, `${d.gols} gols · ${liga} ${d.ano}`, d.ano, "chuteira", OURO));
   if (d.jogos >= 15 && d.assist >= alvoAssist) g.push(trofeu("trofeu-garcom", `Rei das assistências ${d.ano}`, `${d.assist} assistências · ${liga} ${d.ano}`, d.ano, "prato", OURO));
-  if (d.jogos >= 25 && d.nota >= alvoCraque) g.push(trofeu("trofeu-craque", `Craque do campeonato ${d.ano}`, `Nota média ${d.nota.toFixed(2)} · ${liga} ${d.ano}`, d.ano, "bola", OURO));
-  if (d.jogos >= 22 && d.nota >= alvoSelecao) g.push(trofeu("trofeu-selecao", `Seleção do campeonato ${d.ano}`, `${liga} ${d.ano}`, d.ano, "placa", OURO));
-  if (d.idade <= 21 && d.jogos >= 15 && d.nota >= 6.75 && d.temporadasCheias === 0) g.push(trofeu("trofeu-revelacao", `Revelação ${d.ano}`, `${d.idade} anos · ${liga} ${d.ano}`, d.ano, "estrela", OURO));
+  if (d.craque ?? (d.jogos >= 25 && d.nota >= alvoCraque)) g.push(trofeu("trofeu-craque", `Craque do campeonato ${d.ano}`, `Nota média ${d.nota.toFixed(2)} · ${liga} ${d.ano}`, d.ano, "bola", OURO));
+  if (d.naSelecao ?? (d.jogos >= 22 && d.nota >= alvoSelecao)) g.push(trofeu("trofeu-selecao", `Seleção do campeonato ${d.ano}`, `${liga} ${d.ano}`, d.ano, "placa", OURO));
+  if (d.revelacao ?? (d.idade <= 21 && d.jogos >= 15 && d.nota >= 6.75 && d.temporadasCheias === 0)) g.push(trofeu("trofeu-revelacao", `Revelação ${d.ano}`, `${d.idade} anos · ${liga} ${d.ano}`, d.ano, "estrela", OURO));
   if (d.idade <= 21 && d.jogos >= 18 && d.nota >= 7.0 + ruido(0.08)) g.push(trofeu("trofeu-sub21", `Melhor sub-21 ${d.ano}`, `${liga} ${d.ano}`, d.ano, "estrela", PRATA));
   if (d.recemContratado && d.jogos >= 20 && d.nota >= 6.9 + ruido(0.08)) g.push(trofeu("trofeu-contratacao", `Melhor contratação ${d.ano}`, `${d.clubeNome} · ${liga} ${d.ano}`, d.ano, "placa", PRATA));
   if (d.base >= 15 && d.golsBase >= Math.max(12, Math.round(rng.normal(17, 3)))) g.push(trofeu("trofeu-artilheiro-base", `Artilheiro do sub-17 ${d.ano}`, `${d.golsBase} gols · Sub-17 ${d.ano}`, d.ano, "chuteira", PRATA));

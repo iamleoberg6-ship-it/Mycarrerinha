@@ -10,7 +10,7 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
-import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes } from "../src/mundo.js";
+import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -927,6 +927,19 @@ teste("Seleção da rodada e do mês: 4-3-3 com os melhores da liga; o jogador e
   for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s, false).fimDeTemporada;
   assert.ok((fim!.mvp ?? 0) >= 3 && (fim!.selRodada ?? 0) >= 1, JSON.stringify([fim!.mvp, fim!.selRodada]));
   assert.ok((s.casa.reliquias ?? []).some((x) => x.id === "rel-trofeu-mvp-1"), "troféu do primeiro melhor em campo");
+});
+
+teste("Prêmios do campeonato: seleção, craque, artilheiro, garçom e revelação entre todos; o jogador ganha se for o melhor", () => {
+  sincronizarMundo(pacote, "premios", 0);
+  const p = premiosDaLiga(pacote, "BRA1", 2026);
+  assert.equal(p.selecao.length, 11);
+  assert.ok(p.craque && p.artilheiro && p.garcom && p.revelacao && (p.revelacao.idade ?? 99) <= 21);
+  assert.ok(p.artilheiro!.gols >= p.selecao.reduce((a, x) => Math.max(a, x.gols), 0));
+  const eu = { nome: "Eu", clubeId: "FLA", posicao: "ATA", nota: 8.5, gols: 40, assist: 15, jogos: 34, idade: 20, eu: true };
+  const q = premiosDaLiga(pacote, "BRA1", 2026, [eu]);
+  assert.ok(q.craque?.eu && q.artilheiro?.eu && q.selecao.some((x) => x.eu) && q.revelacao?.eu);
+  const r = premiosDaLiga(pacote, "BRA1", 2026, [{ ...eu, nota: 6, gols: 2, assist: 1 }]);
+  assert.ok(!r.craque?.eu && !r.selecao.some((x) => x.eu));
 });
 
 console.log(`\n${ok} testes passaram`);

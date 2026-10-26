@@ -8,7 +8,7 @@ import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
-import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, notasDaRodada, selecaoDaRodada, selecaoDoMes, type Selecionado } from "./mundo.js";
+import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
 import { COPAS, ehEstadual, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
@@ -61,6 +61,8 @@ export interface Carreira {
   /** estadual da temporada (fica em `copas`): suspensão e estatísticas separadas das da copa continental */
   /** nota, gols e assistências do jogador em cada rodada da liga (para a seleção da rodada e do mês) */
   notasRodada?: Record<number, { nota: number; gols: number; assist: number }>;
+  /** prêmios da liga na última temporada terminada (craque, seleção, artilheiro...) */
+  premiosLiga?: PremiosLiga;
   suspensaoEstadual?: number; statsEstadual?: { jogos: number; gols: number; assist: number; notas: number[] };
   tabelaAnterior?: { ligaId: string; ordem: string[] }; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
@@ -1217,8 +1219,15 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   // premiação: troféus que vão para a casa
   const cc = clubeCasa(pacote, c.clubeId), ev: string[] = [];
   const ligaId = infoLiga(c.ligaId).id, artilheiro = rankingDaLiga(pacote, ligaId, 999, "g", 1)[0], garcom = rankingDaLiga(pacote, ligaId, 999, "a", 1)[0];
-  if (artilheiro && !(r.gols >= artilheiro.valor && r.jogos >= 15)) noticia(s, "clube", `${artilheiro.nome} é o artilheiro`, `${artilheiro.nome}, do ${infoClube(pacote, artilheiro.clubeId)?.nome ?? ""}, termina a ${infoLiga(c.ligaId).curto} com ${artilheiro.valor} gols.`);
-  const premios = premiosDaTemporada(rngDe(s, "premios"), { maxGols: artilheiro?.valor, maxAssist: garcom?.valor, ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
+  // premiação da liga: todos os jogadores, com o do usuário competindo com os números dele
+  const eu: Selecionado[] = !c.fase && r.jogos ? [{ nome: j.apelido, clubeId: c.clubeId, posicao: j.posicao, nota: r.nota, gols: r.gols, assist: r.assist, jogos: r.jogos, idade: j.idade, eu: true }] : [];
+  const pl = c.fase ? undefined : premiosDaLiga(pacote, ligaId, r.ano, eu);
+  if (pl) {
+    c.premiosLiga = pl;
+    const nm = (x?: Selecionado) => x ? `${x.eu ? j.apelido : x.nome} (${infoClube(pacote, x.clubeId)?.nome ?? ""})` : "–";
+    noticia(s, "clube", `Prêmios da ${infoLiga(c.ligaId).curto} ${r.ano}`, `Craque: ${nm(pl.craque)}. Artilheiro: ${nm(pl.artilheiro)}, ${pl.artilheiro?.gols ?? 0} gols. Garçom: ${nm(pl.garcom)}, ${pl.garcom?.assist ?? 0} assistências.${pl.revelacao ? ` Revelação: ${nm(pl.revelacao)}.` : ""}`, { k: "trofeu" });
+  }
+  const premios = premiosDaTemporada(rngDe(s, "premios"), { maxGols: artilheiro?.valor, maxAssist: garcom?.valor, ...(pl ? { craque: !!pl.craque?.eu, naSelecao: pl.selecao.some((x) => x.eu), revelacao: !!pl.revelacao?.eu } : {}), ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
     padrao: infoClube(pacote, c.clubeId).padrao, ligaCurto: infoLiga(c.ligaId).curto, recemContratado: c.chegadaClube === c.temporada,
     jogos: r.jogos, gols: r.gols, assist: r.assist, nota: r.nota, titulo, base: r.base, golsBase: c.stats.baseGols, notaBase: media(c.stats.baseNotas ?? []),
     temporadasCheias: c.historico.filter((h) => h.jogos >= 15).length });

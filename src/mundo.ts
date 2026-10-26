@@ -197,7 +197,7 @@ export const janelasFeitas = (pacote: PacoteDados): { t: number; meio: boolean }
 export const janelaDoMeioAtual = (pacote: PacoteDados) => { const e = garantir(pacote); return e.feitoMeio ? e.meio[e.temporada] : undefined; };
 // ------------------------------------------------------------------ seleção da rodada / do mês
 /** Um jogador numa seleção (ou nas notas de uma rodada): nota da rodada (ou média do mês), gols e assistências. */
-export interface Selecionado { nome: string; clubeId: string; posicao: string; nota: number; gols: number; assist: number; jogos?: number; eu?: boolean }
+export interface Selecionado { nome: string; clubeId: string; posicao: string; nota: number; gols: number; assist: number; jogos?: number; idade?: number; eu?: boolean }
 const hashS = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
 /** As notas dos outros jogadores da liga numa rodada (quem jogou): a média da temporada dele, os gols e passes da rodada e o dia. */
 export function notasDaRodada(pacote: PacoteDados, ligaId: string, rodada: number, clubes?: string[]): Selecionado[] {
@@ -237,6 +237,30 @@ export function selecaoDoMes(pacote: PacoteDados, ligaId: string, rodadas: numbe
   const minimo = Math.max(1, rodadas.length - 1);
   const lista = [...soma.values()].filter((x) => (x.jogos ?? 0) >= minimo).map((x) => ({ ...x, nota: Math.round((x.nota / x.jogos! + 0.05 * (x.gols + x.assist * 0.5)) * 100) / 100 }));
   return montarSelecao(lista);
+}
+/** Prêmios da temporada de uma liga: seleção do campeonato, craque, artilheiro, garçom e revelação (até 21 anos). */
+export interface PremiosLiga { ligaId: string; ano: number; selecao: Selecionado[]; craque?: Selecionado; artilheiro?: Selecionado; garcom?: Selecionado; revelacao?: Selecionado }
+export function premiosDaLiga(pacote: PacoteDados, ligaId: string, ano: number, extra: Selecionado[] = []): PremiosLiga {
+  const e = garantir(pacote), l = mundo(pacote).liga[ligaId];
+  if (!l) return { ligaId, ano, selecao: [] };
+  const n = rodadasDaLiga(l.clubes.length).length, minimo = Math.ceil(n * 0.5);
+  const lista: Selecionado[] = [];
+  for (const c of l.clubes) for (const j of c.elenco) {
+    const linhas = (e.hist.get(j.nome) ?? []).filter((x) => x.t === e.temporada && l.clubes.some((k) => k.id === x.clubeId));
+    let jogos = 0, gols = 0, assist = 0, somaNota = 0;
+    for (const x of linhas) { const st = statsDaLinha(pacote, j.nome, x); if (!st) continue; jogos += st.j; gols += st.g; assist += st.a; somaNota += st.n * st.j; }
+    if (jogos) lista.push({ nome: j.nome, clubeId: c.id, posicao: j.posicao, nota: Math.round((somaNota / jogos) * 100) / 100, gols, assist, jogos, idade: j.idade });
+  }
+  const todos = [...lista, ...extra];
+  const regulares = todos.filter((x) => (x.jogos ?? 0) >= minimo);
+  const melhor = (l2: Selecionado[], k: (x: Selecionado) => number) => [...l2].sort((a, b) => k(b) - k(a) || Number(!!b.eu) - Number(!!a.eu))[0];
+  // craque: a nota pesa, e gols e passes desempatam (um pouco de bônus para quem decide)
+  const craque = melhor(regulares, (x) => x.nota + 0.02 * (x.gols + 0.5 * x.assist));
+  return {
+    ligaId, ano, selecao: montarSelecao(regulares), craque,
+    artilheiro: melhor(todos, (x) => x.gols * 100 - (x.jogos ?? 0)), garcom: melhor(todos, (x) => x.assist * 100 - (x.jogos ?? 0)),
+    revelacao: melhor(regulares.filter((x) => (x.idade ?? 99) <= 21), (x) => x.nota + 0.02 * (x.gols + 0.5 * x.assist)),
+  };
 }
 export interface LinhaRanking { nome: string; clubeId: string; valor: number; jogos: number }
 /** Artilharia ou assistências da liga até a rodada `feitas` (os outros jogadores; o do usuário entra na tela). */
