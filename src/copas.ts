@@ -8,28 +8,54 @@ import { simularPlacar } from "./partida.js";
 import { tabelaTurnoReturno, novaTabela, registrar, ordenar, simularTemporada, rodadasDaLiga, type LinhaTabela, type Liga } from "./liga.js";
 import { CONVIDADOS } from "./convidados.js";
 
-export type CopaId = "LIB" | "UCL" | "ACL";
-export interface InfoCopa { id: CopaId; nome: string; curto: string; regiao: string; cores: [string, string] }
+// Estaduais: os campeonatos dos estados nas primeiras semanas do ano (às quartas), com os clubes do estado de todas as
+// divisões (os 8 melhores; 6 nos estados menores): turno único, semifinal em jogo único na casa do mais bem colocado
+// e final em ida e volta.
+export type EstadualId = "PAU" | "CAR" | "MIN" | "GAU" | "PRN" | "CAT" | "BAI" | "PER" | "CEA" | "GOI";
+export type CopaId = "LIB" | "UCL" | "ACL" | EstadualId;
+export interface InfoCopa { id: CopaId; nome: string; curto: string; regiao: string; cores: [string, string]; prep: "da" | "do"; uf?: string; vagas?: number }
+const est = (id: EstadualId, nome: string, curto: string, uf: string, cores: [string, string], vagas = 8): InfoCopa => ({ id, nome, curto, regiao: "Brasil", cores, prep: "do", uf, vagas });
 export const COPAS: Record<CopaId, InfoCopa> = {
-  LIB: { id: "LIB", nome: "Copa Libertadora da América", curto: "Libertadora", regiao: "América do Sul", cores: ["#E3B341", "#1F3A5F"] },
-  UCL: { id: "UCL", nome: "Champions Ligue", curto: "Champions", regiao: "Europa", cores: ["#0B1F5C", "#C9D3E6"] },
-  ACL: { id: "ACL", nome: "Champions Ligue Asiática", curto: "Champions Asiática", regiao: "Ásia", cores: ["#0B6B6B", "#E3B341"] },
+  LIB: { id: "LIB", nome: "Copa Libertadora da América", curto: "Libertadora", regiao: "América do Sul", cores: ["#E3B341", "#1F3A5F"], prep: "da" },
+  UCL: { id: "UCL", nome: "Champions Ligue", curto: "Champions", regiao: "Europa", cores: ["#0B1F5C", "#C9D3E6"], prep: "da" },
+  ACL: { id: "ACL", nome: "Champions Ligue Asiática", curto: "Champions Asiática", regiao: "Ásia", cores: ["#0B6B6B", "#E3B341"], prep: "da" },
+  PAU: est("PAU", "Campeonato Paulista", "Paulistão", "SP", ["#C8102E", "#111111"]),
+  CAR: est("CAR", "Campeonato Carioca", "Cariocão", "RJ", ["#0B3D91", "#F5C400"]),
+  MIN: est("MIN", "Campeonato Mineiro", "Mineirão", "MG", ["#C8102E", "#FFFFFF"]),
+  GAU: est("GAU", "Campeonato Gaúcho", "Gauchão", "RS", ["#0B7A3B", "#F5C400"]),
+  PRN: est("PRN", "Campeonato Paranaense", "Paranaense", "PR", ["#0B7A3B", "#FFFFFF"]),
+  CAT: est("CAT", "Campeonato Catarinense", "Catarinense", "SC", ["#C8102E", "#0B7A3B"]),
+  BAI: est("BAI", "Campeonato Baiano", "Baianão", "BA", ["#0B3D91", "#C8102E"], 6),
+  PER: est("PER", "Campeonato Pernambucano", "Pernambucano", "PE", ["#F5C400", "#0B3D91"], 6),
+  CEA: est("CEA", "Campeonato Cearense", "Cearense", "CE", ["#0B7A3B", "#111111"]),
+  GOI: est("GOI", "Campeonato Goiano", "Goianão", "GO", ["#0B7A3B", "#F5C400"]),
 };
+export const ehEstadual = (id: CopaId) => !!COPAS[id]?.uf;
+/** Estado dos clubes das Séries A, B e C (os da Série D têm a UF no fim do id). */
+const UF_CIDADE: Record<string, string> = {
+  "Rio de Janeiro": "RJ", "Volta Redonda": "RJ", "São Paulo": "SP", "Santos": "SP", "Bragança Paulista": "SP", "Mirassol": "SP", "Campinas": "SP", "Ribeirão Preto": "SP",
+  "Novo Horizonte": "SP", "São Bernardo do Campo": "SP", "Araraquara": "SP", "Itu": "SP", "Limeira": "SP", "Belo Horizonte": "MG", "São João del-Rei": "MG",
+  "Porto Alegre": "RS", "Caxias do Sul": "RS", "Erechim": "RS", "Curitiba": "PR", "Londrina": "PR", "Ponta Grossa": "PR", "Maringá": "PR",
+  "Chapecó": "SC", "Criciúma": "SC", "Florianópolis": "SC", "Brusque": "SC", "Balneário Camboriú": "SC", "Salvador": "BA", "Recife": "PE", "Fortaleza": "CE",
+  "Goiânia": "GO", "Anápolis": "GO", "Belém": "PA", "Manaus": "AM", "São Luís": "MA", "Maceió": "AL", "Cuiabá": "MT", "Aracaju": "SE", "João Pessoa": "PB", "Itabaiana": "SE",
+};
+export const ufDoClube = (id: string, cidade: string) => (id.startsWith("D-") ? id.slice(-2) : UF_CIDADE[cidade] ?? "");
 /** Vagas de cada liga (pela tabela final da temporada anterior) e convidados de cada copa. */
-const VAGAS: Record<CopaId, [string, number][]> = {
+const VAGAS: Partial<Record<CopaId, [string, number][]>> = {
   LIB: [["BRA1", 7], ["ARG1", 6], ["URU1", 3], ["COL1", 3], ["CHI1", 3], ["PAR1", 3], ["ECU1", 3]],
   UCL: [["ENG1", 5], ["ESP1", 5], ["ITA1", 5], ["GER1", 5], ["FRA1", 4], ["POR1", 3], ["NED1", 3], ["TUR1", 1]],
   ACL: [["KSA1", 4]],
 };
-const REGIAO_CONV: Record<CopaId, string[]> = { LIB: ["SUL"], UCL: ["EUR"], ACL: ["ASO", "ASL"] };
+const REGIAO_CONV: Partial<Record<CopaId, string[]>> = { LIB: ["SUL"], UCL: ["EUR"], ACL: ["ASO", "ASL"] };
 
 /** Semanas (da temporada) de cada fase; ida e volta usam duas semanas. */
+export const SEMANAS_ESTADUAL = { liga: [0, 1, 2, 3, 4, 6, 8], semi: [10], final: [11, 13] } as const;
 export const SEMANAS_COPA = {
   LIB: { grupos: [5, 7, 9, 12, 14, 16], oitavas: [20, 21], quartas: [25, 26], semi: [30, 31], final: [36] },
   UCL: { liga: [4, 6, 8, 10, 13, 15, 18, 19], playoff: [21, 22], oitavas: [24, 25], quartas: [28, 29], semi: [32, 33], final: [37] },
   ACL: { liga: [4, 6, 8, 10, 13, 15, 18, 19], oitavas: [22, 23], quartas: [33], semi: [35], final: [37] },
 } as const;
-export const NOME_FASE: Record<string, string> = { grupos: "Fase de grupos", liga: "Fase de liga", playoff: "Playoff", oitavas: "Oitavas de final", quartas: "Quartas de final", semi: "Semifinal", final: "Final" };
+export const NOME_FASE: Record<string, string> = { turno: "Primeira fase", grupos: "Fase de grupos", liga: "Fase de liga", playoff: "Playoff", oitavas: "Oitavas de final", quartas: "Quartas de final", semi: "Semifinal", final: "Final" };
 
 export interface JogoCopa {
   id: string; semana: number; fase: string; casa: string; fora: string;
@@ -51,6 +77,8 @@ export interface FonteTabelas {
   /** liga atual do jogador e a tabela final real dela (se já houver uma temporada jogada) */
   ligas: Record<string, Liga>; tabelaReal?: { ligaId: string; ordem: string[] };
   semente: string; temporada: number;
+  /** cidade de cada clube (para saber o estado nos estaduais) */
+  cidade?: (id: string) => string;
 }
 /** Ordem final da temporada anterior de uma liga: a real (a do jogador) ou simulada. */
 export function ordemFinal(f: FonteTabelas, ligaId: string): string[] {
@@ -65,8 +93,15 @@ export function ordemFinal(f: FonteTabelas, ligaId: string): string[] {
   return simularTemporada(new RNG(`${f.semente}|tabela-anterior|${ligaId}|${f.temporada}`), l).tabela.map((t) => t.clube);
 }
 export function classificados(f: FonteTabelas, id: CopaId): string[] {
-  const doLigas = VAGAS[id].flatMap(([lid, n]) => ordemFinal(f, lid).slice(0, n));
-  const conv = CONVIDADOS.filter((c) => REGIAO_CONV[id].includes(c.regiao)).map((c) => c.id);
+  const info = COPAS[id];
+  if (info.uf) {
+    // estadual: os clubes do estado, da Série A para baixo (dentro da divisão, os mais fortes)
+    const div = ["BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`)];
+    const cs = div.flatMap((lid, i) => (f.ligas[lid]?.clubes ?? []).filter((c) => ufDoClube(c.id, f.cidade?.(c.id) ?? "") === info.uf).map((c) => ({ id: c.id, k: (i < 3 ? i : 3) * 100 - c.forca })));
+    return cs.sort((a, b) => a.k - b.k).slice(0, info.vagas ?? 8).map((c) => c.id);
+  }
+  const doLigas = (VAGAS[id] ?? []).flatMap(([lid, n]) => ordemFinal(f, lid).slice(0, n));
+  const conv = CONVIDADOS.filter((c) => (REGIAO_CONV[id] ?? []).includes(c.regiao)).map((c) => c.id);
   return [...doLigas, ...conv];
 }
 
@@ -82,10 +117,16 @@ function rodadasDeLiga(rng: RNG, clubes: string[], k: number): [string, string][
 
 export function novaCopa(id: CopaId, temporada: number, clubes: string[], forca: (c: string) => number, paisDe: (c: string) => string, regiaoDe: (c: string) => string, semente: string): EstadoCopa {
   const rng = new RNG(`${semente}|copa|${id}|${temporada}`);
-  const e: EstadoCopa = { id, temporada, clubes, tabelas: {}, jogos: [], fase: id === "LIB" ? "grupos" : "liga", chegou: Object.fromEntries(clubes.map((c) => [c, id === "LIB" ? "grupos" : "liga"])) };
+  const fase0 = id === "LIB" ? "grupos" : ehEstadual(id) ? "turno" : "liga";
+  const e: EstadoCopa = { id, temporada, clubes, tabelas: {}, jogos: [], fase: fase0, chegou: Object.fromEntries(clubes.map((c) => [c, fase0])) };
   const linha = (c: string): LinhaTabela => ({ clube: c, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, pts: 0 });
   let n = 0;
-  if (id === "LIB") {
+  if (ehEstadual(id)) {
+    // turno único: todos contra todos uma vez
+    e.tabelas.Estadual = clubes.map(linha);
+    const ord = rng.shuffle([...clubes]);
+    tabelaTurnoReturno(ord.length).slice(0, ord.length - 1).forEach((rod, r) => rod.forEach(([a, b]) => e.jogos.push({ id: jid(id, "turno", n++), semana: SEMANAS_ESTADUAL.liga[r], fase: "turno", rodada: r + 1, grupo: "Estadual", casa: ord[a], fora: ord[b] })));
+  } else if (id === "LIB") {
     // 4 potes de 8 por força; em cada grupo, um de cada pote, evitando dois do mesmo país
     const ord = [...clubes].sort((a, b) => forca(b) - forca(a));
     const sortear = () => {
@@ -151,7 +192,18 @@ function proximaFase(e: EstadoCopa, forca: (c: string) => number) {
   const marca = (cs: string[], fase: string) => cs.forEach((c) => (e.chegou[c] = fase));
   const vencedores = (fase: string) => serieDe(e, fase).map((s) => vencedorSerie(e, s)!);
   const pares = (cs: string[], fase: string, sem: readonly number[], neutro = false) => { for (let i = 0; i < cs.length; i += 2) serie(e, fase, `${fase}-${i / 2 + 1}`, cs[i], cs[i + 1], sem, neutro); };
-  if (e.id === "LIB") {
+  if (ehEstadual(e.id)) {
+    const S = SEMANAS_ESTADUAL;
+    if (e.fase === "turno") {
+      // 1º×4º e 2º×3º, jogo único na casa do mais bem colocado
+      const t = ord(e.tabelas.Estadual).slice(0, 4), cs = [t[0], t[3], t[1], t[2]];
+      marca(cs, "semi"); pares(cs, "semi", S.semi); e.fase = "semi";
+    } else if (e.fase === "semi") {
+      // final em ida e volta: o mais bem colocado na primeira fase decide em casa
+      const pos = ord(e.tabelas.Estadual), cs = vencedores("semi").sort((a, b) => pos.indexOf(a) - pos.indexOf(b));
+      marca(cs, "final"); pares(cs, "final", S.final); e.fase = "final";
+    } else if (e.fase === "final") { e.campeao = vencedores("final")[0]; e.fase = "fim"; }
+  } else if (e.id === "LIB") {
     const S = SEMANAS_COPA.LIB;
     if (e.fase === "grupos") {
       const g = "ABCDEFGH".split("").map((k) => ord(e.tabelas[k]));
@@ -192,7 +244,10 @@ function proximaFase(e: EstadoCopa, forca: (c: string) => number) {
 }
 
 /** Joga a rodada da semana (os jogos que ainda não têm placar). placar: o do jogo do jogador, se ele jogou. */
-export function rodarSemana(e: EstadoCopa, semana: number, forca: (c: string) => number, rng: RNG, meu?: { id: string; gc: number; gf: number; penaltis?: string }) {
+/** No estadual o grande x pequeno é menos desigual que a força dos clubes sugere (time pequeno se fecha, joga a vida). */
+export const forcaNoEstadual = (f: number) => 64 + (f - 64) * 0.6;
+export function rodarSemana(e: EstadoCopa, semana: number, forcaReal: (c: string) => number, rng: RNG, meu?: { id: string; gc: number; gf: number; penaltis?: string }) {
+  const forca = ehEstadual(e.id) ? (c: string) => forcaNoEstadual(forcaReal(c)) : forcaReal;
   for (const j of e.jogos) {
     if (j.semana !== semana || j.gc !== undefined) continue;
     if (meu && meu.id === j.id) { j.gc = meu.gc; j.gf = meu.gf; if (meu.penaltis) j.penaltis = meu.penaltis; }

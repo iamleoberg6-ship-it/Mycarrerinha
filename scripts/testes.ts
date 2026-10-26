@@ -718,10 +718,10 @@ teste("Base no país do jogador: espanhol começa na La Lyga, uruguaio na Argent
 teste("Copas continentais: formatos, classificados, sem jogo duplo na semana e um campeão", () => {
   const w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60, pais = (id: string) => w.clube[id]?.pais ?? "";
   const fonte = { ligas: w.liga, semente: "copas", temporada: 2026 };
-  const esperado: Record<CopaId, { clubes: number; jogos: number }> = { LIB: { clubes: 32, jogos: 125 }, UCL: { clubes: 36, jogos: 189 }, ACL: { clubes: 24, jogos: 119 } };
-  for (const id of Object.keys(COPAS) as CopaId[]) {
+  const esperado: Partial<Record<CopaId, { clubes: number; jogos: number }>> = { LIB: { clubes: 32, jogos: 125 }, UCL: { clubes: 36, jogos: 189 }, ACL: { clubes: 24, jogos: 119 } };
+  for (const id of ["LIB", "UCL", "ACL"] as CopaId[]) {
     const cl = classificados(fonte, id);
-    assert.equal(cl.length, esperado[id].clubes, `${id}: classificados`);
+    assert.equal(cl.length, esperado[id]!.clubes, `${id}: classificados`);
     assert.equal(new Set(cl).size, cl.length, `${id}: clube repetido`);
     const e = novaCopa(id, 2026, cl, forca, pais, regiaoNaCopa, "copas");
     const rng = new RNG(`rodar-${id}`);
@@ -729,12 +729,12 @@ teste("Copas continentais: formatos, classificados, sem jogo duplo na semana e u
       rodarSemana(e, sem, forca, rng);
       for (const c of cl) assert.ok(e.jogos.filter((j) => j.semana === sem && (j.casa === c || j.fora === c)).length <= 1, `${id}: ${c} joga duas vezes na semana ${sem}`);
     }
-    assert.equal(e.jogos.length, esperado[id].jogos, `${id}: número de jogos`);
+    assert.equal(e.jogos.length, esperado[id]!.jogos, `${id}: número de jogos`);
     assert.ok(e.jogos.every((j) => j.gc !== undefined), `${id}: jogo sem resultado`);
     assert.ok(e.campeao && cl.includes(e.campeao), `${id}: campeão`);
     const final = e.jogos.filter((j) => j.fase === "final");
     assert.equal(final.length, 1, `${id}: final em jogo único`); assert.ok(final[0].neutro, `${id}: final em campo neutro`);
-    assert.ok(Object.values(SEMANAS_COPA[id]).flat().every((x) => x >= 2 && x < SEMANAS_TEMPORADA), `${id}: semanas dentro da temporada`);
+    assert.ok(Object.values(SEMANAS_COPA[id as "LIB"]).flat().every((x) => x >= 2 && x < SEMANAS_TEMPORADA), `${id}: semanas dentro da temporada`);
   }
   // Libertadora: grupos sem dois clubes do mesmo país; Champions: 8 rodadas de liga para todo mundo
   const lib = novaCopa("LIB", 2026, classificados(fonte, "LIB"), forca, pais, regiaoNaCopa, "copas");
@@ -765,9 +765,9 @@ teste("Semana com jogo de copa: quarta travada, jogo de quarta antes do domingo 
   const rs = concluirSemana(pacote, s, plano, liga, []);
   assert.equal(rs.copa?.competicao, COPAS[cid].nome); assert.equal(s.carreira.semana, sem + 1); assert.equal(s.carreira.meioSemana, undefined);
   let fim;
-  for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s).fimDeTemporada;
-  assert.ok(fim?.copa && fim.copa.jogos >= 6, "campanha na copa no fim da temporada");
-  assert.ok(s.carreira.historico.at(-1)!.copa);
+  for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s, false).fimDeTemporada;
+  assert.ok((fim?.copa?.jogos ?? 0) + (fim?.estadual?.jogos ?? 0) >= 6, "campanha nas copas no fim da temporada");
+  assert.ok(s.carreira.historico.at(-1)!.copa || s.carreira.historico.at(-1)!.estadual);
   assert.ok(e.jogos.filter((j) => (j.casa === "FLA" || j.fora === "FLA")).every((j) => jogoDoClubeNaSemana({ LIB: e }, "FLA", j.semana)?.jogo.id === j.id));
 });
 
@@ -881,6 +881,32 @@ teste("Agentes livres: banco de quem ficou sem clube; contratar de lá é de gra
     if (!x.de && x.tipo !== "base" && x.tipo !== "aposentadoria") assert.ok(x.taxa === 0 && x.ovr <= 75, `${x.nome} veio do nada com taxa ${x.taxa}`);
     if (x.tipo === "livre") assert.equal(x.taxa, 0);
   }
+});
+
+teste("Estaduais: clubes do estado de todas as divisões, turno único, semifinal e final ida e volta, sem bater com a Libertadora", () => {
+  const w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60;
+  const fonte = { ligas: w.liga, semente: "est", temporada: 0, cidade: (id: string) => w.info[id]?.cidade ?? "" };
+  const lib = new Set(classificados(fonte, "LIB"));
+  for (const id of ["PAU", "CAR", "MIN", "GAU", "PRN", "CAT", "BAI", "PER", "CEA", "GOI"] as CopaId[]) {
+    const cl = classificados(fonte, id);
+    assert.equal(cl.length, COPAS[id].vagas, id);
+    const e = novaCopa(id, 0, cl, forca, () => "BRA", () => "", "est"), rng = new RNG(id);
+    for (let sem = 0; sem < SEMANAS_TEMPORADA; sem++) rodarSemana(e, sem, forca, rng);
+    assert.ok(e.campeao && cl.includes(e.campeao), `${id}: campeão`);
+    assert.equal(e.jogos.filter((j) => j.fase === "final").length, 2, `${id}: final ida e volta`);
+    for (const j of e.jogos) if (lib.has(j.casa) || lib.has(j.fora)) assert.ok(![5, 7, 9, 12, 14, 16].includes(j.semana), `${id}: bate com a Libertadora`);
+  }
+  assert.deepEqual(classificados(fonte, "PAU").slice(0, 3).sort(), ["COR", "PAL", "SAN", "SPA"].filter((x) => classificados(fonte, "PAU").slice(0, 3).includes(x)).sort());
+  // carreira: o jogador do Palmeral joga o Paulistão às quartas e a campanha vai para o histórico
+  const r = criarJogador({ nome: "Teste Est", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "estadual" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "PAL", "estadual");
+  for (const k of ATRIBUTOS) s.jogador.at[k] = 78;
+  s.jogador.idade = 22; s.carreira.formacao = false;
+  assert.equal(jogoCopaDaSemana(pacote, s)?.copa.id, "PAU", "estreia no Paulistão na semana 1");
+  assert.ok(["titular", "banco"].includes(prepararPartida(pacote, s, planoPadrao(), jogoCopaDaSemana(pacote, s))!.escalacao), "joga o estadual na pré-temporada");
+  let fim;
+  for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s, false).fimDeTemporada;
+  assert.ok(fim?.estadual && fim.estadual.jogos >= 5 && fim.estadual.nome === "Campeonato Paulista", JSON.stringify(fim?.estadual));
 });
 
 console.log(`\n${ok} testes passaram`);

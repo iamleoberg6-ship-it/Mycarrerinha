@@ -4,7 +4,7 @@ import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
 import { ordenar, type LinhaTabela } from "../../src/liga";
-import { COPAS, NOME_FASE as NOME_FASE_COPA, rotuloJogo, idaDe, copaDoClube, vencedorSerie, type CopaId, type JogoCopa } from "../../src/copas";
+import { COPAS, ufDoClube, NOME_FASE as NOME_FASE_COPA, rotuloJogo, idaDe, copaDoClube, vencedorSerie, type CopaId, type JogoCopa } from "../../src/copas";
 import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from "../../src/atributos";
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono } from "../../src/casa";
@@ -193,7 +193,7 @@ function telaSemana(s: Save): string {
       <span></span>${DIAS.map((d, i) => `<span class="cab${travados.includes(i) ? " jogo" : ""}">${d}${travados.includes(i) ? "<small>jogo</small>" : i === 4 && jogo ? "<small>vésp.</small>" : ""}</span>`).join("")}${FIM_SEMANA.map((d, i) => `<span class="cab trav">${d}<small>${jogo ? (i ? "jogo" : "conc.") : "folga"}</small></span>`).join("")}
       ${acoesDisp.map((a) => `<span class="acao">${ACOES[a].nome}<small>${esc(ACOES[a].efeito)}</small></span>${DIAS.map((d, i) => travados.includes(i) || (c.meioSemana?.semana === c.semana && i < 2) ? `<span class="cel travado" aria-hidden="true"></span>` : `<button class="cel${plano.acoes[i] === a ? " ativo" : ""}" data-dia="${i}" data-a="${a}" aria-label="${d}: ${ACOES[a].nome}" aria-pressed="${plano.acoes[i] === a}"></button>`).join("")}${FIM_SEMANA.map(() => `<span class="cel travado" aria-hidden="true"></span>`).join("")}`).join("")}
     </div>
-    ${travados.length ? `<p class="sub" style="margin-top:6px">Quarta é dia de jogo pela ${esc(COPAS[jc?.copa.id ?? copaDoClube(s.carreira.copas, s.carreira.clubeId)!.id].curto)}: só sobram quatro dias livres. O cansaço da quarta chega no domingo.</p>` : ""}
+    ${travados.length ? `<p class="sub" style="margin-top:6px">Quarta é dia de jogo ${(() => { const k = COPAS[jc?.copa.id ?? copaDoClube(s.carreira.copas, s.carreira.clubeId)!.id]; return `${k.prep === "do" ? "pelo" : "pela"} ${esc(k.curto)}`; })()}: só sobram quatro dias livres. O cansaço da quarta chega no domingo.</p>` : ""}
     <div class="previa"><span>Cansaço no jogo <b>${prev.cansaco}</b></span><span>Moral <b>${prev.moral}</b></span><span>Evolução <b>${sinal(prev.evolucao)}%</b></span>${prev.notaExtra ? `<span>Nota <b>+${prev.notaExtra.toFixed(2)}</b></span>` : ""}</div>
   </section>
   <button class="botao grande" data-acao="jogar">${jc && escQ !== "lesionado" ? "Ir para o jogo de quarta" : jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
@@ -222,8 +222,8 @@ function abaCopa(s: Save, id: CopaId): string {
   else {
     const nomes = Object.keys(e.tabelas), meuG = nomes.find((k) => e.tabelas[k].some((x) => x.clube === meu));
     const ordem = meuG ? [meuG, ...nomes.filter((k) => k !== meuG)] : nomes;
-    const zona = id === "LIB" ? (i: number) => (i < 2 ? "z-dir" : "") : (i: number) => (i < 8 ? "z-dir" : "z-fora");
-    tabelas = ordem.map((k, i) => { const h = `<p class="rotulo" style="margin:12px 0 4px">${id === "LIB" ? `Grupo ${k}` : k}</p>${tabelaCopaHtml(e.tabelas[k], meu, zona)}`; return i === 0 ? h : `<details><summary class="sub">${id === "LIB" ? `Grupo ${k}` : k}</summary>${h}</details>`; }).join("");
+    const zona = id === "LIB" ? (i: number) => (i < 2 ? "z-dir" : "") : COPAS[id].uf ? (i: number) => (i < 4 ? "z-dir" : "z-fora") : (i: number) => (i < 8 ? "z-dir" : "z-fora");
+    tabelas = ordem.map((k, i) => { const h = `<p class="rotulo" style="margin:12px 0 4px">${id === "LIB" ? `Grupo ${k}` : COPAS[id].uf ? "Primeira fase · os 4 primeiros vão à semifinal" : k}</p>${tabelaCopaHtml(e.tabelas[k], meu, zona)}`; return i === 0 ? h : `<details><summary class="sub">${id === "LIB" ? `Grupo ${k}` : k}</summary>${h}</details>`; }).join("");
   }
   const mm = FASES_MM.filter((f) => e.jogos.some((j) => j.fase === f)).reverse().map((f) => {
     const series = [...new Set(e.jogos.filter((j) => j.fase === f).map((j) => j.serie!))];
@@ -255,7 +255,9 @@ function rankingsHtml(s: Save): string {
 }
 function abaTabela(s: Save): string {
   const t = ordenar(s.carreira.tabela);
-  const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
+  // liga, as copas continentais e o estadual do clube (ou do estado dele)
+  const uf = ufDoClube(s.carreira.clubeId, mundo(pacote).info[s.carreira.clubeId]?.cidade ?? "");
+  const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).filter((k) => !COPAS[k].uf || COPAS[k].uf === uf).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
   const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${vistas.map(([k, n]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`).join("")}</div>`;
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
   return `${chips}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>` + rankingsHtml(s);
@@ -925,7 +927,7 @@ function mostrarResumo(r: ResumoSemana) {
   const q = r.copa, copaHtml = q ? `<section class="painel"><p class="rotulo dia-jogo">Quarta · ${esc(q.competicao ?? "Copa")}${q.rotulo ? ` · ${esc(q.rotulo)}` : ""}</p><h2 style="margin:4px 0">${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</h2>${q.penaltis ? `<p class="sub">${esc(q.penaltis)} venceu nos pênaltis.</p>` : ""}
       ${q.minutos > 0 ? `<div class="kv"><span>Nota</span><b>${q.nota.toFixed(1)}</b><span>Minutos</span><b>${q.minutos}</b><span>Gols / assistências</span><b>${q.gols} / ${q.assist}</b></div>` : `<p class="sub">Você não entrou em campo${q.escalacao && q.escalacao !== "banco" && q.escalacao !== "titular" ? ` (${esc(NOME_ESCALACAO[q.escalacao].toLowerCase())})` : ""}.</p>`}</section>` : "";
   const fim = r.fimDeTemporada ? `<section class="painel" style="border-color:var(--ouro)"><p class="rotulo">Fim da temporada ${r.fimDeTemporada.ano}</p><h2 style="margin:4px 0">${esc(r.fimDeTemporada.clube)} em ${r.fimDeTemporada.posicao}º${r.fimDeTemporada.titulo ? " · CAMPEÃO!" : ""}</h2>
-      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${r.fimDeTemporada.copa ? `<span>${esc(COPAS[r.fimDeTemporada.copa.id].curto)}</span><b>${r.fimDeTemporada.copa.jogos} j · ${r.fimDeTemporada.copa.gols} g · ${esc(r.fimDeTemporada.copa.fase ?? "")}</b>` : ""}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
+      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${[r.fimDeTemporada.estadual, r.fimDeTemporada.copa].filter(Boolean).map((k) => `<span>${esc(COPAS[k!.id].curto)}</span><b>${k!.jogos} j · ${k!.gols} g · ${esc(k!.fase ?? "")}</b>`).join("")}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
   $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${copaHtml}${partidaHtml}${fim}
     <section class="painel"><div style="display:flex;justify-content:space-between;align-items:flex-end"><div><p class="rotulo">OVR</p><div class="grande-num">${Math.round(r.ovrDepois)}</div></div><span class="delta ${r.ovrDepois - r.ovrAntes > 0 ? "pos" : ""}">${sinal(r.ovrDepois - r.ovrAntes, 2)}</span></div>
       <p class="sub" style="margin-top:6px">Mais evoluíram: ${r.ganhos.map(([a, v]) => `${NOME_AT[a]} ${sinal(v, 2)}`).join(" · ")}</p></section>
