@@ -195,6 +195,49 @@ export const janelasFeitas = (pacote: PacoteDados): { t: number; meio: boolean }
 };
 /** A janela do meio do ano da temporada atual, se já fechou (notícias). */
 export const janelaDoMeioAtual = (pacote: PacoteDados) => { const e = garantir(pacote); return e.feitoMeio ? e.meio[e.temporada] : undefined; };
+// ------------------------------------------------------------------ seleção da rodada / do mês
+/** Um jogador numa seleção (ou nas notas de uma rodada): nota da rodada (ou média do mês), gols e assistências. */
+export interface Selecionado { nome: string; clubeId: string; posicao: string; nota: number; gols: number; assist: number; jogos?: number; eu?: boolean }
+const hashS = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
+/** As notas dos outros jogadores da liga numa rodada (quem jogou): a média da temporada dele, os gols e passes da rodada e o dia. */
+export function notasDaRodada(pacote: PacoteDados, ligaId: string, rodada: number, clubes?: string[]): Selecionado[] {
+  const e = garantir(pacote), l = mundo(pacote).liga[ligaId];
+  if (!l) return [];
+  const n = rodadasDaLiga(l.clubes.length).length, out: Selecionado[] = [];
+  for (const c of l.clubes) {
+    if (clubes && !clubes.includes(c.id)) continue;
+    for (const j of c.elenco) {
+      const linha = (e.hist.get(j.nome) ?? []).find((x) => x.t === e.temporada && x.clubeId === c.id && (!x.liga || ((x.liga[5] ?? 0) <= rodada && rodada < (x.liga[6] ?? n))));
+      const st = linha && statsDaLinha(pacote, j.nome, linha);
+      if (!st?.jr?.includes(rodada)) continue;
+      const g = st.gr!.filter((r) => r === rodada).length, a = st.ar!.filter((r) => r === rodada).length;
+      const dia = ((hashS(`${e.semente}|${j.nome}|${rodada}`) % 1000) / 1000 - 0.5) * 1.8;
+      out.push({ nome: j.nome, clubeId: c.id, posicao: j.posicao, nota: Math.round(Math.min(9.6, Math.max(4.5, st.n + 1.0 * g + 0.5 * a + dia)) * 10) / 10, gols: g, assist: a });
+    }
+  }
+  return out;
+}
+/** Os 11 da seleção (4-3-3: goleiro, 2 zagueiros, 2 laterais, volante, 2 meias, 2 pontas, centroavante). */
+export const VAGAS_SELECAO: [string, number][] = [["GOL", 1], ["LAT", 2], ["ZAG", 2], ["VOL", 1], ["MEI", 2], ["PON", 2], ["ATA", 1]];
+function montarSelecao(lista: Selecionado[]): Selecionado[] {
+  const ord = [...lista].sort((a, b) => b.nota - a.nota || b.gols - a.gols || Number(!!b.eu) - Number(!!a.eu));
+  return VAGAS_SELECAO.flatMap(([p, k]) => ord.filter((x) => x.posicao === p).slice(0, k));
+}
+/** Seleção da rodada da liga. `extra`: o jogador do usuário, com a nota dele na rodada. */
+export function selecaoDaRodada(pacote: PacoteDados, ligaId: string, rodada: number, extra: Selecionado[] = []): Selecionado[] {
+  return montarSelecao([...notasDaRodada(pacote, ligaId, rodada), ...extra]);
+}
+/** Seleção do mês (quatro rodadas): média de quem jogou pelo menos três, com um bônus pelos gols e passes. */
+export function selecaoDoMes(pacote: PacoteDados, ligaId: string, rodadas: number[], extra: Selecionado[] = []): Selecionado[] {
+  const soma = new Map<string, Selecionado>();
+  for (const x of [...rodadas.flatMap((r) => notasDaRodada(pacote, ligaId, r)), ...extra]) {
+    const k = `${x.nome}|${x.clubeId}`, y = soma.get(k);
+    if (y) { y.nota += x.nota; y.gols += x.gols; y.assist += x.assist; y.jogos = (y.jogos ?? 1) + (x.jogos ?? 1); } else soma.set(k, { ...x, jogos: x.jogos ?? 1 });
+  }
+  const minimo = Math.max(1, rodadas.length - 1);
+  const lista = [...soma.values()].filter((x) => (x.jogos ?? 0) >= minimo).map((x) => ({ ...x, nota: Math.round((x.nota / x.jogos! + 0.05 * (x.gols + x.assist * 0.5)) * 100) / 100 }));
+  return montarSelecao(lista);
+}
 export interface LinhaRanking { nome: string; clubeId: string; valor: number; jogos: number }
 /** Artilharia ou assistências da liga até a rodada `feitas` (os outros jogadores; o do usuário entra na tela). */
 export function rankingDaLiga(pacote: PacoteDados, ligaId: string, feitas: number, tipo: "g" | "a", limite = 10): LinhaRanking[] {

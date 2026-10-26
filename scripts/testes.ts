@@ -10,7 +10,7 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
-import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres } from "../src/mundo.js";
+import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes } from "../src/mundo.js";
 import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -907,6 +907,26 @@ teste("Estaduais: clubes do estado de todas as divisões, turno único, semifina
   let fim;
   for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s, false).fimDeTemporada;
   assert.ok(fim?.estadual && fim.estadual.jogos >= 5 && fim.estadual.nome === "Campeonato Paulista", JSON.stringify(fim?.estadual));
+});
+
+teste("Seleção da rodada e do mês: 4-3-3 com os melhores da liga; o jogador entra com nota alta; melhor em campo", () => {
+  sincronizarMundo(pacote, "sel", 0);
+  const sel = selecaoDaRodada(pacote, "BRA1", 5);
+  assert.equal(sel.length, 11);
+  for (const [p, k] of [["GOL", 1], ["ZAG", 2], ["LAT", 2], ["VOL", 1], ["MEI", 2], ["PON", 2], ["ATA", 1]] as const) assert.equal(sel.filter((x) => x.posicao === p).length, k, p);
+  const eu = { nome: "Eu", clubeId: "FLA", posicao: "ATA", nota: 10, gols: 3, assist: 0, eu: true };
+  assert.ok(selecaoDaRodada(pacote, "BRA1", 5, [eu]).some((x) => x.eu));
+  assert.ok(!selecaoDaRodada(pacote, "BRA1", 5, [{ ...eu, nota: 5 }]).some((x) => x.eu));
+  const mes = selecaoDoMes(pacote, "BRA1", [0, 1, 2, 3]);
+  assert.equal(mes.length, 11);
+  const r = criarJogador({ nome: "Teste Mvp", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "mvp" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "mvp");
+  for (const k of ATRIBUTOS) s.jogador.at[k] = 88;
+  s.jogador.idade = 24; s.carreira.formacao = false;
+  let fim;
+  for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s, false).fimDeTemporada;
+  assert.ok((fim!.mvp ?? 0) >= 3 && (fim!.selRodada ?? 0) >= 1, JSON.stringify([fim!.mvp, fim!.selRodada]));
+  assert.ok((s.casa.reliquias ?? []).some((x) => x.id === "rel-trofeu-mvp-1"), "troféu do primeiro melhor em campo");
 });
 
 console.log(`\n${ok} testes passaram`);
