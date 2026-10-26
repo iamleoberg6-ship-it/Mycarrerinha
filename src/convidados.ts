@@ -5,7 +5,7 @@ import { RNG, clamp } from "./rng.js";
 import type { Posicao } from "./atributos.js";
 import type { Clube, JogadorNPC } from "./liga.js";
 
-export interface Convidado { id: string; nome: string; apelido: string; cidade: string; estadio: string; pais: string; cores: string[]; padrao: string; forca: number; regiao: "SUL" | "EUR" | "ASO" | "ASL" }
+export interface Convidado { id: string; nome: string; apelido: string; cidade: string; estadio: string; pais: string; cores: string[]; padrao: string; forca: number; regiao: "SUL" | "EUR" | "ASO" | "ASL" | "AFR" | "OCE" }
 
 export const TODOS_CONVIDADOS: Convidado[] = [
   // América do Sul
@@ -56,7 +56,13 @@ export const TODOS_CONVIDADOS: Convidado[] = [
   { id: "AU-CCM", nome: "Costa Central Marinheiros", apelido: "Mariners", cidade: "Gosford", estadio: "Industree", pais: "AUS", cores: ["#F5C400", "#0B2F7A"], padrao: "lisa", forca: 62, regiao: "ASL" },
   { id: "AU-MEL", nome: "Melburno Cidade", apelido: "City", cidade: "Melbourne", estadio: "AAMI Park", pais: "AUS", cores: ["#6CB4E4", "#FFFFFF"], padrao: "lisa", forca: 63, regiao: "ASL" },
   { id: "TH-BUR", nome: "Buriram Unidos", apelido: "Castelo do Trovão", cidade: "Buriram", estadio: "Chang Arena", pais: "THA", cores: ["#0B2F7A", "#F58220"], padrao: "lisa", forca: 62, regiao: "ASL" },
-  { id: "MY-JDT", nome: "Johor Tigres do Sul", apelido: "Tigres do Sul", cidade: "Johor Bahru", estadio: "Sultan Ibrahim", pais: "MAS", cores: ["#1C4FA1", "#C8102E"], padrao: "faixaH", forca: 63, regiao: "ASL" },
+  { id: "MY-JDT", nome: "Johor Tigres do Sul", apelido: "Tigres do Sul", cidade: "Johor Bahru", estadio: "Sultan Ibrahim", pais: "MAS", cores: ["#1C4FA1", "#C8102E"], padrao: "faixaH", forca: 63, regiao: "ASL" },  // África e Oceania: só para o Mundial de Clubes
+  { id: "EG-AHL", nome: "Al-Ahlí do Cairo", apelido: "Diabos Vermelhos", cidade: "Cairo", estadio: "Cairo Internacional", pais: "EGY", cores: ["#C8102E", "#FFFFFF"], padrao: "lisa", forca: 70, regiao: "AFR" },
+  { id: "MA-WAC", nome: "Uidade Casablanca", apelido: "Wydadis", cidade: "Casablanca", estadio: "Mohammed V", pais: "MAR", cores: ["#C8102E", "#FFFFFF"], padrao: "lisa", forca: 67, regiao: "AFR" },
+  { id: "TN-EST", nome: "Esperança de Túnis", apelido: "Sang et Or", cidade: "Túnis", estadio: "Hammadi Agrebi", pais: "TUN", cores: ["#C8102E", "#F5C400"], padrao: "listrasV", forca: 66, regiao: "AFR" },
+  { id: "ZA-SUN", nome: "Mamelodi Sundaunes", apelido: "Brasileiros", cidade: "Pretória", estadio: "Loftus Versfeld", pais: "RSA", cores: ["#F5C400", "#0B7A3B"], padrao: "lisa", forca: 67, regiao: "AFR" },
+  { id: "EG-PYR", nome: "Pirâmides FC", apelido: "Faraós", cidade: "Cairo", estadio: "30 de Junho", pais: "EGY", cores: ["#0B3D91", "#FFFFFF"], padrao: "lisa", forca: 67, regiao: "AFR" },
+  { id: "NZ-AUC", nome: "Auclande City", apelido: "Navy Blues", cidade: "Auckland", estadio: "Kiwitea Street", pais: "NZL", cores: ["#0B2F7A", "#FFFFFF"], padrao: "lisa", forca: 55, regiao: "OCE" },
 ];
 /** Países que ganharam liga própria (src/ligas-extra.ts): os clubes deles jogam a liga e entram nas copas pela tabela. */
 const COM_LIGA = new Set(["URU", "COL", "CHI", "PAR", "ECU", "TUR"]);
@@ -78,7 +84,7 @@ const NOMES: Record<string, [string[], string[]]> = {
   th: [["Chanathip", "Teerasil", "Supachai", "Theerathon", "Ekanit", "Sarach", "Bordin", "Peeradon"], ["Songkrasin", "Dangda", "Chaided", "Bunmathan", "Panya", "Yooyen", "Phala", "Chamratsamee"]],
   ms: [["Safawi", "Arif", "Faisal", "Akhyar", "Syamer", "Hakimi", "Danial", "Nazmi"], ["Rasid", "Aiman", "Halim", "Rashid", "Kutty", "Azmi", "Ashraf", "Faiz"]],
 };
-const LINGUA: Record<string, string> = { URU: "es", COL: "es", CHI: "es", PAR: "es", ECU: "es", PER: "es", BOL: "es", BEL: "nl", SCO: "en", AUT: "de", TUR: "tr", UAE: "ar", QAT: "ar", IRN: "fa", JPN: "ja", KOR: "ko", CHN: "zh", AUS: "en", THA: "th", MAS: "ms" };
+const LINGUA: Record<string, string> = { URU: "es", COL: "es", CHI: "es", PAR: "es", ECU: "es", PER: "es", BOL: "es", BEL: "nl", SCO: "en", AUT: "de", TUR: "tr", UAE: "ar", QAT: "ar", IRN: "fa", JPN: "ja", KOR: "ko", CHN: "zh", AUS: "en", THA: "th", MAS: "ms", EGY: "ar", MAR: "ar", TUN: "ar", RSA: "en", NZL: "en" };
 
 /** Clube de jogo (com elenco) de um convidado: sempre o mesmo para o mesmo id. */
 export function clubeConvidado(c: Convidado): Clube {

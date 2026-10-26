@@ -151,7 +151,7 @@ function telaSemana(s: Save): string {
     const j0 = jc.jogo, ida = idaDe(jc.copa, j0), cls = escQ === "titular" ? "titular" : escQ === "banco" ? "banco" : "ruim";
     return `<p class="rotulo dia-jogo">Quarta · ${esc(COPAS[jc.copa.id].nome)}</p><div class="confronto"><div class="time">${escudo(j0.casa)}<span>${esc(nomeDe(j0.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(j0.fora))}</span>${escudo(j0.fora)}</div></div>
       <div class="linha-info"><span>${j0.neutro ? "Campo neutro" : j0.casa === c.clubeId ? "Em casa" : "Fora de casa"}</span><span>${esc(rotuloJogo(j0))}</span>${ida ? `<span>Ida: ${esc(nomeDe(ida.casa))} <b>${ida.gc} × ${ida.gf}</b> ${esc(nomeDe(ida.fora))}</span>` : ""}</div>
-      <div><span class="tag ${cls}">Previsão: ${NOME_ESCALACAO[escQ!].toLowerCase()}</span></div><p class="rotulo dia-jogo" style="margin-top:10px">Domingo · ${esc(infoLiga(c.ligaId).curto)}</p>`;
+      <div><span class="tag ${cls}">Previsão: ${NOME_ESCALACAO[escQ!].toLowerCase()}</span></div>${jogo ? `<p class="rotulo dia-jogo" style="margin-top:10px">Domingo · ${esc(infoLiga(c.ligaId).curto)}</p>` : ""}`;
   })() : (() => {
     const m = c.meioSemana;
     if (!m || m.semana !== c.semana) return "";
@@ -160,8 +160,9 @@ function telaSemana(s: Save): string {
   })();
   const jogoHtml = jogo ? `<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(nomeDe(jogo.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(jogo.fora))}</span>${escudo(jogo.fora)}</div></div>
       <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(infoLiga(c.ligaId).curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
+    : c.semana >= SEMANAS_PRE + nRodadas(c) && c.copas?.MUN?.clubes.includes(c.clubeId) ? (jc ? "" : `<p class="sub">Semana do Mundial de Clubes.</p>`)
     : c.semana < SEMANAS_PRE ? `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>` : `<p class="sub">A ${esc(infoLiga(c.ligaId).curto)} já terminou. Semana de treino até o fim do calendário.</p>`;
-  const previsao = escPrev === "semJogo" ? "" : `<div><span class="tag ${tagCls}">${escPrev === "base" ? `Jogo da base (${categoriaBase(j.idade)})${reservaNaBase(pacote, s, prev.cansaco) ? " · reserva" : " · titular"}` : `Previsão: ${NOME_ESCALACAO[escPrev].toLowerCase()}`}</span></div>`;
+  const previsao = escPrev === "semJogo" || (!jogo && c.semana >= SEMANAS_PRE) ? "" : `<div><span class="tag ${tagCls}">${escPrev === "base" ? `Jogo da base (${categoriaBase(j.idade)})${reservaNaBase(pacote, s, prev.cansaco) ? " · reserva" : " · titular"}` : `Previsão: ${NOME_ESCALACAO[escPrev].toLowerCase()}`}</span></div>`;
   const focos: [Grupo, string][] = [["fisico", "Físico"], ["tecnico", "Técnico"], ["tatico", "Tático"]];
   const ints: [Intensidade, string][] = [["leve", "Leve"], ["normal", "Normal"], ["alta", "Puxado"]];
   const acoesDisp = (Object.keys(ACOES) as Acao[]).filter((a) => a !== "video" || jogo);
@@ -204,7 +205,7 @@ function telaSemana(s: Save): string {
 }
 
 let vistaTabela: "liga" | CopaId = "liga";
-const FASES_MM = ["playoff", "oitavas", "quartas", "semi", "final"];
+const FASES_MM = ["derby", "desafio", "playoff", "oitavas", "quartas", "semi", "final"];
 function tabelaCopaHtml(t: LinhaTabela[], meu: string, zona?: (i: number) => string) {
   return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${ordenar(t).map((x, i) => `<tr class="${x.clube === meu ? "meu" : ""} ${zona ? zona(i) : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
@@ -222,8 +223,8 @@ function abaCopa(s: Save, id: CopaId): string {
   else {
     const nomes = Object.keys(e.tabelas), meuG = nomes.find((k) => e.tabelas[k].some((x) => x.clube === meu));
     const ordem = meuG ? [meuG, ...nomes.filter((k) => k !== meuG)] : nomes;
-    const zona = id === "LIB" ? (i: number) => (i < 2 ? "z-dir" : "") : COPAS[id].uf ? (i: number) => (i < 4 ? "z-dir" : "z-fora") : (i: number) => (i < 8 ? "z-dir" : "z-fora");
-    tabelas = ordem.map((k, i) => { const h = `<p class="rotulo" style="margin:12px 0 4px">${id === "LIB" ? `Grupo ${k}` : COPAS[id].uf ? "Primeira fase · os 4 primeiros vão à semifinal" : k}</p>${tabelaCopaHtml(e.tabelas[k], meu, zona)}`; return i === 0 ? h : `<details><summary class="sub">${id === "LIB" ? `Grupo ${k}` : k}</summary>${h}</details>`; }).join("");
+    const zona = id === "LIB" || id === "MUN" ? (i: number) => (i < 2 ? "z-dir" : "") : COPAS[id].uf ? (i: number) => (i < 4 ? "z-dir" : "z-fora") : (i: number) => (i < 8 ? "z-dir" : "z-fora");
+    tabelas = ordem.map((k, i) => { const h = `<p class="rotulo" style="margin:12px 0 4px">${id === "LIB" || id === "MUN" ? `Grupo ${k}` : COPAS[id].uf ? "Primeira fase · os 4 primeiros vão à semifinal" : k}</p>${tabelaCopaHtml(e.tabelas[k], meu, zona)}`; return i === 0 ? h : `<details><summary class="sub">${id === "LIB" || id === "MUN" ? `Grupo ${k}` : k}</summary>${h}</details>`; }).join("");
   }
   const mm = FASES_MM.filter((f) => e.jogos.some((j) => j.fase === f)).reverse().map((f) => {
     const series = [...new Set(e.jogos.filter((j) => j.fase === f).map((j) => j.serie!))];
@@ -295,7 +296,7 @@ function abaTabela(s: Save): string {
   const t = ordenar(s.carreira.tabela);
   // liga, as copas continentais e o estadual do clube (ou do estado dele)
   const uf = ufDoClube(s.carreira.clubeId, mundo(pacote).info[s.carreira.clubeId]?.cidade ?? "");
-  const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).filter((k) => !COPAS[k].uf || COPAS[k].uf === uf).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
+  const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).filter((k) => k === "INT" || k === "MUN" ? !!s.carreira.copas?.[k] : !COPAS[k].uf || COPAS[k].uf === uf).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
   const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${vistas.map(([k, n]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`).join("")}</div>`;
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
   return `${chips}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>` + selecaoHtml(s) + rankingsHtml(s) + premiosLigaHtml(s);
@@ -966,7 +967,7 @@ function mostrarResumo(r: ResumoSemana) {
   const q = r.copa, copaHtml = q ? `<section class="painel"><p class="rotulo dia-jogo">Quarta · ${esc(q.competicao ?? "Copa")}${q.rotulo ? ` · ${esc(q.rotulo)}` : ""}${q.melhorEmCampo ? " · ★ Melhor em campo" : ""}</p><h2 style="margin:4px 0">${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</h2>${q.penaltis ? `<p class="sub">${esc(q.penaltis)} venceu nos pênaltis.</p>` : ""}
       ${q.minutos > 0 ? `<div class="kv"><span>Nota</span><b>${q.nota.toFixed(1)}</b><span>Minutos</span><b>${q.minutos}</b><span>Gols / assistências</span><b>${q.gols} / ${q.assist}</b></div>` : `<p class="sub">Você não entrou em campo${q.escalacao && q.escalacao !== "banco" && q.escalacao !== "titular" ? ` (${esc(NOME_ESCALACAO[q.escalacao].toLowerCase())})` : ""}.</p>`}</section>` : "";
   const fim = r.fimDeTemporada ? `<section class="painel" style="border-color:var(--ouro)"><p class="rotulo">Fim da temporada ${r.fimDeTemporada.ano}</p><h2 style="margin:4px 0">${esc(r.fimDeTemporada.clube)} em ${r.fimDeTemporada.posicao}º${r.fimDeTemporada.titulo ? " · CAMPEÃO!" : ""}</h2>
-      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${[r.fimDeTemporada.estadual, r.fimDeTemporada.copa].filter(Boolean).map((k) => `<span>${esc(COPAS[k!.id].curto)}</span><b>${k!.jogos} j · ${k!.gols} g · ${esc(k!.fase ?? "")}</b>`).join("")}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
+      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${[r.fimDeTemporada.estadual, r.fimDeTemporada.copa, ...(r.fimDeTemporada.extras ?? [])].filter(Boolean).map((k) => `<span>${esc(COPAS[k!.id].curto)}</span><b>${k!.jogos} j · ${k!.gols} g · ${esc(k!.fase ?? "")}</b>`).join("")}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
   $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${copaHtml}${partidaHtml}${fim}${r.fimDeTemporada && save!.carreira.premiosLiga ? `<section class="painel">${premiosLigaHtml(save!)}</section>` : ""}
     <section class="painel"><div style="display:flex;justify-content:space-between;align-items:flex-end"><div><p class="rotulo">OVR</p><div class="grande-num">${Math.round(r.ovrDepois)}</div></div><span class="delta ${r.ovrDepois - r.ovrAntes > 0 ? "pos" : ""}">${sinal(r.ovrDepois - r.ovrAntes, 2)}</span></div>
       <p class="sub" style="margin-top:6px">Mais evoluíram: ${r.ganhos.map(([a, v]) => `${NOME_AT[a]} ${sinal(v, 2)}`).join(" · ")}</p></section>

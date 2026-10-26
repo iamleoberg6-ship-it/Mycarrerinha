@@ -28,10 +28,10 @@ import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
 import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
-import { COPAS, SEMANAS_COPA, novaCopa, rodarSemana, classificados, regiaoNaCopa, jogoDoClubeNaSemana, type CopaId } from "../src/copas.js";
+import { COPAS, SEMANAS_COPA, novaCopa, rodarSemana, classificados, regiaoNaCopa, jogoDoClubeNaSemana, confederacao, type CopaId } from "../src/copas.js";
 import { CONVIDADOS } from "../src/convidados.js";
 import { nivelBase } from "../src/evolucao.js";
-import { copasDe, jogoCopaDaSemana, diasTravados, concluirJogoDaCopa, escalacao, fatorDoClube } from "../src/jogo.js";
+import { copasDe, jogoCopaDaSemana, diasTravados, concluirJogoDaCopa, escalacao, fatorDoClube, participantesMundial } from "../src/jogo.js";
 import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type EscolhasCriacao } from "../src/dna.js";
 
 let ok = 0;
@@ -940,6 +940,28 @@ teste("Prêmios do campeonato: seleção, craque, artilheiro, garçom e revelaç
   assert.ok(q.craque?.eu && q.artilheiro?.eu && q.selecao.some((x) => x.eu) && q.revelacao?.eu);
   const r = premiosDaLiga(pacote, "BRA1", 2026, [{ ...eu, nota: 6, gols: 2, assist: 1 }]);
   assert.ok(!r.craque?.eu && !r.selecao.some((x) => x.eu));
+});
+
+teste("Intercontinental todo ano e Mundial de Clubes a cada quatro anos, com os critérios da FIFA adaptados", () => {
+  const r = criarJogador({ nome: "Teste Mundo", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "mundial" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "mundial");
+  const w = mundo(pacote), pais = (id: string) => w.info[id]?.pais ?? "";
+  const int = copasDe(pacote, s).INT!;
+  assert.equal(int.clubes.length, 4);
+  assert.deepEqual(int.clubes.map((x) => confederacao(pais(x))), ["CONCACAF", "CONMEBOL", "AFC", "UEFA"]);
+  const forca = (id: string) => w.clube[id]?.forca ?? 60, rng = new RNG("int");
+  for (let sem = 0; sem < 40; sem++) rodarSemana(int, sem, forca, rng);
+  assert.ok(int.campeao && int.jogos.length === 3 && int.jogos.every((j) => j.neutro && [17, 27, 34].includes(j.semana)));
+  assert.ok(!copasDe(pacote, s).MUN, "2026 não é ano de Mundial");
+  const m = participantesMundial(pacote, s, 3);
+  assert.equal(m.length, 32); assert.equal(new Set(m).size, 32);
+  const conta = (cf: string) => m.filter((x) => confederacao(pais(x)) === cf).length;
+  assert.ok(conta("UEFA") === 12 && conta("CAF") === 4 && conta("OFC") === 1 && conta("AFC") === 4 && conta("CONCACAF") === 4 && conta("CONMEBOL") >= 6, JSON.stringify(["UEFA", "CONMEBOL", "AFC", "CONCACAF"].map(conta)));
+  const e = novaCopa("MUN", 3, m, forca, pais, (id) => confederacao(pais(id)), "mundial"), r2 = new RNG("mun");
+  for (const g of Object.values(e.tabelas)) assert.ok(g.filter((x) => confederacao(pais(x.clube)) === "UEFA").length <= 2);
+  for (let sem = 40; sem <= 46; sem++) rodarSemana(e, sem, forca, r2);
+  assert.ok(e.campeao && m.includes(e.campeao));
+  assert.equal(e.jogos.length, 48 + 8 + 4 + 2 + 1);
 });
 
 console.log(`\n${ok} testes passaram`);
