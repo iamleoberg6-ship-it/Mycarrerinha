@@ -673,6 +673,23 @@ export function tirarDoDeposito(e: EstadoCasa, uid: string, comodo: string): Res
   return { ok: false, msg: "Não tem espaço para esse item nesta casa." };
 }
 
+export const MAX_RELIQUIAS_COMODO = 4;
+const reliquiasNoComodo = (e: EstadoCasa, comodo: string) => e.objetos.filter((o) => o.comodo === comodo && ehReliquia(o.item));
+/** Arruma a casa: fora da sala de troféus, cada cômodo fica com as relíquias mais recentes; as outras vão para o depósito. */
+export function arrumarReliquias(e: EstadoCasa): Resultado {
+  const ano = (id: string) => e.reliquias?.find((r) => r.id === id)?.ano ?? 0;
+  let n = 0;
+  for (const c of imovelAtual(e).comodos) {
+    if (c.tipo === "trofeus") continue;
+    const rs = reliquiasNoComodo(e, c.id).sort((a, b) => ano(b.item) - ano(a.item));
+    for (const o of rs.slice(MAX_RELIQUIAS_COMODO)) {
+      e.objetos.splice(e.objetos.indexOf(o), 1);
+      e.deposito.push({ uid: o.uid, item: o.item, cor: o.cor });
+      n++;
+    }
+  }
+  return n ? { ok: true, msg: `${n} ${n === 1 ? "relíquia guardada" : "relíquias guardadas"} no depósito. Cada cômodo ficou com as ${MAX_RELIQUIAS_COMODO} mais recentes.` } : { ok: false, msg: "A casa já está arrumada." };
+}
 /** Uma relíquia nova vai direto para a casa: sala de troféus, sala, quarto... ou depósito, se não couber. */
 export function ganharReliquia(e: EstadoCasa, r: Reliquia): Resultado {
   e.reliquias ??= [];
@@ -682,6 +699,8 @@ export function ganharReliquia(e: EstadoCasa, r: Reliquia): Resultado {
   const cs = [...imovelAtual(e).comodos].sort((a, b) => (ordem.indexOf(a.tipo) + 1 || 99) - (ordem.indexOf(b.tipo) + 1 || 99));
   for (const c of cs) {
     if (!TIPOS[ITENS[r.id].tipo].comodos.includes(c.tipo)) continue;
+    // fora da sala de troféus, no máximo algumas relíquias por cômodo (o resto vai para o depósito, sem lotar a casa)
+    if (c.tipo !== "trofeus" && reliquiasNoComodo(e, c.id).length >= MAX_RELIQUIAS_COMODO) continue;
     const lugar = acharLugar(e, r.id, c.id, uid);
     if (lugar) { e.objetos.push({ ...lugar, cor: 0 }); return { ok: true, msg: `${r.nome}, já ${noComodo(c.tipo)}.`, uid, comodo: c.id }; }
   }

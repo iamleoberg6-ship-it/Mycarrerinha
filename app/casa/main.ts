@@ -6,6 +6,7 @@ import {
   imovelAtual, mover, mudar, novoEstado, patrimonio, podeMudar, podeReformar, precoAcabamento, precoTrocaCor, reformar,
   rendaMinima, tirarDoDeposito, trocarCor, vender, registrarReliquias, ganharReliquia, ehReliquia, noComodo, VALOR_REVENDA, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
   type Acabamento, type Categoria, type CategoriaImovel, type Efeitos, type Estilo, type EstadoCasa, type Item, type Objeto, type TipoComodo,
+  arrumarReliquias, MAX_RELIQUIAS_COMODO,
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
 import { salarioLiquido, type Save } from "../../src/jogo";
@@ -194,6 +195,8 @@ function renderConquistas() {
   const grupos: Grupo[] = ["Camisas", "Bolas", "Troféus"];
   let h = `<p class="sub">${feitas} de ${total} conquistas · ${rels.length} ${rels.length === 1 ? "relíquia" : "relíquias"} na coleção. Toda relíquia vai para qualquer cômodo e dá +1 de moral.</p>`;
   if (!carreira) h += `<div class="ferr-botoes"><button class="botao sec peq" data-acao="exemplos">Liberar relíquias de exemplo</button></div>`;
+  const soltas = st.e.objetos.filter((o) => ehReliquia(o.item) && comodoDe(st.e, o.comodo).tipo !== "trofeus").length;
+  if (soltas > MAX_RELIQUIAS_COMODO) h += `<div class="ferr-botoes"><button class="botao sec peq" data-acao="arrumar">Arrumar a casa (deixar ${MAX_RELIQUIAS_COMODO} por cômodo)</button></div><p class="sub">A sala de troféus não tem limite. O que sair fica no depósito e volta quando você quiser.</p>`;
   for (const gr of grupos) {
     const cards: string[] = [];
     for (const c of CONQUISTAS.filter((x) => x.grupo === gr)) {
@@ -376,6 +379,7 @@ document.addEventListener("click", (ev) => {
 });
 
 function acao(a: string, d: DOMStringMap) {
+  if (a === "arrumar") { const r = arrumarReliquias(st.e); aviso(r.msg, !r.ok); tudo(); return; }
   if (a === "exemplos") { const r = reliquiasDeExemplo(); aviso(r.msg, !r.ok); tudo(); return; }
   const o = objSel(); if (!o && a !== "semprevia") return;
   let r: { ok: boolean; msg: string } = { ok: true, msg: "" };
