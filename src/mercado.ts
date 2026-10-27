@@ -1,5 +1,6 @@
 // Contratos, valor de mercado, salário e interesse dos clubes — seções "Contratos e transferências"
 // e "Interesse dos clubes e ambientação" do documento de design.
+import { SO_BASCOS } from "./evolucao.js";
 import { RNG, clamp } from "./rng.js";
 import type { Posicao } from "./atributos.js";
 import type { Clube, Liga } from "./liga.js";
@@ -149,6 +150,7 @@ export function gerarPropostas(rng: RNG, p: PerfilMercado, mundo: Liga[], fama: 
   for (const liga of mundo) {
     if (!forcado && ag.ligas !== "todas" && !ag.ligas.includes(liga.id)) continue;
     for (const clube of liga.clubes) {
+      if (clube.id === SO_BASCOS) continue; // o Atlético Bilbau só contrata bascos
       const c = componentesInteresse(p, clube, liga);
       if (!passaFiltros(p, clube, liga, c.vm, c.orcamento, forcado)) continue;
       // o Golfo vai atrás de jogador experiente e conhecido; o resto do interesse tem um pouco de acaso (olheiro, técnico, momento)

@@ -297,7 +297,7 @@ function premiosMundoHtml(s: Save): string {
     ${bola ? `<p class="sub" style="margin-bottom:4px">Bola de Ouro${meu >= 0 ? ` · você ficou em <b>${meu + 1}º</b>` : ""}</p>${bola.ranking.map((x, i) => `<div class="premio-l${i === 0 ? " ouro" : ""}"><span class="rotulo">${i + 1}º</span><span>${quem(x)}</span><b>${extra(bola, x)}</b></div>`).join("")}` : ""}
     <p class="sub" style="margin:10px 0 4px">Os outros prêmios <small>(cada um com os seus votantes)</small></p>
     ${outros.map((pr) => `<div class="premio-l largo"><span class="rotulo">${esc(pr.nome)}</span><span>${quem(pr.ranking[0])}</span><b>${extra(pr, pr.ranking[0])}</b></div>`).join("")}
-    ${p.selecao.length ? `<p class="sub" style="margin:10px 0 6px">Seleção do Ano</p><div class="campinho">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : ""}
+    ${p.selecao.length ? `<p class="sub" style="margin:10px 0 6px">Seleção FIFA do Ano <small>(os 11 do mundo, votados pelos jogadores)</small></p><div class="campinho">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : ""}
     ${gal.length > 1 ? `<details style="margin-top:8px"><summary class="sub">Galeria da Bola de Ouro</summary>${[...gal].reverse().map((g) => `<div class="premio-l"><span class="rotulo">${g.ano}</span><span>${g.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : esc(g.nome)} <small class="sub">${esc(nomeDe(g.clubeId))}</small></span><b></b></div>`).join("")}</details>` : ""}`;
 }
 const nomeCurtoSel = (n: string) => { const p = n.split(" "); return p.length > 2 ? `${p[0]} ${p[p.length - 1]}` : n; };

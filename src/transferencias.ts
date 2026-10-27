@@ -182,7 +182,7 @@ const golfoQuer = (p: Proposta, s: Save) => p.liga.id !== "KSA1" || s.jogador.id
 /** Um amigo do clube indicou você: o clube dele faz uma proposta (só com janela aberta). */
 export function propostaPorIndicacao(pacote: PacoteDados, s: Save, clubeId: string): PropostaSave | undefined {
   const c = s.carreira, w = mundo(pacote), clube = w.clube[clubeId];
-  if (!clube || clubeId === c.clubeId || !janelaAberta(c) || c.formacao || s.jogador.idade < 18) return undefined;
+  if (!clube || clubeId === c.clubeId || clubeId === "ES-ATH" || !janelaAberta(c) || c.formacao || s.jogador.idade < 18) return undefined;
   const liga = w.liga[clube.ligaId], perfil = perfilDe(pacote, s), comp = componentesInteresse(perfil, clube, liga);
   const salario = salarioMensal({ ovr: ovr(s.jogador), idade: s.jogador.idade, liga, clube, agente: c.agente, fama: c.fama });
   const p = paraSave(pacote, s, { clube, liga, interesse: 0.7, taxa: perfil.clubeAtual ? comp.vm : 0, orcamento: comp.orcamento, salario, anos: 3, titularProvavel: comp.titular });

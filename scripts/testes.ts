@@ -1036,4 +1036,16 @@ teste("Prêmios do mundo: Bola de Ouro, Melhor da Europa, Rei da América... cad
   assert.ok(p.premios.find((x) => x.id === "BOLA")!.ranking[0].eu && p.premios.find((x) => x.id === "UEFA")!.ranking[0].eu);
 });
 
+teste("Atlético Bilbau: só bascos, temporada após temporada (base, mercado e reposição)", () => {
+  for (let t = 0; t <= 6; t++) {
+    sincronizarMundo(pacote, "bilbau", t, 30);
+    const ath = mundo(pacote).clube["ES-ATH"];
+    assert.ok(ath.elenco.length >= 20);
+    const fora = ath.elenco.filter((j) => !j.basco);
+    assert.equal(fora.length, 0, `temporada ${t}: ${fora.map((j) => j.nome).join(", ")}`);
+    assert.ok(baseDoClube(pacote, "ES-ATH").every((j) => j.basco));
+  }
+  sincronizarMundo(pacote, "", 0);
+});
+
 console.log(`\n${ok} testes passaram`);

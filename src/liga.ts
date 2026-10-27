@@ -9,6 +9,8 @@ export interface JogadorNPC {
   ovr: number;
   idade: number;
   nacionalidade: string;
+  /** nascido ou formado no País Basco (o Atlético Bilbau só tem desses) */
+  basco?: boolean;
   numero?: number;
   /** potencial (gerado na primeira virada de temporada, ou na criação dos garotos da base) */
   pot?: number;

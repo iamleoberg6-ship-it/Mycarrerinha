@@ -65,6 +65,8 @@ const POOLS: Record<string, Pool> = {
   ko: { primeiros: ["Min-jae", "Seung-ho", "Jae-sung", "Hyun-woo", "Dong-gyeong", "Kang-hyun", "Ui-jo", "Young-gwon", "Tae-hwan", "Ji-sung"], sobrenomes: ["Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Cho", "Yoon", "Jang", "Lim"] },
   zh: { primeiros: ["Wei", "Lei", "Hao", "Jun", "Yang", "Peng", "Tao", "Bin", "Xin", "Chen"], sobrenomes: ["Wang", "Li", "Zhang", "Liu", "Chen", "Yang", "Zhao", "Wu", "Zhou", "Xu"] },
   th: { primeiros: ["Chanathip", "Supachai", "Theerathon", "Ekanit", "Sarach", "Bordin", "Peeradon", "Suphanat"], sobrenomes: ["Songkrasin", "Chaided", "Bunmathan", "Panya", "Yooyen", "Phala", "Chamratsamee", "Mueanta"] },
+  // bascos (Atlético Bilbau e vizinhos)
+  eu: { primeiros: ["Iker", "Unai", "Aitor", "Mikel", "Ander", "Asier", "Gorka", "Iñaki", "Oier", "Julen", "Beñat", "Xabier", "Jon", "Ibai", "Endika", "Peio", "Urko", "Eneko", "Markel", "Iñigo", "Oihan", "Unax"], sobrenomes: ["Etxeberria", "Agirre", "Goikoetxea", "Zubiaurre", "Arrieta", "Olabarria", "Larrañaga", "Elizondo", "Urrutia", "Garmendia", "Iturralde", "Aranburu", "Zabala", "Mendizabal", "Ugarte", "Lekuona", "Bengoetxea", "Otxoa", "Uriarte", "Ibarrola", "Arana", "Etxebarria", "Zubeldia", "Goiri"] },
   ms: { primeiros: ["Safawi", "Arif", "Faisal", "Akhyar", "Syamer", "Hakimi", "Danial", "Nazmi"], sobrenomes: ["Rasid", "Aiman", "Halim", "Rashid", "Kutty", "Azmi", "Ashraf", "Faiz"] },
 };
 
@@ -78,7 +80,7 @@ const LINGUA: Record<string, string> = {
   NGA: "afe", GHA: "afe", SLE: "afe", LBR: "afe", GAM: "afe", KEN: "afe", ZAM: "afe", ZIM: "afe", RSA: "afe", UGA: "afe", TAN: "afe",
   DEN: "nord", SWE: "nord", NOR: "nord", ISL: "nord", FIN: "nord",
   SRB: "slav", CRO: "slav", BIH: "slav", SVN: "slav", MNE: "slav", MKD: "slav", POL: "slav", CZE: "slav", SVK: "slav", UKR: "slav", RUS: "slav",
-  TUR: "tr", IRN: "fa", JPN: "ja", KOR: "ko", CHN: "zh", THA: "th", MAS: "ms",
+  BAS: "eu", TUR: "tr", IRN: "fa", JPN: "ja", KOR: "ko", CHN: "zh", THA: "th", MAS: "ms",
 };
 
 /** Nome novo para um jogador dessa nacionalidade, sem repetir os já usados no mundo. */

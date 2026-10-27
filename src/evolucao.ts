@@ -115,6 +115,25 @@ export function gerarReforco(rng: RNG, ovr: number, posicao: Pos, pais: string, 
   const o = Math.round(clamp(ovr, 35, 92));
   return { nome: gerarNome(rng, nac, usados), posicao, ovr: o, idade, nacionalidade: nac, pot: idade <= 23 ? o + rng.int(2, 8) : o };
 }
+// ------------------------------------------------------------------ Atlético Bilbau: só bascos
+/** O Atlético Bilbau só tem jogadores bascos (nascidos ou formados no País Basco), em toda a história. */
+export const SO_BASCOS = "ES-ATH";
+/** Clubes do País Basco e de Navarra: as bases deles formam bascos (que o Atlético pode contratar). */
+export const CLUBES_BASCOS = new Set(["ES-ATH", "ES-RSO", "ES-RSB", "ES-ALA", "ES-OSA", "ES-EIB"]);
+/** O clube aceita esse jogador? (todos aceitam todos, menos o Atlético Bilbau) */
+export const aceita = (clubeId: string, j: { basco?: boolean }) => clubeId !== SO_BASCOS || !!j.basco;
+/** Garoto da base de um clube basco: no Atlético é sempre basco (com nome de lá); nos vizinhos, a maioria dos espanhóis. */
+export function marcarBasco(rng: RNG, clubeId: string, j: JogadorNPC, usados: Set<string>) {
+  if (!CLUBES_BASCOS.has(clubeId)) return j;
+  if (clubeId === SO_BASCOS || (j.nacionalidade === "ESP" && rng.chance(0.7))) {
+    j.basco = true;
+    const ath = clubeId === SO_BASCOS;
+    // no Atlético, filho de imigrante criado em Bilbau é raro (Williams, Sannadi): a base é quase toda espanhola e de nome basco
+    if (ath && j.nacionalidade !== "ESP" && rng.chance(0.8)) { j.nacionalidade = "ESP"; usados.delete(j.nome); j.nome = gerarNome(rng, "ESP", usados); }
+    if (j.nacionalidade === "ESP" && rng.chance(ath ? 0.75 : 0.6)) { usados.delete(j.nome); j.nome = gerarNome(rng, "BAS", usados); }
+  }
+  return j;
+}
 const nacDaBase = (rng: RNG, pais: string, estrutura: number) => (rng.chance(SUL.has(pais) ? 0.01 : estrutura >= 5 ? 0.2 : 0.08) ? nacionalidadeEstrangeira(rng, pais) : pais);
 /** Posição que mais falta numa lista (para a base e para os reforços). */
 function posQueFalta(lista: JogadorNPC[], alvo: Record<Pos, number>, rng: RNG): Pos {
@@ -122,9 +141,9 @@ function posQueFalta(lista: JogadorNPC[], alvo: Record<Pos, number>, rng: RNG): 
   return falta[0][1] > 0 ? falta[0][0] : rng.pick(POSICOES.filter((p) => p !== "GOL"));
 }
 /** A base inteira de um clube (começo do jogo): cinco garotos por idade, de 15 a 19 anos. */
-export function criarBase(rng: RNG, n: NivelBase, pais: string, usados: Set<string>): JogadorNPC[] {
+export function criarBase(rng: RNG, n: NivelBase, pais: string, usados: Set<string>, clubeId = ""): JogadorNPC[] {
   const base: JogadorNPC[] = [];
-  for (let idade = 15; idade <= 19; idade++) for (let k = 0; k < 5; k++) base.push(gerarJovem(rng, n, idade, posQueFalta(base, ALVO_BASE, rng), nacDaBase(rng, pais, n.estrutura), usados));
+  for (let idade = 15; idade <= 19; idade++) for (let k = 0; k < 5; k++) base.push(marcarBasco(rng, clubeId, gerarJovem(rng, n, idade, posQueFalta(base, ALVO_BASE, rng), nacDaBase(rng, pais, n.estrutura), usados), usados));
   return base;
 }
 
@@ -211,7 +230,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     for (const j of subiram[c.id]) b.splice(b.indexOf(j), 1);
     // aos 20 a base acaba: quem tem nível de profissional sobe mesmo passando da cota; o resto é dispensado
     for (const j of b.filter((x) => x.idade >= 20)) { b.splice(b.indexOf(j), 1); if (j.ovr >= corte) subiram[c.id].push(j); else if (j.ovr >= 48) livre(j, c.id); }
-    for (let k = 0; k < 5 && b.length < 25; k++) b.push(gerarJovem(r, n, 15, posQueFalta(b, ALVO_BASE, r), nacDaBase(r, c.pais, n.estrutura), usados));
+    for (let k = 0; k < 5 && b.length < 25; k++) b.push(marcarBasco(r, c.id, gerarJovem(r, n, 15, posQueFalta(b, ALVO_BASE, r), nacDaBase(r, c.pais, n.estrutura), usados), usados));
   }
 
   // 3) mercado entre os clubes: craque de clube menor vai para um maior, reserva vai para um menor
@@ -227,7 +246,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   for (const { j, de } of vendas) {
     const subindo = j.ovr >= de.forca + 5;
     // qualquer clube do mundo do nível certo; a chance de cada um vem da afinidade com o jogador
-    const alvo = porForca.filter((c) => c !== de && c.elenco.length < 32 && (subindo ? c.forca > de.forca && c.forca >= j.ovr - 5 && c.forca <= j.ovr + 1 : c.forca <= j.ovr + 4 && c.forca >= j.ovr - 3));
+    const alvo = porForca.filter((c) => c !== de && aceita(c.id, j) && c.elenco.length < 32 && (subindo ? c.forca > de.forca && c.forca >= j.ovr - 5 && c.forca <= j.ovr + 1 : c.forca <= j.ovr + 4 && c.forca >= j.ovr - 3));
     if (!alvo.length) { if (!subindo) { sai(de, j, mov(j, "dispensado")); livre(j, de.id); } continue; }
     const para = sortearPeso(r3, alvo, (c) => afinidade(c.pais, j.nacionalidade, de.pais))!;
     const t = taxa(j, para);
@@ -257,7 +276,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     /** Procura um reforço no mundo: reservas que sobram em outros clubes e agentes livres do nível; sem ninguém,
      *  titulares de clubes menores (compra); depois livres um pouco abaixo; depois um garoto da própria base. */
     const buscar = (pos: Pos, min: number, max: number): boolean => {
-      const nivelOk = (j: JogadorNPC) => j.posicao === pos && j.ovr >= min && j.ovr <= max;
+      const nivelOk = (j: JogadorNPC) => j.posicao === pos && j.ovr >= min && j.ovr <= max && aceita(c.id, j);
       const peso = (nac: string, de?: string) => afinidade(c.pais, nac, de ? paisDe[de] : undefined);
       const pegarLivre = (k: number) => { const l0 = livres.splice(k, 1)[0]; chega(c, l0.j, "contratado", l0.de, 0); return true; };
       const comprar = (j: JogadorNPC, de: Clube) => { tomados.add(j); const v = taxa(j, c); sai(de, j, mov(j, "vendido", { para: c.id, taxa: v })); chega(c, j, "contratado", de.id, v); return true; };
@@ -286,7 +305,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
       if (!amador && !g.convidados.includes(c)) {
         if (buscar(pos, nivelAlvo - 6, nivelAlvo + 3)) return;
         // 3) agente livre um pouco abaixo do nível
-        const k = livres.findIndex((x) => x.j.posicao === pos && x.de !== c.id && x.j.ovr >= nivelAlvo - 12 && x.j.ovr < nivelAlvo - 6);
+        const k = livres.findIndex((x) => x.j.posicao === pos && x.de !== c.id && aceita(c.id, x.j) && x.j.ovr >= nivelAlvo - 12 && x.j.ovr < nivelAlvo - 6);
         if (k >= 0) { const l0 = livres.splice(k, 1)[0]; chega(c, l0.j, "contratado", l0.de, 0); return; }
         // 4) um garoto da própria base
         const b = base[c.id]?.filter((j) => j.posicao === pos && j.idade >= 17).sort((a, b2) => b2.ovr - a.ovr)[0];
@@ -295,6 +314,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
       // 5) último caso: um jogador sem clube de nível modesto (e de graça); nos amadores, gente nova da idade da liga
       const [i0, i1] = amador ? faixaAmadora(c.id) : [19, 26];
       const nj = gerarReforco(r, amador ? nivelAlvo + r.normal(0, 3) : nivelAlvo - 7 + r.normal(0, 2), pos, c.pais, usados, r.int(i0, i1));
+      if (c.id === SO_BASCOS) { usados.delete(nj.nome); nj.nacionalidade = "ESP"; nj.nome = gerarNome(r, "BAS", usados); nj.basco = true; } // basco que voltou para casa
       chega(c, nj, "contratado", undefined, amador ? undefined : 0);
     };
     for (const p of POSICOES) while (c.elenco.filter((j) => j.posicao === p).length < MINIMO[p]) reforco(p);
@@ -310,9 +330,22 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
       const tit = titulares(c.elenco), pior = [...tit].sort((a, b) => a.ovr - b.ovr)[0];
       if (!pior || !buscar(pior.posicao, Math.round(rf.top - 1), Math.round(rf.top + 4))) break;
       // quem perdeu a vaga é vendido para um clube do nível dele (sem comprador, vira agente livre)
-      const destino = sortearPeso(r, g.pro.filter((o) => o !== c && o.elenco.length < 30 && o.forca <= pior.ovr + 3 && o.forca >= pior.ovr - 4), (o) => afinidade(o.pais, pior.nacionalidade, c.pais));
+      const destino = sortearPeso(r, g.pro.filter((o) => o !== c && aceita(o.id, pior) && o.elenco.length < 30 && o.forca <= pior.ovr + 3 && o.forca >= pior.ovr - 4), (o) => afinidade(o.pais, pior.nacionalidade, c.pais));
       if (destino) { const v = taxa(pior, destino); sai(c, pior, mov(pior, "vendido", { para: destino.id, taxa: v })); chega(destino, pior, "contratado", c.id, v); }
       else { sai(c, pior, mov(pior, "dispensado")); livre(pior, c.id); }
+    }
+  }
+  // 4b) conferência: quem perdeu gente depois de montar o elenco (vendas para clubes processados depois) completa as posições
+  for (const c of todos) {
+    const rf = ref[c.id];
+    if (!rf) continue;
+    const r = rngDe("conferencia", c.id), alvoN = rf.forca - 6;
+    for (const p of POSICOES) while (c.elenco.filter((j) => j.posicao === p).length < MINIMO[p]) {
+      const k = g.amadores.includes(c) ? -1 : livres.findIndex((x) => x.j.posicao === p && x.de !== c.id && aceita(c.id, x.j) && x.j.ovr >= alvoN - 8 && x.j.ovr <= alvoN + 4);
+      if (k >= 0) { const l0 = livres.splice(k, 1)[0]; chega(c, l0.j, "contratado", l0.de, 0); continue; }
+      const nj = gerarReforco(r, alvoN + r.normal(0, 2), p, c.pais, usados);
+      if (c.id === SO_BASCOS) { usados.delete(nj.nome); nj.nacionalidade = "ESP"; nj.nome = gerarNome(r, "BAS", usados); nj.basco = true; }
+      chega(c, nj, "contratado", undefined, g.amadores.includes(c) ? undefined : 0);
     }
   }
   // 5) o nível de cada liga fica onde estava: a régua é relativa (craque continua craque, mas a liga não infla)

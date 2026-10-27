@@ -1,5 +1,5 @@
 // Prêmios do ano no mundo: Bola de Ouro, The Best, Melhor da Europa, Rei da América, Melhor da Ásia, Melhor Africano,
-// Troféu Kopa (sub-21), Troféu Yashin (goleiro), Chuteira de Ouro e a Seleção do Ano.
+// Troféu Kopa (sub-21), Troféu Yashin (goleiro), Chuteira de Ouro e a Seleção FIFA do Ano.
 // Cada prêmio tem os seus votantes: pesos diferentes para a temporada individual, a fama (nível) e os títulos de cada
 // competição, e um "humor" do júri (ruído próprio). Por isso, quase sempre o melhor do mundo também é o melhor da Europa,
 // mas de vez em quando os votos se dividem e dão vencedores diferentes.
@@ -82,7 +82,7 @@ export function premiosDoAno(candidatos: Candidato[], ctx: ContextoPremios): Pre
     .map((x) => [x, x.gols * (ctx.nivelLiga(x.ligaId) === 1 ? 2 : ctx.nivelLiga(x.ligaId) <= 3 ? 1.5 : 1)] as [Candidato, number])
     .sort((a, b) => b[1] - a[1] || a[0].jogos! - b[0].jogos!).slice(0, 3).map(([x, p]) => linha(x, p));
   if (chut.length) premios.push({ id: "CHUTEIRA", nome: "Chuteira de Ouro", ranking: chut });
-  // Seleção do Ano (votada pelos jogadores): os melhores por posição no voto do The Best, num 4-3-3
+  // Seleção FIFA do Ano (FIFPro, votada pelos jogadores): os melhores por posição no voto do The Best, num 4-3-3
   const ord = [...(pontosBest ?? new Map())].sort((a, b) => b[1] - a[1]);
   const selecao = VAGAS.flatMap(([pos, k]) => ord.filter(([x]) => x.posicao === pos).slice(0, k).map(([x, p]) => linha(x, p)));
   return { ano: ctx.ano, premios, selecao };

@@ -518,7 +518,16 @@ function premiosDoMundo(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev: st
       noticia(s, "jogo", `${j.apelido} é ${pos + 1}º ${pr.id === "BOLA" ? "na Bola de Ouro" : "no The Best"}`, `${nome(v)} (${clube(v.clubeId)}) venceu. ${j.apelido} terminou em ${pos + 1}º lugar.`);
     }
   }
-  if (p.selecao.some((x) => x.eu)) { r.premios = [...(r.premios ?? []), `Seleção do Ano ${ano}`]; c.fama = clamp(c.fama + 3, 0, 100); }
+  // Seleção FIFA do Ano (FIFPro): os 11 do mundo, votados pelos jogadores
+  if (p.selecao.length) {
+    const eu = p.selecao.some((x) => x.eu);
+    if (eu) {
+      const nomeT = `Seleção FIFA do Ano ${ano}`;
+      receberReliquias(s, [{ conquista: "trofeu-mundo-FIFPRO", reliquia: { id: `rel-trofeu-mundo-FIFPRO-${ano}`, chave: "trofeu-mundo-FIFPRO", tipo: "trofeu", nome: nomeT, legenda: `${clube(c.clubeId)} · os 11 do mundo · ${ano}`, ano, cores: ["#C0C8D8", "#1E3A6B"], modelo: "placa" } }], ev);
+      r.premios = [...(r.premios ?? []), nomeT]; c.fama = clamp(c.fama + 4, 0, 100);
+    }
+    noticia(s, "clube", `Seleção FIFA do Ano ${ano}`, `${eu ? `${j.apelido} está entre os 11 do mundo! ` : ""}${p.selecao.map((x) => nome(x)).join(", ")}.`, { k: "trofeu" });
+  }
   const bola = p.premios.find((x) => x.id === "BOLA")?.ranking[0], uefa = p.premios.find((x) => x.id === "UEFA")?.ranking[0], rei = p.premios.find((x) => x.id === "REI")?.ranking[0];
   if (bola) noticia(s, "clube", `Bola de Ouro ${ano}: ${nome(bola)}`, `${nome(bola)} (${clube(bola.clubeId)}) é o melhor do mundo.${uefa ? ` Melhor da Europa: ${nome(uefa)}${uefa.nome !== bola.nome ? " — os votantes da UEFA discordaram" : ""}.` : ""}${rei ? ` Rei da América: ${nome(rei)}.` : ""}`, { k: "trofeu" });
 }

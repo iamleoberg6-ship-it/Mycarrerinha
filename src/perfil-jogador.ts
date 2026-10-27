@@ -141,7 +141,7 @@ const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
   [/^Troféu Kopa/, "Troféu Kopa", "bola", PRATA],
   [/^Troféu Yashin/, "Troféu Yashin", "placa", OURO],
   [/^Chuteira de Ouro/, "Chuteira de Ouro", "chuteira", OURO],
-  [/^Seleção do Ano/, "Seleção do Ano", "placa", PRATA],
+  [/^Seleção (FIFA )?do Ano/, "Seleção FIFA do Ano", "placa", PRATA],
   [/^Taça do Mundial/, "Mundial de Clubes", "taca", OURO],
   [/^Taça da Intercontinental/, "Copa Intercontinental", "taca", OURO],
   [/^Taça da Libertadora/, "Copa Libertadora", "taca", OURO],

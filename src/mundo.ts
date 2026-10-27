@@ -12,7 +12,7 @@ import { RNG } from "./rng.js";
 import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
 import { gerarStats, statsAte, type StatsNPC } from "./estatisticas.js";
 import { VAGAS_433 } from "./partida.js";
-import { criarBase, nivelBase, virarTemporada, type GruposMundo, type Referencia, type ViradaMundo, type NivelBase, type AgenteLivre } from "./evolucao.js";
+import { criarBase, CLUBES_BASCOS, SO_BASCOS, nivelBase, virarTemporada, type GruposMundo, type Referencia, type ViradaMundo, type NivelBase, type AgenteLivre } from "./evolucao.js";
 
 export { LIGAS, LIGA_INFO, type InfoLiga };
 export interface InfoClube { id: string; nome: string; apelido: string; cores: string[]; forca: number; cidade: string; estadio: string; capacidade: number; padrao: string; ligaId: string; pais: string }
@@ -64,6 +64,8 @@ export function mundo(pacote: PacoteDados): Mundo {
   const m: Mundo = { ligas, amadoras, liga: Object.fromEntries(todas.map((l) => [l.id, l])), clube: Object.fromEntries(todas.flatMap((l) => l.clubes.map((c) => [c.id, c]))), info };
   cache = { pacote, m };
   // o mundo de 2026 fica guardado: as temporadas seguintes são calculadas a partir dele (src/evolucao.ts)
+  // bascos: todo o elenco do Atlético Bilbau (é a regra do clube) e boa parte dos espanhóis dos vizinhos
+  for (const c of Object.values(m.clube)) if (CLUBES_BASCOS.has(c.id)) for (const j of c.elenco) if (c.id === SO_BASCOS || (j.nacionalidade === "ESP" && hashS(`basco|${j.nome}`) % 10 < 6)) j.basco = true;
   original = new Map(Object.values(m.clube).map((c) => [c, c.elenco.map((j) => ({ ...j }))]));
   ref = Object.fromEntries(Object.values(m.clube).map((c) => [c.id, { forca: c.forca, top: forcaDoElenco(c.elenco), tamanho: c.elenco.length, nivel: nivelBase(c.id, info[c.id]?.forca ?? c.forca, c.pais) }]));
   grupos = { pro: ligas.flatMap((l) => l.clubes), convidados: conv, amadores: amadoras.flatMap((l) => l.clubes), ligas: [...ligas.map((l) => l.clubes), ...amadoras.map((l) => l.clubes), conv] };
@@ -176,7 +178,7 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     for (const id of Object.keys(m.clube)) if (id.startsWith("NAT-")) { delete m.clube[id]; delete m.info[id]; }
     const usados = new Set([...Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)), ...nomesSelecao]);
     const base: Record<string, JogadorNPC[]> = {};
-    for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados);
+    for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados, c.id);
     estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map() };
     registrarTemporada(m);
   }
