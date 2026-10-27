@@ -57,7 +57,7 @@ import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../sr
 import { AGENTE_INFO, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClausulas, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
-import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, type Aparencia } from "../criacao/avatar";
+import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, luminancia, type Aparencia } from "../criacao/avatar";
 import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
 import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visual/torneios";
@@ -130,6 +130,19 @@ function foto(s: Save): string {
   const ap = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) };
   return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: s.jogador.numero, traje: "jogo", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
 }
+/** Rosto de um personagem do jogo (rival, companheiro), sorteado pelo nome: sempre o mesmo para o mesmo nome. */
+function fotoNpc(nome: string, clubeId: string, idade = 25): string {
+  let h = 2166136261; for (const ch of nome) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const pick = <T,>(l: readonly T[], k: number) => l[(h >>> k) % l.length];
+  const [a, b] = cores(clubeId);
+  const ap: Aparencia = { ...APARENCIA_PADRAO, pele: (h >>> 3) % 8, rosto: pick(["oval", "redondo", "quadrado", "longo", "largo", "diamante"] as const, 5),
+    cabelo: pick(["raspado", "curto", "degrade", "topete", "ondulado", "cacheado", "crespo", "blackpower", "trancas", "undercut", "careca", "moicano"] as const, 7),
+    corCabelo: (h >>> 11) % 5, olhos: (h >>> 13) % 4, nariz: pick(["reto", "pequeno", "largo", "achatado", "aquilino", "batata"] as const, 9),
+    boca: pick(["neutra", "sorriso", "lado", "fina", "cheia"] as const, 15), barba: idade < 21 ? "nenhuma" : pick(["nenhuma", "sombra", "rala", "cavanhaque", "curta", "cheia", "bigode"] as const, 17) };
+  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: String(((h >>> 19) % 30) + 2), traje: "jogo" });
+}
+const ICO_COMP: Record<string, string> = { parceiro: "🤝", invejoso: "😒", mentor: "🧓", pupilo: "🧒" };
+const humor = (rel: number) => (rel >= 70 ? "😄" : rel >= 45 ? "🙂" : rel >= 30 ? "😐" : "😠");
 const barra = (nome: string, v: number, max = 100, cor?: string, txt?: string) =>
   `<div class="barra">${nome}<b>${txt ?? Math.round(v)}</b><i style="--v:${Math.max(0, Math.min(100, (100 * v) / max))}%${cor ? `;--c:${cor}` : ""}"></i></div>`;
 const estrelas = (n: number) => `<span class="estrelas" aria-label="${n} de 5">${"★".repeat(n)}${'<span style="opacity:.25">' + "★".repeat(5 - n) + "</span>"}</span>`;
@@ -834,19 +847,32 @@ function blocoClube(s: Save): string {
     ${(v.exTecnicos ?? []).length ? `<p class="sub" style="margin-top:6px">Ex-técnicos: ${v.exTecnicos!.map((x) => `${esc(x.nome)} <small>(${x.rel >= 65 ? "fã de você" : x.rel >= 40 ? "neutro" : "não gosta"})</small>`).join(" · ")}. Quem gosta de você pode te chamar quando assumir outro clube.</p>` : ""}</div>` : "";
   const prox = v.papel === "capitao" ? "Você usa a braçadeira. Discursa antes das decisões e responde pelo grupo." : v.papel === "vice" ? "Próximo passo: capitão (liderança 74, titular e 20 jogos no clube)." : v.papel === "novato" ? "Ainda é o novato: jogos, tempo de casa e as escolhas no vestiário mudam isso." : "Liderança sobe com tempo de casa, idade, carisma, fama e as escolhas nos momentos do vestiário.";
   const vest = `<div class="card-clube"><div class="linha-ico"><span class="ico">${v.papel === "capitao" ? "🅒" : "👕"}</span><div><b>${NOME_PAPEL_VEST[v.papel]}</b><small>${esc(prox)}</small></div></div>${barra("Liderança", v.lideranca, 100, "#74D394")}
-    ${v.comp.length ? `<div class="comp-lista">${v.comp.map((x) => `<div class="comp"><b>${esc(x.nome)}</b><small>${esc(NOME_COMP[x.tipo][0])} · ${esc(NOME_COMP[x.tipo][1])}</small>${barra("", x.rel, 100, x.rel < 35 ? "#E5534B" : "#6FA8DC", "")}</div>`).join("")}</div>` : ""}</div>`;
+    ${v.comp.length ? `<div class="vest-grupo">${v.comp.map((x) => `<div class="vg-cel" title="${esc(NOME_COMP[x.tipo][1])}"><div class="vg-foto">${fotoNpc(x.nome, c.clubeId, x.tipo === "pupilo" ? 18 : x.tipo === "mentor" ? 33 : 25)}<span class="vg-tipo">${ICO_COMP[x.tipo]}</span><span class="vg-humor">${humor(x.rel)}</span></div><b>${esc(x.nome.split(" ")[0])}</b><small>${esc(NOME_COMP[x.tipo][0])}</small><i class="vg-rel" style="--v:${Math.round(x.rel)}%;--c:${x.rel < 35 ? "#E5534B" : x.rel >= 65 ? "#74D394" : "#6FA8DC"}"></i></div>`).join("")}</div>` : ""}</div>`;
   const r = c.rival;
-  const rival = r ? `<div class="card-clube rival"><div class="rival-topo"><div>${escudo(c.clubeId)}<b>${esc(j.apelido)}</b></div><div class="rival-placar"><span>${r.placar.eu}</span><small>× ${r.placar.empate} ×</small><span>${r.placar.ele}</span></div><div>${escudo(r.clubeId)}<b>${esc(r.nome)}</b></div></div>
+  const rival = r ? `<div class="card-clube rival"><div class="rival-topo"><div><span class="rv-foto">${foto(s)}</span>${escudo(c.clubeId)}<b>${esc(j.apelido)}</b></div><div class="rival-placar"><span>${r.placar.eu}</span><small>× ${r.placar.empate} ×</small><span>${r.placar.ele}</span></div><div><span class="rv-foto ele">${fotoNpc(r.nome, r.clubeId, r.idade)}</span>${escudo(r.clubeId)}<b>${esc(r.nome)}</b></div></div>
     <p class="sub" style="text-align:center">Duelos: vitórias suas × empates × vitórias dele · rivalidade desde ${r.desde}</p>${barra("Temperatura", r.temp, 100, "#E5534B")}
     ${r.duelos.length ? `<div class="kv">${r.duelos.slice(-5).reverse().map((d) => `<span>${d.ano} · contra o ${esc(d.adv)}</span><b>${d.meu.toFixed(1)} × ${d.dele.toFixed(1)}${d.golsEu || d.golsEle ? ` <small>(gols ${d.golsEu} × ${d.golsEle})</small>` : ""}</b>`).join("")}</div>` : `<p class="sub">Ainda sem duelo: quando os clubes se enfrentarem, a nota de cada um vai para o placar.</p>`}
     ${r.anos.length ? `<p class="sub" style="margin-top:6px">Gols por temporada: ${r.anos.slice(-4).map((x) => `${x.ano}: <b>${x.golsEu} × ${x.golsEle}</b>`).join(" · ")}</p>` : ""}</div>`
     : `<p class="sub">Ainda sem rival. Quando a sua fama crescer (28+ e 10 jogos como profissional), a imprensa escolhe alguém da sua geração para te comparar.</p>`;
   const passados = (c.rivaisPassados ?? []).length ? `<p class="sub">Rivais de antes: ${c.rivaisPassados!.map((x) => `${esc(x.nome)} (${x.placar.eu}×${x.placar.ele}, ${esc(x.fim?.motivo ?? "")})`).join(" · ")}</p>` : "";
   const tv = c.torcidaViva?.[c.clubeId], torc = c.torcida ?? 50;
-  const torcida = `<div class="card-clube">${barra("Reputação com a torcida", torc, 100, "#74D394")}
+  const [tc1, tc2] = cores(c.clubeId), corT = torc >= 70 ? "#74D394" : torc >= 40 ? "#E8D36A" : "#EC7D69";
+  const torcida = `<div class="card-clube"><div class="torc-vis"><div class="termo" role="img" aria-label="Reputação ${Math.round(torc)}"><i style="height:${Math.round(torc)}%;background:${corT}"></i><b style="background:${corT}"></b></div>
+    <svg class="arquibancada" viewBox="0 0 210 84" role="img" aria-label="Arquibancada">${(() => {
+      // quanto mais a torcida gosta, mais gente com a camisa, mais bandeira e mais pulo
+      const peles = ["#F0C29E", "#C98C63", "#8A5534", "#E2A77D", "#6B3F24"], out: string[] = [];
+      for (let lin = 0; lin < 3; lin++) for (let k = 0; k < 9; k++) {
+        const x = 12 + k * 23 + (lin % 2 ? 11 : 0), y = 30 + lin * 20, i = lin * 9 + k, camisa = (i * 37) % 100 < torc ? (i % 3 ? tc1 : tc2) : "#3A3A3A";
+        const pula = torc >= 55 && (i * 7) % 3 === 0;
+        out.push(`<g class="${pula ? "pula" : ""}" style="animation-delay:${((i * 0.17) % 1).toFixed(2)}s">${torc >= 40 && i % 7 === 3 ? `<path d="M${x + 6} ${y - 4} V${y - 26}" stroke="#DDD" stroke-width="1.4"/><path d="M${x + 6} ${y - 26} q8 -3 16 1 q-8 4 -16 9 Z" fill="${i % 2 ? tc2 : tc1}" stroke="#0006" stroke-width=".6"/>` : ""}
+          <path d="M${x - 9} ${y + 16} q0 -11 9 -11 q9 0 9 11 Z" fill="${camisa}" stroke="#0005" stroke-width=".6"/><circle cx="${x}" cy="${y}" r="5.5" fill="${peles[i % 5]}"/>${pula ? `<path d="M${x - 8} ${y + 6} l-4 -10 M${x + 8} ${y + 6} l4 -10" stroke="${peles[i % 5]}" stroke-width="2.4" stroke-linecap="round"/>` : ""}</g>`);
+      }
+      return out.join("");
+    })()}</svg>
+    <div class="torc-num"><b style="color:${corT}">${Math.round(torc)}</b><small>${torc >= 80 ? "Ídolo" : torc >= 65 ? "Querido" : torc >= 45 ? "Respeitado" : torc >= 30 ? "Desconfiada" : "Na bronca"}</small></div></div>
     ${tv?.apelido ? `<p class="sub">Apelido da arquibancada: <b>"${esc(tv.apelido)}"</b></p>` : `<p class="sub">Ainda sem apelido: a arquibancada batiza quem conquista ela (reputação 68+).</p>`}
     ${tv?.musica ? `<blockquote class="musica">🎵 ${tv.musica.versos.map(esc).join("<br>")}</blockquote>` : `<p class="sub">Música própria só para ídolo: reputação 80+ e 15 jogos no clube.</p>`}
-    ${tv?.faixas.length ? `<div class="faixas">${tv.faixas.slice(-4).reverse().map((f) => `<span class="faixa-est">${esc(f.texto)}</span>`).join("")}</div>` : ""}
+    ${tv?.faixas.length ? `<div class="faixas">${tv.faixas.slice(-4).reverse().map((f, i) => `<span class="faixa-est" style="background:${i % 2 ? tc2 : tc1};color:${luminancia(i % 2 ? tc2 : tc1) > 0.6 ? "#151515" : "#FFFFFF"}">${esc(f.texto)}</span>`).join("")}</div>` : ""}
     ${tv && (tv.protestos || tv.aeroporto) ? `<p class="sub">${tv.aeroporto ? `${tv.aeroporto} festa${tv.aeroporto > 1 ? "s" : ""} no aeroporto` : ""}${tv.aeroporto && tv.protestos ? " · " : ""}${tv.protestos ? `${tv.protestos} protesto${tv.protestos > 1 ? "s" : ""} no CT` : ""}</p>` : ""}
     ${Object.values(c.torcidaViva ?? {}).filter((x) => x.clubeId !== c.clubeId && (x.apelido || x.musica)).map((x) => `<p class="sub">No ${esc(infoClube(pacote, x.clubeId)?.nome ?? "")}: ${x.apelido ? `"${esc(x.apelido)}"` : ""}${x.musica ? " · tinha música" : ""}</p>`).join("")}</div>`;
   const k = c.contrato;
