@@ -1713,12 +1713,53 @@ function abrirComemoracao(min: number) {
   fila.unshift({ min, decisao: decisaoComemoracao(save!, partida!, min) });
 }
 
+/** Diagrama do lance: você, o goleiro, o zagueiro e o companheiro, com uma seta numerada para cada opção. */
+type TipoSeta = "gol" | "passe" | "drible" | "defesa" | "outro";
+function tipoDaOpcao(teste: Record<string, number> | undefined, rotulo: string): TipoSeta {
+  const t = teste ?? {}, top = Object.entries(t).sort((a, b) => b[1] - a[1])[0]?.[0];
+  // primeiro o verbo da opção; só sem verbo conhecido vale o atributo principal do teste
+  if (/chut|bat|finaliz|cabece|encher|cobrar|colocad|cavadinha|mergulh|encobr|bicicleta|voleio/i.test(rotulo)) return "gol";
+  if (/pass|toc|rol|cruz|lanç|enfi|abr|tabel|escor|ajeit|deix|servir|ger/i.test(rotulo)) return "passe";
+  if (/dribl|conduz|arranc|corte|caneta|chapéu|pedalada|avanç|corrida/i.test(rotulo)) return "drible";
+  if (/desarm|carrinho|marc|cobertura|antecip|bote|afast/i.test(rotulo)) return "defesa";
+  if (top === "FIN" || top === "CAB") return "gol";
+  if (top === "PAS" || top === "VIS" || top === "CRU") return "passe";
+  if (top === "DRI" || top === "VEL") return "drible";
+  if (top === "MAR" || top === "POS") return "defesa";
+  return "outro";
+}
+function diagramaLance(d: Decisao): string {
+  const sit = SITUACAO[d.situacao];
+  if (!sit || sit.momento) return "";
+  const tipos = d.opcoes.map((o) => tipoDaOpcao(sit.opcoes.find((x) => x.id === o.id)?.teste as Record<string, number> | undefined, o.rotulo));
+  if (tipos.every((t) => t === "outro")) return "";
+  const defesa = tipos.filter((t) => t === "defesa").length > tipos.length / 2;
+  const [m1] = cores(partida!.souCasa ? partida!.casa : partida!.fora), [a1] = cores(partida!.souCasa ? partida!.fora : partida!.casa);
+  const eu: [number, number] = defesa ? [120, 60] : [165, 62], gol: [number, number] = defesa ? [12, 60] : [288, 60];
+  const seta = (t: TipoSeta, k: number) => {
+    const [x, y] = eu, n = k + 1, iguais = tipos.filter((u) => u === t).length, j = tipos.slice(0, k).filter((u) => u === t).length, off = (j - (iguais - 1) / 2) * 18;
+    const fim: [number, number] = t === "gol" ? [defesa ? 18 : 282, 60 + off] : t === "passe" ? [222 + off, 98] : t === "drible" ? [248, 30 + off] : t === "defesa" ? [168, 58 + off] : [x + 20 + off, 16];
+    const ctrl: [number, number] = t === "drible" ? [x + 40, y - 50] : t === "passe" ? [x + 30, y + 40] : [(x + fim[0]) / 2, (y + fim[1]) / 2];
+    const curva = `M${x} ${y} Q${ctrl[0]} ${ctrl[1]} ${fim[0]} ${fim[1]}`;
+    // o número fica a 70% do caminho (ponto da curva quadrática)
+    const tt = 0.7, lx = (1 - tt) ** 2 * x + 2 * (1 - tt) * tt * ctrl[0] + tt * tt * fim[0], ly = (1 - tt) ** 2 * y + 2 * (1 - tt) * tt * ctrl[1] + tt * tt * fim[1];
+    const cor = ["#E3B341", "#74D394", "#6FA8DC", "#E58FB1"][k % 4];
+    return `<defs><marker id="ponta${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="${cor}"/></marker></defs><path d="${curva}" stroke="${cor}" stroke-width="2.4" fill="none" stroke-dasharray="${t === "outro" ? "4 4" : "0"}" marker-end="url(#ponta${k})"/>
+      <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="7.5" fill="${cor}" stroke="#0008" stroke-width="1"/><text x="${lx.toFixed(1)}" y="${(ly + 3.2).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="900" fill="#111">${n}</text>`;
+  };
+  const jog = (x: number, y: number, cor: string, txt = "") => `<circle cx="${x}" cy="${y}" r="7" fill="${cor}" stroke="#fff" stroke-width="1.4"/>${txt ? `<text x="${x}" y="${y + 3}" text-anchor="middle" font-size="7.5" font-weight="900" fill="${luzCor(cor) > 0.6 ? "#111" : "#fff"}">${txt}</text>` : ""}`;
+  return `<svg class="diagrama-lance" viewBox="0 0 300 120" aria-hidden="true"><rect width="300" height="120" rx="8" fill="#2A6E3F"/><g fill="none" stroke="#ffffff88" stroke-width="1.2">${defesa ? `<rect x="2" y="30" width="44" height="60"/><rect x="2" y="46" width="14" height="28"/><path d="M290 2 V118"/>` : `<rect x="254" y="30" width="44" height="60"/><rect x="284" y="46" width="14" height="28"/><path d="M10 2 V118"/>`}<circle cx="${defesa ? 290 : 10}" cy="60" r="18"/></g>
+    <rect x="${gol[0] - 3}" y="50" width="6" height="20" fill="#fff"/>
+    ${defesa ? jog(170, 56, a1) + jog(30, 60, m1, "GK") : jog(282, 60, a1, "GK") + jog(222, 46, a1) + jog(222, 98, m1)}
+    ${tipos.map(seta).join("")}${jog(eu[0], eu[1], m1, esc(save!.jogador.numero))}</svg>`;
+}
 function mostrarDecisao(d: Decisao) {
   const i = nDec++; decisoesAbertas[i] = d;
   const el = document.createElement("div"); el.className = "decisao"; el.id = `dec${i}`;
   const pos = SITUACAO[d.situacao]?.momento === "pos";
-  el.innerHTML = `<p class="rotulo" style="color:var(--ouro)">${pos ? "Depois do jogo" : `${d.min}' · Sua decisão`}</p><h2>${esc(d.titulo)}</h2><p class="sub" style="font-size:15px;color:var(--giz)">${esc(d.texto)}</p>
-    <div class="ops">${d.opcoes.map((o) => `<button data-decidir="${i}" data-op="${o.id}"><span>${esc(o.rotulo)}</span><small>›</small></button>`).join("")}</div>`;
+  const diag = diagramaLance(d);
+  el.innerHTML = `<p class="rotulo" style="color:var(--ouro)">${pos ? "Depois do jogo" : `${d.min}' · Sua decisão`}</p><h2>${esc(d.titulo)}</h2>${diag}<p class="sub" style="font-size:15px;color:var(--giz)">${esc(d.texto)}</p>
+    <div class="ops">${d.opcoes.map((o, k) => `<button data-decidir="${i}" data-op="${o.id}">${diag ? `<i class="num-op n${k % 4}">${k + 1}</i>` : ""}<span>${esc(o.rotulo)}</span><small>›</small></button>`).join("")}</div>`;
   $("lances").appendChild(el); el.scrollIntoView({ behavior: "smooth", block: "end" });
   $("rodapeJogo").innerHTML = `<p class="sub" style="text-align:center">Escolha uma opção.</p>`;
 }
