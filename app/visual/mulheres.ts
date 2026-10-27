@@ -2,6 +2,7 @@
 // Não é personalização: é um pacote fixo de mulheres (rosto, cabelo, maquiagem, brincos), sempre o mesmo para a mesma
 // pessoa. A roupa acompanha a profissão (personal de top de academia, advogada de blazer, médica de jaleco...).
 import { RNG } from "../../src/rng.js";
+import { FOTOS_IA } from "./fotos-ia.js";
 
 const TINTA = "#2A1A12", TRACO = 1.9;
 let seq = 0;
@@ -195,5 +196,7 @@ export function svgMulher(m: Mulher, roupaId: RoupaF): string {
   </g>
 </svg>`;
 }
-/** Retrato pronto de um perfil do app. */
-export const fotoDoPerfil = (p: { id: string; profissao: string }) => svgMulher(mulherDoPerfil(p.id), roupaDaProfissao(p.id, p.profissao));
+/** Retrato de um perfil do app: as fotos geradas por IA (pacote 1); sem elas, o desenho do pacote em código. */
+export const fotoDoPerfil = (p: { id: string; profissao: string }) => FOTOS_IA.length
+  ? `<img src="${FOTOS_IA[hash(p.id) % FOTOS_IA.length]}" alt="" loading="lazy" decoding="async">`
+  : svgMulher(mulherDoPerfil(p.id), roupaDaProfissao(p.id, p.profissao));
