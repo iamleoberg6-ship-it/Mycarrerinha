@@ -961,6 +961,25 @@ function abaMercado(s: Save): string {
 }
 const rotuloDaSemanaAbs = (abs: number) => { const t = Math.floor(abs / SEMANAS_TEMPORADA), sem = abs % SEMANAS_TEMPORADA; return `semana ${sem + 1} de ${ANO_INICIAL + t}`; };
 /** Cláusulas da proposta e o que dá para pedir (cada pedido gasta a paciência da diretoria). */
+/** Escalação 4-3-3 desenhada: onde você entra no time (titular, rodízio ou banco). */
+const XY_POS: Record<string, [number, number][]> = { ZAG: [[38, 76], [62, 76]], LAT: [[14, 70], [86, 70]], VOL: [[50, 58]], MEI: [[32, 48], [68, 48]], PON: [[16, 24], [84, 24]], ATA: [[50, 18]] };
+function escalacaoPapel(pos: string, papel: "titular" | "rotacao" | "reserva", cor: string): string {
+  const todos: [number, number][] = [[50, 90], [14, 70], [38, 76], [62, 76], [86, 70], [50, 58], [32, 48], [68, 48], [16, 24], [50, 18], [84, 24]];
+  const meu = (XY_POS[pos] ?? [[50, 48]])[0], noTime = papel !== "reserva";
+  const bolas = todos.map(([x, y]) => (x === meu[0] && y === meu[1] && noTime) ? "" : `<circle cx="${x}" cy="${y * 1.1}" r="4.2" fill="#ffffff55"/>`).join("");
+  const eu = (x: number, y: number) => `<circle cx="${x}" cy="${y}" r="6.5" fill="${cor}" stroke="#FFF" stroke-width="1.6"/><text x="${x}" y="${y + 2.6}" text-anchor="middle" font-size="7" font-weight="900" fill="#FFF" paint-order="stroke" stroke="#0008" stroke-width="1.5">EU</text>`;
+  const banco = `<rect x="104" y="30" width="22" height="60" rx="4" fill="#00000033" stroke="#ffffff33"/><text x="115" y="26" text-anchor="middle" font-size="6" fill="#ffffffaa">BANCO</text>${[0, 1, 2, 3].map((i) => `<circle cx="115" cy="${40 + i * 13}" r="3.6" fill="#ffffff44"/>`).join("")}`;
+  const meuXY: [number, number] = noTime ? [meu[0], meu[1] * 1.1] : [115, 40];
+  return `<svg class="esc-papel" viewBox="0 0 130 104" role="img" aria-label="${NOME_PAPEL[papel]}"><rect x="2" y="2" width="96" height="100" rx="4" fill="#2E7D4F"/><g fill="none" stroke="#ffffff66" stroke-width=".8"><rect x="2" y="2" width="96" height="100" rx="4"/><path d="M2 52 H98"/><circle cx="50" cy="52" r="10"/><rect x="30" y="86" width="40" height="16"/><rect x="30" y="2" width="40" height="16"/></g>
+    ${bolas}${banco}${papel === "rotacao" ? `<path d="M${meu[0] + 7} ${meu[1] * 1.1} Q 102 ${meu[1] * 1.1} 112 44" fill="none" stroke="#E3B341" stroke-width="1.2" stroke-dasharray="2 2"/>${eu(meuXY[0], meuXY[1])}<circle cx="115" cy="40" r="5" fill="none" stroke="#E3B341" stroke-dasharray="2 1.5"/>` : eu(meuXY[0], meuXY[1])}</svg>`;
+}
+/** Contrato atual × proposta, linha a linha, com seta de melhor/pior. */
+function comparaContrato(linhas: [string, string, number, string, number][]): string {
+  return `<div class="compara"><div class="cmp-cab"><span></span><small>Hoje</small><small>Proposta</small></div>${linhas.map(([nome, a, va, b, vb]) => {
+    const d = vb - va, cls = Math.abs(d) < 1e-9 ? "igual" : d > 0 ? "pos" : "neg";
+    return `<div class="cmp-linha"><span>${esc(nome)}</span><b class="cmp-a">${a}</b><b class="cmp-b ${cls}">${b}<i>${cls === "igual" ? "=" : d > 0 ? "▲" : "▼"}</i></b></div>`;
+  }).join("")}</div>`;
+}
 function clausulasHtml(p: PropostaSave): string {
   if (save) comClausulas(pacote, save, p);
   const pac = p.paciencia ?? 0, pedidos = p.pedidos ?? [];
@@ -989,8 +1008,14 @@ function abaMercadoEu(s: Save): string {
       : `<button class="botao" data-prop="${p.id}" data-op="aceitar">${p.tipo === "renovacao" ? "Renovar" : p.tipo === "emprestimo" ? "Aceitar o empréstimo" : "Aceitar"}</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Recusar</button>`;
     return `<div class="oferta" style="--c1:${info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0]}"><div class="faixa"></div><div class="corpo">
       <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(infoLiga(p.ligaId).curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)} · ${esc(NOME_CULTURA[culturaBase(p.clubeId)].toLowerCase())}</span></div></div>
-      <div class="linha-info"><span class="tag ${p.papel === "titular" ? "titular" : p.papel === "rotacao" ? "banco" : "ruim"}">${NOME_TIPO[p.tipo]} · ${NOME_PAPEL[p.papel].toLowerCase()}</span></div>
-      <div class="kv"><span>Salário</span><b>${dinheiro(p.salario)}/mês <small class="${delta >= 0 ? "pos" : "neg"}">${delta >= 0 ? "+" : "−"}${dinheiro(Math.abs(delta))}</small></b>${p.anos ? `<span>Contrato</span><b>${p.anos} anos</b>` : `<span>Duração</span><b>Até o fim da temporada</b>`}${p.luvas ? `<span>Luvas</span><b>${dinheiro(p.luvas)}</b>` : ""}${p.taxa ? `<span>Pagam ao ${esc(meu.nome)}</span><b>${milhoes(p.taxa)}</b>` : ""}</div>
+      <div class="prop-vis">${escalacaoPapel(j.posicao, p.papel, info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0])}<div class="pv-lado"><span class="tag ${p.papel === "titular" ? "titular" : p.papel === "rotacao" ? "banco" : "ruim"}">${NOME_TIPO[p.tipo]}</span><b class="pv-papel">${NOME_PAPEL[p.papel]}</b><small class="sub">${p.papel === "titular" ? "Entra no time de cara" : p.papel === "rotacao" ? "Reveza com o titular" : "Começa no banco"}</small></div></div>
+        ${comparaContrato([
+          ["Salário/mês", dinheiroCurto(c.salario), c.salario, dinheiroCurto(p.salario), p.salario],
+          ["Anos", String(c.anosContrato), c.anosContrato, p.anos ? String(p.anos) : "½", p.anos || 0.5],
+          ["Força do time", String(Math.round(meu.forca)), meu.forca, String(Math.round(cl.forca)), cl.forca],
+          ["Papel", NOME_PAPEL[papel], ["reserva", "rotacao", "titular"].indexOf(papel), NOME_PAPEL[p.papel], ["reserva", "rotacao", "titular"].indexOf(p.papel)],
+        ])}
+      ${p.luvas || p.taxa ? `<div class="kv">${p.luvas ? `<span>Luvas</span><b>${dinheiro(p.luvas)}</b>` : ""}${p.taxa ? `<span>Pagam ao ${esc(meu.nome)}</span><b>${milhoes(p.taxa)}</b>` : ""}</div>` : ""}
       ${p.tipo !== "emprestimo" ? clausulasHtml(p) : ""}
       ${p.pagaMulta ? `<p class="sub" style="color:var(--pos)">Eles pagam a sua multa rescisória: o ${esc(meu.nome)} não pode segurar.</p>` : p.travada ? `<p class="sub" style="color:var(--neg)">O ${esc(meu.nome)} não quer vender. Forçar a saída desgasta a relação com o técnico e com a torcida.</p>` : ""}
       <div class="ferr-botoes">${botoes}</div></div></div>`;
