@@ -14,10 +14,11 @@ import {
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
-  familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo,
+  familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo, agirFilhoJogo,
   copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
+import { NOME_ACAO_FILHO, type AcaoFilho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg } from "./poster";
@@ -601,19 +602,23 @@ function celMatch(s: Save): string {
   if (s.jogador.idade < IDADE_MINIMA_APP) return `<p class="sub">O app de namoro é só a partir dos ${IDADE_MINIMA_APP} anos.</p>`;
   const c = s.carreira, n = namoroDe(c), par = n.par, ab = semanaAbsJogo(c);
   const feitas = n.semana === ab ? n.feitas : 0;
-  const acoes = (p: Par, caso = false) => acoesNamoro(p, ab, caso).map((a) => `<button class="chip${a === "terminar" ? " perigo" : ""}" data-nam="${p.id}" data-op="${a}">${a === "terminar" && !caso && p.etapa === "casados" ? "Pedir o divórcio" : NOME_ACAO_NAMORO[a as AcaoNamoro]}</button>`).join("");
+  const acoes = (p: Par, caso = false) => acoesNamoro(p, ab, caso, !!n.gravidez).map((a) => `<button class="chip${a === "terminar" ? " perigo" : ""}" data-nam="${p.id}" data-op="${a}">${a === "terminar" && !caso && p.etapa === "casados" ? "Pedir o divórcio" : NOME_ACAO_NAMORO[a as AcaoNamoro]}</button>`).join("");
   const barra = (p: Par, rot = NOME_ETAPA[p.etapa]) => `<div class="rel-nivel" style="margin-top:6px"><span style="color:${corRelFam(p.relacao)}">${rot} · ${Math.round(p.relacao)}</span><span class="rel-barra"><i style="width:${p.relacao}%;background:${corRelFam(p.relacao)}"></i></span></div>`;
   const parHtml = par ? `<p class="rotulo">${par.etapa === "saindo" ? "Saindo com" : par.etapa === "casados" ? "Sua esposa" : par.etapa === "noivos" ? "Sua noiva" : "Sua namorada"}</p>${cartaoPar(par, "", barra(par))}<div class="rel-acoes" style="margin-left:0">${acoes(par)}</div>` : "";
   const casos = n.casos ?? [];
   const casosHtml = casos.length ? `<p class="rotulo" style="margin-top:14px">Casos escondidos <small>(${casos.length})</small></p><p class="sub">Quanto mais casos, encontros e fama, maior o risco de a mídia descobrir.${par ? ` Se descobrir, ${esc(par.nome.split(" ")[0])} fica sabendo.` : ""}</p>${casos.map((x) => `${cartaoPar(x, "", barra(x, x.exposto ? "Caso (já saiu na mídia)" : x.etapa === "namorando" ? "Namoro escondido" : "Caso"))}<div class="rel-acoes" style="margin-left:0">${acoes(x, true)}</div>`).join("")}` : "";
   const filhos = n.filhos ?? [];
-  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f) => `<div class="premio-l largo"><span class="rotulo">${f.ano}</span><span>${esc(f.nome)} <small class="sub">· mãe: ${esc(f.mae.split(" ")[0])}</small></span><b>${f.pensao ? "pensão" : "em casa"}</b></div>`).join("")}` : "";
+  const ano = ANO_INICIAL + c.temporada, g = n.gravidez;
+  const gravidezHtml = g ? `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>` : "";
+  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : "mora com você"}</small></div>
+      <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
+      <div class="rel-acoes" style="margin-left:0">${(Object.keys(NOME_ACAO_FILHO) as AcaoFilho[]).map((a) => `<button class="chip" data-filho="${i}" data-op="${a}">${NOME_ACAO_FILHO[a]}</button>`).join("")}</div></div>`; }).join("")}` : "";
   const livres = `<p class="sub" style="margin-top:8px">${MAX_ACOES_NAMORO - feitas} ${MAX_ACOES_NAMORO - feitas === 1 ? "programa livre" : "programas livres"} nesta semana. Com a mesma pessoa, cada programa rende um pouco menos. Sem atenção a relação esfria; vida noturna demais incomoda.</p>`;
   const perfis = perfisDaSemana(pacote, s);
   const deck = perfis.length ? perfis.map((p) => cartaoPar(p, `<button class="botao sec peq" data-curtir="${p.id}" data-sim="0">Passar</button><button class="botao peq" data-curtir="${p.id}" data-sim="1">Curtir</button>`, `<small class="sub">Chance de match: ${Math.round(100 * chanceMatch(p, c.fama))}%</small>`)).join("") : `<p class="sub">Acabaram os perfis desta semana. Novos chegam na próxima.</p>`;
   const matches = n.matches.length ? `<p class="rotulo" style="margin-top:14px">Matches</p>${n.matches.map((m) => `${cartaoPar(m, "", `<small class="sub">${m.conversas} ${m.conversas === 1 ? "conversa" : "conversas"}${m.conversas < 2 ? " · converse mais antes de chamar para sair" : ""}</small>`)}<div class="rel-acoes" style="margin-left:0">${acoes(m)}</div>`).join("")}` : "";
   const aviso = par && par.etapa !== "saindo" ? `<p class="sub">Você tem compromisso: quem você chamar para sair vira caso escondido.</p>` : "";
-  return `${parHtml}${casosHtml}${filhosHtml}${livres}<p class="rotulo" style="margin-top:14px">Perfis da semana</p>${aviso}<p class="sub">Fama ajuda no match. A profissão dela mexe no seu jogo.</p>${deck}${matches}`;
+  return `${parHtml}${gravidezHtml}${casosHtml}${filhosHtml}${livres}<p class="rotulo" style="margin-top:14px">Perfis da semana</p>${aviso}<p class="sub">Fama ajuda no match. A profissão dela mexe no seu jogo.</p>${deck}${matches}`;
 }
 function abaAmigos(s: Save): string {
   const c = s.carreira, rr = relacoesDe(c), lista = Object.values(rr.lista), est = estrelasDoMundo(pacote);
@@ -1146,6 +1151,7 @@ document.addEventListener("click", (ev) => {
   else if (d.bliga) { buscaLiga = d.bliga; buscaClube = undefined; render(); }
   else if (d.bclube) { buscaClube = d.bclube; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.curtir && save) { const r = curtirPerfil(pacote, save, d.curtir, d.sim === "1"); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.filho !== undefined && save) { const r = agirFilhoJogo(pacote, save, Number(d.filho), d.op as AcaoFilho); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.nam && save) { const r = agirNamoroJogo(pacote, save, d.nam, d.op as AcaoNamoro); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.rel && save) {
     const r = agirRelacao(pacote, save, d.rel, d.op as AcaoRel, d.clube); msgRel = { texto: r.msg, ok: r.ok };

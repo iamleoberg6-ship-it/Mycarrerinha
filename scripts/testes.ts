@@ -31,7 +31,7 @@ import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
 import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
-import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, semanaNamoro, temporadaNamoro, type Par } from "../src/namoro.js";
+import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, type Par } from "../src/namoro.js";
 import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
@@ -1139,6 +1139,14 @@ teste("Vida amorosa: caso escondido vira escândalo, divórcio custa caro, filho
   n.par = par("Ana", "casados", 80);
   const div = agirNamoro(n, "Ana", "terminar", { ...ctx, semanaAbs: 300 });
   assert.ok(div.ok && div.custo === 300000 && !n.par, "divórcio: 30% do saldo");
+  // filho planejado: tentar, gravidez, parto 36 semanas depois, programas com a criança
+  n.par = par("Duda", "casados", 90); n.filhos = [];
+  for (let w = 400; w < 440 && !n.gravidez; w++) agirNamoro(n, "Duda", "tentarFilho", { ...ctx, semanaAbs: w });
+  assert.ok(n.gravidez && n.gravidez.mae === "Duda Silva", "grávida");
+  const parto = n.gravidez!.parto;
+  semanaNamoro(n, { ...ctx, semanaAbs: parto, ano: 2030 });
+  assert.ok(!n.gravidez && n.filhos!.length === 1 && !n.filhos![0].pensao && n.filhos![0].ano === 2030, "nasceu e mora com o pai");
+  assert.ok(agirFilho(n, 0, "passear", { ...ctx, semanaAbs: parto + 1 }).ok);
   n.par = par("Carla", "casados", 90);
   let filhos = 0; for (let a = 2030; a < 2045; a++) { temporadaNamoro(n, [], { semente: "amor", ano: a, salario: 100000 }); filhos = n.filhos!.length; }
   assert.ok(filhos >= 1);

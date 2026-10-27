@@ -33,6 +33,7 @@ import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, cam
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, familiaAutomatica, membro, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
+import { agirFilho, type AcaoFilho } from "./namoro.js";
 import { novoNamoro, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, namoroAutomatico, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
@@ -1338,7 +1339,7 @@ export function ctxFamilia(pacote: PacoteDados, s: Save): CtxFamilia {
 }
 export function ctxNamoro(pacote: PacoteDados, s: Save): CtxNamoro {
   const c = s.carreira;
-  return { semente: s.semente, semanaAbs: semanaAbsJogo(c), idadeJogador: s.jogador.idade, fama: c.fama, cidade: infoClube(pacote, c.clubeId).cidade, salario: c.salario, saldo: s.casa.saldo, vidaNoturna: c.vidaNoturna };
+  return { ano: ANO_INICIAL + c.temporada, semente: s.semente, semanaAbs: semanaAbsJogo(c), idadeJogador: s.jogador.idade, fama: c.fama, cidade: infoClube(pacote, c.clubeId).cidade, salario: c.salario, saldo: s.casa.saldo, vidaNoturna: c.vidaNoturna };
 }
 /** O jogador fala com alguém da família (ligar, visitar, presente, levar ao jogo, indicar o irmão...). */
 export function agirFamiliaJogo(pacote: PacoteDados, s: Save, id: string, acao: AcaoFamilia): { ok: boolean; msg: string } {
@@ -1363,6 +1364,15 @@ export function curtirPerfil(pacote: PacoteDados, s: Save, id: string, sim: bool
   return curtir(n, id, sim, ctx);
 }
 export function perfisDaSemana(pacote: PacoteDados, s: Save) { return baralhoDaSemana(namoroDe(s.carreira), ctxNamoro(pacote, s)); }
+export function agirFilhoJogo(pacote: PacoteDados, s: Save, i: number, acao: AcaoFilho): { ok: boolean; msg: string } {
+  const c = s.carreira, r = agirFilho(namoroDe(c), i, acao, ctxNamoro(pacote, s));
+  if (!r.ok) return r;
+  if (r.custo) s.casa.saldo -= r.custo;
+  if (r.moral) c.moral = clamp(c.moral + r.moral, 0, 100);
+  if (r.cansaco) c.cansaco = clamp(c.cansaco + r.cansaco, 0, 100);
+  if (r.fama) c.fama = clamp(c.fama + r.fama, 0, 100);
+  return { ok: true, msg: r.msg };
+}
 export function agirNamoroJogo(pacote: PacoteDados, s: Save, id: string, acao: AcaoNamoro): { ok: boolean; msg: string } {
   const c = s.carreira, r = agirNamoro(namoroDe(c), id, acao, ctxNamoro(pacote, s));
   if (!r.ok) return r;
