@@ -3,9 +3,9 @@
 // e vence em poucas semanas: quem não responde fica com a primeira opção de "deixar para lá".
 import type { RNG } from "./rng.js";
 
-export type OrigemOcasiao = "amor" | "familia" | "filho" | "parca" | "convite" | "encrenca" | "exterior" | "fundacao" | "ferias" | "hobby" | "garagem";
-export const ICONE_ORIGEM: Record<OrigemOcasiao, string> = { amor: "❤️", familia: "👨‍👩‍👧", filho: "🧒", parca: "🤙", convite: "✨", encrenca: "⚖️", exterior: "✈️", fundacao: "💛", ferias: "🏝️", hobby: "🎲", garagem: "🏎️" };
-export const NOME_ORIGEM: Record<OrigemOcasiao, string> = { amor: "Amor", familia: "Família", filho: "Filhos", parca: "Parças", convite: "Convite", encrenca: "Encrenca", exterior: "Vida lá fora", fundacao: "Fundação", ferias: "Férias", hobby: "Hobby", garagem: "Garagem" };
+export type OrigemOcasiao = "amor" | "familia" | "filho" | "parca" | "convite" | "encrenca" | "exterior" | "fundacao" | "ferias" | "hobby" | "garagem" | "vestiario" | "tecnico" | "rival" | "torcida" | "cidade" | "contrato";
+export const ICONE_ORIGEM: Record<OrigemOcasiao, string> = { amor: "❤️", familia: "👨‍👩‍👧", filho: "🧒", parca: "🤙", convite: "✨", encrenca: "⚖️", exterior: "✈️", fundacao: "💛", ferias: "🏝️", hobby: "🎲", garagem: "🏎️", vestiario: "👕", tecnico: "📋", rival: "⚔️", torcida: "📣", cidade: "🏙️", contrato: "✍️" };
+export const NOME_ORIGEM: Record<OrigemOcasiao, string> = { amor: "Amor", familia: "Família", filho: "Filhos", parca: "Parças", convite: "Convite", encrenca: "Encrenca", exterior: "Vida lá fora", fundacao: "Fundação", ferias: "Férias", hobby: "Hobby", garagem: "Garagem", vestiario: "Vestiário", tecnico: "Técnico", rival: "Rival", torcida: "Torcida", cidade: "Cidade", contrato: "Contrato" };
 
 /** O que uma escolha mexe na vida do jogador. */
 export interface EfeitoVida {
@@ -26,7 +26,7 @@ export interface OpcaoOcasiao { id: string; rotulo: string; texto: string; ef: E
 export interface Ocasiao { uid: string; origem: OrigemOcasiao; titulo: string; texto: string; opcoes: OpcaoOcasiao[]; expira: number; chave: string }
 export interface EstadoAgenda { pendentes: Ocasiao[]; vistas: Record<string, number>; uid: number; luto?: { semanas: number; quem: string } }
 export const novaAgenda = (): EstadoAgenda => ({ pendentes: [], vistas: {}, uid: 0 });
-export const MAX_PENDENTES = 4;
+export const MAX_PENDENTES = 5;
 
 /** Põe um momento na agenda (sem repetir a mesma chave dentro do intervalo e sem passar do limite). */
 export function agendar(a: EstadoAgenda, semanaAbs: number, o: Omit<Ocasiao, "uid" | "expira"> & { prazo?: number }, intervalo = 30): boolean {

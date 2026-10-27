@@ -33,6 +33,13 @@ import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./p
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
+import { semanaDoClube, gatilhoClube, fimDeTemporadaClube, figurinhaDaSelecao } from "./clube-vivo.js";
+import type { Vestiario } from "./vestiario.js";
+import type { Rival } from "./rival.js";
+import type { EstadoTorcida } from "./torcida.js";
+import { perfilCidade, type EstadoCidade } from "./cidades.js";
+import type { Figurinha } from "./figurinhas.js";
+import type { ClausulasContrato } from "./transferencias.js";
 import { alvoSeguidores, tetoSeguidores, saltoTransferencia, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
 import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from "./identidade.js";
 import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
@@ -166,6 +173,10 @@ export interface Carreira {
   encerrada?: Despedida;
   /** patrocinadores: contratos ativos, proposta na mesa, marcas recusadas na temporada e números do mês para os bônus */
   patrocinios?: ContratoPatrocinio[]; propPatrocinio?: PropostaPatrocinio; recusadas?: string[]; mesStats?: { gols: number; assist: number; notas8: number };
+  /** cláusulas do contrato em vigor (multa, % de venda, bônus) */
+  contrato?: ClausulasContrato;
+  /** vestiário do clube atual, rival pessoal (e os de antes), torcida de cada clube, cidade onde mora e álbum */
+  vestiario?: Vestiario; rival?: Rival; rivaisPassados?: Rival[]; torcidaViva?: EstadoTorcida; cidade?: EstadoCidade; cidadesMoradas?: string[]; album?: Figurinha[];
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
@@ -178,6 +189,7 @@ const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
 // ------------------------------------------------------------------ mundo (liga e clubes)
 /** Clássicos entre cidades diferentes (os da mesma cidade já contam sozinhos). */
 const CLASSICOS_EXTRA: Record<string, true> = { "PAL-SAN": true, "COR-SAN": true, "SAN-SPA": true };
+export const ehClassico = (pacote: PacoteDados, a: string, b: string) => { const x = infoClube(pacote, a), y = infoClube(pacote, b); return (!!x && !!y && x.cidade === y.cidade) || [a, b].sort().join("-") in CLASSICOS_EXTRA; };
 let ligaCache: { pacote: PacoteDados; liga: Liga } | undefined;
 /** A Série A (início de carreira e ofertas da base). */
 export function liga(pacote: PacoteDados): Liga {
@@ -490,6 +502,7 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   if (c.lesao > 0) return "lesionado";
   if (!copa && c.semana < SEMANAS_PRE) return "semJogo";
   if (copa ? (estadual ? c.suspensaoEstadual : c.suspensaoCopa) : c.suspensao) return "suspenso";
+  if (c.vestiario?.geladeira && c.vestiario.clubeId === c.clubeId && !c.formacao) return "fora"; // geladeira do técnico
   if (copa) { const e = escalacao(pacote, { ...s, carreira: { ...c, suspensao: 0, semana: Math.max(c.semana, SEMANAS_PRE) } }, cansacoPrevisto); return e === "base" ? "fora" : e; }
   const elenco = elencoDisponivel(pacote, s), tec = c.tecnico;
   const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade) + bonusDoTecnico(tec, j.posicao, j.idade);
@@ -693,7 +706,9 @@ export function convocado(pacote: PacoteDados, s: Save, chave = `${s.carreira.te
   reg.conv[chave] = sim;
   const primeira = sim && reg.convocacoes === 0;
   if (sim) { reg.convocacoes++; noticia(s, "jogo", `${j.apelido} convocado`, `${j.apelido} está na lista da ${sel!.nome}${chave.endsWith("copa") ? " para a Copa do Mundo" : ""}.`); }
-  if (primeira) { // primeira convocação: as redes explodem
+  if (primeira) { // primeira convocação: as redes explodem e a figurinha da seleção vai para o álbum
+    const ic = infoClube(pacote, sel!.id);
+    figurinhaDaSelecao(pacote, s, sel!.nome, [ic?.cores[0] ?? "#F2C200", ic?.cores[1] ?? "#0B7A3B"]);
     c.hype = clamp((c.hype ?? 0) + 0.8, -0.3, 1.5);
     c.seguidores = saltoTransferencia(c.seguidores, alvoDeSeguidores(pacote, s));
   }
@@ -1317,9 +1332,12 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   // 5. dinheiro no fim do mês
   let dinheiro: ResumoSemana["dinheiro"];
   if (c.semana % 4 === 3) {
-    const pat = fecharMesPatrocinios(s, eventos);
+    // bônus por gol do contrato (antes de os números do mês zerarem)
+    const bonusGol = c.fase || c.formacao ? 0 : (c.contrato?.bonusGol ?? 0) * (c.mesStats?.gols ?? 0);
+    if (bonusGol) eventos.push(`Bônus por gol do contrato: R$ ${bonusGol.toLocaleString("pt-BR")}.`);
+    const pat = fecharMesPatrocinios(s, eventos) + bonusGol;
     // várzea, academia, colégio e universidade: a família paga o custo de vida
-    const liquido = salarioLiquido(c) + pat, g = c.fase ? { itens: [], total: 0 } : gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
+    const liquido = salarioLiquido(c) + pat, g = c.fase ? { itens: [], total: 0 } : gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa), c.cidade ? perfilCidade(c.cidade.nome, c.cidade.pais).custo : 1);
     const { aluguel } = fecharMes(s.casa, liquido - g.total);
     if (c.mesesPatrocinio > 0) c.mesesPatrocinio--; else c.patrocinioMensal = 0;
     // equipe particular, parças com função, fundação e garagem fecham o mês junto
@@ -1422,6 +1440,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     c.fama = clamp(c.fama + 0.02 * (m.imprensa - 50) / 50, 0, 100);
   }
   semanaVidaFora(pacote, s, eventos, !!jogoDaSemana(s) || !!jogoCopaDaSemana(pacote, s));
+  if (!fim) semanaDoClube(pacote, s, eventos, { jogou: !!resumoPartida && resumoPartida.minutos > 0 && resumoPartida.tipo === "profissional", titular: participacao === "titular", nota: resumoPartida?.nota ?? 0, gols: resumoPartida?.gols ?? 0, adv: jogo?.adversario, rodada: jogo?.rodada, grande: (partida?.clima?.peso ?? 1) >= 1.2 });
   checarRecordes(pacote, s, eventos);
   if (!fim) { noticiasDeLesao(pacote, s, eventos); demissaoNoMeio(pacote, s, eventos); }
   return {
@@ -1552,6 +1571,7 @@ export function aplicarEfeitoVida(pacote: PacoteDados, s: Save, ef: EfeitoVida) 
   if (ef.gatilho) gatilhoVida(pacote, s, ef.gatilho);
 }
 function gatilhoVida(pacote: PacoteDados, s: Save, g: string) {
+  if (gatilhoClube(pacote, s, g)) return;
   const c = s.carreira, [k, a, b] = g.split(":"), ps = parcasDe(s);
   if (k === "parca-divida") { const p = ps.find((x) => x.id === a); if (p) p.divida = (p.divida ?? 0) + +b; }
   else if (k === "parca-afastar") c.parcas = ps.filter((x) => x.id !== a);
@@ -2154,6 +2174,8 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   if (c.selecao) { c.selecao.naTorneio = undefined; c.selecao.naCopa = undefined; }
   // técnico do clube do jogador: a campanha real decide se ele fica
   avaliarTecnico(pacote, s, posicao, ev);
+  // vida no clube: títulos (bônus, aeroporto), figurinha do ano e o balanço da briga com o rival
+  fimDeTemporadaClube(pacote, s, r, ev);
   // tabela final (vale para as vagas das copas da próxima temporada)
   c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
   if (!c.fase && !infoLiga(c.ligaId).amador) (c.tabelasReais ??= {})[c.temporada] = c.tabelaAnterior;

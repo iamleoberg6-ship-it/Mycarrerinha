@@ -54,11 +54,15 @@ import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
-import { AGENTE_INFO, NOME_PAPEL, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
+import { AGENTE_INFO, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClausulas, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
 import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, type Aparencia } from "../criacao/avatar";
 import { acessoriosAtivos, type Marca } from "../../src/marcas";
+import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
+import { vestiarioDe, albumDe } from "../../src/clube-vivo";
+import { perfilCidade, NOME_CLIMA, inverno } from "../../src/cidades";
+import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
 import { svgComodo } from "../casa/iso";
 
 const pacote = pacoteJson as unknown as PacoteDados;
@@ -743,7 +747,7 @@ function abaAmigos(s: Save): string {
     ${aposentados.length ? `<details class="dobra" style="margin-top:14px"><summary class="rotulo">Aposentados (${aposentados.length})</summary>${aposentados.slice(0, 20).map((x) => linhaRel(s, x, ["mensagem"])).join("")}</details>` : ""}`;
 }
 
-let subJogador: "atributos" | "saude" | "negocios" | "visual" | "dinheiro" = "atributos";
+let subJogador: "atributos" | "clube" | "saude" | "negocios" | "visual" | "dinheiro" = "atributos";
 let msgJog: { ok: boolean; texto: string } | undefined, operarCerteza: string | undefined;
 
 // ------------------------------------------------------------------ saúde e longevidade
@@ -794,15 +798,81 @@ function blocoNegocios(s: Save): string {
     <div class="staff${n.assessor ? " on" : ""}" style="margin-top:10px"><div><b>Assessor financeiro</b><small>Desconfia das propostas estranhas e cuida um pouco das empresas.</small></div><button class="botao ${n.assessor ? "sec" : ""} peq" data-assessor="${n.assessor ? 0 : 1}">${n.assessor ? "Dispensar" : `Contratar<small>${dinheiro(CUSTO_ASSESSOR)}/mês</small>`}</button></div>
     <details class="dobra" style="margin-top:16px"${n.empresas.length ? "" : " open"}><summary class="rotulo">Abrir um negócio</summary>${abrir || `<p class="sub">Você já tem um de cada.</p>`}</details>`;
 }
+/** Jogador › Clube: técnico, vestiário, rival, torcida e contrato. */
+function blocoClube(s: Save): string {
+  const c = s.carreira, j = s.jogador, info = infoClube(pacote, c.clubeId), sub = (t: string) => `<p class="rotulo" style="margin-top:18px">${t}</p>`;
+  if (c.fase || c.formacao || c.mercado?.semClube) return `<p class="sub">${c.mercado?.semClube ? "Sem clube, sem vestiário. Assine um contrato e esta tela ganha vida." : "Na base, o vestiário é outro: técnico, capitania, rival e torcida chegam com o contrato profissional."}</p>${blocoCidade(s, true)}`;
+  const v = vestiarioDe(pacote, s), t = c.tecnico;
+  const tecnico = t ? `<div class="card-clube"><div class="linha-ico"><span class="ico">📋</span><div><b>${esc(t.nome)}</b><small>${esc(NOME_ESTILO[t.estilo][0])} · ${t.idade} anos · desde ${ANO_INICIAL + t.desde}</small></div></div>
+    <p class="sub">${esc(NOME_ESTILO[t.estilo][1])}</p>${barra("Relação", c.relTecnico, 100, c.relTecnico < 30 ? "#E5534B" : "#E3B341")}
+    ${v.geladeira ? `<p class="aviso-geladeira">🧊 Na geladeira: mais ${v.geladeira} ${v.geladeira === 1 ? "semana" : "semanas"} fora dos relacionados.</p>` : c.relTecnico < 25 ? `<p class="sub" style="color:var(--neg)">Relação ruim: o técnico pode te tirar dos relacionados.</p>` : ""}
+    ${(v.exTecnicos ?? []).length ? `<p class="sub" style="margin-top:6px">Ex-técnicos: ${v.exTecnicos!.map((x) => `${esc(x.nome)} <small>(${x.rel >= 65 ? "fã de você" : x.rel >= 40 ? "neutro" : "não gosta"})</small>`).join(" · ")}. Quem gosta de você pode te chamar quando assumir outro clube.</p>` : ""}</div>` : "";
+  const prox = v.papel === "capitao" ? "Você usa a braçadeira. Discursa antes das decisões e responde pelo grupo." : v.papel === "vice" ? "Próximo passo: capitão (liderança 74, titular e 20 jogos no clube)." : v.papel === "novato" ? "Ainda é o novato: jogos, tempo de casa e as escolhas no vestiário mudam isso." : "Liderança sobe com tempo de casa, idade, carisma, fama e as escolhas nos momentos do vestiário.";
+  const vest = `<div class="card-clube"><div class="linha-ico"><span class="ico">${v.papel === "capitao" ? "🅒" : "👕"}</span><div><b>${NOME_PAPEL_VEST[v.papel]}</b><small>${esc(prox)}</small></div></div>${barra("Liderança", v.lideranca, 100, "#74D394")}
+    ${v.comp.length ? `<div class="comp-lista">${v.comp.map((x) => `<div class="comp"><b>${esc(x.nome)}</b><small>${esc(NOME_COMP[x.tipo][0])} · ${esc(NOME_COMP[x.tipo][1])}</small>${barra("", x.rel, 100, x.rel < 35 ? "#E5534B" : "#6FA8DC", "")}</div>`).join("")}</div>` : ""}</div>`;
+  const r = c.rival;
+  const rival = r ? `<div class="card-clube rival"><div class="rival-topo"><div>${escudo(c.clubeId)}<b>${esc(j.apelido)}</b></div><div class="rival-placar"><span>${r.placar.eu}</span><small>× ${r.placar.empate} ×</small><span>${r.placar.ele}</span></div><div>${escudo(r.clubeId)}<b>${esc(r.nome)}</b></div></div>
+    <p class="sub" style="text-align:center">Duelos: vitórias suas × empates × vitórias dele · rivalidade desde ${r.desde}</p>${barra("Temperatura", r.temp, 100, "#E5534B")}
+    ${r.duelos.length ? `<div class="kv">${r.duelos.slice(-5).reverse().map((d) => `<span>${d.ano} · contra o ${esc(d.adv)}</span><b>${d.meu.toFixed(1)} × ${d.dele.toFixed(1)}${d.golsEu || d.golsEle ? ` <small>(gols ${d.golsEu} × ${d.golsEle})</small>` : ""}</b>`).join("")}</div>` : `<p class="sub">Ainda sem duelo: quando os clubes se enfrentarem, a nota de cada um vai para o placar.</p>`}
+    ${r.anos.length ? `<p class="sub" style="margin-top:6px">Gols por temporada: ${r.anos.slice(-4).map((x) => `${x.ano}: <b>${x.golsEu} × ${x.golsEle}</b>`).join(" · ")}</p>` : ""}</div>`
+    : `<p class="sub">Ainda sem rival. Quando a sua fama crescer (28+ e 10 jogos como profissional), a imprensa escolhe alguém da sua geração para te comparar.</p>`;
+  const passados = (c.rivaisPassados ?? []).length ? `<p class="sub">Rivais de antes: ${c.rivaisPassados!.map((x) => `${esc(x.nome)} (${x.placar.eu}×${x.placar.ele}, ${esc(x.fim?.motivo ?? "")})`).join(" · ")}</p>` : "";
+  const tv = c.torcidaViva?.[c.clubeId], torc = c.torcida ?? 50;
+  const torcida = `<div class="card-clube">${barra("Reputação com a torcida", torc, 100, "#74D394")}
+    ${tv?.apelido ? `<p class="sub">Apelido da arquibancada: <b>"${esc(tv.apelido)}"</b></p>` : `<p class="sub">Ainda sem apelido: a arquibancada batiza quem conquista ela (reputação 68+).</p>`}
+    ${tv?.musica ? `<blockquote class="musica">🎵 ${tv.musica.versos.map(esc).join("<br>")}</blockquote>` : `<p class="sub">Música própria só para ídolo: reputação 80+ e 15 jogos no clube.</p>`}
+    ${tv?.faixas.length ? `<div class="faixas">${tv.faixas.slice(-4).reverse().map((f) => `<span class="faixa-est">${esc(f.texto)}</span>`).join("")}</div>` : ""}
+    ${tv && (tv.protestos || tv.aeroporto) ? `<p class="sub">${tv.aeroporto ? `${tv.aeroporto} festa${tv.aeroporto > 1 ? "s" : ""} no aeroporto` : ""}${tv.aeroporto && tv.protestos ? " · " : ""}${tv.protestos ? `${tv.protestos} protesto${tv.protestos > 1 ? "s" : ""} no CT` : ""}</p>` : ""}
+    ${Object.values(c.torcidaViva ?? {}).filter((x) => x.clubeId !== c.clubeId && (x.apelido || x.musica)).map((x) => `<p class="sub">No ${esc(infoClube(pacote, x.clubeId)?.nome ?? "")}: ${x.apelido ? `"${esc(x.apelido)}"` : ""}${x.musica ? " · tinha música" : ""}</p>`).join("")}</div>`;
+  const k = c.contrato;
+  const contrato = `<div class="card-clube"><div class="kv"><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b>${k ? `<span>Multa rescisória</span><b>€ ${(k.multa / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi</b>${k.pctVenda ? `<span>Da venda futura</span><b>${k.pctVenda}%</b>` : ""}<span>Bônus por gol</span><b>${k.bonusGol ? dinheiro(k.bonusGol) : "–"}</b><span>Bônus por título</span><b>${k.bonusTitulo ? dinheiro(k.bonusTitulo) : "–"}</b>` : ""}</div>
+    ${!k ? `<p class="sub">Contrato antigo, sem cláusulas. A próxima renovação ou transferência traz multa, bônus e % de venda.</p>` : ""}
+    <div class="ferr-botoes"><button class="botao sec peq" data-aumento="1" ${k?.pedidoAumento === c.temporada ? "disabled" : ""}>Pedir aumento à diretoria</button></div>
+    <p class="sub">Uma vez por temporada. Quem é titular e está em boa fase ganha renovação melhor; quem não está, ouve um não.</p></div>`;
+  return `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(info.estadio)}</span></div></div>
+    ${sub("Técnico")}${tecnico}${sub("Vestiário")}${vest}${sub("Rival")}${rival}${passados}${sub("Torcida")}${torcida}${sub("Contrato")}${contrato}`;
+}
+/** A cidade onde o jogador mora. */
+function blocoCidade(s: Save, curto = false): string {
+  const c = s.carreira, info = infoClube(pacote, c.clubeId), nome = c.cidade?.nome ?? info?.cidade ?? "", pais = c.cidade?.pais ?? info?.pais ?? "BRA", p = perfilCidade(nome, pais);
+  const lua = (n: number) => n ? "🌙".repeat(n) : "Tranquila";
+  const inv = inverno(pais, c.semana);
+  return `<div class="card-clube cidade"><h2 style="margin:0 0 4px">${esc(nome)}</h2><p class="sub">${esc(p.descricao)}</p>
+    <div class="kv"><span>Clima</span><b>${esc(NOME_CLIMA[p.clima])}${inv && p.clima === "frio" ? " · inverno agora" : ""}</b><span>Custo de vida</span><b>${p.custo >= 1.4 ? "Muito caro" : p.custo >= 1.15 ? "Caro" : p.custo <= 0.85 ? "Barato" : "Na média"} <small>(${p.custo >= 1 ? "+" : "−"}${Math.round(Math.abs(p.custo - 1) * 100)}% nos gastos)</small></b><span>Vida noturna</span><b>${lua(p.noite)}</b><span>Praia</span><b>${p.praia ? "Sim" : "Não"}</b><span>Trânsito</span><b>${p.transito ? "Pesado" : "Tranquilo"}</b><span>Segurança</span><b>${["Tranquila", "Atenção", "Perigosa"][p.perigo]}</b>${p.festa ? `<span>Festa típica</span><b>${esc(p.festa.nome)}</b>` : ""}</div>
+    ${curto ? "" : `<p class="sub" style="margin-top:8px">Para conhecer: ${p.pontos.map(esc).join(" · ")}${c.cidade?.conheceu ? " (já conheceu)" : ""}</p>
+    <p class="sub">Vida noturna agitada puxa a balada; frio pesa no humor de quem vem de país quente; o custo mexe nos gastos do mês.</p>
+    ${(c.cidadesMoradas ?? []).length > 1 ? `<p class="sub">Já morou em: ${c.cidadesMoradas!.map(esc).join(" · ")}</p>` : ""}`}</div>`;
+}
+/** Álbum de figurinhas da carreira. */
+function figurinhaSvg(f: Figurinha): string {
+  const cor = f.cores[0].toUpperCase() === "#FFFFFF" ? f.cores[1] : f.cores[0];
+  const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
+  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: f.cores[0].toUpperCase() === "#FFFFFF" ? "#F4F4F2" : f.cores[0], cor2: f.cores[1] ?? "#111111", estilo: "lisa" }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="10" y="22" width="140" height="168" ');
+  return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="Figurinha ${f.ano}"><defs><linearGradient id="fg${f.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${cor}"/><stop offset="1" stop-color="#0E1A15"/></linearGradient></defs>
+    <rect x="1" y="1" width="158" height="228" rx="10" fill="url(#fg${f.id})"/>${rosto}
+    <rect x="6" y="6" width="58" height="16" rx="4" fill="#0008"/><text x="35" y="18" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="11" fill="#fff">${f.ano}</text>
+    <text x="150" y="20" text-anchor="end" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="18" fill="#fff">${f.ovr}</text>
+    <rect x="0" y="186" width="160" height="44" fill="#0E1A15" opacity=".92"/><text x="80" y="202" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${esc(f.clube.toUpperCase().slice(0, 22))}</text>
+    <text x="80" y="216" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#cfd8d3">${esc(f.posicao)} · ${f.jogos} J · ${f.gols} G · ${f.assist} A</text><text x="80" y="226" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#E3B341">${esc(f.legenda.slice(0, 34))}</text></svg>`;
+}
+function albumHtml(s: Save): string {
+  const album = albumDe(s.carreira);
+  if (!album.length) return `<p class="rotulo">Álbum de figurinhas</p><p class="sub">A primeira figurinha sai no fim da primeira temporada como profissional. Momentos grandes (capitão, seleção, título) ganham figurinha especial.</p>`;
+  const ord = [...album].sort((a, b) => a.ano - b.ano || a.tipo.localeCompare(b.tipo));
+  const cont = (r: string) => album.filter((f) => f.raridade === r).length;
+  return `<p class="rotulo">Álbum de figurinhas · ${album.length}</p><p class="sub">${(["lenda", "brilhante", "prata", "comum"] as const).filter((r) => cont(r)).map((r) => `${cont(r)} ${NOME_RARIDADE[r].toLowerCase()}`).join(" · ")}</p>
+    <div class="album">${ord.map((f) => `<div class="fig ${f.raridade}"><span class="fig-tag">${esc(NOME_TIPO_FIG[f.tipo])}</span>${figurinhaSvg(f)}</div>`).join("")}</div>`;
+}
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const visual = blocoVisual(s);
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
   const grupos: [string, Grupo][] = [["Físico", "fisico"], ["Técnico", "tecnico"], ["Tático", "tatico"]];
-  const sub = `<div class="sub-abas">${([["atributos", "Atributos"], ["saude", "Saúde"], ["negocios", "Negócios"], ["dinheiro", "Dinheiro"], ["visual", "Visual"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
+  const sub = `<div class="sub-abas">${([["atributos", "Atributos"], ["clube", "Clube"], ["saude", "Saúde"], ["negocios", "Negócios"], ["dinheiro", "Dinheiro"], ["visual", "Visual"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
   const msg = msgJog ? `<p class="msg-mercado ${msgJog.ok ? "ok" : "nao"}">${esc(msgJog.texto)}</p>` : "";
   msgJog = undefined;
   if (subJogador === "visual") return sub + visual;
+  if (subJogador === "clube") return sub + msg + blocoClube(s);
   if (subJogador === "dinheiro") return sub + blocoPatrocinios(s) + blocoVida(s);
   if (subJogador === "saude") return sub + msg + blocoSaude(s);
   if (subJogador === "negocios") return sub + msg + blocoNegocios(s);
@@ -865,6 +935,15 @@ function abaMercado(s: Save): string {
   return chips + (vistaMercado === "mundo" ? janelaHtml(s) : abaMercadoEu(s));
 }
 const rotuloDaSemanaAbs = (abs: number) => { const t = Math.floor(abs / SEMANAS_TEMPORADA), sem = abs % SEMANAS_TEMPORADA; return `semana ${sem + 1} de ${ANO_INICIAL + t}`; };
+/** Cláusulas da proposta e o que dá para pedir (cada pedido gasta a paciência da diretoria). */
+function clausulasHtml(p: PropostaSave): string {
+  if (save) comClausulas(pacote, save, p);
+  const pac = p.paciencia ?? 0, pedidos = p.pedidos ?? [];
+  const itens = (Object.keys(NOME_ITEM) as (keyof typeof NOME_ITEM)[]).filter((k) => !pedidos.includes(k));
+  return `<div class="kv clausulas"><span>Multa rescisória</span><b>€ ${((p.multa ?? 0) / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi</b>${p.pctVenda ? `<span>Da venda futura</span><b>${p.pctVenda}% para você</b>` : ""}<span>Bônus por gol</span><b>${p.bonusGol ? dinheiro(p.bonusGol) : "–"}</b><span>Bônus por título</span><b>${p.bonusTitulo ? dinheiro(p.bonusTitulo) : "–"}</b></div>
+    <details class="dobra negociar"${pedidos.length ? " open" : ""}><summary class="rotulo">Negociar · paciência da diretoria ${"●".repeat(Math.max(0, pac))}${"○".repeat(Math.max(0, 4 - pac))}</summary>
+    ${pac > 0 ? `<div class="chips" style="flex-wrap:wrap">${itens.map((k) => `<button class="chip" data-negoc="${p.id}" data-item="${k}" title="${esc(NOME_ITEM[k][1])}">${esc(NOME_ITEM[k][0])}</button>`).join("")}</div><p class="sub">Cada pedido que não colar gasta paciência. Quando acaba, é pegar ou largar${p.tipo === "renovacao" ? "" : ", e o clube pode desistir"}.</p>` : `<p class="sub">A diretoria encerrou a conversa: é pegar ou largar.</p>`}</details>`;
+}
 function abaMercadoEu(s: Save): string {
   const c = s.carreira, j = s.jogador, m = mercadoDe(c), w = mundo(pacote), meu = w.clube[c.clubeId], jan = janelaAberta(c);
   const ligaNome = infoLiga(c.ligaId).curto, papel = papelNoClube(meu, s);
@@ -882,12 +961,13 @@ function abaMercadoEu(s: Save): string {
     const info = infoClube(pacote, p.clubeId), cl = w.clube[p.clubeId], delta = p.salario - c.salario;
     const botoes = p.travada
       ? `<button class="botao" data-prop="${p.id}" data-op="forcar">Forçar a saída</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Desistir</button>`
-      : `<button class="botao" data-prop="${p.id}" data-op="aceitar">${p.tipo === "renovacao" ? "Renovar" : p.tipo === "emprestimo" ? "Aceitar o empréstimo" : "Aceitar"}</button>${!p.negociada && p.tipo !== "emprestimo" ? `<button class="botao sec" data-prop="${p.id}" data-op="negociar">Pedir mais (agente)</button>` : ""}<button class="botao sec" data-prop="${p.id}" data-op="recusar">Recusar</button>`;
+      : `<button class="botao" data-prop="${p.id}" data-op="aceitar">${p.tipo === "renovacao" ? "Renovar" : p.tipo === "emprestimo" ? "Aceitar o empréstimo" : "Aceitar"}</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Recusar</button>`;
     return `<div class="oferta" style="--c1:${info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0]}"><div class="faixa"></div><div class="corpo">
       <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(infoLiga(p.ligaId).curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)} · ${esc(NOME_CULTURA[culturaBase(p.clubeId)].toLowerCase())}</span></div></div>
       <div class="linha-info"><span class="tag ${p.papel === "titular" ? "titular" : p.papel === "rotacao" ? "banco" : "ruim"}">${NOME_TIPO[p.tipo]} · ${NOME_PAPEL[p.papel].toLowerCase()}</span></div>
       <div class="kv"><span>Salário</span><b>${dinheiro(p.salario)}/mês <small class="${delta >= 0 ? "pos" : "neg"}">${delta >= 0 ? "+" : "−"}${dinheiro(Math.abs(delta))}</small></b>${p.anos ? `<span>Contrato</span><b>${p.anos} anos</b>` : `<span>Duração</span><b>Até o fim da temporada</b>`}${p.luvas ? `<span>Luvas</span><b>${dinheiro(p.luvas)}</b>` : ""}${p.taxa ? `<span>Pagam ao ${esc(meu.nome)}</span><b>${milhoes(p.taxa)}</b>` : ""}</div>
-      ${p.travada ? `<p class="sub" style="color:var(--neg)">O ${esc(meu.nome)} não quer vender. Forçar a saída desgasta a relação com o técnico e com a torcida.</p>` : p.negociada ? `<p class="sub">O agente já negociou essa.</p>` : ""}
+      ${p.tipo !== "emprestimo" ? clausulasHtml(p) : ""}
+      ${p.pagaMulta ? `<p class="sub" style="color:var(--pos)">Eles pagam a sua multa rescisória: o ${esc(meu.nome)} não pode segurar.</p>` : p.travada ? `<p class="sub" style="color:var(--neg)">O ${esc(meu.nome)} não quer vender. Forçar a saída desgasta a relação com o técnico e com a torcida.</p>` : ""}
       <div class="ferr-botoes">${botoes}</div></div></div>`;
   };
   const props = m.propostas.length ? `<div class="ofertas">${m.propostas.map(card).join("")}</div>` : `<p class="sub">${jan ? "Nenhuma proposta por enquanto. Elas chegam ao longo da janela; jogar bem e ter um bom agente ajudam." : "Fora da janela de transferências. Jogue bem: os clubes estão olhando."}</p>`;
@@ -1003,6 +1083,7 @@ function perfilHtml(s: Save): string {
 
       ${evolucaoHtml(s)}
       ${linhaDaVidaHtml(s)}
+      ${albumHtml(s)}
       <p class="rotulo">Temporada a temporada <small>(toque no ano para ver a retrospectiva)</small></p>
       <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${c.historico.includes(h) ? `<button class="nome-hist" data-retro="${h.ano}">${h.ano}</button>` : h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}${(h as { parcial?: boolean }).parcial ? " <small class=\"sub\">(até a troca)</small>" : ""}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
     </div>`;
@@ -1257,7 +1338,7 @@ function abaNoticias(s: Save): string {
 }
 
 // ------------------------------------------------------------------ vida fora de campo (aba Vida)
-let subVida: "agenda" | "casa" | "parcas" | "garagem" | "rotina" | "fundacao" = "agenda";
+let subVida: "agenda" | "casa" | "cidade" | "parcas" | "garagem" | "rotina" | "fundacao" = "agenda";
 let msgVida: { ok: boolean; texto: string } | undefined, afastarCerteza: string | undefined;
 function htmlOcasiao(s: Save, o: ReturnType<typeof agendaDe>["pendentes"][number], compacto = false): string {
   const falta = o.expira - semanaAbsJogo(s.carreira);
@@ -1274,11 +1355,11 @@ function cardAgenda(s: Save): string {
 }
 function abaVida(s: Save): string {
   const a = agendaDe(s.carreira), n = a.pendentes.length;
-  const subs: [typeof subVida, string][] = [["agenda", n ? `Agenda (${n})` : "Agenda"], ["casa", "Casa"], ["parcas", "Parças"], ["garagem", "Garagem"], ["rotina", "Rotina"], ["fundacao", "Fundação"]];
+  const subs: [typeof subVida, string][] = [["agenda", n ? `Agenda (${n})` : "Agenda"], ["casa", "Casa"], ["cidade", "Cidade"], ["parcas", "Parças"], ["garagem", "Garagem"], ["rotina", "Rotina"], ["fundacao", "Fundação"]];
   const sub = `<div class="sub-abas rolar">${subs.map(([k, t]) => `<button class="${subVida === k ? "ativo" : ""}" data-subvida="${k}">${t}</button>`).join("")}</div>`;
   const msg = msgVida ? `<p class="msg-mercado ${msgVida.ok ? "ok" : "nao"}">${esc(msgVida.texto)}</p>` : "";
   msgVida = undefined;
-  const corpo = subVida === "casa" ? abaCasa(s) : subVida === "parcas" ? vidaParcas(s) : subVida === "garagem" ? vidaGaragem(s) : subVida === "rotina" ? vidaRotina(s) : subVida === "fundacao" ? vidaFundacao(s) : vidaAgenda(s);
+  const corpo = subVida === "cidade" ? blocoCidade(s) : subVida === "casa" ? abaCasa(s) : subVida === "parcas" ? vidaParcas(s) : subVida === "garagem" ? vidaGaragem(s) : subVida === "rotina" ? vidaRotina(s) : subVida === "fundacao" ? vidaFundacao(s) : vidaAgenda(s);
   return sub + msg + corpo;
 }
 function vidaAgenda(s: Save): string {
@@ -1651,7 +1732,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -1690,6 +1771,8 @@ document.addEventListener("click", (ev) => {
   else if (d.post) { const r = postarJogo(pacote, save!, d.post as TipoPost); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.pauta) { const r = responderEntrevistaJogo(pacote, save!, d.pauta); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") telaCel = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); if (b.classList.contains("aviso-mercado")) document.querySelector(".abas")?.scrollIntoView({ behavior: "smooth" }); }
+  else if (d.negoc && save) { const r = negociarItem(pacote, save, d.negoc, d.item as never); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.aumento && save) { const r = pedirAumento(pacote, save, forma(save.carreira)); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.prop && save) {
     const r = d.op === "aceitar" ? aceitar(pacote, save, d.prop) : d.op === "forcar" ? aceitar(pacote, save, d.prop, true) : d.op === "negociar" ? negociar(pacote, save, d.prop) : recusar(pacote, save, d.prop);
     msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render();

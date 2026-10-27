@@ -1355,4 +1355,40 @@ teste("Seguidores com teto do clube e da liga; seleção quebra o teto; marcas d
   assert.equal(ac.oculos?.tipo, "oculos");
   void MARCAS;
 });
+teste("Vida no clube: vestiário, cidade, rival, torcida, cláusulas e álbum", async () => {
+  const tv = await import("../src/transferencias.js"), cv = await import("../src/clube-vivo.js"), ves = await import("../src/vestiario.js"), riv = await import("../src/rival.js"), cid = await import("../src/cidades.js");
+  const r = criarJogador({ nome: "Clube", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "tclube" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "tclube");
+  s.carreira.formacao = false; s.jogador.idade = 22; s.carreira.anosContrato = 5; s.carreira.salario = 100000; s.carreira.fama = 40;
+  for (const k of Object.keys(s.jogador.at)) (s.jogador.at as Record<string, number>)[k] = 80;
+  for (let w = 0; w < SEMANAS_TEMPORADA + 2; w++) semanaAutomatica(pacote, s, false);
+  const c = s.carreira;
+  assert.ok(c.vestiario && c.vestiario.clubeId === c.clubeId, "vestiário do clube");
+  assert.ok(c.cidade && c.cidade.nome, "mora numa cidade");
+  assert.ok((c.album ?? []).some((f) => f.tipo === "temporada"), "figurinha da temporada");
+  // gatilhos dos momentos
+  const lid = c.vestiario!.lideranca;
+  assert.ok(cv.gatilhoClube(pacote, s, "vest:lid:10")); assert.ok(c.vestiario!.lideranca > lid);
+  // capitania: liderança alta e tempo de casa dão a braçadeira
+  const v = ves.novoVestiario(new RNG("v"), "FLA", [], { idade: 27, posicao: "ATA", ovr: 80 }, 0); v.lideranca = 90; v.papel = "vice";
+  const e = ves.semanaVestiario(v, jogoMod.agendaDe(c), new RNG("v2"), { ab: 1, idade: 27, fama: 70, carisma: 15, titular: true, nota: 7, jogosNoClube: 60, temporadasNoClube: 3, relTecnico: 70, apelido: "T", clube: "X", salario: 1e5, elenco: [], posicao: "ATA", ovr: 80 });
+  assert.equal(v.papel, "capitao"); assert.ok(e.marcos.length);
+  // rival: mesma geração e faixa do campo
+  const cand = riv.escolherRival([{ nome: "A", clubeId: "PAL", ovr: 75, posicao: "ATA", idade: 23, fama: 60 }, { nome: "B", clubeId: "PAL", ovr: 75, posicao: "ZAG", idade: 23, fama: 60 }, { nome: "C", clubeId: "PAL", ovr: 75, posicao: "PON", idade: 35, fama: 60 }], { idade: 22, posicao: "ATA", ovr: 74, clubeId: "FLA", ligaDe: () => "BRA1", ligaId: "BRA1" });
+  assert.equal(cand?.nome, "A");
+  const rv = riv.novoRival(cand!, 2027); riv.registrarDuelo(rv, { ano: 2027, adv: "PAL", meu: 8.5, dele: 6.5, golsEu: 2, golsEle: 0 });
+  assert.equal(rv.placar.eu, 1);
+  // cidade: perfil e custo
+  assert.ok(cid.perfilCidade("London", "ENG").custo > cid.perfilCidade("Recife", "BRA").custo);
+  // cláusulas: proposta tem multa e dá para negociar item a item
+  s.carreira.semana = 1; s.carreira.anosContrato = 1; tv.mercadoDe(s.carreira).semRenovacao = undefined;
+  const pr = tv.pedirAumento(pacote, s, 8);
+  const p = tv.mercadoDe(s.carreira).propostas.find((x) => x.tipo === "renovacao");
+  if (pr.ok) {
+    assert.ok(p && p.multa! > 0 && (p.paciencia ?? 0) >= 2);
+    tv.negociarItem(pacote, s, p!.id, "venda"); tv.negociarItem(pacote, s, p!.id, "gols");
+    assert.equal(p!.pedidos!.length, 2);
+    assert.ok(tv.aceitar(pacote, s, p!.id).ok); assert.ok(s.carreira.contrato && s.carreira.contrato.multa > 0);
+  }
+});
 console.log(`\n${ok} testes passaram`);

@@ -115,8 +115,8 @@ export function pctEquipe(fama: number, formacao: boolean): number {
 }
 
 export interface Gastos { itens: { nome: string; valor: number }[]; total: number }
-export function gastosDoMes(padrao: PadraoVida, ligaId: string | undefined, salario: number, fama: number, formacao: boolean, manutencao: { nome: string; valor: number }[] = []): Gastos {
-  const f = fCustoVida(ligaId);
+export function gastosDoMes(padrao: PadraoVida, ligaId: string | undefined, salario: number, fama: number, formacao: boolean, manutencao: { nome: string; valor: number }[] = [], fCidade = 1): Gastos {
+  const f = fCustoVida(ligaId) * fCidade;
   const itens = ITENS_VIDA.map((k) => formacao && k === "alimentacao" && padrao[k] <= 1
     ? { nome: "Alimentação: refeitório do clube", valor: 0 }
     : { nome: `${VIDA[k].nome}: ${VIDA[k].niveis[padrao[k]].nome}`, valor: Math.round(VIDA[k].niveis[padrao[k]].custo * f) });
