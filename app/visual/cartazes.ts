@@ -4,14 +4,14 @@ const DISPLAY = "'Big Shoulders Display', 'Barlow', sans-serif", TEXTO = "'Barlo
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const luz = (hex: string) => { const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
 const TINTA = "#0A0A0A";
+import { corpoEscudo } from "./escudos";
 
 /** Escudo genérico com as cores do clube (nada de escudo real). */
-export function escudoGrande(c1: string, c2: string, x: number, y: number, w: number): string {
-  const h = w * 1.15, s = w / 26;
-  return `<g transform="translate(${x} ${y}) scale(${s})"><path d="M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z" fill="${c1}" stroke="${TINTA}" stroke-width="1.4"/><path d="M1 11 H25 V17 H1 Z" fill="${c2}"/><path d="M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z" fill="none" stroke="${TINTA}" stroke-width="1.4"/></g>${h ? "" : ""}`;
+export function escudoGrande(c1: string, c2: string, x: number, y: number, w: number, chave?: string, nome?: string): string {
+  return `<g transform="translate(${x} ${y}) scale(${w / 26})">${corpoEscudo(chave ?? `${c1}${c2}`, c1, c2, nome, 1.4)}</g>`;
 }
 
-export interface DadosAnuncio { clube: string; apelidoClube: string; cores: string[]; liga: string; jogador: string; numero: string; tipo: "transferencia" | "livre" | "emprestimo"; ate: number; taxa?: number; corpoSvg: string }
+export interface DadosAnuncio { id?: string; clube: string; apelidoClube: string; cores: string[]; liga: string; jogador: string; numero: string; tipo: "transferencia" | "livre" | "emprestimo"; ate: number; taxa?: number; corpoSvg: string }
 /** Anúncio oficial do reforço (360 × 480): cores do clube, o jogador de corpo inteiro com o uniforme novo. */
 export function anuncioTransferencia(d: DadosAnuncio): string {
   const [c1, c2r] = d.cores, c2 = c2r ?? "#FFFFFF";
@@ -31,11 +31,11 @@ export function anuncioTransferencia(d: DadosAnuncio): string {
     ${[0, 1, 2, 3, 4, 5, 6].map((i) => `<path d="M${-120 + i * 80} 480 L${40 + i * 80} 0" stroke="${detalhe}" stroke-opacity=".14" stroke-width="30"/>`).join("")}
     <rect width="360" height="480" fill="url(#${id}l)"/>
     ${[0, 1, 2, 3].map((i) => `<circle cx="${210 + i * 40}" cy="26" r="5" fill="#FFFFFF" opacity=".7"/>`).join("")}
-    <g opacity=".18">${escudoGrande(c1, c2, 170, 120, 220)}</g>
+    <g opacity=".18">${escudoGrande(c1, c2, 170, 120, 220, d.id, d.clube)}</g>
     <path d="M150 455 Q265 430 380 455 L380 480 L150 480 Z" fill="#000" opacity=".18"/>
     ${corpo}
     <rect x="0" y="0" width="360" height="480" fill="none"/>
-    ${escudoGrande(c1, c2, 20, 22, 44)}
+    ${escudoGrande(c1, c2, 20, 22, 44, d.id, d.clube)}
     <text x="20" y="104" font-family="${DISPLAY}" font-weight="900" font-size="24" fill="${tinta}" opacity=".85">${titulo}</text>
     ${linhas.slice(0, 3).map((l, i) => `<text x="20" y="${104 + tam * (i + 1)}" font-family="${DISPLAY}" font-weight="900" font-size="${tam}" fill="${tinta}">${esc(l)}</text>`).join("")}
     <rect x="20" y="${120 + tam * nL}" width="60" height="5" fill="${detalhe}"/>
@@ -77,21 +77,21 @@ export function capaVideogame(d: { edicao: number; jogador: string; numero: stri
 
 // ------------------------------------------------------------------ miniaturas das notícias (120 × 90)
 export type ImgNoticia =
-  | { k: "placar"; casa: [string, string]; fora: [string, string]; gc: number; gf: number; nomeCasa: string; nomeFora: string }
+  | { k: "placar"; casa: [string, string]; fora: [string, string]; gc: number; gf: number; nomeCasa: string; nomeFora: string; idCasa?: string; idFora?: string }
   | { k: "transferencia"; cores: [string, string]; corpoSvg?: string }
   | { k: "patrocinio"; logoSvg: string; cor: string }
-  | { k: "lesao" } | { k: "dinheiro" } | { k: "vida"; corpoSvg?: string } | { k: "polemica" } | { k: "trofeu"; cor?: string } | { k: "clube"; cores: [string, string] };
+  | { k: "lesao" } | { k: "dinheiro" } | { k: "vida"; corpoSvg?: string } | { k: "polemica" } | { k: "trofeu"; cor?: string } | { k: "clube"; cores: [string, string]; id?: string; nome?: string };
 
 const moldura = (conteudo: string, fundo: string) => `<svg class="mini-noticia" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><clipPath id="mn"><rect width="120" height="90" rx="10"/></clipPath></defs><g clip-path="url(#mn)"><rect width="120" height="90" fill="${fundo}"/>${conteudo}</g></svg>`;
 const sigla = (n: string) => n.replace(/^(CR|SE|SC|EC|FC|FBPA|FR|CA)\s+/i, "").replace(/\s+(FC|EC|SC|FBPA|FR)$/i, "").slice(0, 3).toUpperCase();
 export function miniNoticia(img: ImgNoticia): string {
   switch (img.k) {
     case "placar": return moldura(`<rect width="60" height="90" fill="${img.casa[0]}" opacity=".9"/><rect x="60" width="60" height="90" fill="${img.fora[0]}" opacity=".9"/><rect y="56" width="120" height="34" fill="#0B0B0B" opacity=".8"/>
-      ${escudoGrande(img.casa[0], img.casa[1], 18, 10, 24)}${escudoGrande(img.fora[0], img.fora[1], 78, 10, 24)}
+      ${escudoGrande(img.casa[0], img.casa[1], 18, 10, 24, img.idCasa, img.nomeCasa)}${escudoGrande(img.fora[0], img.fora[1], 78, 10, 24, img.idFora, img.nomeFora)}
       <text x="60" y="81" text-anchor="middle" font-family="${DISPLAY}" font-weight="900" font-size="22" fill="#FFFFFF">${img.gc} × ${img.gf}</text>
       <text x="14" y="70" font-family="${TEXTO}" font-weight="700" font-size="9" fill="#FFFFFF" opacity=".75">${esc(sigla(img.nomeCasa))}</text><text x="106" y="70" text-anchor="end" font-family="${TEXTO}" font-weight="700" font-size="9" fill="#FFFFFF" opacity=".75">${esc(sigla(img.nomeFora))}</text>`, "#1B3229");
     case "transferencia": return moldura(`${[0, 1, 2, 3].map((i) => `<path d="M${-30 + i * 40} 90 L${10 + i * 40} 0" stroke="${img.cores[1]}" stroke-opacity=".2" stroke-width="14"/>`).join("")}${img.corpoSvg ? img.corpoSvg.replace("<svg ", '<svg x="50" y="4" width="70" height="170" preserveAspectRatio="xMidYMin meet" ') : ""}${escudoGrande(img.cores[0], img.cores[1], 10, 12, 30)}<text x="10" y="70" font-family="${DISPLAY}" font-weight="900" font-size="14" fill="${luz(img.cores[0]) > 0.6 ? "#111" : "#FFF"}">REFORÇO</text>`, img.cores[0]);
-    case "clube": return moldura(`${escudoGrande(img.cores[0], img.cores[1], 42, 14, 36)}`, "#1B3229");
+    case "clube": return moldura(`${escudoGrande(img.cores[0], img.cores[1], 42, 14, 36, img.id, img.nome)}`, "#1B3229");
     case "patrocinio": return moldura(`<g transform="translate(10 30)">${img.logoSvg.replace("<svg ", '<svg width="100" height="30" ')}</g>`, img.cor);
     case "lesao": return moldura(`<rect x="44" y="20" width="32" height="50" rx="6" fill="#F2F0EA" stroke="${TINTA}" stroke-width="2"/><path d="M60 32 V58 M47 45 H73" stroke="#C0392B" stroke-width="8"/>`, "#3A2A2A");
     case "dinheiro": return moldura(`${[0, 1, 2].map((i) => `<ellipse cx="${44 + i * 8}" cy="${62 - i * 9}" rx="22" ry="7" fill="#E3B341" stroke="${TINTA}" stroke-width="1.6"/>`).join("")}<rect x="66" y="30" width="34" height="22" rx="3" fill="#74D394" stroke="${TINTA}" stroke-width="1.6"/><text x="83" y="46" text-anchor="middle" font-family="${DISPLAY}" font-weight="900" font-size="13" fill="#1B3229">R$</text>`, "#1E3A2C");

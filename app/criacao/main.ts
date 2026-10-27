@@ -2,6 +2,7 @@ declare const __CARREIRA__: boolean;
 // Tela de criação do jogador em história guiada. Usa o DNA do motor (src/dna.ts).
 // As escolhas não mostram números: o DNA é surpresa até a revelação do card.
 import CLUBES_JSON from "./clubes-coracao.json";
+import { svgEscudo } from "../visual/escudos.js";
 import { OPCOES_PAI, OPCOES_IRMAOS, type EscolhaPai, type EscolhaIrmaos } from "../../src/familia.js";
 import {
   PAISES, FORMACOES, FAMILIAS, TRACOS, criarJogador, formacaoPermitida, LIGA_DA_BASE, MUDOU_PARA,
@@ -164,7 +165,7 @@ function telaPasso(): string {
       const fora = estado.pais ? MUDOU_PARA[estado.pais] : undefined;
       return `${cab("O clube do coração", "A primeira camisa que você ganhou foi a do…", fora ? `Aos 12 anos, a família se mudou para ${fora}. Foi lá que um time te conquistou.` : "Um dia você vai jogar contra ele. Ou por ele.")}
       <div class="opcoes grade">${[...clubesDoPais(), BAIRRO].map((c) => opcao(c.id || "bairro", "clube", c.nome, c.apelido, estado.clube === c.id, "",
-        `<span class="escudo" style="--c1:${c.camisa.cor1};--c2:${c.camisa.cor2}"></span>`)).join("")}</div>`;
+        svgEscudo(c.id || "bairro", c.camisa.cor1, c.camisa.cor2, c.nome))).join("")}</div>`;
     }
     case 4:
       return `${cab("A formação", "A bola entrou na sua vida…")}

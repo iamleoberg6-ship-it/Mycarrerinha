@@ -375,7 +375,8 @@ export function fimDaTemporadaNoMercado(pacote: PacoteDados, s: Save, eventos: s
   if (m.emprestimo && m.emprestimo.ate < c.temporada) {
     const e = m.emprestimo;
     m.emprestimo = undefined;
-    mudarDeClube(pacote, s, w.clube[e.origem], "emprestimo", 0, e.ordemOrigem);
+    // se o clube de origem subiu ou caiu de divisão enquanto você estava fora, a ordem antiga não vale mais
+    mudarDeClube(pacote, s, w.clube[e.origem], "emprestimo", 0, w.info[e.origem]?.ligaId === e.ligaOrigem ? e.ordemOrigem : undefined);
     m.transferencias.pop();
     eventos.push(`Fim do empréstimo: de volta ao ${w.clube[e.origem].nome}.`);
   }

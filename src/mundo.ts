@@ -69,6 +69,7 @@ export function mundo(pacote: PacoteDados): Mundo {
   // bascos: todo o elenco do Atlético Bilbau (é a regra do clube) e boa parte dos espanhóis dos vizinhos
   for (const c of Object.values(m.clube)) if (CLUBES_BASCOS.has(c.id)) for (const j of c.elenco) if (c.id === SO_BASCOS || (j.nacionalidade === "ESP" && hashS(`basco|${j.nome}`) % 10 < 6)) j.basco = true;
   original = new Map(Object.values(m.clube).map((c) => [c, c.elenco.map((j) => ({ ...j }))]));
+  ligasOriginais = new Map(ligas.map((l) => [l, [...l.clubes]]));
   ref = Object.fromEntries(Object.values(m.clube).map((c) => [c.id, { forca: c.forca, top: forcaDoElenco(c.elenco), tamanho: c.elenco.length, nivel: nivelBase(c.id, info[c.id]?.forca ?? c.forca, c.pais) }]));
   grupos = { pro: ligas.flatMap((l) => l.clubes), convidados: conv, amadores: amadoras.flatMap((l) => l.clubes), ligas: [...ligas.map((l) => l.clubes), ...amadoras.map((l) => l.clubes), conv] };
   estado = undefined;
@@ -138,12 +139,20 @@ export const selecaoDe = (pacote: PacoteDados, pais: string): Clube | undefined 
 export const todasSelecoes = (pacote: PacoteDados) => SELECOES.map((x) => mundo(pacote).clube[idSelecao(x[0])]).filter(Boolean) as Clube[];
 
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
+let ligasOriginais = new Map<Liga, Clube[]>();
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
 let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }>;
   /** técnico de cada clube profissional, técnicos sem clube e as trocas de cada virada */
   tecnicos: Record<string, Tecnico>; tecLivres: Tecnico[]; trocas: Record<number, TrocaTecnico[]>; nomesTec: Set<string>;
   /** lesões graves da temporada (rodadas da liga em que o jogador fica fora) */
-  lesoes: Map<string, Lesao> } | undefined;
+  lesoes: Map<string, Lesao>;
+  /** acesso e rebaixamento de cada virada (quem subiu e quem caiu, de onde para onde) */
+  acessos: Record<number, Acesso[]>;
+  /** primeira temporada com acesso e rebaixamento (saves antigos começam na última temporada jogada) */
+  desde: number } | undefined;
+export interface Acesso { clubeId: string; de: string; para: string; sobe: boolean; campeao?: boolean }
+/** Tabela real (a do campeonato que o jogador disputou) de cada temporada: decide quem sobe e quem cai na liga dele. */
+export type TabelasReais = Record<number, { ligaId: string; ordem: string[] }>;
 export interface Lesao { t: number; clubeId: string; ini: number; fim: number; tipo: string; ovr: number }
 /** Uma temporada na carreira de um jogador do mundo. */
 /** `liga`: o que a temporada imaginada precisa (fila na posição, titulares, força do clube, média da liga, rodadas);
@@ -294,16 +303,18 @@ export const SEMANA_JANELA_MEIO = 24;
 /** Rodada da liga em que os negociados no meio do ano trocam de time (rodadas antes: clube antigo). */
 const RODADA_MEIO = SEMANA_JANELA_MEIO - 2;
 /** Põe o mundo na temporada t (e semana) da carreira de semente `semente` (0 = elencos reais de 2026, com as bases sorteadas). */
-export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada: number, semana = 0) {
+export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada: number, semana = 0, reais: TabelasReais = {}, desde = 0) {
   const m = mundo(pacote), comMeio = semana >= SEMANA_JANELA_MEIO;
   if (estado && estado.semente === semente && estado.temporada === temporada && estado.feitoMeio === comMeio) return;
-  if (!estado || estado.semente !== semente || estado.temporada > temporada || (estado.temporada === temporada && estado.feitoMeio && !comMeio)) {
+  if (!estado || estado.semente !== semente || estado.desde !== desde || estado.temporada > temporada || (estado.temporada === temporada && estado.feitoMeio && !comMeio)) {
     for (const [c, el] of original) { c.elenco = el.map((j) => ({ ...j })); c.forca = ref[c.id].forca; }
+    // cada clube volta para a divisão de 2026
+    for (const [l, cl] of ligasOriginais) { l.clubes.splice(0, l.clubes.length, ...cl); for (const c of cl) { c.ligaId = l.id; if (m.info[c.id]) m.info[c.id].ligaId = l.id; } }
     for (const id of Object.keys(m.clube)) if (id.startsWith("NAT-")) { delete m.clube[id]; delete m.info[id]; }
     const usados = new Set([...Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)), ...nomesSelecao]);
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados, c.id);
-    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map() };
+    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map(), acessos: {}, desde };
     registrarTemporada(m);
   }
   const e = estado;
@@ -312,6 +323,7 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     if (!e.feitoMeio) fazerMeio();
     virarTecnicos(m, semente);
     sequelas(m);
+    e.acessos[e.temporada] = e.temporada >= e.desde ? acessoERebaixamento(m, semente, e.temporada, reais[e.temporada]) : [];
     e.temporada++; e.feitoMeio = false;
     e.virada = e.viradas[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, false, e.livres); registrarTemporada(m);
   }
@@ -319,6 +331,46 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
   montarSelecoes(m);
   versao++; indice = undefined;
 }
+// ------------------------------------------------------------------ acesso e rebaixamento
+/** Pirâmides com acesso: [divisão de cima, de baixo, quantos trocam]. A Série D sobe pelos campeões dos grupos. */
+const PIRAMIDES: [string, string, number][] = [["BRA1", "BRA2", 4], ["BRA2", "BRA3", 4], ["ENG1", "ENG2", 3], ["ESP1", "ESP2", 3]];
+const GRUPOS_D = "ABCDEFGH".split("").map((g) => `BRA4${g}`);
+/** Fim da temporada t: os últimos de cada divisão descem, os primeiros de baixo sobem (a tabela real vale para a liga do jogador). */
+function acessoERebaixamento(m: Mundo, semente: string, t: number, real?: { ligaId: string; ordem: string[] }): Acesso[] {
+  const fonte = { ligas: m.liga, semente: `${semente}|sim`, temporada: t, ...(real ? { tabelaReal: real } : {}) };
+  const ordem = (id: string) => { const o = ordemFinal(fonte, id), l = m.liga[id]; return o.filter((x) => l?.clubes.some((c) => c.id === x)); };
+  const trocas: { de: Liga; para: Liga; clube: Clube; sobe: boolean; campeao: boolean }[] = [];
+  for (const [cima, baixo, n] of PIRAMIDES) {
+    const lc = m.liga[cima], lb = m.liga[baixo];
+    if (!lc || !lb) continue;
+    const oc = ordem(cima), ob = ordem(baixo);
+    for (const id of oc.slice(-n)) trocas.push({ de: lc, para: lb, clube: m.clube[id], sobe: false, campeao: false });
+    ob.slice(0, n).forEach((id, i) => trocas.push({ de: lb, para: lc, clube: m.clube[id], sobe: true, campeao: i === 0 }));
+  }
+  // Série D: dos oito campeões de grupo, quatro sobem (mata-mata simulado pela força); os quatro últimos da C caem nas vagas deles
+  const lc = m.liga.BRA3;
+  if (lc && GRUPOS_D.every((g) => m.liga[g])) {
+    const r = new RNG(`${semente}|acesso-D|${t}`);
+    const campeoes = GRUPOS_D.map((g) => ({ g, id: ordem(g)[0] })).filter((x) => x.id);
+    const sobem = campeoes.map((x) => ({ ...x, v: (m.clube[x.id]?.forca ?? 50) + r.normal(0, 4) + (real?.ligaId === x.g && real.ordem[0] === x.id ? 2 : 0) })).sort((a, b) => b.v - a.v).slice(0, 4);
+    const caem = ordem("BRA3").slice(-sobem.length);
+    sobem.forEach((x, i) => {
+      trocas.push({ de: m.liga[x.g], para: lc, clube: m.clube[x.id], sobe: true, campeao: i === 0 });
+      if (caem[i]) trocas.push({ de: lc, para: m.liga[x.g], clube: m.clube[caem[i]], sobe: false, campeao: false });
+    });
+  }
+  const feitos: Acesso[] = [];
+  for (const x of trocas) {
+    if (!x.clube || !x.de.clubes.includes(x.clube)) continue;
+    x.de.clubes.splice(x.de.clubes.indexOf(x.clube), 1); x.para.clubes.push(x.clube);
+    x.clube.ligaId = x.para.id; if (m.info[x.clube.id]) m.info[x.clube.id].ligaId = x.para.id;
+    feitos.push({ clubeId: x.clube.id, de: x.de.id, para: x.para.id, sobe: x.sobe, ...(x.campeao ? { campeao: true } : {}) });
+  }
+  return feitos;
+}
+/** Quem subiu e quem caiu na virada para a temporada t (vem da temporada t − 1). */
+export const acessosDaVirada = (pacote: PacoteDados, t: number): Acesso[] => { garantir(pacote); return estado?.acessos[t - 1] ?? []; };
+
 /** Depois da janela do meio: quem trocou de clube ganha uma linha nova na mesma temporada (do clube novo, da rodada do meio em diante). */
 function registrarMeio(m: Mundo) {
   const e = estado!, v = e.meio[e.temporada];

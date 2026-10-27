@@ -21,7 +21,7 @@ import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, l
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
 import { premiosDoAno, type PremiosDoAno, type IdPremio } from "./premios-mundo.js";
 import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
-import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
+import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, type TabelasReais, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
 import { ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type TorneioId } from "./copas.js";
@@ -117,7 +117,9 @@ export interface Carreira {
   marcos?: Marco[];
   galeriaPremios?: Partial<Record<IdPremio, { ano: number; nome: string; clubeId: string; nacionalidade: string; eu?: boolean }[]>>;
   suspensaoEstadual?: number; statsEstadual?: { jogos: number; gols: number; assist: number; notas: number[] };
-  tabelaAnterior?: { ligaId: string; ordem: string[] }; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
+  tabelaAnterior?: { ligaId: string; ordem: string[] };
+  /** tabela final real de cada temporada (decide acesso e rebaixamento no mundo) e a primeira temporada com a pirâmide valendo */
+  tabelasReais?: TabelasReais; piramideDesde?: number; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
   ligaId?: string;
   /** propostas, empréstimo, histórico de transferências, agente */
@@ -229,9 +231,12 @@ export const ovrEm = (j: Jogador, p: Posicao) => calcOvr(j.at, p) - penalidade(f
 /** Põe o mundo na temporada da carreira (o mundo envelhece, evolui e troca de clube a cada temporada) e acerta o que
  *  o save guarda dele: amigos que mudaram de clube ou se aposentaram e a camisa do jogador. */
 export function sincronizar(pacote: PacoteDados, s: Save) {
-  const antes = versaoMundo();
-  sincronizarMundo(pacote, s.semente, s.carreira.temporada, s.carreira.semana);
-  const c = s.carreira;
+  const antes = versaoMundo(), c = s.carreira;
+  // saves de antes do acesso e rebaixamento: a pirâmide passa a valer a partir da última temporada jogada
+  c.piramideDesde ??= Math.max(0, c.temporada - 1);
+  const reais: TabelasReais = { ...(c.tabelaAnterior && c.temporada > 0 ? { [c.temporada - 1]: c.tabelaAnterior } : {}), ...(c.tabelasReais ?? {}) };
+  sincronizarMundo(pacote, s.semente, s.carreira.temporada, s.carreira.semana, reais, c.piramideDesde);
+  mudancaDeDivisao(pacote, s);
   if (c.tecnicoClube !== c.clubeId && !c.fase) {
     const t = tecnicoDoClube(pacote, idClube(c.clubeId));
     c.tecnico = t ? { ...t } : tecnicoLivrePara(pacote, idClube(c.clubeId), `${c.temporada}-chegada`); c.tecnicoClube = c.clubeId; c.resultadosClube = [];
@@ -249,6 +254,30 @@ export function sincronizar(pacote: PacoteDados, s: Save) {
   if (clube && escolheNumero(c) && meu) {
     const dono = clube.elenco.find((j) => j.numero === meu);
     if (dono) { dono.numero = numeroParaChegada(clube, dono.posicao, dono.nome, [meu, ...clube.elenco.map((j) => j.numero ?? 0)]); limparNumeros(); }
+  }
+}
+/** Acesso ou rebaixamento: o clube do jogador mudou de divisão no mundo, e a carreira vai junto (tabela e calendário novos). */
+function mudancaDeDivisao(pacote: PacoteDados, s: Save) {
+  const c = s.carreira, w = mundo(pacote), id = idClube(c.clubeId), nova = w.info[id]?.ligaId;
+  if (c.fase || c.mercado?.semClube || !nova || !w.clube[id] || !w.liga[nova] || infoLiga(nova).amador) return;
+  if (nova === infoLiga(c.ligaId).id) {
+    // mesma divisão, mas quem subiu e quem caiu mudou os adversários: calendário e tabela novos
+    const l = w.liga[nova], ids = new Set(l.clubes.map((x) => x.id));
+    if (c.ordem.length !== ids.size || !c.ordem.every((x) => ids.has(idClube(x)))) { c.ordem = l.clubes.map((x) => x.id); c.tabela = novaTabela(l); }
+    return;
+  }
+  const de = infoLiga(c.ligaId), para = infoLiga(nova), sobe = para.divisao < de.divisao || (para.divisao === de.divisao && para.nivel < de.nivel);
+  const l = w.liga[nova];
+  c.ligaId = nova; c.ordem = l.clubes.map((x) => x.id); c.tabela = novaTabela(l);
+  const clube = infoClube(pacote, id)?.nome ?? "clube", ano = ANO_INICIAL + c.temporada;
+  if (sobe) {
+    noticia(s, "clube", `Acesso! O ${clube} sobe para a ${para.curto}`, `Depois da campanha na ${de.curto}, o ${clube} joga a ${para.curto} em ${ano}. ${s.jogador.apelido} vai jogar uma divisão acima.`, { k: "trofeu" });
+    registrarMarco(s, { tipo: "clube", texto: `Acesso com o ${clube}: da ${de.curto} para a ${para.curto}` });
+    c.moral = clamp(c.moral + 6, 0, 100); c.torcida = clamp((c.torcida ?? 50) + 8, 0, 100); c.fama = clamp(c.fama + 2, 0, 100);
+  } else {
+    noticia(s, "clube", `Rebaixado: o ${clube} cai para a ${para.curto}`, `A campanha na ${de.curto} não foi suficiente. Em ${ano} o ${clube} disputa a ${para.curto}.`);
+    registrarMarco(s, { tipo: "clube", texto: `Rebaixado com o ${clube}: da ${de.curto} para a ${para.curto}` });
+    c.moral = clamp(c.moral - 8, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 5, 0, 100);
   }
 }
 /** Quem saiu do clube atual na virada para esta temporada (libera o número e a vaga). */
@@ -2120,6 +2149,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   avaliarTecnico(pacote, s, posicao, ev);
   // tabela final (vale para as vagas das copas da próxima temporada)
   c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
+  if (!c.fase && !infoLiga(c.ligaId).amador) (c.tabelasReais ??= {})[c.temporada] = c.tabelaAnterior;
   c.notasRodada = undefined;
   c.copas = undefined; c.statsCopa = undefined; c.suspensaoCopa = undefined; c.statsEstadual = undefined; c.suspensaoEstadual = undefined; c.statsExtra = undefined;
   fimDeTemporadaVida(pacote, s, r, ev);
@@ -2139,18 +2169,20 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   sincronizar(pacote, s);
   noticiasDaVirada(pacote, s);
-  c.tabela = novaTabela(l); c.stats = statsVazias(); c.resultadosClube = [];
-  const clube = clubeDe(l, c.clubeId);
+  // a liga pode ter mudado (acesso ou rebaixamento): a tabela nova é a da divisão em que o clube vai jogar
+  const lN = ligaAtual(pacote, s);
+  c.tabela = novaTabela(lN); c.stats = statsVazias(); c.resultadosClube = [];
+  const clube = clubeDe(lN, c.clubeId);
   if (c.fase) { c.anosContrato = Math.max(1, c.anosContrato); fimDeTemporadaDoCaminho(pacote, s, eventos); }
   if (c.fase) { /* várzea, academia, colégio e universidade: a passagem é pelos convites */ }
   else if (c.formacao && j.idade >= 18) {
     c.escolhaNumero = "chegada"; // sobe para o profissional: escolhe o número no elenco de cima
     c.formacao = false; c.anosContrato = 3;
-    c.salario = Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama }));
+    c.salario = Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga: lN, clube, agente: c.agente, fama: c.fama }));
     noticia(s, "clube", "Primeiro contrato profissional", `${j.apelido} assina por 3 anos: R$ ${c.salario.toLocaleString("pt-BR")} por mês.`);
   } else if (c.anosContrato <= 0 && c.formacao) {
     c.anosContrato = 2;
-    c.salario = Math.round(Math.max(3000, salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama, formacao: true })));
+    c.salario = Math.round(Math.max(3000, salarioMensal({ ovr: ovr(j), idade: j.idade, liga: lN, clube, agente: c.agente, fama: c.fama, formacao: true })));
     noticia(s, "clube", "Contrato renovado", `Mais 2 anos na base, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`);
   }
   // aposentadoria: anunciada, aos 40, ou sem clube depois dos 35

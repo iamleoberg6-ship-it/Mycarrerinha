@@ -24,6 +24,7 @@ import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type Ofe
 import { cartazPatrocinio, logoSvg } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia, capaVideogame } from "../visual/cartazes";
+import { svgEscudo } from "../visual/escudos";
 import { fotoDoPerfil } from "../visual/mulheres";
 import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
@@ -47,7 +48,7 @@ import { SITUACAO } from "../../src/lances";
 import type { LinhaPremio, PremioMundo } from "../../src/premios-mundo";
 import { trocasDeTecnicoEm, lesoesDaTemporada } from "../../src/mundo";
 import { NOME_ESTILO } from "../../src/tecnicos";
-import { infoClube, idSelecao, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
+import { infoClube, idClube, idSelecao, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
 import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
@@ -87,8 +88,8 @@ const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, p
 // ------------------------------------------------------------------ peças visuais
 function cores(id: string): string[] { return clubeCasa(pacote, id).cores; }
 function escudo(id: string): string {
-  const [a, b] = cores(id), c2 = b ?? "#FFFFFF";
-  return `<svg class="escudo" viewBox="0 0 26 30" aria-hidden="true"><path d="M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z" fill="${a}" stroke="#0A0A0A" stroke-width="1.6"/><path d="M1 12 H25 V17 H1 Z" fill="${c2}" opacity=".9"/><path d="M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z" fill="none" stroke="#0A0A0A" stroke-width="1.6"/></svg>`;
+  const [a, b] = cores(id);
+  return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome);
 }
 /** Uniforme do clube (cores e padrão) com a chuteira do patrocinador de material esportivo, se houver. */
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
@@ -372,7 +373,7 @@ let msgVisual: { texto: string; ok: boolean } | undefined, areaTat: AreaTatuagem
 const CHAVE_ANUNCIO = "mycarrerinha:anuncio";
 function anuncioDe(s: Save, n: Noticia): string {
   const img = n.img as Extract<ImgNoticia, { k: "transferencia" }>, info = infoClube(pacote, img.clube);
-  return anuncioTransferencia({ clube: info.nome, apelidoClube: info.nome, cores: info.cores, liga: infoLiga(info.ligaId).nome, jogador: s.jogador.apelido, numero: s.jogador.numero, tipo: img.tipo as "transferencia", ate: img.ate, taxa: img.taxa, corpoSvg: corpoDe(s, "jogo", img.clube) });
+  return anuncioTransferencia({ id: info.id, clube: info.nome, apelidoClube: info.nome, cores: info.cores, liga: infoLiga(info.ligaId).nome, jogador: s.jogador.apelido, numero: s.jogador.numero, tipo: img.tipo as "transferencia", ate: img.ate, taxa: img.taxa, corpoSvg: corpoDe(s, "jogo", img.clube) });
 }
 function cardAnuncio(s: Save): string {
   const n = s.noticias.find((x) => x.img?.k === "transferencia");
@@ -871,7 +872,7 @@ function imgNoticia(s: Save, n: Noticia, i: number): string {
   const img = n.img;
   if (img?.k === "transferencia" && s.noticias.findIndex((x) => x.img?.k === "transferencia") === i) return `<div class="noticia-img grande">${anuncioDe(s, n)}</div>`;
   const ci = (id: string) => { const c = infoClube(pacote, id); return [c.cores[0], c.cores[1] ?? "#FFFFFF"] as [string, string]; };
-  if (img?.k === "placar") return miniNoticia({ k: "placar", casa: ci(img.casa), fora: ci(img.fora), gc: img.gc, gf: img.gf, nomeCasa: infoClube(pacote, img.casa).nome, nomeFora: infoClube(pacote, img.fora).nome });
+  if (img?.k === "placar") return miniNoticia({ k: "placar", casa: ci(img.casa), fora: ci(img.fora), gc: img.gc, gf: img.gf, idCasa: idClube(img.casa), idFora: idClube(img.fora), nomeCasa: infoClube(pacote, img.casa).nome, nomeFora: infoClube(pacote, img.fora).nome });
   if (img?.k === "transferencia") return miniNoticia({ k: "transferencia", cores: ci(img.clube), corpoSvg: corpoDe(s, "jogo", img.clube) });
   if (img?.k === "patrocinio" && MARCA[img.marca]) return miniNoticia({ k: "patrocinio", logoSvg: logoSvg(MARCA[img.marca]), cor: MARCA[img.marca].cores[2] });
   if (img?.k === "trofeu") return miniNoticia({ k: "trofeu" });

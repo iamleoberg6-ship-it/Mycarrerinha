@@ -815,7 +815,8 @@ teste("Mundo anda: todos envelhecem, jovem evolui, veterano cai ou se aposenta, 
   }
   assert.ok(veteranos > 500 && caiu / veteranos > 0.7, `${caiu}/${veteranos}`);
   sincronizarMundo(pacote, "anda", 6);
-  for (const l of w.ligas) assert.ok(Math.abs(l.clubes.reduce((a, c) => a + c.forca, 0) / l.clubes.length - ref[l.id]) < 1.2, `${l.id} estável`);
+  // ligas sem acesso ficam estáveis; nas pirâmides (Brasil, Inglaterra, Espanha) quem sobe e quem cai mexe mais na média
+  for (const l of w.ligas) assert.ok(Math.abs(l.clubes.reduce((a, c) => a + c.forca, 0) / l.clubes.length - ref[l.id]) < (/^(BRA|ENG|ESP)/.test(l.id) ? 6 : 1.2), `${l.id} estável`);
   let cresceu = 0, aposentou = 0;
   for (const [nome, j0] of antes) {
     const o = ondeJoga(pacote, nome);
@@ -1314,5 +1315,23 @@ teste("Namoro mais rico: gostos, chat, encontro, pedido, momentos do casal e cas
   const o = jogoMod.agendaDe(s.carreira).pendentes[0];
   assert.ok(jogoMod.responderOcasiaoJogo(pacote, s, o.uid, "praia").ok);
   assert.ok(jogoMod.agendaDe(s.carreira).pendentes.some((x) => x.titulo === "Lua de mel"), "depois do casamento vem a lua de mel");
+});
+teste("Acesso e rebaixamento: o campeão da Série C sobe e a carreira vai junto", () => {
+  const w = mundo(pacote);
+  sincronizarMundo(pacote, "piramide", 0);
+  const tam = Object.fromEntries(["BRA1", "BRA2", "BRA3", "BRA4A", "ENG1", "ENG2"].map((id) => [id, w.liga[id].clubes.length]));
+  const x = w.liga.BRA3.clubes[5].id, resto = w.liga.BRA3.clubes.map((c) => c.id).filter((id) => id !== x);
+  const r = criarJogador({ nome: "Acesso", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "piramide" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: x }, x, "piramide");
+  assert.equal(s.carreira.ligaId, "BRA3");
+  s.carreira.tabelasReais = { 0: { ligaId: "BRA3", ordem: [x, ...resto] } }; s.carreira.piramideDesde = 0; s.carreira.temporada = 1; s.carreira.semana = 0;
+  jogoMod.sincronizar(pacote, s);
+  assert.equal(w.info[x].ligaId, "BRA2"); assert.equal(s.carreira.ligaId, "BRA2");
+  assert.ok(s.carreira.ordem.includes(x) && s.carreira.ordem.length === w.liga.BRA2.clubes.length);
+  assert.ok(s.noticias.some((n) => n.titulo.startsWith("Acesso!")));
+  // os tamanhos das divisões não mudam; e voltar no tempo devolve todo mundo para 2026
+  for (const [id, n] of Object.entries(tam)) assert.equal(w.liga[id].clubes.length, n, id);
+  sincronizarMundo(pacote, "piramide", 0);
+  assert.equal(w.info[x].ligaId, "BRA3");
 });
 console.log(`\n${ok} testes passaram`);
