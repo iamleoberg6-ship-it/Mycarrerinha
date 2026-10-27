@@ -9,6 +9,7 @@ const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 export const simboloMarca = (m: Marca, cor: string, cor2: string) => simbolo(m.simbolo, cor, cor2, m.nome[0]);
 function simbolo(s: Simbolo, c: string, c2: string, letra: string): string {
   switch (s) {
+    case "aviao": return `<path d="M20 3 C22 3 23 6 23 9 V16 L37 24 V28 L23 24 V32 L28 36 V38 L20 36 L12 38 V36 L17 32 V24 L3 28 V24 L17 16 V9 C17 6 18 3 20 3 Z" fill="${c}"/>`;
     case "onda": return `<path d="M3 24 Q11 12 20 22 T37 18" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`;
     case "circulo": return `<circle cx="20" cy="20" r="16" fill="${c}"/><circle cx="20" cy="20" r="9" fill="${c2}"/>`;
     case "pera": return `<path d="M20 9 C27 9 25 17 29 23 C33 30 28 37 20 37 C12 37 7 30 11 23 C15 17 13 9 20 9 Z" fill="${c}"/><path d="M20 9 Q22 3 27 2" stroke="${c}" stroke-width="2.5" fill="none"/><ellipse cx="25" cy="5" rx="4" ry="2" fill="${c}" transform="rotate(-25 25 5)"/>`;
@@ -46,6 +47,8 @@ export function logoSvg(m: Marca, altura = 28): string {
   return `<svg class="logo-marca" viewBox="0 0 ${larg} 40" height="${altura}" role="img" aria-label="${esc(m.nome)}"><rect width="${larg}" height="40" rx="8" fill="${m.cores[0]}"/><g transform="translate(4 0)">${logoMarca(m)}</g></svg>`;
 }
 
+/** Aeroporto-base de cada companhia (vai no cartão de embarque do cartaz). */
+const HUB: Record<string, string> = { katarair: "DOH", emiratez: "DXB", etihade: "AUH", saudita: "JED", turquinha: "IST", lufthanza: "FRA", iberica: "MAD", airfranca: "CDG", britair: "LHR", tapa: "LIS", latao: "GRU", azulzinha: "VCP", deltta: "ATL", avianka: "BOG", rdutch: "AMS" };
 /** O produto desenhado no cartaz, perto do jogador. */
 function produto(m: Marca, apelido: string, numero: string): string {
   const [a, b, c] = m.cores;
@@ -67,6 +70,9 @@ function produto(m: Marca, apelido: string, numero: string): string {
       const ac = m.acessorio?.tipo === "fone" ? m.acessorio : undefined, cor = ac?.cor ?? a, det = ac?.detalhe ?? b;
       return `<g transform="translate(200 250)"><path d="M10 70 Q10 0 55 0 Q100 0 100 70" stroke="${cor}" stroke-width="10" fill="none"/><rect x="-4" y="60" width="30" height="46" rx="12" fill="${cor}" stroke="#1A1A1A" stroke-width="2"/><rect x="84" y="60" width="30" height="46" rx="12" fill="${cor}" stroke="#1A1A1A" stroke-width="2"/><circle cx="11" cy="83" r="8" fill="${det}"/><circle cx="99" cy="83" r="8" fill="${det}"/></g>`;
     }
+    case "aerea": return `<g transform="translate(160 250) rotate(-12)"><rect width="150" height="70" rx="10" fill="#FFFFFF" stroke="${c}" stroke-width="2"/><rect width="150" height="20" rx="10" fill="${a}"/><rect y="12" width="150" height="8" fill="${a}"/>
+      <text x="10" y="15" font-family="${TEXTO}" font-weight="800" font-size="10" fill="${b}">${esc(m.nome.toUpperCase())}</text><text x="10" y="44" font-family="${DISPLAY}" font-weight="900" font-size="22" fill="#1A1A1A">${HUB[m.id] ?? "GRU"} ✈ FINAL</text>
+      <text x="10" y="62" font-family="${TEXTO}" font-weight="700" font-size="9" fill="#555">PASSAGEIRO ${esc(apelido.toUpperCase())} · ASSENTO ${esc(numero)}A</text><path d="M118 20 V70" stroke="#999" stroke-dasharray="3 3"/><g transform="translate(122 30) scale(.6)">${simbolo("aviao", a, b, "")}</g></g>`;
     case "comida": return `<g transform="translate(196 262)"><path d="M6 46 Q50 -6 94 46 Z" fill="#E0A34A"/><rect x="2" y="46" width="96" height="12" rx="5" fill="#5A9E3A"/><rect x="0" y="57" width="100" height="16" rx="6" fill="#6B3A1E"/><rect x="2" y="72" width="96" height="10" rx="4" fill="#F2C200"/><path d="M4 82 Q50 104 96 82 Z" fill="#E0A34A"/>${[18, 40, 62, 80].map((x) => `<ellipse cx="${x}" cy="${26 + (x % 3) * 4}" rx="2.4" ry="1.4" fill="#FFF4DA"/>`).join("")}</g><g transform="translate(150 268) scale(1.2)">${simbolo("batata", a, b, "")}</g>`;
   }
 }

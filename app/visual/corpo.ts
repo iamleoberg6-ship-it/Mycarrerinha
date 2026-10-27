@@ -137,6 +137,10 @@ function marcaNoCalcado(x: number, y: number, l: number, simbolo: string, cor: s
     case "balanca": return `<text x="${cx}" y="${cy + 5}" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="12" fill="${cor}">N</text>`;
     case "onda": return t(`M${cx - 9 * l} ${cy + 2} Q${cx - 4 * l} ${cy - 5} ${cx} ${cy + 1} T${cx + 9 * l} ${cy}`, 2.4);
     case "estrela": return `<path d="${Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, r = i % 2 ? 2.3 : 5.2; return `${i ? "L" : "M"}${(cx + Math.cos(a) * r).toFixed(1)} ${(cy + Math.sin(a) * r).toFixed(1)}`; }).join(" ")}Z" fill="${cor}"/>`;
+    case "escudo": return `<path d="M${cx - 4} ${cy - 5} H${cx + 4} V${cy} Q${cx + 4} ${cy + 4} ${cx} ${cy + 6} Q${cx - 4} ${cy + 4} ${cx - 4} ${cy} Z" fill="${cor}"/>`;
+    case "letra": return t(`M${cx - 6 * l} ${cy + 5} L${cx} ${cy - 5} L${cx + 6 * l} ${cy + 5}`, 2.6);
+    case "asa": return [0, 1].map((i) => t(`M${cx - 7 * l + i * 6 * l} ${cy + 5} L${cx - 3 * l + i * 6 * l} ${cy - 3} L${cx + 1 * l + i * 6 * l} ${cy + 5}`, 2)).join("");
+    case "garra": return [0, 1, 2].map((i) => t(`M${cx - 5 * l + i * 4 * l} ${cy - 5} Q${cx - 7 * l + i * 4 * l} ${cy} ${cx - 4 * l + i * 4 * l} ${cy + 6}`, 1.8)).join("");
     default: return "";
   }
 }

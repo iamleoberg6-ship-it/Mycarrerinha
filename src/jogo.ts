@@ -1390,7 +1390,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (!c.propPatrocinio && (c.patrocinios?.length ?? 0) < 4) {
     const r3 = rngDe(s, "patrocinio");
     if (r3.chance(0.025 + c.fama / 700)) {
-      const m = marcaInteressada(r3, c.fama, j.idade, c.patrocinios ?? [], c.recusadas ?? [], c.seguidores);
+      const m = marcaInteressada(r3, c.fama, j.idade, c.patrocinios ?? [], c.recusadas ?? [], c.seguidores, infoClube(pacote, c.clubeId)?.pais, j.pais);
       if (m) { c.propPatrocinio = { marca: m.id, opcoes: ofertasDaMarca(r3, m, c.fama, c.seguidores), expira: semanaAbsJogo(c) + 4 }; eventos.push(`Proposta de patrocínio: ${m.nome}.`); noticia(s, "dinheiro", `${m.nome} quer patrocinar ${j.apelido}`, `A marca mandou três modelos de contrato. A proposta vale por quatro semanas.`, { k: "patrocinio", marca: m.id }); }
     }
   }
