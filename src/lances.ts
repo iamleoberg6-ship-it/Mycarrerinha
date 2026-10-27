@@ -12,10 +12,11 @@ import { CABECA } from "./lances/cabeca.js";
 import { COMEMORACAO, POS_JOGO } from "./lances/fora.js";
 import { DECISIVOS, DISPUTA } from "./lances/decisivos.js";
 import { PASSES } from "./lances/passes.js";
+import { VARIEDADE } from "./lances/variedade.js";
 
 export { contextoPadrao, preencher, type Contexto, type Efeito, type Nivel, type OpcaoLance, type Situacao } from "./lances/base.js";
 export { COMEMORACAO, POS_JOGO, DISPUTA };
-export const SITUACOES: Situacao[] = [...ATAQUE, ...DEFESA, ...CABECA, ...DECISIVOS, ...PASSES];
+export const SITUACOES: Situacao[] = [...ATAQUE, ...DEFESA, ...CABECA, ...DECISIVOS, ...PASSES, ...VARIEDADE];
 export const SITUACAO: Record<string, Situacao> = Object.fromEntries([...SITUACOES, COMEMORACAO, DISPUTA, ...POS_JOGO].map((s) => [s.id, s]));
 
 /** O que o jogador já viveu: evita repetir o mesmo lance e favorece os que ele nunca viu. */
