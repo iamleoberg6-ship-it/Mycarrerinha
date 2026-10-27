@@ -917,8 +917,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const clima = base ? undefined : climaDoJogo(infoCopa, ctx, estadio);
   if (clima && (clima.peso >= 1.3 || ctx.briga)) ctx.decisiva = true;
   // decisões dentro do tempo em campo: de uma a três, situações diferentes conforme posição, minuto, placar, contexto e memória
-  // mais lances por partida: cerca de um a cada 15 minutos em campo (até 6), para o jogo ser sempre novidade
-  const nDec = minutos <= 0 ? 0 : Math.min(6, Math.max(1, Math.round(minutos / 15) + (rng.chance(0.5) ? 1 : 0)));
+  const nDec = minutos <= 0 ? 0 : minutos < 30 ? 1 : rng.chance(0.25) ? 1 : rng.chance(0.7) ? 2 : 3;
   const decisoes: Decisao[] = [], usadas: string[] = [];
   for (const [lo, hi] of janelasDeLance(entrada, saida, nDec)) {
     const min = rng.int(lo, hi);
