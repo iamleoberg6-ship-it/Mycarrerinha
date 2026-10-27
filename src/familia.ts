@@ -18,6 +18,8 @@ export interface Familiar {
   /** semana (absoluta) do último contato */
   contato: number;
   traco?: TracoFamilia; futebol?: FutebolIrmao;
+  /** saúde dos pais com a idade: internado, com tratamento pago, e o ano em que faleceu */
+  saude?: "doente"; doenteDesde?: number; tratamento?: boolean; falecido?: number;
 }
 export interface EstadoFamilia { membros: Familiar[]; semana: number; feitas: string[] }
 export type AcaoFamilia = "ligar" | "visitar" | "presente" | "jogo" | "conselho" | "indicarBase" | "pedirIndicacao";
@@ -176,6 +178,7 @@ export interface CtxFamilia {
 export interface ResultadoAcaoFam { ok: boolean; msg: string; custo?: number; moral?: number; cansaco?: number; indicacaoClube?: string }
 
 export function acoesDe(m: Familiar, ctx: CtxFamilia): AcaoFamilia[] {
+  if (m.falecido) return [];
   const a: AcaoFamilia[] = ["ligar", ctx.exterior ? "visitar" : "visitar", "presente"];
   if (ctx.jogoEmCasa) a.push("jogo");
   if (m.traco || m.futebol?.fase === "pro") a.push("conselho");
@@ -247,6 +250,7 @@ export const riscoLesaoFamilia = (f: EstadoFamilia | undefined) => (membro(f ?? 
 export function semanaFamilia(f: EstadoFamilia, ctx: CtxSemanaFam): { moral: number; avisos: string[]; pressao: number } {
   const avisos: string[] = [];
   for (const m of f.membros) {
+    if (m.falecido) continue;
     const longe = ctx.semanaAbs - m.contato;
     let d = 0;
     if (m.parentesco === "pai" || m.parentesco === "mae") d += [-0.25, 0.25, 0.6][ctx.padraoFamilia] ?? 0;

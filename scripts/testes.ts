@@ -1236,4 +1236,46 @@ teste("Vida fora de campo: negócios, golpes, saúde do corpo e redes", async ()
   assert.ok(md.pauta, "pede entrevista em boa fase");
   const ef = mid.responderPauta(md, "humilde", cm); assert.ok(!("erro" in ef)); assert.equal(md.pauta, undefined);
 });
+teste("Vida fora de campo 2: agenda, família que envelhece, estudos, adaptação, fundação", async () => {
+  const ag = await import("../src/agenda.js"), vs = await import("../src/vida-social.js"), es = await import("../src/estilo.js");
+  const { RNG } = await import("../src/rng.js");
+  // agenda: sem repetir a mesma chave, quem não responde fica com a última opção
+  const a = ag.novaAgenda();
+  const o = { origem: "convite" as const, chave: "x", titulo: "T", texto: "", opcoes: [{ id: "sim", rotulo: "Sim", texto: "foi", ef: { fama: 2 } }, { id: "nao", rotulo: "Não", texto: "ficou", ef: { moral: 1 } }] };
+  assert.ok(ag.agendar(a, 10, o)); assert.ok(!ag.agendar(a, 10, o), "mesma chave");
+  const v = ag.vencidas(a, 13); assert.equal(v.length, 1); assert.equal(v[0].texto, "ficou"); assert.equal(a.pendentes.length, 0);
+  assert.ok(!ag.agendar(a, 20, o), "intervalo"); assert.ok(ag.agendar(a, 45, o));
+  const r = ag.resolverOcasiao(a, a.pendentes[0].uid, "sim", new RNG("r")); assert.equal(r?.ef.fama, 2);
+  // família: o pai de 82 anos uma hora adoece; doente, ou se recupera ou parte
+  const pai = { id: "pai", parentesco: "pai" as const, nome: "José Silva", nasc: 1950, profissao: "", relacao: 70, contato: 0 };
+  const ctx = { semanaAbs: 0, semana: 10, ano: 2032, idade: 30, fama: 20, saldo: 1e6, salario: 1e5, patrimonio: 1e6, vidaNoturna: 10, apelido: "T", nac: "BRA", cidadeNatal: "Rio", clube: "Fla", exterior: false, temJogo: true, assessor: false, ferias: false, casado: false, familia: [pai], filhos: [], parcas: [], carroEsportivo: false, valoresEmCasa: 0 } as Parameters<typeof vs.semanaSocial>[2];
+  const ag2 = ag.novaAgenda();
+  let k = 0; for (; k < 600 && !(pai as { saude?: string }).saude; k++) vs.semanaSocial(ag2, new RNG("f" + k), { ...ctx, semanaAbs: k }, []);
+  assert.equal((pai as { saude?: string }).saude, "doente", "adoeceu");
+  for (let w = k; w < k + 200 && (pai as { saude?: string }).saude; w++) vs.semanaSocial(ag2, new RNG("g" + w), { ...ctx, semanaAbs: w }, []);
+  assert.ok(!(pai as { saude?: string }).saude, "teve alta ou partiu");
+  // parças: funções custam e mudam a semana
+  const ps = vs.parcasIniciais(new RNG("p"), "BRA", 2026); assert.ok(ps.length >= 2 && ps.some((p) => p.perfil === "leal"));
+  ps[0].funcao = "motorista"; const ef = vs.efeitosParcas(ps); assert.ok(ef.cansaco < 0 && ef.custo === 8000);
+  // estudos: 16 semanas de inglês = nível básico; adaptação melhor com o idioma
+  const st = { idiomas: {}, formacoes: [] } as Parameters<typeof es.semanaEstudos>[0];
+  st.atual = { curso: "idioma-en", progresso: 0 };
+  for (let w = 0; w < 16; w++) es.semanaEstudos(st, false);
+  assert.equal(st.idiomas.en, 1); assert.equal(st.atual, undefined);
+  const sem = es.novaAdaptacao("ENG", "pt", {}, 0), com = es.novaAdaptacao("ENG", "pt", { en: 3 }, 0), por = es.novaAdaptacao("POR", "pt", {}, 0);
+  assert.ok(com.valor > sem.valor + 40 && por.valor >= 85);
+  assert.ok(es.fatorAdaptacao(sem) < es.fatorAdaptacao(com));
+  // fundação: doação grande por três meses dá o Coração de Ouro
+  const f = { nome: "F", cidade: "Rio", criada: 2030, nivel: 3 as const, impacto: 0, impactoAno: 0, premios: [] };
+  for (let m = 0; m < 3; m++) es.mesFundacao(f);
+  assert.ok(es.ganhouCoracaoDeOuro(f));
+  // no jogo: dez semanas automáticas com garagem, hobby e curso, sem quebrar nada
+  const rr = criarJogador({ nome: "Vida", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "vida2" });
+  const s = novoJogo(pacote, { resultado: rr, aparencia: {}, clube: null }, "FLA", "vida2");
+  s.carreira.formacao = false; s.carreira.fama = 50; s.casa.saldo = 5e6; s.jogador.idade = 25;
+  assert.ok(jogoMod.comprarLuxoJogo(s, "suv").ok); assert.ok(jogoMod.hobbyJogo(s, "pesca").ok); assert.ok(jogoMod.matricularJogo(s, "licenca-c").ok);
+  for (let w = 0; w < 10; w++) semanaAutomatica(pacote, s);
+  assert.ok(jogoMod.estudosDe(s.carreira).atual!.progresso >= 5);
+  assert.ok(jogoMod.parcasDe(s).length >= 2);
+});
 console.log(`\n${ok} testes passaram`);

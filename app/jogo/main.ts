@@ -15,9 +15,9 @@ import {
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
   familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo, agirFilhoJogo,
-  copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
+  copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
-import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
+import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { NOME_ACAO_FILHO, type AcaoFilho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
@@ -30,6 +30,9 @@ import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, clubesDaCa
 import { TRACOS, PAISES } from "../../src/dna";
 import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa, type TipoInvest, type AcaoEmpresa } from "../../src/negocios";
 import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
+import { ICONE_ORIGEM, NOME_ORIGEM } from "../../src/agenda";
+import { NOME_PERFIL, FUNCOES, type FuncaoParca } from "../../src/vida-social";
+import { LUXO, MAX_LUXO, HOBBIES, MAX_HOBBIES, CURSOS, NOME_LINGUA, NIVEL_LINGUA, cursosDisponiveis, infoCurso, linguaNativa, DOACAO, NOME_DOACAO, CUSTO_FUNDACAO, type TipoLuxo, type Hobby, type Curso, type Lingua } from "../../src/estilo";
 import { POSTS, MAX_POSTS, postsDisponiveis, respostasDaPauta, tituloDaPauta, type TipoPost } from "../../src/midia";
 import { valorMercado } from "../../src/mercado";
 import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao, visualDe, tatuagemVisivel, type AreaTatuagem, type Fisico, type RoupaCasual } from "../../src/visual";
@@ -116,6 +119,9 @@ function render() {
     return;
   }
   app.innerHTML = save.carreira.encerrada ? telaDespedida(save) : telaSemana(save);
+  // sub-abas que rolam: a escolhida fica à vista
+  const rol = document.querySelector<HTMLElement>(".sub-abas.rolar"), at = rol?.querySelector<HTMLElement>(".ativo");
+  if (rol && at) rol.scrollLeft = Math.max(0, at.offsetLeft - rol.offsetLeft - 16);
 }
 
 function telaInicio(): string {
@@ -193,6 +199,7 @@ function telaSemana(s: Save): string {
   ${cardAnuncio(s)}
   ${cardPatrocinio(s)}
   ${cardEvento(s)}
+  ${cardAgenda(s)}
   ${cardNumero(s)}
   ${cardConvites(s)}
   ${cardSugestao(s)}
@@ -214,8 +221,8 @@ function telaSemana(s: Save): string {
   </section>
   <button class="botao grande fixo-jogar" data-acao="jogar">${jc && escQ !== "lesionado" ? "Ir para o jogo de quarta" : jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
 
-  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Celular"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
-  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaCasa(s)}</section>
+  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Celular"], ["noticias", "Notícias"], ["casa", agendaDe(s.carreira).pendentes.length ? `Vida (${agendaDe(s.carreira).pendentes.length})` : "Vida"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
+  <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaVida(s)}</section>
   <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador. Para não perder a carreira (trocar de aparelho, limpar o navegador), baixe o save de vez em quando.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
 }
 
@@ -576,9 +583,10 @@ let telaCel: "contatos" | "busca" | "match" | "redes" = "contatos", buscaLiga: s
 const iniciais = (nome: string) => nome.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n >= 40 ? "#6FB7E0" : n >= 20 ? "#C9A24D" : "#EC7D69");
 function linhaFam(s: Save, m: Familiar): string {
+  if (m.falecido) return `<div class="rel-linha em-memoria"><div class="rel-topo"><span class="avatar-fam" style="--c:#8A968E">🕊️</span><div class="rel-nome"><b>${esc(m.nome)}</b><small>${NOME_PARENTESCO[m.parentesco]} · ${m.nasc}–${m.falecido} · em memória</small></div></div></div>`;
   const ctx = ctxFamilia(pacote, s), ano = ANO_INICIAL + s.carreira.temporada, fb = m.futebol, cor = corRelFam(m.relacao);
   const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${esc(nomeDe(fb.clubeId))}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
-  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome"><b>${esc(m.nome)}</b>${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
+  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome"><b>${esc(m.nome)}</b>${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
@@ -650,7 +658,7 @@ function celMatch(s: Save): string {
   const filhos = n.filhos ?? [];
   const ano = ANO_INICIAL + c.temporada, g = n.gravidez;
   const gravidezHtml = g ? `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>` : "";
-  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : "mora com você"}</small></div>
+  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${esc(nomeDe(f.futebol.clubeId))}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
       <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
       <div class="rel-acoes" style="margin-left:0">${(Object.keys(NOME_ACAO_FILHO) as AcaoFilho[]).map((a) => `<button class="chip" data-filho="${i}" data-op="${a}">${NOME_ACAO_FILHO[a]}</button>`).join("")}</div></div>`; }).join("")}` : "";
   const livres = `<p class="sub" style="margin-top:8px">${MAX_ACOES_NAMORO - feitas} ${MAX_ACOES_NAMORO - feitas === 1 ? "programa livre" : "programas livres"} nesta semana. Com a mesma pessoa, cada programa rende um pouco menos. Sem atenção a relação esfria; vida noturna demais incomoda.</p>`;
@@ -1196,6 +1204,79 @@ function abaNoticias(s: Save): string {
   return `${chips}<div style="display:flex;flex-direction:column;gap:12px">${out.join("")}</div>`;
 }
 
+// ------------------------------------------------------------------ vida fora de campo (aba Vida)
+let subVida: "agenda" | "casa" | "parcas" | "garagem" | "rotina" | "fundacao" = "agenda";
+let msgVida: { ok: boolean; texto: string } | undefined, afastarCerteza: string | undefined;
+function htmlOcasiao(s: Save, o: ReturnType<typeof agendaDe>["pendentes"][number], compacto = false): string {
+  const falta = o.expira - semanaAbsJogo(s.carreira);
+  return `<section class="painel ocasiao o-${o.origem}"><p class="rotulo">${ICONE_ORIGEM[o.origem]} ${NOME_ORIGEM[o.origem]}<span class="prazo">${falta <= 0 ? "responda nesta semana" : `${falta + 1} semanas para responder`}</span></p><h2>${esc(o.titulo)}</h2><p class="sub">${esc(o.texto)}</p>
+    <div class="ops">${o.opcoes.map((x) => `<button data-oca="${o.uid}" data-op="${x.id}"><span>${esc(x.rotulo)}</span><small>›</small></button>`).join("")}</div>${compacto ? "" : ""}</section>`;
+}
+function cardAgenda(s: Save): string {
+  const a = agendaDe(s.carreira), m = msgVida && aba !== "casa" ? msgVida : undefined;
+  if (m) msgVida = undefined;
+  const res = m ? `<section class="painel ocasiao feita"><p>${esc(m.texto)}</p></section>` : "";
+  if (!a.pendentes.length) return res;
+  const o = a.pendentes[0], mais = a.pendentes.length - 1;
+  return res + htmlOcasiao(s, o, true) + (mais ? `<button class="painel aviso-mercado" data-aba="casa" data-ir="agenda"><span>📅</span><span><b>Mais ${mais} ${mais === 1 ? "momento" : "momentos"} na agenda</b><small>Responda na aba Vida.</small></span></button>` : "");
+}
+function abaVida(s: Save): string {
+  const a = agendaDe(s.carreira), n = a.pendentes.length;
+  const subs: [typeof subVida, string][] = [["agenda", n ? `Agenda (${n})` : "Agenda"], ["casa", "Casa"], ["parcas", "Parças"], ["garagem", "Garagem"], ["rotina", "Rotina"], ["fundacao", "Fundação"]];
+  const sub = `<div class="sub-abas rolar">${subs.map(([k, t]) => `<button class="${subVida === k ? "ativo" : ""}" data-subvida="${k}">${t}</button>`).join("")}</div>`;
+  const msg = msgVida ? `<p class="msg-mercado ${msgVida.ok ? "ok" : "nao"}">${esc(msgVida.texto)}</p>` : "";
+  msgVida = undefined;
+  const corpo = subVida === "casa" ? abaCasa(s) : subVida === "parcas" ? vidaParcas(s) : subVida === "garagem" ? vidaGaragem(s) : subVida === "rotina" ? vidaRotina(s) : subVida === "fundacao" ? vidaFundacao(s) : vidaAgenda(s);
+  return sub + msg + corpo;
+}
+function vidaAgenda(s: Save): string {
+  const a = agendaDe(s.carreira);
+  const luto = a.luto ? `<section class="painel luto"><p>🕊️ Tempo de luto. A moral pesa por mais ${a.luto.semanas} ${a.luto.semanas === 1 ? "semana" : "semanas"}.</p></section>` : "";
+  return `${luto}${a.pendentes.length ? a.pendentes.map((o) => htmlOcasiao(s, o)).join("") : `<p class="sub">Nada pendente. A vida fora de campo chega aqui: família, filhos, parças, convites, encrencas, a vida no exterior e as férias. Quem não responde a tempo fica com a última opção.</p>`}`;
+}
+function vidaParcas(s: Save): string {
+  const ps = parcasDe(s), c = s.carreira, ab = semanaAbsJogo(c);
+  const card = (p: typeof ps[number]) => {
+    const cor = p.lealdade >= 70 ? "#74D394" : p.lealdade >= 45 ? "#E3B341" : "#EC7D69";
+    return `<div class="parca"><div class="parca-topo"><span class="avatar-fam" style="--c:${cor}">${esc(p.apelido.slice(0, 2).toUpperCase())}</span><div><b>${esc(p.apelido)}</b> <span class="selo">${NOME_PERFIL[p.perfil]}</span><small>${esc(p.nome)} · amigo desde ${p.desde}${p.funcao ? ` · ${FUNCOES[p.funcao].nome.toLowerCase()}` : ""}${p.divida ? ` · te deve R$ ${p.divida.toLocaleString("pt-BR")}` : ""}</small></div></div>
+      <div class="emp-saude"><span>Lealdade</span><span class="rel-barra"><i style="width:${p.lealdade}%;background:${cor}"></i></span></div>
+      <div class="rel-acoes" style="margin-left:0">${(Object.keys(FUNCOES) as FuncaoParca[]).map((f) => `<button class="chip${p.funcao === f ? " ativo" : ""}" data-parca="${p.id}" data-funcao="${p.funcao === f ? "" : f}">${FUNCOES[f].nome}${p.funcao === f ? " ✓" : ""}</button>`).join("")}<button class="chip" data-afastar="${p.id}">${afastarCerteza === p.id ? "Toque de novo para afastar" : "Afastar"}</button></div></div>`;
+  };
+  return `<p class="sub">Os amigos de sempre. Leais seguram a sua cabeça; festeiros puxam para a noite; interesseiros pedem dinheiro; boca solta conta tudo quando fica chateado. Dar uma função paga salário e deixa o parça mais fiel.</p>
+    <div class="ferr-botoes" style="margin:10px 0"><button class="botao${c.churrasco === ab ? " sec" : ""}" data-acao="churrasco" ${c.churrasco === ab ? "disabled" : ""}>🍖 Churrasco com os parças</button></div>
+    ${ps.length ? ps.map(card).join("") : `<p class="sub">Ninguém por perto. Quando a fama sobe, aparece gente nova.</p>`}
+    <p class="rotulo" style="margin-top:14px">Funções</p>${(Object.keys(FUNCOES) as FuncaoParca[]).map((f) => `<p class="sub" style="margin:2px 0"><b>${FUNCOES[f].nome}</b> (${dinheiro(FUNCOES[f].custo)}/mês): ${esc(FUNCOES[f].desc)}</p>`).join("")}`;
+}
+function vidaGaragem(s: Save): string {
+  const c = s.carreira, l = luxoDe(c), saldo = s.casa.saldo;
+  const tem = l.map((i) => { const x = LUXO[i.tipo], d = i.valor - x.preco; return `<div class="luxo"><span class="luxo-ic">${x.emoji}</span><div><b>${esc(x.nome)}</b><small>desde ${i.ano} · pagou ${dinheiro(x.preco)}</small></div><div class="emp-valor"><b>${dinheiro(i.valor)}</b><small class="${d >= 0 ? "pos" : "neg"}">${d >= 0 ? "+" : "−"}${dinheiro(Math.abs(d))}</small></div><button class="chip" data-vender-luxo="${i.uid}">Vender</button></div>`; }).join("");
+  const loja = (Object.keys(LUXO) as TipoLuxo[]).map((t) => { const x = LUXO[t], pode = c.fama >= x.famaMin && saldo >= x.preco && l.length < MAX_LUXO; return `<div class="abrir-emp${pode ? "" : " trava"}"><div><b>${x.emoji} ${esc(x.nome)}</b><small>${x.mes < 0 ? `perde ~${Math.abs(x.mes * 1200).toFixed(0)}% ao ano` : `valoriza ~${(x.mes * 1200).toFixed(0)}% ao ano`}${x.vol ? " (oscila)" : ""}</small>${c.fama < x.famaMin ? `<small class="falta">Precisa de fama ${x.famaMin}</small>` : ""}</div><button class="botao peq${pode ? "" : " sec"}" data-luxo="${t}" ${pode ? "" : "disabled"}>${dinheiro(x.preco)}</button></div>`; }).join("");
+  return `<p class="sub">Carro, relógio e arte dão status (a fama sobe um pouco) e alegria nas primeiras semanas. Carro perde valor; relógio e arte podem valorizar. Esportivo na garagem traz multa; relógio em casa sem segurança atrai ladrão.</p>
+    <p class="rotulo" style="margin-top:12px">Na garagem e no cofre · ${l.length}/${MAX_LUXO}</p>${tem || `<p class="sub">Nada ainda.</p>`}
+    <details class="dobra" style="margin-top:14px"${l.length ? "" : " open"}><summary class="rotulo">Comprar</summary>${loja}</details>`;
+}
+function vidaRotina(s: Save): string {
+  const c = s.carreira, j = s.jogador, h = hobbiesDe(c), e = estudosDe(c), ad = c.adaptacao, nativa = linguaNativa(j.nacionalidade) as Lingua;
+  const hob = (Object.keys(HOBBIES) as Hobby[]).map((k) => { const on = h.ativos.includes(k), nv = Math.round(h.nivel[k] ?? 0); return `<button class="hobby${on ? " on" : ""}" data-hobby="${k}"><span>${HOBBIES[k].emoji}</span><b>${HOBBIES[k].nome}</b><small>${esc(HOBBIES[k].desc)}</small>${nv ? `<i style="width:${nv}%"></i>` : ""}</button>`; }).join("");
+  const extra = [h.esports ? `🎮 Time de e-sports: ${dinheiro(h.esports.valor)}${h.esports.titulos ? ` · ${h.esports.titulos} ${h.esports.titulos === 1 ? "título" : "títulos"}` : ""}` : "", h.musica ? `🎤 Música gravada em ${h.musica}` : ""].filter(Boolean);
+  const atual = e.atual ? (() => { const i = infoCurso(e.atual!.curso), p = Math.min(100, Math.round(100 * e.atual!.progresso / i.semanas)); return `<div class="curso"><div><b>${esc(i.nome)}</b><small>${Math.round(e.atual!.progresso)} de ${i.semanas} semanas · ${dinheiro(i.custo)}/mês</small></div><span class="rel-barra"><i style="width:${p}%;background:#6FB7E0"></i></span><button class="chip" data-curso="">Trancar</button></div>`; })() : "";
+  const disp = e.atual ? "" : cursosDisponiveis(e, nativa).map((k: Curso) => { const i = infoCurso(k); return `<div class="abrir-emp"><div><b>${esc(i.nome)}</b><small>${esc(i.desc)} · ${i.semanas} semanas · ${dinheiro(i.custo)}/mês</small></div><button class="botao peq" data-curso="${k}">Estudar</button></div>`; }).join("");
+  const idiomas = (Object.keys(NOME_LINGUA) as Lingua[]).filter((l) => l !== nativa && (e.idiomas[l] ?? 0) > 0).map((l) => `${NOME_LINGUA[l]}: ${NIVEL_LINGUA[e.idiomas[l]!].toLowerCase()}`);
+  const adapt = ad ? `<div class="corpo-card" style="margin-bottom:14px"><p class="rotulo">✈️ Vida lá fora · ${esc(NOME_PAIS[ad.pais] ?? ad.pais)}</p><h2 style="margin:2px 0 6px">Adaptação ${Math.round(ad.valor)}%</h2><div class="barra-corpo"><i style="width:${Math.max(4, ad.valor)}%;background:${ad.valor >= 65 ? "#74D394" : ad.valor >= 40 ? "#E3B341" : "#EC7D69"}"></i></div><p class="sub" style="margin-top:8px">Pouca adaptação tira moral toda semana e um pouco do seu jogo. Ajudam: o idioma do país (estude aqui embaixo), a companheira morando junto, um parça com função e trazer a família.</p></div>` : "";
+  return `${adapt}<p class="rotulo">Hobbies · até ${MAX_HOBBIES}</p><div class="hobbies">${hob}</div>${extra.length ? `<p class="sub" style="margin-top:6px">${extra.map(esc).join(" · ")}</p>` : ""}
+    <p class="rotulo" style="margin-top:16px">Estudos</p>${atual}${disp}
+    ${idiomas.length || e.formacoes.length ? `<p class="sub" style="margin-top:8px">${[...idiomas, ...e.formacoes.map((f) => `🎓 ${f}`)].map(esc).join(" · ")}</p>` : ""}
+    <p class="sub" style="margin-top:6px">Estudar cansa um pouco por semana. Idioma ajuda a se adaptar fora; as licenças e a faculdade preparam a vida depois da bola.</p>`;
+}
+function vidaFundacao(s: Save): string {
+  const f = s.carreira.fundacao;
+  if (!f) return `<p class="sub">Uma fundação na sua cidade natal: escolinha social, cestas, ajuda nas tragédias. Sobe a torcida e a relação com a imprensa, e quem faz a diferença no ano ganha o Prêmio Coração de Ouro.</p><div class="ferr-botoes" style="margin-top:10px"><button class="botao" data-acao="fundacao" ${s.casa.saldo >= CUSTO_FUNDACAO ? "" : "disabled"}>Criar a fundação (${dinheiro(CUSTO_FUNDACAO)})</button></div>`;
+  const meta = Math.min(100, Math.round(f.impactoAno / 60 * 100));
+  return `<div class="corpo-card"><p class="rotulo">💛 ${esc(f.nome)}</p><h2 style="margin:2px 0">${esc(f.cidade)}</h2><p class="sub">Desde ${f.criada} · ${f.impacto} pontos de impacto no total${f.premios.length ? ` · Coração de Ouro: ${f.premios.join(", ")}` : ""}</p>
+      <div class="emp-saude" style="margin-top:10px"><span>Rumo ao Coração de Ouro</span><span class="rel-barra"><i style="width:${meta}%;background:#E58FB1"></i></span></div><p class="sub">${f.impactoAno} de 60 pontos neste ano.</p></div>
+    <p class="rotulo" style="margin-top:14px">Doação mensal</p><div class="chips" style="flex-wrap:wrap">${NOME_DOACAO.map((n, i) => `<button class="chip${f.nivel === i ? " ativo" : ""}" data-doacao="${i}">${n}${DOACAO[i] ? ` · ${dinheiro(DOACAO[i])}` : ""}</button>`).join("")}</div>
+    <p class="sub" style="margin-top:8px">Quanto mais doação, mais impacto por mês. Tragédias e visitas aparecem na agenda e rendem impacto extra.</p>`;
+}
 function abaCasa(s: Save): string {
   const m = imovelAtual(s.casa), ef = efeitosDaCasa(s.casa).total;
   const rels = s.casa.reliquias ?? [];
@@ -1518,7 +1599,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -1529,6 +1610,19 @@ document.addEventListener("click", (ev) => {
   } else if (d.foco) { plano.foco = d.foco as Grupo; salvar(); render(); }
   else if (d.int) { plano.intensidade = d.int as Intensidade; salvar(); render(); }
   else if (d.dia) { plano.acoes[+d.dia] = d.a as Acao; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.oca) { const r = responderOcasiaoJogo(pacote, save!, d.oca, d.op!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.subvida) { subVida = d.subvida as typeof subVida; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.parca !== undefined && d.funcao !== undefined) { const r = funcaoParcaJogo(save!, d.parca, d.funcao as FuncaoParca | ""); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.afastar) {
+    if (afastarCerteza !== d.afastar) afastarCerteza = d.afastar;
+    else { afastarCerteza = undefined; const r = afastarParcaJogo(pacote, save!, d.afastar); msgVida = { ok: r.ok, texto: r.msg }; salvar(); }
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  }
+  else if (d.luxo) { const r = comprarLuxoJogo(save!, d.luxo as TipoLuxo); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.venderLuxo) { const r = venderLuxoJogo(save!, d.venderLuxo); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.hobby) { const r = hobbyJogo(save!, d.hobby as Hobby); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.curso !== undefined) { const r = matricularJogo(save!, d.curso as Curso | ""); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.doacao !== undefined) { const r = nivelFundacaoJogo(save!, +d.doacao as 0 | 1 | 2 | 3); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.staff) { const r = equipeJogo(save!, d.staff as Staff, d.on === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.tratar) { const r = tratarJogo(save!, d.tratar as ParteCorpo); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.operar) {
@@ -1543,7 +1637,7 @@ document.addEventListener("click", (ev) => {
   else if (d.assessor) { const r = assessorJogo(save!, d.assessor === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.post) { const r = postarJogo(pacote, save!, d.post as TipoPost); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.pauta) { const r = responderEntrevistaJogo(pacote, save!, d.pauta); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
-  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") telaCel = "redes"; render(); if (b.classList.contains("aviso-mercado")) document.querySelector(".abas")?.scrollIntoView({ behavior: "smooth" }); }
+  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") telaCel = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); if (b.classList.contains("aviso-mercado")) document.querySelector(".abas")?.scrollIntoView({ behavior: "smooth" }); }
   else if (d.prop && save) {
     const r = d.op === "aceitar" ? aceitar(pacote, save, d.prop) : d.op === "forcar" ? aceitar(pacote, save, d.prop, true) : d.op === "negociar" ? negociar(pacote, save, d.prop) : recusar(pacote, save, d.prop);
     msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render();
@@ -1635,6 +1729,8 @@ document.addEventListener("click", (ev) => {
     case "desistir-aposentadoria": desistirAposentadoria(save!); salvar(); abrirPerfil(); render(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
     case "vida-toda": { vidaAberta = !vidaAberta; const t = $("telaPerfil"), y = t.scrollTop; t.innerHTML = perfilHtml(save!); t.scrollTop = y; break; }
+    case "churrasco": { const r = churrascoJogo(save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
+    case "fundacao": { const r = criarFundacaoJogo(pacote, save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case "fechar-retro": ($("dlgRetro") as HTMLDialogElement).close(); retro = undefined; break;
     case "baixar-save": void baixarSave(); break;
     case "carregar-save":

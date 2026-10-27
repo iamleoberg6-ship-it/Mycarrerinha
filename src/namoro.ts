@@ -35,7 +35,10 @@ export interface Par extends Perfil { etapa: Etapa; relacao: number; desde: numb
   /** caso escondido: encontros nesta semana (aumentam o risco) e se já saiu na mídia */
   escondidos?: number; exposto?: boolean }
 export interface Filho { nome: string; mae: string; ano: number; /** mãe não é a companheira atual: pensão */ pensao: boolean;
-  /** relação com o pai (0–100) e a semana do último programa juntos */ relacao?: number; contato?: number; vezes?: { s: number; n: number } }
+  /** relação com o pai (0–100) e a semana do último programa juntos */ relacao?: number; contato?: number; vezes?: { s: number; n: number };
+  /** o filho que quer ser jogador: escolinha, base de um clube, profissional, ou largou */
+  futebol?: { fase: "escolinha" | "base" | "pro" | "parou"; ovr: number; pot: number; clubeId?: string };
+  adulto?: boolean }
 export interface Gravidez { mae: string; parto: number; caso: boolean }
 export interface EstadoNamoro {
   /** perfis do dia no app (renovam toda semana) e a semana em que foram gerados */
