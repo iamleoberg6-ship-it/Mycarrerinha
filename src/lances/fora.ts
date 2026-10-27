@@ -10,6 +10,10 @@ export const COMEMORACAO: Situacao = {
       e("Apontou para o céu e mostrou a camiseta com a foto da família. A foto rodou o país.", 0, { moral: 5, fama: 0.6, seguidores: 0.03 }),
       e(["Homenagem à família. Sua mãe chorou na arquibancada.", "Fez um coração com as mãos para a família na arquibancada."], 0, { moral: 5, fama: 0.3 }),
       e("Homenagem à família.", 0, { moral: 4 }), e("Homenagem à família.", 0, { moral: 4 }), e("Homenagem à família.", 0, { moral: 4 })] },
+    { id: "coracao", rotulo: "Fazer um coração para ela na arquibancada", teste: { CARISMA: 1 }, dif: -15, quando: (c) => !!c.namorada, niveis: [
+      e("Coração com as mãos para ela na arquibancada. A câmera achou, o telão mostrou, o estádio aplaudiu.", 0, { moral: 5, fama: 0.6, seguidores: 0.04, relPar: 10 }),
+      e("Coração para ela na arquibancada. Ela mandou um beijo de volta.", 0, { moral: 4, fama: 0.3, relPar: 8 }),
+      e("Gol dedicado a ela.", 0, { moral: 3, relPar: 6 }), e("Gol dedicado a ela.", 0, { moral: 3, relPar: 5 }), e("Gol dedicado a ela.", 0, { moral: 3, relPar: 5 })] },
     { id: "danca", rotulo: "Dancinha ensaiada", teste: { CARISMA: 0.7, COM: 0.3 }, dif: 0, niveis: [
       e("A dancinha viralizou. Milhares de vídeos imitando você.", 0, { fama: 1.2, seguidores: 0.12, moral: 3 }),
       e("A dancinha pegou bem nas redes.", 0, { fama: 0.6, seguidores: 0.05, moral: 2 }),

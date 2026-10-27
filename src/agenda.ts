@@ -3,9 +3,9 @@
 // e vence em poucas semanas: quem não responde fica com a primeira opção de "deixar para lá".
 import type { RNG } from "./rng.js";
 
-export type OrigemOcasiao = "familia" | "filho" | "parca" | "convite" | "encrenca" | "exterior" | "fundacao" | "ferias" | "hobby" | "garagem";
-export const ICONE_ORIGEM: Record<OrigemOcasiao, string> = { familia: "👨‍👩‍👧", filho: "🧒", parca: "🤙", convite: "✨", encrenca: "⚖️", exterior: "✈️", fundacao: "💛", ferias: "🏝️", hobby: "🎲", garagem: "🏎️" };
-export const NOME_ORIGEM: Record<OrigemOcasiao, string> = { familia: "Família", filho: "Filhos", parca: "Parças", convite: "Convite", encrenca: "Encrenca", exterior: "Vida lá fora", fundacao: "Fundação", ferias: "Férias", hobby: "Hobby", garagem: "Garagem" };
+export type OrigemOcasiao = "amor" | "familia" | "filho" | "parca" | "convite" | "encrenca" | "exterior" | "fundacao" | "ferias" | "hobby" | "garagem";
+export const ICONE_ORIGEM: Record<OrigemOcasiao, string> = { amor: "❤️", familia: "👨‍👩‍👧", filho: "🧒", parca: "🤙", convite: "✨", encrenca: "⚖️", exterior: "✈️", fundacao: "💛", ferias: "🏝️", hobby: "🎲", garagem: "🏎️" };
+export const NOME_ORIGEM: Record<OrigemOcasiao, string> = { amor: "Amor", familia: "Família", filho: "Filhos", parca: "Parças", convite: "Convite", encrenca: "Encrenca", exterior: "Vida lá fora", fundacao: "Fundação", ferias: "Férias", hobby: "Hobby", garagem: "Garagem" };
 
 /** O que uma escolha mexe na vida do jogador. */
 export interface EfeitoVida {

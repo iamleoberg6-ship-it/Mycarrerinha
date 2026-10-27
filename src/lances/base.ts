@@ -11,6 +11,8 @@ export interface Efeito {
   texto: string; nota: number;
   golPro?: boolean; golContra?: boolean; meu?: "gol" | "assist";
   amarelo?: boolean; vermelho?: boolean; sai?: boolean; lesao?: number; fama?: number; moral?: number; relTecnico?: number; seguidores?: number; noticia?: string;
+  /** relação com a namorada/esposa */
+  relPar?: number;
 }
 export interface EfeitoDef extends Omit<Efeito, "texto" | "noticia"> { texto: Txt; noticia?: Txt }
 export type Teste = Partial<Record<Atributo | "CALMA" | "CARISMA" | "PROF", number>>;
@@ -21,7 +23,9 @@ export interface Contexto {
   pos: Posicao; min: number; saldo: number; base: boolean; jaFezGol: boolean;
   classico: boolean; mandante: boolean;
   /** jogo que vale muito: final, semifinal, mata-mata de volta, briga direta na reta final */
-  decisiva?: boolean; reta: boolean; briga: "titulo" | "rebaixamento" | ""; fama: number;
+  decisiva?: boolean;
+  /** tem namorada ou esposa na arquibancada */
+  namorada?: boolean; reta: boolean; briga: "titulo" | "rebaixamento" | ""; fama: number;
   estreia: boolean; chuva: boolean; idade: number; relTecnico: number; moral: number; jogosPro: number;
   /** só no pós-jogo */
   resultado?: "v" | "e" | "d"; gols?: number; expulso?: boolean; nota?: number;

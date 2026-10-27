@@ -1278,4 +1278,41 @@ teste("Vida fora de campo 2: agenda, família que envelhece, estudos, adaptaçã
   assert.ok(jogoMod.estudosDe(s.carreira).atual!.progresso >= 5);
   assert.ok(jogoMod.parcasDe(s).length >= 2);
 });
+teste("Namoro mais rico: gostos, chat, encontro, pedido, momentos do casal e casamento", async () => {
+  const nm = await import("../src/namoro.js"), am = await import("../src/amor.js"), ag = await import("../src/agenda.js");
+  const { RNG } = await import("../src/rng.js");
+  const ctx = { semente: "amor", semanaAbs: 100, idadeJogador: 25, fama: 50, cidade: "Rio", salario: 100000, saldo: 5e6, vidaNoturna: 20, ano: 2030 };
+  const base = { id: "x1", nome: "Bia Souza", idade: 25, cidade: "Rio", profissao: "medica" as const, jeito: "romântica", bio: "", interesse: 50 };
+  const g = nm.gostosDe(base); assert.equal(g.gosta.length, 2); assert.ok(!g.gosta.includes(g.odeia));
+  assert.deepEqual(nm.gostosDe(base), g, "sempre os mesmos gostos");
+  // encontro no lugar que ela ama rende mais que no que ela odeia
+  const lugarDe = (gg: string) => (Object.entries(nm.LUGARES).find(([, l]) => l.gosto === gg) ?? [])[0];
+  const ama = lugarDe(g.gosta[0]), odeia = lugarDe(g.odeia);
+  const par = (rel: number) => ({ ...base, gostos: g.gosta, odeia: g.odeia, etapa: "namorando" as const, relacao: rel, desde: 0, conversas: 5, cidadeClube: "Rio" });
+  if (ama && odeia) {
+    const n1 = nm.novoNamoro(); n1.par = par(50); nm.agirNamoro(n1, "x1", "encontro", ctx, ama);
+    const n2 = nm.novoNamoro(); n2.par = par(50); nm.agirNamoro(n2, "x1", "encontro", ctx, odeia);
+    assert.ok(n1.par!.relacao > n2.par!.relacao + 3, `${n1.par!.relacao} x ${n2.par!.relacao}`);
+    assert.ok(n1.par!.cena, "o encontro tem um momento com escolha");
+    const r = nm.responderCena(n1, "x1", n1.par!.cena!.opcoes[0].id); assert.ok(r.ok); assert.equal(n1.par!.cena, undefined);
+  }
+  // chat: romântica gosta de carinho, não de quem se gaba
+  const p = par(50);
+  assert.ok(am.respostaChat(p, "romantico", new RNG("c")).delta >= 8); assert.ok(am.respostaChat(p, "convencido", new RNG("c")).delta < 0);
+  // pedido no gramado: com fama e notícia
+  const n3 = nm.novoNamoro(); n3.par = { ...par(98), etapa: "morando", desde: 0 };
+  const ped = nm.agirNamoro(n3, "x1", "pedirCasamento", ctx, "estadio"); assert.ok(ped.ok && (ped.fama ?? 0) > 0);
+  // momentos do casal: aniversário dela cai na semana certa
+  const a = ag.novaAgenda(), n4 = nm.novoNamoro(); n4.par = { ...par(60), aniver: 12 };
+  am.semanaAmor(a, new RNG("s"), n4, { semanaAbs: 112, semana: 12, ano: 2030, fama: 30, salario: 1e5, exterior: false, apelido: "T", temFilhoComEla: false });
+  assert.ok(a.pendentes.some((o) => o.titulo.startsWith("Aniversário da Bia")));
+  // casamento e lua de mel no jogo
+  const rr = criarJogador({ nome: "Amor", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "amor2" });
+  const s = novoJogo(pacote, { resultado: rr, aparencia: {}, clube: null }, "FLA", "amor2");
+  s.casa.saldo = 1e7;
+  am.agendarCasamento(jogoMod.agendaDe(s.carreira), 5, "Bia", 1e5);
+  const o = jogoMod.agendaDe(s.carreira).pendentes[0];
+  assert.ok(jogoMod.responderOcasiaoJogo(pacote, s, o.uid, "praia").ok);
+  assert.ok(jogoMod.agendaDe(s.carreira).pendentes.some((x) => x.titulo === "Lua de mel"), "depois do casamento vem a lua de mel");
+});
 console.log(`\n${ok} testes passaram`);
