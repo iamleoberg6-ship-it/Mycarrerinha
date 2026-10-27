@@ -327,7 +327,7 @@ function rankingsHtml(s: Save): string {
   if (c.fase || c.semana <= SEMANAS_PRE) return "";
   const feitas = c.semana - SEMANAS_PRE, lid = infoLiga(c.ligaId).id;
   const lista = (tipo: "g" | "a", rot: string) => {
-    const meu = c.formacao ? 0 : tipo === "g" ? c.stats.gols : c.stats.assist;
+    const meu = tipo === "g" ? c.stats.gols : c.stats.assist; // conta os gols no profissional mesmo para quem ainda é da base
     const l = rankingDaLiga(pacote, lid, feitas, tipo, 10).map((x) => ({ ...x, eu: false }));
     if (meu > 0) l.push({ nome: s.jogador.apelido, clubeId: c.clubeId, valor: meu, jogos: c.stats.jogos, eu: true });
     const top = l.sort((a, b) => b.valor - a.valor || Number(b.eu) - Number(a.eu)).slice(0, 10);
@@ -341,7 +341,8 @@ function abaTabela(s: Save): string {
   // na base: a tabela da categoria do jogador vem primeiro (a do profissional fica num chip)
   const naBase = c.formacao && !c.fase;
   if (!naBase && vistaTabela === "base") vistaTabela = "liga";
-  if (naBase && !tabelaEscolhida && vistaTabela === "liga") vistaTabela = "base";
+  // quem é da base mas já joga no profissional começa vendo a tabela de cima
+  if (naBase && !tabelaEscolhida && vistaTabela === "liga" && !c.stats.jogos) vistaTabela = "base";
   // liga, as copas continentais e o estadual do clube (ou do estado dele)
   const uf = ufDoClube(s.carreira.clubeId, mundo(pacote).info[s.carreira.clubeId]?.cidade ?? "");
   const vistas: [typeof vistaTabela, string][] = [...(naBase ? [["base", `Base ${categoriaBase(s.jogador.idade)}`] as [typeof vistaTabela, string]] : []), ["liga", naBase ? `${infoLiga(s.carreira.ligaId).curto} (profissional)` : infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).filter((k) => k === "INT" || k === "MUN" || ehDeSelecao(k) ? !!s.carreira.copas?.[k] : !COPAS[k].uf || COPAS[k].uf === uf).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
@@ -351,14 +352,14 @@ function abaTabela(s: Save): string {
   const minhas = vistas.filter(([k]) => minha(k) || k === vistaTabela), outras = vistas.filter(([k]) => !minha(k) && k !== vistaTabela);
   const chip = ([k, n]: [typeof vistaTabela, string]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`;
   const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${minhas.map(chip).join("")}${outras.length ? `<button class="chip outras" data-outras="1" aria-expanded="${verOutras}">${verOutras ? "Menos ▴" : `Outras (${outras.length}) ▾`}</button>` : ""}${verOutras ? outras.map(chip).join("") : ""}</div>`;
+  const subT = `<div class="sub-abas">${([["classificacao", "Classificação"], ["estatisticas", "Estatísticas"], ["premios", "Prêmios"]] as const).map(([k, n]) => `<button class="${subTabela === k ? "ativo" : ""}" data-subtab="${k}">${n}</button>`).join("")}</div>`;
+  if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "estatisticas") return chips + subT + (selecaoHtml(s) + rankingsHtml(s) || `<p class="sub">As estatísticas aparecem depois da primeira rodada.</p>`);
+  if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "premios") return chips + subT + (premiosLigaHtml(s) + premiosMundoHtml(s) || `<p class="sub">Os prêmios saem no fim da primeira temporada.</p>`);
   if (vistaTabela === "base") {
     const tb = c.tabelaBase && c.tabelaBase.t === c.temporada && c.tabelaBase.cat === categoriaBase(s.jogador.idade) ? ordenar(c.tabelaBase.tabela) : ordenar(novaTabelaDe(c));
-    return `${chips}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(c.ligaId).curto)} ${categoriaBase(s.jogador.idade)} <small>(os times da base, mesmos confrontos)</small></p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${tb.map((x, i) => `<tr class="${x.clube === c.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))} ${categoriaBase(s.jogador.idade)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+    return `${chips}${subT}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(c.ligaId).curto)} ${categoriaBase(s.jogador.idade)} <small>(os times da base, mesmos confrontos)</small></p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${tb.map((x, i) => `<tr class="${x.clube === c.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))} ${categoriaBase(s.jogador.idade)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
   }
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
-  const subT = `<div class="sub-abas">${([["classificacao", "Classificação"], ["estatisticas", "Estatísticas"], ["premios", "Prêmios"]] as const).map(([k, n]) => `<button class="${subTabela === k ? "ativo" : ""}" data-subtab="${k}">${n}</button>`).join("")}</div>`;
-  if (subTabela === "estatisticas") return chips + subT + (selecaoHtml(s) + rankingsHtml(s) || `<p class="sub">As estatísticas aparecem depois da primeira rodada.</p>`);
-  if (subTabela === "premios") return chips + subT + (premiosLigaHtml(s) + premiosMundoHtml(s) || `<p class="sub">Os prêmios saem no fim da primeira temporada.</p>`);
   return `${chips}${subT}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
 
