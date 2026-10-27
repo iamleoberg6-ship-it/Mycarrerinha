@@ -15,7 +15,7 @@ import {
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
   familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo,
-  copasDe, jogoCopaDaSemana, diasTravados, concluirJogoDaCopa, reservaNaBase, type ResumoPartida,
+  copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, concluirJogoDaCopa, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
@@ -34,7 +34,7 @@ import { CIDADES_VARZEA, DA_CIDADE } from "../../src/ligas";
 import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_ACAO_REL, chanceCamisa, MAX_ACOES_SEMANA, atencao, alternarFavorito, type AcaoRel, type Relacao } from "../../src/relacoes";
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
-import { infoClube, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
+import { infoClube, idSelecao, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
 import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
@@ -146,11 +146,12 @@ function telaSemana(s: Save): string {
   // quarta-feira: jogo da copa continental
   copasDe(pacote, s);
   const jc = jogoCopaDaSemana(pacote, s), travados = diasTravados(s);
-  const prevQ = jc ? previaPlano(s, { ...plano, acoes: plano.acoes.slice(0, 2) }) : undefined, escQ = jc ? escalacao(pacote, s, prevQ!.cansaco, true) : undefined;
+  const prevQ = jc ? previaPlano(s, { ...plano, acoes: plano.acoes.slice(0, 2) }) : undefined, natJ = !!jc && (jc.copa.id === "SEL" || jc.copa.id === "COP"), meuJ = natJ ? idSelecao(j.nacionalidade) : c.clubeId;
+  const escQ = jc ? (natJ ? escalacaoSelecao(pacote, s, prevQ!.cansaco) : escalacao(pacote, s, prevQ!.cansaco, true)) : undefined;
   const copaHtml = jc ? (() => {
     const j0 = jc.jogo, ida = idaDe(jc.copa, j0), cls = escQ === "titular" ? "titular" : escQ === "banco" ? "banco" : "ruim";
-    return `<p class="rotulo dia-jogo">Quarta · ${esc(COPAS[jc.copa.id].nome)}</p><div class="confronto"><div class="time">${escudo(j0.casa)}<span>${esc(nomeDe(j0.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(j0.fora))}</span>${escudo(j0.fora)}</div></div>
-      <div class="linha-info"><span>${j0.neutro ? "Campo neutro" : j0.casa === c.clubeId ? "Em casa" : "Fora de casa"}</span><span>${esc(rotuloJogo(j0))}</span>${ida ? `<span>Ida: ${esc(nomeDe(ida.casa))} <b>${ida.gc} × ${ida.gf}</b> ${esc(nomeDe(ida.fora))}</span>` : ""}</div>
+    return `<p class="rotulo dia-jogo">${natJ ? `Convocado · ${esc(nomeDe(meuJ))} · ${jc.jogo.fase === "eliminatorias" ? "Eliminatórias" : jc.jogo.fase === "amistoso" ? "Amistoso" : "Copa do Mundo"}` : `Quarta · ${esc(COPAS[jc.copa.id].nome)}`}</p><div class="confronto"><div class="time">${escudo(j0.casa)}<span>${esc(nomeDe(j0.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(j0.fora))}</span>${escudo(j0.fora)}</div></div>
+      <div class="linha-info"><span>${j0.neutro ? "Campo neutro" : j0.casa === meuJ ? "Em casa" : "Fora de casa"}</span><span>${esc(rotuloJogo(j0))}</span>${ida ? `<span>Ida: ${esc(nomeDe(ida.casa))} <b>${ida.gc} × ${ida.gf}</b> ${esc(nomeDe(ida.fora))}</span>` : ""}</div>
       <div><span class="tag ${cls}">Previsão: ${NOME_ESCALACAO[escQ!].toLowerCase()}</span></div>${jogo ? `<p class="rotulo dia-jogo" style="margin-top:10px">Domingo · ${esc(infoLiga(c.ligaId).curto)}</p>` : ""}`;
   })() : (() => {
     const m = c.meioSemana;
@@ -213,7 +214,7 @@ function tabelaCopaHtml(t: LinhaTabela[], meu: string, zona?: (i: number) => str
 function abaCopa(s: Save, id: CopaId): string {
   const e = copasDe(pacote, s)[id], c = s.carreira;
   if (!e) return `<p class="sub">Sem copa nesta temporada.</p>`;
-  const meu = c.clubeId, estou = e.clubes.includes(meu);
+  const nat = id === "SEL" || id === "COP", meu = nat ? idSelecao(s.jogador.nacionalidade) : c.clubeId, estou = e.clubes.includes(meu);
   const placar = (j: JogoCopa) => j.gc === undefined ? `<span class="sub">sem. ${j.semana + 1}</span>` : `<b>${j.gc} × ${j.gf}</b>${j.penaltis ? ` <small class="sub">(pên. ${esc(nomeDe(j.penaltis))})</small>` : ""}`;
   const linhaJogo = (j: JogoCopa) => `<div class="jogo-copa${j.casa === meu || j.fora === meu ? " meu" : ""}"><span>${esc(nomeDe(j.casa))}</span>${placar(j)}<span>${esc(nomeDe(j.fora))}</span></div>`;
   const meus = e.jogos.filter((j) => j.casa === meu || j.fora === meu);
@@ -224,8 +225,8 @@ function abaCopa(s: Save, id: CopaId): string {
   else {
     const nomes = Object.keys(e.tabelas), meuG = nomes.find((k) => e.tabelas[k].some((x) => x.clube === meu));
     const ordem = meuG ? [meuG, ...nomes.filter((k) => k !== meuG)] : nomes;
-    const zona = id === "LIB" || id === "MUN" ? (i: number) => (i < 2 ? "z-dir" : "") : COPAS[id].uf ? (i: number) => (i < 4 ? "z-dir" : "z-fora") : (i: number) => (i < 8 ? "z-dir" : "z-fora");
-    tabelas = ordem.map((k, i) => { const h = `<p class="rotulo" style="margin:12px 0 4px">${id === "LIB" || id === "MUN" ? `Grupo ${k}` : COPAS[id].uf ? "Primeira fase · os 4 primeiros vão à semifinal" : k}</p>${tabelaCopaHtml(e.tabelas[k], meu, zona)}`; return i === 0 ? h : `<details><summary class="sub">${id === "LIB" || id === "MUN" ? `Grupo ${k}` : k}</summary>${h}</details>`; }).join("");
+    const zona = id === "LIB" || id === "MUN" || id === "COP" ? (i: number) => (i < 2 ? "z-dir" : "") : COPAS[id].uf ? (i: number) => (i < 4 ? "z-dir" : "z-fora") : (i: number) => (i < 8 ? "z-dir" : "z-fora");
+    tabelas = ordem.map((k, i) => { const h = `<p class="rotulo" style="margin:12px 0 4px">${id === "LIB" || id === "MUN" || id === "COP" ? `Grupo ${k}` : COPAS[id].uf ? "Primeira fase · os 4 primeiros vão à semifinal" : k}</p>${tabelaCopaHtml(e.tabelas[k], meu, zona)}`; return i === 0 ? h : `<details><summary class="sub">${id === "LIB" || id === "MUN" || id === "COP" ? `Grupo ${k}` : k}</summary>${h}</details>`; }).join("");
   }
   const mm = FASES_MM.filter((f) => e.jogos.some((j) => j.fase === f)).reverse().map((f) => {
     const series = [...new Set(e.jogos.filter((j) => j.fase === f).map((j) => j.serie!))];
@@ -236,7 +237,9 @@ function abaCopa(s: Save, id: CopaId): string {
       return `<div class="serie${a === meu || b === meu ? " meu" : ""}"><div class="jogo-copa"><span class="${v === a ? "venc" : ""}">${esc(nomeDe(a))}</span>${agg ? `<b>${agg[0]} × ${agg[1]}</b>` : `<span class="sub">ida e volta</span>`}<span class="${v === b ? "venc" : ""}">${esc(nomeDe(b))}</span></div><small class="sub">${js.map((j) => `${esc(nomeDe(j.casa))} ${j.gc ?? "–"}×${j.gf ?? "–"}`).join(" · ")}${js[1].penaltis ? ` · pênaltis: ${esc(nomeDe(js[1].penaltis))}` : ""}</small></div>`;
     }).join("")}`;
   }).join("");
-  return `<p class="rotulo" style="margin-bottom:2px">${esc(COPAS[id].nome)}</p><p class="sub" style="margin-bottom:8px">${status}${estou ? ` · ${esc(clubeDe(ligaAtual(pacote, s), meu).nome)}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : " · seu clube não está nesta copa"}</p>
+  const sl = c.selecao, selInfo = nat && sl ? `<div class="grade-n" style="display:flex;gap:14px;margin:6px 0 10px"><span><b>${sl.convocacoes}</b> <small class="sub">convocações</small></span><span><b>${sl.jogos}</b> <small class="sub">jogos</small></span><span><b>${sl.gols}</b> <small class="sub">gols</small></span><span><b>${sl.assist}</b> <small class="sub">assist.</small></span></div>${sl.copas.length ? `<p class="sub">Copas: ${sl.copas.map((x) => `${x.ano} · ${esc(x.fase)} (${x.jogos} j, ${x.gols} g)`).join(" · ")}</p>` : ""}` : "";
+  if (id === "SEL") return `<p class="rotulo" style="margin-bottom:2px">${esc(nomeDe(meu))} · ${e.jogos[0]?.fase === "eliminatorias" ? "Eliminatórias" : "Amistosos"}</p><p class="sub" style="margin-bottom:6px">Três datas FIFA na temporada. A convocação sai na semana de cada jogo: nível, fase e fama contra os outros ${esc(NOME_POS[s.jogador.posicao] ?? "Goleiro")}s do país.</p>${selInfo}${e.jogos.map((j) => linhaJogo(j) + (j.gc === undefined ? "" : `<small class="sub">${sl?.conv[`${c.temporada}-${j.semana}`] ? "convocado" : "fora da lista"}</small>`)).join("")}`;
+  return `<p class="rotulo" style="margin-bottom:2px">${esc(COPAS[id].nome)}</p>${selInfo}<p class="sub" style="margin-bottom:8px">${status}${estou && nat ? ` · ${esc(nomeDe(meu))}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : nat ? " · sua seleção não se classificou" : estou ? ` · ${esc(clubeDe(ligaAtual(pacote, s), meu).nome)}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : " · seu clube não está nesta copa"}</p>
     ${prox.length ? `<p class="rotulo" style="margin:6px 0 4px">Seus próximos jogos</p>${prox.map((j) => `<div class="jogo-copa meu"><span>${esc(nomeDe(j.casa))}</span><span class="sub">sem. ${j.semana + 1} · ${esc(rotuloJogo(j))}</span><span>${esc(nomeDe(j.fora))}</span></div>`).join("")}` : ""}
     ${mm}${tabelas}`;
 }
@@ -297,7 +300,7 @@ function abaTabela(s: Save): string {
   const t = ordenar(s.carreira.tabela);
   // liga, as copas continentais e o estadual do clube (ou do estado dele)
   const uf = ufDoClube(s.carreira.clubeId, mundo(pacote).info[s.carreira.clubeId]?.cidade ?? "");
-  const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).filter((k) => k === "INT" || k === "MUN" ? !!s.carreira.copas?.[k] : !COPAS[k].uf || COPAS[k].uf === uf).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
+  const vistas: [typeof vistaTabela, string][] = [["liga", infoLiga(s.carreira.ligaId).curto], ...(Object.keys(COPAS) as CopaId[]).filter((k) => k === "INT" || k === "MUN" || k === "SEL" || k === "COP" ? !!s.carreira.copas?.[k] : !COPAS[k].uf || COPAS[k].uf === uf).map((k) => [k, COPAS[k].curto] as [CopaId, string])];
   const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${vistas.map(([k, n]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`).join("")}</div>`;
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
   return `${chips}<p class="rotulo" style="margin-bottom:6px">${esc(infoLiga(s.carreira.ligaId).nome)}</p><table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>` + selecaoHtml(s) + rankingsHtml(s) + premiosLigaHtml(s);

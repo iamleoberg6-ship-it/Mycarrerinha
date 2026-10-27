@@ -10,7 +10,8 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
-import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga } from "../src/mundo.js";
+import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
+import { convocado, participantesCopa, escalacaoSelecao } from "../src/jogo.js";
 import { oferecerJogador, aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -335,7 +336,7 @@ teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS
   const w = mundo(pacote);
   assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "CHI1", "COL1", "ECU1", "ENG1", "ENG2", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "MEX1", "NED1", "PAR1", "POR1", "TUR1", "URU1", "USA1"]);
   assert.equal(w.amadoras.length, 10);
-  assert.equal(Object.keys(w.clube).length, 516 + CONVIDADOS.length + 116);
+  assert.equal(Object.values(w.clube).filter((c) => c.ligaId !== "SELECOES").length, 516 + CONVIDADOS.length + 116);
   assert.equal(w.liga.USA1.clubes.length, 30); assert.equal(w.liga.BRA3.clubes.length, 20);
   assert.equal("ABCDEFGH".split("").reduce((a, g) => a + w.liga[`BRA4${g}`].clubes.length, 0), 96);
   assert.ok(w.clube["US-MIA"].elenco.some((j) => j.nome === "Lionel Mesi" && j.ovr >= 85), "o craque da liga americana");
@@ -467,7 +468,7 @@ teste("Mercado: transferência para outra liga, empréstimo, renovação, agente
   assert.ok(trocarAgente(s, "top").ok); assert.equal(c.agente, "top");
   // contrato vencido: vira agente livre (sem salário, escolhe entre as propostas)
   c.anosContrato = 0; const antes = c.clubeId; eventos = [];
-  assert.ok(contratoVencido(pacote, s, eventos)); assert.ok(mercadoDe(c).semClube && c.salario === 0); assert.ok(eventos.length === 1, antes);
+  assert.ok(contratoVencido(pacote, s, eventos)); assert.ok(mercadoDe(c).semClube && (c.salario as number) === 0); assert.ok(eventos.length === 1, antes);
   // papel no clube faz sentido
   for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 90;
   assert.equal(papelNoClube(w.liga.BRA2.clubes[0], s), "titular");
@@ -814,7 +815,7 @@ teste("Mundo anda: todos envelhecem, jovem evolui, veterano cai ou se aposenta, 
     if (j0.idade <= 20 && j.ovr > j0.ovr + 3) cresceu++;
   }
   assert.ok(cresceu > 300 && aposentou > 1000, `${cresceu} ${aposentou}`);
-  const nomes = Object.values(w.clube).flatMap((c) => c.elenco.map((j) => j.nome)).filter((n) => !repetidos.has(n));
+  const nomes = Object.values(w.clube).filter((c) => c.ligaId !== "SELECOES").flatMap((c) => c.elenco.map((j) => j.nome)).filter((n) => !repetidos.has(n));
   assert.equal(new Set(nomes).size, nomes.length, "nomes únicos");
   for (const c of Object.values(w.clube)) {
     assert.ok(pos(c, "GOL") >= 2 && pos(c, "ZAG") >= 3 && pos(c, "LAT") >= 2 && pos(c, "ATA") >= 2, c.id);
@@ -986,6 +987,28 @@ teste("Sem clube: fim de contrato vira agente livre, não joga, propostas chegam
   assert.ok(m.propostas.length > 0 && m.propostas.every((p) => p.taxa === 0), "propostas sem taxa fora da janela");
   assert.ok(aceitar(pacote, s, m.propostas[0].id).ok);
   assert.ok(!m.semClube && s.carreira.salario > 0 && s.carreira.anosContrato > 0, "assinou");
+});
+
+teste("Seleção nacional: 44 seleções com os melhores do país, convocação pelo nível, datas FIFA e Copa do Mundo de 32", () => {
+  const r = criarJogador({ nome: "Teste Sel", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "selecao" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "selecao");
+  const sels = todasSelecoes(pacote), bra = selecaoDe(pacote, "BRA")!;
+  assert.ok(sels.length >= 40 && bra.elenco.length === 24, `${sels.length}`);
+  assert.ok(bra.forca > selecaoDe(pacote, "NZL")!.forca, "Brasil mais forte que Nova Zelândia");
+  const copas = copasDe(pacote, s), sel = copas.SEL!;
+  assert.equal(sel.jogos.length, 3); assert.ok(sel.jogos.every((j) => j.casa === bra.id || j.fora === bra.id));
+  assert.ok(sel.jogos.every((j) => j.fase === "amistoso"), "2026: ano de Copa, amistosos");
+  // garoto da base não é chamado; craque é
+  s.jogador.idade = 16; assert.ok(!convocado(pacote, s, "x1"));
+  for (const k of ATRIBUTOS) s.jogador.at[k] = 92;
+  s.jogador.idade = 26; s.carreira.formacao = false; s.carreira.fase = undefined as any; s.carreira.fama = 80;
+  assert.ok(convocado(pacote, s, "x2"), "craque convocado");
+  assert.ok(["titular", "banco"].includes(escalacaoSelecao(pacote, s, 0)));
+  const m = participantesCopa(pacote, 4), w = mundo(pacote), pais = (id: string) => w.clube[id]?.pais ?? "";
+  assert.equal(new Set(m).size, 32); for (const p of ["ESP", "POR", "MAR"]) assert.ok(m.includes(idSelecao(p)), p);
+  const e = novaCopa("COP", 4, m, (id) => w.clube[id]?.forca ?? 60, pais, (id) => confederacao(pais(id)), "cop"), rr = new RNG("cop");
+  for (let sem = 40; sem <= 46; sem++) rodarSemana(e, sem, (id) => w.clube[id]?.forca ?? 60, rr);
+  assert.ok(e.campeao && m.includes(e.campeao));
 });
 
 console.log(`\n${ok} testes passaram`);

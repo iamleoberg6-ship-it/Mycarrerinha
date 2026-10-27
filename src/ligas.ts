@@ -60,6 +60,7 @@ export const LIGAS: InfoLiga[] = [
 export const LIGA_INFO: Record<string, InfoLiga> = Object.fromEntries(LIGAS.map((l) => [l.id, l]));
 /** Clubes convidados das copas continentais (sem liga jogável): fora de LIGAS, só para infoLiga não cair na Série A. */
 LIGA_INFO.CONV = { id: "CONV", nome: "Clubes convidados", curto: "Convidados", pais: "INT", regiao: "SUL", divisao: 9, nivel: 3, fLiga: 0.6, fSalario: 0.6, rebaixados: 0, amador: true, bolas: [["#FFFFFF", "#1F3A5F"]] };
+LIGA_INFO.SELECOES = { id: "SELECOES", nome: "Seleções nacionais", curto: "Seleção", pais: "INT", regiao: "EUR", divisao: 9, nivel: 1, fLiga: 1, fSalario: 1, rebaixados: 0, amador: true, bolas: [["#FFFFFF", "#C9A14A"]] };
 /** Ids antigos (antes das ligas reais) que podem estar em saves velhos. */
 export const LIGA_ANTIGA: Record<string, string> = { EUR1: "ENG1", EUR2: "FRA1", ARA1: "KSA1" };
 export const infoLiga = (id: string | undefined): InfoLiga => LIGA_INFO[LIGA_ANTIGA[id ?? ""] ?? id ?? "BRA1"] ?? LIGA_INFO.BRA1;

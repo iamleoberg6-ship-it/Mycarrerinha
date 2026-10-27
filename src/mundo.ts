@@ -6,6 +6,7 @@ import { ligaDoPacote, type Clube, type JogadorNPC, type Liga, type PacoteDados 
 import { LIGAS, LIGA_INFO, type InfoLiga } from "./ligas.js";
 import dados from "../data/mundo-2026.json";
 import { CONVIDADOS, clubeConvidado } from "./convidados.js";
+import { gerarNome } from "./nomes.js";
 import { CLUBES_EXTRA, clubeExtra } from "./ligas-extra.js";
 import { RNG } from "./rng.js";
 import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
@@ -70,6 +71,63 @@ export function mundo(pacote: PacoteDados): Mundo {
   return m;
 }
 
+// ------------------------------------------------------------------ seleções nacionais
+/** Seleções: [país, nome, apelido, cores, força base (quando o país tem poucos jogadores no mundo do jogo)]. */
+const SELECOES: [string, string, string, string[], number][] = [
+  ["BRA", "Seleção Brasileira", "Canarinho", ["#F5C400", "#0B7A3B"], 86], ["ARG", "Seleção Argentina", "Albiceleste", ["#6CB4E4", "#FFFFFF"], 87],
+  ["URU", "Seleção Uruguaia", "Celeste", ["#6CB4E4", "#111111"], 80], ["COL", "Seleção Colombiana", "Cafeteros", ["#F5C400", "#0B3D91"], 80],
+  ["CHI", "Seleção Chilena", "La Roja", ["#C8102E", "#0B3D91"], 74], ["PAR", "Seleção Paraguaia", "Albirroja", ["#C8102E", "#FFFFFF"], 75],
+  ["ECU", "Seleção Equatoriana", "La Tri", ["#F5C400", "#0B3D91"], 78], ["PER", "Seleção Peruana", "La Blanquirroja", ["#FFFFFF", "#C8102E"], 72],
+  ["MEX", "Seleção Mexicana", "El Tri", ["#0B7A3B", "#FFFFFF"], 77], ["USA", "Seleção dos EUA", "USMNT", ["#FFFFFF", "#0B2F7A"], 78],
+  ["CAN", "Seleção Canadense", "Canucks", ["#C8102E", "#FFFFFF"], 75], ["ENG", "Seleção Inglesa", "Three Lions", ["#FFFFFF", "#0B2F7A"], 87],
+  ["FRA", "Seleção Francesa", "Les Bleus", ["#0B2F7A", "#FFFFFF"], 88], ["ESP", "Seleção Espanhola", "La Roja", ["#C8102E", "#F5C400"], 88],
+  ["GER", "Seleção Alemã", "Mannschaft", ["#FFFFFF", "#111111"], 85], ["ITA", "Seleção Italiana", "Azzurra", ["#1C4FA1", "#FFFFFF"], 83],
+  ["POR", "Seleção Portuguesa", "Seleção das Quinas", ["#C8102E", "#0B7A3B"], 86], ["NED", "Seleção Holandesa", "Laranja", ["#F58220", "#FFFFFF"], 84],
+  ["BEL", "Seleção Belga", "Diabos Vermelhos", ["#C8102E", "#111111"], 82], ["CRO", "Seleção Croata", "Vatreni", ["#FFFFFF", "#C8102E"], 81],
+  ["DEN", "Seleção Dinamarquesa", "Dinamite", ["#C8102E", "#FFFFFF"], 80], ["SUI", "Seleção Suíça", "Nati", ["#C8102E", "#FFFFFF"], 79],
+  ["SRB", "Seleção Sérvia", "Orlovi", ["#C8102E", "#0B3D91"], 77], ["POL", "Seleção Polonesa", "Biało-czerwoni", ["#FFFFFF", "#C8102E"], 77],
+  ["TUR", "Seleção Turca", "Crescentes", ["#C8102E", "#FFFFFF"], 79], ["NOR", "Seleção Norueguesa", "Løvene", ["#C8102E", "#0B2F7A"], 80],
+  ["SWE", "Seleção Sueca", "Blågult", ["#F5C400", "#1C4FA1"], 77], ["AUT", "Seleção Austríaca", "Das Team", ["#C8102E", "#FFFFFF"], 79],
+  ["SCO", "Seleção Escocesa", "Tartan Army", ["#0B2F7A", "#FFFFFF"], 75], ["UKR", "Seleção Ucraniana", "Zbirna", ["#F5C400", "#1C4FA1"], 76],
+  ["MAR", "Seleção Marroquina", "Leões do Atlas", ["#C8102E", "#0B7A3B"], 81], ["SEN", "Seleção Senegalesa", "Leões de Teranga", ["#FFFFFF", "#0B7A3B"], 79],
+  ["NGA", "Seleção Nigeriana", "Super Águias", ["#0B7A3B", "#FFFFFF"], 77], ["GHA", "Seleção Ganesa", "Estrelas Negras", ["#FFFFFF", "#111111"], 75],
+  ["CIV", "Seleção Marfinense", "Elefantes", ["#F58220", "#0B7A3B"], 78], ["CMR", "Seleção Camaronesa", "Leões Indomáveis", ["#0B7A3B", "#C8102E"], 75],
+  ["EGY", "Seleção Egípcia", "Faraós", ["#C8102E", "#FFFFFF"], 76], ["ALG", "Seleção Argelina", "Raposas do Deserto", ["#FFFFFF", "#0B7A3B"], 76],
+  ["TUN", "Seleção Tunisiana", "Águias de Cartago", ["#C8102E", "#FFFFFF"], 73], ["JPN", "Seleção Japonesa", "Samurai Blue", ["#0B2F7A", "#FFFFFF"], 80],
+  ["KOR", "Seleção Sul-Coreana", "Tigres da Ásia", ["#C8102E", "#0B2F7A"], 78], ["KSA", "Seleção Saudita", "Falcões Verdes", ["#0B7A3B", "#FFFFFF"], 72],
+  ["AUS", "Seleção Australiana", "Socceroos", ["#F5C400", "#0B7A3B"], 74], ["IRN", "Seleção Iraniana", "Team Melli", ["#FFFFFF", "#C8102E"], 75],
+  ["QAT", "Seleção do Catar", "Al-Annabi", ["#7A1E2B", "#FFFFFF"], 70], ["NZL", "Seleção Neozelandesa", "All Whites", ["#FFFFFF", "#111111"], 66],
+];
+export const idSelecao = (pais: string) => `NAT-${pais}`;
+export const temSelecao = (pais: string) => SELECOES.some((x) => x[0] === pais);
+/** Monta (ou refaz, quando o mundo muda) os elencos das seleções: os 23 melhores de cada país; completa com gerados se faltar gente. */
+function montarSelecoes(m: Mundo) {
+  const porPais = new Map<string, JogadorNPC[]>();
+  for (const l of [...m.ligas, m.liga.CONV].filter(Boolean)) for (const c of l.clubes) for (const j of c.elenco) if (j.idade >= 17) { const a = porPais.get(j.nacionalidade) ?? []; a.push(j); porPais.set(j.nacionalidade, a); }
+  for (const [pais, nome, apelido, cores, base] of SELECOES) {
+    const id = idSelecao(pais);
+    const pos: JogadorNPC["posicao"][] = ["GOL", "GOL", "GOL", "ZAG", "ZAG", "ZAG", "ZAG", "LAT", "LAT", "LAT", "LAT", "VOL", "VOL", "VOL", "MEI", "MEI", "MEI", "MEI", "PON", "PON", "PON", "ATA", "ATA", "ATA"];
+    const todos = [...(porPais.get(pais) ?? [])].sort((a, b) => b.ovr - a.ovr), elenco: JogadorNPC[] = [];
+    const quer: Record<string, number> = {}; for (const p of pos) quer[p] = (quer[p] ?? 0) + 1;
+    for (const j of todos) if ((quer[j.posicao] ?? 0) > 0) { elenco.push(j); quer[j.posicao]--; }
+    // completa com jogadores do país que não estão no mundo do jogo (sempre os mesmos, só da seleção)
+    const extras = (completar[pais] ??= (() => { const rng = new RNG(`selecao|${pais}`), l: JogadorNPC[] = []; for (const p of pos) l.push({ nome: gerarNome(rng, pais, nomesSelecao), posicao: p, ovr: Math.round(base - 6 + rng.normal(0, 2)), idade: rng.int(21, 32), nacionalidade: pais }); return l; })());
+    for (const [p, k] of Object.entries(quer)) elenco.push(...extras.filter((x) => x.posicao === p).slice(0, k));
+    const forca = Math.round(forcaDoElenco(elenco) * 10) / 10;
+    const c = m.clube[id];
+    if (c) { c.elenco = elenco; c.forca = forca; }
+    else {
+      const novo: Clube = { id, nome, ligaId: "SELECOES", forca, fClube: 1, elenco, pais };
+      m.clube[id] = novo;
+      m.info[id] = { id, nome, apelido, cores, forca: base, cidade: "", estadio: "Estádio nacional", capacidade: 60000, padrao: "lisa", ligaId: "SELECOES", pais };
+    }
+  }
+}
+const completar: Record<string, JogadorNPC[]> = {}, nomesSelecao = new Set<string>(["—"]);
+/** As seleções (time com elenco e força), pela sigla do país. */
+export const selecaoDe = (pacote: PacoteDados, pais: string): Clube | undefined => { mundo(pacote); return mundo(pacote).clube[idSelecao(pais)]; };
+export const todasSelecoes = (pacote: PacoteDados) => SELECOES.map((x) => mundo(pacote).clube[idSelecao(x[0])]).filter(Boolean) as Clube[];
+
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
 let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
@@ -84,7 +142,7 @@ function registrarTemporada(m: Mundo) {
     if (!l.length || l[l.length - 1].t !== e.temporada) l.push({ t: e.temporada, clubeId, idade: j.idade, ovr: j.ovr, pot: j.pot ?? j.ovr, posicao: j.posicao, base });
     e.hist.set(j.nome, l);
   };
-  for (const c of Object.values(m.clube)) for (const j of c.elenco) add(j, c.id, false);
+  for (const c of Object.values(m.clube)) if (c.ligaId !== "SELECOES") for (const j of c.elenco) add(j, c.id, false);
   for (const [id, b] of Object.entries(e.base)) for (const j of b) add(j, id, true);
   // o lugar de cada um no time e na liga, para imaginar a temporada dele quando alguém olhar
   for (const l of [...m.ligas, ...m.amadoras]) {
@@ -115,7 +173,8 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
   if (estado && estado.semente === semente && estado.temporada === temporada && estado.feitoMeio === comMeio) return;
   if (!estado || estado.semente !== semente || estado.temporada > temporada || (estado.temporada === temporada && estado.feitoMeio && !comMeio)) {
     for (const [c, el] of original) { c.elenco = el.map((j) => ({ ...j })); c.forca = ref[c.id].forca; }
-    const usados = new Set(Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)));
+    for (const id of Object.keys(m.clube)) if (id.startsWith("NAT-")) { delete m.clube[id]; delete m.info[id]; }
+    const usados = new Set([...Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)), ...nomesSelecao]);
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados);
     estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map() };
@@ -129,6 +188,7 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     e.virada = e.viradas[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, false, e.livres); registrarTemporada(m);
   }
   if (comMeio && !e.feitoMeio) fazerMeio();
+  montarSelecoes(m);
   versao++; indice = undefined;
 }
 /** Depois da janela do meio: quem trocou de clube ganha uma linha nova na mesma temporada (do clube novo, da rodada do meio em diante). */
@@ -283,7 +343,7 @@ export function ondeJoga(pacote: PacoteDados, nome: string) {
   const e = garantir(pacote), m = mundo(pacote);
   if (!indice) {
     indice = new Map();
-    for (const c of Object.values(m.clube)) for (const j of c.elenco) indice.set(j.nome, { clubeId: c.id, base: false });
+    for (const c of Object.values(m.clube)) if (c.ligaId !== "SELECOES") for (const j of c.elenco) indice.set(j.nome, { clubeId: c.id, base: false });
     for (const [id, b] of Object.entries(e.base)) for (const j of b) indice.set(j.nome, { clubeId: id, base: true });
   }
   return indice.get(nome);

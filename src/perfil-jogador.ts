@@ -131,6 +131,7 @@ export function totaisDaCarreira(hist: Temporada[]) {
 export interface Trofeu { nome: string; modelo: string; cores: [string, string]; vezes: { ano: number; clube: string; liga?: string }[] }
 const OURO: [string, string] = ["#E3B341", "#9A7420"], PRATA: [string, string] = ["#C9CCD1", "#7F8389"];
 const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
+  [/^Taça da Copa do Mundo/, "Copa do Mundo", "taca", OURO],
   [/^Taça do Mundial/, "Mundial de Clubes", "taca", OURO],
   [/^Taça da Intercontinental/, "Copa Intercontinental", "taca", OURO],
   [/^Taça da Libertadora/, "Copa Libertadora", "taca", OURO],
