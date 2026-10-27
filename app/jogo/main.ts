@@ -15,7 +15,7 @@ import {
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
   familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo, agirFilhoJogo,
-  copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
+  copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { NOME_ACAO_FILHO, type AcaoFilho } from "../../src/namoro";
@@ -28,6 +28,9 @@ import { fotoDoPerfil } from "../visual/mulheres";
 import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
 import { TRACOS, PAISES } from "../../src/dna";
+import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa, type TipoInvest, type AcaoEmpresa } from "../../src/negocios";
+import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
+import { POSTS, MAX_POSTS, postsDisponiveis, respostasDaPauta, tituloDaPauta, type TipoPost } from "../../src/midia";
 import { valorMercado } from "../../src/mercado";
 import { TATUAGENS, TATUAGEM, NOME_AREA, NOME_FISICO, NOME_CASUAL, custoRemocao, visualDe, tatuagemVisivel, type AreaTatuagem, type Fisico, type RoupaCasual } from "../../src/visual";
 import { VIDA, ITENS_VIDA, gastosDoMes, imposto, aliquota, fCustoVida, type ItemVida } from "../../src/vida";
@@ -194,6 +197,7 @@ function telaSemana(s: Save): string {
   ${cardConvites(s)}
   ${cardSugestao(s)}
   ${cardCraque(s)}
+  ${(() => { const n = negociosDe(s.carreira), m = midiaDe(s); return (n.proposta ? `<button class="painel aviso-mercado" data-aba="jogador" data-ir="negocios"><span>💼</span><span><b>Proposta de negócio: ${esc(n.proposta.titulo)}</b><small>Responda em Jogador › Negócios.</small></span></button>` : "") + (m.pauta ? `<button class="painel aviso-mercado" data-aba="amigos" data-ir="redes"><span>🎤</span><span><b>Pedido de entrevista</b><small>${esc(tituloDaPauta(m.pauta))}. Responda no Celular › Redes.</small></span></button>` : ""); })()}
   ${nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"}. Ver no Mercado.</small></span></button>` : ""}
 
   <section class="painel grupo-plano" aria-label="Plano da semana">
@@ -568,7 +572,7 @@ function abrirHistorico(nome: string) {
 }
 
 // ------------------------------------------------------------------ celular: contatos, busca e app de namoro
-let telaCel: "contatos" | "busca" | "match" = "contatos", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
+let telaCel: "contatos" | "busca" | "match" | "redes" = "contatos", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
 const iniciais = (nome: string) => nome.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n >= 40 ? "#6FB7E0" : n >= 20 ? "#C9A24D" : "#EC7D69");
 function linhaFam(s: Save, m: Familiar): string {
@@ -579,10 +583,26 @@ function linhaFam(s: Save, m: Familiar): string {
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
 function abaCelular(s: Save): string {
-  const abas = `<div class="cel-abas" role="tablist">${([["contatos", "Contatos"], ["busca", "Buscar jogador"], ["match", "Match"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
+  const abas = `<div class="cel-abas" role="tablist">${([["contatos", "Contatos"], ["busca", "Buscar"], ["match", "Match"], ["redes", midiaDe(s).pauta ? "Redes •" : "Redes"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
   const msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
   msgRel = undefined;
-  return `<div class="celular">${abas}${msg}${telaCel === "busca" ? celBusca(s) : telaCel === "match" ? celMatch(s) : celContatos(s)}</div>`;
+  return `<div class="celular">${abas}${msg}${telaCel === "busca" ? celBusca(s) : telaCel === "match" ? celMatch(s) : telaCel === "redes" ? celRedes(s) : celContatos(s)}</div>`;
+}
+const ICONE_POST: Record<string, string> = { torcedor: "🗣️", rival: "😈", jornalista: "🎙️", meme: "😂", fa: "💛" };
+function celRedes(s: Save): string {
+  const c = s.carreira, m = midiaDe(s), x = ctxMidia(pacote, s), ab = semanaAbsJogo(c);
+  const usados = m.posts.semana === ab ? m.posts.n : 0, disp = postsDisponiveis(m, x);
+  const pauta = m.pauta ? `<section class="painel entrevista"><p class="rotulo">🎤 Entrevista · ${esc(tituloDaPauta(m.pauta))}</p><h2>“${esc(m.pauta.pergunta)}”</h2>
+      <div class="ops">${respostasDaPauta(m.pauta).map((r) => `<button data-pauta="${r.id}"><span>${esc(r.rotulo)}</span><small>${{ humilde: "humilde", confiante: "confiante", polemico: "polêmico" }[r.id]}</small></button>`).join("")}</div></section>` : "";
+  const feed = m.feed.length ? m.feed.map((p) => `<div class="post tom${p.tom}"><div class="post-topo"><span>${ICONE_POST[p.tipo]}</span><b>${esc(p.autor)}</b><small>${esc(p.arroba)}</small></div><p>${esc(p.texto)}</p><small class="post-cur">♥ ${compacto(p.curtidas)}</small></div>`).join("") : `<p class="sub">O feed enche depois do primeiro jogo da semana.</p>`;
+  const imp = m.imprensa, rotImp = imp >= 70 ? "Queridinho da imprensa" : imp >= 50 ? "Boa relação" : imp >= 30 ? "Relação fria" : "Em guerra com a imprensa";
+  return `<div class="tiles">${tile(compacto(c.seguidores), "seguidores")}${tile(`${Math.round(c.engajamento ?? 40)}`, "engajamento")}${tile(`${Math.round(imp)}`, "imprensa")}</div>
+    <p class="sub" style="margin:6px 0 10px">${esc(rotImp)}. Colunista que te acompanha: <b>${esc(m.colunista.nome)}</b> (${esc(m.colunista.veiculo)}).</p>
+    ${pauta}
+    ${m.assunto ? `<p class="assunto">Em alta: <b>${esc(m.assunto)}</b></p>` : ""}
+    <p class="rotulo" style="margin-top:12px">O que estão falando de você</p><div class="feed">${feed}</div>
+    <p class="rotulo" style="margin-top:16px">Postar · ${MAX_POSTS - usados} de ${MAX_POSTS} nesta semana</p>
+    ${usados >= MAX_POSTS ? `<p class="sub">Já postou o bastante nesta semana.</p>` : `<div class="posts">${(Object.keys(POSTS) as TipoPost[]).filter((t) => disp.includes(t)).map((t) => `<button class="post-op" data-post="${t}"><b>${esc(POSTS[t].nome)}</b><small>${esc(POSTS[t].desc)}</small></button>`).join("")}</div>`}`;
 }
 function celContatos(s: Save): string {
   const c = s.carreira, rr = relacoesDe(c), fam = familiaDe(pacote, s);
@@ -663,15 +683,69 @@ function abaAmigos(s: Save): string {
     ${aposentados.length ? `<details class="dobra" style="margin-top:14px"><summary class="rotulo">Aposentados (${aposentados.length})</summary>${aposentados.slice(0, 20).map((x) => linhaRel(s, x, ["mensagem"])).join("")}</details>` : ""}`;
 }
 
-let subJogador: "atributos" | "visual" | "dinheiro" = "atributos";
+let subJogador: "atributos" | "saude" | "negocios" | "visual" | "dinheiro" = "atributos";
+let msgJog: { ok: boolean; texto: string } | undefined, operarCerteza: string | undefined;
+
+// ------------------------------------------------------------------ saúde e longevidade
+function blocoSaude(s: Save): string {
+  const c = s.carreira, j = s.jogador, sd = saudeDe(c), ic = idadeDoCorpo(sd, j.idade), prev = previsaoAltoNivel(sd, j.idade, j.personalidade.profissionalismo);
+  const cor = sd.desgaste < 20 ? "#74D394" : sd.desgaste < 40 ? "#A9D46F" : sd.desgaste < 60 ? "#E3B341" : sd.desgaste < 80 ? "#F09A5B" : "#EC7D69";
+  const diff = Math.round((ic - j.idade) * 10) / 10;
+  const previsao = prev <= j.idade ? "Pelos exames, o corpo já está no limite do alto nível. Cada temporada agora é lucro." : `Pelos exames, o corpo aguenta alto nível até uns <b>${prev} anos</b>.`;
+  const staff = (Object.keys(STAFF) as Staff[]).map((k) => { const on = !!sd.equipe[k]; return `<div class="staff${on ? " on" : ""}"><div><b>${STAFF[k].nome}</b><small>${esc(STAFF[k].desc)}</small></div><button class="botao ${on ? "sec" : ""} peq" data-staff="${k}" data-on="${on ? 0 : 1}">${on ? "Dispensar" : `Contratar<small>${dinheiro(STAFF[k].custo)}/mês</small>`}</button></div>`; }).join("");
+  const cron = sd.cronicas.map((x) => `<div class="cronica n${x.nivel}"><div><b>${NOME_PARTE[x.parte]}</b><small>Dor crônica ${["", "leve", "moderada", "forte"][x.nivel]} · desde ${x.desde}${x.tratando ? " · em tratamento" : ""}</small></div>
+    <div class="ferr-botoes"><button class="botao sec peq" data-tratar="${x.parte}">${x.tratando ? "Parar tratamento" : "Tratar"}</button><button class="botao sec peq" data-operar="${x.parte}">${operarCerteza === x.parte ? "Toque de novo: opera" : "Operar"}</button></div></div>`).join("");
+  return `<div class="corpo-card"><div class="corpo-topo"><div><p class="rotulo">Corpo</p><h2 style="color:${cor}">${rotuloCorpo(sd.desgaste)}</h2></div><div class="corpo-idade"><b>${ic.toFixed(1).replace(".", ",")}</b><small>idade do corpo</small></div></div>
+      <div class="barra-corpo"><i style="width:${Math.max(4, sd.desgaste)}%;background:${cor}"></i></div>
+      <p class="sub" style="margin-top:8px">Desgaste ${Math.round(sd.desgaste)}/100. ${diff > 0.5 ? `O corpo está ${diff.toFixed(1).replace(".", ",")} anos mais velho que você.` : diff < -0.5 ? `O corpo está ${Math.abs(diff).toFixed(1).replace(".", ",")} anos mais novo que você.` : "O corpo acompanha a sua idade."} ${previsao}</p></div>
+    <p class="sub" style="margin-top:8px">Jogar muito, treino puxado, cansaço alto, noitadas e a idade desgastam. Dias de descanso, boa alimentação (em Dinheiro), casa confortável e a equipe particular seguram. Corpo gasto se machuca mais e cai mais rápido com a idade.</p>
+    <p class="rotulo" style="margin-top:16px">Lesões crônicas</p>
+    ${cron || `<p class="sub">Nenhuma. Lesão grave às vezes deixa sequela: com fisioterapeuta, a chance é menor.</p>`}
+    ${sd.cronicas.length ? `<p class="sub" style="margin-top:6px">Tratar só avança com fisioterapeuta particular. Operar resolve quase sempre, mas tira você de 8 a 15 semanas.</p>` : ""}
+    <p class="rotulo" style="margin-top:16px">Equipe particular${custoEquipe(sd) ? ` · ${dinheiro(custoEquipe(sd))}/mês` : ""}</p>${staff}`;
+}
+
+// ------------------------------------------------------------------ negócios e investimentos
+function blocoNegocios(s: Save): string {
+  const c = s.carreira, n = negociosDe(c), saldo = s.casa.saldo, inv = patrimonioInvestido(n);
+  const p = n.proposta;
+  const prop = p ? `<section class="painel prop-neg${n.assessor && p.golpe ? " suspeita" : ""}"><p class="rotulo">Proposta · ${esc(p.de)}</p><h2>${esc(p.titulo)}</h2><p class="sub">${esc(p.texto)}</p>
+      <div class="kv" style="margin-top:6px"><span>Valor</span><b>${dinheiro(p.valor)}</b><span>Promessa</span><b>${esc(p.promessa)}</b></div>
+      ${n.assessor ? `<p class="assessor">${p.golpe ? "🧐 Seu assessor: \"Retorno garantido desse tamanho não existe. Isso tem cara de golpe.\"" : "📊 Seu assessor: \"Negócio de verdade. Tem risco, mas é honesto.\""}</p>` : ""}
+      <div class="ferr-botoes"><button class="botao" data-propneg="1">Topar</button><button class="botao sec" data-propneg="0">Recusar</button></div></section>` : "";
+  const emp = n.empresas.map((e) => {
+    const info = EMPRESAS[e.tipo], cor = e.saude >= 65 ? "#74D394" : e.saude >= 40 ? "#E3B341" : "#EC7D69", ab = semanaAbsJogo(c), feito = e.acao === ab;
+    return `<div class="empresa"><div class="emp-topo"><div><b>${esc(e.nome)}</b><small>${esc(info.nome)} · desde ${e.desde}</small></div><div class="emp-valor"><b>${dinheiro(Math.round(e.valor))}</b><small>${e.lucroUlt === undefined ? "primeiro mês" : `${e.lucroUlt >= 0 ? "+" : "−"}${dinheiro(Math.abs(e.lucroUlt))} no mês`}</small></div></div>
+      <div class="emp-saude"><span>Saúde do negócio</span><span class="rel-barra"><i style="width:${e.saude}%;background:${cor}"></i></span></div>
+      <div class="rel-acoes" style="margin-left:0">${feito ? `<span class="sub">Já mexeu nela nesta semana.</span>` : (["cuidar", "divulgar", "investir"] as AcaoEmpresa[]).map((a) => `<button class="chip" data-emp="${e.uid}" data-op="${a}">${{ cuidar: "Cuidar pessoalmente", divulgar: "Divulgar nas redes", investir: `Investir ${dinheiro(Math.round(info.custo * 0.25))}` }[a as "cuidar"]}</button>`).join("")}<button class="chip" data-emp="${e.uid}" data-op="vender">Vender (${dinheiro(Math.round(e.valor * (0.6 + e.saude / 250)))})</button></div></div>`;
+  }).join("");
+  const abrir = (Object.keys(EMPRESAS) as TipoEmpresa[]).filter((t) => !n.empresas.some((e) => e.tipo === t)).map((t) => {
+    const i = EMPRESAS[t], pode = c.fama >= i.famaMin && saldo >= i.custo;
+    return `<div class="abrir-emp${pode ? "" : " trava"}"><div><b>${esc(i.nome)}</b><small>${esc(i.desc)}</small>${c.fama < i.famaMin ? `<small class="falta">Precisa de fama ${i.famaMin}</small>` : ""}</div><button class="botao peq${pode ? "" : " sec"}" data-abrir="${t}" ${pode ? "" : "disabled"}>${dinheiro(i.custo)}</button></div>`;
+  }).join("");
+  const invs = (Object.keys(INVEST) as TipoInvest[]).map((k) => `<div class="invest"><div><b>${INVEST[k].nome}</b><small>${esc(INVEST[k].desc)}</small></div><b class="inv-v">${dinheiro(n.invest[k])}</b>
+    <div class="ferr-botoes">${[100_000, 1_000_000].map((v) => `<button class="chip" data-inv="${k}" data-valor="${v}" ${saldo >= v ? "" : "disabled"}>+${dinheiroCurto(v).replace("R$ ", "")}</button>`).join("")}${n.invest[k] > 0 ? `<button class="chip" data-inv="${k}" data-valor="-1e15">Resgatar</button>` : ""}</div></div>`).join("");
+  const golpes = n.golpes.map((g) => `<div class="invest"><div><b>${esc(g.nome)}</b><small>O extrato não para de subir.</small></div><b class="inv-v" style="color:#74D394">${dinheiro(g.mostrado)}</b></div>`).join("");
+  return `${prop}<div class="tiles">${tile(dinheiroCurto(saldo), "Em conta")}${tile(dinheiroCurto(inv), "Investido")}${tile(dinheiroCurto(saldo + inv), "Patrimônio")}</div>
+    ${n.mes ? `<p class="sub" style="margin-top:6px">Último mês: empresas ${n.mes.empresas >= 0 ? "+" : "−"}${dinheiro(Math.abs(n.mes.empresas))} · investimentos ${n.mes.invest >= 0 ? "+" : "−"}${dinheiro(Math.abs(Math.round(n.mes.invest)))}</p>` : ""}
+    <p class="rotulo" style="margin-top:16px">Suas empresas</p>
+    ${emp || `<p class="sub">Nenhuma ainda. Empresa dá lucro quando vai bem, perde quando vai mal e pode falir. Quem cuida, divulga e tem fama vende mais.</p>`}
+    <p class="rotulo" style="margin-top:16px">Investimentos</p>${invs}${golpes}
+    <div class="staff${n.assessor ? " on" : ""}" style="margin-top:10px"><div><b>Assessor financeiro</b><small>Desconfia das propostas estranhas e cuida um pouco das empresas.</small></div><button class="botao ${n.assessor ? "sec" : ""} peq" data-assessor="${n.assessor ? 0 : 1}">${n.assessor ? "Dispensar" : `Contratar<small>${dinheiro(CUSTO_ASSESSOR)}/mês</small>`}</button></div>
+    <details class="dobra" style="margin-top:16px"${n.empresas.length ? "" : " open"}><summary class="rotulo">Abrir um negócio</summary>${abrir || `<p class="sub">Você já tem um de cada.</p>`}</details>`;
+}
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const visual = blocoVisual(s);
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
   const grupos: [string, Grupo][] = [["Físico", "fisico"], ["Técnico", "tecnico"], ["Tático", "tatico"]];
-  const sub = `<div class="sub-abas">${([["atributos", "Atributos"], ["visual", "Visual"], ["dinheiro", "Dinheiro e vida"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
+  const sub = `<div class="sub-abas">${([["atributos", "Atributos"], ["saude", "Saúde"], ["negocios", "Negócios"], ["dinheiro", "Dinheiro"], ["visual", "Visual"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
+  const msg = msgJog ? `<p class="msg-mercado ${msgJog.ok ? "ok" : "nao"}">${esc(msgJog.texto)}</p>` : "";
+  msgJog = undefined;
   if (subJogador === "visual") return sub + visual;
   if (subJogador === "dinheiro") return sub + blocoPatrocinios(s) + blocoVida(s);
+  if (subJogador === "saude") return sub + msg + blocoSaude(s);
+  if (subJogador === "negocios") return sub + msg + blocoNegocios(s);
   return `${sub}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
@@ -1444,7 +1518,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -1455,7 +1529,21 @@ document.addEventListener("click", (ev) => {
   } else if (d.foco) { plano.foco = d.foco as Grupo; salvar(); render(); }
   else if (d.int) { plano.intensidade = d.int as Intensidade; salvar(); render(); }
   else if (d.dia) { plano.acoes[+d.dia] = d.a as Acao; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
-  else if (d.aba) { aba = d.aba as typeof aba; render(); if (b.classList.contains("aviso-mercado")) document.querySelector(".abas")?.scrollIntoView({ behavior: "smooth" }); }
+  else if (d.staff) { const r = equipeJogo(save!, d.staff as Staff, d.on === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.tratar) { const r = tratarJogo(save!, d.tratar as ParteCorpo); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.operar) {
+    if (operarCerteza !== d.operar) operarCerteza = d.operar;
+    else { operarCerteza = undefined; const r = operarJogo(save!, d.operar as ParteCorpo); msgJog = { ok: r.ok, texto: r.msg }; salvar(); }
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  }
+  else if (d.emp) { const r = agirEmpresaJogo(pacote, save!, d.emp, d.op as AcaoEmpresa); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.abrir) { const r = abrirEmpresaJogo(pacote, save!, d.abrir as TipoEmpresa); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.inv) { const r = aplicarJogo(save!, d.inv as TipoInvest, +d.valor!); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.propneg) { const r = responderPropostaNegocio(pacote, save!, d.propneg === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.assessor) { const r = assessorJogo(save!, d.assessor === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.post) { const r = postarJogo(pacote, save!, d.post as TipoPost); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.pauta) { const r = responderEntrevistaJogo(pacote, save!, d.pauta); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") telaCel = "redes"; render(); if (b.classList.contains("aviso-mercado")) document.querySelector(".abas")?.scrollIntoView({ behavior: "smooth" }); }
   else if (d.prop && save) {
     const r = d.op === "aceitar" ? aceitar(pacote, save, d.prop) : d.op === "forcar" ? aceitar(pacote, save, d.prop, true) : d.op === "negociar" ? negociar(pacote, save, d.prop) : recusar(pacote, save, d.prop);
     msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render();

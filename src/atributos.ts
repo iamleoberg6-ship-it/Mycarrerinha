@@ -81,6 +81,8 @@ export interface ContextoTreino {
   participacao: Participacao;
   moral: number; // 0–100
   personalTrainer: boolean;
+  /** multiplicador do declínio pela idade (saúde do corpo: desgaste, lesões crônicas, equipe particular) */
+  fatorDeclinio?: number;
   profissionalismo: number; // 1–20
   /** estrutura e cultura do clube (0,9 a 1,2; 1 = neutro) */
   fClube?: number;
@@ -118,7 +120,7 @@ export function evoluirSemana(at: Atributos, pot: number, ctx: ContextoTreino): 
     if (g === "fisico" && ctx.idade >= 29) declinio = ctx.idade >= 36 ? 0.15 : ctx.idade >= 33 ? 0.09 : 0.05;
     if (g === "tecnico" && ctx.idade >= 32) declinio = ctx.idade >= 36 ? 0.07 : 0.03;
     if (g === "tatico" && ctx.idade >= 34) declinio = ctx.idade >= 37 ? 0.05 : 0.03;
-    novo[a] = clamp(at[a] + ganho - declinio * reducaoDeclinio, 1, 99);
+    novo[a] = clamp(at[a] + ganho - declinio * reducaoDeclinio * (ctx.fatorDeclinio ?? 1), 1, 99);
   }
   return novo;
 }

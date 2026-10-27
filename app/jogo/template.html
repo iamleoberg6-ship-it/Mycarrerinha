@@ -109,6 +109,29 @@ svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2);
 .evo-linha { fill: none; stroke: var(--ouro); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; } .evo-area { fill: var(--ouro); opacity: .12; }
 .evo-ponto { fill: var(--campo); stroke: var(--ouro); stroke-width: 2; } .evo-max { fill: var(--ouro-claro); stroke: var(--campo); stroke-width: 2; } .evo-agora { fill: var(--ouro); stroke: var(--giz); stroke-width: 2; }
 .evo-leg { margin: 6px 0 14px; } .evo-leg .pos { color: #74D394; } .evo-leg .neg { color: var(--neg); }
+/* saúde */
+.corpo-card { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 14px; padding: 14px; }
+.corpo-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; } .corpo-topo h2 { margin: 2px 0 0; }
+.corpo-idade { text-align: right; } .corpo-idade b { display: block; font-family: var(--display); font-size: 34px; font-weight: 900; line-height: 1; } .corpo-idade small { color: var(--giz-2); font-size: 11px; }
+.barra-corpo { height: 10px; border-radius: 6px; background: var(--campo-3); overflow: hidden; margin-top: 10px; } .barra-corpo i { display: block; height: 100%; border-radius: 6px; }
+.cronica { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--campo-2); border-left: 3px solid #E3B341; margin-bottom: 8px; } .cronica.n2 { border-left-color: #F09A5B; } .cronica.n3 { border-left-color: var(--neg); }
+.cronica small, .staff small, .empresa small, .abrir-emp small, .invest small { display: block; color: var(--giz-2); font-size: 12.5px; }
+.staff { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--linha); border-radius: 10px; margin-bottom: 8px; } .staff.on { border-color: #2F6B45; background: rgba(116,211,148,.06); }
+.staff .botao small, .abrir-emp .botao small { display: block; font-size: 10.5px; opacity: .8; color: inherit; }
+/* negócios */
+.prop-neg { border-color: var(--ouro); } .prop-neg.suspeita { border-color: var(--neg); } .assessor { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--campo-3); font-size: 14px; }
+.empresa { padding: 12px; border: 1px solid var(--linha); border-radius: 12px; margin-bottom: 10px; background: var(--campo-2); }
+.emp-topo { display: flex; justify-content: space-between; gap: 10px; } .emp-valor { text-align: right; white-space: nowrap; }
+.emp-saude { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; font-size: 12px; color: var(--giz-2); margin: 8px 0; }
+.abrir-emp { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--linha); } .abrir-emp.trava { opacity: .55; } .abrir-emp .falta { color: var(--ouro-claro); }
+.invest { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--linha); } .invest .ferr-botoes { grid-column: 1 / -1; margin: 0; } .inv-v { font-variant-numeric: tabular-nums; }
+/* redes */
+.entrevista { border-color: var(--ouro); } .entrevista h2 { font-size: 20px; text-transform: none; font-family: var(--texto); font-weight: 700; }
+.entrevista .ops { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; } .entrevista .ops button { text-align: left; background: var(--campo-3); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; color: var(--giz); font: inherit; } .entrevista .ops button:hover { border-color: var(--ouro); } .entrevista .ops small { color: var(--giz-2); }
+.assunto { margin: 10px 0 0; font-size: 14px; color: var(--giz-2); } .assunto b { color: #6FB7E0; }
+.feed { display: flex; flex-direction: column; gap: 8px; } .post { padding: 10px 12px; border-radius: 12px; background: var(--campo-2); border: 1px solid var(--linha); } .post.tom1 { border-left: 3px solid #74D394; } .post.tom-1 { border-left: 3px solid var(--neg); }
+.post-topo { display: flex; gap: 6px; align-items: baseline; font-size: 13px; } .post-topo small { color: var(--giz-2); } .post p { margin: 4px 0; font-size: 14.5px; white-space: pre-line; } .post-cur { color: var(--giz-2); font-size: 12px; }
+.posts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .post-op { text-align: left; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; color: var(--giz); font: inherit; cursor: pointer; } .post-op:hover { border-color: var(--ouro); } .post-op b { display: block; font-size: 14px; } .post-op small { color: var(--giz-2); font-size: 12px; }
 /* linha da vida */
 .vida { position: relative; margin: 6px 0 16px; padding-left: 16px; border-left: 2px solid var(--linha); display: flex; flex-direction: column; gap: 14px; }
 .vida-ano { position: relative; } .vida-ano::before { content: ""; position: absolute; left: -23px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--ouro); box-shadow: 0 0 0 3px var(--campo); }
@@ -135,7 +158,7 @@ svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2);
 .retro-nav { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
 .aviso-save { min-height: 1em; margin: 6px 0; } .aviso-save.erro { color: var(--neg); }
 .sub-abas { display: flex; margin-bottom: 14px; border-bottom: 1px solid var(--linha); gap: 4px; }
-.sub-abas button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 4px 8px; font: inherit; font-weight: 700; font-size: 13px; color: var(--giz-2); cursor: pointer; }
+.sub-abas button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 2px 8px; font: inherit; font-weight: 700; font-size: 12.5px; color: var(--giz-2); cursor: pointer; }
 .sub-abas button.ativo { color: var(--giz); border-bottom-color: var(--ouro); }
 .chip.outras { border-style: dashed; }
 details.dobra > summary { cursor: pointer; }

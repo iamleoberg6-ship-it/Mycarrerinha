@@ -1205,4 +1205,35 @@ teste("Linha da vida: notícias marcantes ficam guardadas com o ano", () => {
   jogoMod.registrarMarco(s, { tipo: "casa", texto: "Muda para a casa nova" }); jogoMod.registrarMarco(s, { tipo: "casa", texto: "Muda para a casa nova" });
   assert.equal(s.carreira.marcos!.length, 3, "sem repetir no mesmo ano");
 });
+teste("Vida fora de campo: negócios, golpes, saúde do corpo e redes", async () => {
+  const neg = await import("../src/negocios.js"), sau = await import("../src/saude.js"), mid = await import("../src/midia.js");
+  const { RNG } = await import("../src/rng.js");
+  // negócios: abrir, mês, vender; golpe some depois de algumas semanas
+  const n = neg.novoNegocios(), ctx = { ano: 2030, semanaAbs: 100, fama: 60, seguidores: 3e6, saldo: 5e6, apelido: "Teste", numero: "9" };
+  assert.equal(neg.abrirEmpresa(n, "marca", { ...ctx, fama: 20 }, new RNG("a")).ok, false, "fama mínima");
+  assert.ok(neg.abrirEmpresa(n, "restaurante", ctx, new RNG("a")).ok);
+  const m = neg.mesNegocios(n, new RNG("m"), ctx);
+  assert.equal(typeof m.lucro, "number");
+  n.golpes.push({ nome: "Pirâmide", valor: 1e6, mostrado: 1e6, revela: 104 });
+  neg.mesNegocios(n, new RNG("m2"), ctx); assert.equal(n.golpes.length, 1); assert.ok(n.golpes[0].mostrado > 1e6, "extrato sobe");
+  const r = neg.mesNegocios(n, new RNG("m3"), { ...ctx, semanaAbs: 104 }); assert.equal(n.golpes.length, 0); assert.ok(r.noticias.some((x) => /golpe/.test(x.titulo)));
+  const venda = neg.agirEmpresa(n, n.empresas[0]?.uid ?? "x", "vender", ctx); assert.ok(!n.empresas.length || venda.ok);
+  // saúde: veterano jogando tudo desgasta mais que o garoto; equipe segura o declínio
+  const base = { minutos: 90, intensidadeAlta: false, cansaco: 50, vidaNoturna: 10, descansos: 1, alimentacao: 1, recuperacaoCasa: 0, lesaoNova: 0, ano: 2030 };
+  const jovem = sau.novaSaude(), velho = sau.novaSaude();
+  for (let k = 0; k < 40; k++) { sau.semanaSaude(jovem, new RNG("j" + k), { ...base, idade: 21 }); sau.semanaSaude(velho, new RNG("v" + k), { ...base, idade: 35 }); }
+  assert.ok(velho.desgaste > jovem.desgaste + 15, `${velho.desgaste} x ${jovem.desgaste}`);
+  const comEquipe = { ...velho, equipe: { nutri: true, preparador: true } };
+  assert.ok(sau.fatorDeclinio(comEquipe) < sau.fatorDeclinio(velho));
+  assert.ok(sau.idadeDoCorpo(velho, 35) > 35);
+  // redes: feed da semana, limite de posts, entrevista
+  const md = mid.novaMidia(new RNG("md")), cm = { apelido: "Teste", clube: "Fla", gols: 2, minutos: 90, nota: 8.5, polemica: false, escandalo: false, lesionado: false, forma: 7.9, fama: 50, seguidores: 1e6, janela: false, relTecnico: 60, selecao: false, base: false, semanaAbs: 10, temperamento: 8, carisma: 12, patrocinios: 0, resultado: "v" as const };
+  mid.feedDaSemana(md, new RNG("f"), cm); assert.ok(md.feed.length >= 2 && md.feed.some((p) => p.tom > 0));
+  assert.ok(!("erro" in mid.postar(md, "treino", new RNG("p"), cm))); assert.ok(!("erro" in mid.postar(md, "familia", new RNG("p"), cm)));
+  assert.ok("erro" in mid.postar(md, "live", new RNG("p"), cm), "só dois por semana");
+  assert.ok(!mid.postsDisponiveis(md, cm).includes("publi"), "publi só com patrocinador");
+  for (let k = 0; k < 30 && !md.pauta; k++) mid.sortearPauta(md, new RNG("pa" + k), { ...cm, semanaAbs: 20 + k * 4 });
+  assert.ok(md.pauta, "pede entrevista em boa fase");
+  const ef = mid.responderPauta(md, "humilde", cm); assert.ok(!("erro" in ef)); assert.equal(md.pauta, undefined);
+});
 console.log(`\n${ok} testes passaram`);

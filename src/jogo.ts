@@ -5,6 +5,9 @@ import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube, type Liga, type LinhaTabela, type PacoteDados } from "./liga.js";
 import { salarioMensal, valorMercado, AGENTES, type TipoAgente } from "./mercado.js";
+import { novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest } from "./negocios.js";
+import { novaSaude, semanaSaude, feriasSaude, operar, riscoLesaoSaude, fatorDeclinio, recuperacaoSaude, custoEquipe, type EstadoSaude, type Staff, type ParteCorpo } from "./saude.js";
+import { novaMidia, feedDaSemana, sortearPauta, postar, responderPauta, type EstadoMidia, type CtxMidia, type EfeitoPost, type TipoPost } from "./midia.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, DISPUTA, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
@@ -99,6 +102,8 @@ export interface Carreira {
   /** prêmios do mundo da temporada passada (Bola de Ouro, Melhor da Europa, Rei da América...) */
   premiosMundo?: PremiosDoAno;
   /** vencedores de cada prêmio do mundo, ano a ano */
+  /** vida fora de campo: negócios e investimentos, saúde do corpo, imprensa e redes */
+  negocios?: EstadoNegocios; saude?: EstadoSaude; midia?: EstadoMidia;
   /** linha do tempo da vida: o que aconteceu de marcante, com o ano (o resto a tela tira do histórico) */
   marcos?: Marco[];
   galeriaPremios?: Partial<Record<IdPremio, { ano: number; nome: string; clubeId: string; nacionalidade: string; eu?: boolean }[]>>;
@@ -1061,7 +1066,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   const grande = (mundo(pacote).clube[c.clubeId] ?? clubeDe(l, c.clubeId)).forca >= 75 ? 1.5 : 1, vitrine = copa && !ehEstadual(copa.id) ? 1.5 : 1;
   c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? pesoJogo * vitrine * grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
   c.cansaco = clamp(c.cansaco + (30 * minutos) / 90, 0, 100);
-  const l2 = sortearLesao(rng, c.cansaco, intensidadeAlta, j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6) * riscoLesaoFamilia(c.familia));
+  const l2 = sortearLesao(rng, c.cansaco, intensidadeAlta, j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6) * riscoLesaoFamilia(c.familia) * riscoLesaoSaude(saudeDe(c)));
   if (l2) { c.lesao = Math.max(c.lesao, l2.semanas); eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}${copa ? " no jogo da copa" : ""}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
   const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
   noticia(s, "jogo", `${copa ? `${COPAS[copa.id].curto}: ` : ""}${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
@@ -1129,7 +1134,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, rng = rngDe(s, "semana");
   const casa = efeitosDaCasa(s.casa).total;
   const rotulo = rotuloSemana(c);
-  const ovrAntes = ovr(j), atAntes = { ...j.at }, moral0 = c.moral, cansaco0 = c.cansaco, fama0 = c.fama;
+  const ovrAntes = ovr(j), atAntes = { ...j.at }, moral0 = c.moral, cansaco0 = c.cansaco, fama0 = c.fama, lesao0 = c.lesao;
   const eventos: string[] = [];
   const validas = acoesValidas(s, plano), travados = diasTravados(s);
   const cont = (a: Acao) => validas.filter((x) => x === a).length;
@@ -1216,7 +1221,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
 
   // 4. evolução e recuperação
   if (c.lesao > 0 && participacao !== "titular" && participacao !== "entrou") { participacao = "ferias"; }
-  const evoluido = evoluirSemana(j.at, j.pot, { idade: j.idade, foco: plano.foco, intensidade: plano.intensidade, participacao, moral: c.moral, personalTrainer: false, profissionalismo: j.personalidade.profissionalismo, fClube: fatorDoClube(pacote, s) });
+  const evoluido = evoluirSemana(j.at, j.pot, { idade: j.idade, foco: plano.foco, intensidade: plano.intensidade, participacao, moral: c.moral, personalTrainer: !!saudeDe(c).equipe.preparador, fatorDeclinio: fatorDeclinio(saudeDe(c)), profissionalismo: j.personalidade.profissionalismo, fClube: fatorDoClube(pacote, s) });
   const vida = efeitosVida(padraoDe(c));
   // família e namoro: a semana deles mexe na moral, no treino e na recuperação
   const fam = familiaDe(pacote, s), cidadeAgora = infoClube(pacote, c.clubeId).cidade;
@@ -1232,8 +1237,18 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const en = efeitosNamoro(nam);
   const mult = 1 + cont("treino") * 0.1 + (casa.evolucao + vida.evolucao + en.evolucao) / 100 + c.bonusEvolucao - (c.treinoPosicao ? 0.1 : 0) + (paiTreinador(fam) ? 0.05 : 0);
   for (const k of ATRIBUTOS) j.at[k] = clamp(j.at[k] + (evoluido[k] - j.at[k]) * (evoluido[k] > j.at[k] ? mult : 1), 1, 99);
+  // saúde: desgaste do corpo, lesão grave que vira crônica, crises de dor, equipe particular
+  {
+    const sd = saudeDe(c), minutos = (resumoPartida?.minutos ?? 0) + (quarta?.resumo?.minutos ?? 0);
+    const ss = semanaSaude(sd, rngDe(s, "saude"), { minutos, intensidadeAlta: plano.intensidade === "alta", cansaco: c.cansaco, vidaNoturna: c.vidaNoturna, idade: j.idade, descansos: cont("descanso"), alimentacao: padraoDe(c).alimentacao, recuperacaoCasa: casa.recuperacao, lesaoNova: c.lesao > lesao0 ? c.lesao : 0, ano: ANO_INICIAL + c.temporada });
+    eventos.push(...ss.avisos);
+    if (ss.lesao) c.lesao = Math.max(c.lesao, ss.lesao);
+    if (ss.moral) c.moral = clamp(c.moral + ss.moral, 0, 100);
+    if (ss.pressao) c.pressao = clamp(c.pressao + ss.pressao, 0, 100);
+    if (ss.noticia) noticia(s, "lesao", ss.noticia, `Os exames de ${j.apelido} mostram um problema que vai exigir cuidado daqui para frente.`);
+  }
   if (c.lesao > 0) c.lesao--;
-  c.cansaco = clamp(c.cansaco - 20 - casa.recuperacao - vida.recuperacao - en.recuperacao, 0, 100);
+  c.cansaco = clamp(c.cansaco - 20 - casa.recuperacao - vida.recuperacao - en.recuperacao - recuperacaoSaude(saudeDe(c)), 0, 100);
   c.moral = clamp(c.moral + 0.18 * (60 + casa.moral + vida.moral + sf.moral + en.moral + en.conforto / 3 - c.moral) + sn.moral, 0, 100);
   c.fama = clamp(c.fama + (casa.fama + vida.fama) * 0.02 + en.fama, 0, 100);
   if (vida.noite) c.vidaNoturna = clamp(c.vidaNoturna + 0.3 * vida.noite, 0, 100);
@@ -1263,7 +1278,18 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     const liquido = salarioLiquido(c) + pat, g = c.fase ? { itens: [], total: 0 } : gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
     const { aluguel } = fecharMes(s.casa, liquido - g.total);
     if (c.mesesPatrocinio > 0) c.mesesPatrocinio--; else c.patrocinioMensal = 0;
-    dinheiro = { salario: Math.round(liquido), aluguel, gastos: g.total };
+    // equipe particular e negócios fecham o mês junto
+    const equipe = custoEquipe(saudeDe(c));
+    if (equipe) s.casa.saldo -= equipe;
+    const mn = mesNegocios(negociosDe(c), rngDe(s, "negocios-mes"), ctxNegocios(pacote, s));
+    s.casa.saldo += mn.lucro; // o rendimento dos investimentos fica aplicado
+    if (mn.moral) c.moral = clamp(c.moral + mn.moral, 0, 100);
+    if (mn.fama) c.fama = clamp(c.fama + mn.fama, 0, 100);
+    if (mn.torcida) c.torcida = clamp((c.torcida ?? 50) + mn.torcida, 0, 100);
+    eventos.push(...mn.avisos);
+    for (const x of mn.noticias) noticia(s, x.polemica ? "polemica" : "dinheiro", x.titulo, x.texto);
+    if (negociosDe(c).empresas.length || mn.invest) eventos.push(`Negócios no mês: ${mn.lucro >= 0 ? "+" : "−"}R$ ${Math.abs(Math.round(mn.lucro)).toLocaleString("pt-BR")} das empresas${mn.invest ? `, ${mn.invest >= 0 ? "+" : "−"}R$ ${Math.abs(Math.round(mn.invest)).toLocaleString("pt-BR")} nos investimentos` : ""}.`);
+    dinheiro = { salario: Math.round(liquido), aluguel, gastos: g.total + equipe };
     noticia(s, "dinheiro", "Fechou o mês", `R$ ${Math.round(liquido).toLocaleString("pt-BR")} de salário líquido, R$ ${g.total.toLocaleString("pt-BR")} de custo de vida${aluguel ? `, R$ ${aluguel.toLocaleString("pt-BR")} de aluguel` : ""}.`);
     if (s.casa.saldo < 0) { c.moral = clamp(c.moral - 4, 0, 100); eventos.push("Conta no vermelho: o custo de vida está maior que o salário."); noticia(s, "dinheiro", "Conta no vermelho", "Os gastos passaram do que entra. Hora de rever o padrão de vida."); }
   }
@@ -1336,6 +1362,19 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       const ctx = contextoEvento(pacote, s), e = sortearEvento(r2, ctx, c.eventosVistos ??= {});
       if (e) { c.evento = e.id; c.eventosVistos[e.id] = c.temporada; eventos.push(`Fora de campo: ${e.titulo}.`); }
     }
+  }
+  // 12. negócios (propostas pelo celular) e imprensa/redes (feed da semana e pedido de entrevista)
+  {
+    const n = negociosDe(c), ab = semanaAbsJogo(c);
+    if (n.proposta && ab > n.proposta.expira) { eventos.push(`A proposta "${n.proposta.titulo}" expirou.`); n.proposta = undefined; }
+    const p = sortearProposta(n, rngDe(s, "negocio-prop"), ctxNegocios(pacote, s));
+    if (p) { n.proposta = p; eventos.push(`Proposta de negócio: ${p.titulo}.`); }
+    const m = midiaDe(s), cm = ctxMidia(pacote, s, { nota: notaSemana || undefined, gols: resumoPartida?.gols ?? 0, minutos: resumoPartida?.minutos ?? 0, adv: jogo ? infoClube(pacote, jogo.adversario)?.apelido : undefined, polemica, escandalo: !!sn.escandalo });
+    feedDaSemana(m, rngDe(s, "feed"), cm);
+    const tinha = !!m.pauta;
+    sortearPauta(m, rngDe(s, "pauta"), cm);
+    if (m.pauta && !tinha) eventos.push("Pedido de entrevista: a imprensa quer falar com você.");
+    c.fama = clamp(c.fama + 0.02 * (m.imprensa - 50) / 50, 0, 100);
   }
   checarRecordes(pacote, s, eventos);
   if (!fim) { noticiasDeLesao(pacote, s, eventos); demissaoNoMeio(pacote, s, eventos); }
@@ -1422,6 +1461,88 @@ export function familiaDe(pacote: PacoteDados, s: Save): EstadoFamilia {
   return (c.familia ??= gerarFamilia(pacote, { semente: s.semente, nome: j.nome, pais: j.pais, origem: j.familia, idade: j.idade - c.temporada, ano: ANO_INICIAL, escolha: c.escolhaFamilia }));
 }
 export const namoroDe = (c: Carreira): EstadoNamoro => (c.namoro ??= novoNamoro());
+export const negociosDe = (c: Carreira): EstadoNegocios => (c.negocios ??= novoNegocios());
+export const saudeDe = (c: Carreira): EstadoSaude => (c.saude ??= novaSaude());
+export const midiaDe = (s: Save): EstadoMidia => (s.carreira.midia ??= novaMidia(rngDe(s, "midia-inicio")));
+export function ctxNegocios(pacote: PacoteDados, s: Save): CtxNegocios {
+  const c = s.carreira;
+  void pacote;
+  return { ano: ANO_INICIAL + c.temporada, semanaAbs: semanaAbsJogo(c), fama: c.fama, seguidores: c.seguidores, saldo: s.casa.saldo, apelido: s.jogador.apelido, numero: String(s.jogador.numero ?? 10) };
+}
+export function ctxMidia(pacote: PacoteDados, s: Save, x: Partial<CtxMidia> = {}): CtxMidia {
+  const c = s.carreira, j = s.jogador, ult = c.formaUlt.slice(-3), r = c.resultadosClube?.at(-1);
+  return { apelido: j.apelido, clube: infoClube(pacote, c.clubeId)?.apelido ?? "time", gols: 0, minutos: 0, polemica: false, escandalo: false, lesionado: c.lesao > 0,
+    forma: ult.length ? ult.reduce((a, b) => a + b, 0) / ult.length : 6.5, fama: c.fama, seguidores: c.seguidores, janela: !!janelaAberta(c), relTecnico: c.relTecnico,
+    selecao: (c.selecao?.convocacoes ?? 0) > 0, base: c.formacao || !!c.fase, semanaAbs: semanaAbsJogo(c), temperamento: j.personalidade.temperamento, carisma: j.personalidade.carisma ?? 10,
+    patrocinios: c.patrocinios?.length ?? 0, resultado: r === undefined ? undefined : r === 3 ? "v" : r === 1 ? "e" : "d", ...x };
+}
+/** Aplica o efeito de um post ou de uma entrevista na carreira. */
+function aplicarMidia(s: Save, ef: EfeitoPost) {
+  const c = s.carreira, m = midiaDe(s);
+  if (ef.engajamento) c.engajamento = clamp((c.engajamento ?? 40) + ef.engajamento, 0, 100);
+  if (ef.hype) c.hype = clamp((c.hype ?? 0) + ef.hype, -0.3, 1.5);
+  if (ef.torcida) c.torcida = clamp((c.torcida ?? 50) + ef.torcida, 0, 100);
+  if (ef.moral) c.moral = clamp(c.moral + ef.moral, 0, 100);
+  if (ef.relTecnico) c.relTecnico = clamp(c.relTecnico + ef.relTecnico, 0, 100);
+  if (ef.fama) c.fama = clamp(c.fama + ef.fama, 0, 100);
+  if (ef.cansaco) c.cansaco = clamp(c.cansaco + ef.cansaco, 0, 100);
+  if (ef.dinheiro) s.casa.saldo += ef.dinheiro;
+  if (ef.imprensa) m.imprensa = clamp(m.imprensa + ef.imprensa, 0, 100);
+  if (ef.noticia) noticia(s, ef.noticia.polemica ? "polemica" : "clube", ef.noticia.titulo, ef.noticia.texto);
+}
+export function postarJogo(pacote: PacoteDados, s: Save, t: TipoPost): { ok: boolean; msg: string } {
+  const ef = postar(midiaDe(s), t, rngDe(s, "post", t), ctxMidia(pacote, s));
+  if ("erro" in ef) return { ok: false, msg: ef.erro };
+  aplicarMidia(s, ef);
+  return { ok: true, msg: ef.msg };
+}
+export function responderEntrevistaJogo(pacote: PacoteDados, s: Save, id: string): { ok: boolean; msg: string } {
+  const ef = responderPauta(midiaDe(s), id, ctxMidia(pacote, s));
+  if ("erro" in ef) return { ok: false, msg: ef.erro };
+  aplicarMidia(s, ef);
+  return { ok: true, msg: ef.msg };
+}
+export function abrirEmpresaJogo(pacote: PacoteDados, s: Save, tipo: TipoEmpresa): { ok: boolean; msg: string } {
+  const r = abrirEmpresa(negociosDe(s.carreira), tipo, ctxNegocios(pacote, s), rngDe(s, "empresa", tipo));
+  if (r.custo) s.casa.saldo -= r.custo;
+  if (r.ok) { noticia(s, "dinheiro", `${s.jogador.apelido} vira empresário`, r.msg); registrarMarco(s, { tipo: "marco", texto: r.msg.replace(" abriu as portas!", ": primeiro dia do negócio") }); }
+  return r;
+}
+export function agirEmpresaJogo(pacote: PacoteDados, s: Save, uid: string, acao: AcaoEmpresa): { ok: boolean; msg: string } {
+  const r = agirEmpresa(negociosDe(s.carreira), uid, acao, ctxNegocios(pacote, s)), c = s.carreira;
+  if (r.custo) s.casa.saldo -= r.custo;
+  if (r.ganho) s.casa.saldo += r.ganho;
+  if (r.cansaco) c.cansaco = clamp(c.cansaco + r.cansaco, 0, 100);
+  if (r.engajamento) c.engajamento = clamp((c.engajamento ?? 40) + r.engajamento, 0, 100);
+  if (r.ok && acao === "vender") registrarMarco(s, { tipo: "marco", texto: r.msg });
+  return r;
+}
+export function aplicarJogo(s: Save, tipo: TipoInvest, valor: number): { ok: boolean; msg: string } {
+  const r = aplicar(negociosDe(s.carreira), tipo, valor, s.casa.saldo);
+  if (r.custo) s.casa.saldo -= r.custo;
+  if (r.ganho) s.casa.saldo += r.ganho;
+  return r;
+}
+export function responderPropostaNegocio(pacote: PacoteDados, s: Save, aceitar: boolean): { ok: boolean; msg: string } {
+  const r = responderProposta(negociosDe(s.carreira), aceitar, ctxNegocios(pacote, s), rngDe(s, "proposta-neg"));
+  if (r.custo) s.casa.saldo -= r.custo;
+  return r;
+}
+export function assessorJogo(s: Save, on: boolean) { negociosDe(s.carreira).assessor = on; return { ok: true, msg: on ? `Assessor financeiro contratado: R$ ${CUSTO_ASSESSOR.toLocaleString("pt-BR")} por mês.` : "Assessor dispensado." }; }
+export function equipeJogo(s: Save, k: Staff, on: boolean) { saudeDe(s.carreira).equipe[k] = on; return { ok: true, msg: on ? "Contratado. Começa já na semana que vem." : "Dispensado." }; }
+export function tratarJogo(s: Save, parte: ParteCorpo) {
+  const sd = saudeDe(s.carreira), cr = sd.cronicas.find((x) => x.parte === parte);
+  if (!cr) return { ok: false, msg: "Nada para tratar aí." };
+  cr.tratando = !cr.tratando;
+  return { ok: true, msg: cr.tratando ? (sd.equipe.fisio ? "Tratamento começou: sessões com o fisioterapeuta toda semana." : "Tratamento marcado, mas sem fisioterapeuta particular ele quase não avança.") : "Tratamento interrompido." };
+}
+export function operarJogo(s: Save, parte: ParteCorpo) {
+  const r = operar(saudeDe(s.carreira), parte, rngDe(s, "cirurgia", parte));
+  if (!r.semanas) return { ok: false, msg: r.msg };
+  s.carreira.lesao = Math.max(s.carreira.lesao, r.semanas);
+  noticia(s, "lesao", `${s.jogador.apelido} passa por cirurgia`, `${r.msg} Fica ${r.semanas} semanas fora.`);
+  return { ok: true, msg: r.msg };
+}
 export function ctxFamilia(pacote: PacoteDados, s: Save): CtxFamilia {
   const c = s.carreira, jg = jogoDaSemana(s), w = mundo(pacote);
   return { semanaAbs: semanaAbsJogo(c), ano: ANO_INICIAL + c.temporada, idadeJogador: s.jogador.idade, exterior: infoLiga(c.ligaId).regiao !== "BRA" && s.jogador.pais === "BRA",
@@ -1715,6 +1836,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     if (tn.custo) s.casa.saldo -= tn.custo;
     if (tn.escandalo) { c.fama = clamp(c.fama + 1, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); }
     if (tn.noticia) noticia(s, tn.escandalo ? "polemica" : "vida", tn.noticia, tn.escandalo ? `A vida pessoal de ${s.jogador.apelido} virou assunto nos programas de fofoca.` : `Festa para a família e os amigos do futebol.`); }
+  feriasSaude(saudeDe(c));
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   sincronizar(pacote, s);
   noticiasDaVirada(pacote, s);
