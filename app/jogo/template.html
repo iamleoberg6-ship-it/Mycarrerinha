@@ -7,7 +7,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&family=Montserrat:wght@700;800;900&family=Oswald:wght@600;700&family=Bebas+Neue&family=Saira+Condensed:wght@700;800&family=Archivo+Black&family=Teko:wght@600;700&display=swap">
 <style>
 /* Semana do jogador: cartão do jogador no topo, a semana planejada dia a dia, o jogo como uma narração com decisões e o resumo no fim. Mesma linguagem das outras telas. */
 :root {
@@ -439,6 +439,28 @@ details.negociar summary { cursor: pointer; margin-top: 6px; }
 .fig.lenda { background: linear-gradient(135deg, #2a1d05, #E3B341 30%, #fff1b8 50%, #E3B341 70%, #2a1d05); box-shadow: 0 0 14px #E3B34199; }
 @keyframes holo { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 @media (prefers-reduced-motion: reduce) { .fig.brilhante { animation: none; } }
+/* identidade visual das competições (app/visual/torneios.ts) */
+.ident { background-color: var(--i-fundo); background-image: var(--i-padrao), linear-gradient(150deg, var(--i-fundo), var(--i-fundo2)); color: var(--i-texto); }
+.placar.ident { border-bottom: 3px solid var(--i-acento); }
+.placar.ident .comp-linha { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 8px; font-family: var(--i-fonte); text-transform: var(--i-caixa); letter-spacing: var(--i-espaco); font-weight: 800; font-size: 13px; color: var(--i-acento); }
+.placar.ident .gols { white-space: nowrap; font-size: 38px; font-family: var(--i-fonte); background: rgba(0, 0, 0, .35); border: 1px solid var(--i-acento); border-radius: 10px; padding: 4px 12px 2px; color: var(--i-texto); }
+.placar.ident .min { color: var(--i-acento); }
+.placar.ident .time span { color: var(--i-texto); font-weight: 700; }
+.placar.ident .selo-jogo span { background: var(--i-acento); color: var(--i-fundo); }
+dialog.jogo-grande .placar.ident { background-image: radial-gradient(120% 140% at 50% 0%, rgba(255, 255, 255, .14), transparent 60%), var(--i-padrao), linear-gradient(150deg, var(--i-fundo), var(--i-fundo2)); border-bottom-color: var(--i-acento); }
+.faixa-comp { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: 999px; font-family: var(--i-fonte); text-transform: var(--i-caixa); letter-spacing: var(--i-espaco); font-weight: 800; font-size: 12px; color: var(--i-acento); line-height: 1.2; vertical-align: middle; }
+.faixa-comp .selo-comp-svg { flex: none; }
+.banner-comp { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 14px; margin: 2px 0 10px; border-bottom: 3px solid var(--i-acento); }
+.banner-comp > div { position: relative; z-index: 1; }
+.banner-comp b { display: block; font-family: var(--i-fonte); text-transform: var(--i-caixa); letter-spacing: var(--i-espaco); font-size: 18px; line-height: 1.1; font-weight: 800; }
+.banner-comp small { display: block; margin-top: 3px; color: var(--i-acento); font-size: 12px; font-weight: 600; }
+.banner-sigla { position: absolute; right: 8px; bottom: -10px; font-family: var(--i-fonte); font-size: 54px; font-weight: 900; color: var(--i-acento); opacity: .14; letter-spacing: 0; pointer-events: none; }
+.comp-wrap table thead th { background: var(--i-fundo); color: var(--i-acento); font-family: var(--i-fonte); letter-spacing: var(--i-espaco); }
+.comp-wrap table thead th:first-child { border-radius: 8px 0 0 8px; } .comp-wrap table thead th:last-child { border-radius: 0 8px 8px 0; }
+.comp-wrap tr.meu td { background: color-mix(in srgb, var(--i-acento) 16%, transparent); color: var(--giz); }
+.comp-wrap tr.meu td:first-child { box-shadow: inset 3px 0 var(--i-acento); }
+.comp-wrap .rotulo { color: var(--i-acento); }
+.comp-wrap .jogo-copa.meu, .comp-wrap .serie.meu { border-color: var(--i-acento); }
 </style>
 </head>
 <body>
