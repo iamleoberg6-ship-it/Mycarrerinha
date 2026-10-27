@@ -13,6 +13,7 @@ import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
 import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
+import { ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type TorneioId } from "./copas.js";
 import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
@@ -64,7 +65,7 @@ export interface Carreira {
   /** nota, gols e assistências do jogador em cada rodada da liga (para a seleção da rodada e do mês) */
   notasRodada?: Record<number, { nota: number; gols: number; assist: number }>;
   /** seleção nacional: jogos, gols e assistências na carreira, convocações, estreia, Copas do Mundo e convocação de cada data */
-  selecao?: { jogos: number; gols: number; assist: number; convocacoes: number; estreia?: number; copas: { ano: number; fase: string; jogos: number; gols: number; campeao: boolean }[]; conv: Record<string, boolean>; naCopa?: { jogos: number; gols: number; assist: number } };
+  selecao?: { jogos: number; gols: number; assist: number; convocacoes: number; estreia?: number; copas: { ano: number; fase: string; jogos: number; gols: number; campeao: boolean; id?: CopaId }[]; conv: Record<string, boolean>; naTorneio?: Partial<Record<CopaId, { jogos: number; gols: number; assist: number }>>; naCopa?: { jogos: number; gols: number; assist: number } };
   /** o que ficou das copas de cada temporada (Intercontinental e Mundial usam) */
   palmares?: Record<number, Palmares>;
   /** estatísticas na Intercontinental e no Mundial */
@@ -400,7 +401,7 @@ export function copasDe(pacote: PacoteDados, s: Save): Partial<Record<CopaId, Es
   if (c.copas && algum && algum.temporada === c.temporada) return c.copas;
   const fonte = { ligas: w.liga, tabelaReal: c.tabelaAnterior, semente: s.semente, temporada: c.temporada, cidade: (id: string) => w.info[id]?.cidade ?? "" };
   const forca = (id: string) => w.clube[id]?.forca ?? 60, pais = (id: string) => w.clube[id]?.pais ?? "";
-  const copas: Partial<Record<CopaId, EstadoCopa>> = Object.fromEntries((Object.keys(COPAS) as CopaId[]).filter((id) => !["INT", "MUN", "SEL", "COP"].includes(id)).map((id) => [id, novaCopa(id, c.temporada, classificados(fonte, id), forca, pais, regiaoNaCopa, s.semente)]));
+  const copas: Partial<Record<CopaId, EstadoCopa>> = Object.fromEntries((Object.keys(COPAS) as CopaId[]).filter((id) => !["INT", "MUN", "SEL", "COP", "EUR", "AME", "AFR", "ASI", "FIN"].includes(id)).map((id) => [id, novaCopa(id, c.temporada, classificados(fonte, id), forca, pais, regiaoNaCopa, s.semente)]));
   // Intercontinental: campeões da temporada passada (Concacaf = campeão mexicano, Libertadora, Asiática, Champions)
   const p = palmaresDe(pacote, s, c.temporada - 1);
   const ints = [p.campeoes.CON ?? p.ordens.MEX1?.[0], p.campeoes.LIB, p.campeoes.ACL, p.campeoes.UCL];
@@ -416,6 +417,11 @@ export function copasDe(pacote: PacoteDados, s: Save): Partial<Record<CopaId, Es
   }
   // Copa do Mundo de seleções (2030, 2034...): 32 seleções, grupos e mata-mata nas semanas 40 a 46
   if (ehCopaDoMundo(c.temporada)) copas.COP = novaCopa("COP", c.temporada, participantesCopa(pacote, c.temporada), forca, pais, (id) => confederacao(w.clube[id]?.pais ?? ""), s.semente);
+  // Eurocopa, Copa América, Copa Africana e Copa da Ásia (2028, 2032...): no fim da temporada, como a Copa
+  const confNat = (id: string) => confederacao(w.clube[id]?.pais ?? "");
+  if (ehTorneioContinental(c.temporada)) for (const id of ["EUR", "AME", "AFR", "ASI"] as TorneioId[]) copas[id] = novaCopa(id, c.temporada, participantesTorneio(pacote, id, c.temporada), forca, pais, confNat, s.semente);
+  // Finalíssima: campeão da Eurocopa × campeão da Copa América do ano anterior, jogo único numa data FIFA
+  if (ehFinalissima(c.temporada)) { const pp = palmaresDe(pacote, s, c.temporada - 1), a = pp.campeoes.EUR, b = pp.campeoes.AME; if (a && b) copas.FIN = novaCopa("FIN", c.temporada, [a, b], forca, pais, confNat, s.semente); }
   if (ehMundial(c.temporada)) copas.MUN = novaCopa("MUN", c.temporada, participantesMundial(pacote, s, c.temporada), forca, pais, (id) => confederacao(pais(id) || w.info[id]?.pais || ""), s.semente);
   c.copas = copas;
   return c.copas;
@@ -476,9 +482,9 @@ export function participantesMundial(pacote: PacoteDados, s: Save, t: number): s
 }
 /** O clube do jogador ainda tem jogo no Mundial, ou a seleção dele (com ele convocado) na Copa do Mundo: a temporada só acaba depois. */
 export const noMundial = (s: Save) => {
-  const c = s.carreira, e = c.copas?.MUN, cop = c.copas?.COP, nat = idSelecao(s.jogador.nacionalidade);
+  const c = s.carreira, e = c.copas?.MUN, nat = idSelecao(s.jogador.nacionalidade);
   const clube = !!e && e.jogos.some((j) => j.gc === undefined && (j.casa === c.clubeId || j.fora === c.clubeId));
-  const selecao = !!cop && c.selecao?.conv[`${c.temporada}-copa`] === true && cop.jogos.some((j) => j.gc === undefined && (j.casa === nat || j.fora === nat));
+  const selecao = TORNEIOS_FIM.some((id) => { const cop = c.copas?.[id]; return !!cop && c.selecao?.conv[chaveConv(id, c.temporada, 0)] === true && cop.jogos.some((j) => j.gc === undefined && (j.casa === nat || j.fora === nat)); });
   return clube || selecao;
 };
 const TROFEU_PREMIO: Record<IdPremio, [string, number, [string, string]]> = {
@@ -491,15 +497,15 @@ function premiosDoMundo(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev: st
   const fonte = { ligas: w.liga, tabelaReal: { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((x) => x.clube) }, semente: `${s.semente}|sim`, temporada: c.temporada };
   const campeaoLiga: Record<string, string | undefined> = {};
   for (const id of Object.keys(w.liga)) if (id !== "SELECOES" && id !== "CONV") campeaoLiga[id] = ordemFinal(fonte, id)[0];
-  const cop = c.copas?.COP, faseDe = (e: EstadoCopa | undefined, id: string) => !e ? undefined : e.campeao === id ? "campeao" : e.chegou[id];
+  const faseDe = (e: EstadoCopa | undefined, id: string) => !e ? undefined : e.campeao === id ? "campeao" : e.chegou[id];
   const cands: Candidato[] = candidatosDoAno(pacote);
   const minimo = Math.ceil(nRodadas(c) * 0.5);
-  const meuCopa = c.selecao?.copas.find((x) => x.ano === ano);
+  const meus = c.selecao?.copas.filter((x) => x.ano === ano) ?? [];
   if (!c.fase && r.jogos >= minimo) cands.push({ nome: j.apelido, clubeId: c.clubeId, posicao: j.posicao, nota: r.nota, gols: r.gols, assist: r.assist, jogos: r.jogos, idade: j.idade, ligaId: infoLiga(c.ligaId).id, ovr: ovr(j) + (c.fama - 50) / 10, nacionalidade: j.nacionalidade, minimo, eu: true });
   const p = premiosDoAno(cands, {
     semente: s.semente, ano, campeaoLiga, regiaoLiga: (id) => infoLiga(id).regiao, nivelLiga: (id) => infoLiga(id).nivel, confederacao,
     faseCopa: (copa, id) => faseDe(c.copas?.[copa as CopaId], id),
-    faseCopaDoMundo: (x) => !cop ? undefined : x.eu ? (meuCopa ? (meuCopa.campeao ? "campeao" : cop.chegou[idSelecao(x.nacionalidade)]) : undefined) : naSelecao(pacote, x.nacionalidade, x.nome) ? faseDe(cop, idSelecao(x.nacionalidade)) : undefined,
+    faseSelecao: (copa, x) => { const cop = c.copas?.[copa as CopaId], nat = idSelecao(x.nacionalidade); if (!cop) return undefined; return (x.eu ? meus.some((m) => (m.id ?? "COP") === copa) : naSelecao(pacote, x.nacionalidade, x.nome)) ? faseDe(cop, nat) : undefined; },
   });
   c.premiosMundo = p;
   const gal = (c.galeriaPremios ??= {}), nome = (x: { nome: string; eu?: boolean }) => (x.eu ? j.apelido : x.nome), clube = (id: string) => infoClube(pacote, id)?.nome ?? "";
@@ -530,6 +536,21 @@ function premiosDoMundo(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev: st
   }
   const bola = p.premios.find((x) => x.id === "BOLA")?.ranking[0], uefa = p.premios.find((x) => x.id === "UEFA")?.ranking[0], rei = p.premios.find((x) => x.id === "REI")?.ranking[0];
   if (bola) noticia(s, "clube", `Bola de Ouro ${ano}: ${nome(bola)}`, `${nome(bola)} (${clube(bola.clubeId)}) é o melhor do mundo.${uefa ? ` Melhor da Europa: ${nome(uefa)}${uefa.nome !== bola.nome ? " — os votantes da UEFA discordaram" : ""}.` : ""}${rei ? ` Rei da América: ${nome(rei)}.` : ""}`, { k: "trofeu" });
+}
+/** Torneios de seleções do fim da temporada (semanas 40+): a temporada espera a seleção do jogador sair. */
+const TORNEIOS_FIM: CopaId[] = ["COP", "EUR", "AME", "AFR", "ASI"];
+/** Chave da convocação: cada data FIFA tem a sua; cada torneio tem uma lista só. */
+const chaveConv = (id: CopaId, t: number, semana: number) => id === "SEL" ? `${t}-${semana}` : id === "COP" ? `${t}-copa` : `${t}-${id}`;
+/** Participantes dos torneios continentais (em ordem de força): Eurocopa 16, Copa América 16 (10 sul-americanos e
+ *  6 convidados da Concacaf), Copa Africana 8, Copa da Ásia 8. As sedes estão sempre. */
+export function participantesTorneio(pacote: PacoteDados, id: TorneioId, t: number): string[] {
+  const sel = todasSelecoes(pacote), por = (cf: string) => sel.filter((x) => confederacao(x.pais) === cf).sort((a, b) => b.forca - a.forca);
+  const sedes: Record<string, string[]> = { "EUR-2": ["ENG", "SCO"], "EUR-6": ["ITA", "TUR"], "AME-2": ["USA"], "AFR-2": ["MAR"], "ASI-2": ["KSA"] };
+  let lista = id === "AME" ? [...por("CONMEBOL").slice(0, 10), ...por("CONCACAF").slice(0, 6)] : por(id === "EUR" ? "UEFA" : id === "AFR" ? "CAF" : "AFC");
+  const n = id === "EUR" || id === "AME" ? 16 : 8, fixas = sedes[`${id}-${t}`] ?? [];
+  lista = [...lista.filter((x) => fixas.includes(x.pais)), ...lista.filter((x) => !fixas.includes(x.pais))].slice(0, n);
+  const forca = (x: { forca: number }) => x.forca;
+  return lista.sort((a, b) => forca(b) - forca(a)).map((x) => x.id).slice(0, Math.floor(lista.length / 4) * 4);
 }
 /** As 32 da Copa do Mundo: por continente, as mais fortes (Europa 13, América do Sul 5, África 5, Ásia 5, Concacaf 3, Oceania 1), com as sedes garantidas. */
 export function participantesCopa(pacote: PacoteDados, t: number): string[] {
@@ -569,10 +590,10 @@ export function escalacaoSelecao(pacote: PacoteDados, s: Save, cansaco: number):
 /** O jogo da seleção nesta semana (se o jogador foi convocado). */
 function jogoDaSelecao(pacote: PacoteDados, s: Save): { copa: EstadoCopa; jogo: JogoCopa } | undefined {
   const c = s.carreira, nat = idSelecao(s.jogador.nacionalidade);
-  for (const id of ["SEL", "COP"] as CopaId[]) {
+  for (const id of ["SEL", "FIN", ...TORNEIOS_FIM] as CopaId[]) {
     const e = copasDe(pacote, s)[id];
     const jg = e?.jogos.find((x) => x.semana === c.semana && x.gc === undefined && (x.casa === nat || x.fora === nat));
-    if (e && jg && convocado(pacote, s, id === "COP" ? `${c.temporada}-copa` : `${c.temporada}-${c.semana}`)) return { copa: e, jogo: jg };
+    if (e && jg && convocado(pacote, s, chaveConv(id, c.temporada, c.semana))) return { copa: e, jogo: jg };
   }
 }
 /** Sede do Mundial da temporada t (liga do país-sede). */
@@ -594,9 +615,9 @@ export function diasTravados(s: Save): number[] {
   if (c.fase) return [];
   // convocado para a seleção nesta semana (a decisão já foi tomada quando a semana abriu)
   const nat = idSelecao(s.jogador.nacionalidade), conv = c.selecao?.conv;
-  for (const id of ["SEL", "COP"] as CopaId[]) {
+  for (const id of ["SEL", "FIN", ...TORNEIOS_FIM] as CopaId[]) {
     const e = c.copas?.[id], jg = e?.jogos.find((x) => x.semana === c.semana && (x.casa === nat || x.fora === nat));
-    if (jg && conv?.[id === "COP" ? `${c.temporada}-copa` : `${c.temporada}-${c.semana}`]) return [2];
+    if (jg && conv?.[chaveConv(id, c.temporada, c.semana)]) return [2];
   }
   if (c.mercado?.semClube) return [];
   const r = jogoDoClubeNaSemana(c.copas, c.clubeId, c.semana);
@@ -681,7 +702,7 @@ function forcaDaBase(pacote: PacoteDados, clubeId: string, idade: number, forcaP
 /** Prepara a partida da semana (domingo, liga) ou, com `copa`, a de quarta pela copa continental. */
 export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa?: { copa: EstadoCopa; jogo: JogoCopa }): Partida | undefined {
   sincronizar(pacote, s);
-  const selecaoJogo = !!copa && (copa.copa.id === "SEL" || copa.copa.id === "COP");
+  const selecaoJogo = !!copa && ehDeSelecao(copa.copa.id);
   if (s.carreira.mercado?.semClube && !selecaoJogo) return; // sem clube: não tem jogo (a seleção, sim)
   const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, W = mundo(pacote);
   const cj = copa?.jogo, meuId = selecaoJogo ? idSelecao(j.nacionalidade) : c.clubeId;
@@ -870,11 +891,11 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
       if ([1, 10, 25, 50, 100].includes(total)) receberReliquias(s, [{ conquista: `trofeu-mvp-${total}`, reliquia: { id: `rel-trofeu-mvp-${total}`, chave: `trofeu-mvp-${total}`, tipo: "trofeu", nome: total === 1 ? "Primeiro prêmio de melhor em campo" : `${total} prêmios de melhor em campo`, legenda: `${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ano}`, ano, cores: ["#E3B341", "#9A7420"], modelo: "estrela" } }], eventos);
     }
   }
-  if (copa && (copa.id === "SEL" || copa.id === "COP")) {
+  if (copa && ehDeSelecao(copa.id)) {
     const sl = (c.selecao ??= { jogos: 0, gols: 0, assist: 0, convocacoes: 0, copas: [], conv: {} });
     sl.jogos++; sl.gols += gols; sl.assist += assist;
-    if (copa.id === "COP") { const nc = (sl.naCopa ??= { jogos: 0, gols: 0, assist: 0 }); nc.jogos++; nc.gols += gols; nc.assist += assist; }
-    c.fama = clamp(c.fama + (copa.id === "COP" ? 1.5 : 0.7) + gols * 0.5, 0, 100);
+    if (copa.id !== "SEL") { const nc = ((sl.naTorneio ??= {})[copa.id] ??= { jogos: 0, gols: 0, assist: 0 }); nc.jogos++; nc.gols += gols; nc.assist += assist; }
+    c.fama = clamp(c.fama + (copa.id === "COP" ? 1.5 : copa.id === "SEL" ? 0.7 : 1.1) + gols * 0.5, 0, 100);
     if (!sl.estreia) {
       sl.estreia = ANO_INICIAL + c.temporada; eventos.push("Estreia pela seleção!");
       const sel = selecaoDe(pacote, j.nacionalidade)!, info = infoClube(pacote, sel.id);
@@ -1093,7 +1114,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   c.semana++;
   let fim: ResumoTemporada | undefined;
   // Copa do Mundo: a lista sai antes da primeira rodada (e a temporada continua se ele foi chamado)
-  if (c.semana === SEMANAS_TEMPORADA && c.copas?.COP?.clubes.includes(idSelecao(s.jogador.nacionalidade))) convocado(pacote, s, `${c.temporada}-copa`);
+  if (c.semana === SEMANAS_TEMPORADA) for (const id of TORNEIOS_FIM) if (c.copas?.[id]?.clubes.includes(idSelecao(s.jogador.nacionalidade))) convocado(pacote, s, chaveConv(id, c.temporada, 0));
   if (c.semana >= SEMANAS_TEMPORADA && !noMundial(s)) fim = fimDeTemporada(pacote, s, eventos);
   // 7. mercado: propostas da janela, renovação, empréstimo; nos caminhos de formação, olheiros e convites
   semanaDoMercado(pacote, s, rngDe(s, "mercado"), eventos);
@@ -1454,7 +1475,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   {
     const w2 = mundo(pacote), fonteP = { ligas: w2.liga, tabelaReal: { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((x) => x.clube) }, semente: `${s.semente}|sim`, temporada: c.temporada };
     const p: Palmares = { campeoes: {}, chegou: {}, ordens: Object.fromEntries(LIGAS_PALMARES.map((l) => [l, ordemFinal(fonteP, l)])) };
-    for (const id of ["LIB", "UCL", "ACL", "CON", "INT", "MUN", "COP"] as CopaId[]) { const e = c.copas?.[id]; if (e) { p.campeoes[id] = e.campeao; if (id !== "INT" && id !== "MUN" && id !== "COP") p.chegou[id] = e.chegou; } }
+    for (const id of ["LIB", "UCL", "ACL", "CON", "INT", "MUN", "COP", "EUR", "AME", "AFR", "ASI", "FIN"] as CopaId[]) { const e = c.copas?.[id]; if (e) { p.campeoes[id] = e.campeao; if (["LIB", "UCL", "ACL", "CON"].includes(id)) p.chegou[id] = e.chegou; } }
     (c.palmares ??= {})[c.temporada] = p;
     for (const k of Object.keys(c.palmares)) if (+k < c.temporada - 4) delete c.palmares[+k];
   }
@@ -1473,23 +1494,24 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
       c.fama = clamp(c.fama + bonus, 0, 100); c.torcida = clamp((c.torcida ?? 50) + bonus * 1.5, 0, 100);
     }
   }
-  // Copa do Mundo: campanha da seleção do jogador (se ele foi convocado) e a taça
-  { const cop = c.copas?.COP, nc = c.selecao?.naCopa, nat = idSelecao(j.nacionalidade);
-    if (cop && nc && c.selecao) {
-      const campeao = cop.campeao === nat, sel = selecaoDe(pacote, j.nacionalidade)!;
-      const fase = campeao ? "Campeão" : NOME_FASE[cop.chegou[nat]] ?? "Fase de grupos";
-      c.selecao.copas.push({ ano: r.ano, fase, jogos: nc.jogos, gols: nc.gols, campeao });
-      (r.extras ??= []).push({ id: "COP", nome: COPAS.COP.nome, fase, campeao, jogos: nc.jogos, gols: nc.gols, assist: nc.assist });
-      if (campeao) {
-        const nomeT = `Taça da Copa do Mundo ${r.ano}`;
-        receberReliquias(s, [{ conquista: "trofeu-copa-COP", reliquia: { id: `rel-trofeu-copa-COP-${r.ano}`, chave: "trofeu-copa-COP", tipo: "trofeu", nome: nomeT, legenda: `${sel.nome} · Copa do Mundo ${r.ano}`, ano: r.ano, cores: ["#E3B341", "#B8892B"], modelo: "taca" } }], ev);
-        r.premios.push(nomeT); c.fama = clamp(c.fama + 20, 0, 100);
-        noticia(s, "jogo", `${sel.nome} campeã do mundo!`, `${j.apelido} levanta a Copa do Mundo ${r.ano}: ${nc.jogos} jogos e ${nc.gols} gols no torneio.`, { k: "trofeu" });
-      } else noticia(s, "jogo", `Fim de Copa para a ${sel.nome}`, `${sel.nome} parou: ${fase.toLowerCase()}. ${j.apelido} fez ${nc.jogos} jogos e ${nc.gols} gols. Campeã: ${infoClube(pacote, cop.campeao ?? "")?.nome ?? "–"}.`);
-    }
-    if (c.selecao) c.selecao.naCopa = undefined; }
+  // torneios de seleções (Copa do Mundo, continentais, Finalíssima): campanha do jogador (se foi convocado) e a taça
+  for (const id of ["FIN", ...TORNEIOS_FIM] as CopaId[]) {
+    const cop = c.copas?.[id], nc = c.selecao?.naTorneio?.[id], nat = idSelecao(j.nacionalidade);
+    if (!cop || !nc || !c.selecao) continue;
+    const campeao = cop.campeao === nat, sel = selecaoDe(pacote, j.nacionalidade)!, nomeC = COPAS[id].nome;
+    const fase = campeao ? "Campeão" : id === "FIN" ? "Vice" : NOME_FASE[cop.chegou[nat]] ?? "Fase de grupos";
+    c.selecao.copas.push({ ano: r.ano, fase, jogos: nc.jogos, gols: nc.gols, campeao, id });
+    (r.extras ??= []).push({ id, nome: nomeC, fase, campeao, jogos: nc.jogos, gols: nc.gols, assist: nc.assist });
+    if (campeao) {
+      const nomeT = `Taça da ${nomeC} ${r.ano}`;
+      receberReliquias(s, [{ conquista: `trofeu-copa-${id}`, reliquia: { id: `rel-trofeu-copa-${id}-${r.ano}`, chave: `trofeu-copa-${id}`, tipo: "trofeu", nome: nomeT, legenda: `${sel.nome} · ${nomeC} ${r.ano}`, ano: r.ano, cores: id === "COP" ? ["#E3B341", "#B8892B"] : [COPAS[id].cores[1], COPAS[id].cores[0]], modelo: "taca" } }], ev);
+      r.premios.push(nomeT); c.fama = clamp(c.fama + ({ COP: 20, EUR: 12, AME: 12, AFR: 8, ASI: 8, FIN: 6 } as Record<string, number>)[id], 0, 100);
+      noticia(s, "jogo", id === "COP" ? `${sel.nome} campeã do mundo!` : `${sel.nome} campeã da ${nomeC}!`, `${j.apelido} levanta a ${nomeC} ${r.ano}: ${nc.jogos} ${nc.jogos === 1 ? "jogo" : "jogos"} e ${nc.gols} gols.`, { k: "trofeu" });
+    } else noticia(s, "jogo", `Fim de ${nomeC} para a ${sel.nome}`, `${sel.nome}: ${fase.toLowerCase()}. ${j.apelido} fez ${nc.jogos} ${nc.jogos === 1 ? "jogo" : "jogos"} e ${nc.gols} gols. Campeã: ${infoClube(pacote, cop.campeao ?? "")?.nome ?? "–"}.`);
+  }
   // prêmios do mundo: cada júri vota do seu jeito (veja premios-mundo.ts)
   premiosDoMundo(pacote, s, r, ev);
+  if (c.selecao) { c.selecao.naTorneio = undefined; c.selecao.naCopa = undefined; }
   // tabela final (vale para as vagas das copas da próxima temporada)
   c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
   c.notasRodada = undefined;

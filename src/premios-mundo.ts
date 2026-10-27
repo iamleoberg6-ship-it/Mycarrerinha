@@ -17,8 +17,8 @@ export interface ContextoPremios {
   campeaoLiga: Record<string, string | undefined>;
   /** até onde o clube foi em cada copa ("campeao" para o campeão) */
   faseCopa: (copa: string, clubeId: string) => string | undefined;
-  /** até onde a seleção do jogador foi na Copa do Mundo (só quem foi convocado) */
-  faseCopaDoMundo: (x: Candidato) => string | undefined;
+  /** até onde a seleção do jogador foi num torneio de seleções (Copa do Mundo, Eurocopa...), só para quem foi convocado */
+  faseSelecao: (copa: string, x: Candidato) => string | undefined;
   regiaoLiga: (ligaId: string) => string;
   nivelLiga: (ligaId: string) => number;
   confederacao: (pais: string) => string;
@@ -31,19 +31,20 @@ interface Juri {
   /** quanto vale a temporada fora da Europa para esse júri (os prêmios mundiais olham mais para lá) */
   foraEuropa?: number;
 }
-const TODAS = { UCL: 1, LIB: 0.5, ACL: 0.25, CON: 0.25, MUN: 0.45, INT: 0.15, COP: 1.1 };
+const SELECOES_IDS = new Set(["COP", "EUR", "AME", "AFR", "ASI", "FIN"]);
+const TODAS = { UCL: 1, LIB: 0.5, ACL: 0.25, CON: 0.25, MUN: 0.45, INT: 0.15, COP: 1.1, EUR: 0.7, AME: 0.6, AFR: 0.3, ASI: 0.2, FIN: 0.15 };
 const JURIS: Juri[] = [
   // jornalistas do mundo todo: temporada e títulos grandes
   { id: "BOLA", nome: "Bola de Ouro", quantos: 10, pool: () => true, indiv: 1, fama: 0.45, liga: 1, copas: TODAS, humor: 1.8, foraEuropa: 0.75 },
   // técnicos e capitães das seleções: pesa mais o nome e a Copa
   { id: "BEST", nome: "The Best da FIFA", quantos: 3, pool: () => true, indiv: 0.9, fama: 0.8, liga: 0.9, copas: { ...TODAS, UCL: 0.85, MUN: 0.6, COP: 1 }, humor: 2, foraEuropa: 0.75 },
   // jornalistas europeus e técnicos da Champions: só quem joga na Europa, e a Champions vale muito
-  { id: "UEFA", nome: "Melhor da Europa", quantos: 3, pool: (x, c) => c.regiaoLiga(x.ligaId) === "EUR", indiv: 1.05, fama: 0.35, liga: 0.8, copas: { UCL: 1.5, COP: 0.45 }, humor: 1.6 },
+  { id: "UEFA", nome: "Melhor da Europa", quantos: 3, pool: (x, c) => c.regiaoLiga(x.ligaId) === "EUR", indiv: 1.05, fama: 0.35, liga: 0.8, copas: { UCL: 1.5, COP: 0.45, EUR: 0.55, FIN: 0.1 }, humor: 1.6 },
   // jornalistas das Américas: quem joga no continente, Libertadora em primeiro
-  { id: "REI", nome: "Rei da América", quantos: 3, pool: (x, c) => ["BRA", "SUL", "NAM"].includes(c.regiaoLiga(x.ligaId)), indiv: 1.1, fama: 0.35, liga: 1.1, copas: { LIB: 1.4, CON: 0.9, MUN: 0.7, INT: 0.3, COP: 0.3 }, humor: 1.6 },
-  { id: "ASIA", nome: "Melhor da Ásia", quantos: 3, pool: (x, c) => c.regiaoLiga(x.ligaId) === "ARA", indiv: 1.1, fama: 0.4, liga: 1.1, copas: { ACL: 1.4, MUN: 0.6, INT: 0.3, COP: 0.3 }, humor: 1.6 },
+  { id: "REI", nome: "Rei da América", quantos: 3, pool: (x, c) => ["BRA", "SUL", "NAM"].includes(c.regiaoLiga(x.ligaId)), indiv: 1.1, fama: 0.35, liga: 1.1, copas: { LIB: 1.4, CON: 0.9, MUN: 0.7, INT: 0.3, COP: 0.3, AME: 0.6, FIN: 0.15 }, humor: 1.6 },
+  { id: "ASIA", nome: "Melhor da Ásia", quantos: 3, pool: (x, c) => c.regiaoLiga(x.ligaId) === "ARA", indiv: 1.1, fama: 0.4, liga: 1.1, copas: { ACL: 1.4, MUN: 0.6, INT: 0.3, COP: 0.3, ASI: 0.8 }, humor: 1.6 },
   // africano de nascimento, jogue onde jogar
-  { id: "AFR", nome: "Melhor Africano", quantos: 3, pool: (x, c) => c.confederacao(x.nacionalidade) === "CAF", indiv: 1, fama: 0.45, liga: 1, copas: { ...TODAS, COP: 0.8 }, humor: 1.8, foraEuropa: 0.75 },
+  { id: "AFR", nome: "Melhor Africano", quantos: 3, pool: (x, c) => c.confederacao(x.nacionalidade) === "CAF", indiv: 1, fama: 0.45, liga: 1, copas: { ...TODAS, COP: 0.8, AFR: 1 }, humor: 1.8, foraEuropa: 0.75 },
   { id: "KOPA", nome: "Troféu Kopa (sub-21)", quantos: 3, pool: (x) => (x.idade ?? 99) <= 21, indiv: 1.1, fama: 0.3, liga: 0.8, copas: TODAS, humor: 1.5, foraEuropa: 0.75 },
   { id: "YASHIN", nome: "Troféu Yashin (goleiro)", quantos: 3, pool: (x) => x.posicao === "GOL", indiv: 1, fama: 0.4, liga: 1, copas: TODAS, humor: 1.2, foraEuropa: 0.75 },
 ];
@@ -61,7 +62,7 @@ function pontos(x: Candidato, j: Juri, ctx: ContextoPremios, rng: RNG): number {
   let p = indiv * prest * j.indiv + (x.ovr - 78) * j.fama;
   if (ctx.campeaoLiga[x.ligaId] === x.clubeId) p += 4 * prest * j.liga;
   for (const [copa, peso] of Object.entries(j.copas)) {
-    const f = copa === "COP" ? ctx.faseCopaDoMundo(x) : ctx.faseCopa(copa, x.clubeId);
+    const f = SELECOES_IDS.has(copa) ? ctx.faseSelecao(copa, x) : ctx.faseCopa(copa, x.clubeId);
     if (f) p += (VALOR_FASE[f] ?? 0) * peso;
   }
   return p + rng.normal(0, j.humor);

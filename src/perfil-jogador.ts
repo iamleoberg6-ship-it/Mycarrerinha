@@ -132,6 +132,11 @@ export interface Trofeu { nome: string; modelo: string; cores: [string, string];
 const OURO: [string, string] = ["#E3B341", "#9A7420"], PRATA: [string, string] = ["#C9CCD1", "#7F8389"];
 const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
   [/^Taça da Copa do Mundo/, "Copa do Mundo", "taca", OURO],
+  [/^Taça da Eurocopa/, "Eurocopa", "taca", OURO],
+  [/^Taça da Copa América/, "Copa América", "taca", OURO],
+  [/^Taça da Copa Africana/, "Copa Africana de Nações", "taca", OURO],
+  [/^Taça da Copa da Ásia/, "Copa da Ásia", "taca", OURO],
+  [/^Taça da Finalíssima/, "Finalíssima", "taca", OURO],
   [/^Bola de Ouro/, "Bola de Ouro", "bola", OURO],
   [/^The Best/, "The Best da FIFA", "estrela", OURO],
   [/^Melhor da Europa/, "Melhor da Europa", "placa", OURO],

@@ -11,7 +11,8 @@ import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstad
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
 import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
-import { convocado, participantesCopa, escalacaoSelecao } from "../src/jogo.js";
+import { convocado, participantesCopa, escalacaoSelecao, participantesTorneio } from "../src/jogo.js";
+import { ehTorneioContinental, ehFinalissima } from "../src/copas.js";
 import { premiosDoAno, type ContextoPremios } from "../src/premios-mundo.js";
 import type { Candidato } from "../src/mundo.js";
 import { infoLiga } from "../src/ligas.js";
@@ -1018,7 +1019,7 @@ teste("Prêmios do mundo: Bola de Ouro, Melhor da Europa, Rei da América... cad
   const cand = (nome: string, ligaId: string, clubeId: string, nota: number, gols: number, ovr: number, extra: Partial<Candidato> = {}): Candidato => ({ nome, ligaId, clubeId, posicao: "ATA", nota, gols, assist: 5, jogos: 30, idade: 26, ovr, nacionalidade: "BRA", minimo: 19, ...extra });
   const base = [cand("Craque Europa", "ENG1", "EN-MCI", 7.6, 25, 90), cand("Segundo Europa", "ESP1", "ES-RMA", 7.5, 22, 89), cand("Craque Brasil", "BRA1", "PAL", 7.7, 24, 82), cand("Goleiro", "ITA1", "IT-INT", 7.45, 0, 87, { posicao: "GOL" }), cand("Joia", "GER1", "DE-FCB", 7.3, 12, 80, { idade: 19 })];
   for (let i = 0; i < 40; i++) base.push(cand(`Jogador ${i}`, ["ENG1", "ESP1", "ITA1", "BRA1", "ARG1"][i % 5], `X${i}`, 6.8 + (i % 7) * 0.05, 5 + (i % 9), 78 + (i % 6), { posicao: ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA", "GOL"][i % 7] }));
-  const ctx = (sem: string, extra: Partial<ContextoPremios> = {}): ContextoPremios => ({ semente: sem, ano: 2027, campeaoLiga: {}, faseCopa: () => undefined, faseCopaDoMundo: () => undefined, regiaoLiga: (id) => infoLiga(id).regiao, nivelLiga: (id) => infoLiga(id).nivel, confederacao, ...extra });
+  const ctx = (sem: string, extra: Partial<ContextoPremios> = {}): ContextoPremios => ({ semente: sem, ano: 2027, campeaoLiga: {}, faseCopa: () => undefined, faseSelecao: () => undefined, regiaoLiga: (id) => infoLiga(id).regiao, nivelLiga: (id) => infoLiga(id).nivel, confederacao, ...extra });
   let difere = 0, bolaEuropa = 0;
   for (let k = 0; k < 40; k++) {
     const p = premiosDoAno(base, ctx(`s${k}`)), v = (id: string) => p.premios.find((x) => x.id === id)?.ranking[0];
@@ -1046,6 +1047,29 @@ teste("Atlético Bilbau: só bascos, temporada após temporada (base, mercado e 
     assert.ok(baseDoClube(pacote, "ES-ATH").every((j) => j.basco));
   }
   sincronizarMundo(pacote, "", 0);
+});
+
+teste("Eurocopa, Copa América, Copa Africana e Copa da Ásia em 2028; Finalíssima entre os campeões em 2029", () => {
+  const w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60, pais = (id: string) => w.clube[id]?.pais ?? "";
+  const tam: Record<string, number> = { EUR: 16, AME: 16, AFR: 8, ASI: 8 };
+  const campeoes: Record<string, string> = {};
+  for (const id of ["EUR", "AME", "AFR", "ASI"] as const) {
+    const ps = participantesTorneio(pacote, id, 2);
+    assert.equal(new Set(ps).size, tam[id], id);
+    if (id === "EUR") { assert.ok(ps.every((x) => confederacao(pais(x)) === "UEFA")); assert.ok(ps.includes(idSelecao("ENG")) && ps.includes(idSelecao("SCO")), "sedes"); }
+    if (id === "AME") assert.equal(ps.filter((x) => confederacao(pais(x)) === "CONMEBOL").length, 10);
+    const e = novaCopa(id, 2, ps, forca, pais, (x) => confederacao(pais(x)), "tor"), r = new RNG(`tor${id}`);
+    for (let sem = 0; sem <= 46; sem++) rodarSemana(e, sem, forca, r);
+    assert.ok(e.campeao && ps.includes(e.campeao), id);
+    assert.equal(e.jogos.length, tam[id] === 16 ? 24 + 4 + 2 + 1 : 12 + 2 + 1);
+    campeoes[id] = e.campeao!;
+  }
+  const f = novaCopa("FIN", 3, [campeoes.EUR, campeoes.AME], forca, pais, (x) => confederacao(pais(x)), "fin"), r = new RNG("fin");
+  for (let sem = 0; sem <= 46; sem++) rodarSemana(f, sem, forca, r);
+  assert.ok(f.jogos.length === 1 && f.jogos[0].semana === 22 && f.jogos[0].neutro && [campeoes.EUR, campeoes.AME].includes(f.campeao!));
+  assert.ok(ehTorneioContinental(2) && ehFinalissima(3) && !ehTorneioContinental(4));
+  // confederações das seleções africanas certas (Senegal não é Europa)
+  assert.equal(confederacao("SEN"), "CAF"); assert.equal(participantesCopa(pacote, 4).filter((x) => confederacao(pais(x)) === "CAF").length >= 5, true);
 });
 
 console.log(`\n${ok} testes passaram`);

@@ -99,6 +99,11 @@ const SELECOES: [string, string, string, string[], number][] = [
   ["KOR", "Seleção Sul-Coreana", "Tigres da Ásia", ["#C8102E", "#0B2F7A"], 78], ["KSA", "Seleção Saudita", "Falcões Verdes", ["#0B7A3B", "#FFFFFF"], 72],
   ["AUS", "Seleção Australiana", "Socceroos", ["#F5C400", "#0B7A3B"], 74], ["IRN", "Seleção Iraniana", "Team Melli", ["#FFFFFF", "#C8102E"], 75],
   ["QAT", "Seleção do Catar", "Al-Annabi", ["#7A1E2B", "#FFFFFF"], 70], ["NZL", "Seleção Neozelandesa", "All Whites", ["#FFFFFF", "#111111"], 66],
+  ["BOL", "Seleção Boliviana", "La Verde", ["#0B7A3B", "#FFFFFF"], 68], ["VEN", "Seleção Venezuelana", "La Vinotinto", ["#7A1E2B", "#FFFFFF"], 71],
+  ["CRC", "Seleção Costarriquenha", "Los Ticos", ["#C8102E", "#0B2F7A"], 70], ["PAN", "Seleção Panamenha", "Los Canaleros", ["#C8102E", "#FFFFFF"], 71],
+  ["JAM", "Seleção Jamaicana", "Reggae Boyz", ["#F5C400", "#0B7A3B"], 69], ["HON", "Seleção Hondurenha", "Los Catrachos", ["#1C4FA1", "#FFFFFF"], 67],
+  ["MLI", "Seleção Malinesa", "Águias", ["#0B7A3B", "#F5C400"], 74], ["RSA", "Seleção Sul-Africana", "Bafana Bafana", ["#F5C400", "#0B7A3B"], 71],
+  ["IRQ", "Seleção Iraquiana", "Leões da Mesopotâmia", ["#FFFFFF", "#0B7A3B"], 70], ["UAE", "Seleção dos Emirados", "Al-Abyad", ["#FFFFFF", "#C8102E"], 68],
 ];
 export const idSelecao = (pais: string) => `NAT-${pais}`;
 export const temSelecao = (pais: string) => SELECOES.some((x) => x[0] === pais);
