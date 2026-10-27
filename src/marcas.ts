@@ -120,5 +120,11 @@ export function acessoriosAtivos(ativos: ContratoPatrocinio[] | undefined): Part
   return out;
 }
 
+/** Roupa de patrocinador fora de campo: boné (energético, senão material esportivo) e blusão (material, senão energético). */
+export function roupasPatro(ativos: ContratoPatrocinio[] | undefined): { bone?: Marca; blusao?: Marca } {
+  const ms = (ativos ?? []).map((k) => MARCA[k.marca]).filter(Boolean) as Marca[];
+  const mat = ms.find((m) => m.categoria === "material"), ene = ms.find((m) => m.categoria === "energetico");
+  return { bone: ene ?? mat, blusao: mat ?? ene };
+}
 /** Bônus do mês de um contrato por desempenho. */
 export const bonusDoMes = (c: ContratoPatrocinio, mes: { gols: number; assist: number; notas8: number }) => c.bonusGol * mes.gols + c.bonusAssist * mes.assist + c.bonusNota * mes.notas8;

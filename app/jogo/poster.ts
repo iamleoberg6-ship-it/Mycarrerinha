@@ -5,7 +5,8 @@ import type { Marca, Simbolo } from "../../src/marcas";
 const DISPLAY = "'Big Shoulders Display', 'Barlow', sans-serif", TEXTO = "'Barlow', sans-serif";
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-/** Ícone do logo num quadro de 40×40. */
+/** Ícone do logo num quadro de 40×40 (também vai no boné e no blusão do patrocinador). */
+export const simboloMarca = (m: Marca, cor: string, cor2: string) => simbolo(m.simbolo, cor, cor2, m.nome[0]);
 function simbolo(s: Simbolo, c: string, c2: string, letra: string): string {
   switch (s) {
     case "onda": return `<path d="M3 24 Q11 12 20 22 T37 18" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`;

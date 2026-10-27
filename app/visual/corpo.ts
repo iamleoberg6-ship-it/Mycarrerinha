@@ -250,12 +250,14 @@ export interface OpcoesCorpo { aparencia: Partial<Aparencia> | null; visual: Vis
   /** relógio de patrocinador (fora de campo, pulso esquerdo) */
   relogio?: { pulseira: string; mostrador: string } | null }
 export function svgCorpo(o: OpcoesCorpo): string {
-  const ap = o.aparencia ?? {}, v = o.visual, g = geometria(v, o.alturaCm ?? 178);
+  // blusão de patrocinador: fora de campo vira o moletom, nas cores da marca, com o símbolo no peito
+  const blusao = o.traje === "casual" ? o.aparencia?.blusaoPatro ?? null : null;
+  const ap = o.aparencia ?? {}, v = blusao ? { ...o.visual, casual: "moletom" as const } : o.visual, g = geometria(v, o.alturaCm ?? 178);
   const pele = PELES[ap.pele ?? 3], sombraPele = mistura(pele, "#2A1206", 0.28);
   const kit = o.kit ?? { cor1: "#C8102E", cor2: "#FFFFFF", padrao: "lisa", numero: "10" };
   const jogo = o.traje === "jogo";
   const largo = jogo ? v.caimento === "largo" : v.casual === "moletom";
-  const corCasual = CORES_ROUPA[v.corCasual] ?? CORES_ROUPA[1];
+  const corCasual = blusao ? blusao.cor : CORES_ROUPA[v.corCasual] ?? CORES_ROUPA[1];
   const camisaCor = jogo ? kit.cor1 : v.casual === "jaqueta" ? "#4F6E9C" : corCasual;
   const camisaCor2 = jogo ? kit.cor2 : escurecer(camisaCor, 0.78);
   const claroDemais = (c: string) => luz(c) > 0.86;
@@ -405,6 +407,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   } else {
     partes.push(`<path d="M123 230 Q150 250 177 230" stroke="${camisaCor2}" stroke-width="5" fill="none"/><path d="M123 230 Q150 250 177 230" stroke="${TINTA}" stroke-width="1.4" fill="none"/>`);
   }
+  if (blusao) partes.push(`<path d="M${150 - g.peito + 6} 330 H${150 + g.peito - 6}" stroke="${blusao.detalhe}" stroke-width="5" opacity=".9"/><g transform="translate(${150 + g.peito * 0.3 - 14} 258) scale(.75)">${blusao.logo}</g>`);
   if (!jogo && ap.fone) partes.push(foneNoPescoco(ap.fone.cor, ap.fone.detalhe, 6));
   return `<svg viewBox="0 0 300 ${g.altura}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Jogador de corpo inteiro">${o.fundo ?? ""}${partes.join("")}</svg>`;
 }

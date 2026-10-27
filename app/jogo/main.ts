@@ -23,7 +23,7 @@ import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, 
 import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
-import { cartazPatrocinio, logoSvg } from "./poster";
+import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia, capaVideogame } from "../visual/cartazes";
 import { svgEscudo } from "../visual/escudos";
@@ -60,7 +60,7 @@ import { AGENTE_INFO, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClau
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
 import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, luminancia, type Aparencia } from "../criacao/avatar";
-import { acessoriosAtivos, type Marca } from "../../src/marcas";
+import { acessoriosAtivos, roupasPatro, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
 import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visual/torneios";
 import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota, catEvento } from "./visuais";
@@ -115,8 +115,23 @@ function apDe(s: Save, forcar?: Marca): Aparencia {
   const o = ac.oculos, f = ac.fone;
   ap.oculosSol = o?.tipo === "oculos" ? { modelo: o.modelo, armacao: o.armacao, lente: o.lente } : null;
   ap.fone = f?.tipo === "fone" ? { cor: f.cor, detalhe: f.detalhe } : null;
+  // boné e blusão das marcas de material esportivo e de energético
+  const v = visualDe(s.jogador), rp = roupasPatro(s.carreira.patrocinios);
+  const bone = forcar && (forcar.categoria === "material" || forcar.categoria === "energetico") ? forcar : v.semAcessorioPatro || v.semBonePatro ? undefined : rp.bone;
+  const blusao = forcar && (forcar.categoria === "material" || forcar.categoria === "energetico") ? forcar : v.semAcessorioPatro || v.semBlusaoPatro ? undefined : rp.blusao;
+  ap.bonePatro = bone ? { cor: bone.cores[0], aba: corAba(bone), logo: simboloMarca(bone, bone.cores[1], bone.cores[0]) } : null;
+  ap.blusaoPatro = blusao ? { cor: blusao.cores[0], detalhe: blusao.cores[1], logo: simboloMarca(blusao, blusao.cores[1], blusao.cores[0]) } : null;
   return ap;
 }
+/** Chips do boné e do blusão de patrocinador na tela de aparência. */
+function roupaPatroHtml(s: Save, v: ReturnType<typeof visualDe>): string {
+  const rp = roupasPatro(s.carreira.patrocinios);
+  if (!rp.bone && !rp.blusao) return `<p class="sub">Fechando com uma marca de material esportivo ou de energético, chegam boné e blusão da marca para usar fora de campo.</p>`;
+  const chip = (k: "semBonePatro" | "semBlusaoPatro", nome: string, m: Marca) => `<button class="chip${v[k] ? "" : " ativo"}" data-vis="${k}" data-val="${v[k] ? "" : "1"}">${nome} ${esc(m.nome)}${v[k] ? " (guardado)" : ""}</button>`;
+  return `<p class="sub">Roupa da marca, fora de campo (na foto e no corpo inteiro):</p><div class="chips" style="flex-wrap:wrap;margin-bottom:8px">${rp.bone ? chip("semBonePatro", "Boné", rp.bone) : ""}${rp.blusao ? chip("semBlusaoPatro", "Blusão", rp.blusao) : ""}</div>`;
+}
+/** Aba do boné: a segunda cor da marca, a não ser que suma contra a copa. */
+const corAba = (m: Marca) => (m.cores[1].toLowerCase() === m.cores[0].toLowerCase() ? m.cores[2] : m.cores[2] === "#FFFFFF" ? m.cores[0] : m.cores[1]);
 function relogioDe(s: Save) {
   const r = visualDe(s.jogador).semAcessorioPatro ? undefined : acessoriosAtivos(s.carreira.patrocinios).relogio;
   return r?.tipo === "relogio" ? { pulseira: r.pulseira, mostrador: r.mostrador } : null;
@@ -484,7 +499,7 @@ function blocoAparencia(s: Save): string {
     ((a.acessorio === "faixa" || a.acessorio === "bandana") ? coresAp("corAcessorio", CORES_ROUPA, NOMES_ROUPA, a.corAcessorio ?? 0) : "") +
     sub("Piercing") + chipsAp("piercing", PIERCINGS, a.piercing ?? "nenhum") +
     sub("Joias") + `<div class="chips" style="flex-wrap:wrap">${liga("brinco", "Brinco esquerdo", a.brinco)}${liga("brinco2", "Brinco direito", a.brinco2)}${liga("corrente", "Corrente", a.corrente)}</div>` +
-    sub("Dos patrocinadores") + (temPatro
+    sub("Dos patrocinadores") + roupaPatroHtml(s, v) + (temPatro
       ? `<p class="sub">${Object.values(ac).map((x) => x!.tipo === "oculos" ? "Óculos escuros" : x!.tipo === "relogio" ? "Relógio" : "Fone").join(", ")} por contrato (aparecem fora de campo).</p><div class="chips">${`<button class="chip${v.semAcessorioPatro ? "" : " ativo"}" data-vis="semAcessorioPatro" data-val="${v.semAcessorioPatro ? "" : "1"}">${v.semAcessorioPatro ? "Usar de novo" : "Usando"}</button>`}</div>`
       : `<p class="sub">Óculos, relógio e fone de marca só chegam quando você for muito seguido: as marcas de acessório procuram a partir de alguns milhões de seguidores.</p>`);
   else corpo = `<p class="sub">Ajuste fino do rosto (o que a genética não decidiu, a câmera decide).</p>` + sub("Formato") + chipsAp("rosto", ROSTOS, a.rosto) + sub("Olhos") + chipsAp("formatoOlho", OLHOS, a.formatoOlho) + sub("Nariz") + chipsAp("nariz", NARIZES, a.nariz) + sub("Boca") + chipsAp("boca", BOCAS, a.boca);
@@ -2086,7 +2101,7 @@ document.addEventListener("click", (ev) => {
   }
   else if (d.vis && save) {
     const v = visualDe(save.jogador) as unknown as Record<string, unknown>;
-    v[d.vis] = d.vis === "corCasual" || d.vis === "corMunhequeira" ? +d.val! : d.vis === "semAcessorioPatro" ? !!d.val : d.val; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+    v[d.vis] = d.vis === "corCasual" || d.vis === "corMunhequeira" ? +d.val! : ["semAcessorioPatro", "semBonePatro", "semBlusaoPatro"].includes(d.vis) ? !!d.val : d.val; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   } else if (d.ap && save) {
     const ap = (save.jogador.aparencia ??= { ...APARENCIA_PADRAO }) as unknown as Record<string, unknown>;
     ap[d.ap] = ["corCabelo", "corAcessorio"].includes(d.ap) ? +d.val! : ["brinco", "brinco2", "corrente"].includes(d.ap) ? d.val === "1" : d.val;

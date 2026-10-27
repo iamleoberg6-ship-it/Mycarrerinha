@@ -32,6 +32,9 @@ export interface Aparencia {
   oculosSol?: OculosSol | null;
   /** fone de patrocinador pendurado no pescoço (só fora de campo) */
   fone?: { cor: string; detalhe: string } | null;
+  /** boné e blusão de patrocinador (só fora de campo): cores e o símbolo da marca (SVG num quadro 40×40) */
+  bonePatro?: { cor: string; aba: string; logo: string } | null;
+  blusaoPatro?: { cor: string; detalhe: string; logo: string } | null;
 }
 
 export const PELES = ["#F8DCC4", "#F0C29E", "#E2A77D", "#C98C63", "#A66A43", "#8A5534", "#6B3F24", "#4A2A18"];
@@ -600,6 +603,29 @@ function acessorioCabeca(tipo: AcessorioCabeca, f: Forma, cor: string): string {
   }
   return "";
 }
+/** Cabelo alto não cabe embaixo do boné: vira um corte baixo da mesma cor (o comprido continua aparecendo atrás). */
+const SOB_BONE: Partial<Record<Cabelo, Cabelo>> = { blackpower: "crespo", topete: "curto", moicano: "raspado", coque: "curto", flattop: "degrade", franja: "curto", undercut: "curto", risco: "degrade" };
+/** Boné de patrocinador: copa em seis gomos, aba curva por cima da testa e o símbolo da marca na frente. */
+function bonePatro(f: Forma, b: { cor: string; aba: string; logo: string }): string {
+  const faixa = f.T + 30, w = f.w100 + 5, topo = f.T - 12;
+  const copa = `M${f1(150 - w)} ${faixa} C${f1(150 - w)} ${topo + 6} ${f1(150 - w * 0.55)} ${topo} 150 ${topo} C${f1(150 + w * 0.55)} ${topo} ${f1(150 + w)} ${topo + 6} ${f1(150 + w)} ${faixa} Q150 ${faixa - 7} ${f1(150 - w)} ${faixa} Z`;
+  const aba = `M${f1(150 - w - 4)} ${faixa - 1} Q150 ${faixa - 9} ${f1(150 + w + 4)} ${faixa - 1} Q${f1(150 + w * 0.72)} ${faixa + 15} 150 ${faixa + 17} Q${f1(150 - w * 0.72)} ${faixa + 15} ${f1(150 - w - 4)} ${faixa - 1} Z`;
+  const gomos = `<path d="M150 ${topo} L150 ${faixa - 7} M${f1(150 - w * 0.5)} ${topo + 4} Q${f1(150 - w * 0.62)} ${faixa - 14} ${f1(150 - w * 0.66)} ${faixa - 4} M${f1(150 + w * 0.5)} ${topo + 4} Q${f1(150 + w * 0.62)} ${faixa - 14} ${f1(150 + w * 0.66)} ${faixa - 4}" stroke="${TINTA}" stroke-opacity=".35" stroke-width="1.3" fill="none"/>`;
+  const luz = `<path d="M${f1(150 - w * 0.7)} ${topo + 14} Q${f1(150 - w * 0.4)} ${topo + 2} 140 ${topo + 2}" stroke="#fff" stroke-opacity=".25" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  return contorno(copa, b.cor) + luz + gomos + `<g transform="translate(136 ${topo + 8}) scale(.7)">${b.logo}</g>` + contorno(aba, b.aba)
+    + `<path d="M${f1(150 - w * 0.8)} ${faixa + 4} Q150 ${faixa + 11} ${f1(150 + w * 0.8)} ${faixa + 4}" stroke="${TINTA}" stroke-opacity=".3" stroke-width="1.2" fill="none"/><circle cx="150" cy="${topo + 1}" r="3.2" fill="${b.cor}" stroke="${TINTA}" stroke-width="1.4"/>`;
+}
+/** Blusão de patrocinador: moletom com capuz nas cores da marca e o símbolo no peito. */
+function blusaoPatroSvg(b: { cor: string; detalhe: string; logo: string }, pele: string, sombraPele: string, hach: string): string {
+  const s = escurecer(b.cor, 0.78), id = novoId("bl");
+  const pescoco = `<path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>`;
+  const capuz = "M96 250 C92 218 116 202 150 202 C184 202 208 218 204 250 C190 238 172 232 150 232 C128 232 110 238 96 250 Z";
+  return `<path d="${capuz}" fill="${s}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>` + pescoco
+    + `<clipPath id="${id}"><path d="${TRONCO_RETO}"/></clipPath><path d="${TRONCO_RETO}" fill="${b.cor}"/><g clip-path="url(#${id})">${sombrasTronco(hach)}<path d="M60 300 L240 300" stroke="${b.detalhe}" stroke-width="5" opacity=".9"/></g><path d="${TRONCO_RETO}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`
+    + `<path d="M118 226 C130 240 170 240 182 226" stroke="${s}" stroke-width="7" fill="none"/><path d="M118 226 C130 240 170 240 182 226" stroke="${TINTA}" stroke-width="1.6" fill="none"/>`
+    + `<path d="M138 238 L136 270 M162 238 L164 270" stroke="${b.detalhe}" stroke-width="2.6" stroke-linecap="round"/>`
+    + `<g transform="translate(170 256) scale(.85)">${b.logo}</g>`;
+}
 /** Óculos: de grau (aro fino, lente clara) ou escuros de patrocinador. */
 function oculos(wO: number, sol: OculosSol | null | undefined): string {
   const haste = (cor: string, w: number) => `<path d="M114 137 L${f1(150 - wO + 1)} 135 M186 137 L${f1(150 + wO - 1)} 135" stroke="${cor}" stroke-width="${w}" stroke-linecap="round"/>`;
@@ -669,7 +695,7 @@ export function svgFoto(o: OpcoesFoto): string {
     ? `<path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>`
     : silhueta
     ? uniforme({ cor1: "#1E2E28", cor2: "#18261F", estilo: "lisa" }, undefined, pele, sombraPele, hach)
-    : o.traje === "social" ? roupaSocial(a.roupaSocial, a.corSocial, pele, sombraPele, hach)
+    : o.traje === "social" ? (a.blusaoPatro ? blusaoPatroSvg(a.blusaoPatro, pele, sombraPele, hach) : roupaSocial(a.roupaSocial, a.corSocial, pele, sombraPele, hach))
     : uniforme(o.camisa ?? CAMISA_PADRAO, o.numero, pele, sombraPele, hach);
   const detalhes = silhueta ? "" : [
     a.sardas ? [[118, 160], [125, 164], [132, 160], [168, 160], [175, 164], [182, 160], [121, 168], [179, 168]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${mistura(pele, "#5A2A12", 0.5)}"/>`).join("") : "",
@@ -679,7 +705,8 @@ export function svgFoto(o: OpcoesFoto): string {
     piercing(a.piercing),
   ].join("");
   const fora = !silhueta && (o.fora || o.traje === "social");
-  const naCabeca = silhueta ? "" : acessorioCabeca(a.acessorio ?? "nenhum", f, CORES_ROUPA[a.corAcessorio ?? 0] ?? CORES_ROUPA[0]);
+  const comBone = fora && !!a.bonePatro, cabeloV: Cabelo = comBone ? SOB_BONE[a.cabelo] ?? a.cabelo : a.cabelo;
+  const naCabeca = silhueta ? "" : comBone ? bonePatro(f, a.bonePatro!) : acessorioCabeca(a.acessorio ?? "nenhum", f, CORES_ROUPA[a.corAcessorio ?? 0] ?? CORES_ROUPA[0]);
   // escuros só fora de campo; de grau em tudo, menos no corpo inteiro de uniforme
   const oculosHtml = silhueta ? "" : fora && a.oculosSol ? oculos(wO, a.oculosSol) : a.acessorio === "oculos" && !(o.soCabeca && !o.fora) ? oculos(wO, null) : "";
   const fone = fora && !o.soCabeca && a.fone ? foneNoPescoco(a.fone.cor, a.fone.detalhe) : "";
@@ -693,7 +720,7 @@ export function svgFoto(o: OpcoesFoto): string {
   return `<svg viewBox="0 0 ${LARG} ${ALT}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto de perfil do jogador">
   ${defs}${cenario}
   <g${silhueta ? ' opacity="0.94"' : ""}>
-  ${cabeloAtras(a.cabelo, f, cor)}
+  ${cabeloAtras(cabeloV, f, cor)}
   ${corpo}
   ${silhueta ? "" : a.corrente && o.traje === "social" ? `<path d="M126 226 Q150 270 174 226" stroke="#D9B44A" stroke-width="2.6" fill="none"/><circle cx="150" cy="252" r="4" fill="#D9B44A" stroke="${TINTA}" stroke-width="1.2"/>` : ""}
   ${o.pescoco ?? ""}
@@ -708,7 +735,7 @@ export function svgFoto(o: OpcoesFoto): string {
   </g>
   ${silhueta ? "" : barba(a.barba, f, rostoD, a.boca, a.nariz, cor, pele)}
   <path d="${rostoD}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
-  ${cabeloFrente(a.cabelo, f, cor, pele)}
+  ${cabeloFrente(cabeloV, f, cor, pele)}
   ${naCabeca}
   ${rosto}
   ${oculosHtml}

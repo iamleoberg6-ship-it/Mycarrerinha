@@ -18,6 +18,8 @@ export interface Visual {
   munhequeira?: Munhequeira; corMunhequeira?: number;
   /** esconde os acessórios de patrocinador (óculos, relógio, fone) */
   semAcessorioPatro?: boolean;
+  /** tira só o boné ou só o blusão do patrocinador */
+  semBonePatro?: boolean; semBlusaoPatro?: boolean;
 }
 export const VISUAL_PADRAO: Visual = { fisico: "atletico", manga: "curta", caimento: "justo", meiao: "alto", casual: "camiseta", corCasual: 1, perna: "bermuda", tatuagens: {} };
 
