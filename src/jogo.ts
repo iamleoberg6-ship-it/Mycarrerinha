@@ -1,5 +1,6 @@
 // A carreira jogável, semana a semana. Tudo que o jogo precisa guardar fica num Save (JSON).
 // Cada sorteio usa uma semente derivada do save + semana, então recarregar a página não muda resultados.
+import { TACA_DO_TORNEIO } from "./trofeus.js";
 import { RNG, clamp } from "./rng.js";
 import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos, type Grupo, type Intensidade, type Participacao, type Posicao } from "./atributos.js";
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
@@ -2165,7 +2166,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     noticia(s, "clube", `Prêmios da ${infoLiga(c.ligaId).curto} ${r.ano}`, `Craque: ${nm(pl.craque)}. Artilheiro: ${nm(pl.artilheiro)}, ${pl.artilheiro?.gols ?? 0} gols. Garçom: ${nm(pl.garcom)}, ${pl.garcom?.assist ?? 0} assistências.${pl.revelacao ? ` Revelação: ${nm(pl.revelacao)}.` : ""}`, { k: "trofeu" });
   }
   const premios = premiosDaTemporada(rngDe(s, "premios"), { maxGols: artilheiro?.valor, maxAssist: garcom?.valor, ...(pl ? { craque: !!pl.craque?.eu, naSelecao: pl.selecao.some((x) => x.eu), revelacao: !!pl.revelacao?.eu } : {}), ano: r.ano, idade: j.idade, clubeId: c.clubeId, clubeNome: cc.nome, cores: cc.cores, numero: j.numero,
-    padrao: infoClube(pacote, c.clubeId).padrao, ligaCurto: infoLiga(c.ligaId).curto, recemContratado: c.chegadaClube === c.temporada,
+    padrao: infoClube(pacote, c.clubeId).padrao, ligaCurto: infoLiga(c.ligaId).curto, ligaId: c.ligaId, recemContratado: c.chegadaClube === c.temporada,
     jogos: r.jogos, gols: r.gols, assist: r.assist, nota: r.nota, titulo, base: r.base, golsBase: c.stats.baseGols, notaBase: media(c.stats.baseNotas ?? []),
     temporadasCheias: c.historico.filter((h) => h.jogos >= 15).length });
   receberReliquias(s, premios, ev);
@@ -2191,7 +2192,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     if (extra) (r.extras ??= []).push(camp); else r[estadual ? "estadual" : "copa"] = camp;
     if (campeao && sc.jogos >= (extra ? 1 : 3)) {
       const nomeT = `Taça ${COPAS[ec.id].prep} ${COPAS[ec.id].curto} ${r.ano}`;
-      receberReliquias(s, [{ conquista: `trofeu-copa-${ec.id}`, reliquia: { id: `rel-trofeu-copa-${ec.id}-${r.ano}`, chave: `trofeu-copa-${ec.id}`, tipo: "trofeu", nome: nomeT, legenda: `${cc.nome} · ${COPAS[ec.id].nome} ${r.ano}`, ano: r.ano, cores: ["#E3B341", "#B8892B"], modelo: "taca" } }], ev);
+      receberReliquias(s, [{ conquista: `trofeu-copa-${ec.id}`, reliquia: { id: `rel-trofeu-copa-${ec.id}-${r.ano}`, chave: `trofeu-copa-${ec.id}`, tipo: "trofeu", nome: nomeT, legenda: `${cc.nome} · ${COPAS[ec.id].nome} ${r.ano}`, ano: r.ano, cores: ["#E3B341", "#B8892B"], modelo: TACA_DO_TORNEIO[ec.id] ?? "taca" } }], ev);
       r.premios.push(nomeT);
       const bonus = ec.id === "MUN" ? 14 : estadual ? 3 : 8;
       c.fama = clamp(c.fama + bonus, 0, 100); c.torcida = clamp((c.torcida ?? 50) + bonus * 1.5, 0, 100);
@@ -2207,7 +2208,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     (r.extras ??= []).push({ id, nome: nomeC, fase, campeao, jogos: nc.jogos, gols: nc.gols, assist: nc.assist });
     if (campeao) {
       const nomeT = `Taça da ${nomeC} ${r.ano}`;
-      receberReliquias(s, [{ conquista: `trofeu-copa-${id}`, reliquia: { id: `rel-trofeu-copa-${id}-${r.ano}`, chave: `trofeu-copa-${id}`, tipo: "trofeu", nome: nomeT, legenda: `${sel.nome} · ${nomeC} ${r.ano}`, ano: r.ano, cores: id === "COP" ? ["#E3B341", "#B8892B"] : [COPAS[id].cores[1], COPAS[id].cores[0]], modelo: "taca" } }], ev);
+      receberReliquias(s, [{ conquista: `trofeu-copa-${id}`, reliquia: { id: `rel-trofeu-copa-${id}-${r.ano}`, chave: `trofeu-copa-${id}`, tipo: "trofeu", nome: nomeT, legenda: `${sel.nome} · ${nomeC} ${r.ano}`, ano: r.ano, cores: id === "COP" ? ["#E3B341", "#B8892B"] : [COPAS[id].cores[1], COPAS[id].cores[0]], modelo: TACA_DO_TORNEIO[id] ?? "taca" } }], ev);
       r.premios.push(nomeT); c.fama = clamp(c.fama + ({ COP: 20, EUR: 12, AME: 12, AFR: 8, ASI: 8, FIN: 6 } as Record<string, number>)[id], 0, 100);
       noticia(s, "jogo", id === "COP" ? `${sel.nome} campeã do mundo!` : `${sel.nome} campeã da ${nomeC}!`, `${j.apelido} levanta a ${nomeC} ${r.ano}: ${nc.jogos} ${nc.jogos === 1 ? "jogo" : "jogos"} e ${nc.gols} gols.`, { k: "trofeu" });
     } else noticia(s, "jogo", `Fim de ${nomeC} para a ${sel.nome}`, `${sel.nome}: ${fase.toLowerCase()}. ${j.apelido} fez ${nc.jogos} ${nc.jogos === 1 ? "jogo" : "jogos"} e ${nc.gols} gols. Campeã: ${infoClube(pacote, cop.campeao ?? "")?.nome ?? "–"}.`);

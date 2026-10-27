@@ -1,5 +1,6 @@
 // Relíquias: camisas, bolas e troféus que a carreira vai liberando e que viram enfeite da casa.
 // Este arquivo diz o que existe, como cada uma é desbloqueada e com que cara ela fica.
+import { TACA_DO_TORNEIO } from "./trofeus.js";
 import type { RNG } from "./rng.js";
 import type { Reliquia } from "./casa.js";
 import { LIGA_INFO } from "./ligas.js";
@@ -121,7 +122,7 @@ export interface DadosTemporada {
   /** resultado da premiação da liga (comparado com todos os jogadores); sem ele, a régua sorteada de antes */
   craque?: boolean; naSelecao?: boolean; revelacao?: boolean;
   ano: number; idade: number; clubeId: string; clubeNome: string; cores: string[]; numero: string;
-  padrao?: string; ligaCurto?: string;
+  padrao?: string; ligaCurto?: string; ligaId?: string;
   /** primeira temporada no clube depois de uma transferência */
   recemContratado?: boolean;
   jogos: number; gols: number; assist: number; nota: number; titulo: boolean;
@@ -141,7 +142,7 @@ export function premiosDaTemporada(rng: RNG, d: DadosTemporada): Ganho[] {
   const ruido = (sd: number) => Math.max(-sd, Math.min(sd * 1.5, rng.normal(0, sd)));
   const alvoCraque = 7.25 + ruido(0.12), alvoSelecao = 6.95 + ruido(0.08);
   if (d.titulo) {
-    g.push(trofeu("trofeu-campeao", `Taça de campeão ${d.ano}`, `${d.clubeNome} · ${liga} ${d.ano}`, d.ano, "taca", OURO));
+    g.push(trofeu("trofeu-campeao", `Taça de campeão ${d.ano}`, `${d.clubeNome} · ${liga} ${d.ano}`, d.ano, TACA_DO_TORNEIO[d.ligaId ?? ""] ?? "taca", OURO));
     g.push({ conquista: "camisa-titulo", reliquia: { id: `rel-camisa-titulo-${d.ano}`, chave: "camisa-titulo", tipo: "camisa", nome: `Camisa do título ${d.ano}`, legenda: `${d.clubeNome} campeão · ${d.ano}`, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: d.padrao ?? padraoCamisa(d.clubeId), numero: d.numero } });
   }
   if (d.jogos >= 15 && d.gols >= alvoGols) g.push(trofeu("trofeu-artilheiro", `Artilheiro ${d.ano}`, `${d.gols} gols · ${liga} ${d.ano}`, d.ano, "chuteira", OURO));

@@ -717,6 +717,42 @@ export function trofeuSvg(x: number, y: number, modelo: string, cores: [string, 
       `<path d="M${f1(x - 8)} ${f1(y - 26)} h16 q0 12 -8 16 q-8 -4 -8 -16 Z" fill="${m}" ${tr}/>` +
       `<path d="M${f1(x - 8)} ${f1(y - 23)} q-6 0 -5 5 q1 4 6 3 M${f1(x + 8)} ${f1(y - 23)} q6 0 5 5 q-1 4 -6 3" stroke="${s}" stroke-width="2" fill="none"/>` +
       `<path d="M${f1(x - 4)} ${f1(y - 24)} q0 7 3 10" stroke="${lz}" stroke-width="1.6" fill="none"/>`;
+    case "orelhas": return base(6, 4) +
+      `<path d="M${f1(x - 2.5)} ${f1(y - 4)} h5 v-6 h-5 Z" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 9)} ${f1(y - 27)} h18 q-1 15 -9 18 q-8 -3 -9 -18 Z" fill="${m}" ${tr}/>` +
+      `<path d="M${f1(x - 9)} ${f1(y - 23)} q-10 -1 -9 8 q1 7 9 6 M${f1(x + 9)} ${f1(y - 23)} q10 -1 9 8 q-1 7 -9 6" stroke="${s}" stroke-width="2.4" fill="none"/>` +
+      `<path d="M${f1(x - 4)} ${f1(y - 24)} q0 6 2 9" stroke="${lz}" stroke-width="1.5" fill="none"/>`;
+    case "globo": return base(5, 3) +
+      `<path d="M${f1(x - 1.5)} ${f1(y - 3)} L${f1(x - 1)} ${f1(y - 13)} H${f1(x + 1)} L${f1(x + 1.5)} ${f1(y - 3)} Z" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 6)} ${f1(y - 13)} q-4 -6 0 -12 M${f1(x + 6)} ${f1(y - 13)} q4 -6 0 -12" stroke="${s}" stroke-width="2" fill="none"/>` +
+      `<circle cx="${f1(x)}" cy="${f1(y - 23)}" r="9" fill="${m}" ${tr}/>` +
+      `<path d="M${f1(x - 9)} ${f1(y - 23)} h18 M${f1(x)} ${f1(y - 32)} q-5 9 0 18" stroke="${s}" stroke-width="1" fill="none"/>` +
+      `<circle cx="${f1(x - 3.5)}" cy="${f1(y - 27)}" r="2" fill="${lz}"/>`;
+    case "alcas": return base(5, 4) +
+      `<path d="M${f1(x - 1.5)} ${f1(y - 4)} h3 v-7 h-3 Z" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 6)} ${f1(y - 27)} h12 v9 q0 8 -6 9 q-6 -1 -6 -9 Z" fill="${m}" ${tr}/>` +
+      `<rect x="${f1(x - 9.5)}" y="${f1(y - 25)}" width="2.4" height="13" rx="1" fill="${s}" ${tr}/>` +
+      `<rect x="${f1(x + 7.1)}" y="${f1(y - 25)}" width="2.4" height="13" rx="1" fill="${s}" ${tr}/>` +
+      `<rect x="${f1(x - 5)}" y="${f1(y - 29)}" width="10" height="2.2" rx="0.6" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 3)} ${f1(y - 24)} q0 6 2 8" stroke="${lz}" stroke-width="1.4" fill="none"/>`;
+    case "fitas": return base(4, 4) +
+      `<path d="M${f1(x - 3)} ${f1(y - 4)} L${f1(x - 1)} ${f1(y - 14)} H${f1(x + 1)} L${f1(x + 3)} ${f1(y - 4)} Z" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 10)} ${f1(y - 17)} Q${f1(x)} ${f1(y - 36)} ${f1(x + 10)} ${f1(y - 17)} Q${f1(x)} ${f1(y - 2)} ${f1(x - 10)} ${f1(y - 17)} Z" fill="${m}" ${tr}/>` +
+      `<path d="M${f1(x - 7)} ${f1(y - 26)} Q${f1(x)} ${f1(y - 10)} ${f1(x + 7)} ${f1(y - 26)}" stroke="${s}" stroke-width="2.2" fill="none"/>` +
+      `<path d="M${f1(x - 4)} ${f1(y - 22)} Q${f1(x)} ${f1(y - 30)} ${f1(x + 4)} ${f1(y - 22)}" stroke="${lz}" stroke-width="1.2" fill="none"/>`;
+    case "bowl": return base(5, 4) +
+      `<path d="M${f1(x - 1)} ${f1(y - 4)} h2 v-4 h-2 Z" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 11)} ${f1(y - 21)} h22 q-1 12 -11 13 q-10 -1 -11 -13 Z" fill="${m}" ${tr}/>` +
+      `<path d="M${f1(x - 11)} ${f1(y - 18)} q-5 0 -4 4 q1 3 5 2 M${f1(x + 11)} ${f1(y - 18)} q5 0 4 4 q-1 3 -5 2" stroke="${s}" stroke-width="1.8" fill="none"/>` +
+      `<rect x="${f1(x - 5)}" y="${f1(y - 9)}" width="10" height="3" rx="1" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 6)} ${f1(y - 19)} q1 4 4 5" stroke="${lz}" stroke-width="1.3" fill="none"/>`;
+    case "coluna": return base(6, 4) +
+      `<rect x="${f1(x - 4)}" y="${f1(y - 27)}" width="8" height="22" fill="${m}" ${tr}/>` +
+      `<rect x="${f1(x - 5.5)}" y="${f1(y - 14)}" width="11" height="2.2" fill="${s}" ${tr}/>` +
+      `<rect x="${f1(x - 5.5)}" y="${f1(y - 21)}" width="11" height="2.2" fill="${s}" ${tr}/>` +
+      `<rect x="${f1(x - 6)}" y="${f1(y - 29)}" width="12" height="2.4" rx="0.6" fill="${s}" ${tr}/>` +
+      `<circle cx="${f1(x)}" cy="${f1(y - 33)}" r="2.8" fill="${s}" ${tr}/>` +
+      `<path d="M${f1(x - 2.5)} ${f1(y - 25)} v9" stroke="${lz}" stroke-width="1.2"/>`;
     case "bola": return base(5, 4) + `<path d="M${f1(x - 2.5)} ${f1(y - 4)} h5 l-1 -4 h-3 Z" fill="${s}" ${tr}/>` +
       `<circle cx="${f1(x)}" cy="${f1(y - 16)}" r="8" fill="${m}" ${tr}/><path d="M${f1(x - 8)} ${f1(y - 16)} q8 -4 16 0 M${f1(x)} ${f1(y - 24)} q-4 8 0 16" stroke="${s}" stroke-width="1" fill="none"/><circle cx="${f1(x - 3)}" cy="${f1(y - 19)}" r="2" fill="${lz}"/>`;
     case "chuteira": return base(6, 4) +
