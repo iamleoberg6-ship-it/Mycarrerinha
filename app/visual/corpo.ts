@@ -1,7 +1,7 @@
 // O jogador de corpo inteiro, no mesmo traço da foto (contorno preto, sombra chapada à direita).
 // A cabeça vem da foto (svgFoto com soCabeca); o resto é desenhado aqui: físico, uniforme do clube (manga curta ou
 // longa, justo ou largo, meião alto ou baixo, chuteira do patrocinador), roupa do dia a dia e tatuagens.
-import { svgFoto, PELES, CORES_ROUPA, escurecer, luminancia, type Aparencia } from "../criacao/avatar";
+import { svgFoto, foneNoPescoco, PELES, CORES_ROUPA, escurecer, luminancia, type Aparencia } from "../criacao/avatar";
 import type { Visual, AreaTatuagem } from "../../src/visual";
 import { tatuagemVisivel } from "../../src/visual";
 
@@ -94,6 +94,12 @@ function desenhoTatuagem(id: string): string {
     case "asas": return `<path d="M-1 0 Q-10 -12 -16 -6 Q-12 -4 -14 2 Q-8 0 -9 6 Q-4 2 -1 0 Z M1 0 Q10 -12 16 -6 Q12 -4 14 2 Q8 0 9 6 Q4 2 1 0 Z" fill="${TINTA_TAT}" fill-opacity=".85"/>`;
     case "data": return `<text x="0" y="0" transform="rotate(90)" text-anchor="middle" dominant-baseline="middle" font-family="Georgia, serif" font-size="8.5" letter-spacing="1" fill="${TINTA_TAT}">XII·IV·MMX</text>`;
     case "bola": return `<circle r="9" ${t} stroke-width="1.6"/><path d="M0 -4 L4 -1 L2.5 4 L-2.5 4 L-4 -1 Z" fill="${TINTA_TAT}"/><path d="M0 -4 V-9 M4 -1 L8.5 -3 M2.5 4 L5 8 M-2.5 4 L-5 8 M-4 -1 L-8.5 -3" ${t} stroke-width="1"/>`;
+    case "leao": return `<path d="${Array.from({ length: 16 }, (_, i) => { const a = (i * Math.PI) / 8, r = i % 2 ? 9 : 13; return `${i ? "L" : "M"}${f1(Math.cos(a) * r)} ${f1(Math.sin(a) * r)}`; }).join(" ")} Z" fill="${TINTA_TAT}" fill-opacity=".8"/><circle r="7" fill="#C98C63" stroke="${TINTA_TAT}" stroke-width="1.2"/><circle cx="-2.6" cy="-1.5" r="1" fill="${TINTA_TAT}"/><circle cx="2.6" cy="-1.5" r="1" fill="${TINTA_TAT}"/><path d="M-2 2 L0 4 L2 2 M0 4 V5.5" ${t} stroke-width="1.1"/>`;
+    case "cruz": return `<path d="M0 -15 V15 M-7 -6 H7" ${t} stroke-width="2.6"/><path d="M-9 -12 L-12 -15 M9 -12 L12 -15 M-11 0 L-15 0 M11 0 L15 0" ${t} stroke-width="1"/>`;
+    case "mae": return `<text x="0" y="-4" transform="rotate(90)" text-anchor="middle" dominant-baseline="middle" font-family="'Brush Script MT','Segoe Script',cursive" font-style="italic" font-size="12" fill="${TINTA_TAT}">Mãe</text><path d="M0 16 C-6 11 -5 7 -2.4 7 C-1 7 0 8.4 0 9.4 C0 8.4 1 7 2.4 7 C5 7 6 11 0 16 Z" fill="#B3263A" stroke="${TINTA_TAT}" stroke-width="1"/>`;
+    case "mandala": return `<circle r="11" ${t} stroke-width="1.3"/><circle r="6.5" ${t} stroke-width="1.2"/><circle r="2" fill="${TINTA_TAT}"/>${Array.from({ length: 12 }, (_, i) => { const a = (i * Math.PI) / 6; return `<circle cx="${f1(Math.cos(a) * 8.8)}" cy="${f1(Math.sin(a) * 8.8)}" r="1" fill="${TINTA_TAT}"/><path d="M${f1(Math.cos(a) * 11)} ${f1(Math.sin(a) * 11)} L${f1(Math.cos(a) * 14)} ${f1(Math.sin(a) * 14)}" ${t} stroke-width="1"/>`; }).join("")}`;
+    case "relogio": return `<circle cy="-8" r="9" fill="#FFFFFF" fill-opacity=".15" stroke="${TINTA_TAT}" stroke-width="1.5"/><path d="M0 -8 V-14 M0 -8 L4 -6" ${t} stroke-width="1.3"/><path d="M0 4 Q-2 14 1 22" ${t}/><circle cy="6" r="5" fill="#B3263A" stroke="${TINTA_TAT}" stroke-width="1.1"/>`;
+    case "trofeu": return `<path d="M-8 -14 H8 V-6 Q8 4 0 5 Q-8 4 -8 -6 Z" fill="${TINTA_TAT}" fill-opacity=".85"/><path d="M-8 -11 Q-14 -11 -12 -4 Q-10 0 -7 -1 M8 -11 Q14 -11 12 -4 Q10 0 7 -1" ${t} stroke-width="1.3"/><path d="M0 5 V11 M-6 12 H6 M-7 15 H7" ${t} stroke-width="2"/>`;
     default: return "";
   }
 }
@@ -211,8 +217,22 @@ function sombraLado(d: string, x0: number, x1: number, forca = 0.28): string {
   const id = `sl${(gradSeq++).toString(36)}`;
   return `<defs><linearGradient id="${id}g" gradientUnits="userSpaceOnUse" x1="${f1(x0)}" y1="0" x2="${f1(x1)}" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${forca}"/></linearGradient><clipPath id="${id}c"><path d="${d}"/></clipPath></defs><rect x="0" y="0" width="300" height="800" fill="url(#${id}g)" clip-path="url(#${id}c)"/>`;
 }
+/** Estampa de camisa florida: folhas e flores grandes, na cor de fundo da camisa. */
+function florida(fundo: string, x: number, y: number, w: number, h: number): string {
+  const folha = mistura(fundo, luminancia(fundo) > 0.5 ? "#2E6B3E" : "#7BC47F", 0.55), flor = luminancia(fundo) > 0.5 ? "#D9483B" : "#F2C14E";
+  let out = "";
+  for (let i = 0; i < 14; i++) {
+    const cx = x + ((i * 37) % 97) / 97 * w, cy = y + ((i * 53) % 89) / 89 * h;
+    out += i % 2
+      ? `<path d="M${f1(cx)} ${f1(cy)} q8 -10 18 -4 q-8 10 -18 4 Z" fill="${folha}" stroke="${TINTA}" stroke-width=".8"/>`
+      : `<g transform="translate(${f1(cx)} ${f1(cy)})">${[0, 72, 144, 216, 288].map((a) => `<ellipse rx="3.4" ry="6" transform="rotate(${a}) translate(0 -5)" fill="${flor}" stroke="${TINTA}" stroke-width=".7"/>`).join("")}<circle r="2" fill="#FFF4C2"/></g>`;
+  }
+  return out;
+}
 // ------------------------------------------------------------------ montagem
-export interface OpcoesCorpo { aparencia: Partial<Aparencia> | null; visual: Visual; alturaCm?: number; traje: "jogo" | "casual"; kit?: Kit; fundo?: string }
+export interface OpcoesCorpo { aparencia: Partial<Aparencia> | null; visual: Visual; alturaCm?: number; traje: "jogo" | "casual"; kit?: Kit; fundo?: string;
+  /** relógio de patrocinador (fora de campo, pulso esquerdo) */
+  relogio?: { pulseira: string; mostrador: string } | null }
 export function svgCorpo(o: OpcoesCorpo): string {
   const ap = o.aparencia ?? {}, v = o.visual, g = geometria(v, o.alturaCm ?? 178);
   const pele = PELES[ap.pele ?? 3], sombraPele = mistura(pele, "#2A1206", 0.28);
@@ -275,8 +295,10 @@ export function svgCorpo(o: OpcoesCorpo): string {
     partes.push(`<path d="${pelve}" fill="${corCalca}"/><path d="M150 ${camisa.bainha} L150 ${camisa.bainha + 38}" stroke="${TINTA}" stroke-width="1.4" opacity=".5"/>`);
   }
 
+  // capuz do moletom: deitado atrás do pescoço (o pescoço passa na frente; só as laterais aparecem)
+  if (!jogo && v.casual === "moletom") partes.push(`<path d="M108 240 C102 216 124 202 150 202 C176 202 198 216 192 240 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="2.4" stroke-linejoin="round"/><path d="M118 232 C118 218 134 210 150 210 C166 210 182 218 182 232" fill="none" stroke="${TINTA}" stroke-width="1.2" opacity=".45"/>`);
   // 3. cabeça (com pescoço e tatuagem do pescoço)
-  partes.push(svgFoto({ aparencia: { ...(ap as Aparencia) }, soCabeca: true, pescoco: vis("pescoco") ? tatuagemPescoco(tat.pescoco) : "" }).replace("<svg ", '<svg x="0" y="0" width="300" height="360" '));
+  partes.push(svgFoto({ aparencia: { ...(ap as Aparencia) }, soCabeca: true, fora: !jogo, pescoco: vis("pescoco") ? tatuagemPescoco(tat.pescoco) : "" }).replace("<svg ", '<svg x="0" y="0" width="300" height="360" '));
 
   // 4. braços, tatuagens dos antebraços e mãos
   const regata = !jogo && v.casual === "regata";
@@ -300,7 +322,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   }
   // 5. camisa: mangas e tronco
   const idK = `kt${gradSeq++}`;
-  const longa = jogo ? v.manga === "longa" : ["moletom", "social", "jaqueta"].includes(v.casual);
+  const longa = jogo ? v.manga === "longa" : ["moletom", "social", "jaqueta", "agasalho"].includes(v.casual);
   const folga = largo ? 5 : 0;
   const corManga = jogo && kit.padrao === "centro" ? kit.cor2 : camisaCor;
   if (!regata) g.bracos.forEach((b, i) => {
@@ -309,16 +331,33 @@ export function svgCorpo(o: OpcoesCorpo): string {
     if (jogo && ["listrasV", "listrasH"].includes(kit.padrao)) partes.push(`<g clip-path="url(#${idK}m${i})">${padraoKit(kit, g)}</g>`);
     partes.push(sombraLado(m.d, b.J[0] - b.lado * 8, b.J[0] + g.braco * 0.7, b.lado === 1 ? 0.32 : 0.14));
     // punho/barra da manga
-    if (jogo || ["moletom", "social"].includes(v.casual)) {
+    if (!jogo && v.casual === "agasalho") partes.push(`<g clip-path="url(#${idK}m${i})"><path d="M${f1(b.J[0] + b.lado * 4)} 250 L${f1(b.E[0] + b.lado * (g.antebraco / 2 + 2))} ${f1(b.E[1])} L${f1(b.W[0] + b.lado * (g.antebraco * 0.36 + 2))} ${f1(b.W[1])}" stroke="#F2F0EA" stroke-width="3.2" fill="none"/><path d="M${f1(b.J[0] + b.lado * 10)} 252 L${f1(b.E[0] + b.lado * (g.antebraco / 2 + 7))} ${f1(b.E[1])} L${f1(b.W[0] + b.lado * (g.antebraco * 0.36 + 7))} ${f1(b.W[1])}" stroke="#F2F0EA" stroke-width="3.2" fill="none"/></g>`);
+    if (!jogo && v.casual === "florida") partes.push(`<g clip-path="url(#${idK}m${i})">${florida(camisaCor, b.J[0] - 30, 240, 70, 100)}</g>`);
+    if (jogo || ["moletom", "social", "agasalho"].includes(v.casual)) {
       const [fo, fi] = m.punho, n = normalFora(longa ? b.E : b.J, longa ? b.W : b.E, b.lado);
       const dx = (longa ? b.W[0] - b.E[0] : b.E[0] - b.J[0]), dy = (longa ? b.W[1] - b.E[1] : b.E[1] - b.J[1]), L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, k = longa ? 9 : 6;
       void n;
       partes.push(`<path d="M${f1(fo[0])} ${f1(fo[1])} L${f1(fi[0])} ${f1(fi[1])} L${f1(fi[0] - ux * k)} ${f1(fi[1] - uy * k)} L${f1(fo[0] - ux * k)} ${f1(fo[1] - uy * k)} Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.6" stroke-linejoin="round"/>`);
     }
   });
+  // munhequeira (em campo) e relógio de patrocinador (fora)
+  const pulso = (b: Braco, conteudo: (hw: number) => string) => {
+    const c = lerp(b.E, b.W, 0.86), hw = g.antebraco * 0.4 + 3.5;
+    return `<g transform="translate(${f1(c[0])} ${f1(c[1])}) rotate(${f1(ang(b.E, b.W) - 90)})">${conteudo(hw)}</g>`;
+  };
+  if (jogo && v.munhequeira && v.munhequeira !== "nenhuma") {
+    const cm = (v.corMunhequeira ?? -1) < 0 ? kit.cor2 : CORES_ROUPA[v.corMunhequeira!] ?? "#F2F0EA";
+    for (const b of g.bracos) if (v.munhequeira === "duas" || b.lado === 1)
+      partes.push(pulso(b, (hw) => `<rect x="${f1(-hw)}" y="-7" width="${f1(hw * 2)}" height="14" rx="3" fill="${cm}" stroke="${TINTA}" stroke-width="2"/><path d="M${f1(-hw + 1)} -2.5 H${f1(hw - 1)} M${f1(-hw + 1)} 2.5 H${f1(hw - 1)}" stroke="${escurecer(cm, 0.7)}" stroke-width="1"/>`));
+  }
+  if (!jogo && o.relogio) {
+    const b = g.bracos[0], r = o.relogio;
+    partes.push(pulso(b, (hw) => `<rect x="${f1(-hw + 1)}" y="-4" width="${f1(hw * 2 - 2)}" height="8" rx="2" fill="${r.pulseira}" stroke="${TINTA}" stroke-width="1.6"/><circle cx="0" cy="0" r="6.4" fill="${r.mostrador}" stroke="${TINTA}" stroke-width="2"/><path d="M0 0 V-3.6 M0 0 L2.6 1" stroke="${TINTA}" stroke-width="1" stroke-linecap="round"/>`));
+  }
   const tronco = regata ? regataPath(g, largo) : camisa.d;
   partes.push(`<clipPath id="${idK}t"><path d="${tronco}"/></clipPath>`, contorno(tronco, camisaCor));
   if (jogo) partes.push(`<g clip-path="url(#${idK}t)">${padraoKit(kit, g)}</g>`);
+  if (!jogo && v.casual === "florida") partes.push(`<g clip-path="url(#${idK}t)">${florida(camisaCor, 150 - g.ombro, 230, g.ombro * 2, camisa.bainha - 230)}</g>`);
   partes.push(sombraLado(tronco, 150 + g.peito * 0.15, 150 + g.ombro, 0.3));
   if (regata) {
     // viés: gola e cavas com acabamento, recortado pelo próprio tecido
@@ -337,10 +376,17 @@ export function svgCorpo(o: OpcoesCorpo): string {
     partes.push(`<path d="M124 228 L150 248 L138 262 L116 236 Z M176 228 L150 248 L162 262 L184 236 Z" fill="${mistura(camisaCor, "#000000", 0.08)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M150 248 V${camisa.bainha}" stroke="${TINTA}" stroke-width="1.3"/>${[272, 302, 332, 362, 392, 422].map((y) => `<circle cx="154" cy="${y}" r="2" fill="${escurecer(camisaCor, 0.6)}"/>`).join("")}`);
   } else if (v.casual === "jaqueta") {
     partes.push(`<path d="M130 236 L150 258 L170 236 L176 ${camisa.bainha} L124 ${camisa.bainha} Z" fill="${corCasual}" stroke="${TINTA}" stroke-width="1.8"/><path d="M120 232 L142 270 L128 284 L104 246 Z M180 232 L158 270 L172 284 L196 246 Z" fill="#3B5680" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M${150 - g.peito + 14} 336 H${150 - g.peito + 42} M${150 + g.peito - 42} 336 H${150 + g.peito - 14}" stroke="#E2B36A" stroke-width="1.6" stroke-dasharray="4 3"/>`);
+  } else if (v.casual === "polo") {
+    partes.push(`<path d="M122 226 L150 240 L138 256 L112 236 Z M178 226 L150 240 L162 256 L188 236 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M146 240 V286 H154 V240" fill="none" stroke="${TINTA}" stroke-width="1.3"/><circle cx="150" cy="256" r="2" fill="${escurecer(camisaCor, 0.55)}"/><circle cx="150" cy="272" r="2" fill="${escurecer(camisaCor, 0.55)}"/>`);
+  } else if (v.casual === "florida") {
+    partes.push(`<path d="M124 228 L150 262 L136 270 L114 236 Z M176 228 L150 262 L164 270 L186 236 Z" fill="${camisaCor}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M134 236 L150 262 L166 236 Q150 246 134 236 Z" fill="${pele}"/><path d="M150 262 V${camisa.bainha}" stroke="${TINTA}" stroke-width="1.3"/>`);
+  } else if (v.casual === "agasalho") {
+    partes.push(`<path d="M122 222 Q150 234 178 222 L180 236 Q150 250 120 236 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M150 244 V${camisa.bainha}" stroke="${TINTA}" stroke-width="2.2"/><path d="M150 244 V${camisa.bainha}" stroke="#C0C3C8" stroke-width="0.9" stroke-dasharray="2 2"/><rect x="147" y="252" width="6" height="10" rx="1.5" fill="#C0C3C8" stroke="${TINTA}" stroke-width="1.2"/><path d="M${150 - g.peito + 12} 300 H${150 - g.peito + 30}" stroke="#F2F0EA" stroke-width="3"/>`);
   } else if (v.casual === "moletom") {
-    partes.push(`<path d="M116 232 C112 216 130 208 150 208 C170 208 188 216 184 232 C172 226 128 226 116 232 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="2"/><path d="M${150 - g.cintura + 10} 380 H${150 + g.cintura - 10} L${150 + g.cintura - 18} 420 H${150 - g.cintura + 18} Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.6"/><path d="M140 240 L139 274 M160 240 L161 274" stroke="${mistura(camisaCor, "#FFFFFF", 0.5)}" stroke-width="2.4" stroke-linecap="round"/>`);
+    partes.push(`<path d="M123 230 Q150 250 177 230" stroke="${camisaCor2}" stroke-width="6" fill="none"/><path d="M123 230 Q150 250 177 230" stroke="${TINTA}" stroke-width="1.4" fill="none"/><path d="M${150 - g.cintura + 10} 380 H${150 + g.cintura - 10} L${150 + g.cintura - 18} 420 H${150 - g.cintura + 18} Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.6"/><path d="M140 240 L139 274 M160 240 L161 274" stroke="${mistura(camisaCor, "#FFFFFF", 0.5)}" stroke-width="2.4" stroke-linecap="round"/>`);
   } else {
     partes.push(`<path d="M123 230 Q150 250 177 230" stroke="${camisaCor2}" stroke-width="5" fill="none"/><path d="M123 230 Q150 250 177 230" stroke="${TINTA}" stroke-width="1.4" fill="none"/>`);
   }
+  if (!jogo && ap.fone) partes.push(foneNoPescoco(ap.fone.cor, ap.fone.detalhe, 6));
   return `<svg viewBox="0 0 300 ${g.altura}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Jogador de corpo inteiro">${o.fundo ?? ""}${partes.join("")}</svg>`;
 }

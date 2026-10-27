@@ -57,7 +57,8 @@ import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../sr
 import { AGENTE_INFO, NOME_PAPEL, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
-import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, aparenciaCompat, type Aparencia } from "../criacao/avatar";
+import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, type Aparencia } from "../criacao/avatar";
+import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { svgComodo } from "../casa/iso";
 
 const pacote = pacoteJson as unknown as PacoteDados;
@@ -97,8 +98,22 @@ function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
   return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, chuteira: mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1]] : undefined };
 }
+/** Aparência com os acessórios dos patrocinadores (óculos e fone) por cima. */
+function apDe(s: Save, forcar?: Marca): Aparencia {
+  const ap: Aparencia = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) };
+  const ac = visualDe(s.jogador).semAcessorioPatro && !forcar ? {} : acessoriosAtivos(s.carreira.patrocinios);
+  if (forcar?.acessorio) (ac as Record<string, unknown>)[forcar.acessorio.tipo] = forcar.acessorio;
+  const o = ac.oculos, f = ac.fone;
+  ap.oculosSol = o?.tipo === "oculos" ? { modelo: o.modelo, armacao: o.armacao, lente: o.lente } : null;
+  ap.fone = f?.tipo === "fone" ? { cor: f.cor, detalhe: f.detalhe } : null;
+  return ap;
+}
+function relogioDe(s: Save) {
+  const r = visualDe(s.jogador).semAcessorioPatro ? undefined : acessoriosAtivos(s.carreira.patrocinios).relogio;
+  return r?.tipo === "relogio" ? { pulseira: r.pulseira, mostrador: r.mostrador } : null;
+}
 function corpoDe(s: Save, traje: "jogo" | "casual", clubeId?: string): string {
-  return svgCorpo({ aparencia: (s.jogador.aparencia as Partial<Aparencia>) ?? null, visual: visualDe(s.jogador), alturaCm: s.jogador.alturaCm, traje, kit: kitDe(s, clubeId) });
+  return svgCorpo({ aparencia: s.jogador.aparencia ? apDe(s) : null, visual: visualDe(s.jogador), alturaCm: s.jogador.alturaCm, traje, kit: kitDe(s, clubeId), relogio: relogioDe(s) });
 }
 function capaDe(s: Save, edicao: number, clube: string, regional: boolean): string {
   return capaVideogame({ edicao, jogador: s.jogador.apelido, numero: s.jogador.numero, cores: infoClube(pacote, clube)?.cores ?? ["#0B7A3B", "#F5C400"], corpoSvg: corpoDe(s, "jogo", clube), ...(regional ? { edicaoDe: NOME_PAIS[s.jogador.pais] ?? "Brasil" } : {}) });
@@ -394,14 +409,40 @@ function blocoVisual(s: Save): string {
     <p class="sub" style="margin:12px 0 6px;font-weight:600">Uniforme</p>${chips("manga", [["curta", "Manga curta"], ["longa", "Manga longa"]], v.manga)}${chips("caimento", [["justo", "Justo"], ["largo", "Largo"]], v.caimento)}${chips("meiao", [["alto", "Meião alto"], ["baixo", "Meião baixo"]], v.meiao)}
     <p class="sub" style="margin:12px 0 6px;font-weight:600">Dia a dia</p>${chips("casual", (Object.keys(NOME_CASUAL) as RoupaCasual[]).map((k) => [k, NOME_CASUAL[k]]), v.casual)}${chips("perna", [["bermuda", "Bermuda"], ["calca", "Calça"]], v.perna)}
     <div class="cores-roupa">${CORES_ROUPA.map((c, i) => `<button class="cor${v.corCasual === i ? " ativo" : ""}" style="--c:${c}" data-vis="corCasual" data-val="${i}" aria-label="${esc(NOMES_ROUPA[i])}"></button>`).join("")}</div>
+    <p class="sub" style="margin:12px 0 6px;font-weight:600">Munhequeira (em campo)</p>${chips("munhequeira", [["nenhuma", "Sem"], ["uma", "Um pulso"], ["duas", "Os dois"]], v.munhequeira ?? "nenhuma")}
+    ${(v.munhequeira ?? "nenhuma") !== "nenhuma" ? `<div class="cores-roupa"><button class="cor${(v.corMunhequeira ?? -1) < 0 ? " ativo" : ""}" style="--c:linear-gradient(135deg,${cores(s.carreira.clubeId)[0]} 50%,${cores(s.carreira.clubeId)[1] ?? "#fff"} 50%)" data-vis="corMunhequeira" data-val="-1" aria-label="Cor do clube"></button>${CORES_ROUPA.map((c, i) => `<button class="cor${v.corMunhequeira === i ? " ativo" : ""}" style="--c:${c}" data-vis="corMunhequeira" data-val="${i}" aria-label="${esc(NOMES_ROUPA[i])}"></button>`).join("")}</div>` : ""}
+    ${blocoAparencia(s)}
     <p class="rotulo" style="margin-top:16px">Estúdio de tatuagem</p>
     <div class="chips" style="flex-wrap:wrap">${(Object.keys(NOME_AREA) as AreaTatuagem[]).map((a) => `<button class="chip${areaTat === a ? " ativo" : ""}" data-tarea="${a}">${esc(NOME_AREA[a])}${v.tatuagens[a] ? " •" : ""}</button>`).join("")}</div>
     ${atualTat ? `<p class="sub" style="margin-top:8px">${esc(NOME_AREA[areaTat])}: <b>${esc(TATUAGEM[atualTat].nome)}</b>. <button class="botao sec peq" data-tat-remover="${areaTat}">Tirar com laser (${dinheiro(custoRemocao(atualTat))})</button></p>`
       : `<div class="tat-lista">${designs.map((t) => `<button class="tat-op" data-tat="${t.id}"><span class="tat-prev">${previaTatuagem(t.id)}</span><b>${esc(t.nome)}</b><small>${dinheiro(t.preco)}</small></button>`).join("")}</div>`}
     ${!tatuagemVisivel(areaTat, v, trajeVisto) ? `<p class="sub">Com essa roupa, a tatuagem nessa parte fica escondida.</p>` : ""}`;
 }
+let abaAp: "cabelo" | "acessorios" | "rosto" = "cabelo";
+/** Barbearia, acessórios e rosto: mexe na aparência do jogador. */
+function blocoAparencia(s: Save): string {
+  const a = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) }, v = visualDe(s.jogador);
+  const chipsAp = <T extends string>(campo: string, ops: { id: T; nome: string }[], atual: T | undefined) => `<div class="chips" style="flex-wrap:wrap">${ops.map((o) => `<button class="chip${atual === o.id ? " ativo" : ""}" data-ap="${campo}" data-val="${o.id}">${esc(o.nome)}</button>`).join("")}</div>`;
+  const coresAp = (campo: string, lista: string[], nomes: string[], atual: number) => `<div class="cores-roupa">${lista.map((c, i) => `<button class="cor${atual === i ? " ativo" : ""}" style="--c:${c}" data-ap="${campo}" data-val="${i}" aria-label="${esc(nomes[i])}"></button>`).join("")}</div>`;
+  const liga = (campo: string, nome: string, on: boolean | undefined) => `<button class="chip${on ? " ativo" : ""}" data-ap="${campo}" data-val="${on ? "0" : "1"}">${esc(nome)}</button>`;
+  const sub = (t: string) => `<p class="sub" style="margin:12px 0 6px;font-weight:600">${t}</p>`;
+  const ac = acessoriosAtivos(s.carreira.patrocinios), temPatro = Object.keys(ac).length > 0;
+  let corpo = "";
+  if (abaAp === "cabelo") corpo = sub("Corte") + chipsAp("cabelo", CABELOS, a.cabelo) + sub("Cor") + coresAp("corCabelo", CORES_CABELO, NOMES_CABELO_COR, a.corCabelo) + sub("Barba") + chipsAp("barba", BARBAS, a.barba);
+  else if (abaAp === "acessorios") corpo = sub("Na cabeça") + chipsAp("acessorio", ACESSORIOS, a.acessorio ?? "nenhum") +
+    ((a.acessorio === "faixa" || a.acessorio === "bandana") ? coresAp("corAcessorio", CORES_ROUPA, NOMES_ROUPA, a.corAcessorio ?? 0) : "") +
+    sub("Piercing") + chipsAp("piercing", PIERCINGS, a.piercing ?? "nenhum") +
+    sub("Joias") + `<div class="chips" style="flex-wrap:wrap">${liga("brinco", "Brinco esquerdo", a.brinco)}${liga("brinco2", "Brinco direito", a.brinco2)}${liga("corrente", "Corrente", a.corrente)}</div>` +
+    sub("Dos patrocinadores") + (temPatro
+      ? `<p class="sub">${Object.values(ac).map((x) => x!.tipo === "oculos" ? "Óculos escuros" : x!.tipo === "relogio" ? "Relógio" : "Fone").join(", ")} por contrato (aparecem fora de campo).</p><div class="chips">${`<button class="chip${v.semAcessorioPatro ? "" : " ativo"}" data-vis="semAcessorioPatro" data-val="${v.semAcessorioPatro ? "" : "1"}">${v.semAcessorioPatro ? "Usar de novo" : "Usando"}</button>`}</div>`
+      : `<p class="sub">Óculos, relógio e fone de marca só chegam quando você for muito seguido: as marcas de acessório procuram a partir de alguns milhões de seguidores.</p>`);
+  else corpo = `<p class="sub">Ajuste fino do rosto (o que a genética não decidiu, a câmera decide).</p>` + sub("Formato") + chipsAp("rosto", ROSTOS, a.rosto) + sub("Olhos") + chipsAp("formatoOlho", OLHOS, a.formatoOlho) + sub("Nariz") + chipsAp("nariz", NARIZES, a.nariz) + sub("Boca") + chipsAp("boca", BOCAS, a.boca);
+  return `<p class="rotulo" style="margin-top:16px">Aparência</p><div class="chips">${([["cabelo", "Cabelo e barba"], ["acessorios", "Acessórios"], ["rosto", "Rosto"]] as const).map(([k, n]) => `<button class="chip${abaAp === k ? " ativo" : ""}" data-abaap="${k}">${n}</button>`).join("")}</div>${corpo}`;
+}
 let cartazNovo: ContratoPatrocinio | undefined;
-const cartaz = (s: Save, k: ContratoPatrocinio) => cartazPatrocinio(MARCA[k.marca], foto(s), s.jogador.apelido, s.jogador.numero, k.desde);
+/** Na campanha de acessório, a foto é fora de campo e com o produto no rosto. */
+const fotoCampanha = (s: Save, m: Marca) => m.acessorio ? svgFoto({ aparencia: apDe(s, m), traje: "social", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) }) : foto(s);
+const cartaz = (s: Save, k: ContratoPatrocinio) => cartazPatrocinio(MARCA[k.marca], fotoCampanha(s, MARCA[k.marca]), s.jogador.apelido, s.jogador.numero, k.desde);
 function cardPatrocinio(s: Save): string {
   if (cartazNovo) {
     const k = cartazNovo, m = MARCA[k.marca]; cartazNovo = undefined;
@@ -1610,7 +1651,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -1662,7 +1703,12 @@ document.addEventListener("click", (ev) => {
   }
   else if (d.vis && save) {
     const v = visualDe(save.jogador) as unknown as Record<string, unknown>;
-    v[d.vis] = d.vis === "corCasual" ? +d.val! : d.val; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+    v[d.vis] = d.vis === "corCasual" || d.vis === "corMunhequeira" ? +d.val! : d.vis === "semAcessorioPatro" ? !!d.val : d.val; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  } else if (d.ap && save) {
+    const ap = (save.jogador.aparencia ??= { ...APARENCIA_PADRAO }) as unknown as Record<string, unknown>;
+    ap[d.ap] = ["corCabelo", "corAcessorio"].includes(d.ap) ? +d.val! : ["brinco", "brinco2", "corrente"].includes(d.ap) ? d.val === "1" : d.val;
+    salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+  } else if (d.abaap) { abaAp = d.abaap as typeof abaAp; const y = window.scrollY; render(); window.scrollTo(0, y);
   } else if (d.traje) { trajeVisto = d.traje as "jogo" | "casual"; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.tarea) { areaTat = d.tarea as AreaTatuagem; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if ((d.tat || d.tatRemover) && save) {

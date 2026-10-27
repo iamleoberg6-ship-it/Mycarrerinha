@@ -1,18 +1,23 @@
 // Avatar do jogador no estilo de arte do jogo (mistura de quadrinho e figurinha), montado por partes.
 // Todo corte de cabelo, barba e orelha é calculado a partir do contorno do rosto escolhido.
-export type Rosto = "oval" | "redondo" | "quadrado" | "longo" | "coracao" | "largo";
+export type Rosto = "oval" | "redondo" | "quadrado" | "longo" | "coracao" | "largo" | "diamante" | "triangulo" | "retangular";
 export type Cabelo =
   | "careca" | "raspado" | "curto" | "degrade" | "topete" | "franja" | "ondulado" | "cacheado"
-  | "crespo" | "blackpower" | "trancas" | "dreads" | "moicano" | "coque" | "longo";
-export type Olho = "amendoado" | "redondo" | "estreito" | "caido" | "erguido" | "semdobra" | "encapuzado";
+  | "crespo" | "blackpower" | "trancas" | "dreads" | "moicano" | "coque" | "longo"
+  | "mullet" | "undercut" | "flattop" | "risco";
+export type Olho = "amendoado" | "redondo" | "estreito" | "caido" | "erguido" | "semdobra" | "encapuzado" | "grande" | "felino" | "sonolento";
 export type Sobrancelha = "reta" | "arqueada" | "angulada" | "suave" | "corte";
-export type Nariz = "reto" | "pequeno" | "fino" | "largo" | "achatado" | "arrebitado" | "aquilino" | "grande";
+export type Nariz = "reto" | "pequeno" | "fino" | "largo" | "achatado" | "arrebitado" | "aquilino" | "grande" | "batata" | "torto" | "botao" | "comprido";
 export type RoupaSocial = "camiseta" | "moletom" | "polo" | "jaqueta" | "camisa" | "regata";
 export type Barba =
   | "nenhuma" | "sombra" | "rala" | "bigode" | "bigodao" | "cavanhaque" | "cavanhaque_bigode"
   | "queixo" | "costeletas" | "curta" | "cheia" | "longa";
-export type Boca = "sorriso" | "neutra" | "aberta" | "lado" | "cheia";
+export type Boca = "sorriso" | "neutra" | "aberta" | "lado" | "cheia" | "fina" | "dentes";
 export type Traje = "jogo" | "social";
+export type AcessorioCabeca = "nenhum" | "faixa" | "bandana" | "oculos";
+export type Piercing = "nenhum" | "nariz" | "sobrancelha" | "dois";
+/** Óculos escuros de patrocinador: modelo e cores (a marca é que dá). */
+export interface OculosSol { modelo: "aviador" | "esportivo" | "quadrado"; armacao: string; lente: string }
 export type EstiloCamisa = "lisa" | "listrasV" | "listrasH" | "faixa" | "faixaH";
 export interface Camisa { cor1: string; cor2: string; cor3?: string; estilo: EstiloCamisa }
 
@@ -21,6 +26,11 @@ export interface Aparencia {
   sobrancelha: number; formatoSobrancelha: Sobrancelha; nariz: Nariz; boca: Boca;
   sardas: boolean; pinta: boolean; brinco: boolean;
   roupaSocial: RoupaSocial; corSocial: number; barba: Barba; corrente: boolean;
+  acessorio?: AcessorioCabeca; corAcessorio?: number; piercing?: Piercing; brinco2?: boolean;
+  /** vem do patrocínio (não é escolhido na criação) */
+  oculosSol?: OculosSol | null;
+  /** fone de patrocinador pendurado no pescoço (só fora de campo) */
+  fone?: { cor: string; detalhe: string } | null;
 }
 
 export const PELES = ["#F8DCC4", "#F0C29E", "#E2A77D", "#C98C63", "#A66A43", "#8A5534", "#6B3F24", "#4A2A18"];
@@ -31,17 +41,20 @@ export const NOMES_OLHOS = ["Castanho escuro", "Castanho", "Mel", "Verde", "Azul
 export const ROSTOS: { id: Rosto; nome: string }[] = [
   { id: "oval", nome: "Oval" }, { id: "redondo", nome: "Redondo" }, { id: "quadrado", nome: "Quadrado" },
   { id: "longo", nome: "Alongado" }, { id: "coracao", nome: "Coração" }, { id: "largo", nome: "Mandíbula larga" },
+  { id: "diamante", nome: "Diamante" }, { id: "triangulo", nome: "Triangular" }, { id: "retangular", nome: "Retangular" },
 ];
 export const CABELOS: { id: Cabelo; nome: string }[] = [
   { id: "careca", nome: "Careca" }, { id: "raspado", nome: "Raspado" }, { id: "curto", nome: "Curto" }, { id: "degrade", nome: "Degradê" },
   { id: "topete", nome: "Topete" }, { id: "franja", nome: "Franja" }, { id: "ondulado", nome: "Ondulado" }, { id: "cacheado", nome: "Cacheado" },
   { id: "crespo", nome: "Crespo baixo" }, { id: "blackpower", nome: "Black power" }, { id: "trancas", nome: "Tranças" }, { id: "dreads", nome: "Dreads" },
   { id: "moicano", nome: "Moicano" }, { id: "coque", nome: "Coque" }, { id: "longo", nome: "Longo" },
+  { id: "mullet", nome: "Mullet" }, { id: "undercut", nome: "Undercut" }, { id: "flattop", nome: "Flat top" }, { id: "risco", nome: "Social com risca" },
 ];
 export const OLHOS: { id: Olho; nome: string }[] = [
   { id: "amendoado", nome: "Amendoado" }, { id: "redondo", nome: "Redondo" }, { id: "estreito", nome: "Estreito" },
   { id: "caido", nome: "Caído" }, { id: "erguido", nome: "Erguido" }, { id: "semdobra", nome: "Monopálpebra" },
-  { id: "encapuzado", nome: "Pálpebra encapuzada" },
+  { id: "encapuzado", nome: "Pálpebra encapuzada" }, { id: "grande", nome: "Grandes" }, { id: "felino", nome: "Felino" },
+  { id: "sonolento", nome: "Sonolento" },
 ];
 export const SOBRANCELHAS: { id: Sobrancelha; nome: string }[] = [
   { id: "reta", nome: "Reta" }, { id: "arqueada", nome: "Arqueada" }, { id: "angulada", nome: "Angulada" },
@@ -50,6 +63,7 @@ export const SOBRANCELHAS: { id: Sobrancelha; nome: string }[] = [
 export const NARIZES: { id: Nariz; nome: string }[] = [
   { id: "reto", nome: "Reto" }, { id: "pequeno", nome: "Pequeno" }, { id: "fino", nome: "Fino" }, { id: "largo", nome: "Largo" },
   { id: "achatado", nome: "Largo e baixo" }, { id: "arrebitado", nome: "Arrebitado" }, { id: "aquilino", nome: "Aquilino" }, { id: "grande", nome: "Grande" },
+  { id: "batata", nome: "Batata" }, { id: "torto", nome: "De boxeador" }, { id: "botao", nome: "Botão" }, { id: "comprido", nome: "Comprido" },
 ];
 export const ROUPAS_SOCIAIS: { id: RoupaSocial; nome: string }[] = [
   { id: "camiseta", nome: "Camiseta" }, { id: "moletom", nome: "Moletom" }, { id: "polo", nome: "Polo" },
@@ -59,7 +73,13 @@ export const CORES_ROUPA = ["#F2F0EA", "#1D1F22", "#2E4A7A", "#7A2E3A", "#3E6B4A
 export const NOMES_ROUPA = ["Branco", "Preto", "Azul-marinho", "Vinho", "Verde", "Mostarda", "Cinza", "Laranja"];
 export const BOCAS: { id: Boca; nome: string }[] = [
   { id: "sorriso", nome: "Sorriso" }, { id: "aberta", nome: "Sorrisão" }, { id: "neutra", nome: "Séria" }, { id: "lado", nome: "De canto" },
-  { id: "cheia", nome: "Lábios cheios" },
+  { id: "cheia", nome: "Lábios cheios" }, { id: "fina", nome: "Lábios finos" }, { id: "dentes", nome: "Mostrando os dentes" },
+];
+export const ACESSORIOS: { id: AcessorioCabeca; nome: string }[] = [
+  { id: "nenhum", nome: "Nada" }, { id: "faixa", nome: "Faixa de cabelo" }, { id: "bandana", nome: "Bandana" }, { id: "oculos", nome: "Óculos de grau" },
+];
+export const PIERCINGS: { id: Piercing; nome: string }[] = [
+  { id: "nenhum", nome: "Sem piercing" }, { id: "nariz", nome: "Argola no nariz" }, { id: "sobrancelha", nome: "Na sobrancelha" }, { id: "dois", nome: "Nariz e sobrancelha" },
 ];
 export const BARBAS: { id: Barba; nome: string }[] = [
   { id: "nenhuma", nome: "Sem barba" }, { id: "sombra", nome: "Por fazer" }, { id: "rala", nome: "Rala" },
@@ -72,6 +92,7 @@ export const APARENCIA_PADRAO: Aparencia = {
   pele: 3, rosto: "oval", cabelo: "curto", corCabelo: 0, olhos: 0, formatoOlho: "amendoado", sobrancelha: 3,
   formatoSobrancelha: "reta", nariz: "reto", boca: "sorriso", sardas: false, pinta: false, brinco: false,
   roupaSocial: "moletom", corSocial: 1, barba: "nenhuma", corrente: false,
+  acessorio: "nenhum", corAcessorio: 0, piercing: "nenhum", brinco2: false,
 };
 /** Aparência salva no formato do estilo de arte que foi desfeito (v: 2, tudo por índice) → formato deste boneco. */
 export function aparenciaCompat(x: unknown): Aparencia {
@@ -135,6 +156,9 @@ const FORMAS: Record<Rosto, Forma> = {
   longo: { T: 64, w100: 45, w122: 46, w150: 45, w176: 40, w199: 28, Q: 222, plano: 0 },
   coracao: { T: 70, w100: 51, w122: 52, w150: 47, w176: 36, w199: 21, Q: 214, plano: 0 },
   largo: { T: 71, w100: 49, w122: 50, w150: 51, w176: 51, w199: 41, Q: 216, plano: 16 },
+  diamante: { T: 70, w100: 42, w122: 51, w150: 52, w176: 40, w199: 24, Q: 217, plano: 0 },
+  triangulo: { T: 73, w100: 44, w122: 47, w150: 50, w176: 51, w199: 40, Q: 214, plano: 17 },
+  retangular: { T: 66, w100: 47, w122: 48, w150: 48, w176: 47, w199: 37, Q: 221, plano: 12 },
 };
 
 function contornoRosto(f: Forma): string {
@@ -212,6 +236,11 @@ function cabeloAtras(c: Cabelo, f: Forma, cor: string): string {
       return contorno(d, cor) + recorte(d, locs);
     }
     case "coque": return contorno(`M150 ${T - 19} m-17 0 a17 15 0 1 0 34 0 a17 15 0 1 0 -34 0`, cor);
+    case "mullet": {
+      // nuca comprida: aparece dos dois lados do pescoço, abaixo das orelhas
+      const d = `M${150 - w + 2} 150 C${150 - w - 6} 175 ${150 - w - 8} 205 ${150 - w + 2} 228 Q${150 - w + 12} 236 ${150 - 22} 232 L${150 + 22} 232 Q${150 + w - 12} 236 ${150 + w - 2} 228 C${150 + w + 8} 205 ${150 + w + 6} 175 ${150 + w - 2} 150 Z`;
+      return contorno(d, cor) + recorte(d, [-1, 1].map((l) => `<path d="M${150 + l * (w - 2)} 172 Q${150 + l * (w + 4)} 205 ${150 + l * (w - 4)} 228 M${150 + l * (w - 10)} 190 Q${150 + l * (w - 4)} 212 ${150 + l * (w - 14)} 230" stroke="${s}" stroke-width="2" fill="none"/>`).join(""));
+    }
     default: return "";
   }
 }
@@ -285,6 +314,28 @@ function cabeloFrente(c: Cabelo, f: Forma, cor: string, pele: string): string {
       const d = calota(f, { volume: 3, testa: T + 22 });
       return contorno(d, cor) + recorte(d, `<path d="M${150 - w} ${T + 26} Q${150 - 0.4 * w} ${T + 2} 150 ${T - 6} M${150 + w} ${T + 26} Q${150 + 0.4 * w} ${T + 2} 150 ${T - 6}" stroke="${s}" stroke-width="2" fill="none"/>`);
     }
+    case "mullet": return contorno(cheia, cor) + recorte(cheia, fios(f, s) + reflexo);
+    case "undercut": {
+      // laterais raspadas e o topo comprido penteado para o lado
+      const lados = calota(f, { volume: 1, folga: 1.5, testa: T + 28 });
+      const topo = `M${150 - 0.78 * w} ${T + 22} C${150 - 0.9 * w} ${T - 6} ${150 - 0.4 * w} ${T - 22} ${150 + 0.15 * w} ${T - 20} C${150 + 0.6 * w} ${T - 18} ${150 + 0.95 * w} ${T - 4} ${150 + 0.92 * w} ${T + 16} C${150 + 0.7 * w} ${T + 6} ${150 + 0.2 * w} ${T + 10} ${150 - 0.2 * w} ${T + 26} C${150 - 0.45 * w} ${T + 18} ${150 - 0.62 * w} ${T + 18} ${150 - 0.78 * w} ${T + 22} Z`;
+      return contorno(lados, mistura(cor, pele, 0.55)) + contorno(topo, cor) + recorte(topo, `<path d="M${150 - 0.6 * w} ${T + 12} C${150 - 0.3 * w} ${T - 10} ${150 + 0.3 * w} ${T - 12} ${150 + 0.8 * w} ${T + 6} M${150 - 0.3 * w} ${T + 18} C${150} ${T} ${150 + 0.4 * w} ${T - 2} ${150 + 0.85 * w} ${T + 12}" stroke="${s}" stroke-width="2.2" fill="none"/>` + reflexo);
+    }
+    case "flattop": {
+      // degradê baixo e um bloco reto de crespo em cima
+      const lados = calota(f, { volume: 1, folga: 1.5, testa: T + 26 });
+      const L = 0.84 * w, topo = `M${150 - L} ${T + 26} L${150 - L - 1} ${T - 14} Q${150 - L + 1} ${T - 22} ${150 - L + 12} ${T - 22} L${150 + L - 12} ${T - 22} Q${150 + L - 1} ${T - 22} ${150 + L + 1} ${T - 14} L${150 + L} ${T + 26} Q${150 + 0.4 * w} ${T + 20} 150 ${T + 22} Q${150 - 0.4 * w} ${T + 20} ${150 - L} ${T + 26} Z`;
+      let cachos = "";
+      for (let k = 0; k < 40; k++) { const x = 150 - L + ((k * 41) % 89) / 89 * 2 * L, y = T - 18 + ((k * 29) % 47) / 47 * 40; cachos += `<path d="M${f1(x)} ${f1(y)} a2.6 2.6 0 1 1 3.4 3" stroke="${s}" stroke-width="1.5" fill="none"/>`; }
+      return contorno(lados, mistura(cor, pele, 0.5)) + contorno(topo, cor) + recorte(topo, cachos);
+    }
+    case "risco": {
+      // social penteado com a risca do lado esquerdo
+      const d = calota(f, { volume: 9, testa: T + 22 }), rx = 150 - 0.42 * w;
+      return contorno(d, cor) + recorte(d, `<path d="M${rx} ${T + 24} Q${rx - 1} ${T + 10} ${rx + 3} ${T + 2}" stroke="${mistura(cor, pele, 0.45)}" stroke-width="2.4" fill="none"/>` +
+        [0.1, 0.35, 0.6].map((k) => `<path d="M${rx + 8} ${T + 18 - k * 8} Q${150 + k * w * 0.5} ${T - 14} ${150 + (0.6 + k * 0.4) * w} ${T + 8 + k * 6}" stroke="${s}" stroke-width="2" fill="none"/>`).join("") +
+        `<path d="M${rx - 6} ${T + 16} Q${rx - 14} ${T + 6} ${150 - 0.8 * w} ${T + 18}" stroke="${s}" stroke-width="2" fill="none"/>` + reflexo);
+    }
     case "longo": {
       const mecha = `M${150 - w + 3} ${T + 58} C${150 - w + 2} ${T + 30} ${150 - w + 18} ${T + 14} ${150 - 14} ${T + 12} C${150 - w + 28} ${T + 26} ${150 - w + 18} ${T + 40} ${150 - w + 17} ${T + 62} Z`;
       return contorno(cheia, cor) + recorte(cheia, reflexo) + contorno(mecha, cor);
@@ -301,15 +352,23 @@ const FORMA_OLHO: Record<Olho, string> = {
   erguido: "M-11.5 -1.2 Q1 -9 11.5 2 Q0 7 -11.5 -1.2 Z",
   semdobra: "M-12 -1.4 Q-1 -6.6 11.5 0.8 Q0 4.6 -12 -1.4 Z",
   encapuzado: "M-11.5 0.6 Q0 -6 11.5 0.6 Q0 7 -11.5 0.6 Z",
+  grande: "M-12.5 0.5 Q0 -11.5 12.5 0.5 Q0 9.5 -12.5 0.5 Z",
+  felino: "M-13 -3.4 Q1 -8 11 1.2 Q-2 6 -13 -3.4 Z",
+  sonolento: "M-11.5 0.4 Q0 -4.2 11.5 0.4 Q0 7 -11.5 0.4 Z",
 };
 const PALPEBRA: Record<Olho, string> = {
   amendoado: "M-11.5 0 Q0 -9 11.5 0", redondo: "M-10 0 A10 8.2 0 0 1 10 0", estreito: "M-11.5 0 Q0 -6 11.5 0",
   caido: "M-11.5 2 Q-1 -9 11.5 -0.6", erguido: "M-11.5 -1.2 Q1 -9 11.5 2", semdobra: "M-12 -1.4 Q-1 -6.6 11.5 0.8",
-  encapuzado: "M-11.5 0.6 Q0 -6 11.5 0.6",
+  encapuzado: "M-11.5 0.6 Q0 -6 11.5 0.6", grande: "M-12.5 0.5 Q0 -11.5 12.5 0.5", felino: "M-13 -3.4 Q1 -8 11 1.2",
+  sonolento: "M-11.5 0.4 Q0 -4.2 11.5 0.4",
 };
 function olho(x: number, espelho: boolean, f: Olho, cor: string, pele: string, sombraPele: string): string {
   const id = novoId("ol");
-  const vinco = f === "semdobra" ? "" : f === "encapuzado"
+  const vinco = f === "semdobra" ? "" : f === "felino"
+    ? `<path d="M-13 -3.4 L-16.5 -6" stroke="${TINTA}" stroke-width="2.2" stroke-linecap="round"/><path d="M-8 -9.4 Q1 -12.5 9 -7.6" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity="0.5"/>`
+    : f === "sonolento"
+    ? `<path d="M-12.5 -0.8 Q0 -8.5 12.5 -0.8" stroke="${sombraPele}" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M-11 -5.6 Q0 -10.5 11 -5.6" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity="0.6"/>`
+    : f === "encapuzado"
     ? `<path d="M-13 -3.2 Q0 -11.5 13 -3" stroke="${sombraPele}" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M-12 -3.6 Q0 -11.5 12 -3.4" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity="0.7"/>`
     : `<path d="M-9 -8.4 Q0 -12.5 9 -8.4" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity="0.55"/>`;
   return `<g transform="translate(${x} 141)${espelho ? " scale(-1 1)" : ""}">
@@ -351,6 +410,10 @@ function nariz(n: Nariz, luz: string): string {
     case "arrebitado": return ponta(149, 170) + l("M155 144 Q157 161 158 169") + l("M141 175 Q146 181 150 177.5 Q154 181 159 175");
     case "aquilino": return ponta(152, 170) + l("M152 136 Q161 151 157 168 Q155 175 161 177") + l("M141 177 Q145 182 150 180");
     case "grande": return ponta(150, 175) + l("M157 136 Q165 160 166 176") + l("M136 178 Q142 187 151 183.5 Q160 187 166 178") + narinas(144, 158, 181);
+    case "batata": return `<ellipse cx="150" cy="174" rx="8.5" ry="6.5" fill="${luz}" opacity="0.7"/>` + l("M155 142 Q158 156 158.5 165") + l("M141 172 Q137 181 145 182 Q150 185 155 182 Q163 181 159 172") + narinas(144.5, 155.5, 179.5);
+    case "torto": return ponta(151, 172) + l("M154 140 Q149 151 155 159 Q160 165 159.5 172") + l("M141 177 Q145 182 150 180 Q155 182 159 177");
+    case "botao": return `<circle cx="150" cy="174" r="4.2" fill="${luz}"/>` + l("M145 172 Q143 179 150 179.5 Q157 179 155 172", 2.2) + narinas(147, 153, 177.5).replace(/rx="2.3" ry="1.3"/g, 'rx="1.4" ry="0.9"');
+    case "comprido": return ponta(150, 178) + l("M154.5 136 Q158.5 160 159 178") + l("M142 182 Q146 187.5 150.5 185.5 Q155 187.5 159 182") + narinas(145, 156, 184.2).replace(/rx="2.3" ry="1.3"/g, 'rx="1.8" ry="1"');
     default: return ponta(149, 172) + l("M156 140 Q160 160 162 172") + l("M141 177 Q145 182 150 180 Q155 182 159 177");
   }
 }
@@ -362,6 +425,8 @@ const GEO_BOCA: Record<Boca, GeoBoca> = {
   neutra: { e: [136, 196], d: [164, 196], topo: 195.5, base: 201 },
   lado: { e: [136, 197], d: [166, 190], topo: 192.5, base: 201 },
   cheia: { e: [133, 195], d: [167, 195], topo: 189, base: 206 },
+  fina: { e: [135, 195], d: [165, 195], topo: 195, base: 200 },
+  dentes: { e: [133, 193], d: [167, 193], topo: 192, base: 204 },
 };
 function boca(b: Boca, pele: string): string {
   const labio = mistura(pele, "#7A2E2A", 0.35), labioLuz = mistura(pele, "#E8A090", 0.2);
@@ -371,6 +436,13 @@ function boca(b: Boca, pele: string): string {
       const forma = "M132 192 Q150 195 168 192 Q150 214 132 192 Z", id = novoId("bo");
       return `<clipPath id="${id}"><path d="${forma}"/></clipPath><path d="${forma}" fill="#3A1010"/>
         <g clip-path="url(#${id})"><rect x="128" y="186" width="44" height="13" fill="#F7F3EC"/><line x1="150" y1="193" x2="150" y2="198.5" stroke="#CFC6B6" stroke-width="1"/><ellipse cx="150" cy="210" rx="10" ry="5" fill="#B5474A"/></g>
+        <path d="${forma}" fill="none" stroke="${TINTA}" stroke-width="2.6" stroke-linejoin="round"/>`;
+    }
+    case "fina": return `<path d="M138 197.2 Q150 200.5 162 197.2 Q150 198.8 138 197.2 Z" fill="${labio}"/>` + linha("M135 195 Q150 199 165 195");
+    case "dentes": {
+      const forma = "M133 193 Q150 196.5 167 193 Q160 205 150 205 Q140 205 133 193 Z", id = novoId("bo");
+      return `<clipPath id="${id}"><path d="${forma}"/></clipPath><path d="${forma}" fill="#F7F3EC"/>
+        <g clip-path="url(#${id})"><path d="M133 199.5 Q150 202 167 199.5" stroke="#CFC6B6" stroke-width="1.2" fill="none"/>${[143, 150, 157].map((x) => `<line x1="${x}" y1="195" x2="${x}" y2="204" stroke="#D8D0C2" stroke-width="0.9"/>`).join("")}</g>
         <path d="${forma}" fill="none" stroke="${TINTA}" stroke-width="2.6" stroke-linejoin="round"/>`;
     }
     case "neutra": return `<path d="M140 198 Q150 203 160 198 Q150 200 140 198 Z" fill="${labio}"/>` + linha("M136 196 L164 196");
@@ -386,7 +458,7 @@ function boca(b: Boca, pele: string): string {
 function barba(b: Barba, f: Forma, rostoD: string, bocaId: Boca, nariz: Nariz, cor: string, pele: string): string {
   if (b === "nenhuma") return "";
   const g = GEO_BOCA[bocaId], [ex, ey] = g.e, [dx, dy] = g.d;
-  const nb = nariz === "grande" || nariz === "achatado" ? 186 : 183; // logo abaixo do nariz
+  const nb = nariz === "grande" || nariz === "achatado" ? 186 : nariz === "comprido" ? 189 : 183; // logo abaixo do nariz
   const furo = `M${ex - 2} ${ey} Q150 ${g.topo - 3} ${dx + 2} ${dy} Q150 ${g.base + 3} ${ex - 2} ${ey} Z`;
   const bigodeD = (grosso: boolean) => {
     const p = grosso ? 5 : 2, alto = grosso ? nb : nb + 1.5;
@@ -506,6 +578,58 @@ function roupaSocial(tipo: RoupaSocial, corIdx: number, pele: string, sombraPele
   }
 }
 
+// ---------------------------------- acessórios ----------------------------------
+const PRATA = "#D9DCE0";
+/** Faixa de cabelo ou bandana, por cima do cabelo. */
+function acessorioCabeca(tipo: AcessorioCabeca, f: Forma, cor: string): string {
+  if (tipo === "faixa") {
+    const y1 = f.T + 15, y2 = f.T + 27, w1 = largura(f, y1) + 4, w2 = largura(f, y2) + 4;
+    const d = `M${f1(150 - w1)} ${y1} Q150 ${y1 - 7} ${f1(150 + w1)} ${y1} L${f1(150 + w2)} ${y2} Q150 ${y2 - 7} ${f1(150 - w2)} ${y2} Z`;
+    const friso = luminancia(cor) > 0.6 ? escurecer(cor, 0.7) : mistura(cor, "#FFFFFF", 0.4);
+    return contorno(d, cor) + `<path d="M${f1(150 - w1 + 3)} ${y1 + 5.5} Q150 ${y1 - 1.5} ${f1(150 + w1 - 3)} ${y1 + 5.5}" stroke="${friso}" stroke-width="1.6" fill="none"/>`;
+  }
+  if (tipo === "bandana") {
+    const d = calota(f, { volume: 5, testa: f.T + 24, folga: 4 });
+    const s = escurecer(cor, 0.72), detalhe = luminancia(cor) > 0.6 ? escurecer(cor, 0.55) : mistura(cor, "#FFFFFF", 0.55);
+    let estampa = "";
+    for (let i = 0; i < 16; i++) estampa += `<circle cx="${f1(150 - f.w100 + ((i * 37) % 97) / 97 * 2 * f.w100)}" cy="${f1(f.T - 6 + ((i * 53) % 61) / 61 * 30)}" r="${i % 3 ? 1.4 : 2.4}" fill="${detalhe}"/>`;
+    const nx = 150 + f.w100 + 2, ny = f.T + 30;
+    const no = `M${nx} ${ny} Q${nx + 12} ${ny + 2} ${nx + 16} ${ny + 14} Q${nx + 8} ${ny + 12} ${nx + 2} ${ny + 8} Z M${nx} ${ny + 2} Q${nx + 6} ${ny + 14} ${nx + 4} ${ny + 26} Q${nx - 2} ${ny + 18} ${nx - 4} ${ny + 6} Z`;
+    return contorno(no, s) + contorno(d, cor) + recorte(d, estampa) + `<path d="${calotaPartes(f, { volume: 5, testa: f.T + 24, folga: 4 }).dentro.replace(/^ L/, "M").replace(/ Z$/, "")}" stroke="${s}" stroke-width="3" fill="none"/>`;
+  }
+  return "";
+}
+/** Óculos: de grau (aro fino, lente clara) ou escuros de patrocinador. */
+function oculos(wO: number, sol: OculosSol | null | undefined): string {
+  const haste = (cor: string, w: number) => `<path d="M114 137 L${f1(150 - wO + 1)} 135 M186 137 L${f1(150 + wO - 1)} 135" stroke="${cor}" stroke-width="${w}" stroke-linecap="round"/>`;
+  if (!sol) {
+    const aro = "#2B2B2B", lente = (x: number) => `<rect x="${x - 15}" y="130" width="30" height="22" rx="8" fill="#FFFFFF" fill-opacity="0.12" stroke="${aro}" stroke-width="2.4"/><path d="M${x - 9} 134 L${x - 4} 134" stroke="#FFFFFF" stroke-width="1.6" opacity="0.7" stroke-linecap="round"/>`;
+    return haste(aro, 2.2) + lente(129) + lente(171) + `<path d="M144 139 Q150 134.5 156 139" stroke="${aro}" stroke-width="2.2" fill="none"/>`;
+  }
+  const id = novoId("ls");
+  const grad = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${escurecer(sol.lente, 0.55)}"/><stop offset="1" stop-color="${sol.lente}"/></linearGradient></defs>`;
+  const brilho = (x: number) => `<path d="M${x - 9} 135 L${x - 2} 133" stroke="#FFFFFF" stroke-width="2" opacity="0.55" stroke-linecap="round"/>`;
+  if (sol.modelo === "esportivo") {
+    const d = "M106 132 Q150 123 194 132 Q195 147 179 152 Q165 155 157 147 Q150 142 143 147 Q135 155 121 152 Q105 147 106 132 Z";
+    return grad + haste(sol.armacao, 3) + `<path d="${d}" fill="url(#${id})" stroke="${TINTA}" stroke-width="2.4" stroke-linejoin="round"/><path d="M106 132 Q150 123 194 132" stroke="${sol.armacao}" stroke-width="4" fill="none"/>` + brilho(124) + brilho(166);
+  }
+  const lenteD = sol.modelo === "aviador" ? "M-15 -8 Q0 -11 15 -8 Q16 4 7 10 Q0 12 -8 9 Q-16 4 -15 -8 Z" : "M-16 -9 L16 -9 L14 6 Q13 10 9 10 L-10 10 Q-14 10 -15 6 Z";
+  const lente = (x: number, esp: boolean) => `<path d="${lenteD}" transform="translate(${x} 140)${esp ? " scale(-1 1)" : ""}" fill="url(#${id})" stroke="${sol.modelo === "aviador" ? sol.armacao : TINTA}" stroke-width="${sol.modelo === "aviador" ? 2 : 3.2}" stroke-linejoin="round"/>`;
+  const ponte = sol.modelo === "aviador" ? `<path d="M144 133 Q150 130 156 133 M141 131 L159 131" stroke="${sol.armacao}" stroke-width="1.8" fill="none"/>` : `<path d="M145 135 Q150 132 155 135" stroke="${TINTA}" stroke-width="3" fill="none"/>`;
+  return grad + haste(sol.modelo === "aviador" ? sol.armacao : TINTA, sol.modelo === "aviador" ? 1.8 : 3) + lente(129, true) + lente(171, false) + ponte + brilho(129) + brilho(171);
+}
+function piercing(p: Piercing | undefined): string {
+  const nariz = `<circle cx="157.5" cy="181" r="2.8" fill="none" stroke="${PRATA}" stroke-width="1.6"/><path d="M155.6 179 a2.8 2.8 0 0 1 4.4 1" stroke="${TINTA}" stroke-width="0.6" fill="none" opacity="0.5"/>`;
+  const sobr = `<circle cx="182" cy="121.5" r="2" fill="${PRATA}" stroke="${TINTA}" stroke-width="0.9"/><circle cx="184" cy="133" r="2" fill="${PRATA}" stroke="${TINTA}" stroke-width="0.9"/>`;
+  return p === "nariz" ? nariz : p === "sobrancelha" ? sobr : p === "dois" ? nariz + sobr : "";
+}
+/** Fone de patrocinador pendurado no pescoço. */
+export function foneNoPescoco(cor: string, detalhe: string, y = 0): string {
+  return `<g transform="translate(0 ${y})"><path d="M120 222 Q150 252 180 222" stroke="${TINTA}" stroke-width="7.5" fill="none" stroke-linecap="round"/><path d="M120 222 Q150 252 180 222" stroke="${cor}" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="114" cy="226" rx="9" ry="12" fill="${cor}" stroke="${TINTA}" stroke-width="2.4"/><ellipse cx="186" cy="226" rx="9" ry="12" fill="${cor}" stroke="${TINTA}" stroke-width="2.4"/>
+    <ellipse cx="114" cy="226" rx="4" ry="6" fill="${detalhe}"/><ellipse cx="186" cy="226" rx="4" ry="6" fill="${detalhe}"/></g>`;
+}
+
 // ---------------------------------- montagem ----------------------------------
 export interface OpcoesFoto {
   aparencia: Aparencia | null; // null = silhueta (ainda sem aparência escolhida)
@@ -517,6 +641,8 @@ export interface OpcoesFoto {
   soCabeca?: boolean;
   /** desenho extra por cima do pescoço (tatuagem), nas coordenadas do quadro */
   pescoco?: string;
+  /** fora de campo (corpo inteiro de roupa do dia a dia): óculos aparecem */
+  fora?: boolean;
 }
 
 export function svgFoto(o: OpcoesFoto): string {
@@ -548,7 +674,14 @@ export function svgFoto(o: OpcoesFoto): string {
     a.sardas ? [[118, 160], [125, 164], [132, 160], [168, 160], [175, 164], [182, 160], [121, 168], [179, 168]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${mistura(pele, "#5A2A12", 0.5)}"/>`).join("") : "",
     a.pinta ? `<circle cx="172" cy="186" r="2" fill="${mistura(pele, "#000", 0.6)}"/>` : "",
     a.brinco ? `<circle cx="${150 - wO - 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
+    a.brinco2 ? `<circle cx="${150 + wO + 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
+    piercing(a.piercing),
   ].join("");
+  const fora = !silhueta && (o.fora || o.traje === "social");
+  const naCabeca = silhueta ? "" : acessorioCabeca(a.acessorio ?? "nenhum", f, CORES_ROUPA[a.corAcessorio ?? 0] ?? CORES_ROUPA[0]);
+  // escuros só fora de campo; de grau em tudo, menos no corpo inteiro de uniforme
+  const oculosHtml = silhueta ? "" : fora && a.oculosSol ? oculos(wO, a.oculosSol) : a.acessorio === "oculos" && !(o.soCabeca && !o.fora) ? oculos(wO, null) : "";
+  const fone = fora && !o.soCabeca && a.fone ? foneNoPescoco(a.fone.cor, a.fone.detalhe) : "";
   const rosto = silhueta ? "" : `
     ${sobrancelhas(a.formatoSobrancelha, a.sobrancelha, corSobr, pele)}
     ${olho(129, false, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}${olho(171, true, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}
@@ -563,6 +696,7 @@ export function svgFoto(o: OpcoesFoto): string {
   ${corpo}
   ${silhueta ? "" : a.corrente && o.traje === "social" ? `<path d="M126 226 Q150 270 174 226" stroke="#D9B44A" stroke-width="2.6" fill="none"/><circle cx="150" cy="252" r="4" fill="#D9B44A" stroke="${TINTA}" stroke-width="1.2"/>` : ""}
   ${o.pescoco ?? ""}
+  ${fone}
   ${orelha(-1)}${orelha(1)}
   <path d="${rostoD}" fill="${pele}"/>
   <g clip-path="url(#${clipRosto})">
@@ -574,7 +708,9 @@ export function svgFoto(o: OpcoesFoto): string {
   ${silhueta ? "" : barba(a.barba, f, rostoD, a.boca, a.nariz, cor, pele)}
   <path d="${rostoD}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
   ${cabeloFrente(a.cabelo, f, cor, pele)}
+  ${naCabeca}
   ${rosto}
+  ${oculosHtml}
   ${silhueta ? `<text x="150" y="160" text-anchor="middle" font-family="'Big Shoulders Display','Arial Narrow',sans-serif" font-weight="900" font-size="52" fill="#3A5148">?</text>` : ""}
   </g>
 </svg>`;

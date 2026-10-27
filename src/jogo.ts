@@ -33,7 +33,7 @@ import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./p
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
-import { alvoSeguidores, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
+import { alvoSeguidores, tetoSeguidores, saltoTransferencia, famaDeReferencia, efeitosVida, gastosDoMes, imposto, semanaRedes, visibilidade, PADRAO_INICIAL, type PadraoVida } from "./vida.js";
 import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from "./identidade.js";
 import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
 import { gradeDeNumeros, numeroLivre, numeroParaChegada, limparNumeros, type Camisa } from "./numeros.js";
@@ -691,7 +691,12 @@ export function convocado(pacote: PacoteDados, s: Save, chave = `${s.carreira.te
     sim = sel.elenco.filter((x) => x.posicao === j.posicao && x.ovr > meu).length < (CONVOCADOS[j.posicao] ?? 3);
   }
   reg.conv[chave] = sim;
+  const primeira = sim && reg.convocacoes === 0;
   if (sim) { reg.convocacoes++; noticia(s, "jogo", `${j.apelido} convocado`, `${j.apelido} está na lista da ${sel!.nome}${chave.endsWith("copa") ? " para a Copa do Mundo" : ""}.`); }
+  if (primeira) { // primeira convocação: as redes explodem
+    c.hype = clamp((c.hype ?? 0) + 0.8, -0.3, 1.5);
+    c.seguidores = saltoTransferencia(c.seguidores, alvoDeSeguidores(pacote, s));
+  }
   return sim;
 }
 /** Titular ou banco na seleção: a posição dele entre os convocados da posição. */
@@ -1350,7 +1355,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (!c.propPatrocinio && (c.patrocinios?.length ?? 0) < 4) {
     const r3 = rngDe(s, "patrocinio");
     if (r3.chance(0.025 + c.fama / 700)) {
-      const m = marcaInteressada(r3, c.fama, j.idade, c.patrocinios ?? [], c.recusadas ?? []);
+      const m = marcaInteressada(r3, c.fama, j.idade, c.patrocinios ?? [], c.recusadas ?? [], c.seguidores);
       if (m) { c.propPatrocinio = { marca: m.id, opcoes: ofertasDaMarca(r3, m, c.fama, c.seguidores), expira: semanaAbsJogo(c) + 4 }; eventos.push(`Proposta de patrocínio: ${m.nome}.`); noticia(s, "dinheiro", `${m.nome} quer patrocinar ${j.apelido}`, `A marca mandou três modelos de contrato. A proposta vale por quatro semanas.`, { k: "patrocinio", marca: m.id }); }
     }
   }
@@ -2055,7 +2060,9 @@ export const padraoDe = (c: Carreira): PadraoVida => (c.padrao ??= { ...PADRAO_I
 /** Seguidores que o jogador "deveria" ter no clube atual. */
 export function alvoDeSeguidores(pacote: PacoteDados, s: Save, clubeId = s.carreira.clubeId): number {
   const c = s.carreira, cl = mundo(pacote).clube[clubeId];
-  return alvoSeguidores(c.fama, visibilidade(clubeId, cl?.ligaId, cl?.fClube ?? 1), s.jogador.personalidade.carisma ?? 10, c.engajamento ?? 40, c.hype ?? 0);
+  const sel = { convocacoes: c.selecao?.convocacoes ?? 0, copas: c.selecao?.copas?.filter((x) => x.jogos > 0).length ?? 0 };
+  const vis = Math.max(visibilidade(clubeId, cl?.ligaId, cl?.fClube ?? 1), sel.convocacoes ? 0.9 : 0);
+  return alvoSeguidores(c.fama, vis, s.jogador.personalidade.carisma ?? 10, c.engajamento ?? 40, c.hype ?? 0, tetoSeguidores(clubeId, cl?.ligaId, cl?.fClube ?? 1, sel));
 }
 function posicaoNaTabela(fixa: number | undefined, s: Save): number {
   if (fixa) return fixa;

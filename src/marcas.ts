@@ -2,7 +2,12 @@
 // Uma marca por categoria (exclusividade), até quatro patrocinadores ao mesmo tempo.
 import { RNG } from "./rng.js";
 
-export type Categoria = "banco" | "refrigerante" | "cerveja" | "energetico" | "carro" | "celular" | "material" | "comida";
+export type Categoria = "banco" | "refrigerante" | "cerveja" | "energetico" | "carro" | "celular" | "material" | "comida" | "oculos" | "relogio" | "fone";
+/** O que a marca de acessório põe no jogador (aparece no visual enquanto o contrato durar). */
+export type AcessorioMarca =
+  | { tipo: "oculos"; modelo: "aviador" | "esportivo" | "quadrado"; armacao: string; lente: string }
+  | { tipo: "relogio"; pulseira: string; mostrador: string }
+  | { tipo: "fone"; cor: string; detalhe: string };
 export type Simbolo = "onda" | "circulo" | "pera" | "coroa" | "guardaChuva" | "chama" | "raio" | "folha" | "gota" | "estrela" | "oval" | "escudo" | "pontos" | "batata" | "asa" | "balanca" | "quadrado" | "chifre" | "garra" | "engrenagem" | "letra";
 export interface Marca {
   id: string; nome: string; categoria: Categoria; cores: [string, string, string]; simbolo: Simbolo; slogan: string;
@@ -10,10 +15,12 @@ export interface Marca {
   peso: number; famaMin: number;
   /** estilo da letra do logo */
   letra: "redonda" | "pesada" | "fina" | "italica";
+  /** marcas de acessório só procuram quem já é muito seguido */
+  seguidoresMin?: number; acessorio?: AcessorioMarca;
 }
 
 export const NOME_CATEGORIA: Record<Categoria, string> = {
-  banco: "Banco", refrigerante: "Refrigerante", cerveja: "Cerveja", energetico: "Energético", carro: "Carro", celular: "Celular", material: "Material esportivo", comida: "Lanchonete",
+  banco: "Banco", refrigerante: "Refrigerante", cerveja: "Cerveja", energetico: "Energético", carro: "Carro", celular: "Celular", material: "Material esportivo", comida: "Lanchonete", oculos: "Óculos", relogio: "Relógio", fone: "Fone de ouvido",
 };
 
 export const MARCAS: Marca[] = [
@@ -55,6 +62,15 @@ export const MARCAS: Marca[] = [
   // lanchonetes
   { id: "macdonaldo", nome: "MacDonaldo", categoria: "comida", cores: ["#DA291C", "#FFC72C", "#FFFFFF"], simbolo: "batata", slogan: "Amo muito tudo isso, menos perder.", peso: 1.5, famaMin: 50, letra: "redonda" },
   { id: "burguerrei", nome: "Burguer Rei", categoria: "comida", cores: ["#F5EBDC", "#D62300", "#502314"], simbolo: "coroa", slogan: "Rei da área, rei do lanche.", peso: 1.2, famaMin: 35, letra: "redonda" },
+  // acessórios (só para quem é muito seguido; o produto aparece no visual)
+  { id: "reiban", nome: "Rei-Ban", categoria: "oculos", cores: ["#B5121B", "#FFFFFF", "#1A1A1A"], simbolo: "letra", slogan: "Nunca escondeu o olhar do goleiro.", peso: 1.6, famaMin: 55, letra: "italica", seguidoresMin: 15e6, acessorio: { tipo: "oculos", modelo: "aviador", armacao: "#C9A24D", lente: "#2F4A36" } },
+  { id: "ouclei", nome: "Ouclei", categoria: "oculos", cores: ["#111111", "#E8E8E8", "#1F6FB0"], simbolo: "oval", slogan: "Feito para o sol das três da tarde.", peso: 1.4, famaMin: 50, letra: "pesada", seguidoresMin: 8e6, acessorio: { tipo: "oculos", modelo: "esportivo", armacao: "#E8E8E8", lente: "#1F6FB0" } },
+  { id: "chilibins", nome: "Chili Bins", categoria: "oculos", cores: ["#E30613", "#111111", "#FFFFFF"], simbolo: "chama", slogan: "Óculos com pimenta.", peso: 1.0, famaMin: 40, letra: "redonda", seguidoresMin: 3e6, acessorio: { tipo: "oculos", modelo: "quadrado", armacao: "#1A1A1A", lente: "#2A2A2A" } },
+  { id: "rolecs", nome: "Rolécs", categoria: "relogio", cores: ["#006039", "#C9A24D", "#FFFFFF"], simbolo: "coroa", slogan: "Cada minuto conta. Principalmente os acréscimos.", peso: 2.0, famaMin: 75, letra: "fina", seguidoresMin: 40e6, acessorio: { tipo: "relogio", pulseira: "#C9A24D", mostrador: "#0F3D2A" } },
+  { id: "taguer", nome: "Tague Roier", categoria: "relogio", cores: ["#111111", "#E30613", "#FFFFFF"], simbolo: "escudo", slogan: "Não ceda à pressão.", peso: 1.5, famaMin: 60, letra: "pesada", seguidoresMin: 15e6, acessorio: { tipo: "relogio", pulseira: "#B9BDC4", mostrador: "#1A1A1A" } },
+  { id: "casiu", nome: "Casiu", categoria: "relogio", cores: ["#1A1A1A", "#6E8BFF", "#FFFFFF"], simbolo: "quadrado", slogan: "Aguenta tombo, aguenta carrinho.", peso: 0.9, famaMin: 40, letra: "pesada", seguidoresMin: 2e6, acessorio: { tipo: "relogio", pulseira: "#2B2B2B", mostrador: "#9FB7A0" } },
+  { id: "bitz", nome: "Bitz", categoria: "fone", cores: ["#E30613", "#FFFFFF", "#111111"], simbolo: "circulo", slogan: "Entra em campo no seu ritmo.", peso: 1.5, famaMin: 55, letra: "redonda", seguidoresMin: 10e6, acessorio: { tipo: "fone", cor: "#F2F0EA", detalhe: "#E30613" } },
+  { id: "jbla", nome: "JBLá", categoria: "fone", cores: ["#FF5A00", "#FFFFFF", "#1A1A1A"], simbolo: "pontos", slogan: "O som do vestiário.", peso: 1.0, famaMin: 40, letra: "pesada", seguidoresMin: 3e6, acessorio: { tipo: "fone", cor: "#1A1A1A", detalhe: "#FF5A00" } },
   { id: "habibao", nome: "Habibão", categoria: "comida", cores: ["#E30613", "#FFD200", "#FFFFFF"], simbolo: "engrenagem", slogan: "Esfiha de campeão.", peso: 0.7, famaMin: 15, letra: "pesada" },
 ];
 export const MARCA: Record<string, Marca> = Object.fromEntries(MARCAS.map((m) => [m.id, m]));
@@ -84,15 +100,22 @@ export function ofertasDaMarca(rng: RNG, m: Marca, fama: number, seguidores: num
 }
 
 /** Uma marca interessada (de categoria livre, que caiba na fama e na idade do jogador). */
-export function marcaInteressada(rng: RNG, fama: number, idade: number, ativos: ContratoPatrocinio[], recusadas: string[]): Marca | undefined {
+export function marcaInteressada(rng: RNG, fama: number, idade: number, ativos: ContratoPatrocinio[], recusadas: string[], seguidores = 0): Marca | undefined {
   const ocupadas = new Set(ativos.map((c) => MARCA[c.marca]?.categoria));
-  const pool = MARCAS.filter((m) => !ocupadas.has(m.categoria) && fama >= m.famaMin && (m.categoria !== "cerveja" || idade >= 18) && !recusadas.includes(m.id));
+  const pool = MARCAS.filter((m) => !ocupadas.has(m.categoria) && fama >= m.famaMin && seguidores >= (m.seguidoresMin ?? 0) && (m.categoria !== "cerveja" || idade >= 18) && !recusadas.includes(m.id));
   if (!pool.length) return undefined;
   // marca grande tem preferência quando o jogador já é grande
   const pesos = pool.map((m) => 1 + (fama - m.famaMin) / 40 + m.peso);
   let x = rng.next() * pesos.reduce((a, b) => a + b, 0);
   for (let i = 0; i < pool.length; i++) { x -= pesos[i]; if (x <= 0) return pool[i]; }
   return pool[pool.length - 1];
+}
+
+/** Acessórios que o jogador está usando por contrato (um por tipo). */
+export function acessoriosAtivos(ativos: ContratoPatrocinio[] | undefined): Partial<Record<AcessorioMarca["tipo"], AcessorioMarca>> {
+  const out: Partial<Record<AcessorioMarca["tipo"], AcessorioMarca>> = {};
+  for (const k of ativos ?? []) { const a = MARCA[k.marca]?.acessorio; if (a) out[a.tipo] = a; }
+  return out;
 }
 
 /** Bônus do mês de um contrato por desempenho. */

@@ -27,19 +27,41 @@ export function visibilidade(clubeId: string, ligaId: string | undefined, fClube
 const TETO_SEG = 700e6;
 export interface EstadoRedes { engajamento: number; hype: number }
 
-/** Quantos seguidores o jogador "deveria" ter agora: fama, clube, jeito de marqueteiro e quanto ele posta. */
-export function alvoSeguidores(fama: number, vis: number, carisma: number, engajamento: number, hype: number): number {
+/** Até onde o clube e a liga deixam o jogador chegar nas redes: um garoto de Série C não passa de uns 2 milhões,
+ *  por mais gol que faça. A seleção quebra esse teto (e uma Copa do Mundo quebra mais ainda). */
+const TETO_LIGA: Record<string, number> = {
+  BRA4: 0.5e6, BRA3: 2e6, BRA2: 6e6, BRA1: 30e6, ARG1: 25e6, POR1: 30e6, NED1: 25e6, USA1: 60e6, KSA1: 150e6,
+  ENG2: 10e6, ESP2: 8e6, ITA1: 120e6, GER1: 120e6, FRA1: 120e6, ESP1: 300e6, ENG1: 300e6,
+};
+export interface SelecaoRedes { convocacoes: number; copas: number }
+export function tetoSeguidores(clubeId: string, ligaId: string | undefined, fClube: number, sel?: SelecaoRedes): number {
+  const li = infoLiga(ligaId);
+  let t = li.amador ? 0.15e6 : (TETO_LIGA[li.id] ?? TETO_LIGA[li.id.slice(0, 4)] ?? 15e6) * (0.5 + 0.5 * clamp(fClube, 0, 1.4));
+  if (VIS_CLUBE[clubeId]) t *= VIS_CLUBE[clubeId];
+  const n = sel?.convocacoes ?? 0;
+  if (n > 0) {
+    // camisa da seleção: o país inteiro passa a olhar para ele, jogue onde jogar
+    t = Math.max(t * (1 + 3 * Math.min(1, n / 3)), 10e6 + 5e6 * Math.min(n, 4));
+    if ((sel?.copas ?? 0) > 0) t = Math.max(t * 2, 60e6);
+  }
+  return Math.min(TETO_SEG, t);
+}
+
+/** Quantos seguidores o jogador "deveria" ter agora: fama, clube, jeito de marqueteiro e quanto ele posta (até o teto). */
+export function alvoSeguidores(fama: number, vis: number, carisma: number, engajamento: number, hype: number, teto = TETO_SEG): number {
   const base = 2500 * Math.exp(fama / 8.4); // fama 30 ≈ 90 mil; 60 ≈ 3 mi; 90 ≈ 110 mi
   const marqueteiro = 0.6 + (0.9 * carisma) / 20; // 0,65 a 1,5
   const posta = 0.6 + (0.8 * engajamento) / 100; // 0,6 a 1,4
   const bruto = base * vis * marqueteiro * posta * (1 + hype);
-  return TETO_SEG * (1 - Math.exp(-bruto / TETO_SEG));
+  const t = Math.min(TETO_SEG, teto);
+  return t * (1 - Math.exp(-bruto / t));
 }
 
 /** Uma semana nas redes: sobe rápido quando está abaixo do alvo, cai devagar quando está acima. */
 export function semanaRedes(seg: number, alvo: number): number {
   if (!(seg > 0) || seg > 5 * TETO_SEG) return Math.round(alvo); // save quebrado / números de antes da correção
-  const taxa = alvo > seg ? 0.06 : 0.02;
+  // acima do alvo cai devagar; muito acima (número que não cabe no clube) cai rápido
+  const taxa = alvo > seg ? 0.06 : seg > 2 * alvo ? 0.1 : 0.02;
   return Math.max(100, Math.round(seg + (alvo - seg) * taxa));
 }
 

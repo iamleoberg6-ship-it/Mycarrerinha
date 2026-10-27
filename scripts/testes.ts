@@ -22,9 +22,9 @@ import { tecnicoDoClube, trocasDeTecnicoEm, lesoesDaTemporada } from "../src/mun
 import { oferecerJogador, aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
-import { alvoSeguidores, semanaRedes, imposto } from "../src/vida.js";
+import { alvoSeguidores, semanaRedes, imposto, tetoSeguidores } from "../src/vida.js";
 import { tetoSalarial } from "../src/mercado.js";
-import { MARCAS, MARCA, ofertasDaMarca, marcaInteressada } from "../src/marcas.js";
+import { MARCAS, MARCA, ofertasDaMarca, marcaInteressada, acessoriosAtivos } from "../src/marcas.js";
 import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararPartida, planoPadrao, resolverDecisao, concluirSemana, decisaoComemoracao, decisaoPosJogo, migrarSave, resolverEvento } from "../src/jogo.js";
 import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSemana, melhoresAmigos, ovr as ovrJ, ovrEm } from "../src/jogo.js";
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
@@ -1333,5 +1333,26 @@ teste("Acesso e rebaixamento: o campeão da Série C sobe e a carreira vai junto
   for (const [id, n] of Object.entries(tam)) assert.equal(w.liga[id].clubes.length, n, id);
   sincronizarMundo(pacote, "piramide", 0);
   assert.equal(w.info[x].ligaId, "BRA3");
+});
+teste("Seguidores com teto do clube e da liga; seleção quebra o teto; marcas de acessório só para muito seguido", () => {
+  const w = mundo(pacote); sincronizarMundo(pacote, "seg", 0);
+  const c3 = w.liga.BRA3.clubes[0];
+  const tC = tetoSeguidores(c3.id, "BRA3", c3.fClube);
+  assert.ok(tC <= 2e6, `teto da Série C ${tC}`);
+  assert.ok(alvoSeguidores(90, 0.3, 20, 100, 1.5, tC) < 2e6, "garoto estourado na Série C não passa de 2 mi");
+  const tSel = tetoSeguidores(c3.id, "BRA3", c3.fClube, { convocacoes: 1, copas: 0 });
+  assert.ok(tSel >= 1e7, `convocado: teto vai longe (${tSel})`);
+  assert.ok(tetoSeguidores("ES-RMA", "ESP1", 1) > 2e8);
+  // 22 milhões numa Série C caem rápido para perto do alvo
+  let seg = 22e6; for (let i = 0; i < 30; i++) seg = semanaRedes(seg, 1.5e6);
+  assert.ok(seg < 3e6, `ajuste de save antigo ${seg}`);
+  const rng = new RNG("ac");
+  for (let i = 0; i < 200; i++) { const m = marcaInteressada(rng, 90, 25, [], [], 1e6); assert.ok(!m?.acessorio, "com 1 mi de seguidores, nada de marca de acessório"); }
+  let viu = false;
+  for (let i = 0; i < 300 && !viu; i++) viu = !!marcaInteressada(rng, 90, 25, [], [], 5e7)?.acessorio;
+  assert.ok(viu, "muito seguido recebe marca de acessório");
+  const ac = acessoriosAtivos([{ marca: "reiban", tipo: "fixo", mensal: 1, meses: 12, restantes: 12, desde: 0, luvas: 0, bonusGol: 0, bonusAssist: 0, bonusNota: 0 }]);
+  assert.equal(ac.oculos?.tipo, "oculos");
+  void MARCAS;
 });
 console.log(`\n${ok} testes passaram`);

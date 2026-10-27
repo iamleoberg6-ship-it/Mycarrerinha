@@ -11,7 +11,7 @@ import {
 import { ATRIBUTOS, GRUPO, peso, type Atributo, type Posicao } from "../../src/atributos.js";
 import {
   svgFoto, APARENCIA_PADRAO, CAMISA_PADRAO, PELES, CORES_CABELO, NOMES_CABELO_COR, CORES_OLHOS, NOMES_OLHOS, ROSTOS, CABELOS,
-  OLHOS, SOBRANCELHAS, NARIZES, BOCAS, BARBAS, ROUPAS_SOCIAIS, CORES_ROUPA, NOMES_ROUPA,
+  OLHOS, SOBRANCELHAS, NARIZES, BOCAS, BARBAS, ROUPAS_SOCIAIS, CORES_ROUPA, NOMES_ROUPA, ACESSORIOS, PIERCINGS,
   type Aparencia, type Camisa,
 } from "./avatar.js";
 import { definirPerfil, estiloDeJogo, type PerfilCraque } from "../../src/perfil.js";
@@ -217,7 +217,7 @@ function painelAparencia(): string {
   switch (estado.aba) {
     case "rosto":
       return grupoTexto("rosto", "Formato do rosto", ROSTOS, a.rosto) + grupoCores("pele", "Tom de pele", PELES, a.pele) +
-        `<span class="rotulo">Detalhes</span><div class="pilulas">${([["sardas", "Sardas"], ["pinta", "Pinta"], ["brinco", "Brinco"]] as const).map(([k, n]) =>
+        `<span class="rotulo">Detalhes</span><div class="pilulas">${([["sardas", "Sardas"], ["pinta", "Pinta"], ["brinco", "Brinco"], ["brinco2", "Brinco nas duas"]] as const).map(([k, n]) =>
           `<button type="button" class="pilula${a[k] ? " ativa" : ""}" data-grupo="liga" data-id="${k}" aria-pressed="${a[k]}">${n}</button>`).join("")}</div>`;
     case "olhos":
       return grupoTexto("formatoOlho", "Formato dos olhos", OLHOS, a.formatoOlho) + grupoCores("olhos", "Cor dos olhos", CORES_OLHOS, a.olhos, NOMES_OLHOS) +
@@ -226,7 +226,9 @@ function painelAparencia(): string {
     case "nariz":
       return grupoTexto("nariz", "Nariz", NARIZES, a.nariz) + grupoTexto("boca", "Boca", BOCAS, a.boca) + grupoTexto("barba", "Barba", BARBAS, a.barba);
     case "cabelo":
-      return grupoTexto("cabelo", "Corte", CABELOS, a.cabelo) + grupoCores("corCabelo", "Cor do cabelo", CORES_CABELO, a.corCabelo, NOMES_CABELO_COR);
+      return grupoTexto("cabelo", "Corte", CABELOS, a.cabelo) + grupoCores("corCabelo", "Cor do cabelo", CORES_CABELO, a.corCabelo, NOMES_CABELO_COR) +
+        grupoTexto("acessorio", "Na cabeça", ACESSORIOS, a.acessorio ?? "nenhum") + (a.acessorio === "faixa" || a.acessorio === "bandana" ? grupoCores("corAcessorio", "Cor da faixa", CORES_ROUPA, a.corAcessorio ?? 0, NOMES_ROUPA) : "") +
+        grupoTexto("piercing", "Piercing", PIERCINGS, a.piercing ?? "nenhum");
     case "roupa":
       return grupoTexto("roupaSocial", "Roupa fora de campo", ROUPAS_SOCIAIS, a.roupaSocial) + grupoCores("corSocial", "Cor", CORES_ROUPA, a.corSocial, NOMES_ROUPA) +
         `<span class="rotulo">Acessório</span><div class="pilulas"><button type="button" class="pilula${a.corrente ? " ativa" : ""}" data-grupo="liga" data-id="corrente" aria-pressed="${a.corrente}">Corrente</button></div>
@@ -454,7 +456,7 @@ function escolher(grupo: string, id: string) {
   else if (grupo === "posicao") estado.posicao = id as Posicao;
   else if (grupo === "aba") { estado.aba = id as Estado["aba"]; if (id === "roupa") estado.traje = "social"; }
   else if (grupo === "traje") estado.traje = id as Estado["traje"];
-  else if (grupo === "liga") { const k = id as "sardas" | "pinta" | "brinco" | "corrente"; estado.aparencia[k] = !estado.aparencia[k]; }
+  else if (grupo === "liga") { const k = id as "sardas" | "pinta" | "brinco" | "brinco2" | "corrente"; estado.aparencia[k] = !estado.aparencia[k]; }
   else if (grupo === "decisao") {
     estado.decisao = id;
     const op = estado.perfil?.evento?.opcoes.find((o) => o.id === id);
@@ -462,7 +464,7 @@ function escolher(grupo: string, id: string) {
   }
   else if (grupo.startsWith("ap-")) {
     const chave = grupo.slice(3) as keyof Aparencia;
-    const numerico = chave === "pele" || chave === "corCabelo" || chave === "olhos" || chave === "corSocial";
+    const numerico = chave === "pele" || chave === "corCabelo" || chave === "olhos" || chave === "corSocial" || chave === "corAcessorio";
     (estado.aparencia as unknown as Record<string, unknown>)[chave] = numerico ? Number(id) : id;
   }
   render();
