@@ -23,6 +23,7 @@ import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type Ofe
 import { cartazPatrocinio, logoSvg } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia, capaVideogame } from "../visual/cartazes";
+import { fotoDoPerfil } from "../visual/mulheres";
 import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
 import { TRACOS, PAISES } from "../../src/dna";
@@ -593,7 +594,7 @@ function celBusca(s: Save): string {
 }
 function cartaoPar(p: Par | Perfil, botoes: string, extra = ""): string {
   const prof = PROFISSOES[p.profissao];
-  return `<div class="perfil-app"><span class="avatar-app">${esc(iniciais(p.nome))}</span><div class="perfil-app-txt"><b>${esc(p.nome.split(" ")[0])}, ${p.idade}</b><small>${esc(prof.nome)} · ${esc(p.cidade)} · ${esc(p.jeito)}</small>
+  return `<div class="perfil-app"><span class="avatar-app foto">${fotoDoPerfil(p)}</span><div class="perfil-app-txt"><b>${esc(p.nome.split(" ")[0])}, ${p.idade}</b><small>${esc(prof.nome)} · ${esc(p.cidade)} · ${esc(p.jeito)}</small>
     <p>“${esc(p.bio)}”</p><small class="efeito-prof">${esc(prof.efeito)}</small>${extra}</div><div class="perfil-app-botoes">${botoes}</div></div>`;
 }
 function celMatch(s: Save): string {
