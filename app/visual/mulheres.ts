@@ -21,7 +21,7 @@ const FUNDOS: [string, string][] = [["#FF9A8B", "#FF6A88"], ["#7F7FD5", "#86A8E7
   ["#FAD0C4", "#FFD1FF"], ["#30CFD0", "#330867"], ["#F093FB", "#F5576C"], ["#4FACFE", "#00F2FE"], ["#43E97B", "#38F9D7"], ["#FA709A", "#FEE140"], ["#2B5876", "#4E4376"]];
 
 export type CabeloF = "liso" | "ondulado" | "cacheado" | "blackpower" | "coque" | "rabo" | "chanel" | "trancas" | "franja" | "curtinho";
-export type OlhoF = "amendoado" | "gatinho" | "redondo" | "semdobra";
+export type OlhoF = "amendoado" | "gatinho" | "redondo" | "semdobra" | "caido" | "estreito";
 export type BocaF = "sorriso" | "sorrisao" | "canto" | "beicinho";
 export type RoupaF = "alcinha" | "ombro" | "academia" | "blazer" | "jaleco" | "couro" | "vestido" | "golaAlta" | "regata" | "camisa";
 export type BrincoF = "nenhum" | "argola" | "ponto" | "pendente";
@@ -49,7 +49,7 @@ export const PACOTE_MULHERES: Mulher[] = (() => {
     const cabelo: CabeloF = escura ? r.pick(["blackpower", "trancas", "cacheado", "liso", "coque", "rabo", "ondulado", "curtinho"]) : r.pick(CABELOS_LISTA.filter((c) => c !== "blackpower" && c !== "trancas"));
     const corCabelo = escura ? r.pick([0, 0, 1, 1, 2, 9, 4]) : clara ? r.pick([0, 2, 3, 4, 5, 6, 7, 8, 1]) : r.pick([0, 1, 1, 2, 3, 4, 8, 9]);
     out.push({
-      pele, cabelo, corCabelo, olho: r.pick(pele <= 2 && i % 7 === 3 ? ["semdobra"] as OlhoF[] : ["amendoado", "gatinho", "redondo", "amendoado", "gatinho"]),
+      pele, cabelo, corCabelo, olho: r.pick(pele <= 2 && i % 7 === 3 ? ["semdobra"] as OlhoF[] : ["amendoado", "gatinho", "redondo", "caido", "estreito", "amendoado", "gatinho"]),
       corOlho: clara ? r.int(0, OLHOS_F.length - 1) : r.pick([0, 0, 1, 1, 2, 3]), boca: r.pick(["sorriso", "sorrisao", "canto", "beicinho", "sorriso"]),
       batom: r.int(0, BATONS.length - 1), rosto: r.int(0, 2), brinco: r.pick(["argola", "ponto", "pendente", "nenhum", "argola"]), colar: r.chance(0.55),
       pinta: r.chance(0.25), sardas: clara && r.chance(0.35), delineado: r.chance(0.6), fundo: i % FUNDOS.length, corRoupa: r.int(0, ROUPAS.length - 1),
@@ -69,7 +69,7 @@ const ROSTOS = [
   "M150 72 C188 72 204 102 203 140 C202 172 184 200 150 208 C116 200 98 172 97 140 C96 102 112 72 150 72 Z", // redondo
 ];
 const OMBROS = "M24 360 C28 304 78 268 128 250 L172 250 C222 268 272 304 276 360 Z";
-const PESCOCO = "M134 190 L131 254 L169 254 L166 190 Z";
+const PESCOCO = "M129 190 L126 254 L174 254 L171 190 Z";
 
 function cabeloAtras(c: CabeloF, cor: string, esc: string): string {
   const f = (d: string) => `<path d="${d}" fill="${cor}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`;
@@ -123,18 +123,19 @@ function roupa(r: RoupaF, cor: string, pele: string, sombra: string): string {
     case "camisa": return base + p("M30 360 C34 300 76 268 124 256 L150 292 L176 256 C224 268 266 300 270 360 Z") + p("M124 256 L150 292 L136 300 L118 266 Z", clara) + p("M176 256 L150 292 L164 300 L182 266 Z", clara) + [312, 336].map((y) => `<circle cx="150" cy="${y}" r="2.4" fill="${esc}"/>`).join("");
   }
 }
-function olho(x: number, esp: boolean, f: OlhoF, cor: string, delineado: boolean, sombraOlho: string, pele: string, sedutor: boolean, blur: string): string {
+function olho(x: number, esp: boolean, f: OlhoF, cor: string, delineado: boolean, sombraOlho: string, pele: string, sedutor: boolean, blur: string, tam: number): string {
   const id = novoId("of");
   const forma: Record<OlhoF, string> = {
     amendoado: "M-14 1 Q-3 -14 14 -3 Q4 10 -14 1 Z", gatinho: "M-14 2 Q-4 -13 15 -6 Q6 10 -14 2 Z",
     redondo: "M-13 1 Q-1 -16 13 -1 Q2 12 -13 1 Z", semdobra: "M-14 1 Q-2 -10 14 -2 Q4 8 -14 1 Z",
+    caido: "M-14 -2 Q-2 -13 14 1 Q3 9 -14 -2 Z", estreito: "M-15 0 Q-2 -9 15 -2 Q3 6 -15 0 Z",
   };
-  const lid: Record<OlhoF, string> = { amendoado: "M-15 1 Q-3 -15 15 -3", gatinho: "M-15 2 Q-4 -14 16 -6", redondo: "M-14 1 Q-1 -17 14 -1", semdobra: "M-15 1 Q-2 -11 15 -2" };
+  const lid: Record<OlhoF, string> = { amendoado: "M-15 1 Q-3 -15 15 -3", gatinho: "M-15 2 Q-4 -14 16 -6", redondo: "M-14 1 Q-1 -17 14 -1", semdobra: "M-15 1 Q-2 -11 15 -2", caido: "M-15 -2 Q-2 -14 15 1", estreito: "M-16 0 Q-2 -10 16 -2" };
   const asa = delineado ? `<path d="M13 -4 Q18 -7 22 -11" stroke="#120A06" stroke-width="2.4" stroke-linecap="round" fill="none"/>` : "";
   const cilios = `<path d="M12 -5 Q17 -8 19 -12 M8 -8 Q12 -11 13 -15" stroke="#120A06" stroke-width="1.3" stroke-linecap="round" fill="none"/>`;
   const ig = novoId("ir");
   const palpebra = sedutor ? `<path d="M-16 -16 L18 -16 L18 -4 Q2 -8 -16 -3 Z" fill="${pele}"/>` : "";
-  return `<g transform="translate(${x} 146) scale(${esp ? -1.3 : 1.3} 1.3)"><clipPath id="${id}"><path d="${forma[f]}"/></clipPath>
+  return `<g transform="translate(${x} 146) scale(${esp ? -tam : tam} ${tam})"><clipPath id="${id}"><path d="${forma[f]}"/></clipPath>
     <radialGradient id="${ig}" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="${mistura(cor, "#fff", 0.45)}"/><stop offset=".6" stop-color="${cor}"/><stop offset="1" stop-color="${mistura(cor, "#000", 0.55)}"/></radialGradient>
     <path d="M-17 1 Q-3 -20 19 -6 Q2 -12 -17 1 Z" fill="${sombraOlho}" opacity=".55" filter="url(#${blur})"/>
     <path d="${forma[f]}" fill="#F6EEE6"/><g clip-path="url(#${id})"><path d="M-16 -12 L18 -12 L18 -2 Q0 -6 -16 -1 Z" fill="#000" opacity=".1"/><circle cx="-1" cy="-0.5" r="6.8" fill="url(#${ig})"/><circle cx="-1" cy="-0.5" r="3" fill="#0A0A0A"/><circle cx="1.6" cy="-3.2" r="2" fill="#fff"/><circle cx="-3.4" cy="2.2" r="0.9" fill="#fff" opacity=".8"/>${palpebra}</g>
@@ -159,7 +160,7 @@ export function svgMulher(m: Mulher, roupaId: RoupaF): string {
   const peleBase = PELES_F[m.pele], sombra = mistura(peleBase, "#4A1A08", 0.24), luzPele = mistura(peleBase, "#FFF5E6", 0.3);
   const corBase = CABELOS_F[m.corCabelo], escCabelo = mistura(corBase, "#000", 0.35), luzCabelo = mistura(corBase, "#fff", 0.35);
   const [f1, f2] = FUNDOS[m.fundo], idf = novoId("fm"), idc = novoId("fc"), gp = novoId("gp"), gc = novoId("gc"), gn = novoId("gn"), bl = novoId("bl"), bl2 = novoId("bb");
-  const pele = `url(#${gp})`, cor = `url(#${gc})`, h = hash(JSON.stringify(m)), sedutor = h % 2 === 0, inclina = [-4, -2, 0, 2, 4][h % 5];
+  const pele = `url(#${gp})`, cor = `url(#${gc})`, h = hash(JSON.stringify(m)), sedutor = h % 2 === 0, inclina = [-4, -2, 0, 2, 4][h % 5], tamOlho = [0.98, 1.04, 1.1, 1.16, 1.22][(h >>> 4) % 5];
   const rosto = ROSTOS[m.rosto];
   const corRoupa = ROUPAS[m.corRoupa], batom = BATONS[m.batom], sombraOlho = ["#8C5A7A", "#B07A55", "#6A5A8C", "#A8687A", "#7A6048"][m.batom % 5];
   const sobr = (esp: boolean) => `<g transform="${esp ? "translate(300 0) scale(-1 1)" : ""}"><path d="M110 122 Q122 108 142 116 Q124 112 110 122 Z" fill="${m.corCabelo >= 5 && m.corCabelo <= 6 ? CABELOS_F[3] : escCabelo}" stroke="${m.corCabelo >= 5 && m.corCabelo <= 6 ? CABELOS_F[3] : escCabelo}" stroke-width="1.4" stroke-linejoin="round" opacity=".92"/></g>`;
@@ -184,7 +185,7 @@ export function svgMulher(m: Mulher, roupaId: RoupaF): string {
   ${brinco(97)}${brinco(203)}
   <ellipse cx="117" cy="168" rx="13" ry="8" fill="#E8607A" opacity=".32" filter="url(#${bl})"/><ellipse cx="183" cy="168" rx="13" ry="8" fill="#E8607A" opacity=".32" filter="url(#${bl})"/>
   ${sobr(false)}${sobr(true)}
-  ${olho(127, true, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho, luzPele, sedutor, bl)}${olho(173, false, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho, luzPele, sedutor, bl)}
+  ${olho(127, true, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho, luzPele, sedutor, bl, tamOlho)}${olho(173, false, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho, luzPele, sedutor, bl, tamOlho)}
   <path d="M146 150 Q143 164 142 168" stroke="${sombra}" stroke-width="4" fill="none" opacity=".5" filter="url(#${bl})"/>
   <path d="M144 169 Q150 173 156 169" stroke="${mistura(peleBase, "#000", 0.4)}" stroke-width="1.6" fill="none" stroke-linecap="round"/><ellipse cx="151" cy="163" rx="1.6" ry="3" fill="#fff" opacity=".55"/>
   ${boca(m.boca, batom)}<ellipse cx="146" cy="191" rx="4" ry="1.6" fill="#fff" opacity=".55" filter="url(#${bl})"/>
