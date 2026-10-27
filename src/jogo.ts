@@ -1012,11 +1012,12 @@ export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
 
 // ------------------------------------------------------------------ fim da semana
 /** Resumo de uma partida do jogador (o da copa traz a competição e a fase). */
-export interface ResumoPartida { nomeCasa: string; nomeFora: string; golsCasa: number; golsFora: number; nota: number; gols: number; assist: number; minutos: number; tipo: Partida["tipo"]; competicao?: string; rotulo?: string; penaltis?: string; escalacao?: Escalacao; melhorEmCampo?: boolean }
+export interface ResumoPartida { nomeCasa: string; nomeFora: string; idCasa?: string; idFora?: string; golsCasa: number; golsFora: number; nota: number; gols: number; assist: number; minutos: number; tipo: Partida["tipo"]; competicao?: string; rotulo?: string; penaltis?: string; escalacao?: Escalacao; melhorEmCampo?: boolean }
 export interface ResumoSemana {
   rotulo: string; escalacao: Escalacao; partida?: ResumoPartida; copa?: ResumoPartida;
   ovrAntes: number; ovrDepois: number; ganhos: [Atributo, number][]; moral: [number, number]; cansaco: [number, number]; fama: [number, number];
   dinheiro?: { salario: number; aluguel: number; gastos?: number }; eventos: string[]; posicaoTabela: number; fimDeTemporada?: ResumoTemporada;
+  seguidores?: [number, number]; saldo?: [number, number]; relTecnico?: [number, number]; torcida?: [number, number];
 }
 
 const POLEMICAS = [
@@ -1078,7 +1079,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
     const info = infoClube(pacote, adversario), ano = ANO_INICIAL + c.temporada;
     receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${craque.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", nome: `Camisa de ${craque}`, legenda: `${info?.nome ?? ""}${partida.tipo === "base" ? ` ${categoriaBase(j.idade)}` : ""} · troca no apito final · ${ano}`, ano, cores: [info?.cores[0] ?? "#FFFFFF", info?.cores[1] ?? "#111111"], modelo: info?.padrao ?? "lisa", numero: String(1 + (craque.length * 7) % 30) } }], eventos);
   }
-  const resumo: ResumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo, escalacao: partida.escalacao,
+  const resumo: ResumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, idCasa: partida.casa, idFora: partida.fora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo, escalacao: partida.escalacao,
     ...(copa ? { competicao: copa.nome, rotulo: copa.rotulo } : {}) };
   if (minutos <= 0) {
     if (partida.escalacao === "banco") { c.moral = clamp(c.moral - 1, 0, 100); eventos.push(copa ? "Ficou no banco o jogo da copa todo." : "Ficou no banco o jogo todo."); }
@@ -1164,7 +1165,7 @@ export function concluirJogoDaCopa(pacote: PacoteDados, s: Save, plano: Plano, p
     else { c.moral = clamp(c.moral - (disputa.venceu ? 2 : 7), 0, 100); if (!disputa.venceu) { c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); noticia(s, "polemica", `${j.apelido} perde pênalti na disputa`, `${j.apelido} desperdiçou a cobrança e ${ehDeSelecao(info.id) ? "a seleção foi eliminada" : "o time foi eliminado"}${disputa.placar ? ` (${disputa.placar} nos pênaltis)` : ""}.`); } }
     if (disputa.converteu && disputa.venceu) noticia(s, "jogo", `${j.apelido} converte e ${ehDeSelecao(info.id) ? "a seleção" : "o time"} passa nos pênaltis`, `Frieza na marca da cal${disputa.placar ? `: ${disputa.placar} na disputa` : ""}.`);
   }
-  const resumo: ResumoPartida = r.resumo ?? { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: jg.gc!, golsFora: jg.gf!, nota: 0, gols: 0, assist: 0, minutos: 0, tipo: "profissional", competicao: info.nome, rotulo: info.rotulo, escalacao: partida.escalacao };
+  const resumo: ResumoPartida = r.resumo ?? { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, idCasa: partida.casa, idFora: partida.fora, golsCasa: jg.gc!, golsFora: jg.gf!, nota: 0, gols: 0, assist: 0, minutos: 0, tipo: "profissional", competicao: info.nome, rotulo: info.rotulo, escalacao: partida.escalacao };
   if (jg.penaltis) { resumo.penaltis = w.info[jg.penaltis]?.nome; eventos.push(`Decisão nos pênaltis: ${w.info[jg.penaltis]?.nome} passou.`); }
   noticiasDaCopa(pacote, s, e, eventos);
   c.meioSemana = { semana: c.semana, resumo, participacao: r.participacao, nota: r.nota, eventos };
@@ -1205,6 +1206,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const casa = efeitosDaCasa(s.casa).total;
   const rotulo = rotuloSemana(c);
   const ovrAntes = ovr(j), atAntes = { ...j.at }, moral0 = c.moral, cansaco0 = c.cansaco, fama0 = c.fama, lesao0 = c.lesao;
+  const segIni = c.seguidores, saldoIni = s.casa.saldo, relIni = c.relTecnico, torcIni = c.torcida ?? 50;
   const eventos: string[] = [];
   const validas = acoesValidas(s, plano), travados = diasTravados(s);
   const cont = (a: Acao) => validas.filter((x) => x === a).length;
@@ -1465,6 +1467,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   return {
     rotulo, escalacao: partida?.escalacao ?? (c.semana - 1 < SEMANAS_PRE ? "semJogo" : "fora"), partida: resumoPartida, ...(quarta ? { copa: quarta.resumo } : {}),
     ovrAntes, ovrDepois: ovr(j), ganhos, moral: [moral0, c.moral], cansaco: [cansaco0, c.cansaco], fama: [fama0, c.fama], dinheiro, eventos,
+    seguidores: [segIni, c.seguidores], saldo: [saldoIni, s.casa.saldo], relTecnico: [relIni, c.relTecnico], torcida: [torcIni, c.torcida ?? 50],
     posicaoTabela: posicaoNaTabela(fim ? s.carreira.historico.at(-1)!.posicao : undefined, s), fimDeTemporada: fim,
   };
 }

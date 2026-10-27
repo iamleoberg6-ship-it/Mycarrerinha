@@ -61,6 +61,7 @@ import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOME
 import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
 import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visual/torneios";
+import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota } from "./visuais";
 import { vestiarioDe, albumDe } from "../../src/clube-vivo";
 import { perfilCidade, NOME_CLIMA, inverno } from "../../src/cidades";
 import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
@@ -1491,7 +1492,8 @@ function abrirJogo() {
   const idComp = p.copa ? p.copa.id : p.tipo === "base" ? "BASE" : infoLiga(save.carreira.ligaId).id, idt = identidade(idComp);
   $("telaJogo").innerHTML = `<div class="placar ident" style="${estiloIdent(idt)}">${p.clima ? `<p class="selo-jogo"><span>${esc(p.clima.tag)}</span></p>` : ""}<p class="comp-linha">${seloSvg(idt, 22)}<span>${p.copa ? `${esc(COPAS[p.copa.id].curto)} · ${esc(p.copa.rotulo)}${p.copa.neutro ? " · campo neutro" : ""}` : p.tipo === "base" ? `${esc(infoLiga(save.carreira.ligaId).curto)} ${categoriaBase(save.jogador.idade).replace("s", "S")}` : `${esc(infoLiga(save.carreira.ligaId).curto)} · ${esc(rotuloSemana(save.carreira))}`}</span></p>
     <div class="linha"><div class="time">${escudo(p.casa)}<span>${esc(p.nomeCasa)}</span></div><div class="gols" id="gols">0 × 0</div><div class="time dir"><span>${esc(p.nomeFora)}</span>${escudo(p.fora)}</div></div>
-    <div class="min" id="minuto">0'</div><div class="placar-extra"><span id="agregado"></span><span class="nota-viva" id="notaViva"></span></div></div>
+    <div class="min" id="minuto">0'</div><div class="placar-extra"><span id="agregado"></span><span class="nota-viva" id="notaViva"></span></div>
+    ${campinhoSvg(p)}<div class="pressao" aria-label="Quem está melhor no jogo"><span>${esc(p.souCasa ? p.nomeCasa : p.nomeFora)}</span><i><b id="pressaoBar"></b></i><span>${esc(p.souCasa ? p.nomeFora : p.nomeCasa)}</span></div></div>
     <div class="lances" id="lances"></div><div class="rodape" id="rodapeJogo"><button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button></div>`;
   ($("dlgJogo") as HTMLDialogElement).showModal();
   atualizarPlacar();
@@ -1541,6 +1543,36 @@ function adicionarLance(min: number, html: string, cls = "") {
   $("lances").appendChild(el); el.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
+// ------------------------------------------------------------------ campinho: a bola anda conforme o lance
+let pressao = 0, passoBola = 0;
+function campinhoSvg(p: Partida): string {
+  pressao = 0; passoBola = 0;
+  const [m1] = cores(p.souCasa ? p.casa : p.fora), [a1] = cores(p.souCasa ? p.fora : p.casa);
+  const faixas = Array.from({ length: 8 }, (_, i) => `<rect x="${i * 37.5}" y="0" width="37.5" height="110" fill="${i % 2 ? "#2F7A45" : "#2A6E3F"}"/>`).join("");
+  return `<svg class="campinho" viewBox="0 0 300 110" aria-hidden="true">${faixas}<g fill="none" stroke="#ffffffaa" stroke-width="1.4"><rect x="4" y="4" width="292" height="102"/><path d="M150 4 V106"/><circle cx="150" cy="55" r="15"/><rect x="4" y="30" width="34" height="50"/><rect x="262" y="30" width="34" height="50"/><rect x="4" y="44" width="10" height="22"/><rect x="286" y="44" width="10" height="22"/></g>
+    <rect x="0" y="45" width="4" height="20" fill="${m1}" stroke="#fff" stroke-width=".8"/><rect x="296" y="45" width="4" height="20" fill="${a1}" stroke="#fff" stroke-width=".8"/>
+    <g id="voce" class="voce" transform="translate(180 55)" style="opacity:${p.entrada === 0 ? 1 : 0}"><circle r="7" fill="${m1}" stroke="#fff" stroke-width="1.6"/><text y="3" text-anchor="middle" font-size="8" font-weight="900" fill="${luzCor(m1) > 0.6 ? "#111" : "#fff"}">${esc(save!.jogador.numero)}</text></g>
+    <g id="bola" class="bola" transform="translate(150 55)"><circle r="4.2" fill="#fff" stroke="#111" stroke-width="1"/></g></svg>`;
+}
+const luzCor = (hex: string) => { const n = parseInt(hex.replace("#", "").slice(0, 6), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+/** Leva a bola para uma faixa do campo (0 = nosso gol, 300 = gol deles) e mexe na barra de pressão. */
+function moverBola(xMin: number, xMax: number, dPressao: number, voce = false) {
+  passoBola++;
+  const x = xMin + ((passoBola * 37) % 100) / 100 * (xMax - xMin), y = 18 + ((passoBola * 53) % 100) / 100 * 74;
+  document.getElementById("bola")?.setAttribute("transform", `translate(${x.toFixed(0)} ${y.toFixed(0)})`);
+  const v = document.getElementById("voce");
+  const emCampo = !!partida && !expulso && minutoAtual >= partida.entrada && minutoAtual <= Math.min(90, partida.saida);
+  if (v) v.style.opacity = emCampo ? "1" : "0";
+  if (v) { v.setAttribute("transform", voce ? `translate(${(x - 10).toFixed(0)} ${(y + 6).toFixed(0)})` : `translate(${Math.min(250, Math.max(110, x - 30 + ((passoBola * 17) % 40))).toFixed(0)} ${(30 + ((passoBola * 29) % 50)).toFixed(0)})`); v.classList.toggle("ativo", voce); }
+  pressao = Math.max(-1, Math.min(1, pressao * 0.8 + dPressao));
+  const b = document.getElementById("pressaoBar");
+  if (b) { b.style.width = `${Math.abs(pressao) * 50}%`; b.style.left = pressao >= 0 ? "50%" : `${50 - Math.abs(pressao) * 50}%`; b.className = pressao >= 0 ? "pos" : "neg"; }
+}
+function flashGol(meu: boolean, nome: string) {
+  const t = $("telaJogo"), d = document.createElement("div");
+  d.className = `flash-gol ${meu ? "meu" : "contra"}`; d.innerHTML = `<b>GOL!</b><span>${esc(nome)}</span>`;
+  t.appendChild(d); setTimeout(() => d.remove(), 1500);
+}
 function avancar() {
   clearTimeout(timer);
   const item = fila.shift();
@@ -1552,6 +1584,7 @@ function avancar() {
     const momento = SITUACAO[item.decisao.situacao]?.momento ?? (item.decisao.situacao === "comemoracao" ? "comemoracao" : "");
     const deCampo = momento !== "pos" && momento !== "comemoracao";
     if (deCampo && (expulso || item.min < partida.entrada || item.min > Math.min(90, partida.saida))) { avancar(); return; }
+    if (deCampo) moverBola(200, 255, 0.2, true);
     mostrarDecisao(item.decisao); atualizarPlacar(); return;
   }
   if (item.acrescimo) {
@@ -1561,6 +1594,14 @@ function avancar() {
   }
   if (item.gol) { if (item.gol === "casa") placar[0]++; else placar[1]++; }
   atualizarPlacar();
+  { // a bola no campinho
+    const meuLado = partida.souCasa ? "casa" : "fora";
+    if (item.gol) { const meu = item.gol === meuLado; moverBola(meu ? 292 : 6, meu ? 296 : 8, meu ? 0.6 : -0.6, item.meu === "gol"); flashGol(meu, item.meu === "gol" ? save.jogador.apelido : meu ? (partida.souCasa ? partida.nomeCasa : partida.nomeFora) : (partida.souCasa ? partida.nomeFora : partida.nomeCasa)); }
+    else if (item.jogador) moverBola(170, 240, 0.12, true);
+    else if (item.cls === "meu") moverBola(200, 270, 0.18);
+    else if (item.cls === "contra") moverBola(30, 100, -0.18);
+    else if (!item.fim && !item.acrescimo && item.min > 0) moverBola(100, 200, 0);
+  }
   adicionarLance(item.min, item.html ?? htmlGol(partida, item.gol!, item.meu, item.texto), item.gol ? "gol" : item.cls ?? "");
   if (item.gol && !item.meu) { const re = reacaoGol(item.gol); if (re) adicionarLance(item.min, re, "reacao"); }
   if (item.meu === "gol") abrirComemoracao(item.min);
@@ -1738,19 +1779,44 @@ function fecharSemana() {
 }
 
 function mostrarResumo(r: ResumoSemana) {
-  const p = r.partida, d = (a: [number, number], casas = 0, inv = false) => { const v = a[1] - a[0]; const bom = inv ? v < 0 : v > 0; return `<span class="delta ${v === 0 ? "" : bom ? "pos" : "neg"}">${Math.round(a[0])} → ${Math.round(a[1])}</span>`; void casas; };
-  const partidaHtml = p ? `<section class="painel"><p class="rotulo">${faixaComp(p.competicao ? compPorNome(p.competicao) : p.tipo === "base" ? "BASE" : infoLiga(save!.carreira.ligaId).id, p.tipo === "base" ? "Jogo da base" : esc(p.competicao ?? infoLiga(save!.carreira.ligaId).curto))}${p.melhorEmCampo ? ` · <span style="color:var(--ouro)">★ Melhor em campo</span>` : ""}</p><h2 style="margin:4px 0">${esc(p.nomeCasa)} ${p.golsCasa} × ${p.golsFora} ${esc(p.nomeFora)}</h2>
-      ${p.minutos > 0 ? `<div style="display:flex;gap:18px;align-items:flex-end"><div><div class="grande-num">${p.nota.toFixed(1)}</div><span class="rotulo">Nota</span></div><div class="kv" style="flex:1"><span>Minutos</span><b>${p.minutos}</b><span>Gols</span><b>${p.gols}</b><span>Assistências</span><b>${p.assist}</b></div></div>` : `<p class="sub">Você não entrou em campo.</p>`}</section>`
-    : `<section class="painel"><p class="rotulo">${r.rotulo}</p><p class="sub">${esc(NOME_ESCALACAO[r.escalacao])}${r.escalacao === "semJogo" ? ": semana de treinos." : "."}</p></section>`;
-  const q = r.copa, copaHtml = q ? `<section class="painel"><p class="rotulo dia-jogo">${faixaComp(compPorNome(q.competicao), `Quarta · ${esc(q.competicao ?? "Copa")}${q.rotulo ? ` · ${esc(q.rotulo)}` : ""}`)}${q.melhorEmCampo ? " · ★ Melhor em campo" : ""}</p><h2 style="margin:4px 0">${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</h2>${q.penaltis ? `<p class="sub">${esc(q.penaltis)} venceu nos pênaltis.</p>` : ""}
-      ${q.minutos > 0 ? `<div class="kv"><span>Nota</span><b>${q.nota.toFixed(1)}</b><span>Minutos</span><b>${q.minutos}</b><span>Gols / assistências</span><b>${q.gols} / ${q.assist}</b></div>` : `<p class="sub">Você não entrou em campo${q.escalacao && q.escalacao !== "banco" && q.escalacao !== "titular" ? ` (${esc(NOME_ESCALACAO[q.escalacao].toLowerCase())})` : ""}.</p>`}</section>` : "";
-  const fim = r.fimDeTemporada ? `<section class="painel" style="border-color:var(--ouro)"><p class="rotulo">Fim da temporada ${r.fimDeTemporada.ano}</p><h2 style="margin:4px 0">${esc(r.fimDeTemporada.clube)} em ${r.fimDeTemporada.posicao}º${r.fimDeTemporada.titulo ? " · CAMPEÃO!" : ""}</h2>
-      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${[r.fimDeTemporada.estadual, r.fimDeTemporada.copa, ...(r.fimDeTemporada.extras ?? [])].filter(Boolean).map((k) => `<span>${esc(COPAS[k!.id].curto)}</span><b>${k!.jogos} j · ${k!.gols} g · ${esc(k!.fase ?? "")}</b>`).join("")}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p><button class="botao" style="width:100%;margin-top:10px" data-retro="${r.fimDeTemporada.ano}">Ver a retrospectiva de ${r.fimDeTemporada.ano}</button></section>` : "";
-  $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${copaHtml}${partidaHtml}${fim}${r.fimDeTemporada && save!.carreira.premiosLiga ? `<section class="painel">${premiosLigaHtml(save!)}</section>` : ""}${r.fimDeTemporada && save!.carreira.premiosMundo ? `<section class="painel">${premiosMundoHtml(save!)}</section>` : ""}
-    <section class="painel"><div style="display:flex;justify-content:space-between;align-items:flex-end"><div><p class="rotulo">OVR</p><div class="grande-num">${Math.round(r.ovrDepois)}</div></div><span class="delta ${r.ovrDepois - r.ovrAntes > 0 ? "pos" : ""}">${sinal(r.ovrDepois - r.ovrAntes, 2)}</span></div>
-      <p class="sub" style="margin-top:6px">Mais evoluíram: ${r.ganhos.map(([a, v]) => `${NOME_AT[a]} ${sinal(v, 2)}`).join(" · ")}</p></section>
-    <section class="painel kv"><span>Moral</span>${d(r.moral)}<span>Cansaço</span>${d(r.cansaco, 0, true)}<span>Fama</span>${d(r.fama)}${r.dinheiro ? `<span>Salário</span><b class="delta pos">+${dinheiro(r.dinheiro.salario)}</b>${r.dinheiro.aluguel ? `<span>Aluguel</span><b class="delta neg">−${dinheiro(r.dinheiro.aluguel)}</b>` : ""}` : ""}${r.posicaoTabela && !r.fimDeTemporada && save!.carreira.semana > SEMANAS_PRE ? `<span>Clube na tabela</span><b>${r.posicaoTabela}º</b>` : ""}</section>
-    ${r.eventos.length ? `<section class="painel" style="display:flex;flex-direction:column;gap:6px">${r.eventos.map((e) => `<p class="sub" style="color:var(--giz)">${esc(e)}</p>`).join("")}</section>` : ""}
+  const c = save!.carreira;
+  /** Card de partida: escudos e placar, anel da nota, gols e assistências em ícones, minutos em barra. */
+  const cardPartida = (p: ResumoPartida, faixa: string) => {
+    const jogou = p.minutos > 0;
+    return `<section class="painel res-jogo"><p class="rotulo">${faixa}${p.melhorEmCampo ? ` <span class="selo-mvp">★ Melhor em campo</span>` : ""}</p>
+      <div class="res-placar">${p.idCasa ? escudo(p.idCasa) : ""}<span class="rp-nome">${esc(p.nomeCasa)}</span><b>${p.golsCasa}<i>×</i>${p.golsFora}</b><span class="rp-nome">${esc(p.nomeFora)}</span>${p.idFora ? escudo(p.idFora) : ""}</div>
+      ${p.penaltis ? `<p class="sub" style="text-align:center">${esc(p.penaltis)} venceu nos pênaltis</p>` : ""}
+      ${jogou ? `<div class="res-eu">${anelNota(p.nota)}<div class="res-stats"><div class="res-min"><span>⏱ ${p.minutos}'</span><i style="--v:${Math.min(100, (p.minutos / 90) * 100)}%"></i></div>
+        <div class="res-ico">${p.gols ? `<span title="gols">${repetir("⚽", p.gols)}</span>` : ""}${p.assist ? `<span title="assistências">${repetir("👟", p.assist)}</span>` : ""}${!p.gols && !p.assist ? `<span class="sub">sem gol nem assistência</span>` : ""}</div></div></div>`
+        : `<p class="sub res-nao">🪑 ${p.escalacao && p.escalacao !== "banco" && p.escalacao !== "titular" ? esc(NOME_ESCALACAO[p.escalacao]) : "Não entrou em campo"}</p>`}</section>`;
+  };
+  const p = r.partida, ligaId = infoLiga(c.ligaId).id;
+  const partidaHtml = p ? cardPartida(p, faixaComp(p.competicao ? compPorNome(p.competicao) : p.tipo === "base" ? "BASE" : ligaId, p.tipo === "base" ? "Jogo da base" : esc(p.competicao ?? infoLiga(c.ligaId).curto)))
+    : `<section class="painel res-semjogo"><span class="rs-ico">${r.escalacao === "lesionado" ? "🩹" : r.escalacao === "suspenso" ? "🟥" : r.escalacao === "semJogo" ? "🏋️" : "🪑"}</span><div><p class="rotulo">${esc(r.rotulo)}</p><b>${esc(NOME_ESCALACAO[r.escalacao])}</b>${r.escalacao === "semJogo" ? `<small>Semana de treinos</small>` : ""}</div></section>`;
+  const q = r.copa, copaHtml = q ? cardPartida(q, faixaComp(compPorNome(q.competicao), `Quarta · ${esc(q.competicao ?? "Copa")}${q.rotulo ? ` · ${esc(q.rotulo)}` : ""}`)) : "";
+  const ft = r.fimDeTemporada;
+  const fim = ft ? `<section class="painel res-fim"><p class="rotulo">Fim da temporada ${ft.ano}</p><div class="res-fim-topo"><span class="rf-pos">${ft.titulo ? "🏆" : `${ft.posicao}º`}</span><div><h2 style="margin:0">${esc(ft.clube)}</h2><small class="sub">${ft.titulo ? "Campeão!" : `${ft.posicao}º lugar`}</small></div></div>
+      <div class="cartas-num">${[["Jogos", ft.jogos, "🏟️"], ["Gols", ft.gols, "⚽"], ["Assist.", ft.assist, "👟"], ["OVR", ft.ovr, "📈"]].map(([n, v, i]) => `<div class="carta-num"><span>${i}</span><b>${v}</b><small>${n}</small></div>`).join("")}</div>
+      ${[ft.estadual, ft.copa, ...(ft.extras ?? [])].filter(Boolean).map((k) => `<p class="res-copa">${faixaComp(k!.id, esc(COPAS[k!.id].curto))}<span>${k!.jogos} j · ${k!.gols} g · ${esc(k!.fase ?? "")}</span></p>`).join("")}
+      ${ft.premios?.length ? `<div class="res-premios">${ft.premios.map((x) => `<span>🏆 ${esc(x)}</span>`).join("")}</div>` : ""}
+      <button class="botao" style="width:100%;margin-top:10px" data-retro="${ft.ano}">Ver a retrospectiva de ${ft.ano}</button></section>` : "";
+  const blocos = [
+    blocoDelta("❤️", "Moral", r.moral[0], r.moral[1]), blocoDelta("🔋", "Cansaço", r.cansaco[0], r.cansaco[1], undefined, true), blocoDelta("⭐", "Fama", r.fama[0], r.fama[1]),
+    ...(r.seguidores ? [blocoDelta("📱", "Seguidores", r.seguidores[0], r.seguidores[1], compacto)] : []),
+    ...(r.saldo ? [blocoDelta("💰", "Saldo", r.saldo[0], r.saldo[1], dinheiroCurto)] : []),
+    ...(r.relTecnico && !c.fase ? [blocoDelta("📋", "Técnico", r.relTecnico[0], r.relTecnico[1])] : []),
+    ...(r.torcida && !c.formacao && !c.fase ? [blocoDelta("📣", "Torcida", r.torcida[0], r.torcida[1])] : []),
+    ...(r.posicaoTabela && !ft && c.semana > SEMANAS_PRE ? [`<div class="bloco-delta"><span class="bd-ico">🏟️</span><b>${r.posicaoTabela}º</b><small>Na tabela</small><i>${esc(infoLiga(c.ligaId).curto)}</i></div>`] : []),
+  ].join("");
+  const maxG = Math.max(0.01, ...r.ganhos.map(([, v]) => Math.abs(v)));
+  const evo = `<section class="painel res-evo"><div class="res-ovr"><span class="rotulo">OVR</span><b>${Math.round(r.ovrDepois)}</b><i class="${r.ovrDepois - r.ovrAntes > 0.005 ? "pos" : ""}">${sinal(r.ovrDepois - r.ovrAntes, 2)}</i></div>
+    <div class="res-ganhos">${r.ganhos.map(([a, v]) => `<div><span>${NOME_AT[a]}</span><i style="--v:${Math.max(4, (Math.abs(v) / maxG) * 100)}%" class="${v > 0 ? "pos" : v < 0 ? "neg" : ""}"></i><b>${sinal(v, 2)}</b></div>`).join("")}</div></section>`;
+  const eventos = r.eventos.filter((e) => !/seguidores nas redes/.test(e));
+  $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${copaHtml}${partidaHtml}${fim}${ft && c.premiosLiga ? `<section class="painel">${premiosLigaHtml(save!)}</section>` : ""}${ft && c.premiosMundo ? `<section class="painel">${premiosMundoHtml(save!)}</section>` : ""}
+    <div class="blocos-delta">${blocos}</div>
+    ${r.dinheiro ? `<div class="res-dinheiro"><span>💵 Salário <b class="pos">+${dinheiroCurto(r.dinheiro.salario)}</b></span>${r.dinheiro.aluguel ? `<span>🏠 Aluguel <b class="neg">−${dinheiroCurto(r.dinheiro.aluguel)}</b></span>` : ""}${r.dinheiro.gastos ? `<span>🛒 Gastos <b class="neg">−${dinheiroCurto(r.dinheiro.gastos)}</b></span>` : ""}</div>` : ""}
+    ${evo}
+    ${eventos.length ? cartoesEventos(eventos) : ""}
     </div><div class="rodape"><button class="botao grande" data-acao="proxima">Próxima semana</button></div>`;
   ($("dlgResumo") as HTMLDialogElement).showModal();
 }
