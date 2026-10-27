@@ -1,6 +1,7 @@
 // Imprensa e redes: o feed da semana (torcedores, rivais, memes, o colunista que te acompanha), o que você posta
 // (bastidores, família, ostentação, publi, resposta a crítico, live, trend) e as entrevistas: perguntas que mudam
 // com a fase (má fase, boa fase, rumor de transferência, vida pessoal, técnico, seleção).
+import { primeiroNome } from "./pessoas.js";
 import { RNG, clamp } from "./rng.js";
 
 export type TomPost = 1 | 0 | -1;
@@ -24,6 +25,8 @@ export interface CtxMidia {
   apelido: string; clube: string; adv?: string; nota?: number; gols: number; resultado?: "v" | "e" | "d"; minutos: number;
   polemica: boolean; escandalo: boolean; lesionado: boolean; forma: number; fama: number; seguidores: number; janela: boolean;
   relTecnico: number; selecao: boolean; base: boolean; semanaAbs: number; temperamento: number; carisma: number; patrocinios: number;
+  /** país do clube: os torcedores que comentam têm nome de lá */
+  pais?: string;
 }
 
 // ------------------------------------------------------------------ feed
@@ -35,7 +38,7 @@ const fill = (t: string, x: CtxMidia) => t.replaceAll("{a}", x.apelido).replaceA
 function post(rng: RNG, tipo: Post["tipo"], tom: TomPost, textos: string[], x: CtxMidia, colunista?: EstadoMidia["colunista"]): Post {
   const slug = x.clube.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "").slice(0, 10) || "time";
   const arroba = (tipo === "rival" ? rng.pick(ARROBAS_RIVAL) : tipo === "meme" ? rng.pick(ARROBAS_MEME) : rng.pick(ARROBAS_TORC)).replaceAll("{c}", slug).replaceAll("{n}", String(rng.int(7, 99)));
-  const autor = tipo === "jornalista" && colunista ? colunista.nome : tipo === "meme" ? "Memes da Bola" : tipo === "rival" ? "Secador" : rng.pick(NOMES);
+  const autor = tipo === "jornalista" && colunista ? colunista.nome : tipo === "meme" ? "Memes da Bola" : tipo === "rival" ? "Secador" : x.pais && x.pais !== "BRA" ? primeiroNome(rng, x.pais, rng.chance(0.5)) : rng.pick(NOMES);
   const base = Math.max(30, x.seguidores / 400);
   return { autor, arroba: tipo === "jornalista" && colunista ? colunista.veiculo : arroba, tipo, tom, texto: fill(rng.pick(textos), x), curtidas: Math.round(base * rng.range(0.3, 2.5) * (tom === 0 ? 0.5 : 1)) };
 }

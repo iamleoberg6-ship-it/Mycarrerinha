@@ -2,6 +2,7 @@
 // Às vezes o pai tem passado no futebol (treinador ou ex-jogador), o irmão mais velho é jogador de verdade
 // num elenco do mundo, e o irmão mais novo joga bola e pode ser indicado à base do seu clube.
 // Cada um tem relação de 0 a 100: família perto e bem cuidada dá moral; distância, sumiço e polêmica pesam.
+import { nomesDoPais } from "./pessoas.js";
 import { RNG, clamp } from "./rng.js";
 import type { PacoteDados } from "./liga.js";
 import type { Posicao } from "./atributos.js";
@@ -32,23 +33,6 @@ export const NOME_PARENTESCO: Record<Parentesco, string> = { pai: "Pai", mae: "M
 export const NOME_TRACO: Record<TracoFamilia, string> = { treinador: "Treinador", exJogador: "Ex-jogador" };
 export const NOME_FASE_IRMAO: Record<FaseIrmao, string> = { crianca: "Ainda criança", amador: "Joga bola no bairro", base: "Na base", pro: "Profissional", parou: "Largou o futebol" };
 
-// ------------------------------------------------------------------ nomes por língua
-const NOMES: Record<string, [string[], string[]]> = {
-  pt: [["Carlos", "José", "Marcos", "Paulo", "Ricardo", "Sérgio", "Antônio", "Luiz", "Fábio", "Rogério", "Davi", "Pedro", "Lucas", "Mateus", "Rafael", "Enzo", "Thiago", "Caio"],
-    ["Maria", "Ana", "Cláudia", "Patrícia", "Fernanda", "Sandra", "Márcia", "Juliana", "Luciana", "Rosana", "Beatriz", "Larissa", "Camila", "Júlia", "Manuela", "Letícia"]],
-  es: [["Jorge", "Carlos", "Diego", "Martín", "Pablo", "Luis", "Sergio", "Javier", "Nicolás", "Matías", "Santiago", "Joaquín", "Tomás", "Facundo"],
-    ["María", "Ana", "Laura", "Silvia", "Gabriela", "Lucía", "Carolina", "Valentina", "Sofía", "Camila", "Florencia", "Paula"]],
-  en: [["John", "David", "Michael", "Paul", "Mark", "James", "Chris", "Daniel", "Tom", "Ryan", "Jack", "Kevin", "Emeka", "Kwame", "Tunde", "Kofi"],
-    ["Sarah", "Emma", "Laura", "Claire", "Rachel", "Jessica", "Amy", "Grace", "Chloe", "Ngozi", "Ama", "Adaeze", "Efua", "Funmi"]],
-  fr: [["Pierre", "Jean", "Michel", "Olivier", "Laurent", "Nicolas", "Thomas", "Hugo", "Lucas", "Mamadou", "Ibrahima", "Moussa", "Cheikh"],
-    ["Marie", "Sophie", "Isabelle", "Nathalie", "Camille", "Léa", "Chloé", "Aminata", "Fatou", "Awa", "Mariama"]],
-  de: [["Thomas", "Michael", "Stefan", "Andreas", "Jens", "Markus", "Lukas", "Jonas", "Felix", "Leon", "Niklas"], ["Sabine", "Petra", "Claudia", "Anja", "Katrin", "Lena", "Mia", "Hannah", "Lea", "Laura"]],
-  it: [["Marco", "Giuseppe", "Antonio", "Luca", "Andrea", "Francesco", "Matteo", "Lorenzo", "Alessandro", "Davide"], ["Giulia", "Francesca", "Chiara", "Sara", "Paola", "Elena", "Martina", "Sofia", "Aurora"]],
-  nl: [["Jan", "Pieter", "Kees", "Dennis", "Ruud", "Mark", "Daan", "Sem", "Lars", "Bram"], ["Anna", "Ingrid", "Marieke", "Linda", "Sanne", "Emma", "Julia", "Fenna", "Lotte"]],
-  ja: [["Hiroshi", "Takeshi", "Kenji", "Satoshi", "Yuki", "Haruto", "Ren", "Sota", "Kaito", "Riku"], ["Yoko", "Keiko", "Naomi", "Akiko", "Yui", "Hina", "Sakura", "Aoi", "Mei"]],
-  ko: [["Min-jun", "Seo-jun", "Ji-ho", "Hyun-woo", "Sung-min", "Dong-hyun", "Jae-won", "Tae-yang"], ["Ji-woo", "Seo-yeon", "Min-seo", "Ha-eun", "Soo-ah", "Ye-jin", "Da-eun"]],
-};
-const LINGUA: Record<string, string> = { BRA: "pt", ARG: "es", URU: "es", ESP: "es", NED: "nl", GER: "de", ITA: "it", ENG: "en", FRA: "fr", NGA: "en", SEN: "fr", GHA: "en", JPN: "ja", KOR: "ko" };
 
 // ------------------------------------------------------------------ profissões por origem
 const PROF_PAI: Record<string, string[]> = {
@@ -90,7 +74,7 @@ const sobrenomeDe = (nome: string) => { const p = nome.trim().split(/\s+/); retu
 
 /** A família da carreira (sorteada uma vez; saves antigos ganham na primeira semana). */
 export function gerarFamilia(pacote: PacoteDados, d: DadosFamilia): EstadoFamilia {
-  const rng = new RNG(`${d.semente}|familia`), lingua = LINGUA[d.pais] ?? "pt", [hom, mul] = NOMES[lingua];
+  const rng = new RNG(`${d.semente}|familia`), hom = nomesDoPais(d.pais, false), mul = nomesDoPais(d.pais, true);
   const sob = sobrenomeDe(d.nome), comSob = (n: string) => (sob ? `${n} ${sob}` : n);
   const origem = PROF_PAI[d.origem] ? d.origem : "media";
   const usados = new Set<string>([d.nome.split(" ")[0]]);

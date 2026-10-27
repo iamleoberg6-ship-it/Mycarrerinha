@@ -1826,7 +1826,7 @@ export function ctxNegocios(pacote: PacoteDados, s: Save): CtxNegocios {
 }
 export function ctxMidia(pacote: PacoteDados, s: Save, x: Partial<CtxMidia> = {}): CtxMidia {
   const c = s.carreira, j = s.jogador, ult = c.formaUlt.slice(-3), r = c.resultadosClube?.at(-1);
-  return { apelido: j.apelido, clube: infoClube(pacote, c.clubeId)?.apelido ?? "time", gols: 0, minutos: 0, polemica: false, escandalo: false, lesionado: c.lesao > 0,
+  return { pais: infoClube(pacote, c.clubeId)?.pais, apelido: j.apelido, clube: infoClube(pacote, c.clubeId)?.apelido ?? "time", gols: 0, minutos: 0, polemica: false, escandalo: false, lesionado: c.lesao > 0,
     forma: ult.length ? ult.reduce((a, b) => a + b, 0) / ult.length : 6.5, fama: c.fama, seguidores: c.seguidores, janela: !!janelaAberta(c), relTecnico: c.relTecnico,
     selecao: (c.selecao?.convocacoes ?? 0) > 0, base: c.formacao || !!c.fase, semanaAbs: semanaAbsJogo(c), temperamento: j.personalidade.temperamento, carisma: j.personalidade.carisma ?? 10,
     patrocinios: c.patrocinios?.length ?? 0, resultado: r === undefined ? undefined : r === 3 ? "v" : r === 1 ? "e" : "d", ...x };
@@ -1906,7 +1906,12 @@ export function ctxFamilia(pacote: PacoteDados, s: Save): CtxFamilia {
 }
 export function ctxNamoro(pacote: PacoteDados, s: Save): CtxNamoro {
   const c = s.carreira;
-  return { ano: ANO_INICIAL + c.temporada, semente: s.semente, semanaAbs: semanaAbsJogo(c), idadeJogador: s.jogador.idade, fama: c.fama, cidade: infoClube(pacote, c.clubeId).cidade, salario: c.salario, saldo: s.casa.saldo, vidaNoturna: c.vidaNoturna };
+  return { ano: ANO_INICIAL + c.temporada, semente: s.semente, semanaAbs: semanaAbsJogo(c), idadeJogador: s.jogador.idade, fama: c.fama, cidade: infoClube(pacote, c.clubeId).cidade, salario: c.salario, saldo: s.casa.saldo, vidaNoturna: c.vidaNoturna,
+    pais: paisOndeMora(pacote, s), paisJogador: s.jogador.pais };
+}
+/** País onde o jogador mora agora (a cidade escolhida, senão o país do clube). */
+export function paisOndeMora(pacote: PacoteDados, s: Save): string {
+  return s.carreira.cidade?.pais ?? infoClube(pacote, s.carreira.clubeId)?.pais ?? s.jogador.pais ?? "BRA";
 }
 /** O jogador fala com alguém da família (ligar, visitar, presente, levar ao jogo, indicar o irmão...). */
 export function agirFamiliaJogo(pacote: PacoteDados, s: Save, id: string, acao: AcaoFamilia): { ok: boolean; msg: string } {
@@ -2227,7 +2232,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);
   // nova temporada
   { const tf = temporadaFamilia(pacote, familiaDe(pacote, s), rngDe(s, "familia-temporada"), ANO_INICIAL + c.temporada + 1, s.jogador.pais, eventos); c.moral = clamp(c.moral + tf.moral, 0, 100); }
-  { const tn = temporadaNamoro(namoroDe(c), eventos, { semente: s.semente, ano: ANO_INICIAL + c.temporada, salario: c.salario });
+  { const tn = temporadaNamoro(namoroDe(c), eventos, { semente: s.semente, ano: ANO_INICIAL + c.temporada, salario: c.salario, paises: [paisOndeMora(pacote, s), s.jogador.pais] });
     if (tn.casou) agendarCasamento(agendaDe(c), semanaAbsJogo(c), tn.casou, c.salario);
     if (tn.custo) s.casa.saldo -= tn.custo;
     if (tn.escandalo) { c.fama = clamp(c.fama + 1, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); }

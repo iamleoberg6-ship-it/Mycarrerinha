@@ -4,7 +4,7 @@ import type { RNG } from "./rng.js";
 
 type Pool = { primeiros: string[]; sobrenomes: string[]; apelidos?: string[]; chanceApelido?: number };
 
-const POOLS: Record<string, Pool> = {
+export const POOLS: Record<string, Pool> = {
   br: {
     primeiros: ["Gabriel", "Lucas", "Matheus", "Pedro", "Guilherme", "Rafael", "Felipe", "Gustavo", "João", "Vinícius", "Enzo", "Arthur", "Davi", "Samuel", "Kauã", "Ryan", "Breno", "Caio", "Igor", "Luan", "Thiago", "Diego", "Wesley", "Kaique", "Yuri", "Eduardo", "Henrique", "Murilo", "Nicolas", "Bruno", "Leonardo", "Miguel", "Heitor", "Otávio", "Renan", "Alisson", "Wallace", "Jhonata", "Erick", "Luiz"],
     sobrenomes: ["Silva", "Santos", "Oliveira", "Souza", "Pereira", "Lima", "Carvalho", "Ferreira", "Rodrigues", "Almeida", "Costa", "Gomes", "Martins", "Araújo", "Barbosa", "Ribeiro", "Rocha", "Dias", "Moraes", "Teixeira", "Cardoso", "Nascimento", "Mendes", "Freitas", "Batista", "Correia", "Vieira", "Monteiro", "Pinheiro", "Campos", "Fonseca", "Brandão", "Moura", "Sales", "Bezerra", "Paixão"],
@@ -70,7 +70,7 @@ const POOLS: Record<string, Pool> = {
   ms: { primeiros: ["Safawi", "Arif", "Faisal", "Akhyar", "Syamer", "Hakimi", "Danial", "Nazmi"], sobrenomes: ["Rasid", "Aiman", "Halim", "Rashid", "Kutty", "Azmi", "Ashraf", "Faiz"] },
 };
 
-const LINGUA: Record<string, string> = {
+export const LINGUA: Record<string, string> = {
   BRA: "br", POR: "pt", ANG: "pt", CPV: "pt", GNB: "pt", MOZ: "pt",
   ARG: "es", URU: "es", ESP: "es", COL: "es", CHI: "es", PAR: "es", ECU: "es", PER: "es", BOL: "es", VEN: "es", MEX: "es", CRC: "es", PAN: "es", HON: "es", GUA: "es", SLV: "es", DOM: "es", CUB: "es",
   ENG: "en", USA: "en", SCO: "en", WAL: "en", IRL: "en", NIR: "en", CAN: "en", AUS: "en", NZL: "en", JAM: "en", TRI: "en",

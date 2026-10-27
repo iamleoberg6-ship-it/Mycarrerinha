@@ -3,6 +3,7 @@
 // (influencer dá fama, psicóloga dá moral, agente negocia por você...). Só a partir dos 18 anos.
 import { RNG, clamp } from "./rng.js";
 import type { Conversa } from "./conversas.js";
+import { nomeFeminino, sugestoesBebe } from "./pessoas.js";
 
 export const IDADE_MINIMA_APP = 18;
 export type Profissao = "influencer" | "psicologa" | "agente" | "modelo" | "medica" | "jornalista" | "personal" | "nutricionista" | "advogada" | "professora" | "estudante" | "arquiteta";
@@ -70,10 +71,6 @@ const CENAS: { tipo: string; texto: string; opcoes: { id: string; rotulo: string
     { id: "aceitar", rotulo: "Aceitar e jogar para ganhar", delta: { base: 3, competitiva: 8, engraçada: 3 } },
     { id: "perder", rotulo: "Deixar ela ganhar", delta: { base: 1, competitiva: -6, romântica: 3 } }] },
 ];
-const NOMES = ["Ana", "Bia", "Bruna", "Camila", "Carol", "Clara", "Duda", "Fernanda", "Gabi", "Giovanna", "Helena", "Isabela", "Jéssica", "Júlia", "Larissa", "Laura", "Letícia",
-  "Lívia", "Luana", "Manu", "Mariana", "Marina", "Natália", "Paula", "Rafaela", "Raquel", "Sofia", "Thaís", "Valentina", "Vitória", "Yasmin", "Lara", "Alice", "Nina", "Lorena"];
-const SOBRENOMES = ["Alves", "Araújo", "Barros", "Campos", "Cardoso", "Costa", "Dias", "Duarte", "Freitas", "Gomes", "Lima", "Lopes", "Machado", "Martins", "Melo", "Moraes", "Nunes",
-  "Oliveira", "Pereira", "Ramos", "Reis", "Ribeiro", "Rocha", "Santos", "Silva", "Souza", "Teixeira", "Vieira"];
 
 export interface Perfil { id: string; nome: string; idade: number; cidade: string; profissao: Profissao; jeito: string; bio: string; /** quanto ela está a fim (0–100) */ interesse: number; gostos?: Gosto[]; odeia?: Gosto }
 export type Etapa = "match" | "saindo" | "namorando" | "morando" | "noivos" | "casados";
@@ -90,6 +87,8 @@ export interface Par extends Perfil { etapa: Etapa; relacao: number; desde: numb
   /** conversa da semana no chat (src/conversas.ts), assuntos recentes e a semana em que ela topou sair */
   conversa?: Conversa; topicosVistos?: string[]; topouSair?: number }
 export interface Filho { nome: string; mae: string; ano: number; /** mãe não é a companheira atual: pensão */ pensao: boolean;
+  /** menina? (saves antigos: sem o campo) */ menina?: boolean;
+  /** recém-nascido esperando o pai escolher o nome: as sugestões (o nome provisório é a primeira) */ nomear?: string[];
   /** relação com o pai (0–100) e a semana do último programa juntos */ relacao?: number; contato?: number; vezes?: { s: number; n: number };
   /** o filho que quer ser jogador: escolinha, base de um clube, profissional, ou largou */
   futebol?: { fase: "escolinha" | "base" | "pro" | "parou"; ovr: number; pot: number; clubeId?: string };
@@ -124,7 +123,8 @@ export function arrumarNamoro(n: EstadoNamoro) {
 export const acharPar = (n: EstadoNamoro, id: string): Par | undefined => n.par?.id === id ? n.par : n.ficantes?.find((x) => x.id === id) ?? n.casos?.find((x) => x.id === id) ?? n.matches.find((x) => x.id === id);
 export const MAX_ACOES_NAMORO = 20;
 
-export interface CtxNamoro { ano?: number; semente: string; semanaAbs: number; idadeJogador: number; fama: number; cidade: string; salario: number; saldo: number; vidaNoturna: number }
+export interface CtxNamoro { ano?: number; semente: string; semanaAbs: number; idadeJogador: number; fama: number; cidade: string; salario: number; saldo: number; vidaNoturna: number;
+  /** país onde o jogador mora (nomes das pessoas do app) e onde ele nasceu */ pais?: string; paisJogador?: string }
 
 function sortearProf(rng: RNG): Profissao {
   const tot = PESO_PROF.reduce((a, [, p]) => a + p, 0); let r = rng.next() * tot;
@@ -153,7 +153,7 @@ export function baralhoDaSemana(n: EstadoNamoro, ctx: CtxNamoro): Perfil[] {
   const rng = new RNG(`${ctx.semente}|app|${ctx.semanaAbs}`);
   n.baralho = Array.from({ length: 6 }, (_, i) => {
     const prof = sortearProf(rng);
-    return { id: `p${ctx.semanaAbs}-${i}`, nome: `${rng.pick(NOMES)} ${rng.pick(SOBRENOMES)}`, idade: Math.max(IDADE_MINIMA_APP, ctx.idadeJogador + rng.int(-3, 4)),
+    return { id: `p${ctx.semanaAbs}-${i}`, nome: nomeFeminino(rng, ctx.paisJogador && ctx.pais !== ctx.paisJogador && rng.chance(0.2) ? ctx.paisJogador : ctx.pais ?? "BRA"), idade: Math.max(IDADE_MINIMA_APP, ctx.idadeJogador + rng.int(-3, 4)),
       cidade: rng.chance(0.75) ? ctx.cidade : "região metropolitana", profissao: prof, jeito: rng.pick(JEITOS), bio: rng.pick(BIO[prof]), interesse: rng.int(25, 70) } as Perfil;
   });
   for (const p of n.baralho) { const g = gostosDe(p); p.gostos = g.gosta; p.odeia = g.odeia; }
@@ -434,11 +434,12 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   let noticiaFilho: string | undefined, escFilho = false;
   const g = n.gravidez;
   if (g && ctx.semanaAbs >= g.parto) {
-    const rng = new RNG(`${ctx.semente}|parto|${g.parto}`), nomeF = rng.pick(NOMES_FILHO), mae = g.mae.split(" ")[0];
-    (n.filhos ??= []).push({ nome: nomeF, mae: g.mae, ano: ctx.ano ?? 0, pensao: !p || p.nome !== g.mae, relacao: 70, contato: ctx.semanaAbs });
+    const rng = new RNG(`${ctx.semente}|parto|${g.parto}`), mae = g.mae.split(" ")[0];
+    const b = novoBebe(rng, g.mae, ctx.ano ?? 0, !p || p.nome !== g.mae, [ctx.pais ?? "BRA", ctx.paisJogador ?? ctx.pais ?? "BRA"], ctx.semanaAbs), quem = b.menina ? "uma menina" : "um menino";
+    (n.filhos ??= []).push(b);
     n.gravidez = undefined; moral += 10;
-    avisos.push(`Nasceu ${nomeF}! Filho seu com ${mae}.`);
-    noticiaFilho = g.caso ? `Filho fora do casamento: nasce ${nomeF}, filho do jogador com ${mae}` : `Nasceu ${nomeF}, filho do jogador com ${mae}`;
+    avisos.push(`Nasceu ${quem}! Filho seu com ${mae}. Escolha o nome no Celular, na aba Match.`);
+    noticiaFilho = g.caso ? `Filho fora do casamento: nasce ${quem}, filho do jogador com ${mae}` : `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${mae}`;
     if (g.caso) { escFilho = true; n.escandalos = (n.escandalos ?? 0) + 1; const c = n.casos?.find((x) => x.nome === g.mae); if (c) c.exposto = true; if (p) p.relacao = clamp(p.relacao - 35, 0, 100); }
   }
   // filhos: sem atenção a relação esfria (mais rápido quando moram longe)
@@ -496,9 +497,22 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
 }
 
 /** Fim da temporada: noivos se casam. */
-const NOMES_FILHO = ["Miguel", "Arthur", "Heitor", "Théo", "Davi", "Gael", "Bernardo", "Helena", "Alice", "Laura", "Maitê", "Cecília", "Liz", "Aurora", "Benjamin", "Lorenzo"];
+/** Um bebê novo: menino ou menina, com sugestões de nome do lugar onde mora (e do país do pai); a primeira vale até o pai escolher. */
+export function novoBebe(rng: RNG, mae: string, ano: number, pensao: boolean, paises: string[], semanaAbs?: number): Filho {
+  const menina = rng.chance(0.49), sug = sugestoesBebe(rng, paises, menina);
+  return { nome: sug[0], mae, ano, pensao, menina, nomear: sug, relacao: 70, ...(semanaAbs !== undefined ? { contato: semanaAbs } : {}) };
+}
+/** O pai escolhe o nome do recém-nascido. */
+export function nomearFilho(n: EstadoNamoro, i: number, nome: string): { ok: boolean; msg: string } {
+  const f = n.filhos?.[i], limpo = nome.replace(/\s+/g, " ").trim().slice(0, 30);
+  if (!f) return { ok: false, msg: "Filho não encontrado." };
+  if (!f.nomear) return { ok: false, msg: `${f.nome} já tem nome.` };
+  if (limpo.length < 2 || !/^[\p{L}' -]+$/u.test(limpo)) return { ok: false, msg: "Escolha um nome só com letras." };
+  f.nome = limpo.replace(/(^|\s)(\p{L})/gu, (_, a, b) => a + b.toUpperCase()); f.nomear = undefined;
+  return { ok: true, msg: `${f.menina ? "Ela" : "Ele"} vai se chamar ${f.nome}.` };
+}
 /** Fim da temporada: noivos se casam; pode nascer filho (da companheira ou de um caso); pensão dos filhos de fora. */
-export function temporadaNamoro(n: EstadoNamoro, eventos: string[], ctx?: { semente: string; ano: number; salario: number }): { custo: number; noticia?: string; escandalo?: boolean; casou?: string } {
+export function temporadaNamoro(n: EstadoNamoro, eventos: string[], ctx?: { semente: string; ano: number; salario: number; paises?: string[] }): { custo: number; noticia?: string; escandalo?: boolean; casou?: string } {
   const p = n.par, filhos = (n.filhos ??= []);
   let noticia: string | undefined, escandalo = false;
   if (p?.etapa === "noivos") {
@@ -510,11 +524,11 @@ export function temporadaNamoro(n: EstadoNamoro, eventos: string[], ctx?: { seme
   if (ctx) {
     const rng = new RNG(`${ctx.semente}|filhos|${ctx.ano}`);
     if (p && !n.gravidez && (p.etapa === "casados" || p.etapa === "morando") && p.relacao >= 60 && rng.chance(0.08)) {
-      const nome = rng.pick(NOMES_FILHO); filhos.push({ nome, mae: p.nome, ano: ctx.ano, pensao: false });
-      eventos.push(`Nasceu ${nome}, filho com ${p.nome.split(" ")[0]}!`); noticia = `Nasceu ${nome}, filho do jogador com ${p.nome.split(" ")[0]}`;
+      const b = novoBebe(rng, p.nome, ctx.ano, false, ctx.paises ?? ["BRA"]), quem = b.menina ? "uma menina" : "um menino"; filhos.push(b);
+      eventos.push(`Nasceu ${quem}, filho com ${p.nome.split(" ")[0]}! Escolha o nome.`); noticia = `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${p.nome.split(" ")[0]}`;
     }
     for (const x of n.casos ?? []) if (x.etapa === "namorando" && rng.chance(0.06)) {
-      const nome = rng.pick(NOMES_FILHO); filhos.push({ nome, mae: x.nome, ano: ctx.ano, pensao: true });
+      const b = novoBebe(rng, x.nome, ctx.ano, true, ctx.paises ?? ["BRA"]), nome = b.menina ? "uma menina" : "um menino"; filhos.push(b);
       x.exposto = true; escandalo = true; n.escandalos = (n.escandalos ?? 0) + 1;
       eventos.push(`${x.nome.split(" ")[0]} teve um filho seu: ${nome}. A notícia vazou.`);
       noticia = `Filho fora do casamento: ${x.nome.split(" ")[0]} confirma que ${nome} é filho do jogador`;
