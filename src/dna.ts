@@ -3,7 +3,7 @@
 import { RNG, clamp } from "./rng.js";
 import { type Atributo, type Atributos, type Posicao, type Personalidade, ATRIBUTOS, atributosIniciais, ovr } from "./atributos.js";
 
-export type EscolaId = "BRA" | "ARG_URU" | "ESP_NED" | "GER" | "ITA" | "ENG" | "FRA" | "AFO" | "JPN_KOR";
+export type EscolaId = "BRA" | "ARG_URU" | "ESP_NED" | "GER" | "ITA" | "ENG" | "FRA" | "AFO" | "JPN_KOR" | "POR" | "EUA" | "MEX" | "COL" | "MAR" | "CRO";
 export type FormacaoId = "rua" | "futsal" | "praia" | "escolinha" | "academia" | "base_grande";
 export type FamiliaId = "humilde" | "media" | "rica";
 export type Pe = "direito" | "esquerdo" | "ambidestro";
@@ -32,9 +32,15 @@ export const ESCOLAS: Escola[] = [
   { id: "FRA", nome: "França", pais: "França", nacionalidade: "FRA", lingua: "fr", descricao: "Velocidade e potência com técnica.", mods: { VEL: 3, FOR: 3, DRI: 2, PAS: -2 } },
   { id: "AFO", nome: "África Ocidental", pais: "Senegal", nacionalidade: "SEN", lingua: "fr", descricao: "Força física e explosão.", mods: { FOR: 4, VEL: 3, RES: 1, POS: -2 } },
   { id: "JPN_KOR", nome: "Japão e Coreia do Sul", pais: "Japão", nacionalidade: "JPN", lingua: "ja", descricao: "Velocidade, fôlego e disciplina tática.", mods: { VEL: 4, RES: 3, POS: 1, DRI: -2, FOR: -1 }, pers: { profissionalismo: 3 } },
+  { id: "POR", nome: "Portugal", pais: "Portugal", nacionalidade: "POR", lingua: "pt", descricao: "Cruzamento, chute de fora e ginga de rua de Lisboa e Porto.", mods: { CRU: 4, FIN: 2, DRI: 2, RES: -1, FOR: -2 }, pers: { ambicao: 3 } },
+  { id: "EUA", nome: "Estados Unidos", pais: "Estados Unidos", nacionalidade: "USA", lingua: "en", descricao: "Atletismo, velocidade e preparo físico desde o colégio.", mods: { VEL: 4, FOR: 3, RES: 3, DRI: -2, PAS: -1 }, pers: { profissionalismo: 3 } },
+  { id: "MEX", nome: "México", pais: "México", nacionalidade: "MEX", lingua: "es", descricao: "Garra de bairro, cabeçada e bola parada.", mods: { CAB: 3, FIN: 2, COM: 2, RES: -1, POS: -1 }, pers: { temperamento: 3 } },
+  { id: "COL", nome: "Colômbia", pais: "Colômbia", nacionalidade: "COL", lingua: "es", descricao: "Ritmo de cadência: passe criativo e drible de quem joga dançando.", mods: { PAS: 3, DRI: 3, VIS: 2, FOR: -1, MAR: -1 }, pers: { carisma: 3 } },
+  { id: "MAR", nome: "Marrocos", pais: "Marrocos", nacionalidade: "MAR", lingua: "ar", descricao: "Técnica de rua, velocidade e leitura de jogo.", mods: { VEL: 3, DRI: 2, POS: 3, RES: 2, FIN: -1 }, pers: { ambicao: 2 } },
+  { id: "CRO", nome: "Croácia", pais: "Croácia", nacionalidade: "CRO", lingua: "slav", descricao: "Cabeça fria no meio-campo: passe e fôlego de país pequeno e duro.", mods: { PAS: 3, VIS: 3, RES: 2, FOR: -2, VEL: -1 }, pers: { profissionalismo: 2 } },
 ];
 
-export type PaisId = "BRA" | "ARG" | "URU" | "ESP" | "NED" | "GER" | "ITA" | "ENG" | "FRA" | "NGA" | "SEN" | "GHA" | "JPN" | "KOR";
+export type PaisId = "BRA" | "ARG" | "URU" | "ESP" | "NED" | "GER" | "ITA" | "ENG" | "FRA" | "NGA" | "SEN" | "GHA" | "JPN" | "KOR" | "POR" | "USA" | "MEX" | "COL" | "MAR" | "CRO";
 /** Cada país tem a sua carta; países da mesma escola de futebol compartilham as tendências de atributos. */
 export interface Pais { id: PaisId; nome: string; local: string; escola: EscolaId; nacionalidade: string; lingua: string; nota: string }
 export const PAISES: Pais[] = [
@@ -52,6 +58,12 @@ export const PAISES: Pais[] = [
   { id: "GHA", nome: "Gana", local: "em Gana", escola: "AFO", nacionalidade: "GHA", lingua: "en", nota: "As Estrelas Negras inspiram cada garoto da rua." },
   { id: "JPN", nome: "Japão", local: "no Japão", escola: "JPN_KOR", nacionalidade: "JPN", lingua: "ja", nota: "Escola organizada, treino diário e respeito ao coletivo." },
   { id: "KOR", nome: "Coreia do Sul", local: "na Coreia do Sul", escola: "JPN_KOR", nacionalidade: "KOR", lingua: "ko", nota: "Fôlego infinito e disciplina de sobra." },
+  { id: "POR", nome: "Portugal", local: "em Portugal", escola: "POR", nacionalidade: "POR", lingua: "pt", nota: "Dos campos de Lisboa às ruas do Porto, o futebol é coisa de família." },
+  { id: "USA", nome: "Estados Unidos", local: "nos Estados Unidos", escola: "EUA", nacionalidade: "USA", lingua: "en", nota: "Colégio, academia e rotina de atleta desde cedo." },
+  { id: "MEX", nome: "México", local: "no México", escola: "MEX", nacionalidade: "MEX", lingua: "es", nota: "Bairro, torcida de oitenta mil e nenhum medo de jogo." },
+  { id: "COL", nome: "Colômbia", local: "na Colômbia", escola: "COL", nacionalidade: "COL", lingua: "es", nota: "Futebol com ritmo: a bola segue o compasso da rua." },
+  { id: "MAR", nome: "Marrocos", local: "em Marrocos", escola: "MAR", nacionalidade: "MAR", lingua: "ar", nota: "Das ruas de Casablanca às periferias de Paris: técnica e velocidade." },
+  { id: "CRO", nome: "Croácia", local: "na Croácia", escola: "CRO", nacionalidade: "CRO", lingua: "slav", nota: "País pequeno que produz meio-campistas de classe mundial." },
 ];
 
 /** Onde o jogador cresce e começa na base: a primeira divisão do país. Quem nasceu num país sem liga no jogo
@@ -59,9 +71,10 @@ export const PAISES: Pais[] = [
 export const LIGA_DA_BASE: Record<PaisId, string> = {
   BRA: "BRA1", ARG: "ARG1", URU: "URU1", ESP: "ESP1", NED: "NED1", GER: "GER1", ITA: "ITA1", ENG: "ENG1", FRA: "FRA1",
   NGA: "ENG1", SEN: "FRA1", GHA: "ENG1", JPN: "GER1", KOR: "GER1",
+  POR: "POR1", USA: "USA1", MEX: "MEX1", COL: "COL1", MAR: "FRA1", CRO: "ITA1",
 };
 /** Para onde a família se mudou (só para quem nasceu num país sem liga no jogo). */
-export const MUDOU_PARA: Partial<Record<PaisId, string>> = { NGA: "a Inglaterra", SEN: "a França", GHA: "a Inglaterra", JPN: "a Alemanha", KOR: "a Alemanha" };
+export const MUDOU_PARA: Partial<Record<PaisId, string>> = { NGA: "a Inglaterra", SEN: "a França", GHA: "a Inglaterra", JPN: "a Alemanha", KOR: "a Alemanha", MAR: "a França", CRO: "a Itália" };
 
 export interface Formacao {
   id: FormacaoId; nome: string; descricao: string; mods: Mods; pot?: number; pers?: Partial<PersonalidadeDNA>;
@@ -151,7 +164,11 @@ function sortearTracos(rng: RNG, e: EscolhasCriacao & { escola: EscolaId }, form
   if (e.escola === "BRA") peso.ginga += 3;
   if (e.escola === "GER" || e.escola === "ENG") peso.chute_longe += 3;
   if (e.escola === "ITA") peso.frieza += 3;
-  if (e.escola === "AFO" || e.escola === "FRA" || e.escola === "JPN_KOR") peso.velocista += 3;
+  if (e.escola === "AFO" || e.escola === "FRA" || e.escola === "JPN_KOR" || e.escola === "EUA" || e.escola === "MAR") peso.velocista += 3;
+  if (e.escola === "POR") peso.chute_longe += 3;
+  if (e.escola === "COL") peso.ginga += 3;
+  if (e.escola === "MEX") peso.cabeceador += 2;
+  if (e.escola === "CRO") peso.frieza += 2;
   if (e.escola === "ARG_URU" || e.familia === "humilde") peso.lider_nato += 2;
   if (e.alturaCm > 185) peso.cabeceador += 4;
   if (e.alturaCm < 175) peso.cabeceador = 0;

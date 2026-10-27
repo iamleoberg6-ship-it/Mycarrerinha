@@ -23,3 +23,9 @@ export function bandeiraDesenhada(pais: string): string | undefined {
   if (pais === "SCO") return `<rect x="4" y="13" width="32" height="20" fill="#0B2F7A"/><path d="M4 13L36 33M36 13L4 33" stroke="#FFFFFF" stroke-width="4"/>`;
   return undefined;
 }
+
+/** A bandeira como SVG da mesma caixa 40×46 do escudo (para ocupar o lugar dele na tela). */
+export function bandeiraSvg(pais: string, cls = "escudo bandeira"): string {
+  const desenho = bandeiraDesenhada(pais);
+  return `<svg class="${cls}" viewBox="0 0 40 46" role="img" aria-label="Bandeira">${desenho ?? `<text x="20" y="34" font-size="30" text-anchor="middle">${bandeiraEmoji(pais)}</text>`}</svg>`;
+}

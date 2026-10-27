@@ -56,7 +56,7 @@ const hash = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.i
 
 // ------------------------------------------------------------------ nível do clube
 export const estruturaPorForca = (f: number) => (f >= 76 ? 5 : f >= 73 ? 4 : f >= 71 ? 3 : f >= 68 ? 2 : 1);
-const ESCOLA: Record<string, number> = { BRA: 2, ARG: 2, FRA: 2, ESP: 2, POR: 2, URU: 1.5, NED: 1.5, ENG: 1, GER: 1, ITA: 1, BEL: 1, USA: -1, KSA: -2 };
+const ESCOLA: Record<string, number> = { BRA: 2, ARG: 2, FRA: 2, ESP: 2, POR: 2, URU: 1.5, NED: 1.5, ENG: 1, GER: 1, ITA: 1, BEL: 1, USA: -1, KSA: -2, COL: 1, MAR: 1, CRO: 1, MEX: 0 };
 export interface NivelBase { estrutura: number; cultura: number; escola: number; potMedio: number; fEvolucao: number; maxSobe: number }
 /** Nível da base de um clube: talento médio dos garotos, o quanto evoluem e quantos sobem por temporada.
  *  O garoto médio fica abaixo do profissional; só os melhores de cada turma chegam ao nível do time de cima. */

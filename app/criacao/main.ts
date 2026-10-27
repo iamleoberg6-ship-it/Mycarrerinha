@@ -8,6 +8,7 @@ import {
   PAISES, FORMACOES, FAMILIAS, TRACOS, criarJogador, formacaoPermitida, LIGA_DA_BASE, MUDOU_PARA,
   type PaisId, type FamiliaId, type FormacaoId, type Pe, type EscolhasCriacao, type ResultadoCriacao,
 } from "../../src/dna.js";
+import { bandeiraSvg } from "../../src/bandeiras";
 import { ATRIBUTOS, GRUPO, peso, type Atributo, type Posicao } from "../../src/atributos.js";
 import {
   svgFoto, APARENCIA_PADRAO, CAMISA_PADRAO, PELES, CORES_CABELO, NOMES_CABELO_COR, CORES_OLHOS, NOMES_OLHOS, ROSTOS, CABELOS,
@@ -125,6 +126,10 @@ function historia(): string {
 /** Lado bom e lado ruim de uma escolha de família. */
 const textoEscolha = (o: { bom: string; ruim: string }) => `${esc(o.bom)}${o.ruim ? `<span class="pesam" style="color:var(--neg)">Mas: ${esc(o.ruim)}</span>` : ""}`;
 
+/** Um quadradinho com a bandeira (ou o escudo) e o nome: cabem vários na tela sem arrastar. */
+function tile(id: string, grupo: string, nome: string, figura: string, ativo: boolean) {
+  return `<button type="button" class="tile${ativo ? " ativa" : ""}" data-grupo="${grupo}" data-id="${id}" aria-pressed="${ativo}" title="${esc(nome)}">${figura}<span class="tile-nome">${esc(nome)}</span></button>`;
+}
 function opcao(id: string, grupo: string, titulo: string, texto: string, ativo: boolean, desabilitado = "", marca = "") {
   return `<button type="button" class="opcao${ativo ? " ativa" : ""}" data-grupo="${grupo}" data-id="${id}" ${desabilitado ? "disabled" : ""} aria-pressed="${ativo}">
     ${marca}<span class="opcao-corpo"><span class="opcao-titulo">${titulo}</span>${texto ? `<span class="opcao-texto">${texto}</span>` : ""}
@@ -153,7 +158,7 @@ function telaPasso(): string {
       <button type="button" class="botao texto" id="exemplo">Ver um jogador de exemplo pronto</button>`;
     case 1:
       return `${cab("A origem", `${esc(estado.nome.split(" ")[0] || "Você")} nasceu em…`, "Cada país tem sua escola de futebol. O que ela deixou em você, só o DNA vai dizer.")}
-      <div class="opcoes grade">${PAISES.map((x) => opcao(x.id, "pais", x.nome, "", estado.pais === x.id, "", `<span class="sigla-pais">${x.nacionalidade}</span>`)).join("")}</div>`;
+      <div class="opcoes tiles">${PAISES.map((x) => tile(x.id, "pais", x.nome, bandeiraSvg(x.id, "bandeira-tile"), estado.pais === x.id)).join("")}</div>`;
     case 2:
       return `${cab("A família", "Em casa, a realidade era…")}
       <div class="opcoes">${FAMILIAS.map((f) => opcao(f.id, "familia", f.nome, f.descricao, estado.familia === f.id)).join("")}</div>
@@ -164,8 +169,7 @@ function telaPasso(): string {
     case 3: {
       const fora = estado.pais ? MUDOU_PARA[estado.pais] : undefined;
       return `${cab("O clube do coração", "A primeira camisa que você ganhou foi a do…", fora ? `Aos 12 anos, a família se mudou para ${fora}. Foi lá que um time te conquistou.` : "Um dia você vai jogar contra ele. Ou por ele.")}
-      <div class="opcoes grade">${[...clubesDoPais(), BAIRRO].map((c) => opcao(c.id || "bairro", "clube", c.nome, c.apelido, estado.clube === c.id, "",
-        svgEscudo(c.id || "bairro", c.camisa.cor1, c.camisa.cor2, c.nome))).join("")}</div>`;
+      <div class="opcoes tiles">${[...clubesDoPais(), BAIRRO].map((c) => tile(c.id || "bairro", "clube", c.nome, svgEscudo(c.id || "bairro", c.camisa.cor1, c.camisa.cor2, c.nome), estado.clube === c.id)).join("")}</div>`;
     }
     case 4:
       return `${cab("A formação", "A bola entrou na sua vida…")}

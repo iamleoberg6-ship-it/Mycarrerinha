@@ -83,6 +83,39 @@ export function camadaPais(p: PaisId): string {
         `<path d="M0 104 L40 70 L80 100 L120 64 L170 98 L200 80 L200 120 L0 120 Z" fill="#7E95B3"/><path d="M0 112 L50 90 L100 110 L150 88 L200 108 L200 124 L0 124 Z" fill="#5E7697"/>` +
         `<rect x="0" y="120" width="200" height="100" fill="#7A9A72"/>` +
         [[6, 70, 14], [22, 84, 12], [160, 66, 14], [176, 78, 12], [188, 88, 10]].map(([x, y, w]) => `<rect x="${x}" y="${y}" width="${w}" height="${122 - y}" fill="#C9D3DE"/>${[0, 1, 2, 3].map((i) => `<rect x="${x + 3}" y="${y + 6 + i * 10}" width="${w - 6}" height="3" fill="#8DA2BA"/>`).join("")}`).join("");
+    case "POR":
+      return ceu("#7FB8E6", "#D9ECF8", "gPOR") + sol(40, 34, 12) +
+        `<rect x="0" y="136" width="200" height="84" fill="#3F8FC4"/><path d="M0 132 Q60 118 120 132 T200 130 L200 140 L0 140 Z" fill="#E8D6B0"/>` +
+        [[30, 100, "#E08A4B"], [48, 92, "#F2C9A0"], [70, 104, "#D5703A"], [126, 96, "#F2E1C6"], [146, 104, "#E08A4B"], [166, 90, "#F2C9A0"]]
+          .map(([x, y, c]) => casinha(x as number, y as number, 18, 22, c as string, "#A34A2A")).join("");
+    case "USA":
+      return ceu("#6EB5E8", "#CFE8F8", "gUSA") + sol(160, 32, 12) +
+        `<rect x="0" y="120" width="200" height="100" fill="#4E8F4A"/>` +
+        `<rect x="34" y="92" width="132" height="22" fill="#9AA3AE"/><rect x="34" y="92" width="132" height="3" fill="#C9D0D8"/>` +
+        [40, 52, 64, 76, 88, 100, 112, 124, 136, 148].map((x) => `<rect x="${x}" y="98" width="2" height="16" fill="#6B737D"/>`).join("") +
+        `<path d="M70 150 L130 150 L130 176 L70 176 Z" fill="none" stroke="#FFFFFF" stroke-width="2" opacity=".85"/><rect x="0" y="176" width="200" height="44" fill="#3E7A3A"/>`;
+    case "MEX":
+      return ceu("#F3B77A", "#FBE3C0", "gMEX") + sol(150, 40, 16, "#FFD27A") +
+        `<path d="M0 118 L40 92 L90 112 L140 86 L200 110 L200 220 L0 220 Z" fill="#C8875A"/>` +
+        `<path d="M0 140 L60 124 L120 140 L200 126 L200 220 L0 220 Z" fill="#A86B43"/>` +
+        [[24, 138], [170, 130]].map(([x, y]) => `<rect x="${x - 3}" y="${y - 22}" width="6" height="22" fill="#4F8A4A"/><rect x="${x - 10}" y="${y - 12}" width="7" height="5" fill="#4F8A4A"/><rect x="${x - 10}" y="${y - 17}" width="3" height="10" fill="#4F8A4A"/>`).join("");
+    case "COL":
+      return ceu("#8CC9EA", "#D2ECF8", "gCOL") + nuvem(60, 36, 0.9) +
+        `<path d="M0 124 L46 58 L86 116 L130 46 L200 124 L200 220 L0 220 Z" fill="#4D7C5B"/>` +
+        `<path d="M118 84 L130 46 L144 84 Z" fill="#F4F7FA"/>` +
+        `<rect x="0" y="150" width="200" height="70" fill="#7DA85E"/>` + palmeira(160, 150, 0.9) + palmeira(34, 156, 0.8);
+    case "MAR":
+      return ceu("#F2B98A", "#FCE9D3", "gMAR") + sol(40, 36, 11, "#FFD27A") +
+        `<rect x="0" y="130" width="200" height="90" fill="#D9C29A"/>` +
+        [[18, 100, "#F4F1EA"], [44, 92, "#F4F1EA"], [132, 96, "#F4F1EA"], [158, 88, "#F4F1EA"]]
+          .map(([x, y, c]) => casinha(x as number, y as number, 20, 30, c as string, "#2E6DB4")).join("") +
+        `<rect x="104" y="60" width="12" height="70" fill="#F4F1EA"/><path d="M104 60 Q110 46 116 60 Z" fill="#2E6DB4"/>`;
+    case "CRO":
+      return ceu("#9FD0EE", "#E6F4FB", "gCRO") + sol(160, 30, 11, "#FFE08A") +
+        `<path d="M0 118 Q70 92 130 116 Q170 104 200 112 L200 220 L0 220 Z" fill="#6E9A5C"/>` +
+        `<rect x="0" y="176" width="200" height="44" fill="#3B7FB8"/>` +
+        [[20, 106, "#D9513C"], [44, 98, "#F2EFE8"], [112, 100, "#D9513C"], [140, 92, "#F2EFE8"]]
+          .map(([x, y, c]) => casinha(x as number, y as number, 18, 20, c as string, "#7A2E22")).join("") + pinheiro(180, 116, 30);
   }
 }
 function palmeiras2() { return palmeira(36, 128, 0.8); }

@@ -1,5 +1,5 @@
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
-import { bandeiraDesenhada, bandeiraEmoji } from "../../src/bandeiras";
+import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { camisaCostas } from "../visual/camisas";
@@ -102,7 +102,7 @@ const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, p
 function cores(id: string): string[] { return clubeCasa(pacote, id).cores; }
 function escudo(id: string): string {
   // seleção: a bandeira do país no lugar do escudo
-  if (id.startsWith("NAT-")) { const pais = id.slice(4), desenho = bandeiraDesenhada(pais); return `<svg class="escudo bandeira" viewBox="0 0 40 46" role="img" aria-label="Bandeira">${desenho ?? `<text x="20" y="34" font-size="30" text-anchor="middle">${bandeiraEmoji(pais)}</text>`}</svg>`; }
+  if (id.startsWith("NAT-")) return bandeiraSvg(id.slice(4));
   const [a, b] = cores(id);
   return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome);
 }
