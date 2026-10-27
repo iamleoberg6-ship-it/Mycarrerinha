@@ -88,6 +88,7 @@ export interface Par extends Perfil { etapa: Etapa; relacao: number; desde: numb
   conversa?: Conversa; topicosVistos?: string[]; topouSair?: number }
 export interface Filho { nome: string; mae: string; ano: number; /** mãe não é a companheira atual: pensão */ pensao: boolean;
   /** menina? (saves antigos: sem o campo) */ menina?: boolean;
+  /** id do perfil da mãe (a foto dela no app): a aparência do filho cruza os traços dela com os do pai */ maeId?: string;
   /** recém-nascido esperando o pai escolher o nome: as sugestões (o nome provisório é a primeira) */ nomear?: string[];
   /** relação com o pai (0–100) e a semana do último programa juntos */ relacao?: number; contato?: number; vezes?: { s: number; n: number };
   /** o filho que quer ser jogador: escolinha, base de um clube, profissional, ou largou */
@@ -435,7 +436,7 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   const g = n.gravidez;
   if (g && ctx.semanaAbs >= g.parto) {
     const rng = new RNG(`${ctx.semente}|parto|${g.parto}`), mae = g.mae.split(" ")[0];
-    const b = novoBebe(rng, g.mae, ctx.ano ?? 0, !p || p.nome !== g.mae, [ctx.pais ?? "BRA", ctx.paisJogador ?? ctx.pais ?? "BRA"], ctx.semanaAbs), quem = b.menina ? "uma menina" : "um menino";
+    const b = novoBebe(rng, g.mae, ctx.ano ?? 0, !p || p.nome !== g.mae, [ctx.pais ?? "BRA", ctx.paisJogador ?? ctx.pais ?? "BRA"], ctx.semanaAbs, [p, ...(n.casos ?? []), ...(n.ficantes ?? [])].find((x) => x?.nome === g.mae)?.id), quem = b.menina ? "uma menina" : "um menino";
     (n.filhos ??= []).push(b);
     n.gravidez = undefined; moral += 10;
     avisos.push(`Nasceu ${quem}! Filho seu com ${mae}. Escolha o nome no Celular, na aba Match.`);
@@ -498,9 +499,9 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
 
 /** Fim da temporada: noivos se casam. */
 /** Um bebê novo: menino ou menina, com sugestões de nome do lugar onde mora (e do país do pai); a primeira vale até o pai escolher. */
-export function novoBebe(rng: RNG, mae: string, ano: number, pensao: boolean, paises: string[], semanaAbs?: number): Filho {
+export function novoBebe(rng: RNG, mae: string, ano: number, pensao: boolean, paises: string[], semanaAbs?: number, maeId?: string): Filho {
   const menina = rng.chance(0.49), sug = sugestoesBebe(rng, paises, menina);
-  return { nome: sug[0], mae, ano, pensao, menina, nomear: sug, relacao: 70, ...(semanaAbs !== undefined ? { contato: semanaAbs } : {}) };
+  return { nome: sug[0], mae, ano, pensao, menina, nomear: sug, relacao: 70, ...(maeId ? { maeId } : {}), ...(semanaAbs !== undefined ? { contato: semanaAbs } : {}) };
 }
 /** O pai escolhe o nome do recém-nascido. */
 export function nomearFilho(n: EstadoNamoro, i: number, nome: string): { ok: boolean; msg: string } {
@@ -524,11 +525,11 @@ export function temporadaNamoro(n: EstadoNamoro, eventos: string[], ctx?: { seme
   if (ctx) {
     const rng = new RNG(`${ctx.semente}|filhos|${ctx.ano}`);
     if (p && !n.gravidez && (p.etapa === "casados" || p.etapa === "morando") && p.relacao >= 60 && rng.chance(0.08)) {
-      const b = novoBebe(rng, p.nome, ctx.ano, false, ctx.paises ?? ["BRA"]), quem = b.menina ? "uma menina" : "um menino"; filhos.push(b);
+      const b = novoBebe(rng, p.nome, ctx.ano, false, ctx.paises ?? ["BRA"], undefined, p.id), quem = b.menina ? "uma menina" : "um menino"; filhos.push(b);
       eventos.push(`Nasceu ${quem}, filho com ${p.nome.split(" ")[0]}! Escolha o nome.`); noticia = `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${p.nome.split(" ")[0]}`;
     }
     for (const x of n.casos ?? []) if (x.etapa === "namorando" && rng.chance(0.06)) {
-      const b = novoBebe(rng, x.nome, ctx.ano, true, ctx.paises ?? ["BRA"]), nome = b.menina ? "uma menina" : "um menino"; filhos.push(b);
+      const b = novoBebe(rng, x.nome, ctx.ano, true, ctx.paises ?? ["BRA"], undefined, x.id), nome = b.menina ? "uma menina" : "um menino"; filhos.push(b);
       x.exposto = true; escandalo = true; n.escandalos = (n.escandalos ?? 0) + 1;
       eventos.push(`${x.nome.split(" ")[0]} teve um filho seu: ${nome}. A notícia vazou.`);
       noticia = `Filho fora do casamento: ${x.nome.split(" ")[0]} confirma que ${nome} é filho do jogador`;

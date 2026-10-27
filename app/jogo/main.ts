@@ -1,4 +1,6 @@
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
+import { cruzar, type GenesFilho } from "../../src/genes";
+import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { camisaCostas } from "../visual/camisas";
 import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
@@ -18,7 +20,7 @@ import {
   copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, chatDe, responderChatJogo, responderCenaJogo, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
-import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho } from "../../src/namoro";
+import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg } from "./poster";
@@ -778,7 +780,7 @@ function celMatch(s: Save): string {
   const filhos = n.filhos ?? [];
   const ano = ANO_INICIAL + c.temporada, g = n.gravidez;
   const gravidezHtml = g ? `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>` : "";
-  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${esc(nomeDe(f.futebol.clubeId))}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
+  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-cab"><span class="filho-foto">${retratoFilho(s, f, i)}</span><div class="filho-info"><p class="filho-puxou">${esc(quemPuxou(s, f, i))}</p></div></div><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${esc(nomeDe(f.futebol.clubeId))}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
       <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
       ${f.nomear ? `<div class="nomear-filho"><p>👶 <b>${f.menina ? "Ela" : "Ele"} ainda não tem nome.</b> Por enquanto, todo mundo chama de ${esc(f.nome)}. Escolha:</p>
         <div class="chips" style="flex-wrap:wrap">${f.nomear.map((x) => `<button class="chip" data-nomefilho="${i}" data-nome="${esc(x)}">${esc(x)}</button>`).join("")}</div>
@@ -927,6 +929,22 @@ function blocoCidade(s: Save, curto = false): string {
 function chaveCamisa(legenda: string): string {
   const nome = legenda.split(" · ")[0];
   return Object.values(mundo(pacote).info).find((x) => x.nome === nome)?.id ?? nome;
+}
+/** Genes do filho: cruzamento dos traços do pai (avatar do jogador) com os da mãe (a foto dela no app). */
+function genesDoFilho(s: Save, f: Filho, i: number): GenesFilho {
+  const n = namoroDe(s.carreira), maeId = f.maeId ?? [n.par, ...(n.casos ?? []), ...(n.ficantes ?? [])].find((x) => x?.nome === f.mae)?.id ?? f.mae;
+  return cruzar(tracosDoPai(s.jogador.aparencia ? apDe(s) : APARENCIA_PADRAO), tracosDaMae(maeId), `${f.mae}|${f.ano}|${i}`);
+}
+const meninaDe = (f: Filho): boolean => { if (f.menina !== undefined) return f.menina; const n = f.nome.split(" ")[0]; return /(a|e|z)$/i.test(n) && !/^(Davi|Henrique|Felipe|Jorge|Andre|André|Luca|Nicolas|Noah|Jose|José)$/i.test(n); };
+function retratoFilho(s: Save, f: Filho, i: number): string {
+  const idade = Math.max(0, ANO_INICIAL + s.carreira.temporada - f.ano), [a, b] = cores(s.carreira.clubeId);
+  return svgFilho(genesDoFilho(s, f, i), idade, meninaDe(f), `${f.mae}|${f.ano}|${i}`, { cores: [a, b ?? "#FFFFFF"], numero: s.jogador.numero });
+}
+function quemPuxou(s: Save, f: Filho, i: number): string {
+  const g = genesDoFilho(s, f, i), m = f.mae.split(" ")[0], de = (x: "pai" | "mae" | "os dois") => (x === "pai" ? "seu" : x === "mae" ? `da ${m}` : "dos dois");
+  const tex = { liso: "liso", ondulado: "ondulado", cacheado: "cacheado", crespo: "crespo" }[g.textura];
+  const olhos = ["castanho-escuros", "castanhos", "cor de mel", "verdes", "azuis"][g.olhos] ?? "castanhos";
+  return `Cabelo ${tex} ${g.puxou.cabelo === "pai" ? "com a cor do seu" : `com a cor do da ${m}`}, olhos ${olhos} ${g.puxou.olhos === "pai" ? "como os seus" : `como os da ${m}`}, a pele ${g.puxou.pele === "os dois" ? "é uma mistura dos dois" : `puxou mais ${de(g.puxou.pele) === "seu" ? "a sua" : `a ${de(g.puxou.pele)}`}`}${g.sardas ? ". E tem sardinhas" : ""}.`;
 }
 /** Álbum de figurinhas da carreira. */
 function figurinhaSvg(f: Figurinha): string {
