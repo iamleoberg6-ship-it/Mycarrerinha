@@ -8,6 +8,7 @@ import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
+import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
 import { premiosDoAno, type PremiosDoAno, type IdPremio } from "./premios-mundo.js";
 import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
 import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
@@ -18,7 +19,7 @@ import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao,
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
 import { estrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
-import { estatisticasEstimadas, type EstatEstimada } from "./perfil-jogador.js";
+import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./perfil-jogador.js";
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
@@ -108,6 +109,12 @@ export interface Carreira {
   treinoPosicao?: Posicao; sugestaoPos?: { pos: Posicao; aceita?: boolean };
   /** maior reputação que teve com a torcida de cada clube */
   torcidaMax?: Record<string, number>;
+  /** melhor posição já anunciada em cada lista de recordes (chave: clube-gols-FLA, sel-jogos, liga-BRA1-3...) */
+  recordes?: Record<string, number>;
+  /** aposentadoria anunciada (vale no fim desta temporada) */
+  aposentadoria?: { temporada: number };
+  /** carreira encerrada: a despedida */
+  encerrada?: Despedida;
   /** patrocinadores: contratos ativos, proposta na mesa, marcas recusadas na temporada e números do mês para os bônus */
   patrocinios?: ContratoPatrocinio[]; propPatrocinio?: PropostaPatrocinio; recusadas?: string[]; mesStats?: { gols: number; assist: number; notas8: number };
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
@@ -1177,6 +1184,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       if (e) { c.evento = e.id; c.eventosVistos[e.id] = c.temporada; eventos.push(`Fora de campo: ${e.titulo}.`); }
     }
   }
+  checarRecordes(pacote, s, eventos);
   return {
     rotulo, escalacao: partida?.escalacao ?? (c.semana - 1 < SEMANAS_PRE ? "semJogo" : "fora"), partida: resumoPartida, ...(quarta ? { copa: quarta.resumo } : {}),
     ovrAntes, ovrDepois: ovr(j), ganhos, moral: [moral0, c.moral], cansaco: [cansaco0, c.cansaco], fama: [fama0, c.fama], dinheiro, eventos,
@@ -1539,6 +1547,13 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
     c.salario = Math.round(Math.max(3000, salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama, formacao: true })));
     noticia(s, "clube", "Contrato renovado", `Mais 2 anos na base, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`);
   }
+  // aposentadoria: anunciada, aos 40, ou sem clube depois dos 35
+  if (!c.fase && (c.aposentadoria?.temporada === c.temporada - 1 || r.idade >= 40 || (!!c.mercado?.semClube && r.idade >= 35))) {
+    checarRecordes(pacote, s, eventos);
+    c.encerrada = despedida(pacote, s, c.aposentadoria?.temporada === c.temporada - 1 ? "anunciada" : r.idade >= 40 ? "idade" : "sem-clube");
+    noticia(s, "clube", `${j.apelido} pendura as chuteiras`, c.encerrada.texto, { k: "trofeu" });
+    return r;
+  }
   // mercado: fim de empréstimo e contrato vencido
   fimDaTemporadaNoMercado(pacote, s, eventos);
   contratoVencido(pacote, s, eventos);
@@ -1550,6 +1565,137 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   }
   if (escolheNumero(c) && !c.escolhaNumero) c.escolhaNumero = "temporada";
   return r;
+}
+
+// ------------------------------------------------------------------ recordes e aposentadoria
+/** Jogos e gols do jogador por um clube (liga, copa, estadual, Intercontinental, Mundial), contando a temporada em andamento. */
+export function numerosNoClube(s: Save, clubeId: string): { jogos: number; gols: number } {
+  const c = s.carreira, n = { jogos: 0, gols: 0 };
+  for (const h of c.historico) if (h.clubeId === clubeId && !h.fase) {
+    for (const x of [h, h.copa, h.estadual, ...(h.extras ?? []).filter((e) => !ehDeSelecao(e.id))]) if (x) { n.jogos += x.jogos; n.gols += x.gols; }
+  }
+  if (c.clubeId === clubeId && !c.fase && !c.encerrada) for (const x of [c.stats, c.statsCopa, c.statsEstadual, ...Object.values(c.statsExtra ?? {})]) if (x) { n.jogos += x.jogos; n.gols += x.gols; }
+  return n;
+}
+export interface ListaRecorde { chave: string; titulo: string; unidade: string; lista: Lenda[]; pos: number; valor: number; clubeId?: string }
+/** As listas de recordes que interessam ao jogador: cada clube por onde passou (gols e jogos), a seleção e o recorde de gols numa temporada da liga atual. */
+export function recordesDoJogador(pacote: PacoteDados, s: Save): ListaRecorde[] {
+  const c = s.carreira, j = s.jogador, out: ListaRecorde[] = [];
+  const clubes = [...new Set([...c.historico.filter((h) => !h.fase && h.clubeId && h.jogos).map((h) => h.clubeId!), ...(c.fase || c.formacao || c.encerrada ? [] : [c.clubeId])])];
+  for (const id of clubes) {
+    const info = infoClube(pacote, id);
+    if (!info) continue;
+    const rec = recordesDoClube(id, info.forca, info.pais ?? "BRA"), n = numerosNoClube(s, id);
+    for (const [tipo, titulo, unidade] of [["gols", "Maiores artilheiros", "gols"], ["jogos", "Mais jogos", "jogos"]] as const) {
+      const { lista, pos } = comJogador(rec[tipo], j.apelido, n[tipo]);
+      out.push({ chave: `clube-${tipo}-${id}`, titulo: `${titulo} do ${info.nome}`, unidade, lista, pos, valor: n[tipo], clubeId: id });
+    }
+  }
+  const sel = selecaoDe(pacote, j.nacionalidade), sl = c.selecao;
+  if (sel && sl?.jogos) {
+    const rec = recordesDaSelecao(j.nacionalidade, infoClube(pacote, sel.id)?.forca ?? sel.forca);
+    for (const [tipo, titulo, unidade] of [["gols", "Maiores artilheiros", "gols"], ["jogos", "Mais jogos", "jogos"]] as const) {
+      const { lista, pos } = comJogador(rec[tipo], j.apelido, sl[tipo]);
+      out.push({ chave: `sel-${tipo}`, titulo: `${titulo} da ${sel.nome}`, unidade, lista, pos, valor: sl[tipo], clubeId: sel.id });
+    }
+  }
+  if (!c.fase && !c.formacao) {
+    const lid = infoLiga(c.ligaId).id, rl = recordeDaLiga(lid, infoLiga(c.ligaId).pais, nRodadas(c));
+    const melhor = Math.max(c.stats.gols, ...c.historico.filter((h) => h.liga === infoLiga(c.ligaId).curto && !h.fase).map((h) => h.gols));
+    out.push({ chave: `liga-${lid}`, titulo: `Recorde de gols numa temporada da ${infoLiga(c.ligaId).curto}`, unidade: "gols", lista: [rl], pos: melhor > rl.valor ? 1 : 0, valor: melhor });
+  }
+  return out;
+}
+const ORD = ["", "maior", "2º maior", "3º maior", "4º maior", "5º maior"];
+/** Toda semana: o jogador subiu numa lista de recordes? Notícia (e, se virou o recordista, troféu e fama). */
+function checarRecordes(pacote: PacoteDados, s: Save, eventos: string[]) {
+  const c = s.carreira, j = s.jogador;
+  if (c.fase || c.formacao) return;
+  const av = (c.recordes ??= {});
+  for (const r of recordesDoJogador(pacote, s)) {
+    // recorde de temporada da liga: uma vez por temporada
+    const chave = r.chave.startsWith("liga-") ? `${r.chave}-${c.temporada}` : r.chave;
+    if (!r.pos || (av[chave] && av[chave] <= r.pos)) continue;
+    av[chave] = r.pos;
+    const passou = r.lista[r.pos] ?? r.lista[r.pos - 1];
+    if (r.chave.startsWith("liga-")) {
+      if (c.stats.gols <= (r.lista.find((x) => !x.eu)?.valor ?? 999)) { delete av[chave]; continue; }
+      const rec = r.lista[0];
+      noticia(s, "jogo", `Recorde na ${infoLiga(c.ligaId).curto}!`, `${j.apelido} chega a ${c.stats.gols} gols e passa ${rec.eu ? "o recorde" : rec.nome}: é o maior artilheiro de uma temporada da história da liga.`, { k: "trofeu" });
+      eventos.push("Recorde de gols numa temporada da liga!");
+      receberReliquias(s, [{ conquista: `recorde-${chave}`, reliquia: { id: `rel-recorde-${chave}`, chave: `recorde-${chave}`, tipo: "trofeu", nome: `Recorde de gols na ${infoLiga(c.ligaId).curto} ${ANO_INICIAL + c.temporada}`, legenda: `${c.stats.gols} gols numa temporada`, ano: ANO_INICIAL + c.temporada, cores: ["#C0C8D8", "#8F96A3"], modelo: "placa" } }], eventos);
+      c.fama = clamp(c.fama + 4, 0, 100);
+      continue;
+    }
+    const sel = r.chave.startsWith("sel-"), onde = r.titulo.replace(/^(Maiores artilheiros|Mais jogos) d[oa] /, "");
+    const oQue = r.unidade === "gols" ? "artilheiro" : "jogador com mais jogos";
+    const nomeAntigo = passou && !passou.eu ? ` Passou ${passou.nome} (${passou.valor}).` : "";
+    noticia(s, sel ? "jogo" : "clube", r.pos === 1 ? `${j.apelido}: recordista ${sel ? "da" : "do"} ${onde}` : `${j.apelido} sobe na história ${sel ? "da" : "do"} ${onde}`,
+      `Com ${r.valor} ${r.unidade}, ${j.apelido} é agora o ${ORD[r.pos]} ${oQue} da história ${sel ? "da" : "do"} ${onde}.${nomeAntigo}`, r.pos === 1 ? { k: "trofeu" } : undefined);
+    if (r.pos <= 2) eventos.push(`Recorde: ${ORD[r.pos]} ${oQue} ${sel ? "da" : "do"} ${onde}.`);
+    if (r.pos === 1) {
+      const cores = (infoClube(pacote, r.clubeId!)?.cores ?? ["#E3B341", "#FFFFFF"]) as [string, string];
+      receberReliquias(s, [{ conquista: `recorde-${r.chave}`, reliquia: { id: `rel-recorde-${r.chave}`, chave: `recorde-${r.chave}`, tipo: "trofeu", nome: `Recordista: ${r.unidade === "gols" ? "maior artilheiro" : "mais jogos"} ${sel ? "da" : "do"} ${onde}`, legenda: `${r.valor} ${r.unidade}`, ano: ANO_INICIAL + c.temporada, cores: [cores[0], cores[1] ?? "#FFFFFF"], modelo: "placa" } }], eventos);
+      c.fama = clamp(c.fama + (sel ? 4 : 3), 0, 100);
+      if (!sel && r.clubeId === c.clubeId) c.torcida = clamp((c.torcida ?? 50) + 8, 0, 100);
+    }
+  }
+}
+
+export interface Despedida {
+  ano: number; idade: number; motivo: "anunciada" | "idade" | "sem-clube"; texto: string;
+  nivel: { titulo: string; texto: string };
+  /** clube do coração da carreira (onde mais jogou) e se ele aposentou a camisa */
+  casa?: { clubeId: string; jogos: number; gols: number; camisa?: string };
+  recordes: string[];
+}
+/** O que fica: nível de lenda (títulos, prêmios, gols, seleção), o clube onde mais jogou (e se ele aposenta a camisa), os recordes. */
+export function despedida(pacote: PacoteDados, s: Save, motivo: Despedida["motivo"]): Despedida {
+  const c = s.carreira, j = s.jogador, hist = c.historico, ultimo = hist.at(-1)!;
+  const t = totaisDaCarreira(hist), sl = c.selecao;
+  const premios = hist.flatMap((h) => h.premios ?? []);
+  const conta = (re: RegExp) => premios.filter((p) => re.test(p)).length;
+  const pontos = t.titulos.length * 3 + conta(/^Bola de Ouro/) * 30 + conta(/^(The Best|Melhor da Europa|Rei da América|Melhor da Ásia|Melhor Africano)/) * 10
+    + conta(/^Taça da Copa do Mundo/) * 25 + conta(/^Taça da (Eurocopa|Copa América|Copa Africana|Copa da Ásia)/) * 10 + t.gols / 10 + t.jogos / 40 + (sl?.jogos ?? 0) / 4 + (sl?.gols ?? 0) / 3;
+  const ids = [...new Set(hist.filter((h) => h.clubeId && !h.fase).map((h) => h.clubeId!))];
+  const porClube = ids.map((id) => ({ id, ...numerosNoClube(s, id) })).sort((a, b) => b.jogos - a.jogos);
+  const casa = porClube[0];
+  const recs = recordesDoJogador(pacote, s).filter((r) => r.pos === 1).map((r) => r.chave.startsWith("liga-") ? `${r.titulo}: ${r.valor} gols` : `${r.titulo.replace(/^Maiores artilheiros/, "Maior artilheiro").replace(/^Mais jogos/, "Recordista de jogos")}: ${r.valor}`);
+  const nomeCasa = casa ? infoClube(pacote, casa.id)?.nome ?? "" : "";
+  const recordistaCasa = !!casa && recordesDoJogador(pacote, s).some((r) => r.clubeId === casa.id && r.pos === 1 && !r.chave.startsWith("sel-"));
+  // camisa aposentada: muitos jogos, títulos e idolatria (ou o recorde do clube)
+  const titulosCasa = hist.filter((h) => h.clubeId === casa?.id && (h.titulo || h.copa?.campeao)).length;
+  const aposentaCamisa = !!casa && (casa.jogos >= 250 || (casa.jogos >= 150 && (titulosCasa >= 2 || recordistaCasa)) || (casa.jogos >= 100 && (c.torcidaMax?.[casa.id] ?? 0) >= 90));
+  const nivel = pontos >= 220 ? { titulo: "Lenda do futebol mundial", texto: "Um dos maiores da história. Daqui a cinquenta anos ainda vão discutir se ele foi o melhor de todos." }
+    : pontos >= 120 ? { titulo: "Craque histórico", texto: "Ganhou o que tinha para ganhar e entrou para a história do futebol do país." }
+    : pontos >= 60 ? { titulo: `Ídolo${nomeCasa ? ` do ${nomeCasa}` : ""}`, texto: "A torcida vai cantar o nome dele por muitos anos." }
+    : pontos >= 25 ? { titulo: "Carreira sólida", texto: "Uma vida inteira no futebol profissional, com respeito por onde passou." }
+    : { titulo: "Carreira de trabalhador da bola", texto: "Nem todo mundo vira craque. Ele viveu do futebol, e isso já é muito." };
+  const motivoTxt = motivo === "idade" ? "Aos 40 anos, o corpo pediu." : motivo === "sem-clube" ? "Sem propostas que valessem a pena, decidiu parar." : "Despedida anunciada, com festa no último jogo.";
+  const texto = `${motivoTxt} ${j.apelido} encerra a carreira em ${ultimo.ano}: ${t.jogos} jogos, ${t.gols} gols e ${t.titulos.length} títulos${sl?.jogos ? `; ${sl.jogos} jogos e ${sl.gols} gols pela seleção` : ""}.${aposentaCamisa ? ` O ${nomeCasa} aposenta a camisa ${j.numero ?? ""}.` : ""}`;
+  if (aposentaCamisa && casa) {
+    const info = infoClube(pacote, casa.id);
+    receberReliquias(s, [{ conquista: "camisa-aposentada", reliquia: { id: "rel-camisa-aposentada", chave: "camisa-aposentada", tipo: "camisa", nome: `Camisa ${j.numero ?? ""} aposentada`, legenda: `${info?.nome ?? ""} · ${casa.jogos} jogos, ${casa.gols} gols`, ano: ultimo.ano, cores: [info?.cores[0] ?? "#2E7D4F", info?.cores[1] ?? "#FFFFFF"], modelo: info?.padrao ?? "lisa", numero: j.numero } }], []);
+  }
+  return { ano: ultimo.ano, idade: ultimo.idade, motivo, texto, nivel, ...(casa ? { casa: { clubeId: casa.id, jogos: casa.jogos, gols: casa.gols, ...(aposentaCamisa ? { camisa: j.numero } : {}) } } : {}), recordes: recs };
+}
+/** Anunciar que esta é a última temporada (a partir dos 30, ou dos 28 sem clube). Dá para voltar atrás até o fim dela. */
+export function anunciarAposentadoria(s: Save): { ok: boolean; msg: string } {
+  const c = s.carreira, j = s.jogador;
+  if (c.encerrada) return { ok: false, msg: "A carreira já acabou." };
+  if (c.fase || c.formacao) return { ok: false, msg: "Ainda nem chegou ao profissional." };
+  if (j.idade < (c.mercado?.semClube ? 28 : 30)) return { ok: false, msg: "Cedo demais: a partir dos 30 anos (28 se estiver sem clube)." };
+  c.aposentadoria = { temporada: c.temporada };
+  c.torcida = clamp((c.torcida ?? 50) + 5, 0, 100);
+  noticia(s, "clube", `${j.apelido} anuncia a aposentadoria`, `Esta é a última temporada da carreira. A despedida será no fim do ano.`);
+  return { ok: true, msg: "Anunciado: esta é a última temporada." };
+}
+export function desistirAposentadoria(s: Save): { ok: boolean; msg: string } {
+  const c = s.carreira;
+  if (!c.aposentadoria || c.encerrada) return { ok: false, msg: "Nada para desfazer." };
+  c.aposentadoria = undefined;
+  noticia(s, "clube", `${s.jogador.apelido} volta atrás`, `Ainda tem lenha para queimar: a aposentadoria fica para depois.`);
+  return { ok: true, msg: "Você continua jogando." };
 }
 
 /** Estrutura e cultura do clube no treino do jogador: na base pesam as duas; no profissional, só a estrutura. */

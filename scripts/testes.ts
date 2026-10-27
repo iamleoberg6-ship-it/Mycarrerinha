@@ -16,6 +16,8 @@ import { ehTorneioContinental, ehFinalissima } from "../src/copas.js";
 import { premiosDoAno, type ContextoPremios } from "../src/premios-mundo.js";
 import type { Candidato } from "../src/mundo.js";
 import { infoLiga } from "../src/ligas.js";
+import { comJogador, recordesDoClube } from "../src/recordes.js";
+import { anunciarAposentadoria, desistirAposentadoria, recordesDoJogador } from "../src/jogo.js";
 import { oferecerJogador, aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -1070,6 +1072,28 @@ teste("Eurocopa, Copa América, Copa Africana e Copa da Ásia em 2028; Finalíss
   assert.ok(ehTorneioContinental(2) && ehFinalissima(3) && !ehTorneioContinental(4));
   // confederações das seleções africanas certas (Senegal não é Europa)
   assert.equal(confederacao("SEN"), "CAF"); assert.equal(participantesCopa(pacote, 4).filter((x) => confederacao(pais(x)) === "CAF").length >= 5, true);
+});
+
+teste("Recordes e aposentadoria: top 5 histórico com o jogador dentro, anúncio, despedida no fim da temporada", () => {
+  const lista = [{ nome: "A", valor: 300 }, { nome: "B", valor: 250 }, { nome: "C", valor: 200 }, { nome: "D", valor: 150 }, { nome: "E", valor: 120 }];
+  assert.equal(comJogador(lista, "Eu", 100).pos, 0);
+  assert.equal(comJogador(lista, "Eu", 120).pos, 0, "empatar não passa");
+  assert.equal(comJogador(lista, "Eu", 201).pos, 3);
+  assert.equal(comJogador(lista, "Eu", 301).lista[0].nome, "Eu");
+  const g = recordesDoClube("FLA", 82, "BRA"), p = recordesDoClube("D-ALGUM", 58, "BRA");
+  assert.ok(g.gols[0].valor > p.gols[0].valor && g.gols[0].valor === recordesDoClube("FLA", 82, "BRA").gols[0].valor, "clube grande, números maiores; sempre iguais");
+  const r = criarJogador({ nome: "Teste Fim", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "fim" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "fim");
+  for (const k of ATRIBUTOS) s.jogador.at[k] = 80;
+  s.jogador.idade = 29; s.carreira.formacao = false; s.carreira.anosContrato = 5;
+  assert.ok(!anunciarAposentadoria(s).ok, "cedo demais");
+  s.jogador.idade = 33;
+  assert.ok(anunciarAposentadoria(s).ok); assert.ok(desistirAposentadoria(s).ok && !s.carreira.aposentadoria);
+  anunciarAposentadoria(s);
+  for (let k = 0; k < 60 && !s.carreira.encerrada; k++) semanaAutomatica(pacote, s, false);
+  const d = s.carreira.encerrada!;
+  assert.ok(d && d.motivo === "anunciada" && d.ano === 2026 && d.nivel.titulo && d.texto.includes("encerra a carreira"));
+  assert.ok(recordesDoJogador(pacote, s).some((x) => x.chave === "clube-gols-FLA"));
 });
 
 console.log(`\n${ok} testes passaram`);

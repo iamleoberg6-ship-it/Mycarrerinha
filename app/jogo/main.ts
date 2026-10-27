@@ -15,7 +15,7 @@ import {
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
   familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo,
-  copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, concluirJogoDaCopa, reservaNaBase, type ResumoPartida,
+  copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
@@ -105,7 +105,7 @@ function render() {
     app.innerHTML = dados?.resultado ? telaOfertas(dados) : telaInicio();
     return;
   }
-  app.innerHTML = telaSemana(save);
+  app.innerHTML = save.carreira.encerrada ? telaDespedida(save) : telaSemana(save);
 }
 
 function telaInicio(): string {
@@ -169,7 +169,7 @@ function telaSemana(s: Save): string {
   const focos: [Grupo, string][] = [["fisico", "Físico"], ["tecnico", "Técnico"], ["tatico", "Tático"]];
   const ints: [Intensidade, string][] = [["leve", "Leve"], ["normal", "Normal"], ["alta", "Puxado"]];
   const acoesDisp = (Object.keys(ACOES) as Acao[]).filter((a) => a !== "video" || jogo);
-  return `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}</span></header>
+  return `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}${c.aposentadoria ? " · última temporada" : ""}</span></header>
   <section class="painel card-jogador" data-acao="perfil" role="button" tabindex="0" aria-label="Abrir o perfil do jogador">
     <div class="jogador"><div class="foto">${foto(s)}</div>
       <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.fase ? ` (${NOME_FASE[c.fase].toLowerCase().replace("eua", "EUA")})` : c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
@@ -796,6 +796,8 @@ function perfilHtml(s: Save): string {
       <p class="rotulo">Clubes</p>
       <div class="lista-clubes">${clubes.map((k) => { const id = idClube(k); return `<div class="linha-clube">${id ? escudo(id) : ""}<div><b>${esc(k.clube)}</b><small>${k.de === k.ate ? k.de : `${k.de}–${k.ate}`}</small></div><span>${k.jogos} j · ${k.gols} g · ${k.assist} a${k.titulos ? ` · 🏆 ${k.titulos}` : ""}</span></div>`; }).join("") || `<p class="sub">Ainda na base.</p>`}</div>
 
+      ${recordesHtml(s)}
+
       <p class="rotulo">Armário de troféus</p>
       ${arm.length ? `<div class="armario">${arm.map((x) => `<button class="trofeu-cel${trofeuAberto === x.nome ? " ativo" : ""}" data-trofeu="${esc(x.nome)}" aria-expanded="${trofeuAberto === x.nome}"><svg viewBox="-13 -30 26 32" aria-hidden="true">${trofeuSvg(0, 0, x.modelo, x.cores)}</svg><b>${x.vezes.length}×</b><small>${esc(x.nome)}</small></button>`).join("")}</div>
         ${aberto ? `<div class="trofeu-detalhe"><b>${esc(aberto.nome)}</b>${[...aberto.vezes].sort((a, b) => b.ano - a.ano).map((v) => `<div><span>${v.ano}</span>${esc(v.clube)}${v.liga ? ` · <small>${esc(v.liga)}</small>` : ""}</div>`).join("")}</div>` : `<p class="sub">Toque num troféu para ver as temporadas.</p>`}` : `<p class="sub">Nenhum ainda. A estante da casa está esperando.</p>`}
@@ -807,6 +809,44 @@ function perfilHtml(s: Save): string {
     </div>`;
 }
 let trofeuAberto: string | undefined, camisaAberta: string | undefined;
+/** Recordes: em cada clube por onde passou e na seleção, o top 5 da história com o jogador dentro (ou quanto falta). */
+function recordesHtml(s: Save): string {
+  const listas = recordesDoJogador(pacote, s);
+  if (!listas.length) return "";
+  const linha = (l: ListaRecorde) => {
+    const quinto = l.lista[l.lista.length - 1], falta = l.pos ? 0 : quinto.valor - l.valor + 1;
+    const resumo = l.chave.startsWith("liga-") ? (l.pos ? `<b style="color:var(--ouro)">seu: ${l.valor}</b>` : `recorde: ${quinto.valor} · seu melhor: ${l.valor}`) : l.pos ? `<b style="color:var(--ouro)">você: ${l.pos}º</b>` : `faltam ${falta} para o top 5`;
+    return `<details class="recorde"><summary><span>${esc(l.titulo)}</span><small>${resumo}</small></summary>${l.lista.map((x, i) => `<div class="premio-l${x.eu ? " ouro" : ""}"><span class="rotulo">${l.chave.startsWith("liga-") ? "" : `${i + 1}º`}</span><span>${x.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : esc(x.nome)}</span><b>${x.valor} ${l.unidade}</b></div>`).join("")}</details>`;
+  };
+  const c = s.carreira, apos = c.encerrada ? "" : c.aposentadoria
+    ? `<p class="sub" style="margin-top:10px">Última temporada: a despedida é no fim do ano.</p><button class="botao sec" data-acao="desistir-aposentadoria">Voltar atrás e continuar jogando</button>`
+    : !c.fase && !c.formacao && s.jogador.idade >= (c.mercado?.semClube ? 28 : 30) ? `<button class="botao sec" style="margin-top:10px" data-acao="aposentar">Anunciar a aposentadoria (esta é a última temporada)</button>` : "";
+  return `<p class="rotulo">Recordes <small>(a história de cada clube e da seleção)</small></p>${listas.map(linha).join("")}${apos}`;
+}
+/** Fim da carreira: a despedida, com tudo o que ficou. */
+function telaDespedida(s: Save): string {
+  const d = s.carreira.encerrada!, j = s.jogador, hist = s.carreira.historico, t = totaisDaCarreira(hist), sl = s.carreira.selecao;
+  const clubes = clubesDaCarreira(hist.filter((h) => h.jogos));
+  const ini = hist.find((h) => h.jogos && !h.fase)?.ano ?? hist[0]?.ano;
+  return `<header class="marca"><strong>Mycarrerinha</strong><span>Fim de carreira</span></header>
+    <section class="painel despedida">
+      <p class="rotulo">${ini ?? ""}–${d.ano} · ${d.idade} anos</p>
+      <h1>${esc(j.apelido)} pendura as chuteiras</h1>
+      <p class="nivel-lenda">${esc(d.nivel.titulo)}</p>
+      <p class="sub">${esc(d.nivel.texto)}</p>
+      <p>${esc(d.texto)}</p>
+      <div class="tiles">${tile(String(t.jogos), "Jogos")}${tile(String(t.gols), "Gols")}${tile(String(t.assist), "Assistências")}${tile(String(t.titulos.length), "Títulos")}${tile(String(t.premios.length), "Prêmios")}${tile(sl?.jogos ? `${sl.jogos}/${sl.gols}` : "–", "Seleção (j/g)")}</div>
+      ${d.casa?.camisa ? `<p class="rotulo">Camisa aposentada</p><div class="linha-clube">${escudo(d.casa.clubeId)}<div><b>${esc(nomeDe(d.casa.clubeId))}</b><small>Ninguém mais veste a ${esc(d.casa.camisa)}</small></div><span>${d.casa.jogos} j · ${d.casa.gols} g</span></div>` : ""}
+      ${d.recordes.length ? `<p class="rotulo">Recordes que ficam</p>${d.recordes.map((r) => `<div class="premio-l largo ouro"><span class="rotulo">★</span><span>${esc(r)}</span><b></b></div>`).join("")}` : ""}
+      <p class="rotulo">Clubes</p>
+      <div class="lista-clubes">${clubes.filter((k, i) => !k.clubeId || clubes.findIndex((x) => x.clubeId === k.clubeId) === i).map((k) => { const n = k.clubeId ? numerosNoClube(s, k.clubeId) : k; return `<div class="linha-clube">${k.clubeId ? escudo(k.clubeId) : ""}<div><b>${esc(k.clube)}</b><small>${k.de === k.ate ? k.de : `${k.de}–${k.ate}`}</small></div><span>${n.jogos} j · ${n.gols} g</span></div>`; }).join("")}</div>
+      <p class="sub">Todas as competições pelo clube.</p>
+      ${t.titulos.length ? `<p class="rotulo">Títulos</p><p class="sub">${t.titulos.map((x) => `${esc(x.nome)} ${x.ano}`).join(" · ")}</p>` : ""}
+      ${t.premios.length ? `<p class="rotulo">Prêmios</p><p class="sub">${t.premios.map((x) => `${esc(x.nome)} ${x.ano}`).join(" · ")}</p>` : ""}
+      <button class="botao grande" data-acao="perfil">Ver o perfil completo</button>
+      <button class="botao sec" data-acao="recomecar">Começar uma nova carreira</button>
+    </section>`;
+}
 /** Armário de camisas: as especiais e as trocadas com craques. */
 function armarioCamisas(s: Save): string {
   const minhas = (s.casa.reliquias ?? []).filter((r) => r.tipo === "camisa").sort((a, b) => a.ano - b.ano);
@@ -1092,6 +1132,11 @@ document.addEventListener("click", (ev) => {
     }
     case "jogar": abrirJogo(); break;
     case "perfil": abrirPerfil(); break;
+    case "aposentar":
+      if (b.dataset.certeza) { const r = anunciarAposentadoria(save!); salvar(); abrirPerfil(); render(); void r; }
+      else { b.dataset.certeza = "1"; b.textContent = "Toque de novo para confirmar: é a última temporada"; }
+      break;
+    case "desistir-aposentadoria": desistirAposentadoria(save!); salvar(); abrirPerfil(); render(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
     case "oferecer": if (save) { const r2 = oferecerJogador(save); msgMercado = { texto: r2.msg, ok: r2.ok }; salvar(); render(); } break;
     case "fechar-hist": ($("dlgHist") as HTMLDialogElement).close(); break;
@@ -1103,6 +1148,7 @@ document.addEventListener("click", (ev) => {
       let n = 0, saiu = !janelaAberta(c);
       while (n < 60) {
         semanaAutomatica(pacote, save, false); n++;
+        if (save.carreira.encerrada) break;
         const jan = janelaAberta(c);
         if (!jan) saiu = true;
         else if (saiu && save.jogador.idade >= 18 && !c.formacao && (mercadoDe(c).propostas.length || c.semana >= jan.fim)) break;
