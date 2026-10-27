@@ -141,6 +141,7 @@ function fotoNpc(nome: string, clubeId: string, idade = 25): string {
     boca: pick(["neutra", "sorriso", "lado", "fina", "cheia"] as const, 15), barba: idade < 21 ? "nenhuma" : pick(["nenhuma", "sombra", "rala", "cavanhaque", "curta", "cheia", "bigode"] as const, 17) };
   return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: String(((h >>> 19) % 30) + 2), traje: "jogo" });
 }
+const ICO_GOSTO: Record<string, string> = { praia: "🏖️", balada: "🪩", cinema: "🎬", futebol: "⚽", viagem: "✈️", comida: "🍝", musica: "🎤", natureza: "🥾", moda: "🛍️", games: "🎮" };
 const ICO_COMP: Record<string, string> = { parceiro: "🤝", invejoso: "😒", mentor: "🧓", pupilo: "🧒" };
 const humor = (rel: number) => (rel >= 70 ? "😄" : rel >= 45 ? "🙂" : rel >= 30 ? "😐" : "😠");
 const barra = (nome: string, v: number, max = 100, cor?: string, txt?: string) =>
@@ -742,7 +743,11 @@ function celMatch(s: Save): string {
     const l = acoesNamoro(p, ab, caso, !!n.gravidez).filter((a) => !(p.etapa === "match" && a === "conversar")), mais = l.filter((a) => !PRINCIPAIS.has(a));
     return l.filter((a) => PRINCIPAIS.has(a)).map(bt).join("") + (mais.length ? `<details class="mais-programas"${mais.some((a) => escolhaNam?.id === p.id && escolhaNam.op === a) ? " open" : ""}><summary class="chip">Mais programas (${mais.length}) ▾</summary><div class="rel-acoes" style="margin:6px 0 0">${mais.map(bt).join("")}</div></details>` : "");
   };
-  const sobreEla = (p: Par) => { const g = gostosDe(p), q = quimica(p, c.vidaNoturna); return `<div class="sobre-ela">${conheceGostos(p) ? `<small>Gosta de <b>${g.gosta.map((x) => NOME_GOSTO[x]).join("</b> e <b>")}</b> · não curte <b>${NOME_GOSTO[g.odeia]}</b></small>` : `<small>Converse mais para descobrir do que ela gosta.</small>`}<div class="emp-saude"><span>Química</span><span class="rel-barra"><i style="width:${q}%;background:#E58FB1"></i></span></div><small class="pensa">💭 ${esc(pensamentoDela(p))}</small>${p.famosa ? `<small>⭐ Celebridade: vocês são o casal do momento.</small>` : ""}</div>`; };
+  const sobreEla = (p: Par) => {
+    const g = gostosDe(p), q = quimica(p, c.vidaNoturna), r = p.relacao ?? 50;
+    const icoQ = q >= 75 ? "🔥" : q >= 50 ? "💞" : q >= 30 ? "🙂" : "🧊", cara = r >= 80 ? "😍" : r >= 60 ? "😊" : r >= 40 ? "🙂" : r >= 20 ? "😕" : "💔";
+    const gostos = conheceGostos(p) ? `<div class="gostos">${g.gosta.map((x) => `<span class="gosto sim" title="Gosta de ${esc(NOME_GOSTO[x])}">${ICO_GOSTO[x]}<small>${esc(NOME_GOSTO[x].split(" ")[0])}</small></span>`).join("")}<span class="gosto nao" title="Não curte ${esc(NOME_GOSTO[g.odeia])}">${ICO_GOSTO[g.odeia]}<small>${esc(NOME_GOSTO[g.odeia].split(" ")[0])}</small></span></div>` : `<div class="gostos">${["❔", "❔", "❔"].map((x) => `<span class="gosto oculto">${x}<small>?</small></span>`).join("")}<small class="sub">Converse mais para descobrir</small></div>`;
+    return `<div class="sobre-ela">${gostos}<div class="quim"><span class="quim-ico">${icoQ}</span><span class="rel-barra"><i style="width:${q}%;background:linear-gradient(90deg,#E58FB1,#FF5C8A)"></i></span><b>${Math.round(q)}</b></div><div class="pensa-vis"><span>${cara}</span><small>${esc(pensamentoDela(p))}</small></div>${p.famosa ? `<small>⭐ Celebridade: vocês são o casal do momento.</small>` : ""}</div>`; };
   const barra = (p: Par, rot = NOME_ETAPA[p.etapa]) => `<div class="rel-nivel" style="margin-top:6px"><span style="color:${corRelFam(p.relacao)}">${rot} · ${Math.round(p.relacao)}</span><span class="rel-barra"><i style="width:${p.relacao}%;background:${corRelFam(p.relacao)}"></i></span></div>`;
   const parHtml = par ? `<p class="rotulo">${par.etapa === "casados" ? "Sua esposa" : par.etapa === "noivos" ? "Sua noiva" : par.etapa === "morando" ? "Mora com você" : "Sua namorada"}</p>${cartaoPar(par, "", barra(par) + sobreEla(par))}${cena(par)}${chat(par)}<div class="rel-acoes" style="margin-left:0">${acoes(par)}</div>${escolha(par)}` : "";
   const fic = n.ficantes ?? [];
