@@ -61,7 +61,7 @@ import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOME
 import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
 import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visual/torneios";
-import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota } from "./visuais";
+import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota, catEvento } from "./visuais";
 import { vestiarioDe, albumDe } from "../../src/clube-vivo";
 import { perfilCidade, NOME_CLIMA, inverno } from "../../src/cidades";
 import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
@@ -1024,6 +1024,10 @@ function imgNoticia(s: Save, n: Noticia, i: number): string {
   if (img?.k === "trofeu") return miniNoticia({ k: "trofeu" });
   if (img?.k === "capa") return `<div class="noticia-img grande">${capaDe(s, img.edicao, img.clube, !!img.regional)}</div>`;
   if (img?.k === "vida" || img?.k === "tatuagem") return miniNoticia({ k: "vida", corpoSvg: casualMini ??= corpoDe(s, "casual") });
+  const t = n.titulo + " " + n.texto;
+  if (/[Rr]ival|[Dd]uelo/.test(t) && s.carreira.rival) return miniNoticia({ k: "rival", cores: ci(s.carreira.clubeId), outro: ci(s.carreira.rival.clubeId) });
+  if (/[Tt]orcida|[Ff]aixa|[Mm]úsica|[Aa]pelido|[Pp]rotesto|aeroporto/.test(t)) return miniNoticia({ k: "torcida", cores: ci(s.carreira.clubeId), nivel: s.carreira.torcida ?? 50 });
+  if (/[Cc]ampeã|[Tt]aça|[Tt]ítulo/.test(n.titulo) && n.titulo.includes(infoClube(pacote, s.carreira.clubeId).nome)) return miniNoticia({ k: "trofeu" });
   return miniNoticia(n.tipo === "lesao" ? { k: "lesao" } : n.tipo === "dinheiro" ? { k: "dinheiro" } : n.tipo === "polemica" ? { k: "polemica" } : n.tipo === "jogo" ? { k: "trofeu", cor: "#C9CCD1" } : { k: "clube", cores: ci(s.carreira.clubeId) });
 }
 // ------------------------------------------------------------------ perfil completo (estilo Football Manager)
@@ -1342,9 +1346,15 @@ function abaNoticias(s: Save): string {
   const chips = `<div class="chips" style="flex-wrap:wrap;margin-bottom:12px">${filtros.map(([k, n]) => `<button class="chip${filtroNoticia === k ? " ativo" : ""}" data-fnot="${k}">${n}</button>`).join("")}</div>`;
   const base = filtroNoticia === "todas" ? s.noticias : s.noticias.filter((n) => filtroNoticia === "polemica" ? n.tipo === "polemica" || n.tipo === "lesao" : n.tipo === filtroNoticia);
   if (!base.length) return chips + `<p class="sub">Nenhuma notícia desse tipo por enquanto.</p>`;
-  const card = (n: Noticia, i: number) => `<div class="noticia ${n.tipo}">${imgNoticia(s, n, i)}<div><small>${esc(n.semana)}</small><strong>${esc(n.titulo)}</strong><span class="sub">${esc(n.texto)}</span></div></div>`;
+  // notícia sem imagem própria e sem arte temática vira uma linha curta com ícone
+  const meuClube = infoClube(pacote, s.carreira.clubeId).nome;
+  // taça de outro clube não ganha arte grande
+  const temArte = (n: Noticia) => (!!n.img && !(n.img.k === "trofeu" && / é campeã/.test(n.titulo) && !n.titulo.includes(meuClube))) || /[Rr]ival|[Dd]uelo|[Tt]orcida|[Ff]aixa|[Mm]úsica|[Aa]pelido|[Pp]rotesto|aeroporto/.test(n.titulo + " " + n.texto) || (/[Cc]ampeã|[Tt]aça|[Tt]ítulo/.test(n.titulo) && n.titulo.includes(infoClube(pacote, s.carreira.clubeId).nome));
+  const card = (n: Noticia, i: number) => temArte(n)
+    ? `<div class="noticia ${n.tipo}">${imgNoticia(s, n, i)}<div><strong>${esc(n.titulo)}</strong><span class="sub">${esc(n.texto)}</span></div></div>`
+    : `<details class="noticia-curta ${n.tipo}"><summary><span class="nc-ico">${catEvento(n.titulo + " " + n.texto).ico !== "•" ? catEvento(n.titulo + " " + n.texto).ico : ICO_TIPO_NOT[n.tipo]}</span><b>${esc(n.titulo)}</b></summary><span class="sub">${esc(n.texto)}</span></details>`;
   // fim de temporada: as conquistas (taças, relíquias, prêmios) viram um card só, que abre a lista
-  const lista = base.slice(0, 40), out: string[] = [], feitos = new Set<string>();
+  const lista = base.slice(0, 40), out: string[] = [], semanaDe: string[] = [], feitos = new Set<string>();
   const ehConquista = (n: Noticia) => n.img?.k === "trofeu" && n.semana.startsWith("Fim da temporada");
   for (let i = 0; i < lista.length && out.length < 25; i++) {
     const n = lista[i];
@@ -1353,14 +1363,20 @@ function abaNoticias(s: Save): string {
       const grupo = lista.map((x, k) => [x, k] as [Noticia, number]).filter(([x]) => ehConquista(x) && x.semana === n.semana);
       if (grupo.length >= 3) {
         feitos.add(n.semana);
-        out.push(`<details class="noticia trofeu grupo-noticias"><summary>${miniNoticia({ k: "trofeu" })}<div><small>${esc(n.semana)}</small><strong>${grupo.length} conquistas e prêmios</strong><span class="sub">${esc(grupo.slice(0, 3).map(([x]) => x.titulo).join(" · "))}${grupo.length > 3 ? "…" : ""} <b style="color:var(--ouro)">Ver tudo</b></span></div></summary><div class="grupo-lista">${grupo.map(([x, k]) => card(x, k)).join("")}</div></details>`);
+        semanaDe[out.length] = n.semana;
+        out.push(`<details class="noticia trofeu grupo-noticias"><summary>${miniNoticia({ k: "trofeu" })}<div><strong>${grupo.length} conquistas e prêmios</strong><span class="sub">${esc(grupo.slice(0, 3).map(([x]) => x.titulo).join(" · "))}${grupo.length > 3 ? "…" : ""} <b style="color:var(--ouro)">Ver tudo</b></span></div></summary><div class="grupo-lista">${grupo.map(([x, k]) => card(x, k)).join("")}</div></details>`);
         continue;
       }
     }
+    semanaDe[out.length] = n.semana;
     out.push(card(n, i));
   }
-  return `${chips}<div style="display:flex;flex-direction:column;gap:12px">${out.join("")}</div>`;
+  // agrupa por semana, com cabeçalho
+  const semanas: string[] = [], porSemana = new Map<string, string[]>();
+  out.forEach((h, k) => { const sem = semanaDe[k]; if (!porSemana.has(sem)) { porSemana.set(sem, []); semanas.push(sem); } porSemana.get(sem)!.push(h); });
+  return `${chips}<div class="feed-not">${semanas.map((sem) => `<div class="feed-sem"><p class="feed-cab"><span>${esc(sem)}</span><i>${porSemana.get(sem)!.length}</i></p><div class="feed-lista">${porSemana.get(sem)!.join("")}</div></div>`).join("")}</div>`;
 }
+const ICO_TIPO_NOT: Record<Noticia["tipo"], string> = { jogo: "⚽", clube: "🏟️", vida: "🌴", dinheiro: "💰", polemica: "🔥", lesao: "🩹" };
 
 // ------------------------------------------------------------------ vida fora de campo (aba Vida)
 let subVida: "agenda" | "casa" | "cidade" | "parcas" | "garagem" | "rotina" | "fundacao" = "agenda";

@@ -80,7 +80,8 @@ export type ImgNoticia =
   | { k: "placar"; casa: [string, string]; fora: [string, string]; gc: number; gf: number; nomeCasa: string; nomeFora: string; idCasa?: string; idFora?: string }
   | { k: "transferencia"; cores: [string, string]; corpoSvg?: string }
   | { k: "patrocinio"; logoSvg: string; cor: string }
-  | { k: "lesao" } | { k: "dinheiro" } | { k: "vida"; corpoSvg?: string } | { k: "polemica" } | { k: "trofeu"; cor?: string } | { k: "clube"; cores: [string, string]; id?: string; nome?: string };
+  | { k: "lesao" } | { k: "dinheiro" } | { k: "vida"; corpoSvg?: string } | { k: "polemica" } | { k: "trofeu"; cor?: string } | { k: "clube"; cores: [string, string]; id?: string; nome?: string }
+  | { k: "rival"; cores: [string, string]; outro: [string, string] } | { k: "torcida"; cores: [string, string]; nivel: number };
 
 const moldura = (conteudo: string, fundo: string) => `<svg class="mini-noticia" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><clipPath id="mn"><rect width="120" height="90" rx="10"/></clipPath></defs><g clip-path="url(#mn)"><rect width="120" height="90" fill="${fundo}"/>${conteudo}</g></svg>`;
 const sigla = (n: string) => n.replace(/^(CR|SE|SC|EC|FC|FBPA|FR|CA)\s+/i, "").replace(/\s+(FC|EC|SC|FBPA|FR)$/i, "").slice(0, 3).toUpperCase();
@@ -97,6 +98,18 @@ export function miniNoticia(img: ImgNoticia): string {
     case "dinheiro": return moldura(`${[0, 1, 2].map((i) => `<ellipse cx="${44 + i * 8}" cy="${62 - i * 9}" rx="22" ry="7" fill="#E3B341" stroke="${TINTA}" stroke-width="1.6"/>`).join("")}<rect x="66" y="30" width="34" height="22" rx="3" fill="#74D394" stroke="${TINTA}" stroke-width="1.6"/><text x="83" y="46" text-anchor="middle" font-family="${DISPLAY}" font-weight="900" font-size="13" fill="#1B3229">R$</text>`, "#1E3A2C");
     case "vida": return moldura(img.corpoSvg ? img.corpoSvg.replace("<svg ", '<svg x="25" y="4" width="70" height="170" preserveAspectRatio="xMidYMin meet" ') : "", "#2A3550");
     case "polemica": return moldura(`<rect x="40" y="10" width="40" height="72" rx="8" fill="#1A1A1A"/><rect x="44" y="18" width="32" height="56" rx="4" fill="#F2F0EA"/><path d="M48 28 h24 v12 h-16 l-6 5 v-5 h-2 Z" fill="#E74C3C"/><path d="M48 50 h20 M48 56 h24 M48 62 h16" stroke="#8C8F94" stroke-width="2.4"/>`, "#4D2420");
+    case "rival": {
+      const boneco = (x: number, cor: string, det: string, vira: number) => `<g transform="translate(${x} 0) scale(${vira} 1)"><circle cx="0" cy="30" r="11" fill="#2A1D14"/><path d="M-18 90 V58 Q-18 44 0 44 Q18 44 18 58 V90 Z" fill="${cor}" stroke="${TINTA}" stroke-width="1.6"/><path d="M-6 44 L0 54 L6 44" fill="none" stroke="${det}" stroke-width="2"/></g>`;
+      return moldura(`<rect width="60" height="90" fill="${img.cores[0]}" opacity=".55"/><rect x="60" width="60" height="90" fill="${img.outro[0]}" opacity=".55"/><path d="M60 0 L54 40 L66 48 L58 90" stroke="#FFD24A" stroke-width="3" fill="none"/>
+        ${boneco(30, img.cores[0], img.cores[1], 1)}${boneco(90, img.outro[0], img.outro[1], -1)}<text x="60" y="34" text-anchor="middle" font-size="22">⚔️</text>`, "#2A0E12");
+    }
+    case "torcida": {
+      const n = Math.max(0, Math.min(100, img.nivel)), cor = n >= 70 ? "#74D394" : n >= 40 ? "#E8D36A" : "#EC7D69";
+      const cabecas = Array.from({ length: 14 }, (_, i) => `<circle cx="${6 + (i % 7) * 15 + (i >= 7 ? 7 : 0)}" cy="${i >= 7 ? 78 : 66}" r="7" fill="${i % 3 ? "#1A1A1A" : "#2E2620"}"/>`).join("");
+      const bandeira = (x: number, c: string) => `<path d="M${x} 62 V22" stroke="${TINTA}" stroke-width="1.6"/><path d="M${x} 22 Q${x + 12} 18 ${x + 22} 24 Q${x + 12} 30 ${x} 34 Z" fill="${c}"/>`;
+      return moldura(`${bandeira(16, img.cores[0])}${bandeira(52, img.cores[1])}${bandeira(80, img.cores[0])}${cabecas}
+        <rect x="106" y="10" width="8" height="62" rx="4" fill="#ffffff22"/><rect x="106" y="${(10 + 62 * (1 - n / 100)).toFixed(1)}" width="8" height="${(62 * n / 100).toFixed(1)}" rx="4" fill="${cor}"/><circle cx="110" cy="78" r="7" fill="${cor}"/>`, "#14301F");
+    }
     case "trofeu": return moldura(`<path d="M44 16 H76 V30 Q76 50 60 54 Q44 50 44 30 Z" fill="${img.cor ?? "#E3B341"}" stroke="${TINTA}" stroke-width="2"/><path d="M44 22 Q32 22 34 34 Q36 42 46 42 M76 22 Q88 22 86 34 Q84 42 74 42" fill="none" stroke="${TINTA}" stroke-width="2"/><rect x="56" y="54" width="8" height="12" fill="${img.cor ?? "#E3B341"}" stroke="${TINTA}" stroke-width="1.6"/><rect x="46" y="66" width="28" height="8" rx="2" fill="#5A3A20" stroke="${TINTA}" stroke-width="1.6"/>`, "#2B2416");
   }
 }

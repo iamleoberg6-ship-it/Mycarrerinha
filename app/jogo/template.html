@@ -280,6 +280,12 @@ table.hist td { vertical-align: middle; } table.hist tr.mudou td { border-top: 1
 .tat-op { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--giz); font: inherit; font-size: 13px; cursor: pointer; text-align: center; }
 .tat-op:hover { border-color: var(--ouro); } .tat-op small { color: var(--giz-2); }
 .noticia.jogo { border-color: var(--ouro); } .noticia.polemica, .noticia.lesao { border-color: var(--neg); } .noticia.dinheiro { border-color: var(--pos); }
+.feed-not { display: flex; flex-direction: column; gap: 18px; } .feed-cab { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 800 12px/1 var(--fonte-titulo, inherit); letter-spacing: 1.5px; text-transform: uppercase; color: var(--giz-2); }
+.feed-cab::after { content: ""; flex: 1; height: 1px; background: var(--linha); } .feed-cab i { font-style: normal; background: var(--linha); border-radius: 99px; padding: 2px 7px; font-size: 11px; }
+.feed-lista { display: flex; flex-direction: column; gap: 10px; }
+.noticia-curta { border-left: 3px solid var(--linha); padding: 2px 0 2px 12px; } .noticia-curta summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; } .noticia-curta summary::-webkit-details-marker { display: none; }
+.noticia-curta .nc-ico { width: 30px; height: 30px; border-radius: 50%; background: #ffffff10; display: grid; place-items: center; font-size: 16px; flex: none; } .noticia-curta > .sub { display: block; margin: 6px 0 2px 40px; } .noticia-curta:not([open]) > .sub { display: none; }
+.noticia-curta.jogo { border-color: var(--ouro); } .noticia-curta.polemica, .noticia-curta.lesao { border-color: var(--neg); } .noticia-curta.dinheiro { border-color: var(--pos); }
 .noticia strong { display: block; } .noticia small { color: var(--giz-2); font-size: 12px; }
 .casa-mini { background: radial-gradient(120% 90% at 50% 40%, #1C3A30 0%, #0F211C 70%); border-radius: 12px; padding: 6px; }
 .casa-mini svg { width: 100%; height: auto; display: block; max-height: 260px; }
