@@ -3,7 +3,8 @@
 import { RNG, clamp } from "./rng.js";
 import { paiExJogador } from "./familia.js";
 import { efeitosNamoro } from "./namoro.js";
-import { AGENTES, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
+import { PAISES } from "./dna.js";
+import { VIZINHOS, alcanceSoRegional, AGENTES, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
 import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { mundo, infoClube } from "./mundo.js";
@@ -76,13 +77,25 @@ export function proximaJanela(c: Carreira): string {
 const fimDaJanela = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + (janelaAberta(c)?.fim ?? c.semana) + 1;
 
 // ------------------------------------------------------------------ agentes
-export interface InfoAgente { nome: string; quem: string; texto: string; requisito?: { fama: number; ovr: number } }
+export interface InfoAgente { nome: string; quem: string; texto?: string; requisito?: { fama: number; ovr: number } }
 export const AGENTE_INFO: Record<TipoAgente, InfoAgente> = {
-  pai: { nome: "Família", quem: "Seu pai cuida de tudo", texto: "Não cobra nada, mas não conhece ninguém fora do Brasil e negocia mal." },
-  iniciante: { nome: "Agente iniciante", quem: "Rodrigo Prates", texto: "Cobra 5% do salário. Contatos só no Brasil, negociação razoável." },
-  experiente: { nome: "Agente experiente", quem: "Márcia Valente", texto: "Cobra 8%. Abre portas na Argentina, em Portugal, na Holanda, nas segundas divisões da Inglaterra e da Espanha e no Golfo; consegue salários melhores.", requisito: { fama: 12, ovr: 64 } },
+  pai: { nome: "Família", quem: "Seu pai cuida de tudo" },
+  iniciante: { nome: "Agente iniciante", quem: "Rodrigo Prates" },
+  experiente: { nome: "Agente experiente", quem: "Márcia Valente", requisito: { fama: 12, ovr: 64 } },
   top: { nome: "Superagente", quem: "Vítor Alencar", texto: "Cobra 10%. Fala com qualquer clube do mundo e arranca os melhores contratos.", requisito: { fama: 30, ovr: 72 } },
 };
+/** Descrição do agente conforme o país do jogador: o que ele alcança em casa e nos vizinhos. */
+export function textoAgente(t: TipoAgente, nacionalidade: string): string {
+  const pais = PAISES.find((x) => x.id === nacionalidade), local = pais?.local ?? "no país";
+  const vizinhos = (VIZINHOS[nacionalidade] ?? []).map((v) => PAISES.find((x) => x.id === v)?.nome).filter(Boolean).join(", ");
+  const regional = alcanceSoRegional(t, nacionalidade);
+  switch (t) {
+    case "pai": return `Não cobra nada, mas conhece ${regional ? "só os clubes regionais" : "só o futebol"} ${local}${regional ? ", sem os grandes" : ""}. Não conhece ninguém fora. Negocia mal.`;
+    case "iniciante": return `Cobra 5% do salário. Contatos ${regional ? "só nos clubes regionais" : "só"} ${local}${regional ? ", sem os grandes" : ""}. Negociação razoável.`;
+    case "experiente": return `Cobra 8%. Abre portas ${local}, inclusive nos grandes${vizinhos ? `, e nos países vizinhos (${vizinhos})` : ""}. Consegue salários melhores.`;
+    case "top": return "Cobra 10%. Fala com qualquer clube do mundo e arranca os melhores contratos.";
+  }
+}
 const HABILIDADE_AGENTE: Record<TipoAgente, number> = { pai: 0, iniciante: 0.1, experiente: 0.2, top: 0.3 };
 /** Habilidade de negociação: o agente, o pai ex-jogador (quando é ele quem cuida) e a namorada agente. */
 export const habilidadeAgente = (s: Save) => HABILIDADE_AGENTE[s.carreira.agente] + (s.carreira.agente === "pai" && paiExJogador(s.carreira.familia) ? 0.1 : 0) + efeitosNamoro(s.carreira.namoro).agente;

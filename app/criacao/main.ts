@@ -57,7 +57,8 @@ const CLUBES: ClubeCoracao[] = [
 const CLUBES_PAIS = CLUBES_JSON as unknown as Record<string, { id: string; nome: string; apelido: string; cores: string[]; padrao: string }[]>;
 function clubesDoPais(): ClubeCoracao[] {
   const liga = estado.pais ? LIGA_DA_BASE[estado.pais] : "BRA1";
-  if (!liga || liga === "BRA1" || !CLUBES_PAIS[liga]) return CLUBES;
+  if (!liga || liga === "BRA1") return CLUBES;
+  if (!CLUBES_PAIS[liga]) return []; // país sem clubes de coração: só o time do bairro, nunca os clubes do Brasil
   return CLUBES_PAIS[liga].map((c) => ({ id: c.id, nome: c.nome, apelido: c.apelido, camisa: { cor1: c.cores[0], cor2: c.cores[1] ?? "#FFFFFF", estilo: (["lisa", "listrasV", "listrasH", "faixa", "faixaH"].includes(c.padrao) ? c.padrao : "lisa") as Camisa["estilo"] } }));
 }
 const BAIRRO: ClubeCoracao = { id: "", nome: "O time do bairro", apelido: "Sem clube grande", camisa: CAMISA_PADRAO };

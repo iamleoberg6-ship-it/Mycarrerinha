@@ -9,12 +9,52 @@ import { VAGAS_433 } from "./partida.js";
 export const CAMBIO = 6.0; // R$ por euro, fixo no MVP
 
 export type TipoAgente = "pai" | "iniciante" | "experiente" | "top";
-const BRASIL = ["BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`)];
-export const AGENTES: Record<TipoAgente, { comissao: number; bonus: number; alcance: number; ligas: string[] | "todas" }> = {
-  pai: { comissao: 0, bonus: -0.1, alcance: 1.0, ligas: BRASIL },
-  iniciante: { comissao: 0.05, bonus: 0, alcance: 1.0, ligas: BRASIL },
-  experiente: { comissao: 0.08, bonus: 0.1, alcance: 1.5, ligas: [...BRASIL, "ARG1", "POR1", "NED1", "ENG2", "ESP2", "KSA1", "USA1"] },
-  top: { comissao: 0.1, bonus: 0.2, alcance: 2.0, ligas: "todas" },
+/** Ligas de cada país (divisões de cima e amadoras de fora, quando existem no jogo). */
+export const LIGAS_DO_PAIS: Record<string, string[]> = {
+  BRA: ["BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`)],
+  ARG: ["ARG1"], URU: ["URU1"], COL: ["COL1"], CHI: ["CHI1"], PAR: ["PAR1"], ECU: ["ECU1"],
+  ENG: ["ENG1", "ENG2"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1"], GER: ["GER1"], FRA: ["FRA1"], NED: ["NED1"],
+  POR: ["POR1"], KSA: ["KSA1"], USA: ["USA1"], MEX: ["MEX1"], JPN: ["JPN1"], KOR: ["KOR1"], MAR: ["MAR1"], CRO: ["CRO1"], EGY: ["EGY1"], TUR: ["TUR1"],
+  // quem nasceu em país sem liga própria joga nas ligas do país onde a família mora
+  NGA: ["ENG1"], SEN: ["FRA1"], GHA: ["ENG1"],
+};
+/** Países que fazem fronteira (ou ficam bem perto): o agente de nível médio alcança essas ligas também. */
+export const VIZINHOS: Record<string, string[]> = {
+  BRA: ["ARG", "URU", "COL", "PAR"], ARG: ["BRA", "URU", "CHI", "PAR"], URU: ["ARG", "BRA"], PAR: ["ARG", "BRA"], CHI: ["ARG"], ECU: ["COL"], COL: ["BRA", "ECU"],
+  POR: ["ESP"], ESP: ["POR", "FRA", "MAR"], FRA: ["ESP", "ITA", "GER", "NED"], ITA: ["FRA", "GER"], GER: ["FRA", "ITA", "NED"], NED: ["GER", "FRA"], ENG: ["FRA"],
+  USA: ["MEX"], MEX: ["USA"], JPN: ["KOR"], KOR: ["JPN"], MAR: ["ESP", "FRA"], CRO: ["ITA", "GER"], EGY: ["KSA"], KSA: ["EGY"], TUR: ["GER"],
+};
+/** Países pequenos ou cercados por ligas maiores: o agente local (pai ou iniciante) só conhece os clubes regionais,
+ *  e os grandes do próprio país só aparecem para o agente experiente. Brasil fica fora: o mercado local é grande o bastante. */
+export const ALCANCE_REGIONAL = new Set(["POR", "URU", "PAR", "ECU", "CHI", "CRO", "MAR"]);
+
+/** Ligas que o agente alcança para um jogador deste país. "todas" = o mundo inteiro. */
+export function ligasDoAgente(t: TipoAgente, nacionalidade: string): string[] | "todas" {
+  if (t === "top") return "todas";
+  const casa = LIGAS_DO_PAIS[nacionalidade] ?? [];
+  if (t !== "experiente") return casa;
+  const vizinhas = (VIZINHOS[nacionalidade] ?? []).flatMap((x) => LIGAS_DO_PAIS[x] ?? []);
+  return [...new Set([...casa, ...vizinhas])];
+}
+
+/** Só clubes regionais: o agente local de um país pequeno não chega aos três maiores da liga de casa. */
+export function alcanceSoRegional(t: TipoAgente, nacionalidade: string): boolean {
+  return t !== "top" && t !== "experiente" && ALCANCE_REGIONAL.has(nacionalidade);
+}
+/** Os três clubes mais fortes de uma liga (os "grandes" que o agente regional não alcança). */
+const grandesDaLiga = (liga: Liga) => new Set([...liga.clubes].sort((a, b) => b.forca - a.forca).slice(0, 3).map((c) => c.id));
+/** O agente consegue levar o jogador a este clube? */
+export function clubeAlcancado(t: TipoAgente, nacionalidade: string, liga: Liga, clube: Clube): boolean {
+  if (!alcanceSoRegional(t, nacionalidade)) return true;
+  if (!(LIGAS_DO_PAIS[nacionalidade] ?? []).includes(liga.id)) return true; // ligas vizinhas: o alcance regional não as corta
+  return !grandesDaLiga(liga).has(clube.id);
+}
+
+export const AGENTES: Record<TipoAgente, { comissao: number; bonus: number; alcance: number }> = {
+  pai: { comissao: 0, bonus: -0.1, alcance: 1.0 },
+  iniciante: { comissao: 0.05, bonus: 0, alcance: 1.0 },
+  experiente: { comissao: 0.08, bonus: 0.1, alcance: 1.5 },
+  top: { comissao: 0.1, bonus: 0.2, alcance: 2.0 },
 };
 
 export function fIdadeVM(idade: number): number {
@@ -146,11 +186,13 @@ export function passaFiltros(p: PerfilMercado, clube: Clube, liga: Liga, vm: num
 /** forcado: o jogador pediu para ser negociado para esse mercado (ignora o alcance do agente e aceita interesse menor). */
 export function gerarPropostas(rng: RNG, p: PerfilMercado, mundo: Liga[], fama: number, forcado = false): Proposta[] {
   const ag = AGENTES[p.agente];
+  const alcanca = ligasDoAgente(p.agente, p.nacionalidade);
   const candidatas: Proposta[] = [];
   for (const liga of mundo) {
-    if (!forcado && ag.ligas !== "todas" && !ag.ligas.includes(liga.id)) continue;
+    if (!forcado && alcanca !== "todas" && !alcanca.includes(liga.id)) continue;
     for (const clube of liga.clubes) {
       if (clube.id === SO_BASCOS) continue; // o Atlético Bilbau só contrata bascos
+      if (!forcado && !clubeAlcancado(p.agente, p.nacionalidade, liga, clube)) continue;
       const c = componentesInteresse(p, clube, liga);
       if (!passaFiltros(p, clube, liga, c.vm, c.orcamento, forcado)) continue;
       // o Golfo vai atrás de jogador experiente e conhecido; o resto do interesse tem um pouco de acaso (olheiro, técnico, momento)

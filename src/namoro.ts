@@ -105,6 +105,8 @@ export interface EstadoNamoro {
   casos?: Par[]; filhos?: Filho[]; escandalos?: number; gravidez?: Gravidez;
   /** mudança de cidade esperando a decisão do casal (e a cidade já decidida) */
   mudanca?: string; mudancaDecidida?: string;
+  /** ano (da carreira) em que as idades das garotas foram atualizadas pela última vez */
+  anoIdade?: number;
 }
 export const novoNamoro = (): EstadoNamoro => ({ baralho: [], geradoEm: -1, vistos: 0, matches: [], semana: -1, feitas: 0, ex: [], ficantes: [], casos: [], filhos: [] });
 /** Relacionamento sério (namoro em diante): só um por vez. "Saindo" é casinho e pode ter vários. */
@@ -428,6 +430,14 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   const avisos: string[] = [];
   let moral = 0;
   arrumarNamoro(n);
+  // as garotas envelhecem com o tempo: um ano a cada temporada (40 semanas)
+  const anoAgora = Math.floor(ctx.semanaAbs / 40);
+  if (n.anoIdade === undefined) n.anoIdade = anoAgora;
+  if (anoAgora > n.anoIdade) {
+    const anos = anoAgora - n.anoIdade;
+    for (const x of [...n.matches, ...(n.ficantes ?? []), ...(n.casos ?? []), ...(n.par ? [n.par] : [])]) x.idade += anos;
+    n.anoIdade = anoAgora;
+  }
   // match sem conversa some; quem segue conversando fica
   n.matches = n.matches.filter((m) => ctx.semanaAbs - m.desde <= 6 || (m.conversas > 0 && !!m.vezes && ctx.semanaAbs - m.vezes.s <= 4));
   const p = n.par;
