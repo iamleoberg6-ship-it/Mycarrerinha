@@ -18,8 +18,9 @@ export interface Visual {
   munhequeira?: Munhequeira; corMunhequeira?: number;
   /** esconde os acessórios de patrocinador (óculos, relógio, fone) */
   semAcessorioPatro?: boolean;
-  /** tira só o boné ou só o blusão do patrocinador */
-  semBonePatro?: boolean; semBlusaoPatro?: boolean;
+  /** boné e blusão de marca liberados por patrocínio (ids das marcas; ficam mesmo depois que o contrato acaba)
+   *  e os que o jogador escolheu usar fora de campo (sem escolha, não usa) */
+  roupasGanhas?: string[]; bonePatro?: string; blusaoPatro?: string;
 }
 export const VISUAL_PADRAO: Visual = { fisico: "atletico", manga: "curta", caimento: "justo", meiao: "alto", casual: "camiseta", corCasual: 1, perna: "bermuda", tatuagens: {} };
 

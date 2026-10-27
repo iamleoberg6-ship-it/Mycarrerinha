@@ -60,7 +60,7 @@ import { AGENTE_INFO, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClau
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
 import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, luminancia, type Aparencia } from "../criacao/avatar";
-import { acessoriosAtivos, roupasPatro, type Marca } from "../../src/marcas";
+import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
 import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visual/torneios";
 import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota, catEvento } from "./visuais";
@@ -115,20 +115,27 @@ function apDe(s: Save, forcar?: Marca): Aparencia {
   const o = ac.oculos, f = ac.fone;
   ap.oculosSol = o?.tipo === "oculos" ? { modelo: o.modelo, armacao: o.armacao, lente: o.lente } : null;
   ap.fone = f?.tipo === "fone" ? { cor: f.cor, detalhe: f.detalhe } : null;
-  // boné e blusão das marcas de material esportivo e de energético
-  const v = visualDe(s.jogador), rp = roupasPatro(s.carreira.patrocinios);
-  const bone = forcar && (forcar.categoria === "material" || forcar.categoria === "energetico") ? forcar : v.semAcessorioPatro || v.semBonePatro ? undefined : rp.bone;
-  const blusao = forcar && (forcar.categoria === "material" || forcar.categoria === "energetico") ? forcar : v.semAcessorioPatro || v.semBlusaoPatro ? undefined : rp.blusao;
+  // boné e blusão de marca: liberados pelo patrocínio, usados só se o jogador escolher (no cartaz da campanha, a marca aparece)
+  const v = visualDe(s.jogador), ganhas = roupasLiberadas(s);
+  const daCampanha = forcar && (forcar.categoria === "material" || forcar.categoria === "energetico") ? forcar : undefined;
+  const bone = daCampanha ?? (v.bonePatro && ganhas.some((m) => m.id === v.bonePatro) ? MARCA[v.bonePatro] : undefined);
+  const blusao = daCampanha ?? (v.blusaoPatro && ganhas.some((m) => m.id === v.blusaoPatro) ? MARCA[v.blusaoPatro] : undefined);
   ap.bonePatro = bone ? { cor: bone.cores[0], aba: corAba(bone), logo: simboloMarca(bone, bone.cores[1], bone.cores[0]) } : null;
   ap.blusaoPatro = blusao ? { cor: blusao.cores[0], detalhe: blusao.cores[1], logo: simboloMarca(blusao, blusao.cores[1], blusao.cores[0]) } : null;
   return ap;
 }
-/** Chips do boné e do blusão de patrocinador na tela de aparência. */
-function roupaPatroHtml(s: Save, v: ReturnType<typeof visualDe>): string {
-  const rp = roupasPatro(s.carreira.patrocinios);
-  if (!rp.bone && !rp.blusao) return `<p class="sub">Fechando com uma marca de material esportivo ou de energético, chegam boné e blusão da marca para usar fora de campo.</p>`;
-  const chip = (k: "semBonePatro" | "semBlusaoPatro", nome: string, m: Marca) => `<button class="chip${v[k] ? "" : " ativo"}" data-vis="${k}" data-val="${v[k] ? "" : "1"}">${nome} ${esc(m.nome)}${v[k] ? " (guardado)" : ""}</button>`;
-  return `<p class="sub">Roupa da marca, fora de campo (na foto e no corpo inteiro):</p><div class="chips" style="flex-wrap:wrap;margin-bottom:8px">${rp.bone ? chip("semBonePatro", "Boné", rp.bone) : ""}${rp.blusao ? chip("semBlusaoPatro", "Blusão", rp.blusao) : ""}</div>`;
+/** Marcas de material esportivo e de energético que já liberaram boné e blusão (fica guardado para sempre). */
+function roupasLiberadas(s: Save): Marca[] {
+  const v = visualDe(s.jogador) as ReturnType<typeof visualDe>, ids = new Set(v.roupasGanhas ?? []);
+  for (const k of s.carreira.patrocinios ?? []) { const m = MARCA[k.marca]; if (m && (m.categoria === "material" || m.categoria === "energetico")) ids.add(m.id); }
+  if (ids.size !== (v.roupasGanhas ?? []).length) v.roupasGanhas = [...ids];
+  return [...ids].map((id) => MARCA[id]).filter(Boolean);
+}
+/** Escolha de boné ou blusão de marca (Não usar + uma opção por marca liberada). */
+function chipsRoupaPatro(s: Save, campo: "bonePatro" | "blusaoPatro", nome: string): string {
+  const ms = roupasLiberadas(s), atual = visualDe(s.jogador)[campo] ?? "";
+  if (!ms.length) return "";
+  return `<div class="chips" style="flex-wrap:wrap">${[["", "Sem " + nome.toLowerCase()], ...ms.map((m) => [m.id, `${nome} ${m.nome}`])].map(([k, n]) => `<button class="chip${atual === k ? " ativo" : ""}" data-vis="${campo}" data-val="${esc(k)}">${esc(n)}</button>`).join("")}</div>`;
 }
 /** Aba do boné: a segunda cor da marca, a não ser que suma contra a copa. */
 const corAba = (m: Marca) => (m.cores[1].toLowerCase() === m.cores[0].toLowerCase() ? m.cores[2] : m.cores[2] === "#FFFFFF" ? m.cores[0] : m.cores[1]);
@@ -473,7 +480,7 @@ function blocoVisual(s: Save): string {
     <div class="visual-duplo"><button class="figura${trajeVisto === "jogo" ? " ativo" : ""}" data-traje="jogo">${corpoDe(s, "jogo")}<small>Uniforme</small></button><button class="figura${trajeVisto === "casual" ? " ativo" : ""}" data-traje="casual">${corpoDe(s, "casual")}<small>Dia a dia</small></button></div>
     <p class="sub" style="margin:12px 0 6px;font-weight:600">Físico</p>${chips("fisico", (Object.keys(NOME_FISICO) as Fisico[]).map((k) => [k, NOME_FISICO[k]]), v.fisico)}
     <p class="sub" style="margin:12px 0 6px;font-weight:600">Uniforme</p>${chips("manga", [["curta", "Manga curta"], ["longa", "Manga longa"]], v.manga)}${chips("caimento", [["justo", "Justo"], ["largo", "Largo"]], v.caimento)}${chips("meiao", [["alto", "Meião alto"], ["baixo", "Meião baixo"]], v.meiao)}
-    <p class="sub" style="margin:12px 0 6px;font-weight:600">Dia a dia</p>${chips("casual", (Object.keys(NOME_CASUAL) as RoupaCasual[]).map((k) => [k, NOME_CASUAL[k]]), v.casual)}${chips("perna", [["bermuda", "Bermuda"], ["calca", "Calça"]], v.perna)}
+    <p class="sub" style="margin:12px 0 6px;font-weight:600">Dia a dia</p>${chips("casual", (Object.keys(NOME_CASUAL) as RoupaCasual[]).map((k) => [k, NOME_CASUAL[k]]), v.casual)}${roupasLiberadas(s).length ? `<p class="sub" style="margin:8px 0 4px">Blusão de marca (liberado pelo patrocínio)</p>${chipsRoupaPatro(s, "blusaoPatro", "Blusão")}` : ""}${chips("perna", [["bermuda", "Bermuda"], ["calca", "Calça"]], v.perna)}
     <div class="cores-roupa">${CORES_ROUPA.map((c, i) => `<button class="cor${v.corCasual === i ? " ativo" : ""}" style="--c:${c}" data-vis="corCasual" data-val="${i}" aria-label="${esc(NOMES_ROUPA[i])}"></button>`).join("")}</div>
     <p class="sub" style="margin:12px 0 6px;font-weight:600">Munhequeira (em campo)</p>${chips("munhequeira", [["nenhuma", "Sem"], ["uma", "Um pulso"], ["duas", "Os dois"]], v.munhequeira ?? "nenhuma")}
     ${(v.munhequeira ?? "nenhuma") !== "nenhuma" ? `<div class="cores-roupa"><button class="cor${(v.corMunhequeira ?? -1) < 0 ? " ativo" : ""}" style="--c:linear-gradient(135deg,${cores(s.carreira.clubeId)[0]} 50%,${cores(s.carreira.clubeId)[1] ?? "#fff"} 50%)" data-vis="corMunhequeira" data-val="-1" aria-label="Cor do clube"></button>${CORES_ROUPA.map((c, i) => `<button class="cor${v.corMunhequeira === i ? " ativo" : ""}" style="--c:${c}" data-vis="corMunhequeira" data-val="${i}" aria-label="${esc(NOMES_ROUPA[i])}"></button>`).join("")}</div>` : ""}
@@ -499,7 +506,7 @@ function blocoAparencia(s: Save): string {
     ((a.acessorio === "faixa" || a.acessorio === "bandana") ? coresAp("corAcessorio", CORES_ROUPA, NOMES_ROUPA, a.corAcessorio ?? 0) : "") +
     sub("Piercing") + chipsAp("piercing", PIERCINGS, a.piercing ?? "nenhum") +
     sub("Joias") + `<div class="chips" style="flex-wrap:wrap">${liga("brinco", "Brinco esquerdo", a.brinco)}${liga("brinco2", "Brinco direito", a.brinco2)}${liga("corrente", "Corrente", a.corrente)}</div>` +
-    sub("Dos patrocinadores") + roupaPatroHtml(s, v) + (temPatro
+    sub("Boné de marca") + (roupasLiberadas(s).length ? chipsRoupaPatro(s, "bonePatro", "Boné") : `<p class="sub">Fechando com uma marca de material esportivo ou de energético, o boné dela fica liberado aqui.</p>`) + sub("Dos patrocinadores") + (temPatro
       ? `<p class="sub">${Object.values(ac).map((x) => x!.tipo === "oculos" ? "Óculos escuros" : x!.tipo === "relogio" ? "Relógio" : "Fone").join(", ")} por contrato (aparecem fora de campo).</p><div class="chips">${`<button class="chip${v.semAcessorioPatro ? "" : " ativo"}" data-vis="semAcessorioPatro" data-val="${v.semAcessorioPatro ? "" : "1"}">${v.semAcessorioPatro ? "Usar de novo" : "Usando"}</button>`}</div>`
       : `<p class="sub">Óculos, relógio e fone de marca só chegam quando você for muito seguido: as marcas de acessório procuram a partir de alguns milhões de seguidores.</p>`);
   else corpo = `<p class="sub">Ajuste fino do rosto (o que a genética não decidiu, a câmera decide).</p>` + sub("Formato") + chipsAp("rosto", ROSTOS, a.rosto) + sub("Olhos") + chipsAp("formatoOlho", OLHOS, a.formatoOlho) + sub("Nariz") + chipsAp("nariz", NARIZES, a.nariz) + sub("Boca") + chipsAp("boca", BOCAS, a.boca);
@@ -2101,7 +2108,9 @@ document.addEventListener("click", (ev) => {
   }
   else if (d.vis && save) {
     const v = visualDe(save.jogador) as unknown as Record<string, unknown>;
-    v[d.vis] = d.vis === "corCasual" || d.vis === "corMunhequeira" ? +d.val! : ["semAcessorioPatro", "semBonePatro", "semBlusaoPatro"].includes(d.vis) ? !!d.val : d.val; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
+    v[d.vis] = d.vis === "corCasual" || d.vis === "corMunhequeira" ? +d.val! : d.vis === "semAcessorioPatro" ? !!d.val : (d.vis === "bonePatro" || d.vis === "blusaoPatro") ? d.val || undefined : d.val;
+    // escolher outra roupa do dia a dia tira o blusão de marca
+    if (d.vis === "casual") v.blusaoPatro = undefined; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   } else if (d.ap && save) {
     const ap = (save.jogador.aparencia ??= { ...APARENCIA_PADRAO }) as unknown as Record<string, unknown>;
     ap[d.ap] = ["corCabelo", "corAcessorio"].includes(d.ap) ? +d.val! : ["brinco", "brinco2", "corrente"].includes(d.ap) ? d.val === "1" : d.val;
