@@ -1,1 +1,4300 @@
-{"aviso": "Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com.", "ligas": {"URU1": [{"convidado": "UY-PEN", "elenco": [["Washington Agüere", "GOL", 69, 33, "URU", 1], ["Maximiliano Olibera", "LAT", 67, 33, "URU", 22], ["Javier Mendes", "ZAG", 67, 28, "URU", 3], ["Eric Remédi", "VOL", 68, 31, "ARG", 5], ["Leonardo Fernándes", "MEI", 72, 27, "URU", 10], ["David Terrans", "MEI", 69, 32, "URU", 8], ["Javier Cabreira", "PON", 68, 34, "URU", 7], ["Maximiliano Silbera", "ATA", 70, 32, "URU", 9]]}, {"convidado": "UY-NAC", "elenco": [["Luiz Megía", "GOL", 69, 35, "PAN", 1], ["Nicolás Lodeyro", "MEI", 70, 37, "URU", 10], ["Gonzalo Carnero", "ATA", 68, 31, "URU", 9]]}, {"convidado": "UY-LIV"}, {"id": "UY-DEF", "nome": "Defensor Esportin", "apelido": "Violeta", "cidade": "Montevidéu", "estadio": "Luis Franzini", "capacidade": 18000, "cores": ["#5B2A86", "#FFFFFF"], "padrao": "lisa", "forca": 64}, {"id": "UY-DAN", "nome": "Danúbio FC", "apelido": "Franja", "cidade": "Montevidéu", "estadio": "Jardines del Hipódromo", "capacidade": 18000, "cores": ["#FFFFFF", "#111111"], "padrao": "faixa", "forca": 62}, {"id": "UY-WAN", "nome": "Montevidéu Uanderers", "apelido": "Bohemios", "cidade": "Montevidéu", "estadio": "Parque Viera", "capacidade": 11000, "cores": ["#111111", "#FFFFFF"], "padrao": "listrasV", "forca": 61}, {"id": "UY-RIV", "nome": "River Prata Montevideano", "apelido": "Darseneros", "cidade": "Montevidéu", "estadio": "Saroldi", "capacidade": 6000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "metade", "forca": 60}, {"id": "UY-CER", "nome": "Clube Cerrito", "apelido": "Villero", "cidade": "Montevidéu", "estadio": "Luis Tróccoli", "capacidade": 25000, "cores": ["#6CB4E4", "#C8102E"], "padrao": "lisa", "forca": 61}, {"id": "UY-RAC", "nome": "Racing de Montevidéu", "apelido": "Cervecero", "cidade": "Montevidéu", "estadio": "Parque Roberto", "capacidade": 8000, "cores": ["#111111", "#0B7A3B"], "padrao": "listrasV", "forca": 60}, {"id": "UY-PLA", "nome": "Praça Colônia", "apelido": "Patablanca", "cidade": "Colonia", "estadio": "Juan Prandi", "capacidade": 4500, "cores": ["#FFFFFF", "#0B7A3B"], "padrao": "lisa", "forca": 60}, {"id": "UY-BOS", "nome": "Bóston River", "apelido": "Sastre", "cidade": "Montevidéu", "estadio": "Campeón del Siglo", "capacidade": 5000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "faixaH", "forca": 62}, {"id": "UY-CLA", "nome": "Cerro Largão", "apelido": "Arachán", "cidade": "Melo", "estadio": "Arquitecto Ubilla", "capacidade": 9000, "cores": ["#1C4FA1", "#FFFFFF"], "padrao": "lisa", "forca": 59}, {"id": "UY-PRO", "nome": "Progresso FC", "apelido": "Gaucho del Pantanoso", "cidade": "Montevidéu", "estadio": "Abraham Paladino", "capacidade": 8000, "cores": ["#F5C400", "#C8102E"], "padrao": "listrasV", "forca": 58}, {"id": "UY-JUV", "nome": "Juventude de Las Piedras", "apelido": "Pedrense", "cidade": "Las Piedras", "estadio": "Parque Artigas", "capacidade": 8000, "cores": ["#FFFFFF", "#111111"], "padrao": "lisa", "forca": 59}, {"id": "UY-TOR", "nome": "Montevidéu Cidade Torque", "apelido": "Ciudadano", "cidade": "Montevidéu", "estadio": "Centenario", "capacidade": 15000, "cores": ["#6CB4E4", "#FFFFFF"], "padrao": "lisa", "forca": 61}, {"id": "UY-MIR", "nome": "Miramar Missões", "apelido": "Cebrita", "cidade": "Montevidéu", "estadio": "Parque Méndez", "capacidade": 6000, "cores": ["#111111", "#FFFFFF"], "padrao": "listrasV", "forca": 57}], "COL1": [{"convidado": "CO-NAC", "elenco": [["Franco Armanni", "GOL", 73, 40, "ARG", 34], ["William Tesilo", "ZAG", 68, 36, "COL", 16], ["Andrés Romám", "LAT", 70, 31, "COL", 6], ["Jorman Campusano", "VOL", 67, 30, "COL", 5], ["Edwin Cardonna", "MEI", 69, 33, "COL", 10], ["Alfredo Morellos", "ATA", 69, 30, "COL", 9]]}, {"convidado": "CO-MIL", "elenco": [["Daniel Catanho", "MEI", 67, 34, "COL", 10], ["Leonardo Kastro", "ATA", 67, 34, "COL", 9]]}, {"convidado": "CO-JUN"}, {"id": "CO-AME", "nome": "América de Kali", "apelido": "Diablos Rojos", "cidade": "Cali", "estadio": "Pascual Guerrero", "capacidade": 38000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 66}, {"id": "CO-CAL", "nome": "Esportivo Cali", "apelido": "Azucareros", "cidade": "Cali", "estadio": "Deportivo Cali", "capacidade": 52000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "lisa", "forca": 65}, {"id": "CO-DIM", "nome": "Independente Medelim", "apelido": "Poderoso", "cidade": "Medellín", "estadio": "Atanasio", "capacidade": 44000, "cores": ["#C8102E", "#0B3D91"], "padrao": "metade", "forca": 66}, {"id": "CO-SFE", "nome": "Independente Santa Fé", "apelido": "Cardenales", "cidade": "Bogotá", "estadio": "El Campín", "capacidade": 36000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "centro", "forca": 65}, {"id": "CO-ONC", "nome": "Once Caldense", "apelido": "Blanco Blanco", "cidade": "Manizales", "estadio": "Palogrande", "capacidade": 36000, "cores": ["#FFFFFF", "#111111"], "padrao": "lisa", "forca": 63}, {"id": "CO-TOL", "nome": "Desportes Tolima", "apelido": "Pijao", "cidade": "Ibagué", "estadio": "Manuel Murillo", "capacidade": 28000, "cores": ["#7A1E2B", "#F5C400"], "padrao": "lisa", "forca": 65}, {"id": "CO-BUC", "nome": "Atlético Bucaramanguense", "apelido": "Leopardos", "cidade": "Bucaramanga", "estadio": "Alfonso López", "capacidade": 25000, "cores": ["#F5C400", "#0B7A3B"], "padrao": "lisa", "forca": 63}, {"id": "CO-PER", "nome": "Desportivo Pereirano", "apelido": "Matecaña", "cidade": "Pereira", "estadio": "Hernán Ramírez", "capacidade": 30000, "cores": ["#C8102E", "#F5C400"], "padrao": "listrasV", "forca": 62}, {"id": "CO-AGU", "nome": "Águias Douradas", "apelido": "Doradas", "cidade": "Rionegro", "estadio": "Alberto Grisales", "capacidade": 14000, "cores": ["#F5C400", "#111111"], "padrao": "lisa", "forca": 61}, {"id": "CO-EQU", "nome": "A Equidade", "apelido": "Aseguradores", "cidade": "Bogotá", "estadio": "Metropolitano de Techo", "capacidade": 10000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "lisa", "forca": 60}, {"id": "CO-ALI", "nome": "Aliança Valledupar", "apelido": "Leones", "cidade": "Valledupar", "estadio": "Armando Maestre", "capacidade": 11000, "cores": ["#FFFFFF", "#0B7A3B"], "padrao": "lisa", "forca": 58}, {"id": "CO-FOR", "nome": "Fortaleza CEIF", "apelido": "Amix", "cidade": "Bogotá", "estadio": "Metropolitano de Techo", "capacidade": 10000, "cores": ["#F5C400", "#111111"], "padrao": "lisa", "forca": 58}, {"id": "CO-CHI", "nome": "Boiacá Chicó", "apelido": "Ajedrezados", "cidade": "Tunja", "estadio": "La Independencia", "capacidade": 20000, "cores": ["#1C4FA1", "#FFFFFF"], "padrao": "metade", "forca": 58}, {"id": "CO-PAS", "nome": "Desportivo Pasto", "apelido": "Volcánicos", "cidade": "Pasto", "estadio": "La Libertad", "capacidade": 20000, "cores": ["#C8102E", "#F5C400"], "padrao": "lisa", "forca": 60}, {"id": "CO-LLA", "nome": "Llaneiros FC", "apelido": "Leones de los Llanos", "cidade": "Villavicencio", "estadio": "Bello Horizonte", "capacidade": 15000, "cores": ["#C8102E", "#0B7A3B"], "padrao": "lisa", "forca": 57}, {"id": "CO-MAG", "nome": "União Magdalena", "apelido": "Ciclón Bananero", "cidade": "Santa Marta", "estadio": "Sierra Nevada", "capacidade": 16000, "cores": ["#1C4FA1", "#C8102E"], "padrao": "listrasV", "forca": 58}, {"id": "CO-ENV", "nome": "Envigado FC", "apelido": "Naranjas", "cidade": "Envigado", "estadio": "Polideportivo Sur", "capacidade": 12000, "cores": ["#F58220", "#0B7A3B"], "padrao": "lisa", "forca": 57}], "CHI1": [{"convidado": "CL-COL", "elenco": [["Arturo Vidall", "VOL", 72, 39, "CHI", 23], ["Tomás Alarcom", "VOL", 70, 27, "CHI", 6], ["Víctor Mendéz", "MEI", 69, 27, "CHI", 5], ["Erick Wimberg", "LAT", 69, 32, "CHI", 21], ["Javier Corrêa", "ATA", 71, 33, "ARG", 9]]}, {"convidado": "CL-UCH", "elenco": [["Gabriel Castelóm", "GOL", 69, 32, "CHI", 25], ["Matías Zaldívia", "ZAG", 68, 34, "ARG", 4], ["Marcelo Moralles", "LAT", 68, 26, "CHI", 13], ["Charles Arânguiz", "VOL", 70, 37, "CHI", 20], ["Lucas Assádi", "MEI", 69, 22, "CHI", 10], ["Leandro Fernándes", "ATA", 70, 34, "ARG", 9]]}, {"convidado": "CL-UCA"}, {"id": "CL-COB", "nome": "Cobrelôa", "apelido": "Loínos", "cidade": "Calama", "estadio": "Zorros del Desierto", "capacidade": 12000, "cores": ["#F58220", "#FFFFFF"], "padrao": "lisa", "forca": 60}, {"id": "CL-HUA", "nome": "Huachipato FC", "apelido": "Acereros", "cidade": "Talcahuano", "estadio": "CAP", "capacidade": 10000, "cores": ["#0B3D91", "#111111"], "padrao": "listrasV", "forca": 62}, {"id": "CL-PAL", "nome": "Palestino Chile", "apelido": "Tricolor", "cidade": "Santiago", "estadio": "La Cisterna", "capacidade": 12000, "cores": ["#0B7A3B", "#C8102E"], "padrao": "faixa", "forca": 63}, {"id": "CL-OHI", "nome": "O'Higgines FC", "apelido": "Capo de Provincia", "cidade": "Rancagua", "estadio": "El Teniente", "capacidade": 14000, "cores": ["#6CB4E4", "#FFFFFF"], "padrao": "lisa", "forca": 61}, {"id": "CL-EVE", "nome": "Everton de Viña", "apelido": "Ruleteros", "cidade": "Viña del Mar", "estadio": "Sausalito", "capacidade": 22000, "cores": ["#0B3D91", "#F5C400"], "padrao": "faixaH", "forca": 60}, {"id": "CL-UES", "nome": "União Espanhola", "apelido": "Hispanos", "cidade": "Santiago", "estadio": "Santa Laura", "capacidade": 19000, "cores": ["#C8102E", "#F5C400"], "padrao": "lisa", "forca": 60}, {"id": "CL-AUD", "nome": "Audax Italiano", "apelido": "Itálicos", "cidade": "Santiago", "estadio": "Bicentenario de La Florida", "capacidade": 12000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "lisa", "forca": 60}, {"id": "CL-COQ", "nome": "Coquimbo Unidos", "apelido": "Piratas", "cidade": "Coquimbo", "estadio": "Francisco Sánchez Rumoroso", "capacidade": 18000, "cores": ["#F5C400", "#111111"], "padrao": "lisa", "forca": 62}, {"id": "CL-IQU", "nome": "Desportes Iquique", "apelido": "Dragones Celestes", "cidade": "Iquique", "estadio": "Tierra de Campeones", "capacidade": 13000, "cores": ["#6CB4E4", "#FFFFFF"], "padrao": "lisa", "forca": 58}, {"id": "CL-NUB", "nome": "Ñublensse", "apelido": "Diablos Rojos", "cidade": "Chillán", "estadio": "Nelson Oyarzún", "capacidade": 12000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 59}, {"id": "CL-SER", "nome": "Desportes La Serena", "apelido": "Papayeros", "cidade": "La Serena", "estadio": "La Portada", "capacidade": 18000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 58}, {"id": "CL-LIM", "nome": "Desportes Limache", "apelido": "Tomateros", "cidade": "Limache", "estadio": "Lucio Fariña", "capacidade": 5000, "cores": ["#C8102E", "#111111"], "padrao": "lisa", "forca": 57}, {"id": "CL-CAL", "nome": "União La Calera", "apelido": "Cementeros", "cidade": "La Calera", "estadio": "Nicolás Chahuán", "capacidade": 9000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "faixa", "forca": 59}], "PAR1": [{"convidado": "PY-OLI", "elenco": [["Gastón Olvera", "GOL", 69, 33, "URU", 1], ["Richard Ortís", "VOL", 66, 36, "PAR", 16], ["Derlis Gonzáles", "PON", 69, 32, "PAR", 10]]}, {"convidado": "PY-CER", "elenco": [["Federico Carriso", "MEI", 68, 34, "ARG", 10], ["Juan Manuel Iturbbe", "PON", 67, 33, "PAR", 7], ["Diego Churim", "ATA", 67, 36, "ARG", 9]]}, {"convidado": "PY-LIB"}, {"id": "PY-GUA", "nome": "Clube Guarani", "apelido": "Aborigen", "cidade": "Assunção", "estadio": "Rogelio Livieres", "capacidade": 8000, "cores": ["#F5C400", "#111111"], "padrao": "listrasV", "forca": 62}, {"id": "PY-NAC", "nome": "Nacional Assunção", "apelido": "Tricolor", "cidade": "Assunção", "estadio": "Arsenio Erico", "capacidade": 4000, "cores": ["#FFFFFF", "#0B3D91"], "padrao": "faixa", "forca": 60}, {"id": "PY-LUQ", "nome": "Sportivo Luquenho", "apelido": "Auriazul", "cidade": "Luque", "estadio": "Feliciano Cáceres", "capacidade": 25000, "cores": ["#F5C400", "#1C4FA1"], "padrao": "listrasV", "forca": 59}, {"id": "PY-TRI", "nome": "Sportivo Trinidense", "apelido": "Trinidense", "cidade": "Assunção", "estadio": "Martín Torres", "capacidade": 3000, "cores": ["#111111", "#FFFFFF"], "padrao": "listrasV", "forca": 58}, {"id": "PY-AME", "nome": "Sportivo Ameliano", "apelido": "Ameliano", "cidade": "Assunção", "estadio": "Ameliano", "capacidade": 5000, "cores": ["#1C4FA1", "#FFFFFF"], "padrao": "lisa", "forca": 58}, {"id": "PY-2MA", "nome": "2 de Maio FC", "apelido": "Gallo Norteño", "cidade": "Pedro Juan Caballero", "estadio": "Río Parapití", "capacidade": 25000, "cores": ["#C8102E", "#111111"], "padrao": "listrasV", "forca": 58}, {"id": "PY-GEN", "nome": "General Cavalheiro JLM", "apelido": "Gallo", "cidade": "Asunción", "estadio": "Ka'arendy", "capacidade": 5000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 57}, {"id": "PY-REC", "nome": "Recoleta FC", "apelido": "Recoleta", "cidade": "Assunção", "estadio": "Recoleta", "capacidade": 3000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 57}, {"id": "PY-TAC", "nome": "Tacuarí FBC", "apelido": "Tacuary", "cidade": "Assunção", "estadio": "Roberto Bettega", "capacidade": 5000, "cores": ["#1C4FA1", "#FFFFFF"], "padrao": "faixa", "forca": 56}], "ECU1": [{"convidado": "EC-LDU", "elenco": [["Alexander Domingues", "GOL", 70, 39, "ECU", 22], ["Ricardo Adé", "ZAG", 70, 36, "HAI", 4], ["Ezequiel Pióvi", "VOL", 69, 35, "ARG", 21], ["Gabriel Villamill", "PON", 68, 25, "ECU", 17], ["Michael Estrata", "ATA", 68, 30, "ECU", 11], ["Álex Arsse", "ATA", 71, 31, "PAR", 9]]}, {"convidado": "EC-BSC", "elenco": [["Janner Corrozo", "PON", 68, 30, "ECU", 7], ["Octavio Ribero", "ATA", 67, 34, "URU", 9]]}, {"convidado": "EC-IDV", "elenco": [["Moisés Ramires", "GOL", 70, 26, "ECU", 1], ["Junior Sornosa", "MEI", 69, 32, "ECU", 10]]}, {"id": "EC-EME", "nome": "Clube Emelecinho", "apelido": "Bombillo", "cidade": "Guayaquil", "estadio": "George Capwell", "capacidade": 40000, "cores": ["#0B3D91", "#FFFFFF"], "padrao": "lisa", "forca": 64}, {"id": "EC-AUC", "nome": "Sociedade Aucas", "apelido": "Oriental", "cidade": "Quito", "estadio": "Gonzalo Pozo Ripalda", "capacidade": 19000, "cores": ["#F5C400", "#C8102E"], "padrao": "lisa", "forca": 62}, {"id": "EC-NAC", "nome": "El Nacional Equatoriano", "apelido": "Puros Criollos", "cidade": "Quito", "estadio": "Atahualpa", "capacidade": 35000, "cores": ["#C8102E", "#0B3D91"], "padrao": "metade", "forca": 60}, {"id": "EC-DEL", "nome": "Delfim SC", "apelido": "Cetáceos", "cidade": "Manta", "estadio": "Jocay", "capacidade": 17000, "cores": ["#F5C400", "#0B3D91"], "padrao": "lisa", "forca": 61}, {"id": "EC-UCA", "nome": "Universidade Católica Quito", "apelido": "Camaratas", "cidade": "Quito", "estadio": "Olímpico Atahualpa", "capacidade": 35000, "cores": ["#0B3D91", "#FFFFFF"], "padrao": "lisa", "forca": 62}, {"id": "EC-CUE", "nome": "Desportivo Cuencano", "apelido": "Morlacos", "cidade": "Cuenca", "estadio": "Alejandro Serrano Aguilar", "capacidade": 16000, "cores": ["#C8102E", "#111111"], "padrao": "lisa", "forca": 60}, {"id": "EC-ORE", "nome": "Orense SC", "apelido": "Bananeros", "cidade": "Machala", "estadio": "9 de Mayo", "capacidade": 16000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "lisa", "forca": 60}, {"id": "EC-MAC", "nome": "Macará FC", "apelido": "Celeste", "cidade": "Ambato", "estadio": "Bellavista", "capacidade": 16000, "cores": ["#6CB4E4", "#FFFFFF"], "padrao": "lisa", "forca": 59}, {"id": "EC-MUS", "nome": "Mushuc Runa SC", "apelido": "Ponchito", "cidade": "Ambato", "estadio": "Echaleche", "capacidade": 8000, "cores": ["#C8102E", "#111111"], "padrao": "lisa", "forca": 59}, {"id": "EC-LIB", "nome": "Libertad de Loja", "apelido": "Libertad", "cidade": "Loja", "estadio": "Reina del Cisne", "capacidade": 14000, "cores": ["#F5C400", "#0B3D91"], "padrao": "lisa", "forca": 58}, {"id": "EC-TEC", "nome": "Técnico Universitário", "apelido": "Rodillo Rojo", "cidade": "Ambato", "estadio": "Bellavista", "capacidade": 16000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 58}, {"id": "EC-MAN", "nome": "Manta FC", "apelido": "Atuneros", "cidade": "Manta", "estadio": "Jocay", "capacidade": 17000, "cores": ["#0B3D91", "#6CB4E4"], "padrao": "lisa", "forca": 57}, {"id": "EC-VIN", "nome": "Vinotinto Equador", "apelido": "Vinotinto", "cidade": "Quito", "estadio": "Banco Guayaquil", "capacidade": 12000, "cores": ["#7A1E2B", "#FFFFFF"], "padrao": "lisa", "forca": 57}], "TUR1": [{"convidado": "TR-GAL", "elenco": [["Uğurcan Çakir", "GOL", 82, 30, "TUR", 1], ["Günay Guvenç", "GOL", 72, 35, "TUR", 19], ["Jankat Yilmas", "GOL", 66, 22, "TUR", 24], ["Dávinson Sanchéz", "ZAG", 81, 30, "COL", 6], ["Abdulkerim Bardakci", "ZAG", 79, 32, "TUR", 42], ["Wilfried Singô", "ZAG", 80, 25, "CIV", 90], ["Kaan Aihan", "ZAG", 75, 31, "TUR", 23], ["Ismail Jacobs", "LAT", 78, 27, "SEN", 4], ["Roland Salai", "LAT", 79, 29, "HUN", 7], ["Eren Elmali", "LAT", 76, 26, "TUR", 17], ["Przemysław Frankowsky", "LAT", 77, 31, "POL", 95], ["Kazımcan Karatas", "LAT", 72, 23, "TUR", 88], ["Gabriel Sarah", "VOL", 81, 27, "BRA", 8], ["İlkay Gundogan", "VOL", 81, 35, "GER", 20], ["Lucas Torreyra", "VOL", 81, 30, "URU", 34], ["Mario Leminá", "VOL", 77, 33, "GAB", 99], ["Lesley Ugochucku", "VOL", 75, 22, "FRA", 18], ["Aleksei Batrakóv", "MEI", 77, 21, "RUS", 83], ["Leroy Sanê", "PON", 83, 30, "GER", 10], ["Barış Alper Yilmas", "PON", 81, 26, "TUR", 53], ["Yunus Akgum", "PON", 78, 26, "TUR", 11], ["Rafael Leãon", "PON", 85, 27, "POR", 27], ["Wilfried Zahá", "PON", 76, 33, "CIV", 14], ["Victor Osimhem", "ATA", 87, 27, "NGA", 45]], "forca": 82}, {"id": "TR-FEN", "nome": "Fenerbaxe SK", "apelido": "Canários", "cidade": "Istambul", "estadio": "Şükrü Saracoğlu", "capacidade": 47000, "cores": ["#0B2F7A", "#F5C400"], "padrao": "listrasV", "forca": 81, "elenco": [["Edersom", "GOL", 83, 33, "BRA", 31], ["Mert Gunock", "GOL", 74, 37, "TUR", 34], ["Tarik Çetim", "GOL", 70, 29, "TUR", 13], ["Nathan Akê", "ZAG", 81, 31, "NED", 15], ["Milan Škrinar", "ZAG", 82, 31, "SVK", 37], ["Yiğit Efe Demirr", "ZAG", 70, 22, "TUR", 14], ["Ognjen Mimovič", "ZAG", 72, 22, "SRB", 77], ["Kwame Opong", "ZAG", 71, 22, "GHA", 21], ["Levent Merkan", "LAT", 75, 25, "GER", 22], ["Mert Muldür", "LAT", 76, 27, "TUR", 18], ["Archie Browm", "LAT", 78, 24, "ENG", 3], ["Jayden Oosterwold", "LAT", 79, 25, "NED", 24], ["Nélson Semedô", "LAT", 79, 32, "POR", 27], ["Mattéo Guendousi", "VOL", 82, 27, "FRA", 6], ["N'Golo Kantê", "VOL", 81, 35, "FRA", 91], ["Ismail Yuksek", "VOL", 76, 27, "TUR", 5], ["Marco Assensio", "MEI", 82, 30, "ESP", 10], ["İrfan Can Kahvecı", "MEI", 77, 31, "TUR", 17], ["Mert Hakan Yandax", "MEI", 72, 32, "TUR", 8], ["Bartuğ Elmas", "MEI", 71, 23, "TUR", 28], ["Oğuz Aydim", "PON", 76, 25, "TUR", 70], ["Kerem Akturkoglu", "PON", 81, 28, "TUR", 7], ["Mason Greenwod", "PON", 84, 25, "ENG", 11], ["Nene Dorgelés", "PON", 77, 23, "MLI", 45], ["Romelu Lukacu", "ATA", 82, 33, "BEL", 9], ["Vedat Muriki", "ATA", 77, 32, "KVX", 19]]}, {"id": "TR-BJK", "nome": "Beşiktaxe JK", "apelido": "Águias Negras", "cidade": "Istambul", "estadio": "Tüpraş Arena", "capacidade": 42000, "cores": ["#111111", "#FFFFFF"], "padrao": "listrasV", "forca": 79, "elenco": [["Alexander Nubél", "GOL", 80, 30, "GER", 1], ["Emre Alemdár", "GOL", 68, 23, "TUR", 80], ["Emmanuel Agbadu", "ZAG", 78, 29, "CIV", 12], ["Tiago Djalô", "ZAG", 77, 26, "POR", 35], ["Umit Akdagh", "ZAG", 73, 23, "ROU", 50], ["Emirhan Topçú", "ZAG", 74, 26, "TUR", 53], ["Abdoulaye Ouatara", "LAT", 74, 22, "FRA", 11], ["Taylan Bulutt", "LAT", 71, 20, "GER", 22], ["Ridvan Yilmás", "LAT", 76, 25, "TUR", 33], ["Amir Murilo", "LAT", 76, 30, "PAN", 62], ["Wilfred Ndidy", "VOL", 80, 29, "NGA", 4], ["Salih Ozcan", "VOL", 77, 28, "TUR", 6], ["Orkun Kokçu", "MEI", 81, 25, "TUR", 10], ["Kartal Yilmas", "MEI", 73, 25, "TUR", 8], ["Fabio Mireti", "MEI", 77, 23, "ITA", 21], ["Junior Olaytan", "MEI", 76, 24, "BEN", 15], ["Václav Černy", "PON", 79, 29, "CZE", 18], ["Leandro Trosard", "PON", 81, 31, "BEL", 19], ["Milot Rashika", "PON", 76, 30, "KVX", 7], ["Ernest Pocu", "PON", 76, 22, "NED", 17], ["Dušan Vlahovič", "ATA", 84, 26, "SRB", 28], ["Oh Hyeon-kyu", "ATA", 77, 25, "KOR", 9], ["Semih Kiliçsoy", "ATA", 75, 21, "TUR", 90], ["Mustafa Hekimoglú", "ATA", 70, 19, "TUR", 23]]}, {"id": "TR-TRA", "nome": "Trabzonsporte", "apelido": "Bordô-Azul", "cidade": "Trabzon", "estadio": "Papara Park", "capacidade": 41000, "cores": ["#7A1E2B", "#6CB4E4"], "padrao": "listrasV", "forca": 78, "elenco": [["André Onanã", "GOL", 81, 30, "CMR", 24], ["Stefan Savič", "ZAG", 75, 35, "MNE", 15], ["Chibuike Nwaywu", "ZAG", 74, 23, "NGA", 27], ["Cenk Ozkacar", "ZAG", 74, 26, "TUR", 39], ["Arseniy Batahov", "ZAG", 73, 24, "UKR", 44], ["Samet Akaydim", "ZAG", 72, 32, "TUR", 4], ["Mustafa Eskihelaç", "LAT", 74, 29, "TUR", 19], ["Wagner Pinna", "LAT", 76, 23, "POR", 20], ["Rayan Cabrál", "LAT", 72, 24, "NED", 55], ["Fabynho", "VOL", 79, 32, "BRA", 6], ["Okay Yokuslu", "VOL", 73, 32, "TUR", 5], ["Ozan Tufám", "VOL", 73, 31, "TUR", 11], ["Benjamin Bouchuari", "VOL", 75, 24, "MAR", 8], ["Batista Mendy", "VOL", 75, 26, "FRA", 3], ["Ruslan Malinovsky", "MEI", 77, 33, "UKR", 17], ["Ernest Muçy", "MEI", 76, 25, "ALB", 7], ["Christ Jabol-Folcareli", "MEI", 73, 26, "FRA", 26], ["Mohamed Salach", "PON", 86, 34, "EGY", 10], ["Paul Onuachú", "ATA", 79, 32, "NGA", 30], ["Umut Nayír", "ATA", 72, 33, "TUR", 14]]}, {"id": "TR-BAS", "nome": "Başakxehir FK", "apelido": "Coruja", "cidade": "Istambul", "estadio": "Fatih Terim", "capacidade": 17000, "cores": ["#F58220", "#0B2F7A"], "padrao": "lisa", "forca": 69}, {"id": "TR-SAM", "nome": "Samsunsporte", "apelido": "Ciclone Vermelho", "cidade": "Samsun", "estadio": "19 Mayıs", "capacidade": 33000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 69}, {"id": "TR-GOZ", "nome": "Göztepinha", "apelido": "Göz-Göz", "cidade": "Izmir", "estadio": "Gürsel Aksel", "capacidade": 20000, "cores": ["#F5C400", "#C8102E"], "padrao": "metade", "forca": 67}, {"id": "TR-KAS", "nome": "Kasımpaxa SK", "apelido": "Apaches", "cidade": "Istambul", "estadio": "Recep Tayyip Erdoğan", "capacidade": 14000, "cores": ["#0B2F7A", "#FFFFFF"], "padrao": "lisa", "forca": 66}, {"id": "TR-KAY", "nome": "Kayserisporte", "apelido": "Corvos de Ouro", "cidade": "Kayseri", "estadio": "RHG Enertürk", "capacidade": 32000, "cores": ["#F5C400", "#C8102E"], "padrao": "listrasV", "forca": 65}, {"id": "TR-KON", "nome": "Konyasporte", "apelido": "Águias Verdes", "cidade": "Konya", "estadio": "Medaş Konya", "capacidade": 42000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "faixaH", "forca": 66}, {"id": "TR-ANT", "nome": "Antalyasporte", "apelido": "Escorpiões", "cidade": "Antalya", "estadio": "Corendon Airlines Park", "capacidade": 32000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "listrasV", "forca": 65}, {"id": "TR-ALA", "nome": "Alanyasporte", "apelido": "Laranjas", "cidade": "Alanya", "estadio": "Bahçeşehir Okulları", "capacidade": 10000, "cores": ["#F58220", "#0B7A3B"], "padrao": "lisa", "forca": 66}, {"id": "TR-RIZ", "nome": "Rizesporte", "apelido": "Chá", "cidade": "Rize", "estadio": "Yeni Rize Şehir", "capacidade": 15000, "cores": ["#0B7A3B", "#0B2F7A"], "padrao": "listrasV", "forca": 65}, {"id": "TR-GAZ", "nome": "Gaziantep FK", "apelido": "Falcões", "cidade": "Gaziantep", "estadio": "Kalyon", "capacidade": 33000, "cores": ["#C8102E", "#111111"], "padrao": "lisa", "forca": 65}, {"id": "TR-EYU", "nome": "Eyüpsporte", "apelido": "Sultão", "cidade": "Istambul", "estadio": "Recep Tayyip Erdoğan", "capacidade": 14000, "cores": ["#5B2A86", "#F5C400"], "padrao": "lisa", "forca": 65}, {"id": "TR-KOC", "nome": "Kocaelisporte", "apelido": "Gaivotas", "cidade": "Kocaeli", "estadio": "Kocaeli", "capacidade": 34000, "cores": ["#0B7A3B", "#111111"], "padrao": "listrasV", "forca": 64}, {"id": "TR-GEN", "nome": "Gençlerbirliği SK", "apelido": "Papoula", "cidade": "Ancara", "estadio": "Eryaman", "capacidade": 20000, "cores": ["#C8102E", "#111111"], "padrao": "metade", "forca": 64}, {"id": "TR-KAR", "nome": "Karagümruque SK", "apelido": "Bairro", "cidade": "Istambul", "estadio": "Atatürk Olímpico", "capacidade": 75000, "cores": ["#C8102E", "#111111"], "padrao": "listrasV", "forca": 64}], "MEX1": [{"id": "MX-AME", "nome": "Clube América MX", "apelido": "Águilas", "cidade": "Cidade do México", "estadio": "Azteca", "capacidade": 83000, "cores": ["#F5C400", "#0B2F7A"], "padrao": "lisa", "forca": 72, "elenco": [["Luis Malagóm", "GOL", 77, 29, "MEX", 1], ["Israel Reyez", "ZAG", 74, 26, "MEX", 3], ["Kevin Alvares", "LAT", 74, 27, "MEX", 5], ["Erick Sánches", "MEI", 75, 27, "MEX", 28], ["Raphael Veyga", "MEI", 78, 31, "BRA", 23], ["Brian Rodrígues", "PON", 76, 26, "URU", 7], ["Alejandro Zendeyas", "PON", 76, 28, "USA", 10], ["Henry Martím", "ATA", 74, 33, "MEX", 9]]}, {"id": "MX-GDL", "nome": "Chivás de Guadalajara", "apelido": "Rebaño Sagrado", "cidade": "Guadalajara", "estadio": "Akron", "capacidade": 46000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "listrasV", "forca": 69, "elenco": [["Raúl Rangell", "GOL", 76, 26, "MEX", 1], ["Jesús Campilo", "ZAG", 72, 25, "MEX", 3], ["Daniel Aguirra", "ZAG", 73, 27, "USA", 23], ["Fernando Gonzáles", "VOL", 73, 32, "MEX", 28], ["Omar Goveia", "VOL", 72, 30, "MEX", 6], ["Luis Romô", "MEI", 75, 31, "MEX", 7], ["Roberto Alvaradoo", "PON", 76, 28, "MEX", 25], ["Ricardo Marím", "ATA", 72, 28, "MEX", 17]]}, {"id": "MX-CAZ", "nome": "Cruz Azulada", "apelido": "Máquina Celeste", "cidade": "Cidade do México", "estadio": "Olímpico Universitário", "capacidade": 58000, "cores": ["#0B3D91", "#FFFFFF"], "padrao": "faixa", "forca": 71, "elenco": [["Andrés Gudinho", "GOL", 74, 29, "MEX", 1], ["Kevin Myer", "GOL", 75, 26, "COL", 23], ["Willer Dita", "ZAG", 75, 29, "COL", 4], ["Gonzalo Piovy", "LAT", 74, 32, "ARG", 33], ["Erik Lyra", "VOL", 75, 26, "MEX", 6], ["Agustín Palavecinno", "MEI", 75, 29, "ARG", 8], ["José Paradella", "MEI", 75, 27, "ARG", 20], ["Carlos Rotondy", "PON", 75, 29, "ARG", 29], ["Nicolás Ibañes", "ATA", 76, 32, "ARG", 7], ["Gabriel Fernándes", "ATA", 74, 32, "URU", 21]]}, {"id": "MX-PUM", "nome": "Pumas UNAMex", "apelido": "Universitários", "cidade": "Cidade do México", "estadio": "Olímpico Universitário", "capacidade": 58000, "cores": ["#FFFFFF", "#0B2F7A"], "padrao": "lisa", "forca": 67}, {"id": "MX-MTY", "nome": "Rayados de Monterrei", "apelido": "Rayados", "cidade": "Monterrey", "estadio": "BBVA", "capacidade": 53000, "cores": ["#0B2F7A", "#FFFFFF"], "padrao": "listrasV", "forca": 72, "elenco": [["Esteban Andradda", "GOL", 76, 35, "ARG", 1], ["Stefan Medinna", "ZAG", 72, 34, "COL", 33], ["Gerardo Arteagá", "LAT", 74, 28, "MEX", 3], ["Oliver Torrez", "MEI", 77, 31, "ESP", 8], ["Jesús Coronna", "PON", 74, 33, "MEX", 17], ["Lucas Ocampo", "PON", 77, 32, "ARG", 7], ["Hugo Cuipers", "ATA", 76, 29, "BEL", 99], ["Uroš Đurđevič", "ATA", 72, 32, "MNE", 32]]}, {"id": "MX-TIG", "nome": "Tigres UANL", "apelido": "Felinos", "cidade": "San Nicolás", "estadio": "Universitário", "capacidade": 42000, "cores": ["#F5C400", "#0B3D91"], "padrao": "lisa", "forca": 72, "elenco": [["Nahuel Guzmám", "GOL", 74, 40, "ARG", 1], ["Joakim", "ZAG", 75, 27, "BRA", 28], ["Fernando Gorriarám", "VOL", 76, 31, "URU", 8], ["Rômullo", "VOL", 75, 26, "BRA", 23], ["Juan Brunneta", "MEI", 77, 29, "ARG", 11], ["Diego Lainéz", "MEI", 75, 26, "MEX", 16], ["Ozziel Herrerra", "PON", 74, 25, "MEX", 77], ["André-Pierre Gignák", "ATA", 72, 40, "FRA", 10]]}, {"id": "MX-TOL", "nome": "Toluca FC", "apelido": "Diablos Rojos", "cidade": "Toluca", "estadio": "Nemesio Díez", "capacidade": 30000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "lisa", "forca": 71, "elenco": [["Hugo Gonzáles", "GOL", 74, 36, "MEX", 1], ["Bruno Mendés", "ZAG", 74, 27, "URU", 4], ["Federico Pereyra", "ZAG", 74, 26, "URU", 6], ["Marcel Ruíz", "MEI", 75, 25, "MEX", 14], ["Nicolás Kastro", "MEI", 74, 25, "ARG", 8], ["Jesús Angullo", "MEI", 74, 29, "MEX", 10], ["Alexis Veiga", "PON", 77, 28, "MEX", 9], ["Helynho", "PON", 77, 26, "BRA", 11], ["Paulinhô", "ATA", 79, 33, "POR", 26]]}, {"id": "MX-PAC", "nome": "Pachuca CF", "apelido": "Tuzos", "cidade": "Pachuca", "estadio": "Hidalgo", "capacidade": 27000, "cores": ["#0B2F7A", "#FFFFFF"], "padrao": "metade", "forca": 69, "elenco": [["Carlos Morenno", "GOL", 74, 28, "MEX", 25], ["Eduardo Barretto", "ZAG", 73, 27, "ARG", 2], ["Gustavo Bauermam", "ZAG", 74, 30, "BRA", 4], ["Bryan Venegás", "LAT", 73, 28, "MEX", 15], ["Elías Riverra", "VOL", 74, 30, "COL", 16], ["Oussama Idrisi", "MEI", 76, 30, "MAR", 11], ["Kenedyy", "PON", 76, 30, "BRA", 29], ["Salomón Rondóm", "ATA", 74, 37, "VEN", 23]]}, {"id": "MX-LEO", "nome": "Club Leão", "apelido": "La Fiera", "cidade": "León", "estadio": "Nou Camp", "capacidade": 31000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "faixa", "forca": 67, "elenco": [["Óscar Garcya", "GOL", 72, 23, "MEX", 23], ["Juan Guevarra", "ZAG", 72, 25, "COL", 3], ["Jhonatan Romanha", "ZAG", 72, 28, "COL", 14], ["Rodrigo Morenno", "LAT", 72, 28, "MEX", 7], ["Fidel Rodrigues", "VOL", 72, 30, "MEX", 29], ["Rodrigo Echeverrya", "MEI", 74, 31, "CHI", 20], ["Andrés Arcilla", "PON", 73, 24, "COL", 13], ["Diber Cambindu", "ATA", 74, 30, "COL", 27]]}, {"id": "MX-SAN", "nome": "Santos Laguneiro", "apelido": "Guerreros", "cidade": "Torreón", "estadio": "Corona", "capacidade": 30000, "cores": ["#0B7A3B", "#FFFFFF"], "padrao": "metade", "forca": 65}, {"id": "MX-ATL", "nome": "Atlas Rojinegro", "apelido": "Zorros", "cidade": "Guadalajara", "estadio": "Jalisco", "capacidade": 55000, "cores": ["#C8102E", "#111111"], "padrao": "metade", "forca": 65}, {"id": "MX-PUE", "nome": "Puebla de la Franja", "apelido": "Camoteros", "cidade": "Puebla", "estadio": "Cuauhtémoc", "capacidade": 51000, "cores": ["#FFFFFF", "#0B3D91"], "padrao": "faixa", "forca": 64}, {"id": "MX-QRO", "nome": "Querétaro Galos", "apelido": "Gallos Blancos", "cidade": "Querétaro", "estadio": "Corregidora", "capacidade": 33000, "cores": ["#0B3D91", "#111111"], "padrao": "listrasV", "forca": 63}, {"id": "MX-NEC", "nome": "Necaxa Raios", "apelido": "Rayos", "cidade": "Aguascalientes", "estadio": "Victoria", "capacidade": 23000, "cores": ["#C8102E", "#FFFFFF"], "padrao": "listrasV", "forca": 64}, {"id": "MX-JUA", "nome": "FC Juárez Bravos", "apelido": "Bravos", "cidade": "Ciudad Juárez", "estadio": "Olímpico Benito Juárez", "capacidade": 19000, "cores": ["#0B7A3B", "#C8102E"], "padrao": "lisa", "forca": 64}, {"id": "MX-TIJ", "nome": "Xolos de Tijuana", "apelido": "Xolos", "cidade": "Tijuana", "estadio": "Caliente", "capacidade": 27000, "cores": ["#C8102E", "#111111"], "padrao": "listrasV", "forca": 66}, {"id": "MX-MAZ", "nome": "Mazatlán FC", "apelido": "Cañoneros", "cidade": "Mazatlán", "estadio": "El Encanto", "capacidade": 20000, "cores": ["#5B2A86", "#FFFFFF"], "padrao": "lisa", "forca": 62}, {"id": "MX-SLP", "nome": "Atlético São Luís", "apelido": "Tuneros", "cidade": "San Luis Potosí", "estadio": "Alfonso Lastras", "capacidade": 25000, "cores": ["#C8102E", "#0B3D91"], "padrao": "faixa", "forca": 64}]}}
+{
+ "aviso": "Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com.",
+ "ligas": {
+  "URU1": [
+   {
+    "convidado": "UY-PEN",
+    "elenco": [
+     [
+      "Washington Agüere",
+      "GOL",
+      69,
+      33,
+      "URU",
+      1
+     ],
+     [
+      "Maximiliano Olibera",
+      "LAT",
+      67,
+      33,
+      "URU",
+      22
+     ],
+     [
+      "Javier Mendes",
+      "ZAG",
+      67,
+      28,
+      "URU",
+      3
+     ],
+     [
+      "Eric Remédi",
+      "VOL",
+      68,
+      31,
+      "ARG",
+      5
+     ],
+     [
+      "Leonardo Fernándes",
+      "MEI",
+      72,
+      27,
+      "URU",
+      10
+     ],
+     [
+      "David Terrans",
+      "MEI",
+      69,
+      32,
+      "URU",
+      8
+     ],
+     [
+      "Javier Cabreira",
+      "PON",
+      68,
+      34,
+      "URU",
+      7
+     ],
+     [
+      "Maximiliano Silbera",
+      "ATA",
+      70,
+      32,
+      "URU",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "UY-NAC",
+    "elenco": [
+     [
+      "Luiz Megía",
+      "GOL",
+      69,
+      35,
+      "PAN",
+      1
+     ],
+     [
+      "Nicolás Lodeyro",
+      "MEI",
+      70,
+      37,
+      "URU",
+      10
+     ],
+     [
+      "Gonzalo Carnero",
+      "ATA",
+      68,
+      31,
+      "URU",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "UY-LIV"
+   },
+   {
+    "id": "UY-DEF",
+    "nome": "Defensor Esportin",
+    "apelido": "Violeta",
+    "cidade": "Montevidéu",
+    "estadio": "Luis Franzini",
+    "capacidade": 18000,
+    "cores": [
+     "#5B2A86",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 64
+   },
+   {
+    "id": "UY-DAN",
+    "nome": "Danúbio FC",
+    "apelido": "Franja",
+    "cidade": "Montevidéu",
+    "estadio": "Jardines del Hipódromo",
+    "capacidade": 18000,
+    "cores": [
+     "#FFFFFF",
+     "#111111"
+    ],
+    "padrao": "faixa",
+    "forca": 62
+   },
+   {
+    "id": "UY-WAN",
+    "nome": "Montevidéu Uanderers",
+    "apelido": "Bohemios",
+    "cidade": "Montevidéu",
+    "estadio": "Parque Viera",
+    "capacidade": 11000,
+    "cores": [
+     "#111111",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 61
+   },
+   {
+    "id": "UY-RIV",
+    "nome": "River Prata Montevideano",
+    "apelido": "Darseneros",
+    "cidade": "Montevidéu",
+    "estadio": "Saroldi",
+    "capacidade": 6000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "metade",
+    "forca": 60
+   },
+   {
+    "id": "UY-CER",
+    "nome": "Clube Cerrito",
+    "apelido": "Villero",
+    "cidade": "Montevidéu",
+    "estadio": "Luis Tróccoli",
+    "capacidade": 25000,
+    "cores": [
+     "#6CB4E4",
+     "#C8102E"
+    ],
+    "padrao": "lisa",
+    "forca": 61
+   },
+   {
+    "id": "UY-RAC",
+    "nome": "Racing de Montevidéu",
+    "apelido": "Cervecero",
+    "cidade": "Montevidéu",
+    "estadio": "Parque Roberto",
+    "capacidade": 8000,
+    "cores": [
+     "#111111",
+     "#0B7A3B"
+    ],
+    "padrao": "listrasV",
+    "forca": 60
+   },
+   {
+    "id": "UY-PLA",
+    "nome": "Praça Colônia",
+    "apelido": "Patablanca",
+    "cidade": "Colonia",
+    "estadio": "Juan Prandi",
+    "capacidade": 4500,
+    "cores": [
+     "#FFFFFF",
+     "#0B7A3B"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "UY-BOS",
+    "nome": "Bóston River",
+    "apelido": "Sastre",
+    "cidade": "Montevidéu",
+    "estadio": "Campeón del Siglo",
+    "capacidade": 5000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 62
+   },
+   {
+    "id": "UY-CLA",
+    "nome": "Cerro Largão",
+    "apelido": "Arachán",
+    "cidade": "Melo",
+    "estadio": "Arquitecto Ubilla",
+    "capacidade": 9000,
+    "cores": [
+     "#1C4FA1",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 59
+   },
+   {
+    "id": "UY-PRO",
+    "nome": "Progresso FC",
+    "apelido": "Gaucho del Pantanoso",
+    "cidade": "Montevidéu",
+    "estadio": "Abraham Paladino",
+    "capacidade": 8000,
+    "cores": [
+     "#F5C400",
+     "#C8102E"
+    ],
+    "padrao": "listrasV",
+    "forca": 58
+   },
+   {
+    "id": "UY-JUV",
+    "nome": "Juventude de Las Piedras",
+    "apelido": "Pedrense",
+    "cidade": "Las Piedras",
+    "estadio": "Parque Artigas",
+    "capacidade": 8000,
+    "cores": [
+     "#FFFFFF",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 59
+   },
+   {
+    "id": "UY-TOR",
+    "nome": "Montevidéu Cidade Torque",
+    "apelido": "Ciudadano",
+    "cidade": "Montevidéu",
+    "estadio": "Centenario",
+    "capacidade": 15000,
+    "cores": [
+     "#6CB4E4",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 61
+   },
+   {
+    "id": "UY-MIR",
+    "nome": "Miramar Missões",
+    "apelido": "Cebrita",
+    "cidade": "Montevidéu",
+    "estadio": "Parque Méndez",
+    "capacidade": 6000,
+    "cores": [
+     "#111111",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 57
+   }
+  ],
+  "COL1": [
+   {
+    "convidado": "CO-NAC",
+    "elenco": [
+     [
+      "Franco Armanni",
+      "GOL",
+      73,
+      40,
+      "ARG",
+      34
+     ],
+     [
+      "William Tesilo",
+      "ZAG",
+      68,
+      36,
+      "COL",
+      16
+     ],
+     [
+      "Andrés Romám",
+      "LAT",
+      70,
+      31,
+      "COL",
+      6
+     ],
+     [
+      "Jorman Campusano",
+      "VOL",
+      67,
+      30,
+      "COL",
+      5
+     ],
+     [
+      "Edwin Cardonna",
+      "MEI",
+      69,
+      33,
+      "COL",
+      10
+     ],
+     [
+      "Alfredo Morellos",
+      "ATA",
+      69,
+      30,
+      "COL",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "CO-MIL",
+    "elenco": [
+     [
+      "Daniel Catanho",
+      "MEI",
+      67,
+      34,
+      "COL",
+      10
+     ],
+     [
+      "Leonardo Kastro",
+      "ATA",
+      67,
+      34,
+      "COL",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "CO-JUN"
+   },
+   {
+    "id": "CO-AME",
+    "nome": "América de Kali",
+    "apelido": "Diablos Rojos",
+    "cidade": "Cali",
+    "estadio": "Pascual Guerrero",
+    "capacidade": 38000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 66
+   },
+   {
+    "id": "CO-CAL",
+    "nome": "Esportivo Cali",
+    "apelido": "Azucareros",
+    "cidade": "Cali",
+    "estadio": "Deportivo Cali",
+    "capacidade": 52000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 65
+   },
+   {
+    "id": "CO-DIM",
+    "nome": "Independente Medelim",
+    "apelido": "Poderoso",
+    "cidade": "Medellín",
+    "estadio": "Atanasio",
+    "capacidade": 44000,
+    "cores": [
+     "#C8102E",
+     "#0B3D91"
+    ],
+    "padrao": "metade",
+    "forca": 66
+   },
+   {
+    "id": "CO-SFE",
+    "nome": "Independente Santa Fé",
+    "apelido": "Cardenales",
+    "cidade": "Bogotá",
+    "estadio": "El Campín",
+    "capacidade": 36000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "centro",
+    "forca": 65
+   },
+   {
+    "id": "CO-ONC",
+    "nome": "Once Caldense",
+    "apelido": "Blanco Blanco",
+    "cidade": "Manizales",
+    "estadio": "Palogrande",
+    "capacidade": 36000,
+    "cores": [
+     "#FFFFFF",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 63
+   },
+   {
+    "id": "CO-TOL",
+    "nome": "Desportes Tolima",
+    "apelido": "Pijao",
+    "cidade": "Ibagué",
+    "estadio": "Manuel Murillo",
+    "capacidade": 28000,
+    "cores": [
+     "#7A1E2B",
+     "#F5C400"
+    ],
+    "padrao": "lisa",
+    "forca": 65
+   },
+   {
+    "id": "CO-BUC",
+    "nome": "Atlético Bucaramanguense",
+    "apelido": "Leopardos",
+    "cidade": "Bucaramanga",
+    "estadio": "Alfonso López",
+    "capacidade": 25000,
+    "cores": [
+     "#F5C400",
+     "#0B7A3B"
+    ],
+    "padrao": "lisa",
+    "forca": 63
+   },
+   {
+    "id": "CO-PER",
+    "nome": "Desportivo Pereirano",
+    "apelido": "Matecaña",
+    "cidade": "Pereira",
+    "estadio": "Hernán Ramírez",
+    "capacidade": 30000,
+    "cores": [
+     "#C8102E",
+     "#F5C400"
+    ],
+    "padrao": "listrasV",
+    "forca": 62
+   },
+   {
+    "id": "CO-AGU",
+    "nome": "Águias Douradas",
+    "apelido": "Doradas",
+    "cidade": "Rionegro",
+    "estadio": "Alberto Grisales",
+    "capacidade": 14000,
+    "cores": [
+     "#F5C400",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 61
+   },
+   {
+    "id": "CO-EQU",
+    "nome": "A Equidade",
+    "apelido": "Aseguradores",
+    "cidade": "Bogotá",
+    "estadio": "Metropolitano de Techo",
+    "capacidade": 10000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "CO-ALI",
+    "nome": "Aliança Valledupar",
+    "apelido": "Leones",
+    "cidade": "Valledupar",
+    "estadio": "Armando Maestre",
+    "capacidade": 11000,
+    "cores": [
+     "#FFFFFF",
+     "#0B7A3B"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "CO-FOR",
+    "nome": "Fortaleza CEIF",
+    "apelido": "Amix",
+    "cidade": "Bogotá",
+    "estadio": "Metropolitano de Techo",
+    "capacidade": 10000,
+    "cores": [
+     "#F5C400",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "CO-CHI",
+    "nome": "Boiacá Chicó",
+    "apelido": "Ajedrezados",
+    "cidade": "Tunja",
+    "estadio": "La Independencia",
+    "capacidade": 20000,
+    "cores": [
+     "#1C4FA1",
+     "#FFFFFF"
+    ],
+    "padrao": "metade",
+    "forca": 58
+   },
+   {
+    "id": "CO-PAS",
+    "nome": "Desportivo Pasto",
+    "apelido": "Volcánicos",
+    "cidade": "Pasto",
+    "estadio": "La Libertad",
+    "capacidade": 20000,
+    "cores": [
+     "#C8102E",
+     "#F5C400"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "CO-LLA",
+    "nome": "Llaneiros FC",
+    "apelido": "Leones de los Llanos",
+    "cidade": "Villavicencio",
+    "estadio": "Bello Horizonte",
+    "capacidade": 15000,
+    "cores": [
+     "#C8102E",
+     "#0B7A3B"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   },
+   {
+    "id": "CO-MAG",
+    "nome": "União Magdalena",
+    "apelido": "Ciclón Bananero",
+    "cidade": "Santa Marta",
+    "estadio": "Sierra Nevada",
+    "capacidade": 16000,
+    "cores": [
+     "#1C4FA1",
+     "#C8102E"
+    ],
+    "padrao": "listrasV",
+    "forca": 58
+   },
+   {
+    "id": "CO-ENV",
+    "nome": "Envigado FC",
+    "apelido": "Naranjas",
+    "cidade": "Envigado",
+    "estadio": "Polideportivo Sur",
+    "capacidade": 12000,
+    "cores": [
+     "#F58220",
+     "#0B7A3B"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   }
+  ],
+  "CHI1": [
+   {
+    "convidado": "CL-COL",
+    "elenco": [
+     [
+      "Arturo Vidall",
+      "VOL",
+      72,
+      39,
+      "CHI",
+      23
+     ],
+     [
+      "Tomás Alarcom",
+      "VOL",
+      70,
+      27,
+      "CHI",
+      6
+     ],
+     [
+      "Víctor Mendéz",
+      "MEI",
+      69,
+      27,
+      "CHI",
+      5
+     ],
+     [
+      "Erick Wimberg",
+      "LAT",
+      69,
+      32,
+      "CHI",
+      21
+     ],
+     [
+      "Javier Corrêa",
+      "ATA",
+      71,
+      33,
+      "ARG",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "CL-UCH",
+    "elenco": [
+     [
+      "Gabriel Castelóm",
+      "GOL",
+      69,
+      32,
+      "CHI",
+      25
+     ],
+     [
+      "Matías Zaldívia",
+      "ZAG",
+      68,
+      34,
+      "ARG",
+      4
+     ],
+     [
+      "Marcelo Moralles",
+      "LAT",
+      68,
+      26,
+      "CHI",
+      13
+     ],
+     [
+      "Charles Arânguiz",
+      "VOL",
+      70,
+      37,
+      "CHI",
+      20
+     ],
+     [
+      "Lucas Assádi",
+      "MEI",
+      69,
+      22,
+      "CHI",
+      10
+     ],
+     [
+      "Leandro Fernándes",
+      "ATA",
+      70,
+      34,
+      "ARG",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "CL-UCA"
+   },
+   {
+    "id": "CL-COB",
+    "nome": "Cobrelôa",
+    "apelido": "Loínos",
+    "cidade": "Calama",
+    "estadio": "Zorros del Desierto",
+    "capacidade": 12000,
+    "cores": [
+     "#F58220",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "CL-HUA",
+    "nome": "Huachipato FC",
+    "apelido": "Acereros",
+    "cidade": "Talcahuano",
+    "estadio": "CAP",
+    "capacidade": 10000,
+    "cores": [
+     "#0B3D91",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 62
+   },
+   {
+    "id": "CL-PAL",
+    "nome": "Palestino Chile",
+    "apelido": "Tricolor",
+    "cidade": "Santiago",
+    "estadio": "La Cisterna",
+    "capacidade": 12000,
+    "cores": [
+     "#0B7A3B",
+     "#C8102E"
+    ],
+    "padrao": "faixa",
+    "forca": 63
+   },
+   {
+    "id": "CL-OHI",
+    "nome": "O'Higgines FC",
+    "apelido": "Capo de Provincia",
+    "cidade": "Rancagua",
+    "estadio": "El Teniente",
+    "capacidade": 14000,
+    "cores": [
+     "#6CB4E4",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 61
+   },
+   {
+    "id": "CL-EVE",
+    "nome": "Everton de Viña",
+    "apelido": "Ruleteros",
+    "cidade": "Viña del Mar",
+    "estadio": "Sausalito",
+    "capacidade": 22000,
+    "cores": [
+     "#0B3D91",
+     "#F5C400"
+    ],
+    "padrao": "faixaH",
+    "forca": 60
+   },
+   {
+    "id": "CL-UES",
+    "nome": "União Espanhola",
+    "apelido": "Hispanos",
+    "cidade": "Santiago",
+    "estadio": "Santa Laura",
+    "capacidade": 19000,
+    "cores": [
+     "#C8102E",
+     "#F5C400"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "CL-AUD",
+    "nome": "Audax Italiano",
+    "apelido": "Itálicos",
+    "cidade": "Santiago",
+    "estadio": "Bicentenario de La Florida",
+    "capacidade": 12000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "CL-COQ",
+    "nome": "Coquimbo Unidos",
+    "apelido": "Piratas",
+    "cidade": "Coquimbo",
+    "estadio": "Francisco Sánchez Rumoroso",
+    "capacidade": 18000,
+    "cores": [
+     "#F5C400",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 62
+   },
+   {
+    "id": "CL-IQU",
+    "nome": "Desportes Iquique",
+    "apelido": "Dragones Celestes",
+    "cidade": "Iquique",
+    "estadio": "Tierra de Campeones",
+    "capacidade": 13000,
+    "cores": [
+     "#6CB4E4",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "CL-NUB",
+    "nome": "Ñublensse",
+    "apelido": "Diablos Rojos",
+    "cidade": "Chillán",
+    "estadio": "Nelson Oyarzún",
+    "capacidade": 12000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 59
+   },
+   {
+    "id": "CL-SER",
+    "nome": "Desportes La Serena",
+    "apelido": "Papayeros",
+    "cidade": "La Serena",
+    "estadio": "La Portada",
+    "capacidade": 18000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "CL-LIM",
+    "nome": "Desportes Limache",
+    "apelido": "Tomateros",
+    "cidade": "Limache",
+    "estadio": "Lucio Fariña",
+    "capacidade": 5000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   },
+   {
+    "id": "CL-CAL",
+    "nome": "União La Calera",
+    "apelido": "Cementeros",
+    "cidade": "La Calera",
+    "estadio": "Nicolás Chahuán",
+    "capacidade": 9000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 59
+   }
+  ],
+  "PAR1": [
+   {
+    "convidado": "PY-OLI",
+    "elenco": [
+     [
+      "Gastón Olvera",
+      "GOL",
+      69,
+      33,
+      "URU",
+      1
+     ],
+     [
+      "Richard Ortís",
+      "VOL",
+      66,
+      36,
+      "PAR",
+      16
+     ],
+     [
+      "Derlis Gonzáles",
+      "PON",
+      69,
+      32,
+      "PAR",
+      10
+     ]
+    ]
+   },
+   {
+    "convidado": "PY-CER",
+    "elenco": [
+     [
+      "Federico Carriso",
+      "MEI",
+      68,
+      34,
+      "ARG",
+      10
+     ],
+     [
+      "Juan Manuel Iturbbe",
+      "PON",
+      67,
+      33,
+      "PAR",
+      7
+     ],
+     [
+      "Diego Churim",
+      "ATA",
+      67,
+      36,
+      "ARG",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "PY-LIB"
+   },
+   {
+    "id": "PY-GUA",
+    "nome": "Clube Guarani",
+    "apelido": "Aborigen",
+    "cidade": "Assunção",
+    "estadio": "Rogelio Livieres",
+    "capacidade": 8000,
+    "cores": [
+     "#F5C400",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 62
+   },
+   {
+    "id": "PY-NAC",
+    "nome": "Nacional Assunção",
+    "apelido": "Tricolor",
+    "cidade": "Assunção",
+    "estadio": "Arsenio Erico",
+    "capacidade": 4000,
+    "cores": [
+     "#FFFFFF",
+     "#0B3D91"
+    ],
+    "padrao": "faixa",
+    "forca": 60
+   },
+   {
+    "id": "PY-LUQ",
+    "nome": "Sportivo Luquenho",
+    "apelido": "Auriazul",
+    "cidade": "Luque",
+    "estadio": "Feliciano Cáceres",
+    "capacidade": 25000,
+    "cores": [
+     "#F5C400",
+     "#1C4FA1"
+    ],
+    "padrao": "listrasV",
+    "forca": 59
+   },
+   {
+    "id": "PY-TRI",
+    "nome": "Sportivo Trinidense",
+    "apelido": "Trinidense",
+    "cidade": "Assunção",
+    "estadio": "Martín Torres",
+    "capacidade": 3000,
+    "cores": [
+     "#111111",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 58
+   },
+   {
+    "id": "PY-AME",
+    "nome": "Sportivo Ameliano",
+    "apelido": "Ameliano",
+    "cidade": "Assunção",
+    "estadio": "Ameliano",
+    "capacidade": 5000,
+    "cores": [
+     "#1C4FA1",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "PY-2MA",
+    "nome": "2 de Maio FC",
+    "apelido": "Gallo Norteño",
+    "cidade": "Pedro Juan Caballero",
+    "estadio": "Río Parapití",
+    "capacidade": 25000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 58
+   },
+   {
+    "id": "PY-GEN",
+    "nome": "General Cavalheiro JLM",
+    "apelido": "Gallo",
+    "cidade": "Asunción",
+    "estadio": "Ka'arendy",
+    "capacidade": 5000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   },
+   {
+    "id": "PY-REC",
+    "nome": "Recoleta FC",
+    "apelido": "Recoleta",
+    "cidade": "Assunção",
+    "estadio": "Recoleta",
+    "capacidade": 3000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   },
+   {
+    "id": "PY-TAC",
+    "nome": "Tacuarí FBC",
+    "apelido": "Tacuary",
+    "cidade": "Assunção",
+    "estadio": "Roberto Bettega",
+    "capacidade": 5000,
+    "cores": [
+     "#1C4FA1",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 56
+   }
+  ],
+  "ECU1": [
+   {
+    "convidado": "EC-LDU",
+    "elenco": [
+     [
+      "Alexander Domingues",
+      "GOL",
+      70,
+      39,
+      "ECU",
+      22
+     ],
+     [
+      "Ricardo Adé",
+      "ZAG",
+      70,
+      36,
+      "HAI",
+      4
+     ],
+     [
+      "Ezequiel Pióvi",
+      "VOL",
+      69,
+      35,
+      "ARG",
+      21
+     ],
+     [
+      "Gabriel Villamill",
+      "PON",
+      68,
+      25,
+      "ECU",
+      17
+     ],
+     [
+      "Michael Estrata",
+      "ATA",
+      68,
+      30,
+      "ECU",
+      11
+     ],
+     [
+      "Álex Arsse",
+      "ATA",
+      71,
+      31,
+      "PAR",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "EC-BSC",
+    "elenco": [
+     [
+      "Janner Corrozo",
+      "PON",
+      68,
+      30,
+      "ECU",
+      7
+     ],
+     [
+      "Octavio Ribero",
+      "ATA",
+      67,
+      34,
+      "URU",
+      9
+     ]
+    ]
+   },
+   {
+    "convidado": "EC-IDV",
+    "elenco": [
+     [
+      "Moisés Ramires",
+      "GOL",
+      70,
+      26,
+      "ECU",
+      1
+     ],
+     [
+      "Junior Sornosa",
+      "MEI",
+      69,
+      32,
+      "ECU",
+      10
+     ]
+    ]
+   },
+   {
+    "id": "EC-EME",
+    "nome": "Clube Emelecinho",
+    "apelido": "Bombillo",
+    "cidade": "Guayaquil",
+    "estadio": "George Capwell",
+    "capacidade": 40000,
+    "cores": [
+     "#0B3D91",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 64
+   },
+   {
+    "id": "EC-AUC",
+    "nome": "Sociedade Aucas",
+    "apelido": "Oriental",
+    "cidade": "Quito",
+    "estadio": "Gonzalo Pozo Ripalda",
+    "capacidade": 19000,
+    "cores": [
+     "#F5C400",
+     "#C8102E"
+    ],
+    "padrao": "lisa",
+    "forca": 62
+   },
+   {
+    "id": "EC-NAC",
+    "nome": "El Nacional Equatoriano",
+    "apelido": "Puros Criollos",
+    "cidade": "Quito",
+    "estadio": "Atahualpa",
+    "capacidade": 35000,
+    "cores": [
+     "#C8102E",
+     "#0B3D91"
+    ],
+    "padrao": "metade",
+    "forca": 60
+   },
+   {
+    "id": "EC-DEL",
+    "nome": "Delfim SC",
+    "apelido": "Cetáceos",
+    "cidade": "Manta",
+    "estadio": "Jocay",
+    "capacidade": 17000,
+    "cores": [
+     "#F5C400",
+     "#0B3D91"
+    ],
+    "padrao": "lisa",
+    "forca": 61
+   },
+   {
+    "id": "EC-UCA",
+    "nome": "Universidade Católica Quito",
+    "apelido": "Camaratas",
+    "cidade": "Quito",
+    "estadio": "Olímpico Atahualpa",
+    "capacidade": 35000,
+    "cores": [
+     "#0B3D91",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 62
+   },
+   {
+    "id": "EC-CUE",
+    "nome": "Desportivo Cuencano",
+    "apelido": "Morlacos",
+    "cidade": "Cuenca",
+    "estadio": "Alejandro Serrano Aguilar",
+    "capacidade": 16000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "EC-ORE",
+    "nome": "Orense SC",
+    "apelido": "Bananeros",
+    "cidade": "Machala",
+    "estadio": "9 de Mayo",
+    "capacidade": 16000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "EC-MAC",
+    "nome": "Macará FC",
+    "apelido": "Celeste",
+    "cidade": "Ambato",
+    "estadio": "Bellavista",
+    "capacidade": 16000,
+    "cores": [
+     "#6CB4E4",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 59
+   },
+   {
+    "id": "EC-MUS",
+    "nome": "Mushuc Runa SC",
+    "apelido": "Ponchito",
+    "cidade": "Ambato",
+    "estadio": "Echaleche",
+    "capacidade": 8000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 59
+   },
+   {
+    "id": "EC-LIB",
+    "nome": "Libertad de Loja",
+    "apelido": "Libertad",
+    "cidade": "Loja",
+    "estadio": "Reina del Cisne",
+    "capacidade": 14000,
+    "cores": [
+     "#F5C400",
+     "#0B3D91"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "EC-TEC",
+    "nome": "Técnico Universitário",
+    "apelido": "Rodillo Rojo",
+    "cidade": "Ambato",
+    "estadio": "Bellavista",
+    "capacidade": 16000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "EC-MAN",
+    "nome": "Manta FC",
+    "apelido": "Atuneros",
+    "cidade": "Manta",
+    "estadio": "Jocay",
+    "capacidade": 17000,
+    "cores": [
+     "#0B3D91",
+     "#6CB4E4"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   },
+   {
+    "id": "EC-VIN",
+    "nome": "Vinotinto Equador",
+    "apelido": "Vinotinto",
+    "cidade": "Quito",
+    "estadio": "Banco Guayaquil",
+    "capacidade": 12000,
+    "cores": [
+     "#7A1E2B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   }
+  ],
+  "TUR1": [
+   {
+    "convidado": "TR-GAL",
+    "elenco": [
+     [
+      "Uğurcan Çakir",
+      "GOL",
+      82,
+      30,
+      "TUR",
+      1
+     ],
+     [
+      "Günay Guvenç",
+      "GOL",
+      72,
+      35,
+      "TUR",
+      19
+     ],
+     [
+      "Jankat Yilmas",
+      "GOL",
+      66,
+      22,
+      "TUR",
+      24
+     ],
+     [
+      "Dávinson Sanchéz",
+      "ZAG",
+      81,
+      30,
+      "COL",
+      6
+     ],
+     [
+      "Abdulkerim Bardakci",
+      "ZAG",
+      79,
+      32,
+      "TUR",
+      42
+     ],
+     [
+      "Wilfried Singô",
+      "ZAG",
+      80,
+      25,
+      "CIV",
+      90
+     ],
+     [
+      "Kaan Aihan",
+      "ZAG",
+      75,
+      31,
+      "TUR",
+      23
+     ],
+     [
+      "Ismail Jacobs",
+      "LAT",
+      78,
+      27,
+      "SEN",
+      4
+     ],
+     [
+      "Roland Salai",
+      "LAT",
+      79,
+      29,
+      "HUN",
+      7
+     ],
+     [
+      "Eren Elmali",
+      "LAT",
+      76,
+      26,
+      "TUR",
+      17
+     ],
+     [
+      "Przemysław Frankowsky",
+      "LAT",
+      77,
+      31,
+      "POL",
+      95
+     ],
+     [
+      "Kazımcan Karatas",
+      "LAT",
+      72,
+      23,
+      "TUR",
+      88
+     ],
+     [
+      "Gabriel Sarah",
+      "VOL",
+      81,
+      27,
+      "BRA",
+      8
+     ],
+     [
+      "İlkay Gundogan",
+      "VOL",
+      81,
+      35,
+      "GER",
+      20
+     ],
+     [
+      "Lucas Torreyra",
+      "VOL",
+      81,
+      30,
+      "URU",
+      34
+     ],
+     [
+      "Mario Leminá",
+      "VOL",
+      77,
+      33,
+      "GAB",
+      99
+     ],
+     [
+      "Lesley Ugochucku",
+      "VOL",
+      75,
+      22,
+      "FRA",
+      18
+     ],
+     [
+      "Aleksei Batrakóv",
+      "MEI",
+      77,
+      21,
+      "RUS",
+      83
+     ],
+     [
+      "Leroy Sanê",
+      "PON",
+      83,
+      30,
+      "GER",
+      10
+     ],
+     [
+      "Barış Alper Yilmas",
+      "PON",
+      81,
+      26,
+      "TUR",
+      53
+     ],
+     [
+      "Yunus Akgum",
+      "PON",
+      78,
+      26,
+      "TUR",
+      11
+     ],
+     [
+      "Rafael Leãon",
+      "PON",
+      85,
+      27,
+      "POR",
+      27
+     ],
+     [
+      "Wilfried Zahá",
+      "PON",
+      76,
+      33,
+      "CIV",
+      14
+     ],
+     [
+      "Victor Osimhem",
+      "ATA",
+      87,
+      27,
+      "NGA",
+      45
+     ]
+    ],
+    "forca": 82
+   },
+   {
+    "id": "TR-FEN",
+    "nome": "Fenerbaxe SK",
+    "apelido": "Canários",
+    "cidade": "Istambul",
+    "estadio": "Şükrü Saracoğlu",
+    "capacidade": 47000,
+    "cores": [
+     "#0B2F7A",
+     "#F5C400"
+    ],
+    "padrao": "listrasV",
+    "forca": 81,
+    "elenco": [
+     [
+      "Edersom",
+      "GOL",
+      83,
+      33,
+      "BRA",
+      31
+     ],
+     [
+      "Mert Gunock",
+      "GOL",
+      74,
+      37,
+      "TUR",
+      34
+     ],
+     [
+      "Tarik Çetim",
+      "GOL",
+      70,
+      29,
+      "TUR",
+      13
+     ],
+     [
+      "Nathan Akê",
+      "ZAG",
+      81,
+      31,
+      "NED",
+      15
+     ],
+     [
+      "Milan Škrinar",
+      "ZAG",
+      82,
+      31,
+      "SVK",
+      37
+     ],
+     [
+      "Yiğit Efe Demirr",
+      "ZAG",
+      70,
+      22,
+      "TUR",
+      14
+     ],
+     [
+      "Ognjen Mimovič",
+      "ZAG",
+      72,
+      22,
+      "SRB",
+      77
+     ],
+     [
+      "Kwame Opong",
+      "ZAG",
+      71,
+      22,
+      "GHA",
+      21
+     ],
+     [
+      "Levent Merkan",
+      "LAT",
+      75,
+      25,
+      "GER",
+      22
+     ],
+     [
+      "Mert Muldür",
+      "LAT",
+      76,
+      27,
+      "TUR",
+      18
+     ],
+     [
+      "Archie Browm",
+      "LAT",
+      78,
+      24,
+      "ENG",
+      3
+     ],
+     [
+      "Jayden Oosterwold",
+      "LAT",
+      79,
+      25,
+      "NED",
+      24
+     ],
+     [
+      "Nélson Semedô",
+      "LAT",
+      79,
+      32,
+      "POR",
+      27
+     ],
+     [
+      "Mattéo Guendousi",
+      "VOL",
+      82,
+      27,
+      "FRA",
+      6
+     ],
+     [
+      "N'Golo Kantê",
+      "VOL",
+      81,
+      35,
+      "FRA",
+      91
+     ],
+     [
+      "Ismail Yuksek",
+      "VOL",
+      76,
+      27,
+      "TUR",
+      5
+     ],
+     [
+      "Marco Assensio",
+      "MEI",
+      82,
+      30,
+      "ESP",
+      10
+     ],
+     [
+      "İrfan Can Kahvecı",
+      "MEI",
+      77,
+      31,
+      "TUR",
+      17
+     ],
+     [
+      "Mert Hakan Yandax",
+      "MEI",
+      72,
+      32,
+      "TUR",
+      8
+     ],
+     [
+      "Bartuğ Elmas",
+      "MEI",
+      71,
+      23,
+      "TUR",
+      28
+     ],
+     [
+      "Oğuz Aydim",
+      "PON",
+      76,
+      25,
+      "TUR",
+      70
+     ],
+     [
+      "Kerem Akturkoglu",
+      "PON",
+      81,
+      28,
+      "TUR",
+      7
+     ],
+     [
+      "Mason Greenwod",
+      "PON",
+      84,
+      25,
+      "ENG",
+      11
+     ],
+     [
+      "Nene Dorgelés",
+      "PON",
+      77,
+      23,
+      "MLI",
+      45
+     ],
+     [
+      "Romelu Lukacu",
+      "ATA",
+      82,
+      33,
+      "BEL",
+      9
+     ],
+     [
+      "Vedat Muriki",
+      "ATA",
+      77,
+      32,
+      "KVX",
+      19
+     ]
+    ]
+   },
+   {
+    "id": "TR-BJK",
+    "nome": "Beşiktaxe JK",
+    "apelido": "Águias Negras",
+    "cidade": "Istambul",
+    "estadio": "Tüpraş Arena",
+    "capacidade": 42000,
+    "cores": [
+     "#111111",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 79,
+    "elenco": [
+     [
+      "Alexander Nubél",
+      "GOL",
+      80,
+      30,
+      "GER",
+      1
+     ],
+     [
+      "Emre Alemdár",
+      "GOL",
+      68,
+      23,
+      "TUR",
+      80
+     ],
+     [
+      "Emmanuel Agbadu",
+      "ZAG",
+      78,
+      29,
+      "CIV",
+      12
+     ],
+     [
+      "Tiago Djalô",
+      "ZAG",
+      77,
+      26,
+      "POR",
+      35
+     ],
+     [
+      "Umit Akdagh",
+      "ZAG",
+      73,
+      23,
+      "ROU",
+      50
+     ],
+     [
+      "Emirhan Topçú",
+      "ZAG",
+      74,
+      26,
+      "TUR",
+      53
+     ],
+     [
+      "Abdoulaye Ouatara",
+      "LAT",
+      74,
+      22,
+      "FRA",
+      11
+     ],
+     [
+      "Taylan Bulutt",
+      "LAT",
+      71,
+      20,
+      "GER",
+      22
+     ],
+     [
+      "Ridvan Yilmás",
+      "LAT",
+      76,
+      25,
+      "TUR",
+      33
+     ],
+     [
+      "Amir Murilo",
+      "LAT",
+      76,
+      30,
+      "PAN",
+      62
+     ],
+     [
+      "Wilfred Ndidy",
+      "VOL",
+      80,
+      29,
+      "NGA",
+      4
+     ],
+     [
+      "Salih Ozcan",
+      "VOL",
+      77,
+      28,
+      "TUR",
+      6
+     ],
+     [
+      "Orkun Kokçu",
+      "MEI",
+      81,
+      25,
+      "TUR",
+      10
+     ],
+     [
+      "Kartal Yilmas",
+      "MEI",
+      73,
+      25,
+      "TUR",
+      8
+     ],
+     [
+      "Fabio Mireti",
+      "MEI",
+      77,
+      23,
+      "ITA",
+      21
+     ],
+     [
+      "Junior Olaytan",
+      "MEI",
+      76,
+      24,
+      "BEN",
+      15
+     ],
+     [
+      "Václav Černy",
+      "PON",
+      79,
+      29,
+      "CZE",
+      18
+     ],
+     [
+      "Leandro Trosard",
+      "PON",
+      81,
+      31,
+      "BEL",
+      19
+     ],
+     [
+      "Milot Rashika",
+      "PON",
+      76,
+      30,
+      "KVX",
+      7
+     ],
+     [
+      "Ernest Pocu",
+      "PON",
+      76,
+      22,
+      "NED",
+      17
+     ],
+     [
+      "Dušan Vlahovič",
+      "ATA",
+      84,
+      26,
+      "SRB",
+      28
+     ],
+     [
+      "Oh Hyeon-kyu",
+      "ATA",
+      77,
+      25,
+      "KOR",
+      9
+     ],
+     [
+      "Semih Kiliçsoy",
+      "ATA",
+      75,
+      21,
+      "TUR",
+      90
+     ],
+     [
+      "Mustafa Hekimoglú",
+      "ATA",
+      70,
+      19,
+      "TUR",
+      23
+     ]
+    ]
+   },
+   {
+    "id": "TR-TRA",
+    "nome": "Trabzonsporte",
+    "apelido": "Bordô-Azul",
+    "cidade": "Trabzon",
+    "estadio": "Papara Park",
+    "capacidade": 41000,
+    "cores": [
+     "#7A1E2B",
+     "#6CB4E4"
+    ],
+    "padrao": "listrasV",
+    "forca": 78,
+    "elenco": [
+     [
+      "André Onanã",
+      "GOL",
+      81,
+      30,
+      "CMR",
+      24
+     ],
+     [
+      "Stefan Savič",
+      "ZAG",
+      75,
+      35,
+      "MNE",
+      15
+     ],
+     [
+      "Chibuike Nwaywu",
+      "ZAG",
+      74,
+      23,
+      "NGA",
+      27
+     ],
+     [
+      "Cenk Ozkacar",
+      "ZAG",
+      74,
+      26,
+      "TUR",
+      39
+     ],
+     [
+      "Arseniy Batahov",
+      "ZAG",
+      73,
+      24,
+      "UKR",
+      44
+     ],
+     [
+      "Samet Akaydim",
+      "ZAG",
+      72,
+      32,
+      "TUR",
+      4
+     ],
+     [
+      "Mustafa Eskihelaç",
+      "LAT",
+      74,
+      29,
+      "TUR",
+      19
+     ],
+     [
+      "Wagner Pinna",
+      "LAT",
+      76,
+      23,
+      "POR",
+      20
+     ],
+     [
+      "Rayan Cabrál",
+      "LAT",
+      72,
+      24,
+      "NED",
+      55
+     ],
+     [
+      "Fabynho",
+      "VOL",
+      79,
+      32,
+      "BRA",
+      6
+     ],
+     [
+      "Okay Yokuslu",
+      "VOL",
+      73,
+      32,
+      "TUR",
+      5
+     ],
+     [
+      "Ozan Tufám",
+      "VOL",
+      73,
+      31,
+      "TUR",
+      11
+     ],
+     [
+      "Benjamin Bouchuari",
+      "VOL",
+      75,
+      24,
+      "MAR",
+      8
+     ],
+     [
+      "Batista Mendy",
+      "VOL",
+      75,
+      26,
+      "FRA",
+      3
+     ],
+     [
+      "Ruslan Malinovsky",
+      "MEI",
+      77,
+      33,
+      "UKR",
+      17
+     ],
+     [
+      "Ernest Muçy",
+      "MEI",
+      76,
+      25,
+      "ALB",
+      7
+     ],
+     [
+      "Christ Jabol-Folcareli",
+      "MEI",
+      73,
+      26,
+      "FRA",
+      26
+     ],
+     [
+      "Mohamed Salach",
+      "PON",
+      86,
+      34,
+      "EGY",
+      10
+     ],
+     [
+      "Paul Onuachú",
+      "ATA",
+      79,
+      32,
+      "NGA",
+      30
+     ],
+     [
+      "Umut Nayír",
+      "ATA",
+      72,
+      33,
+      "TUR",
+      14
+     ]
+    ]
+   },
+   {
+    "id": "TR-BAS",
+    "nome": "Başakxehir FK",
+    "apelido": "Coruja",
+    "cidade": "Istambul",
+    "estadio": "Fatih Terim",
+    "capacidade": 17000,
+    "cores": [
+     "#F58220",
+     "#0B2F7A"
+    ],
+    "padrao": "lisa",
+    "forca": 69
+   },
+   {
+    "id": "TR-SAM",
+    "nome": "Samsunsporte",
+    "apelido": "Ciclone Vermelho",
+    "cidade": "Samsun",
+    "estadio": "19 Mayıs",
+    "capacidade": 33000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 69
+   },
+   {
+    "id": "TR-GOZ",
+    "nome": "Göztepinha",
+    "apelido": "Göz-Göz",
+    "cidade": "Izmir",
+    "estadio": "Gürsel Aksel",
+    "capacidade": 20000,
+    "cores": [
+     "#F5C400",
+     "#C8102E"
+    ],
+    "padrao": "metade",
+    "forca": 67
+   },
+   {
+    "id": "TR-KAS",
+    "nome": "Kasımpaxa SK",
+    "apelido": "Apaches",
+    "cidade": "Istambul",
+    "estadio": "Recep Tayyip Erdoğan",
+    "capacidade": 14000,
+    "cores": [
+     "#0B2F7A",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 66
+   },
+   {
+    "id": "TR-KAY",
+    "nome": "Kayserisporte",
+    "apelido": "Corvos de Ouro",
+    "cidade": "Kayseri",
+    "estadio": "RHG Enertürk",
+    "capacidade": 32000,
+    "cores": [
+     "#F5C400",
+     "#C8102E"
+    ],
+    "padrao": "listrasV",
+    "forca": 65
+   },
+   {
+    "id": "TR-KON",
+    "nome": "Konyasporte",
+    "apelido": "Águias Verdes",
+    "cidade": "Konya",
+    "estadio": "Medaş Konya",
+    "capacidade": 42000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 66
+   },
+   {
+    "id": "TR-ANT",
+    "nome": "Antalyasporte",
+    "apelido": "Escorpiões",
+    "cidade": "Antalya",
+    "estadio": "Corendon Airlines Park",
+    "capacidade": 32000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 65
+   },
+   {
+    "id": "TR-ALA",
+    "nome": "Alanyasporte",
+    "apelido": "Laranjas",
+    "cidade": "Alanya",
+    "estadio": "Bahçeşehir Okulları",
+    "capacidade": 10000,
+    "cores": [
+     "#F58220",
+     "#0B7A3B"
+    ],
+    "padrao": "lisa",
+    "forca": 66
+   },
+   {
+    "id": "TR-RIZ",
+    "nome": "Rizesporte",
+    "apelido": "Chá",
+    "cidade": "Rize",
+    "estadio": "Yeni Rize Şehir",
+    "capacidade": 15000,
+    "cores": [
+     "#0B7A3B",
+     "#0B2F7A"
+    ],
+    "padrao": "listrasV",
+    "forca": 65
+   },
+   {
+    "id": "TR-GAZ",
+    "nome": "Gaziantep FK",
+    "apelido": "Falcões",
+    "cidade": "Gaziantep",
+    "estadio": "Kalyon",
+    "capacidade": 33000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 65
+   },
+   {
+    "id": "TR-EYU",
+    "nome": "Eyüpsporte",
+    "apelido": "Sultão",
+    "cidade": "Istambul",
+    "estadio": "Recep Tayyip Erdoğan",
+    "capacidade": 14000,
+    "cores": [
+     "#5B2A86",
+     "#F5C400"
+    ],
+    "padrao": "lisa",
+    "forca": 65
+   },
+   {
+    "id": "TR-KOC",
+    "nome": "Kocaelisporte",
+    "apelido": "Gaivotas",
+    "cidade": "Kocaeli",
+    "estadio": "Kocaeli",
+    "capacidade": 34000,
+    "cores": [
+     "#0B7A3B",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 64
+   },
+   {
+    "id": "TR-GEN",
+    "nome": "Gençlerbirliği SK",
+    "apelido": "Papoula",
+    "cidade": "Ancara",
+    "estadio": "Eryaman",
+    "capacidade": 20000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "metade",
+    "forca": 64
+   },
+   {
+    "id": "TR-KAR",
+    "nome": "Karagümruque SK",
+    "apelido": "Bairro",
+    "cidade": "Istambul",
+    "estadio": "Atatürk Olímpico",
+    "capacidade": 75000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 64
+   }
+  ],
+  "MEX1": [
+   {
+    "id": "MX-AME",
+    "nome": "Clube América MX",
+    "apelido": "Águilas",
+    "cidade": "Cidade do México",
+    "estadio": "Azteca",
+    "capacidade": 83000,
+    "cores": [
+     "#F5C400",
+     "#0B2F7A"
+    ],
+    "padrao": "lisa",
+    "forca": 72,
+    "elenco": [
+     [
+      "Luis Malagóm",
+      "GOL",
+      77,
+      29,
+      "MEX",
+      1
+     ],
+     [
+      "Israel Reyez",
+      "ZAG",
+      74,
+      26,
+      "MEX",
+      3
+     ],
+     [
+      "Kevin Alvares",
+      "LAT",
+      74,
+      27,
+      "MEX",
+      5
+     ],
+     [
+      "Erick Sánches",
+      "MEI",
+      75,
+      27,
+      "MEX",
+      28
+     ],
+     [
+      "Raphael Veyga",
+      "MEI",
+      78,
+      31,
+      "BRA",
+      23
+     ],
+     [
+      "Brian Rodrígues",
+      "PON",
+      76,
+      26,
+      "URU",
+      7
+     ],
+     [
+      "Alejandro Zendeyas",
+      "PON",
+      76,
+      28,
+      "USA",
+      10
+     ],
+     [
+      "Henry Martím",
+      "ATA",
+      74,
+      33,
+      "MEX",
+      9
+     ]
+    ]
+   },
+   {
+    "id": "MX-GDL",
+    "nome": "Chivás de Guadalajara",
+    "apelido": "Rebaño Sagrado",
+    "cidade": "Guadalajara",
+    "estadio": "Akron",
+    "capacidade": 46000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 69,
+    "elenco": [
+     [
+      "Raúl Rangell",
+      "GOL",
+      76,
+      26,
+      "MEX",
+      1
+     ],
+     [
+      "Jesús Campilo",
+      "ZAG",
+      72,
+      25,
+      "MEX",
+      3
+     ],
+     [
+      "Daniel Aguirra",
+      "ZAG",
+      73,
+      27,
+      "USA",
+      23
+     ],
+     [
+      "Fernando Gonzáles",
+      "VOL",
+      73,
+      32,
+      "MEX",
+      28
+     ],
+     [
+      "Omar Goveia",
+      "VOL",
+      72,
+      30,
+      "MEX",
+      6
+     ],
+     [
+      "Luis Romô",
+      "MEI",
+      75,
+      31,
+      "MEX",
+      7
+     ],
+     [
+      "Roberto Alvaradoo",
+      "PON",
+      76,
+      28,
+      "MEX",
+      25
+     ],
+     [
+      "Ricardo Marím",
+      "ATA",
+      72,
+      28,
+      "MEX",
+      17
+     ]
+    ]
+   },
+   {
+    "id": "MX-CAZ",
+    "nome": "Cruz Azulada",
+    "apelido": "Máquina Celeste",
+    "cidade": "Cidade do México",
+    "estadio": "Olímpico Universitário",
+    "capacidade": 58000,
+    "cores": [
+     "#0B3D91",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 71,
+    "elenco": [
+     [
+      "Andrés Gudinho",
+      "GOL",
+      74,
+      29,
+      "MEX",
+      1
+     ],
+     [
+      "Kevin Myer",
+      "GOL",
+      75,
+      26,
+      "COL",
+      23
+     ],
+     [
+      "Willer Dita",
+      "ZAG",
+      75,
+      29,
+      "COL",
+      4
+     ],
+     [
+      "Gonzalo Piovy",
+      "LAT",
+      74,
+      32,
+      "ARG",
+      33
+     ],
+     [
+      "Erik Lyra",
+      "VOL",
+      75,
+      26,
+      "MEX",
+      6
+     ],
+     [
+      "Agustín Palavecinno",
+      "MEI",
+      75,
+      29,
+      "ARG",
+      8
+     ],
+     [
+      "José Paradella",
+      "MEI",
+      75,
+      27,
+      "ARG",
+      20
+     ],
+     [
+      "Carlos Rotondy",
+      "PON",
+      75,
+      29,
+      "ARG",
+      29
+     ],
+     [
+      "Nicolás Ibañes",
+      "ATA",
+      76,
+      32,
+      "ARG",
+      7
+     ],
+     [
+      "Gabriel Fernándes",
+      "ATA",
+      74,
+      32,
+      "URU",
+      21
+     ]
+    ]
+   },
+   {
+    "id": "MX-PUM",
+    "nome": "Pumas UNAMex",
+    "apelido": "Universitários",
+    "cidade": "Cidade do México",
+    "estadio": "Olímpico Universitário",
+    "capacidade": 58000,
+    "cores": [
+     "#FFFFFF",
+     "#0B2F7A"
+    ],
+    "padrao": "lisa",
+    "forca": 67
+   },
+   {
+    "id": "MX-MTY",
+    "nome": "Rayados de Monterrei",
+    "apelido": "Rayados",
+    "cidade": "Monterrey",
+    "estadio": "BBVA",
+    "capacidade": 53000,
+    "cores": [
+     "#0B2F7A",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 72,
+    "elenco": [
+     [
+      "Esteban Andradda",
+      "GOL",
+      76,
+      35,
+      "ARG",
+      1
+     ],
+     [
+      "Stefan Medinna",
+      "ZAG",
+      72,
+      34,
+      "COL",
+      33
+     ],
+     [
+      "Gerardo Arteagá",
+      "LAT",
+      74,
+      28,
+      "MEX",
+      3
+     ],
+     [
+      "Oliver Torrez",
+      "MEI",
+      77,
+      31,
+      "ESP",
+      8
+     ],
+     [
+      "Jesús Coronna",
+      "PON",
+      74,
+      33,
+      "MEX",
+      17
+     ],
+     [
+      "Lucas Ocampo",
+      "PON",
+      77,
+      32,
+      "ARG",
+      7
+     ],
+     [
+      "Hugo Cuipers",
+      "ATA",
+      76,
+      29,
+      "BEL",
+      99
+     ],
+     [
+      "Uroš Đurđevič",
+      "ATA",
+      72,
+      32,
+      "MNE",
+      32
+     ]
+    ]
+   },
+   {
+    "id": "MX-TIG",
+    "nome": "Tigres UANL",
+    "apelido": "Felinos",
+    "cidade": "San Nicolás",
+    "estadio": "Universitário",
+    "capacidade": 42000,
+    "cores": [
+     "#F5C400",
+     "#0B3D91"
+    ],
+    "padrao": "lisa",
+    "forca": 72,
+    "elenco": [
+     [
+      "Nahuel Guzmám",
+      "GOL",
+      74,
+      40,
+      "ARG",
+      1
+     ],
+     [
+      "Joakim",
+      "ZAG",
+      75,
+      27,
+      "BRA",
+      28
+     ],
+     [
+      "Fernando Gorriarám",
+      "VOL",
+      76,
+      31,
+      "URU",
+      8
+     ],
+     [
+      "Rômullo",
+      "VOL",
+      75,
+      26,
+      "BRA",
+      23
+     ],
+     [
+      "Juan Brunneta",
+      "MEI",
+      77,
+      29,
+      "ARG",
+      11
+     ],
+     [
+      "Diego Lainéz",
+      "MEI",
+      75,
+      26,
+      "MEX",
+      16
+     ],
+     [
+      "Ozziel Herrerra",
+      "PON",
+      74,
+      25,
+      "MEX",
+      77
+     ],
+     [
+      "André-Pierre Gignák",
+      "ATA",
+      72,
+      40,
+      "FRA",
+      10
+     ]
+    ]
+   },
+   {
+    "id": "MX-TOL",
+    "nome": "Toluca FC",
+    "apelido": "Diablos Rojos",
+    "cidade": "Toluca",
+    "estadio": "Nemesio Díez",
+    "capacidade": 30000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 71,
+    "elenco": [
+     [
+      "Hugo Gonzáles",
+      "GOL",
+      74,
+      36,
+      "MEX",
+      1
+     ],
+     [
+      "Bruno Mendés",
+      "ZAG",
+      74,
+      27,
+      "URU",
+      4
+     ],
+     [
+      "Federico Pereyra",
+      "ZAG",
+      74,
+      26,
+      "URU",
+      6
+     ],
+     [
+      "Marcel Ruíz",
+      "MEI",
+      75,
+      25,
+      "MEX",
+      14
+     ],
+     [
+      "Nicolás Kastro",
+      "MEI",
+      74,
+      25,
+      "ARG",
+      8
+     ],
+     [
+      "Jesús Angullo",
+      "MEI",
+      74,
+      29,
+      "MEX",
+      10
+     ],
+     [
+      "Alexis Veiga",
+      "PON",
+      77,
+      28,
+      "MEX",
+      9
+     ],
+     [
+      "Helynho",
+      "PON",
+      77,
+      26,
+      "BRA",
+      11
+     ],
+     [
+      "Paulinhô",
+      "ATA",
+      79,
+      33,
+      "POR",
+      26
+     ]
+    ]
+   },
+   {
+    "id": "MX-PAC",
+    "nome": "Pachuca CF",
+    "apelido": "Tuzos",
+    "cidade": "Pachuca",
+    "estadio": "Hidalgo",
+    "capacidade": 27000,
+    "cores": [
+     "#0B2F7A",
+     "#FFFFFF"
+    ],
+    "padrao": "metade",
+    "forca": 69,
+    "elenco": [
+     [
+      "Carlos Morenno",
+      "GOL",
+      74,
+      28,
+      "MEX",
+      25
+     ],
+     [
+      "Eduardo Barretto",
+      "ZAG",
+      73,
+      27,
+      "ARG",
+      2
+     ],
+     [
+      "Gustavo Bauermam",
+      "ZAG",
+      74,
+      30,
+      "BRA",
+      4
+     ],
+     [
+      "Bryan Venegás",
+      "LAT",
+      73,
+      28,
+      "MEX",
+      15
+     ],
+     [
+      "Elías Riverra",
+      "VOL",
+      74,
+      30,
+      "COL",
+      16
+     ],
+     [
+      "Oussama Idrisi",
+      "MEI",
+      76,
+      30,
+      "MAR",
+      11
+     ],
+     [
+      "Kenedyy",
+      "PON",
+      76,
+      30,
+      "BRA",
+      29
+     ],
+     [
+      "Salomón Rondóm",
+      "ATA",
+      74,
+      37,
+      "VEN",
+      23
+     ]
+    ]
+   },
+   {
+    "id": "MX-LEO",
+    "nome": "Club Leão",
+    "apelido": "La Fiera",
+    "cidade": "León",
+    "estadio": "Nou Camp",
+    "capacidade": 31000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 67,
+    "elenco": [
+     [
+      "Óscar Garcya",
+      "GOL",
+      72,
+      23,
+      "MEX",
+      23
+     ],
+     [
+      "Juan Guevarra",
+      "ZAG",
+      72,
+      25,
+      "COL",
+      3
+     ],
+     [
+      "Jhonatan Romanha",
+      "ZAG",
+      72,
+      28,
+      "COL",
+      14
+     ],
+     [
+      "Rodrigo Morenno",
+      "LAT",
+      72,
+      28,
+      "MEX",
+      7
+     ],
+     [
+      "Fidel Rodrigues",
+      "VOL",
+      72,
+      30,
+      "MEX",
+      29
+     ],
+     [
+      "Rodrigo Echeverrya",
+      "MEI",
+      74,
+      31,
+      "CHI",
+      20
+     ],
+     [
+      "Andrés Arcilla",
+      "PON",
+      73,
+      24,
+      "COL",
+      13
+     ],
+     [
+      "Diber Cambindu",
+      "ATA",
+      74,
+      30,
+      "COL",
+      27
+     ]
+    ]
+   },
+   {
+    "id": "MX-SAN",
+    "nome": "Santos Laguneiro",
+    "apelido": "Guerreros",
+    "cidade": "Torreón",
+    "estadio": "Corona",
+    "capacidade": 30000,
+    "cores": [
+     "#0B7A3B",
+     "#FFFFFF"
+    ],
+    "padrao": "metade",
+    "forca": 65
+   },
+   {
+    "id": "MX-ATL",
+    "nome": "Atlas Rojinegro",
+    "apelido": "Zorros",
+    "cidade": "Guadalajara",
+    "estadio": "Jalisco",
+    "capacidade": 55000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "metade",
+    "forca": 65
+   },
+   {
+    "id": "MX-PUE",
+    "nome": "Puebla de la Franja",
+    "apelido": "Camoteros",
+    "cidade": "Puebla",
+    "estadio": "Cuauhtémoc",
+    "capacidade": 51000,
+    "cores": [
+     "#FFFFFF",
+     "#0B3D91"
+    ],
+    "padrao": "faixa",
+    "forca": 64
+   },
+   {
+    "id": "MX-QRO",
+    "nome": "Querétaro Galos",
+    "apelido": "Gallos Blancos",
+    "cidade": "Querétaro",
+    "estadio": "Corregidora",
+    "capacidade": 33000,
+    "cores": [
+     "#0B3D91",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 63
+   },
+   {
+    "id": "MX-NEC",
+    "nome": "Necaxa Raios",
+    "apelido": "Rayos",
+    "cidade": "Aguascalientes",
+    "estadio": "Victoria",
+    "capacidade": 23000,
+    "cores": [
+     "#C8102E",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 64
+   },
+   {
+    "id": "MX-JUA",
+    "nome": "FC Juárez Bravos",
+    "apelido": "Bravos",
+    "cidade": "Ciudad Juárez",
+    "estadio": "Olímpico Benito Juárez",
+    "capacidade": 19000,
+    "cores": [
+     "#0B7A3B",
+     "#C8102E"
+    ],
+    "padrao": "lisa",
+    "forca": 64
+   },
+   {
+    "id": "MX-TIJ",
+    "nome": "Xolos de Tijuana",
+    "apelido": "Xolos",
+    "cidade": "Tijuana",
+    "estadio": "Caliente",
+    "capacidade": 27000,
+    "cores": [
+     "#C8102E",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 66
+   },
+   {
+    "id": "MX-MAZ",
+    "nome": "Mazatlán FC",
+    "apelido": "Cañoneros",
+    "cidade": "Mazatlán",
+    "estadio": "El Encanto",
+    "capacidade": 20000,
+    "cores": [
+     "#5B2A86",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 62
+   },
+   {
+    "id": "MX-SLP",
+    "nome": "Atlético São Luís",
+    "apelido": "Tuneros",
+    "cidade": "San Luis Potosí",
+    "estadio": "Alfonso Lastras",
+    "capacidade": 25000,
+    "cores": [
+     "#C8102E",
+     "#0B3D91"
+    ],
+    "padrao": "faixa",
+    "forca": 64
+   }
+  ],
+  "JPN1": [
+   {
+    "id": "JP-JP-01",
+    "nome": "Tóquio Ryu FC",
+    "apelido": "Ryu",
+    "cidade": "Tóquio",
+    "estadio": "Estádio Ryūgin",
+    "capacidade": 49000,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 74
+   },
+   {
+    "id": "JP-JP-02",
+    "nome": "Osaka Hanami SC",
+    "apelido": "Hanami",
+    "cidade": "Osaka",
+    "estadio": "Estádio Kansai Sol",
+    "capacidade": 47000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 72
+   },
+   {
+    "id": "JP-JP-03",
+    "nome": "Nagoya Tsuru FC",
+    "apelido": "Tsuru",
+    "cidade": "Nagoya",
+    "estadio": "Estádio Chūbu",
+    "capacidade": 45000,
+    "cores": [
+     "#2E7D4F",
+     "#F2B705"
+    ],
+    "padrao": "faixa",
+    "forca": 71
+   },
+   {
+    "id": "JP-JP-04",
+    "nome": "Yokohama Mar Azul SC",
+    "apelido": "Mar Azul",
+    "cidade": "Yokohama",
+    "estadio": "Estádio Minato",
+    "capacidade": 35000,
+    "cores": [
+     "#1F6FB2",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 70
+   },
+   {
+    "id": "JP-JP-05",
+    "nome": "Sapporo Neve FC",
+    "apelido": "Neve",
+    "cidade": "Sapporo",
+    "estadio": "Estádio Hokkai",
+    "capacidade": 42000,
+    "cores": [
+     "#6FB7E0",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 68
+   },
+   {
+    "id": "JP-JP-06",
+    "nome": "Kobe Porto FC",
+    "apelido": "Porto",
+    "cidade": "Kobe",
+    "estadio": "Estádio Harbor",
+    "capacidade": 30000,
+    "cores": [
+     "#7A1E2B",
+     "#F2B705"
+    ],
+    "padrao": "metade",
+    "forca": 67
+   },
+   {
+    "id": "JP-JP-07",
+    "nome": "Hiroshima Fênix SC",
+    "apelido": "Fênix",
+    "cidade": "Hiroshima",
+    "estadio": "Estádio Fênix",
+    "capacidade": 32000,
+    "cores": [
+     "#C0392B",
+     "#111111"
+    ],
+    "padrao": "faixa",
+    "forca": 66
+   },
+   {
+    "id": "JP-JP-08",
+    "nome": "Kashiwa Pinheiro FC",
+    "apelido": "Pinheiro",
+    "cidade": "Kashiwa",
+    "estadio": "Estádio Pinheiro",
+    "capacidade": 20000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 64
+   },
+   {
+    "id": "JP-JP-09",
+    "nome": "Sendai Lobo SC",
+    "apelido": "Lobo",
+    "cidade": "Sendai",
+    "estadio": "Estádio Lobo",
+    "capacidade": 25000,
+    "cores": [
+     "#5B2C83",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 65
+   },
+   {
+    "id": "JP-JP-10",
+    "nome": "Kyoto Sakura FC",
+    "apelido": "Sakura",
+    "cidade": "Quioto",
+    "estadio": "Estádio Tōkai",
+    "capacidade": 24000,
+    "cores": [
+     "#F2B5C8",
+     "#7A1E2B"
+    ],
+    "padrao": "centro",
+    "forca": 66
+   },
+   {
+    "id": "JP-JP-11",
+    "nome": "Fukuoka Falcão SC",
+    "apelido": "Falcão",
+    "cidade": "Fukuoka",
+    "estadio": "Estádio Kyushu",
+    "capacidade": 33000,
+    "cores": [
+     "#F2B705",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 65
+   },
+   {
+    "id": "JP-JP-12",
+    "nome": "Kawasaki Tigre FC",
+    "apelido": "Tigre",
+    "cidade": "Kawasaki",
+    "estadio": "Estádio Tigre",
+    "capacidade": 28000,
+    "cores": [
+     "#F26B1D",
+     "#111111"
+    ],
+    "padrao": "faixaH",
+    "forca": 63
+   },
+   {
+    "id": "JP-JP-13",
+    "nome": "Niigata Verde FC",
+    "apelido": "Verde do Norte",
+    "cidade": "Niigata",
+    "estadio": "Estádio Japão Norte",
+    "capacidade": 30000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 62
+   },
+   {
+    "id": "JP-JP-14",
+    "nome": "Shizuoka Monte FC",
+    "apelido": "Monte",
+    "cidade": "Shizuoka",
+    "estadio": "Estádio Monte Fuji",
+    "capacidade": 20000,
+    "cores": [
+     "#1F3A5F",
+     "#F2B705"
+    ],
+    "padrao": "metade",
+    "forca": 61
+   },
+   {
+    "id": "JP-JP-15",
+    "nome": "Kumamoto Vulcão SC",
+    "apelido": "Vulcão",
+    "cidade": "Kumamoto",
+    "estadio": "Estádio Vulcão",
+    "capacidade": 22000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "centro",
+    "forca": 60
+   },
+   {
+    "id": "JP-JP-16",
+    "nome": "Okayama Dragão FC",
+    "apelido": "Dragão",
+    "cidade": "Okayama",
+    "estadio": "Estádio Dragão",
+    "capacidade": 18000,
+    "cores": [
+     "#111111",
+     "#C9A14A"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   }
+  ],
+  "KOR1": [
+   {
+    "id": "KR-KO-01",
+    "nome": "Seul Tigres FC",
+    "apelido": "Tigres",
+    "cidade": "Seul",
+    "estadio": "Estádio Hangang",
+    "capacidade": 60000,
+    "cores": [
+     "#F2B705",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 74
+   },
+   {
+    "id": "KR-KO-02",
+    "nome": "Busan Mar SC",
+    "apelido": "Mar",
+    "cidade": "Busan",
+    "estadio": "Estádio Haeundae",
+    "capacidade": 40000,
+    "cores": [
+     "#1F6FB2",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 72
+   },
+   {
+    "id": "KR-KO-03",
+    "nome": "Incheon Aurora FC",
+    "apelido": "Aurora",
+    "cidade": "Incheon",
+    "estadio": "Estádio Aurora",
+    "capacidade": 30000,
+    "cores": [
+     "#7A1E2B",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 70
+   },
+   {
+    "id": "KR-KO-04",
+    "nome": "Daegu Lâmina SC",
+    "apelido": "Lâmina",
+    "cidade": "Daegu",
+    "estadio": "Estádio Lâmina",
+    "capacidade": 35000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 69
+   },
+   {
+    "id": "KR-KO-05",
+    "nome": "Suwon Falcão FC",
+    "apelido": "Falcão do Oeste",
+    "cidade": "Suwon",
+    "estadio": "Estádio Falcão",
+    "capacidade": 42000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 68
+   },
+   {
+    "id": "KR-KO-06",
+    "nome": "Gwangju Bambu FC",
+    "apelido": "Bambu",
+    "cidade": "Gwangju",
+    "estadio": "Estádio Bambu",
+    "capacidade": 25000,
+    "cores": [
+     "#2E7D4F",
+     "#F2B705"
+    ],
+    "padrao": "centro",
+    "forca": 66
+   },
+   {
+    "id": "KR-KO-07",
+    "nome": "Daejeon Cometa SC",
+    "apelido": "Cometa",
+    "cidade": "Daejeon",
+    "estadio": "Estádio Cometa",
+    "capacidade": 30000,
+    "cores": [
+     "#5B2C83",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 66
+   },
+   {
+    "id": "KR-KO-08",
+    "nome": "Ulsan Baleia FC",
+    "apelido": "Baleia",
+    "cidade": "Ulsan",
+    "estadio": "Estádio Baleia",
+    "capacidade": 44000,
+    "cores": [
+     "#1F3A5F",
+     "#6FB7E0"
+    ],
+    "padrao": "faixaH",
+    "forca": 67
+   },
+   {
+    "id": "KR-KO-09",
+    "nome": "Jeju Ilha FC",
+    "apelido": "Ilha",
+    "cidade": "Jeju",
+    "estadio": "Estádio Ilha",
+    "capacidade": 18000,
+    "cores": [
+     "#F26B1D",
+     "#FFFFFF"
+    ],
+    "padrao": "metade",
+    "forca": 63
+   },
+   {
+    "id": "KR-KO-10",
+    "nome": "Pohang Aço SC",
+    "apelido": "Aço",
+    "cidade": "Pohang",
+    "estadio": "Estádio Aço",
+    "capacidade": 22000,
+    "cores": [
+     "#111111",
+     "#C0392B"
+    ],
+    "padrao": "faixa",
+    "forca": 64
+   },
+   {
+    "id": "KR-KO-11",
+    "nome": "Changwon Guerreiro FC",
+    "apelido": "Guerreiro",
+    "cidade": "Changwon",
+    "estadio": "Estádio Guerreiro",
+    "capacidade": 20000,
+    "cores": [
+     "#C9A14A",
+     "#2B2B2B"
+    ],
+    "padrao": "lisa",
+    "forca": 62
+   },
+   {
+    "id": "KR-KO-12",
+    "nome": "Cheonan Garça SC",
+    "apelido": "Garça",
+    "cidade": "Cheonan",
+    "estadio": "Estádio Garça",
+    "capacidade": 17000,
+    "cores": [
+     "#F2B5C8",
+     "#1F3A5F"
+    ],
+    "padrao": "listrasV",
+    "forca": 60
+   },
+   {
+    "id": "KR-KO-13",
+    "nome": "Jeonju Pincel FC",
+    "apelido": "Pincel",
+    "cidade": "Jeonju",
+    "estadio": "Estádio Pincel",
+    "capacidade": 18000,
+    "cores": [
+     "#2E7D4F",
+     "#111111"
+    ],
+    "padrao": "centro",
+    "forca": 61
+   },
+   {
+    "id": "KR-KO-14",
+    "nome": "Gangneung Mar Frio FC",
+    "apelido": "Mar Frio",
+    "cidade": "Gangneung",
+    "estadio": "Estádio Frio",
+    "capacidade": 15000,
+    "cores": [
+     "#6FB7E0",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 59
+   },
+   {
+    "id": "KR-KO-15",
+    "nome": "Suncheon Jardim SC",
+    "apelido": "Jardim",
+    "cidade": "Suncheon",
+    "estadio": "Estádio Jardim",
+    "capacidade": 16000,
+    "cores": [
+     "#F2B705",
+     "#2E7D4F"
+    ],
+    "padrao": "faixaH",
+    "forca": 60
+   },
+   {
+    "id": "KR-KO-16",
+    "nome": "Gyeongju Coroa FC",
+    "apelido": "Coroa",
+    "cidade": "Gyeongju",
+    "estadio": "Estádio Coroa",
+    "capacidade": 15000,
+    "cores": [
+     "#7A1E2B",
+     "#C9A14A"
+    ],
+    "padrao": "metade",
+    "forca": 58
+   }
+  ],
+  "MAR1": [
+   {
+    "id": "MA-MA-01",
+    "nome": "Casablanca Oasis FC",
+    "apelido": "Oasis",
+    "cidade": "Casablanca",
+    "estadio": "Estádio Oasis",
+    "capacidade": 45000,
+    "cores": [
+     "#C0392B",
+     "#2E7D4F"
+    ],
+    "padrao": "listrasV",
+    "forca": 71
+   },
+   {
+    "id": "MA-MA-02",
+    "nome": "Rabat Medina SC",
+    "apelido": "Medina",
+    "cidade": "Rabat",
+    "estadio": "Estádio Medina",
+    "capacidade": 40000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 70
+   },
+   {
+    "id": "MA-MA-03",
+    "nome": "Fez Atlas FC",
+    "apelido": "Atlas",
+    "cidade": "Fez",
+    "estadio": "Estádio Atlas",
+    "capacidade": 35000,
+    "cores": [
+     "#1F3A5F",
+     "#F2B705"
+    ],
+    "padrao": "faixa",
+    "forca": 69
+   },
+   {
+    "id": "MA-MA-04",
+    "nome": "Marrakech Rosa SC",
+    "apelido": "Rosa",
+    "cidade": "Marraquexe",
+    "estadio": "Estádio Rosa",
+    "capacidade": 30000,
+    "cores": [
+     "#F2B5C8",
+     "#7A1E2B"
+    ],
+    "padrao": "centro",
+    "forca": 67
+   },
+   {
+    "id": "MA-MA-05",
+    "nome": "Tânger Estreito FC",
+    "apelido": "Estreito",
+    "cidade": "Tânger",
+    "estadio": "Estádio Estreito",
+    "capacidade": 25000,
+    "cores": [
+     "#1F6FB2",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 66
+   },
+   {
+    "id": "MA-MA-06",
+    "nome": "Agadir Sol FC",
+    "apelido": "Sol",
+    "cidade": "Agadir",
+    "estadio": "Estádio Sol",
+    "capacidade": 22000,
+    "cores": [
+     "#F2B705",
+     "#C0392B"
+    ],
+    "padrao": "listrasV",
+    "forca": 64
+   },
+   {
+    "id": "MA-MA-07",
+    "nome": "Meknès Vinhas SC",
+    "apelido": "Vinhas",
+    "cidade": "Meknès",
+    "estadio": "Estádio Vinhas",
+    "capacidade": 20000,
+    "cores": [
+     "#7A1E2B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 63
+   },
+   {
+    "id": "MA-MA-08",
+    "nome": "Oujda Fronteira FC",
+    "apelido": "Fronteira",
+    "cidade": "Oujda",
+    "estadio": "Estádio Fronteira",
+    "capacidade": 18000,
+    "cores": [
+     "#2E7D4F",
+     "#111111"
+    ],
+    "padrao": "faixa",
+    "forca": 63
+   },
+   {
+    "id": "MA-MA-09",
+    "nome": "Safi Porto SC",
+    "apelido": "Porto de Safi",
+    "cidade": "Safi",
+    "estadio": "Estádio Porto Safi",
+    "capacidade": 17000,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "metade",
+    "forca": 62
+   },
+   {
+    "id": "MA-MA-10",
+    "nome": "Kenitra Canal FC",
+    "apelido": "Canal",
+    "cidade": "Kenitra",
+    "estadio": "Estádio Canal",
+    "capacidade": 16000,
+    "cores": [
+     "#111111",
+     "#F2B705"
+    ],
+    "padrao": "lisa",
+    "forca": 61
+   },
+   {
+    "id": "MA-MA-11",
+    "nome": "Tetuão Montanha SC",
+    "apelido": "Montanha",
+    "cidade": "Tetuão",
+    "estadio": "Estádio Rif",
+    "capacidade": 16000,
+    "cores": [
+     "#C9A14A",
+     "#2E7D4F"
+    ],
+    "padrao": "centro",
+    "forca": 60
+   },
+   {
+    "id": "MA-MA-12",
+    "nome": "Essaouira Vento FC",
+    "apelido": "Vento",
+    "cidade": "Essaouira",
+    "estadio": "Estádio Vento",
+    "capacidade": 12000,
+    "cores": [
+     "#6FB7E0",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 60
+   },
+   {
+    "id": "MA-MA-13",
+    "nome": "Beni Mellal Planície SC",
+    "apelido": "Planície",
+    "cidade": "Beni Mellal",
+    "estadio": "Estádio Planície",
+    "capacidade": 15000,
+    "cores": [
+     "#F26B1D",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 59
+   },
+   {
+    "id": "MA-MA-14",
+    "nome": "Laayoune Deserto FC",
+    "apelido": "Deserto",
+    "cidade": "Laayoune",
+    "estadio": "Estádio Deserto",
+    "capacidade": 12000,
+    "cores": [
+     "#C9A14A",
+     "#111111"
+    ],
+    "padrao": "faixa",
+    "forca": 58
+   },
+   {
+    "id": "MA-MA-15",
+    "nome": "Nador Mar Azul SC",
+    "apelido": "Mar Azul do Rife",
+    "cidade": "Nador",
+    "estadio": "Estádio Nador",
+    "capacidade": 14000,
+    "cores": [
+     "#1F6FB2",
+     "#F2B705"
+    ],
+    "padrao": "listrasV",
+    "forca": 58
+   },
+   {
+    "id": "MA-MA-16",
+    "nome": "Settat Oliva FC",
+    "apelido": "Oliva",
+    "cidade": "Settat",
+    "estadio": "Estádio Oliva",
+    "capacidade": 12000,
+    "cores": [
+     "#2E7D4F",
+     "#C9A14A"
+    ],
+    "padrao": "faixaH",
+    "forca": 57
+   }
+  ],
+  "CRO1": [
+   {
+    "id": "HR-CR-01",
+    "nome": "Zagreb Azul FC",
+    "apelido": "Azul",
+    "cidade": "Zagreb",
+    "estadio": "Estádio Capital",
+    "capacidade": 35000,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 73
+   },
+   {
+    "id": "HR-CR-02",
+    "nome": "Split Dálmata SC",
+    "apelido": "Dálmata",
+    "cidade": "Split",
+    "estadio": "Estádio Adriático",
+    "capacidade": 30000,
+    "cores": [
+     "#FFFFFF",
+     "#1F6FB2"
+    ],
+    "padrao": "listrasV",
+    "forca": 71
+   },
+   {
+    "id": "HR-CR-03",
+    "nome": "Rijeka Porto FC",
+    "apelido": "Porto",
+    "cidade": "Rijeka",
+    "estadio": "Estádio Golfo",
+    "capacidade": 12000,
+    "cores": [
+     "#7A1E2B",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 69
+   },
+   {
+    "id": "HR-CR-04",
+    "nome": "Osijek Planície SC",
+    "apelido": "Planície",
+    "cidade": "Osijek",
+    "estadio": "Estádio Drava",
+    "capacidade": 17000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 67
+   },
+   {
+    "id": "HR-CR-05",
+    "nome": "Varaždin Castelo FC",
+    "apelido": "Castelo",
+    "cidade": "Varaždin",
+    "estadio": "Estádio Castelo",
+    "capacidade": 10000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "centro",
+    "forca": 64
+   },
+   {
+    "id": "HR-CR-06",
+    "nome": "Zadar Sal FC",
+    "apelido": "Sal",
+    "cidade": "Zadar",
+    "estadio": "Estádio Sal",
+    "capacidade": 9000,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "faixaH",
+    "forca": 63
+   },
+   {
+    "id": "HR-CR-07",
+    "nome": "Šibenik Pedra SC",
+    "apelido": "Pedra",
+    "cidade": "Šibenik",
+    "estadio": "Estádio Pedra",
+    "capacidade": 8000,
+    "cores": [
+     "#6FB7E0",
+     "#1F3A5F"
+    ],
+    "padrao": "metade",
+    "forca": 62
+   },
+   {
+    "id": "HR-CR-08",
+    "nome": "Dubrovnik Muralha FC",
+    "apelido": "Muralha",
+    "cidade": "Dubrovnik",
+    "estadio": "Estádio Muralha",
+    "capacidade": 10000,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "listrasV",
+    "forca": 62
+   },
+   {
+    "id": "HR-CR-09",
+    "nome": "Pula Anfiteatro SC",
+    "apelido": "Anfiteatro",
+    "cidade": "Pula",
+    "estadio": "Estádio Anfiteatro",
+    "capacidade": 8000,
+    "cores": [
+     "#5B2C83",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 61
+   },
+   {
+    "id": "HR-CR-10",
+    "nome": "Gorica Verde FC",
+    "apelido": "Verde",
+    "cidade": "Velika Gorica",
+    "estadio": "Estádio Verde",
+    "capacidade": 8000,
+    "cores": [
+     "#2E7D4F",
+     "#111111"
+    ],
+    "padrao": "faixa",
+    "forca": 61
+   },
+   {
+    "id": "HR-CR-11",
+    "nome": "Lokomotiva Vapor SC",
+    "apelido": "Vapor",
+    "cidade": "Zagreb",
+    "estadio": "Estádio Vapor",
+    "capacidade": 12000,
+    "cores": [
+     "#111111",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 63
+   },
+   {
+    "id": "HR-CR-12",
+    "nome": "Vukovar Danúbio FC",
+    "apelido": "Danúbio",
+    "cidade": "Vukovar",
+    "estadio": "Estádio Danúbio",
+    "capacidade": 9000,
+    "cores": [
+     "#1F6FB2",
+     "#C9A14A"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "HR-CR-13",
+    "nome": "Slavonski Brod Carvalho FC",
+    "apelido": "Carvalho",
+    "cidade": "Slavonski Brod",
+    "estadio": "Estádio Carvalho",
+    "capacidade": 10000,
+    "cores": [
+     "#7A1E2B",
+     "#C9A14A"
+    ],
+    "padrao": "centro",
+    "forca": 60
+   },
+   {
+    "id": "HR-CR-14",
+    "nome": "Karlovac Rio FC",
+    "apelido": "Rio",
+    "cidade": "Karlovac",
+    "estadio": "Estádio Rio",
+    "capacidade": 8000,
+    "cores": [
+     "#F26B1D",
+     "#111111"
+    ],
+    "padrao": "listrasV",
+    "forca": 59
+   },
+   {
+    "id": "HR-CR-15",
+    "nome": "Istra Oliveira SC",
+    "apelido": "Oliveira",
+    "cidade": "Pazin",
+    "estadio": "Estádio Oliveira",
+    "capacidade": 7000,
+    "cores": [
+     "#C9A14A",
+     "#2E7D4F"
+    ],
+    "padrao": "faixa",
+    "forca": 59
+   },
+   {
+    "id": "HR-CR-16",
+    "nome": "Bjelovar Bosque FC",
+    "apelido": "Bosque",
+    "cidade": "Bjelovar",
+    "estadio": "Estádio Bosque",
+    "capacidade": 7000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   }
+  ],
+  "EGY1": [
+   {
+    "id": "EG-EG-01",
+    "nome": "Cairo Águia Vermelha SC",
+    "apelido": "Águia",
+    "cidade": "Cairo",
+    "estadio": "Estádio Águia",
+    "capacidade": 75000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 74
+   },
+   {
+    "id": "EG-EG-02",
+    "nome": "Cairo Estrela Branca FC",
+    "apelido": "Estrela",
+    "cidade": "Cairo",
+    "estadio": "Estádio Estrela",
+    "capacidade": 60000,
+    "cores": [
+     "#FFFFFF",
+     "#1F6FB2"
+    ],
+    "padrao": "faixa",
+    "forca": 72
+   },
+   {
+    "id": "EG-EG-03",
+    "nome": "Alexandria Mar SC",
+    "apelido": "Farol",
+    "cidade": "Alexandria",
+    "estadio": "Estádio Farol",
+    "capacidade": 35000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 68
+   },
+   {
+    "id": "EG-EG-04",
+    "nome": "Gizé Pirâmide FC",
+    "apelido": "Pirâmide",
+    "cidade": "Gizé",
+    "estadio": "Estádio Pirâmide",
+    "capacidade": 30000,
+    "cores": [
+     "#F2B705",
+     "#111111"
+    ],
+    "padrao": "faixaH",
+    "forca": 67
+   },
+   {
+    "id": "EG-EG-05",
+    "nome": "Port Said Canal SC",
+    "apelido": "Canal",
+    "cidade": "Port Said",
+    "estadio": "Estádio Canal",
+    "capacidade": 25000,
+    "cores": [
+     "#1F3A5F",
+     "#F2B705"
+    ],
+    "padrao": "metade",
+    "forca": 66
+   },
+   {
+    "id": "EG-EG-06",
+    "nome": "Mansoura Delta FC",
+    "apelido": "Delta",
+    "cidade": "Mansoura",
+    "estadio": "Estádio Delta",
+    "capacidade": 24000,
+    "cores": [
+     "#7A1E2B",
+     "#FFFFFF"
+    ],
+    "padrao": "centro",
+    "forca": 65
+   },
+   {
+    "id": "EG-EG-07",
+    "nome": "Assuã Granito FC",
+    "apelido": "Granito",
+    "cidade": "Assuã",
+    "estadio": "Estádio Granito",
+    "capacidade": 20000,
+    "cores": [
+     "#C9A14A",
+     "#111111"
+    ],
+    "padrao": "lisa",
+    "forca": 63
+   },
+   {
+    "id": "EG-EG-08",
+    "nome": "Luxor Faraó SC",
+    "apelido": "Faraó",
+    "cidade": "Luxor",
+    "estadio": "Estádio Faraó",
+    "capacidade": 20000,
+    "cores": [
+     "#F26B1D",
+     "#2E7D4F"
+    ],
+    "padrao": "faixa",
+    "forca": 63
+   },
+   {
+    "id": "EG-EG-09",
+    "nome": "Tanta Nilo FC",
+    "apelido": "Nilo",
+    "cidade": "Tanta",
+    "estadio": "Estádio Nilo",
+    "capacidade": 22000,
+    "cores": [
+     "#6FB7E0",
+     "#1F3A5F"
+    ],
+    "padrao": "faixaH",
+    "forca": 64
+   },
+   {
+    "id": "EG-EG-10",
+    "nome": "Ismailia Canal Verde FC",
+    "apelido": "Canal Verde",
+    "cidade": "Ismailia",
+    "estadio": "Estádio Verde",
+    "capacidade": 20000,
+    "cores": [
+     "#2E7D4F",
+     "#C9A14A"
+    ],
+    "padrao": "listrasV",
+    "forca": 62
+   },
+   {
+    "id": "EG-EG-11",
+    "nome": "Suez Porto SC",
+    "apelido": "Porto",
+    "cidade": "Suez",
+    "estadio": "Estádio Porto",
+    "capacidade": 18000,
+    "cores": [
+     "#5B2C83",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 62
+   },
+   {
+    "id": "EG-EG-12",
+    "nome": "Minya Sol FC",
+    "apelido": "Sol",
+    "cidade": "Minya",
+    "estadio": "Estádio Sol",
+    "capacidade": 16000,
+    "cores": [
+     "#F2B705",
+     "#C0392B"
+    ],
+    "padrao": "metade",
+    "forca": 61
+   },
+   {
+    "id": "EG-EG-13",
+    "nome": "Assiut Trigo FC",
+    "apelido": "Trigo",
+    "cidade": "Assiut",
+    "estadio": "Estádio Trigo",
+    "capacidade": 16000,
+    "cores": [
+     "#C0392B",
+     "#111111"
+    ],
+    "padrao": "faixa",
+    "forca": 60
+   },
+   {
+    "id": "EG-EG-14",
+    "nome": "Damieta Pesca SC",
+    "apelido": "Pesca",
+    "cidade": "Damieta",
+    "estadio": "Estádio Pesca",
+    "capacidade": 14000,
+    "cores": [
+     "#1F6FB2",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "EG-EG-15",
+    "nome": "Sohag Oásis FC",
+    "apelido": "Oásis",
+    "cidade": "Sohag",
+    "estadio": "Estádio Oásis",
+    "capacidade": 14000,
+    "cores": [
+     "#FFFFFF",
+     "#2E7D4F"
+    ],
+    "padrao": "centro",
+    "forca": 59
+   },
+   {
+    "id": "EG-EG-16",
+    "nome": "Qena Vale FC",
+    "apelido": "Vale",
+    "cidade": "Qena",
+    "estadio": "Estádio Vale",
+    "capacidade": 12000,
+    "cores": [
+     "#7A1E2B",
+     "#F2B705"
+    ],
+    "padrao": "listrasV",
+    "forca": 58
+   }
+  ]
+ }
+}

@@ -3,7 +3,7 @@
 // colegial e universitário dos EUA.
 import type { Liga } from "./liga.js";
 
-export type Regiao = "BRA" | "SUL" | "EUR" | "ARA" | "NAM";
+export type Regiao = "BRA" | "SUL" | "EUR" | "ARA" | "NAM" | "ASI";
 export interface InfoLiga {
   id: string; nome: string; curto: string; pais: string; regiao: Regiao; divisao: number;
   /** liga amadora: não paga salário e não entra no mercado (várzea, colegial, universitário) */
@@ -33,6 +33,11 @@ export const LIGAS: InfoLiga[] = [
   { id: "ITA1", nome: "Serie Á Italiana", curto: "Serie Á", pais: "ITA", regiao: "EUR", divisao: 1, nivel: 1, fLiga: 0.95, fSalario: 1.1, rebaixados: 3, bolas: [["#00205B", "#E3B341"], ["#2E7D4F", "#C0392B"], ["#6A3FA0", "#18A0A8"]] },
   { id: "GER1", nome: "Bundesligue Alemã", curto: "Bundesligue", pais: "GER", regiao: "EUR", divisao: 1, nivel: 1, fLiga: 0.95, fSalario: 1.1, rebaixados: 2, bolas: [["#D20515", "#1F1F1F"], ["#F2B705", "#1F1F1F"], ["#FFFFFF", "#D20515"]] },
   { id: "FRA1", nome: "Ligue Um Francesa", curto: "Ligue Um", pais: "FRA", regiao: "EUR", divisao: 1, nivel: 1, fLiga: 0.9, fSalario: 1.0, rebaixados: 2, bolas: [["#091C3E", "#DAE025"], ["#1F3A5F", "#C0392B"], ["#18A0A8", "#091C3E"]] },
+  { id: "JPN1", nome: "Liga Sakura", curto: "Liga Sakura", pais: "JPN", regiao: "ASI", divisao: 1, nivel: 3, fLiga: 0.75, fSalario: 0.7, rebaixados: 2, bolas: [["#FFFFFF", "#1F3A5F"], ["#C0392B", "#FFFFFF"]] },
+  { id: "KOR1", nome: "Liga Hangang", curto: "Liga Hangang", pais: "KOR", regiao: "ASI", divisao: 1, nivel: 3, fLiga: 0.7, fSalario: 0.65, rebaixados: 2, bolas: [["#F2B705", "#111111"], ["#FFFFFF", "#1F6FB2"]] },
+  { id: "MAR1", nome: "Liga Atlas", curto: "Liga Atlas", pais: "MAR", regiao: "ARA", divisao: 1, nivel: 4, fLiga: 0.55, fSalario: 0.5, rebaixados: 2, bolas: [["#C0392B", "#2E7D4F"], ["#FFFFFF", "#C0392B"]] },
+  { id: "CRO1", nome: "Liga Adriática", curto: "Liga Adriática", pais: "CRO", regiao: "EUR", divisao: 1, nivel: 4, fLiga: 0.6, fSalario: 0.55, rebaixados: 1, bolas: [["#1F3A5F", "#FFFFFF"], ["#FFFFFF", "#C0392B"]] },
+  { id: "EGY1", nome: "Liga do Nilo", curto: "Liga do Nilo", pais: "EGY", regiao: "ARA", divisao: 1, nivel: 3, fLiga: 0.65, fSalario: 0.6, rebaixados: 2, bolas: [["#FFFFFF", "#C0392B"], ["#F2B705", "#1F3A5F"]] },
   { id: "POR1", nome: "Liga Lusitana", curto: "Liga Lusitana", pais: "POR", regiao: "EUR", divisao: 1, nivel: 2, fLiga: 0.85, fSalario: 0.7, rebaixados: 2, bolas: [["#1C2E5A", "#E3B341"], ["#2E7D4F", "#C0392B"]] },
   { id: "NED1", nome: "Eredivisão Holandesa", curto: "Eredivisão", pais: "NED", regiao: "EUR", divisao: 1, nivel: 2, fLiga: 0.85, fSalario: 0.75, rebaixados: 2, bolas: [["#F36C21", "#1F3A5F"], ["#FFFFFF", "#F36C21"]] },
   { id: "KSA1", nome: "Liga do Golfo", curto: "Golfo", pais: "KSA", regiao: "ARA", divisao: 1, nivel: 3, fLiga: 0.7, fSalario: 2.5, rebaixados: 3, bolas: [["#0E5E3A", "#C9A14A"], ["#7A1F3D", "#E3B341"], ["#1F3A5F", "#C9A14A"]] },

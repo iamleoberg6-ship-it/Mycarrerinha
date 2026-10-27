@@ -70,11 +70,11 @@ export const PAISES: Pais[] = [
  *  vai com a família, aos 12 anos, para um país vizinho ou de caminho comum. */
 export const LIGA_DA_BASE: Record<PaisId, string> = {
   BRA: "BRA1", ARG: "ARG1", URU: "URU1", ESP: "ESP1", NED: "NED1", GER: "GER1", ITA: "ITA1", ENG: "ENG1", FRA: "FRA1",
-  NGA: "ENG1", SEN: "FRA1", GHA: "ENG1", JPN: "GER1", KOR: "GER1",
-  POR: "POR1", USA: "USA1", MEX: "MEX1", COL: "COL1", MAR: "FRA1", CRO: "ITA1",
+  NGA: "ENG1", SEN: "FRA1", GHA: "ENG1", JPN: "JPN1", KOR: "KOR1",
+  POR: "POR1", USA: "USA1", MEX: "MEX1", COL: "COL1", MAR: "MAR1", CRO: "CRO1",
 };
 /** Para onde a família se mudou (só para quem nasceu num país sem liga no jogo). */
-export const MUDOU_PARA: Partial<Record<PaisId, string>> = { NGA: "a Inglaterra", SEN: "a França", GHA: "a Inglaterra", JPN: "a Alemanha", KOR: "a Alemanha", MAR: "a França", CRO: "a Itália" };
+export const MUDOU_PARA: Partial<Record<PaisId, string>> = { NGA: "a Inglaterra", SEN: "a França", GHA: "a Inglaterra" };
 
 export interface Formacao {
   id: FormacaoId; nome: string; descricao: string; mods: Mods; pot?: number; pers?: Partial<PersonalidadeDNA>;

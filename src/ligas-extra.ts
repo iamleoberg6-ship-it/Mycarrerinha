@@ -11,11 +11,12 @@ import dados from "../data/ligas-extra.json";
 type Real = [string, JogadorNPC["posicao"], number, number, string, number];
 export interface ClubeExtra { id: string; nome: string; apelido: string; cidade: string; estadio: string; capacidade: number; cores: string[]; padrao: string; forca: number; pais: string; elenco?: Real[] }
 type Linha = { convidado: string; elenco?: Real[]; forca?: number } | Omit<ClubeExtra, "pais">;
-const PAIS_DA_LIGA: Record<string, string> = { URU1: "URU", COL1: "COL", CHI1: "CHI", PAR1: "PAR", ECU1: "ECU", TUR1: "TUR", MEX1: "MEX" };
+const PAIS_DA_LIGA: Record<string, string> = { URU1: "URU", COL1: "COL", CHI1: "CHI", PAR1: "PAR", ECU1: "ECU", TUR1: "TUR", MEX1: "MEX", JPN1: "JPN", KOR1: "KOR", MAR1: "MAR", CRO1: "CRO", EGY1: "EGY" };
 /** de onde vêm os estrangeiros de cada país (e quanto do elenco eles são) */
 const DE_FORA: Record<string, [number, string[]]> = {
   URU: [0.08, ["ARG", "PAR", "COL"]], COL: [0.08, ["VEN", "ARG", "ECU"]], CHI: [0.15, ["ARG", "URU", "COL", "VEN"]], PAR: [0.1, ["ARG", "URU", "COL"]],
   ECU: [0.12, ["COL", "ARG", "URU"]], TUR: [0.4, ["BRA", "POR", "FRA", "SEN", "NGA", "NED", "SRB", "BEL", "CRO"]], MEX: [0.35, ["ARG", "COL", "URU", "CHI", "ECU", "USA", "BRA", "PAR"]],
+  JPN: [0.04, ["KOR", "BRA"]], KOR: [0.05, ["JPN", "BRA"]], MAR: [0.12, ["SEN", "ALG", "TUN", "FRA"]], CRO: [0.15, ["SRB", "BIH", "SVN", "BRA"]], EGY: [0.12, ["SEN", "NGA", "GHA", "ALG", "TUN"]],
 };
 export const PAISES_COM_LIGA_NOVA = new Set(Object.values(PAIS_DA_LIGA));
 
