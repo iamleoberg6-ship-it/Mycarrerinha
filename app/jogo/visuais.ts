@@ -60,6 +60,14 @@ export function iconesEfeito(ef: Record<string, unknown> | undefined, risco = fa
     if (out.some((x) => x.includes(`title="${nome}`))) continue;
     out.push(`<span class="ief ${bom ? "pos" : "neg"}" title="${nome} ${v > 0 ? "+" : ""}${typeof v === "number" ? Math.round(v * 100) / 100 : ""}">${ico}${v > 0 ? "▲" : "▼"}</span>`);
   }
-  if (ef.familiar || ef.filho || ef.parca || ef.gatilho === "par" ) out.push(`<span class="ief pos" title="relação">👥▲</span>`);
+  if (ef.familiar || ef.filho || ef.parca) out.push(`<span class="ief pos" title="relação">👥▲</span>`);
+  // gatilhos que mexem em liderança, companheiros, rival e geladeira
+  const g = typeof ef.gatilho === "string" ? ef.gatilho.split(":") : [];
+  const num = Number(g[g.length - 1]);
+  if (g[0] === "vest" && g[1] === "lid" && num) out.push(`<span class="ief ${num > 0 ? "pos" : "neg"}" title="liderança">👕${num > 0 ? "▲" : "▼"}</span>`);
+  if (g[0] === "vest" && (g[1] === "comp" || g[1] === "pupilo")) out.push(`<span class="ief ${g[1] === "pupilo" || num > 0 ? "pos" : "neg"}" title="companheiro">👥${g[1] === "pupilo" || num > 0 ? "▲" : "▼"}</span>`);
+  if (g[0] === "rival" && num) out.push(`<span class="ief" title="rivalidade">⚔️${num > 0 ? "🔥" : "❄️"}</span>`);
+  if (g[0] === "tec" && g[1] === "geladeira" && num) out.push(`<span class="ief ${num < 0 ? "pos" : "neg"}" title="geladeira">🧊${num < 0 ? "▼" : "▲"}</span>`);
+  if (g[0] === "par" && num) out.push(`<span class="ief ${num > 0 ? "pos" : "neg"}" title="relação">❤️${num > 0 ? "▲" : "▼"}</span>`);
   return out.length || risco ? `<span class="iefs">${out.join("")}${risco ? `<span class="ief risco" title="tem risco">🎲</span>` : ""}</span>` : "";
 }

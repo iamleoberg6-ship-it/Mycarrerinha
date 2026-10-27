@@ -1365,10 +1365,20 @@ function abaNoticias(s: Save): string {
 // ------------------------------------------------------------------ vida fora de campo (aba Vida)
 let subVida: "agenda" | "casa" | "cidade" | "parcas" | "garagem" | "rotina" | "fundacao" = "agenda";
 let msgVida: { ok: boolean; texto: string } | undefined, afastarCerteza: string | undefined;
+/** Cena de cabeçalho de cada tipo de momento: cores do fundo, ícone principal e dois enfeites. */
+const CENA_ORIGEM: Record<string, [string, string, string, string, string]> = {
+  amor: ["#5A1E3A", "#9B3563", "❤️", "🌹", "✨"], familia: ["#3D2A14", "#7A5428", "🏡", "👵", "🍲"], filho: ["#1E3A5A", "#2F6A9B", "🧒", "⚽", "🎈"],
+  parca: ["#3A2A0E", "#7A5A18", "🍖", "🤙", "🎶"], convite: ["#2A1A4A", "#5A3A9B", "🎬", "📸", "✨"], encrenca: ["#3A1414", "#7A2828", "⚖️", "🚨", "📄"],
+  exterior: ["#0E2A4A", "#1F5A8A", "✈️", "🗺️", "🧳"], fundacao: ["#4A3A0E", "#9B7A1F", "💛", "🤝", "🏫"], ferias: ["#0E4A4A", "#1F8A8A", "🏝️", "☀️", "🍹"],
+  hobby: ["#2A2A3A", "#4A4A6A", "🎲", "🎮", "🎣"], garagem: ["#1E1E1E", "#4A4A4A", "🏎️", "🔑", "💨"], vestiario: ["#123A2A", "#1F6A4A", "👕", "🧴", "🗣️"],
+  tecnico: ["#14283A", "#26507A", "📋", "🧠", "⚽"], rival: ["#3A0E14", "#7A1F2A", "⚔️", "😤", "🔥"], torcida: ["#0E3A1E", "#1F7A3E", "📣", "🏟️", "🎉"],
+  cidade: ["#1E2A3A", "#3A5A7A", "🏙️", "🗺️", "📍"], contrato: ["#2A2A14", "#5A5A28", "✍️", "📄", "💰"], acontece: ["#2A1E3A", "#5A3A7A", "⚡", "📰", "📱"],
+};
 function htmlOcasiao(s: Save, o: ReturnType<typeof agendaDe>["pendentes"][number], compacto = false): string {
   const falta = o.expira - semanaAbsJogo(s.carreira);
-  return `<section class="painel ocasiao o-${o.origem}"><p class="rotulo">${ICONE_ORIGEM[o.origem]} ${NOME_ORIGEM[o.origem]}<span class="prazo">${falta <= 0 ? "responda nesta semana" : `${falta + 1} semanas para responder`}</span></p><h2>${esc(o.titulo)}</h2><p class="sub">${esc(o.texto)}</p>
-    <div class="ops">${o.opcoes.map((x) => `<button data-oca="${o.uid}" data-op="${x.id}"><span>${esc(x.rotulo)}</span><small>›</small></button>`).join("")}</div>${compacto ? "" : ""}</section>`;
+  const ce = CENA_ORIGEM[o.origem] ?? CENA_ORIGEM.acontece;
+  return `<section class="painel ocasiao o-${o.origem}"><div class="oca-cena" style="--c1:${ce[0]};--c2:${ce[1]}"><span class="oc-deco a">${ce[3]}</span><span class="oc-ico">${ce[2]}</span><span class="oc-deco b">${ce[4]}</span><span class="oc-tag">${NOME_ORIGEM[o.origem]}</span><span class="prazo">${falta <= 0 ? "⏳ esta semana" : `⏳ ${falta + 1} semanas`}</span></div><h2>${esc(o.titulo)}</h2><p class="sub">${esc(o.texto)}</p>
+    <div class="ops">${o.opcoes.map((x) => `<button data-oca="${o.uid}" data-op="${x.id}"><span>${esc(x.rotulo)}</span>${iconesEfeito(x.ef as unknown as Record<string, unknown>, !!x.risco)}</button>`).join("")}</div>${compacto ? "" : ""}</section>`;
 }
 function cardAgenda(s: Save): string {
   const a = agendaDe(s.carreira), m = msgVida && aba !== "casa" ? msgVida : undefined;
