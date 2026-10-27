@@ -1043,7 +1043,21 @@ function radar(at: Record<Atributo, number>): string {
     ${eixos.map(([n, v], i) => { const [x, y] = pt(i, 1.22); return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--giz-2)">${n} <tspan fill="var(--giz)" font-weight="800">${Math.round(v)}</tspan></text>`; }).join("")}
   </svg>`;
 }
-const tile = (valor: string, rotulo: string) => `<div class="tile"><b>${valor}</b><span>${rotulo}</span></div>`;
+const tile = (valor: string, rotulo: string, icone?: string) => `<div class="tile${icone ? " com-ico" : ""}">${icone ? `<i aria-hidden="true">${icone}</i>` : ""}<b>${valor}</b><span>${rotulo}</span></div>`;
+/** Barras de gols (dourado) e assistências (verde) por temporada. */
+function barrasCarreira(hist: { ano: number; jogos: number; gols: number; assist: number; titulo?: boolean }[]): string {
+  const h = hist.filter((x) => x.jogos > 0).slice(-14);
+  if (h.length < 2) return "";
+  const max = Math.max(4, ...h.map((x) => x.gols + x.assist)), W = 340, H = 120, bw = Math.min(26, (W - 10) / h.length - 4);
+  const barras = h.map((x, i) => {
+    const cx = 6 + i * ((W - 10) / h.length) + ((W - 10) / h.length - bw) / 2, hg = (x.gols / max) * (H - 34), ha = (x.assist / max) * (H - 34), base = H - 18;
+    return `<rect x="${cx.toFixed(1)}" y="${(base - hg).toFixed(1)}" width="${bw.toFixed(1)}" height="${hg.toFixed(1)}" rx="3" fill="#E3B341"><title>${x.ano}: ${x.gols} gols</title></rect>
+      <rect x="${cx.toFixed(1)}" y="${(base - hg - ha).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, ha - 1).toFixed(1)}" rx="3" fill="#74D394"><title>${x.ano}: ${x.assist} assistências</title></rect>
+      ${hg >= 14 ? `<text x="${(cx + bw / 2).toFixed(1)}" y="${(base - hg + 12).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="800" fill="#1A1A1A">${x.gols}</text>` : ""}${ha >= 14 ? `<text x="${(cx + bw / 2).toFixed(1)}" y="${(base - hg - ha + 12).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="800" fill="#123">${x.assist}</text>` : ""}
+      <text x="${(cx + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="9" fill="#A3B6AD">${String(x.ano).slice(2)}</text>`;
+  }).join("");
+  return `<div class="barras-car"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gols e assistências por temporada">${barras}</svg><small><i style="background:#E3B341"></i>Gols <i style="background:#74D394"></i>Assistências</small></div>`;
+}
 function perfilHtml(s: Save): string {
   const j = s.jogador, c = s.carreira, info = infoClube(pacote, c.clubeId), w = mundo(pacote);
   const [c1, c2] = info.cores;
@@ -1079,8 +1093,9 @@ function perfilHtml(s: Save): string {
       <div class="kv perfil-info"><span>Altura</span><b>${j.alturaCm ? `${(j.alturaCm / 100).toFixed(2).replace(".", ",")} m` : "–"}</b><span>Pé</span><b>${j.pe === "esquerdo" ? "Esquerdo" : j.pe === "ambidestro" ? "Ambidestro" : "Direito"}</b><span>Valor de mercado</span><b>${milhoes(vm)}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.formacao ? "Base" : `${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}`}</b><span>Seguidores</span><b>${compacto(c.seguidores)}</b></div>
 
       <p class="rotulo">Carreira</p>
-      <div class="tiles">${tile(String(t.jogos), "Jogos")}${tile(String(t.gols), "Gols")}${tile(String(t.assist), "Assistências")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média")}${tile(String(t.titulos.length), "Títulos")}${tile(String(t.premios.length), "Prêmios")}</div>
-      ${(() => { const soma = (k: "mvp" | "selRodada" | "selMes") => c.historico.reduce((a, h) => a + (h[k] ?? 0), 0) + (c.stats[k] ?? 0); return `<div class="tiles">${tile(String(soma("mvp")), "Melhor em campo")}${tile(String(soma("selRodada")), "Seleção da rodada")}${tile(String(soma("selMes")), "Seleção do mês")}</div>`; })()}
+      <div class="tiles">${tile(String(t.jogos), "Jogos", "🏟️")}${tile(String(t.gols), "Gols", "⚽")}${tile(String(t.assist), "Assistências", "👟")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média", "⭐")}${tile(String(t.titulos.length), "Títulos", "🏆")}${tile(String(t.premios.length), "Prêmios", "🌟")}</div>
+      ${(() => { const soma = (k: "mvp" | "selRodada" | "selMes") => c.historico.reduce((a, h) => a + (h[k] ?? 0), 0) + (c.stats[k] ?? 0); return `<div class="tiles">${tile(String(soma("mvp")), "Melhor em campo", "🥇")}${tile(String(soma("selRodada")), "Seleção da rodada", "📋")}${tile(String(soma("selMes")), "Seleção do mês", "🗓️")}</div>`; })()}
+      ${barrasCarreira(hist)}
 
       <p class="rotulo">Estatísticas <small>(média da carreira, estimada pelo scout)</small></p>
       <div class="tiles">${tile(`${est.passe}%`, "Passes certos")}${tile(`${est.chute}%`, "Chutes no gol")}${tile(String(est.drible).replace(".", ","), "Dribles por jogo")}${tile(String(est.desarme).replace(".", ","), "Desarmes por jogo")}${tile(t.jogos ? (t.gols / t.jogos).toFixed(2).replace(".", ",") : "–", "Gols por jogo")}${tile(minGol ? `${minGol}'` : "–", "Minutos por gol")}</div>
@@ -1193,7 +1208,16 @@ function linhaDaVidaHtml(s: Save): string {
       ${outros.map((x) => `<div class="vida-item t-${x.tipo}"><span aria-hidden="true">${ICONE_VIDA[x.tipo]}</span><span>${esc(x.texto)}</span></div>`).join("")}
       ${trof.length ? `<div class="vida-item t-titulo"><span aria-hidden="true">🏆</span><span>${[...trof.filter((x) => x.tipo === "titulo"), ...trof.filter((x) => x.tipo === "premio")].map((x) => esc(x.texto.replace(new RegExp(` ${a}$`), ""))).join(" · ")}</span></div>` : ""}</div>`;
   };
-  return `<p class="rotulo">Linha da vida</p><div class="vida">${anos.length > visiveis.length ? `<button class="botao sec peq vida-mais" data-acao="vida-toda">Ver desde o começo (${anos.length - visiveis.length} anos antes)</button>` : ""}${visiveis.map(bloco).join("")}${vidaAberta && anos.length > 4 ? `<button class="botao sec peq vida-mais" data-acao="vida-toda">Mostrar só os últimos anos</button>` : ""}</div>`;
+  // fita ilustrada: um ano por coluna, com a cor do clube e os ícones do que aconteceu
+  const corDoAno = (a: number) => { const h = [...c.historico].reverse().find((x) => x.ano === a); const id = h?.clubeId ?? (a === anoAtual ? c.clubeId : undefined); return id ? infoClube(pacote, id)?.cores ?? ["#33463D", "#FFFFFF"] : ["#33463D", "#FFFFFF"]; };
+  const fita = `<div class="fita-vida" tabindex="0" aria-label="Linha da vida em ícones">${anos.map((a) => {
+    const l = it.filter((x) => x.ano === a), [k1, k2] = corDoAno(a), idade = s.jogador.idade - (anoAtual - a);
+    const tits = l.filter((x) => x.tipo === "titulo").length, prems = l.filter((x) => x.tipo === "premio").length;
+    const icos = [...new Set(l.filter((x) => x.tipo !== "titulo" && x.tipo !== "premio").map((x) => ICONE_VIDA[x.tipo]))];
+    return `<div class="fv-ano" title="${esc(l.map((x) => x.texto).join(" · "))}"><div class="fv-icos">${tits ? `<span class="fv-tit">🏆${tits > 1 ? `<b>${tits}</b>` : ""}</span>` : ""}${prems ? `<span class="fv-tit">🌟${prems > 1 ? `<b>${prems}</b>` : ""}</span>` : ""}${icos.map((i) => `<span>${i}</span>`).join("")}</div>
+      <div class="fv-faixa" style="background:linear-gradient(90deg,${k1},${k1} 70%,${k2})"></div><b>${String(a).slice(2)}</b><small>${idade > 0 ? idade : "0"}a</small></div>`;
+  }).join("")}</div>`;
+  return `<p class="rotulo">Linha da vida</p>${fita}<details class="vida-det"><summary>Ver ano a ano</summary><div class="vida">${anos.length > visiveis.length ? `<button class="botao sec peq vida-mais" data-acao="vida-toda">Ver desde o começo (${anos.length - visiveis.length} anos antes)</button>` : ""}${visiveis.map(bloco).join("")}${vidaAberta && anos.length > 4 ? `<button class="botao sec peq vida-mais" data-acao="vida-toda">Mostrar só os últimos anos</button>` : ""}</div></details>`;
 }
 
 // ------------------------------------------------------------------ retrospectiva da temporada (abre no fim do ano e pelo perfil)
@@ -1335,6 +1359,7 @@ function armarioCamisas(s: Save): string {
 function abrirPerfil() {
   if (!save) return;
   $("telaPerfil").innerHTML = perfilHtml(save);
+  document.querySelectorAll<HTMLElement>(".fita-vida").forEach((e) => { e.scrollLeft = e.scrollWidth; });
   ($("dlgPerfil") as HTMLDialogElement).showModal();
   $("telaPerfil").scrollTop = 0;
 }

@@ -163,6 +163,15 @@ svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2);
 .vida-ano { position: relative; } .vida-ano::before { content: ""; position: absolute; left: -23px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--ouro); box-shadow: 0 0 0 3px var(--campo); }
 .vida-cab { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; } .vida-cab b { font-family: var(--display); font-size: 20px; font-weight: 900; color: var(--ouro); } .vida-cab small { color: var(--giz-2); font-size: 12px; }
 .vida-item { display: grid; grid-template-columns: 24px 1fr; gap: 6px; font-size: 14px; padding: 3px 0; } .vida-item.t-titulo { color: var(--ouro-claro); font-weight: 600; } .vida-item.t-amor, .vida-item.t-filho { color: #F3B6CC; } .vida-item.t-lesao, .vida-item.t-escandalo { color: #F6C2B8; } .vida-item.t-fim { font-weight: 700; }
+.fita-vida { display: flex; align-items: flex-end; gap: 2px; overflow-x: auto; padding: 4px 0 8px; margin-bottom: 6px; scroll-snap-type: x proximity; }
+.fv-ano { flex: 0 0 44px; display: flex; flex-direction: column; align-items: center; gap: 3px; scroll-snap-align: end; }
+.fv-icos { min-height: 64px; display: flex; flex-direction: column-reverse; align-items: center; gap: 2px; font-size: 17px; line-height: 1; }
+.fv-tit { position: relative; } .fv-tit b { position: absolute; right: -8px; top: -4px; font-size: 9px; background: var(--ouro); color: #1A1A1A; border-radius: 99px; padding: 1px 4px; }
+.fv-faixa { width: 100%; height: 8px; border-radius: 2px; } .fv-ano > b { font-family: var(--display); font-weight: 900; font-size: 15px; color: var(--giz); } .fv-ano > small { font-size: 10px; color: var(--giz-2); margin-top: -3px; }
+.vida-det > summary { cursor: pointer; color: var(--giz-2); font-size: 13px; margin-bottom: 8px; } .vida-det[open] > summary { margin-bottom: 12px; }
+.tile.com-ico i { font-style: normal; font-size: 18px; } .tile.com-ico b { font-size: 30px; }
+.barras-car { margin-top: 10px; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 8px 6px; } .barras-car svg { width: 100%; display: block; }
+.barras-car small { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--giz-2); justify-content: center; } .barras-car small i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-left: 8px; }
 .vida-mais { align-self: flex-start; margin-left: -6px; }
 /* retrospectiva */
 #dlgRetro .tela { padding: 0; }
