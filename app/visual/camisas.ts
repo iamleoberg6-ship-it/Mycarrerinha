@@ -1,5 +1,6 @@
 // Camisa vista de costas, para o armário de camisas do perfil: cores e padrão do clube, nome e número.
 // Mesmo acabamento do personagem (degradê suave, sem contorno grosso). Apagada = a que ainda falta.
+import { fonteCamisa, attrFonte } from "./fontes-camisa";
 let seq = 0;
 const f1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -24,7 +25,7 @@ function padrao(modelo: string, c2: string): string {
   }
 }
 
-export interface DadosCamisa { cores: [string, string]; modelo: string; numero?: string }
+export interface DadosCamisa { cores: [string, string]; modelo: string; numero?: string; /** clube (id ou nome): escolhe a fonte de nome e número */ chave?: string }
 
 /** SVG (viewBox 0 0 80 104) da camisa pendurada, de costas, com nome e número. */
 export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): string {
@@ -40,7 +41,8 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
     : luz(a) > 0.55 ? (luz(b) < 0.45 ? b : "#1A1A1A") : (luz(b) > 0.55 ? b : "#FFFFFF");
   const borda = luz(tinta) > 0.5 ? mistura(a, "#000000", 0.55) : mistura(a, "#FFFFFF", 0.6);
   const sobrenome = (nome.trim().split(/\s+/).pop() ?? "").toUpperCase().slice(0, 11);
-  const fs = Math.min(9, 40 / Math.max(1, sobrenome.length * 0.66));
+  const fonte = fonteCamisa(c.chave ?? `${c.cores.join("")}${c.modelo}`);
+  const fs = Math.min(9, 40 / Math.max(1, sobrenome.length * 0.66 * fonte.escala));
   return `<svg viewBox="0 0 80 104" aria-hidden="true"><defs>
     <linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
     <linearGradient id="${id}l" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
@@ -53,7 +55,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
       <path d="M30 8 C36 12 44 12 50 8" stroke="${b}" stroke-width="3.2" fill="none"/>
       <path d="M17 33 C20 50 19 70 17 92 M63 33 C60 50 61 70 63 92" stroke="#000" stroke-opacity=".12" stroke-width="1.2" fill="none"/>
     </g>
-    ${sobrenome ? `<text font-family="'Big Shoulders Display','Arial Narrow',sans-serif" font-weight="800" font-size="${fs}" letter-spacing=".5" x="40" y="35" text-anchor="middle" fill="${tinta}" stroke="${borda}" stroke-width=".5" paint-order="stroke">${sobrenome}</text>` : ""}
-    ${c.numero ? `<text x="40" y="${f1(sobrenome ? 74 : 70)}" text-anchor="middle" font-family="'Big Shoulders Display','Arial Black',sans-serif" font-weight="900" font-size="${c.numero.length > 2 ? 24 : 32}" fill="${tinta}" stroke="${borda}" stroke-width="1" paint-order="stroke">${c.numero}</text>` : ""}
+    ${sobrenome ? `<text ${attrFonte(fonte, fs, true)} x="40" y="35" text-anchor="middle" fill="${tinta}" stroke="${borda}" stroke-width=".5" paint-order="stroke">${sobrenome}</text>` : ""}
+    ${c.numero ? `<text x="40" y="${f1(sobrenome ? 74 : 70)}" text-anchor="middle" ${attrFonte(fonte, c.numero.length > 2 ? 24 : 32)} fill="${tinta}" stroke="${borda}" stroke-width="1" paint-order="stroke">${c.numero}</text>` : ""}
   </svg>`;
 }

@@ -103,7 +103,7 @@ function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const info = infoClube(pacote, clubeId), [a, b] = info.cores;
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
   const ch = mat?.chuteira ?? (mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1], mat.cores[2]] : undefined);
-  return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
+  return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
 }
 /** Aparência com os acessórios dos patrocinadores (óculos e fone) por cima. */
 function apDe(s: Save, forcar?: Marca): Aparencia {
@@ -128,7 +128,7 @@ function capaDe(s: Save, edicao: number, clube: string, regional: boolean): stri
 function foto(s: Save): string {
   const [a, b] = cores(s.carreira.clubeId);
   const ap = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) };
-  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: s.jogador.numero, traje: "jogo", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
+  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa", fonte: s.carreira.clubeId }, numero: s.jogador.numero, traje: "jogo", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
 }
 /** Rosto de um personagem do jogo (rival, companheiro), sorteado pelo nome: sempre o mesmo para o mesmo nome. */
 function fotoNpc(nome: string, clubeId: string, idade = 25): string {
@@ -139,7 +139,7 @@ function fotoNpc(nome: string, clubeId: string, idade = 25): string {
     cabelo: pick(["raspado", "curto", "degrade", "topete", "ondulado", "cacheado", "crespo", "blackpower", "trancas", "undercut", "careca", "moicano"] as const, 7),
     corCabelo: (h >>> 11) % 5, olhos: (h >>> 13) % 4, nariz: pick(["reto", "pequeno", "largo", "achatado", "aquilino", "batata"] as const, 9),
     boca: pick(["neutra", "sorriso", "lado", "fina", "cheia"] as const, 15), barba: idade < 21 ? "nenhuma" : pick(["nenhuma", "sombra", "rala", "cavanhaque", "curta", "cheia", "bigode"] as const, 17) };
-  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa" }, numero: String(((h >>> 19) % 30) + 2), traje: "jogo" });
+  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa", fonte: clubeId }, numero: String(((h >>> 19) % 30) + 2), traje: "jogo" });
 }
 const ICO_GOSTO: Record<string, string> = { praia: "🏖️", balada: "🪩", cinema: "🎬", futebol: "⚽", viagem: "✈️", comida: "🍝", musica: "🎤", natureza: "🥾", moda: "🛍️", games: "🎮" };
 const ICO_COMP: Record<string, string> = { parceiro: "🤝", invejoso: "😒", mentor: "🧓", pupilo: "🧒" };
@@ -923,11 +923,16 @@ function blocoCidade(s: Save, curto = false): string {
     <p class="sub">Vida noturna agitada puxa a balada; frio pesa no humor de quem vem de país quente; o custo mexe nos gastos do mês.</p>
     ${(c.cidadesMoradas ?? []).length > 1 ? `<p class="sub">Já morou em: ${c.cidadesMoradas!.map(esc).join(" · ")}</p>` : ""}`}</div>`;
 }
+/** Clube da camisa guardada (a legenda começa pelo nome do clube): vira o id, que escolhe a fonte. */
+function chaveCamisa(legenda: string): string {
+  const nome = legenda.split(" · ")[0];
+  return Object.values(mundo(pacote).info).find((x) => x.nome === nome)?.id ?? nome;
+}
 /** Álbum de figurinhas da carreira. */
 function figurinhaSvg(f: Figurinha): string {
   const cor = f.cores[0].toUpperCase() === "#FFFFFF" ? f.cores[1] : f.cores[0];
   const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
-  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: f.cores[0].toUpperCase() === "#FFFFFF" ? "#F4F4F2" : f.cores[0], cor2: f.cores[1] ?? "#111111", estilo: "lisa" }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="10" y="22" width="140" height="168" ');
+  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: f.cores[0].toUpperCase() === "#FFFFFF" ? "#F4F4F2" : f.cores[0], cor2: f.cores[1] ?? "#111111", estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="10" y="22" width="140" height="168" ');
   return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="Figurinha ${f.ano}"><defs><linearGradient id="fg${f.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${cor}"/><stop offset="1" stop-color="#0E1A15"/></linearGradient></defs>
     <rect x="1" y="1" width="158" height="228" rx="10" fill="url(#fg${f.id})"/>${rosto}
     <rect x="6" y="6" width="58" height="16" rx="4" fill="#0008"/><text x="35" y="18" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="11" fill="#fff">${f.ano}</text>
@@ -1443,7 +1448,7 @@ function armarioCamisas(s: Save): string {
   const nomeCostas = (r: Reliquia) => (r.chave === "camisa-troca" ? r.nome.replace(/^Camisa d[eoa] /, "") : s.jogador.apelido);
   const r = minhas.find((x) => x.id === camisaAberta);
   return `<p class="rotulo">Armário de camisas <small>(${minhas.length})</small></p>
-      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " ativo" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}">${camisaCostas({ cores: x.cores, modelo: x.modelo, numero: x.numero }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></button>`).join("")}</div>
+      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " ativo" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}">${camisaCostas({ cores: x.cores, modelo: x.modelo, numero: x.numero, chave: chaveCamisa(x.legenda) }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></button>`).join("")}</div>
       ${r ? `<div class="trofeu-detalhe"><b>${esc(r.nome)}</b><div>${esc(r.legenda)}</div><small>É uma relíquia: dá para pendurar na parede na aba Casa.</small></div>` : `<p class="sub">Toque numa camisa para ver a história dela.</p>`}`;
 }
 function abrirPerfil() {

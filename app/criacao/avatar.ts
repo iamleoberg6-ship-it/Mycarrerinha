@@ -1,5 +1,6 @@
 // Avatar do jogador no estilo de arte do jogo (mistura de quadrinho e figurinha), montado por partes.
 // Todo corte de cabelo, barba e orelha é calculado a partir do contorno do rosto escolhido.
+import { fonteCamisa, attrFonte } from "../visual/fontes-camisa";
 export type Rosto = "oval" | "redondo" | "quadrado" | "longo" | "coracao" | "largo" | "diamante" | "triangulo" | "retangular";
 export type Cabelo =
   | "careca" | "raspado" | "curto" | "degrade" | "topete" | "franja" | "ondulado" | "cacheado"
@@ -19,7 +20,7 @@ export type Piercing = "nenhum" | "nariz" | "sobrancelha" | "dois";
 /** Óculos escuros de patrocinador: modelo e cores (a marca é que dá). */
 export interface OculosSol { modelo: "aviador" | "esportivo" | "quadrado"; armacao: string; lente: string }
 export type EstiloCamisa = "lisa" | "listrasV" | "listrasH" | "faixa" | "faixaH";
-export interface Camisa { cor1: string; cor2: string; cor3?: string; estilo: EstiloCamisa }
+export interface Camisa { cor1: string; cor2: string; cor3?: string; estilo: EstiloCamisa; /** clube (id): escolhe a fonte do número */ fonte?: string }
 
 export interface Aparencia {
   pele: number; rosto: Rosto; cabelo: Cabelo; corCabelo: number; olhos: number; formatoOlho: Olho;
@@ -535,7 +536,7 @@ function uniforme(c: Camisa, numero: string | undefined, pele: string, sombraPel
     <path d="${TRONCO_V}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
     <path d="${GOLA_V}" fill="${golaCor}" stroke="${TINTA}" stroke-width="${TRACO * 0.8}" stroke-linejoin="round"/>
     <path d="M118 224 L150 262 L182 224" fill="none" stroke="${friso}" stroke-width="1.8" stroke-linejoin="round"/>
-    ${numero ? `<text x="98" y="318" text-anchor="middle" font-family="'Big Shoulders Display','Arial Narrow',sans-serif" font-weight="900" font-size="32" fill="${corNumero}" stroke="${TINTA}" stroke-width="1.4" paint-order="stroke">${numero}</text>` : ""}`;
+    ${numero ? `<text x="98" y="318" text-anchor="middle" ${attrFonte(fonteCamisa(c.fonte), 32)} fill="${corNumero}" stroke="${TINTA}" stroke-width="1.4" paint-order="stroke">${numero}</text>` : ""}`;
 }
 
 function roupaSocial(tipo: RoupaSocial, corIdx: number, pele: string, sombraPele: string, hach: string): string {

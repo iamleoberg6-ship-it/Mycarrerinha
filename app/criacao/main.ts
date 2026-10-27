@@ -105,7 +105,7 @@ const altura = (cm: number) => `${(cm / 100).toFixed(2).replace(".", ",")} m`;
 function foto(numero?: string, traje: "jogo" | "social" = "jogo"): string {
   return svgFoto({
     aparencia: estado.aparenciaFeita || estado.passo >= 7 ? estado.aparencia : null,
-    camisa: clube()?.camisa ?? CAMISA_PADRAO, numero, traje,
+    camisa: clube() ? { ...clube()!.camisa, fonte: clube()!.id || undefined } : CAMISA_PADRAO, numero, traje,
     cenario: cenarioCompleto(estado.pais, estado.familia, estado.formacao),
   });
 }
