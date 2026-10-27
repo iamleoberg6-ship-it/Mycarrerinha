@@ -124,7 +124,7 @@ export function totaisDaCarreira(hist: Temporada[]) {
     ...hist.filter((h) => h.estadual?.campeao).map((h) => ({ ano: h.ano, nome: `Campeão do ${h.estadual!.nome}`, clube: h.clube })),
     ...hist.flatMap((h) => (h.extras ?? []).filter((x) => x.campeao).map((x) => ({ ano: h.ano, nome: `Campeão ${x.nome.startsWith("Mundial") ? "do" : "da"} ${x.nome}`, clube: h.clube })))].sort((a, b) => a.ano - b.ano);
   const premios = hist.flatMap((h) => (h.premios ?? []).filter((p) => !/campe/i.test(p) && !/^Taça /.test(p)).map((p) => ({ ano: h.ano, nome: p.replace(/\s\d{4}$/, ""), clube: h.clube })));
-  return { jogos, gols, assist, nota, est, titulos, premios, temporadas: hist.length };
+  return { jogos, gols, assist, nota, est, titulos, premios, temporadas: new Set(hist.map((h) => h.ano)).size };
 }
 
 // ------------------------------------------------------------------ armário de troféus

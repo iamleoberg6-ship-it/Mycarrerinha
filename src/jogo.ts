@@ -51,9 +51,9 @@ export interface Stats { jogos: number; titular: number; gols: number; assist: n
   mvp?: number; selRodada?: number; selMes?: number }
 /** Campanha numa copa continental (na temporada). */
 export interface CampanhaCopa { id: CopaId; nome: string; fase: string; campeao: boolean; jogos: number; gols: number; assist: number }
-export interface ResumoTemporada { extras?: CampanhaCopa[]; mvp?: number; selRodada?: number; selMes?: number; copa?: CampanhaCopa; estadual?: CampanhaCopa; fase?: Fase; ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
+export interface ResumoTemporada { /** passagem de meia temporada (trocou de clube no meio do ano) */ parcial?: boolean; extras?: CampanhaCopa[]; mvp?: number; selRodada?: number; selMes?: number; copa?: CampanhaCopa; estadual?: CampanhaCopa; fase?: Fase; ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
 /** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
-export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" };
+export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" } | { k: "capa"; edicao: number; clube: string; regional?: boolean };
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
 export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
@@ -117,6 +117,10 @@ export interface Carreira {
   tecnico?: Tecnico; tecnicoClube?: string;
   /** pontos do clube nos últimos jogos da liga (3, 1, 0) e temporada da última troca de técnico no meio do ano */
   resultadosClube?: number[]; tecnicoTroca?: number;
+  /** tabela do campeonato da base (categoria do jogador) */
+  tabelaBase?: { cat: string; t: number; tabela: LinhaTabela[] };
+  /** capas de videogame (edição, clube e se foi a edição do país) */
+  capas?: { edicao: number; clube: string; regional: boolean }[];
   /** aposentadoria anunciada (vale no fim desta temporada) */
   aposentadoria?: { temporada: number };
   /** carreira encerrada: a despedida */
@@ -364,6 +368,23 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
   return save;
 }
 const statsVazias = (): Stats => ({ jogos: 0, titular: 0, gols: 0, assist: 0, notas: [], base: 0, baseGols: 0 });
+/** Trocou de clube no meio da temporada: o que fez no clube antigo vira uma linha própria no histórico (e os números recomeçam). */
+export function fecharPassagemNoClube(pacote: PacoteDados, s: Save) {
+  const c = s.carreira, j = s.jogador, st = c.stats, sc = c.statsCopa, se = c.statsEstadual;
+  if (c.semana <= SEMANAS_PRE || !(st.jogos || st.base || sc?.jogos || se?.jogos)) return;
+  const media = (x: number[]) => (x.length ? +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(2) : 0);
+  const info = infoClube(pacote, c.clubeId), camp = (id: CopaId | undefined, x?: { jogos: number; gols: number; assist: number }) => id && x?.jogos ? { id, nome: COPAS[id].nome, fase: "Até a saída", campeao: false, jogos: x.jogos, gols: x.gols, assist: x.assist } : undefined;
+  const copaId = (Object.keys(c.copas ?? {}) as CopaId[]).find((k) => !ehEstadual(k) && !ehDeSelecao(k) && !["INT", "MUN"].includes(k) && c.copas![k]!.clubes.includes(c.clubeId));
+  const estId = (Object.keys(c.copas ?? {}) as CopaId[]).find((k) => ehEstadual(k) && c.copas![k]!.clubes.includes(c.clubeId));
+  const r: ResumoTemporada = { parcial: true, ...(c.fase ? { fase: c.fase } : {}), ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: info?.nome ?? c.clubeId, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto,
+    ovr: Math.round(ovr(j)), jogos: st.jogos, gols: st.gols, assist: st.assist, nota: media(st.notas), posicao: 0, titulo: false, base: st.base, baseGols: st.baseGols,
+    ...(st.mvp ? { mvp: st.mvp } : {}), ...(st.selRodada ? { selRodada: st.selRodada } : {}), ...(st.selMes ? { selMes: st.selMes } : {}) };
+  const cp = camp(copaId, sc), ce = camp(estId, se);
+  if (cp) r.copa = cp;
+  if (ce) r.estadual = ce;
+  c.historico.push(r);
+  c.stats = statsVazias(); c.statsCopa = undefined; c.statsEstadual = undefined; c.notasRodada = undefined;
+}
 
 export function rotuloSemana(c: Carreira): string {
   const ano = ANO_INICIAL + c.temporada;
@@ -537,6 +558,7 @@ function premiosDoMundo(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev: st
     (gal[pr.id] ??= []).push({ ano, nome: v.nome, clubeId: v.clubeId, nacionalidade: v.nacionalidade, ...(v.eu ? { eu: true } : {}) });
     const pos = pr.ranking.findIndex((x) => x.eu);
     if (pos === 0) {
+      if (pr.id === "BOLA") ganharCapa(s, false);
       const [modelo, fama, cores] = TROFEU_PREMIO[pr.id], nomeT = `${pr.nome} ${ano}`;
       receberReliquias(s, [{ conquista: `trofeu-mundo-${pr.id}`, reliquia: { id: `rel-trofeu-mundo-${pr.id}-${ano}`, chave: `trofeu-mundo-${pr.id}`, tipo: "trofeu", nome: nomeT, legenda: `${clube(c.clubeId)} · ${ano}`, ano, cores, modelo } }], ev);
       r.premios = [...(r.premios ?? []), nomeT];
@@ -852,7 +874,7 @@ const POLEMICAS = [
 /** Aplica uma partida do jogador: decisões, nota, estatísticas, moral, torcida, fama, cansaço, lesão, relíquias e notícia.
  *  Serve para o jogo de domingo (liga) e o de quarta (copa continental). */
 function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes: ResultadoDecisao[], notaExtra: number, intensidadeAlta: boolean, rng: RNG, eventos: string[]):
-  { resumo?: ResumoPartida; participacao: Participacao; nota: number; placar?: [number, number] } {
+  { resumo?: ResumoPartida; participacao: Participacao; nota: number; placar?: [number, number]; placarBase?: [number, number] } {
   const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, casa = efeitosDaCasa(s.casa).total, copa = partida.copa;
   const adversario = partida.souCasa ? partida.fora : partida.casa;
   if (partida.escalacao === "lesionado" || partida.escalacao === "suspenso") return { participacao: "naoJogou", nota: 0 };
@@ -894,11 +916,18 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   if (minutos > 0) nota = Math.round(clamp(nota + notaExtra, 3, 10) * 10) / 10; else nota = 0;
   const pro = partida.tipo === "profissional";
   const placar: [number, number] | undefined = pro ? [gc, gf] : undefined;
+  const placarBase: [number, number] | undefined = partida.tipo === "base" && !copa ? [gc, gf] : undefined;
+  // troca de camisa no apito final (o craque do outro lado pediu): vai para o armário
+  const craque = partida.nomes.craque;
+  if (craque && decisoes.some((d) => d.situacao === "camisa" && d.opcao === "trocar")) {
+    const info = infoClube(pacote, adversario), ano = ANO_INICIAL + c.temporada;
+    receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${craque.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", nome: `Camisa de ${craque}`, legenda: `${info?.nome ?? ""}${partida.tipo === "base" ? ` ${categoriaBase(j.idade)}` : ""} · troca no apito final · ${ano}`, ano, cores: [info?.cores[0] ?? "#FFFFFF", info?.cores[1] ?? "#111111"], modelo: info?.padrao ?? "lisa", numero: String(1 + (craque.length * 7) % 30) } }], eventos);
+  }
   const resumo: ResumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo, escalacao: partida.escalacao,
     ...(copa ? { competicao: copa.nome, rotulo: copa.rotulo } : {}) };
   if (minutos <= 0) {
     if (partida.escalacao === "banco") { c.moral = clamp(c.moral - 1, 0, 100); eventos.push(copa ? "Ficou no banco o jogo da copa todo." : "Ficou no banco o jogo todo."); }
-    return { resumo, participacao: "naoJogou", nota: 0, placar };
+    return { resumo, participacao: "naoJogou", nota: 0, placar, placarBase };
   }
   const participacao: Participacao = pro ? (partida.escalacao === "titular" ? "titular" : "entrou") : "base";
   // melhor em campo: na liga, contra as notas dos outros jogadores dos dois times na rodada; nas copas, contra uma régua sorteada
@@ -955,7 +984,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
   noticia(s, "jogo", `${copa ? `${COPAS[copa.id].curto}: ` : ""}${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
     `${res[0].toUpperCase() + res.slice(1)}${copa ? ` pela ${copa.nome} (${copa.rotulo.toLowerCase()})` : pro ? "" : faseAmadora(c) ? ` ${ROTULO_FASE[c.fase!]}` : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: partida.casa, fora: partida.fora, gc, gf });
-  return { resumo, participacao, nota, placar };
+  return { resumo, participacao, nota, placar, placarBase };
 }
 
 /** Quarta-feira: aplica o jogo da copa do jogador e roda a rodada da copa. Fica guardado para o resumo da semana. */
@@ -1056,7 +1085,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       }
     }
   }
-  const resumoPartida = rj?.resumo, placarMeuJogo = rj?.placar;
+  const resumoPartida = rj?.resumo, placarMeuJogo = rj?.placar, placarBase = rj?.placarBase;
   let notaSemana = rj?.nota ?? 0;
   // semana com jogo de copa: o que aconteceu na quarta entra na evolução e no resumo
   const quarta = c.meioSemana?.semana === c.semana ? c.meioSemana : undefined;
@@ -1076,6 +1105,18 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       registrar(c.tabela.find((t) => t.clube === g.fora)!, b, a);
       if (meu) { const [gp, gc] = g.casa === c.clubeId ? [a, b] : [b, a]; c.resultadosClube = [...(c.resultadosClube ?? []).slice(-9), gp > gc ? 3 : gp === gc ? 1 : 0]; }
     }
+    // tabela da base (sub-17 ou sub-20 do clube, conforme a idade): os mesmos confrontos, com a força dos times da base
+    if (c.formacao && !c.fase) {
+      const cat = categoriaBase(j.idade);
+      if (!c.tabelaBase || c.tabelaBase.cat !== cat || c.tabelaBase.t !== c.temporada) c.tabelaBase = { cat, t: c.temporada, tabela: novaTabela(l) };
+      const fb = (id: string) => forcaDaBase(pacote, id, j.idade, clubeDe(l, id).forca), rb = rngDe(s, "tabela-base");
+      for (const g of jogosDaRodada(c, jogo.rodada)) {
+        const meu = g.casa === c.clubeId || g.fora === c.clubeId;
+        const [a, b] = meu && placarBase ? placarBase : simularPlacar(rb, fb(g.casa), fb(g.fora));
+        const tb = c.tabelaBase.tabela;
+        registrar(tb.find((t) => t.clube === g.casa)!, a, b); registrar(tb.find((t) => t.clube === g.fora)!, b, a);
+      }
+    }
   }
 
   // 3b. a rodada das copas continentais (os jogos de quarta que faltam)
@@ -1093,7 +1134,9 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const nam = namoroDe(c), ctxN = ctxNamoro(pacote, s);
   const sn = semanaNamoro(nam, { ...ctxN, mudouDeCidade: nam.par && nam.par.cidadeClube !== cidadeAgora ? cidadeAgora : undefined });
   eventos.push(...sn.avisos);
-  if (sn.noticia) noticia(s, "vida", sn.noticia, `${s.jogador.apelido} confirmou. A vida segue.`);
+  if (sn.custo) s.casa.saldo -= sn.custo;
+  if (sn.escandalo) { c.fama = clamp(c.fama + 1.5, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); c.exposicao = clamp(c.exposicao + 10, 0, 100); }
+  if (sn.noticia) noticia(s, sn.escandalo ? "polemica" : "vida", sn.noticia, sn.escandalo ? `As fotos rodaram as redes. Patrocinadores e torcida comentam a vida pessoal de ${s.jogador.apelido}.` : `${s.jogador.apelido} confirmou. A vida segue.`);
   const en = efeitosNamoro(nam);
   const mult = 1 + cont("treino") * 0.1 + (casa.evolucao + vida.evolucao + en.evolucao) / 100 + c.bonusEvolucao - (c.treinoPosicao ? 0.1 : 0) + (paiTreinador(fam) ? 0.05 : 0);
   for (const k of ATRIBUTOS) j.at[k] = clamp(j.at[k] + (evoluido[k] - j.at[k]) * (evoluido[k] > j.at[k] ? mult : 1), 1, 99);
@@ -1267,8 +1310,16 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   let texto = preencher(o.resultado, ctx), notas = aplicarEfeito(s, o.efeitos);
   if (o.risco && rngDe(s, "evento-risco", e.id).chance(o.risco.chance)) { texto += " " + preencher(o.risco.resultado, ctx); notas = [...notas, ...aplicarEfeito(s, o.risco.efeitos)]; }
   const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");
+  if (e.id === "videogame" && opcaoId === "aceitar") { ganharCapa(s, true); return { titulo: e.titulo, texto: final }; }
   noticia(s, "vida", e.titulo, final, { k: "vida" });
   return { titulo: e.titulo, texto: final };
+}
+/** Capa de videogame: IAFC da edição seguinte (temporada 2026 → IAFC 27). Regional pelo evento; mundial com a Bola de Ouro. */
+export function ganharCapa(s: Save, regional: boolean) {
+  const c = s.carreira, edicao = ANO_INICIAL + c.temporada + 1, ed = String(edicao % 100).padStart(2, "0");
+  if ((c.capas ??= []).some((x) => x.edicao === edicao)) return;
+  c.capas.push({ edicao, clube: c.clubeId, regional });
+  noticia(s, "vida", `${s.jogador.apelido} é a capa do IAFC ${ed}`, regional ? `A edição do país do novo IAFC ${ed} sai com ${s.jogador.apelido} na capa.` : `O melhor do mundo estampa a capa mundial do IAFC ${ed}. Lançamento em todas as lojas.`, { k: "capa", edicao, clube: c.clubeId, ...(regional ? { regional: true } : {}) });
 }
 export const semanaAbsJogo = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + c.semana;
 
@@ -1318,7 +1369,10 @@ export function agirNamoroJogo(pacote: PacoteDados, s: Save, id: string, acao: A
   if (r.custo) s.casa.saldo -= r.custo;
   if (r.moral) c.moral = clamp(c.moral + r.moral, 0, 100);
   if (r.cansaco) c.cansaco = clamp(c.cansaco + r.cansaco, 0, 100);
-  if (r.noticia) noticia(s, "vida", r.noticia, `${s.jogador.apelido} assumiu o relacionamento nas redes.`);
+  if (r.fama) c.fama = clamp(c.fama + r.fama, 0, 100);
+  if (r.engajamento) c.engajamento = clamp((c.engajamento ?? 40) + r.engajamento, 0, 100);
+  if (r.torcida) c.torcida = clamp((c.torcida ?? 50) + r.torcida, 0, 100);
+  if (r.noticia) noticia(s, r.escandalo ? "polemica" : "vida", r.noticia, r.escandalo ? `Os programas de fofoca não falam de outra coisa.` : `${s.jogador.apelido} assumiu o relacionamento nas redes.`);
   return { ok: true, msg: r.msg };
 }
 /** Paga os patrocínios do mês (fixo + bônus) e encerra os contratos que acabaram. */
@@ -1550,7 +1604,10 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);
   // nova temporada
   { const tf = temporadaFamilia(pacote, familiaDe(pacote, s), rngDe(s, "familia-temporada"), ANO_INICIAL + c.temporada + 1, s.jogador.pais, eventos); c.moral = clamp(c.moral + tf.moral, 0, 100); }
-  { const tn = temporadaNamoro(namoroDe(c), eventos); if (tn.noticia) noticia(s, "vida", tn.noticia, `Festa para a família e os amigos do futebol.`); }
+  { const tn = temporadaNamoro(namoroDe(c), eventos, { semente: s.semente, ano: ANO_INICIAL + c.temporada, salario: c.salario });
+    if (tn.custo) s.casa.saldo -= tn.custo;
+    if (tn.escandalo) { c.fama = clamp(c.fama + 1, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); }
+    if (tn.noticia) noticia(s, tn.escandalo ? "polemica" : "vida", tn.noticia, tn.escandalo ? `A vida pessoal de ${s.jogador.apelido} virou assunto nos programas de fofoca.` : `Festa para a família e os amigos do futebol.`); }
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   sincronizar(pacote, s);
   noticiasDaVirada(pacote, s);

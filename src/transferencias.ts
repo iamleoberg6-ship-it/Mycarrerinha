@@ -11,7 +11,7 @@ import { infoLiga } from "./ligas.js";
 import { bonusJovem } from "./identidade.js";
 import { saltoTransferencia } from "./vida.js";
 import { alojamentosDoClube, imovelAtual, mudar, nomeImovel, IMOVEL } from "./casa.js";
-import { alvoDeSeguidores, SEMANAS_PRE, SEMANAS_TEMPORADA, ANO_INICIAL, clubeCasa, ligaAtual, noticia, ovr, type Carreira, type Save } from "./jogo.js";
+import { fecharPassagemNoClube, alvoDeSeguidores, SEMANAS_PRE, SEMANAS_TEMPORADA, ANO_INICIAL, clubeCasa, ligaAtual, noticia, ovr, type Carreira, type Save } from "./jogo.js";
 
 // ------------------------------------------------------------------ tipos
 export type TipoProposta = "transferencia" | "emprestimo" | "renovacao" | "livre";
@@ -326,6 +326,7 @@ function receberLuvas(s: Save, luvas: number) {
 export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo: TipoProposta, taxa: number, ordemFixa?: string[]) {
   const c = s.carreira, m = mercadoDe(c), w = mundo(pacote), de = c.clubeId, ligaDe = infoLiga(c.ligaId).id;
   const seg0 = c.seguidores;
+  fecharPassagemNoClube(pacote, s); // meio de temporada: a passagem pelo clube antigo fica no histórico
   m.semClube = undefined; // assinou: acabou a fase sem clube
   c.seguidores = saltoTransferencia(c.seguidores, alvoDeSeguidores(pacote, s, destino.id));
   c.clubeId = destino.id; c.ligaId = destino.ligaId;

@@ -47,6 +47,34 @@ export function anuncioTransferencia(d: DadosAnuncio): string {
   </g></svg>`;
 }
 
+/** Capa de videogame (paródia: IA Sports · IAFC + o ano da edição, um a mais que o da temporada), 360 × 480. */
+export function capaVideogame(d: { edicao: number; jogador: string; numero: string; cores: string[]; corpoSvg: string; edicaoDe?: string }): string {
+  const [c1, c2r] = d.cores, c2 = c2r ?? "#FFFFFF", id = `capa${d.edicao}${d.jogador.replace(/[^a-z0-9]/gi, "")}`;
+  const destaque = luz(c1) > 0.85 ? c2 : c1, ed = String(d.edicao % 100).padStart(2, "0");
+  const corpo = d.corpoSvg.replace("<svg ", `<svg x="95" y="96" width="250" height="${Math.round(250 * 2.5)}" preserveAspectRatio="xMidYMin meet" `);
+  return `<svg class="anuncio capa-game" viewBox="0 0 360 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Capa do IAFC ${ed} com ${esc(d.jogador)}">
+  <defs><clipPath id="${id}c"><rect width="360" height="480" rx="14"/></clipPath>
+    <linearGradient id="${id}f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14171F"/><stop offset="1" stop-color="#05060A"/></linearGradient>
+    <radialGradient id="${id}l" cx=".62" cy=".42" r=".6"><stop offset="0" stop-color="${destaque}" stop-opacity=".75"/><stop offset="1" stop-color="${destaque}" stop-opacity="0"/></radialGradient></defs>
+  <g clip-path="url(#${id}c)">
+    <rect width="360" height="480" fill="url(#${id}f)"/>
+    <rect width="360" height="480" fill="url(#${id}l)"/>
+    ${[0, 1, 2, 3, 4].map((i) => `<path d="M${120 + i * 55} 480 L${300 + i * 55} 0" stroke="${i % 2 ? c2 : destaque}" stroke-opacity=".16" stroke-width="${10 + i * 4}"/>`).join("")}
+    <text x="250" y="380" text-anchor="middle" font-family="${DISPLAY}" font-weight="900" font-size="210" fill="#FFFFFF" opacity=".07">${esc(d.numero)}</text>
+    ${corpo}
+    <rect width="360" height="92" fill="#05060A" opacity=".82"/>
+    <text x="20" y="30" font-family="${TEXTO}" font-weight="800" font-size="12" letter-spacing="3" fill="#FFFFFF" opacity=".75">IA SPORTS</text>
+    <text x="18" y="78" font-family="${DISPLAY}" font-weight="900" font-size="54" fill="#FFFFFF">IAFC</text>
+    <text x="146" y="78" font-family="${DISPLAY}" font-weight="900" font-size="54" fill="#E3B341">${ed}</text>
+    ${d.edicaoDe ? `<text x="340" y="30" text-anchor="end" font-family="${TEXTO}" font-weight="700" font-size="11" fill="#FFFFFF" opacity=".7">EDIÇÃO ${esc(d.edicaoDe.toUpperCase())}</text>` : ""}
+    <rect x="0" y="408" width="360" height="72" fill="#05060A" opacity=".85"/>
+    <rect x="20" y="418" width="44" height="4" fill="#E3B341"/>
+    <text x="20" y="452" font-family="${DISPLAY}" font-weight="900" font-size="32" fill="#FFFFFF">${esc(d.jogador.toUpperCase())}</text>
+    <text x="20" y="470" font-family="${TEXTO}" font-weight="600" font-size="11" fill="#FFFFFF" opacity=".6">IA SPORTS · O JOGO DE FUTEBOL DO MUNDO TODO</text>
+    <rect x="300" y="420" width="40" height="40" rx="6" fill="none" stroke="#FFFFFF" stroke-opacity=".5"/><text x="320" y="446" text-anchor="middle" font-family="${TEXTO}" font-weight="800" font-size="11" fill="#FFFFFF" opacity=".75">L</text>
+  </g></svg>`;
+}
+
 // ------------------------------------------------------------------ miniaturas das notícias (120 × 90)
 export type ImgNoticia =
   | { k: "placar"; casa: [string, string]; fora: [string, string]; gc: number; gf: number; nomeCasa: string; nomeFora: string }

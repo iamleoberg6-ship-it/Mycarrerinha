@@ -31,7 +31,7 @@ import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
 import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
-import { efeitosNamoro, IDADE_MINIMA_APP } from "../src/namoro.js";
+import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, semanaNamoro, temporadaNamoro, type Par } from "../src/namoro.js";
 import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
@@ -639,7 +639,8 @@ teste("Família: pai, mãe e irmãos sorteados; irmão mais velho jogador num cl
   const f = familiaDe(pacote, s);
   assert.ok(agirFamiliaJogo(pacote, s, "mae", "ligar").ok);
   assert.ok(agirFamiliaJogo(pacote, s, "pai", "ligar").ok);
-  assert.equal(agirFamiliaJogo(pacote, s, "mae", "ligar").ok, false, "só duas por semana");
+  for (let k = 0; k < 8; k++) assert.ok(agirFamiliaJogo(pacote, s, "mae", "ligar").ok);
+  assert.equal(agirFamiliaJogo(pacote, s, "mae", "ligar").ok, false, "só dez por semana");
   f.membros.push({ id: "irmT", parentesco: "irmao", nome: "Davi Andrade", nasc: 2026 - 15, profissao: "Estudante", relacao: 70, contato: 0, futebol: { fase: "amador", posicao: "MEI", ovr: 50, pot: 92 } });
   s.carreira.formacao = false; s.carreira.semana = 3; s.carreira.temporada = 0;
   const ctx = { semanaAbs: 99, ano: 2026, idadeJogador: 18, exterior: false, salario: 20000, saldo: 0, profissional: true, clubeId: "FLA", forcaClube: 78, relTecnico: 70, fama: 30, jogoEmCasa: false, janela: false, temporada: 0 };
@@ -1119,6 +1120,46 @@ teste("Mundo vivo: técnicos demitidos e contratados, lesões graves que tiram j
   const les = lesoesDaTemporada(pacote).find((y) => y.clubeId === "FLA");
   if (les) { s.carreira.semana = SEMANAS_TEMPORADA - 40 + 2 + les.ini; assert.ok(!elencoDisponivel(pacote, s).some((y) => y.nome === les.nome)); }
   sincronizarMundo(pacote, "", 0);
+});
+
+teste("Vida amorosa: caso escondido vira escândalo, divórcio custa caro, filhos (e pensão)", () => {
+  const n = novoNamoro(), ctx = { semente: "amor", semanaAbs: 10, idadeJogador: 25, fama: 80, cidade: "Rio de Janeiro", salario: 100000, saldo: 1000000, vidaNoturna: 30 };
+  const par = (id: string, etapa: Par["etapa"], relacao: number): Par => ({ id, nome: `${id} Silva`, idade: 25, cidade: "Rio de Janeiro", profissao: "modelo", jeito: "festeira", bio: "", interesse: 60, etapa, relacao, desde: 0, conversas: 3, cidadeClube: "Rio de Janeiro" });
+  n.par = par("Ana", "casados", 80);
+  n.matches.push(par("Bia", "match", 90));
+  let ok2 = false;
+  for (let k = 0; k < 10 && !ok2; k++) ok2 = agirNamoro(n, "Bia", "convidar", { ...ctx, semanaAbs: 10 + k }).msg.includes("caso");
+  assert.ok(ok2 && n.casos!.length === 1, "match com compromisso vira caso");
+  // mesma pessoa várias vezes: rende menos
+  const antes = n.par.relacao; for (let k = 0; k < 8; k++) agirNamoro(n, "Ana", "cozinhar", { ...ctx, semanaAbs: 30 });
+  assert.ok(n.par.relacao - antes < 8 * 6, "retorno decrescente");
+  let flagra = false;
+  for (let w = 31; w < 200 && !flagra; w++) { agirNamoro(n, "Bia", "encontroEscondido", { ...ctx, semanaAbs: w }); flagra = !!semanaNamoro(n, { ...ctx, semanaAbs: w }).escandalo; }
+  assert.ok(flagra && (n.escandalos ?? 0) >= 1, "uma hora a mídia descobre");
+  n.par = par("Ana", "casados", 80);
+  const div = agirNamoro(n, "Ana", "terminar", { ...ctx, semanaAbs: 300 });
+  assert.ok(div.ok && div.custo === 300000 && !n.par, "divórcio: 30% do saldo");
+  n.par = par("Carla", "casados", 90);
+  let filhos = 0; for (let a = 2030; a < 2045; a++) { temporadaNamoro(n, [], { semente: "amor", ano: a, salario: 100000 }); filhos = n.filhos!.length; }
+  assert.ok(filhos >= 1);
+  n.par = undefined;
+  assert.ok(temporadaNamoro(n, [], { semente: "amor", ano: 2050, salario: 100000 }).custo > 0, "sem a mãe por perto: pensão");
+});
+
+teste("Base tem tabela própria; troca no meio da temporada separa as passagens no histórico", () => {
+  const r = criarJogador({ nome: "Teste Base", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 175, pe: "direito", posicao: "MEI", semente: "tbase" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "tbase");
+  s.carreira.formacao = true; s.jogador.idade = 16;
+  for (let k = 0; k < 8; k++) semanaAutomatica(pacote, s, false);
+  const tb = s.carreira.tabelaBase!;
+  assert.ok(tb && tb.cat === "sub-17" && tb.tabela.some((x) => x.j > 0), "tabela da base andando");
+  // profissional que troca de clube no meio do ano
+  s.carreira.formacao = false; s.jogador.idade = 24; s.carreira.stats.jogos = 12; s.carreira.stats.gols = 5;
+  const destino = mundo(pacote).clube["PAL"];
+  const antes = s.carreira.historico.length;
+  mudarDeClube(pacote, s, destino, "transferencia", 1e6);
+  const h = s.carreira.historico.at(-1)!;
+  assert.ok(s.carreira.historico.length === antes + 1 && h.parcial && h.clubeId === "FLA" && h.jogos === 12 && s.carreira.stats.jogos === 0);
 });
 
 console.log(`\n${ok} testes passaram`);

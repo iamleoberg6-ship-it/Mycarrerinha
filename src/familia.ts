@@ -25,7 +25,7 @@ export const NOME_ACAO_FAM: Record<AcaoFamilia, string> = {
   ligar: "Ligar", visitar: "Visitar", presente: "Dar um presente", jogo: "Levar ao jogo", conselho: "Pedir conselho",
   indicarBase: "Indicar à base do clube", pedirIndicacao: "Pedir indicação ao clube dele",
 };
-export const MAX_ACOES_FAMILIA = 2;
+export const MAX_ACOES_FAMILIA = 10;
 export const NOME_PARENTESCO: Record<Parentesco, string> = { pai: "Pai", mae: "Mãe", irmao: "Irmão", irma: "Irmã" };
 export const NOME_TRACO: Record<TracoFamilia, string> = { treinador: "Treinador", exJogador: "Ex-jogador" };
 export const NOME_FASE_IRMAO: Record<FaseIrmao, string> = { crianca: "Ainda criança", amador: "Joga bola no bairro", base: "Na base", pro: "Profissional", parou: "Largou o futebol" };
@@ -198,7 +198,9 @@ export function agirFamilia(f: EstadoFamilia, id: string, acao: AcaoFamilia, ctx
   if (!acoesDe(m, ctx).includes(acao)) return { ok: false, msg: "Agora não dá." };
   const primeiro = m.nome.split(" ")[0];
   const feito = (v: number, msg: string, extra: Partial<ResultadoAcaoFam> = {}): ResultadoAcaoFam => {
-    m.relacao = clamp(m.relacao + v, 0, 100); m.contato = ctx.semanaAbs; f.feitas.push(id);
+    // a mesma pessoa várias vezes na semana: cada conversa rende menos
+    const vezes = f.feitas.filter((x) => x === id).length;
+    m.relacao = clamp(m.relacao + v * Math.max(0.25, 1 - 0.2 * vezes), 0, 100); m.contato = ctx.semanaAbs; f.feitas.push(id);
     return { ok: true, msg: `${msg} (${rotuloRelacaoFam(m.relacao).toLowerCase()} · ${Math.round(m.relacao)})`, ...extra };
   };
   switch (acao) {
