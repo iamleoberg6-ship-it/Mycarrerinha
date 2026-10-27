@@ -35,7 +35,8 @@ import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, sem
 import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
-import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO } from "../src/lances.js";
+import { SITUACOES, SITUACAO, POS_JOGO, COMEMORACAO, contextoPadrao } from "../src/lances.js";
+import * as jogoMod from "../src/jogo.js";
 import { COPAS, SEMANAS_COPA, novaCopa, rodarSemana, classificados, regiaoNaCopa, jogoDoClubeNaSemana, confederacao, type CopaId } from "../src/copas.js";
 import { CONVIDADOS } from "../src/convidados.js";
 import { nivelBase } from "../src/evolucao.js";
@@ -1172,4 +1173,36 @@ teste("Base tem tabela própria; troca no meio da temporada separa as passagens 
   assert.ok(s.carreira.historico.length === antes + 1 && h.parcial && h.clubeId === "FLA" && h.jogos === 12 && s.carreira.stats.jogos === 0);
 });
 
+
+teste("Jogo grande: lances decisivos, pênaltis e o placar da disputa", () => {
+  const { placarDisputa } = jogoMod;
+  // 5 × 5 com o adversário errando a quinta: venceu quem começou
+  const cob = (seq: [boolean, boolean][]) => seq.flatMap(([a, b]) => [{ meu: true, ok: a }, { meu: false, ok: b }]);
+  assert.deepEqual(placarDisputa(cob([[true, true], [true, true], [true, true], [true, true], [true, false]])), { meu: 5, adv: 4, fim: true, venceu: true });
+  // decide antes da quinta: 3 × 0 depois de três de cada
+  assert.equal(placarDisputa(cob([[true, false], [true, false], [true, false]])).fim, true);
+  // alternadas: 5 × 5, depois 1 × 0 na sexta
+  assert.deepEqual(placarDisputa(cob([[true, true], [true, true], [true, true], [true, true], [true, true], [true, false]])).venceu, true);
+  assert.equal(placarDisputa(cob([[true, true], [true, true]])).fim, false);
+  // os lances de jogo grande só aparecem quando o jogo vale muito (ou num clássico)
+  const ctx = contextoPadrao({ min: 44, saldo: -1 });
+  assert.equal(SITUACAO.vestiario.peso(ctx), 0.2);
+  assert.ok(SITUACAO.vestiario.peso({ ...ctx, decisiva: true }) > 1);
+  assert.equal(SITUACAO.comecoDeFinal.peso(contextoPadrao({ min: 8 })), 0);
+  assert.ok(SITUACAO.disputaPenaltis && SITUACAO.disputaPenaltis.opcoes.length === 4);
+  for (const id of ["comecoDeFinal", "segurarResultado", "torcidaHostil", "vestiario", "disputaPenaltis"]) for (const o of SITUACAO[id].opcoes) assert.equal(o.niveis.length, 5, `${id}/${o.id}`);
+});
+teste("Linha da vida: notícias marcantes ficam guardadas com o ano", () => {
+  const r = criarJogador({ nome: "Marco", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "vida" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "vida");
+  jogoMod.noticia(s, "vida", "Bia é a namorada nova do jogador", "x");
+  jogoMod.noticia(s, "lesao", "Lesão", "Marco se machucou e fica 9 semanas fora.");
+  jogoMod.noticia(s, "lesao", "Lesão", "Marco se machucou e fica 2 semanas fora.");
+  jogoMod.noticia(s, "jogo", "Flamengo 2 × 0 Vasco", "x");
+  const m = s.carreira.marcos ?? [];
+  assert.deepEqual(m.map((x) => x.tipo), ["amor", "lesao"]);
+  assert.equal(m[0].ano, jogoMod.ANO_INICIAL + s.carreira.temporada);
+  jogoMod.registrarMarco(s, { tipo: "casa", texto: "Muda para a casa nova" }); jogoMod.registrarMarco(s, { tipo: "casa", texto: "Muda para a casa nova" });
+  assert.equal(s.carreira.marcos!.length, 3, "sem repetir no mesmo ano");
+});
 console.log(`\n${ok} testes passaram`);

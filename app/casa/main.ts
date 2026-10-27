@@ -9,7 +9,7 @@ import {
   arrumarReliquias, MAX_RELIQUIAS_COMODO,
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
-import { salarioLiquido, type Save } from "../../src/jogo";
+import { salarioLiquido, registrarMarco, type Save } from "../../src/jogo";
 import { CONQUISTAS, OURO, PRATA, coresDaBola, padraoCamisa, type Grupo } from "../../src/reliquias";
 import { svgComodo, svgFantasma, svgItem, svgRevestimento, telaParaChao } from "./iso";
 
@@ -374,6 +374,7 @@ document.addEventListener("click", (ev) => {
   else if (d.mudar) {
     const r = mudar(st.e, d.mudar, d.modo as "alugar" | "comprar", salario());
     aviso(r.msg, !r.ok);
+    if (r.ok && carreira) registrarMarco(carreira, { tipo: "casa", texto: `${d.modo === "comprar" ? "Compra" : "Muda para"} ${nomeImovel(st.e, imovelAtual(st.e))}` });
     if (r.ok) { ($("dlgImob") as HTMLDialogElement).close(); st.comodo = imovelAtual(st.e).comodos[0].id; ui.sel = undefined; ui.previa = undefined; ui.cat = "auto"; tudo(); window.scrollTo({ top: 0, behavior: "smooth" }); }
   } else if ("fechar" in d) (b.closest("dialog") as HTMLDialogElement).close();
 });

@@ -19,7 +19,9 @@ export type Momento = "jogo" | "comemoracao" | "pos";
 /** Tudo o que pesa na escolha do lance. */
 export interface Contexto {
   pos: Posicao; min: number; saldo: number; base: boolean; jaFezGol: boolean;
-  classico: boolean; mandante: boolean; reta: boolean; briga: "titulo" | "rebaixamento" | ""; fama: number;
+  classico: boolean; mandante: boolean;
+  /** jogo que vale muito: final, semifinal, mata-mata de volta, briga direta na reta final */
+  decisiva?: boolean; reta: boolean; briga: "titulo" | "rebaixamento" | ""; fama: number;
   estreia: boolean; chuva: boolean; idade: number; relTecnico: number; moral: number; jogosPro: number;
   /** só no pós-jogo */
   resultado?: "v" | "e" | "d"; gols?: number; expulso?: boolean; nota?: number;

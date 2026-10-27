@@ -109,6 +109,12 @@ svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2);
 .evo-linha { fill: none; stroke: var(--ouro); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; } .evo-area { fill: var(--ouro); opacity: .12; }
 .evo-ponto { fill: var(--campo); stroke: var(--ouro); stroke-width: 2; } .evo-max { fill: var(--ouro-claro); stroke: var(--campo); stroke-width: 2; } .evo-agora { fill: var(--ouro); stroke: var(--giz); stroke-width: 2; }
 .evo-leg { margin: 6px 0 14px; } .evo-leg .pos { color: #74D394; } .evo-leg .neg { color: var(--neg); }
+/* linha da vida */
+.vida { position: relative; margin: 6px 0 16px; padding-left: 16px; border-left: 2px solid var(--linha); display: flex; flex-direction: column; gap: 14px; }
+.vida-ano { position: relative; } .vida-ano::before { content: ""; position: absolute; left: -23px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--ouro); box-shadow: 0 0 0 3px var(--campo); }
+.vida-cab { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; } .vida-cab b { font-family: var(--display); font-size: 20px; font-weight: 900; color: var(--ouro); } .vida-cab small { color: var(--giz-2); font-size: 12px; }
+.vida-item { display: grid; grid-template-columns: 24px 1fr; gap: 6px; font-size: 14px; padding: 3px 0; } .vida-item.t-titulo { color: var(--ouro-claro); font-weight: 600; } .vida-item.t-amor, .vida-item.t-filho { color: #F3B6CC; } .vida-item.t-lesao, .vida-item.t-escandalo { color: #F6C2B8; } .vida-item.t-fim { font-weight: 700; }
+.vida-mais { align-self: flex-start; margin-left: -6px; }
 /* retrospectiva */
 #dlgRetro .tela { padding: 0; }
 .retro { min-height: min(640px, 88vh); display: flex; flex-direction: column; padding: 14px 18px 18px; background: radial-gradient(120% 60% at 50% 0%, rgba(227,179,65,.18), transparent 60%), var(--campo); }
@@ -270,7 +276,22 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 15px; }
 .kv span:nth-child(odd) { color: var(--giz-2); }
 .teste summary { cursor: pointer; font-weight: 600; color: var(--giz-2); }
-@media (prefers-reduced-motion: reduce) { .lance, .decisao { animation: none; } }
+/* partida: clima, nota ao vivo, reações, pênaltis */
+.selo-jogo { text-align: center; margin: 0 0 6px; } .selo-jogo span { display: inline-block; font-family: var(--display); font-weight: 900; letter-spacing: .12em; font-size: 13px; padding: 3px 12px; border-radius: 999px; background: var(--ouro); color: var(--tinta); animation: pulsa 2.4s ease-in-out infinite; }
+@keyframes pulsa { 50% { box-shadow: 0 0 0 6px rgba(227,179,65,.18); } }
+dialog.jogo-grande .placar { background: radial-gradient(120% 140% at 50% 0%, rgba(227,179,65,.22), transparent 60%), var(--campo-2); border-bottom-color: var(--ouro-escuro); }
+.placar-extra { display: flex; justify-content: center; gap: 14px; margin-top: 4px; font-size: 12px; color: var(--giz-2); min-height: 18px; }
+.nota-viva { padding: 1px 8px; border-radius: 999px; background: var(--campo-3); } .nota-viva b { color: var(--giz); font-variant-numeric: tabular-nums; }
+.nota-viva.sobe { animation: notaSobe 1.2s ease; } .nota-viva.desce { animation: notaDesce 1.2s ease; }
+@keyframes notaSobe { 0%, 40% { background: rgba(116,211,148,.35); } } @keyframes notaDesce { 0%, 40% { background: rgba(236,125,105,.35); } }
+.lance.clima { color: var(--ouro-claro); font-weight: 600; } .lance.tenso { color: var(--ouro-claro); font-style: italic; }
+.lance.reacao, .lance .reacao { color: var(--giz-2); font-size: 14px; font-style: italic; }
+.disputa { background: var(--campo-2); border: 1px solid var(--ouro); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; animation: entra .35s ease both; }
+.disputa h2 { margin: 0; font-size: 20px; } .disputa h2 span { color: var(--ouro); font-variant-numeric: tabular-nums; }
+.disputa .ops { display: flex; flex-direction: column; gap: 8px; } .disputa .ops button { text-align: left; background: var(--campo-3); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; color: var(--giz); font: inherit; } .disputa .ops button:hover { border-color: var(--ouro); }
+.pen-bolas { display: flex; flex-direction: column; gap: 6px; } .pen-bolas div { display: flex; align-items: center; gap: 6px; min-height: 18px; } .pen-bolas small { width: 92px; color: var(--giz-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pen-bolas i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; } .pen-bolas i.ok { background: #74D394; } .pen-bolas i.erro { background: var(--neg); }
+@media (prefers-reduced-motion: reduce) { .lance, .decisao, .disputa, .selo-jogo span { animation: none; } }
 
 /* treino de posição */
 .pos-chip small { opacity: .75; margin-left: 3px; font-size: 11px; }

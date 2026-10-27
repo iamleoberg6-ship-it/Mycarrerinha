@@ -7,7 +7,7 @@ import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube
 import { salarioMensal, valorMercado, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
-import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
+import { SITUACAO, COMEMORACAO, POS_JOGO, DISPUTA, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { bonusDoTecnico, chanceDeDemissao, NOME_ESTILO, type Tecnico } from "./tecnicos.js";
 import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, lesoesQueComecam } from "./mundo.js";
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
@@ -57,6 +57,24 @@ export interface ResumoTemporada { /** passagem de meia temporada (trocou de clu
   valor?: number; salario?: number; fama?: number; seguidores?: number; saldo?: number }
 /** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
 export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" } | { k: "capa"; edicao: number; clube: string; regional?: boolean };
+export type TipoMarco = "clube" | "amor" | "filho" | "casa" | "recorde" | "lesao" | "escandalo" | "selecao" | "marco";
+export interface Marco { ano: number; tipo: TipoMarco; texto: string }
+/** Guarda na linha do tempo o que a notícia tem de marcante (namoro, casamento, filho, transferência, recorde, lesão grave, escândalo). */
+export function registrarMarco(s: Save, m: Omit<Marco, "ano">) {
+  const c = s.carreira, ano = ANO_INICIAL + c.temporada, l = (c.marcos ??= []);
+  if (l.some((x) => x.ano === ano && x.texto === m.texto)) return;
+  l.push({ ano, ...m });
+  if (l.length > 400) l.splice(0, l.length - 400);
+}
+function marcoDaNoticia(tipo: Noticia["tipo"], titulo: string, texto: string, img?: ImgNoticia): Omit<Marco, "ano"> | undefined {
+  if (img?.k === "transferencia" || /^Primeiro contrato profissional|^Contrato homegrown/.test(titulo)) return { tipo: "clube", texto: titulo };
+  if (/grávida|namorada nova|noivos|se casaram|Divórcio|Fim do casamento|Noivado desfeito|Troca de namorada|termina com ele/i.test(titulo)) return { tipo: "amor", texto: titulo };
+  if (/^Filho fora do casamento/.test(titulo)) return { tipo: "filho", texto: titulo };
+  if (/^Recorde na|recordista/.test(titulo)) return { tipo: "recorde", texto: titulo };
+  if (tipo === "lesao") { const sem = +(texto.match(/(\d+) semanas/)?.[1] ?? 0); if (sem >= 6) return { tipo: "lesao", texto: `Lesão grave: ${sem} semanas fora` }; }
+  if (tipo === "polemica" && /flagra|amante|caso|escândalo|fofoca/i.test(titulo + " " + texto)) return { tipo: "escandalo", texto: titulo };
+  return undefined;
+}
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
 export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
@@ -81,6 +99,8 @@ export interface Carreira {
   /** prêmios do mundo da temporada passada (Bola de Ouro, Melhor da Europa, Rei da América...) */
   premiosMundo?: PremiosDoAno;
   /** vencedores de cada prêmio do mundo, ano a ano */
+  /** linha do tempo da vida: o que aconteceu de marcante, com o ano (o resto a tela tira do histórico) */
+  marcos?: Marco[];
   galeriaPremios?: Partial<Record<IdPremio, { ano: number; nome: string; clubeId: string; nacionalidade: string; eu?: boolean }[]>>;
   suspensaoEstadual?: number; statsEstadual?: { jogos: number; gols: number; assist: number; notas: number[] };
   tabelaAnterior?: { ligaId: string; ordem: string[] }; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
@@ -400,6 +420,8 @@ let rotuloFim: string | undefined;
 export function noticia(s: Save, tipo: Noticia["tipo"], titulo: string, texto: string, img?: ImgNoticia) {
   s.noticias.unshift({ semana: rotuloFim ?? rotuloSemana(s.carreira), titulo, texto, tipo, ...(img ? { img } : {}) });
   s.noticias = s.noticias.slice(0, 80);
+  const m = marcoDaNoticia(tipo, titulo, texto, img);
+  if (m) registrarMarco(s, m);
 }
 
 // ------------------------------------------------------------------ calendário
@@ -705,7 +727,13 @@ export interface Lance { min: number; lado: "casa" | "fora"; meu?: "gol" | "assi
 export interface Partida {
   tipo: "profissional" | "base"; escalacao: Escalacao; casa: string; fora: string; nomeCasa: string; nomeFora: string; souCasa: boolean;
   /** jogo de copa continental (quarta-feira) */
-  copa?: { id: CopaId; jogoId: string; nome: string; rotulo: string; neutro?: boolean };
+  copa?: { id: CopaId; jogoId: string; nome: string; rotulo: string; neutro?: boolean; fase?: string;
+    /** jogo que decide a vaga (volta ou jogo único): empate no agregado vai para os pênaltis */
+    mataMata?: boolean;
+    /** gols do jogo de ida, pela ordem casa/fora DESTE jogo */
+    ida?: [number, number] };
+  /** clima do jogo grande (final, clássico, briga...): selo, texto de abertura e o peso na fama e na torcida */
+  clima?: { tag: string; texto: string; peso: number };
   entrada: number; saida: number; golsCasa: number; golsFora: number; lances: Lance[]; decisoes: Decisao[];
   base: { gols: number; assist: number; nota: number }; fAdv: number;
   /** nomes do elenco usados nos textos, contexto do jogo e narração de ambiente */
@@ -759,7 +787,10 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const jogo = cj ? { casa: cj.casa, fora: cj.fora, souCasa: cj.casa === meuId, adversario: cj.casa === meuId ? cj.fora : cj.casa } : jogoDaSemana(s);
   if (!jogo) return;
   const clubeM = (id: string) => W.clube[idClube(id)] ?? clubeDe(l, id);
-  const infoCopa = copa && cj ? { id: copa.copa.id, jogoId: cj.id, nome: COPAS[copa.copa.id].nome, rotulo: rotuloJogo(cj), ...(cj.neutro ? { neutro: true } : {}) } : undefined;
+  const mataMata = !!cj && !cj.grupo && !cj.amistoso && !cj.rodada && (cj.perna === 2 || !cj.perna);
+  const jIda = cj && cj.perna === 2 ? copa!.copa.jogos.find((x) => x.serie === cj.serie && x.perna === 1 && x.gc !== undefined) : undefined;
+  const ida: [number, number] | undefined = jIda ? (jIda.casa === cj!.casa ? [jIda.gc!, jIda.gf!] : [jIda.gf!, jIda.gc!]) : undefined;
+  const infoCopa = copa && cj ? { id: copa.copa.id, jogoId: cj.id, nome: COPAS[copa.copa.id].nome, rotulo: rotuloJogo(cj), fase: cj.fase, ...(cj.neutro ? { neutro: true } : {}), ...(mataMata ? { mataMata } : {}), ...(ida ? { ida } : {}) } : undefined;
   // na quarta, o cansaço é o de segunda e terça; no domingo, o da semana inteira (com o jogo de quarta, se houve)
   const prev = cj ? previaPlano(s, { ...plano, acoes: plano.acoes.slice(0, 2) }) : previaPlano(s, plano);
   const esc = selecaoJogo ? escalacaoSelecao(pacote, s, prev.cansaco) : escalacao(pacote, s, prev.cansaco, !!cj, !!copa && ehEstadual(copa.copa.id));
@@ -811,6 +842,8 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const ctx: Contexto = { pos: j.posicao, min: 0, saldo: 0, base, jaFezGol: false, classico, mandante: jogo.souCasa, reta,
     briga: cj || base || !reta ? "" : posTab <= 3 ? "titulo" : posTab > c.ordem.length - 4 ? "rebaixamento" : "", fama: c.fama, estreia: !base && jogosPro === 0,
     chuva, idade: j.idade, relTecnico: c.relTecnico, moral: c.moral, jogosPro };
+  const clima = base ? undefined : climaDoJogo(infoCopa, ctx, estadio);
+  if (clima && (clima.peso >= 1.3 || ctx.briga)) ctx.decisiva = true;
   // decisões dentro do tempo em campo: de uma a três, situações diferentes conforme posição, minuto, placar, contexto e memória
   const nDec = minutos <= 0 ? 0 : minutos < 30 ? 1 : rng.chance(0.25) ? 1 : rng.chance(0.7) ? 2 : 3;
   const decisoes: Decisao[] = [], usadas: string[] = [];
@@ -829,7 +862,50 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   void adv;
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}),
     entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF,
-    nomes, ctx, abertura: narr.abertura, narracao: narr.linhas };
+    nomes, ctx, abertura: narr.abertura, narracao: narr.linhas, ...(clima ? { clima } : {}) };
+}
+
+/** O tamanho do jogo: final, semifinal, Copa do Mundo, mata-mata de volta, clássico, briga na reta final, estreia. */
+function climaDoJogo(copa: Partida["copa"], ctx: Contexto, estadio: string): Partida["clima"] {
+  const pick = (l: string[]) => l[(estadio.length + ctx.jogosPro) % l.length];
+  const de = copa ? `${COPAS[copa.id].prep} ${copa.nome}` : "";
+  if (copa?.fase === "final") return { tag: "FINAL", peso: copa.id === "COP" ? 1.9 : 1.6, texto: pick([`Final ${de}. Estádio lotado, mosaico na arquibancada e a taça exposta na beira do campo.`, `É a final ${de}. Fogos antes do apito, as duas torcidas cantando desde cedo.`]) };
+  if (copa?.fase === "semi") return { tag: "SEMIFINAL", peso: copa.id === "COP" ? 1.6 : 1.35, texto: `Semifinal ${de}. Uma vaga na final em jogo${copa.ida ? ", e a ida já foi" : ""}.` };
+  if (copa?.id === "COP") return { tag: "COPA DO MUNDO", peso: 1.4, texto: pick(["Jogo de Copa do Mundo. O país inteiro parou para ver.", "Copa do Mundo. Hino, arrepio e o mundo inteiro olhando."]) };
+  if (copa?.mataMata && copa.fase !== "playoff") return { tag: copa.ida ? "JOGO DE VOLTA" : "MATA-MATA", peso: 1.25, texto: copa.ida ? `Jogo de volta ${de}. Quem perder, está fora.` : `Mata-mata ${de}: jogo único, quem perder volta para casa.` };
+  if (ctx.classico) return { tag: "CLÁSSICO", peso: 1.25, texto: pick(["Clássico. A cidade dividida, a semana inteira só se falou disso.", "Dia de clássico. Arquibancada pulsando desde cedo, as duas torcidas provocando."]) };
+  if (ctx.briga === "titulo") return { tag: "BRIGA PELO TÍTULO", peso: 1.2, texto: "Reta final e briga pelo título: cada ponto agora vale ouro." };
+  if (ctx.briga === "rebaixamento") return { tag: "CONTRA A QUEDA", peso: 1.2, texto: "Reta final e o fantasma do rebaixamento ronda o estádio. Não dá para perder." };
+  if (ctx.estreia) return { tag: "ESTREIA", peso: 1.1, texto: "Sua estreia como profissional. A família está na arquibancada." };
+  return undefined;
+}
+
+/** Disputa de pênaltis do mata-mata: quem bate primeiro, os batedores e, para cada cobrança, se entra (sem a do jogador,
+ *  que é decidida na tela). Até 5 cobranças de cada lado e depois alternadas até alguém errar. */
+export interface Disputa { meuPrimeiro: boolean; meu: boolean[]; adv: boolean[]; batMeu: string[]; batAdv: string[] }
+export function disputaDePenaltis(s: Save, p: Partida): Disputa {
+  const rng = rngDe(s, "disputa", p.copa?.jogoId ?? "");
+  const n = p.nomes, uniq = (l: (string | undefined)[]) => [...new Set(l.filter((x): x is string => !!x && x !== n.nome))];
+  const batMeu = uniq([n.batedor, n.comp, n.meia, n.ponta, n.capitao, n.zagMeu, n.goleiro]), batAdv = uniq([n.craque, n.ata, n.vol, n.zag, n.lat, n.gol]);
+  const chute = () => rng.chance(0.76);
+  return { meuPrimeiro: rng.chance(0.5), meu: Array.from({ length: 20 }, chute), adv: Array.from({ length: 20 }, chute), batMeu, batAdv };
+}
+/** A cobrança do próprio jogador na disputa. */
+export function decisaoDisputa(s: Save, p: Partida): Decisao {
+  return { min: 120, ...montarDecisao(rngDe(s, "disputa-lance", p.copa?.jogoId ?? ""), DISPUTA, p.ctx, p.nomes) };
+}
+/** Placar e vencedor de uma sequência de cobranças (ordem: a primeira cobrança é de quem começa). */
+export function placarDisputa(cob: { meu: boolean; ok: boolean }[]): { meu: number; adv: number; fim: boolean; venceu?: boolean } {
+  let meu = 0, adv = 0, bm = 0, ba = 0;
+  for (const x of cob) {
+    if (x.meu) { bm++; if (x.ok) meu++; } else { ba++; if (x.ok) adv++; }
+    if (bm <= 5 && ba <= 5) {
+      if (meu + (5 - bm) < adv) return { meu, adv, fim: true, venceu: false };
+      if (adv + (5 - ba) < meu) return { meu, adv, fim: true, venceu: true };
+    } else if (bm === ba && meu !== adv) return { meu, adv, fim: true, venceu: meu > adv };
+  }
+  if (bm === ba && bm >= 5 && meu !== adv) return { meu, adv, fim: true, venceu: meu > adv };
+  return { meu, adv, fim: false };
 }
 
 /** Janelas de minuto para os lances do jogador: só com ele em campo (depois de entrar, antes de sair),
@@ -978,11 +1054,12 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
     receberReliquias(s, ganhos, eventos);
   }
   c.formaUlt = [...c.formaUlt.slice(-4), nota];
-  if (pro) c.torcida = clamp((c.torcida ?? 50) + (nota - 6.5) * (copa ? 2 : 1.5) + gols, 0, 100);
+  const pesoJogo = partida.clima?.peso ?? 1;
+  if (pro) c.torcida = clamp((c.torcida ?? 50) + ((nota - 6.5) * (copa ? 2 : 1.5) + gols) * pesoJogo, 0, 100);
   c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
   c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5) * (c.tecnico?.estilo === "linha-dura" ? 1.5 : 1), 0, 100);
   const grande = (mundo(pacote).clube[c.clubeId] ?? clubeDe(l, c.clubeId)).forca >= 75 ? 1.5 : 1, vitrine = copa && !ehEstadual(copa.id) ? 1.5 : 1;
-  c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? vitrine * grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
+  c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? pesoJogo * vitrine * grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
   c.cansaco = clamp(c.cansaco + (30 * minutos) / 90, 0, 100);
   const l2 = sortearLesao(rng, c.cansaco, intensidadeAlta, j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6) * riscoLesaoFamilia(c.familia));
   if (l2) { c.lesao = Math.max(c.lesao, l2.semanas); eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}${copa ? " no jogo da copa" : ""}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
@@ -993,15 +1070,25 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
 }
 
 /** Quarta-feira: aplica o jogo da copa do jogador e roda a rodada da copa. Fica guardado para o resumo da semana. */
-export function concluirJogoDaCopa(pacote: PacoteDados, s: Save, plano: Plano, partida: Partida, decisoes: ResultadoDecisao[]): ResumoPartida | undefined {
+export function concluirJogoDaCopa(pacote: PacoteDados, s: Save, plano: Plano, partida: Partida, decisoes: ResultadoDecisao[], disputa?: { venceu: boolean; bateu?: boolean; converteu?: boolean; placar?: string }): ResumoPartida | undefined {
   const c = s.carreira, eventos: string[] = [], rng = rngDe(s, "copa-quarta"), info = partida.copa;
   if (!info) return;
   if (partida.escalacao === "suspenso") { if (ehEstadual(info.id)) c.suspensaoEstadual = 0; else c.suspensaoCopa = 0; eventos.push(`Cumpriu suspensão no ${COPAS[info.id].curto}.`); }
   const r = aplicarPartida(pacote, s, partida, decisoes, previaPlano(s, { ...plano, acoes: plano.acoes.slice(0, 2) }).notaExtra, plano.intensidade === "alta", rng, eventos);
   const e = copasDe(pacote, s)[info.id]!, w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60;
   const placar = r.placar ?? (partida.lances.length || partida.entrada ? [partida.golsCasa, partida.golsFora] as [number, number] : undefined);
-  rodarSemana(e, c.semana, forca, rngDe(s, "copa-rodada"), placar ? { id: info.jogoId, gc: placar[0], gf: placar[1] } : undefined);
+  // pênaltis jogados na tela: valem se o agregado terminou mesmo empatado
+  const meuId = ehDeSelecao(info.id) ? idSelecao(s.jogador.nacionalidade) : c.clubeId, advId = partida.casa === meuId ? partida.fora : partida.casa;
+  const empatou = !!placar && !!info.mataMata && placar[0] + (info.ida?.[0] ?? 0) === placar[1] + (info.ida?.[1] ?? 0);
+  const pen = empatou && disputa ? (disputa.venceu ? meuId : advId) : undefined;
+  rodarSemana(e, c.semana, forca, rngDe(s, "copa-rodada"), placar ? { id: info.jogoId, gc: placar[0], gf: placar[1], ...(pen ? { penaltis: pen } : {}) } : undefined);
   const jg = e.jogos.find((x) => x.id === info.jogoId)!;
+  if (pen && disputa?.bateu) {
+    const j = s.jogador;
+    if (disputa.converteu) { c.moral = clamp(c.moral + (disputa.venceu ? 5 : 2), 0, 100); if (disputa.venceu) { c.torcida = clamp((c.torcida ?? 50) + 4, 0, 100); c.fama = clamp(c.fama + 1, 0, 100); } }
+    else { c.moral = clamp(c.moral - (disputa.venceu ? 2 : 7), 0, 100); if (!disputa.venceu) { c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); noticia(s, "polemica", `${j.apelido} perde pênalti na disputa`, `${j.apelido} desperdiçou a cobrança e ${ehDeSelecao(info.id) ? "a seleção foi eliminada" : "o time foi eliminado"}${disputa.placar ? ` (${disputa.placar} nos pênaltis)` : ""}.`); } }
+    if (disputa.converteu && disputa.venceu) noticia(s, "jogo", `${j.apelido} converte e ${ehDeSelecao(info.id) ? "a seleção" : "o time"} passa nos pênaltis`, `Frieza na marca da cal${disputa.placar ? `: ${disputa.placar} na disputa` : ""}.`);
+  }
   const resumo: ResumoPartida = r.resumo ?? { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, golsCasa: jg.gc!, golsFora: jg.gf!, nota: 0, gols: 0, assist: 0, minutos: 0, tipo: "profissional", competicao: info.nome, rotulo: info.rotulo, escalacao: partida.escalacao };
   if (jg.penaltis) { resumo.penaltis = w.info[jg.penaltis]?.nome; eventos.push(`Decisão nos pênaltis: ${w.info[jg.penaltis]?.nome} passou.`); }
   noticiasDaCopa(pacote, s, e, eventos);
