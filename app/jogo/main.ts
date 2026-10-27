@@ -120,7 +120,8 @@ function telaInicio(): string {
     <h1>Sua carreira começa na base, na várzea ou nos EUA.</h1>
     <p class="sub" style="font-size:16px">Crie o jogador, escolha por onde começar e jogue semana a semana: treino, descanso, família, redes, o jogo de domingo e a casa que você vai montando com o salário.</p>
     <a class="botao grande" href="criacao.html">Criar meu jogador</a>
-    <button class="botao sec" data-acao="exemplo">Começar com um jogador de exemplo</button>`;
+    <button class="botao sec" data-acao="exemplo">Começar com um jogador de exemplo</button>
+    <button class="botao sec" data-acao="carregar-save">Carregar um save</button><p id="avisoSave" class="sub aviso-save" role="status"></p>`;
 }
 
 function telaOfertas(d: DadosCriacao): string {
@@ -211,7 +212,7 @@ function telaSemana(s: Save): string {
 
   <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Celular"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
   <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaCasa(s)}</section>
-  <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
+  <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador. Para não perder a carreira (trocar de aparelho, limpar o navegador), baixe o save de vez em quando.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
 }
 
 let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, verOutras = false;
@@ -866,9 +867,136 @@ function perfilHtml(s: Save): string {
       ${armarioCamisas(s)}
       ${(c.capas ?? []).length ? `<p class="rotulo">Capas de videogame</p><div class="capas">${c.capas!.map((x) => `<div class="capa-cel">${capaDe(s, x.edicao, x.clube, x.regional)}</div>`).join("")}</div>` : ""}
 
-      <p class="rotulo">Temporada a temporada</p>
-      <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}${(h as { parcial?: boolean }).parcial ? " <small class=\"sub\">(até a troca)</small>" : ""}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
+      ${evolucaoHtml(s)}
+      <p class="rotulo">Temporada a temporada <small>(toque no ano para ver a retrospectiva)</small></p>
+      <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${c.historico.includes(h) ? `<button class="nome-hist" data-retro="${h.ano}">${h.ano}</button>` : h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}${(h as { parcial?: boolean }).parcial ? " <small class=\"sub\">(até a troca)</small>" : ""}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
     </div>`;
+}
+// ------------------------------------------------------------------ evolução da carreira (gráfico no perfil)
+type MetricaEvo = "ovr" | "valor" | "salario" | "fama" | "seguidores";
+let metricaEvo: MetricaEvo = "ovr";
+const METRICAS: [MetricaEvo, string][] = [["ovr", "OVR"], ["valor", "Valor"], ["salario", "Salário"], ["fama", "Fama"], ["seguidores", "Seguidores"]];
+/** Um ponto por ano (a passagem de meia temporada fica de fora; vale a linha do fim do ano) e o "agora". */
+function pontosEvolucao(s: Save, m: MetricaEvo): { rot: string; v: number; agora?: boolean }[] {
+  const c = s.carreira, j = s.jogador, porAno = new Map<number, ResumoTemporada>();
+  for (const h of c.historico) if (!h.parcial) porAno.set(h.ano, h);
+  const pts = [...porAno.values()].map((h) => ({ rot: String(h.ano), v: m === "ovr" ? h.ovr : h[m] })).filter((x): x is { rot: string; v: number } => typeof x.v === "number");
+  const fl = mundo(pacote).liga[infoLiga(c.ligaId).id]?.fLiga ?? 0.6;
+  const agora = { ovr: Math.round(ovr(j)), valor: Math.round(valorMercado(ovr(j), j.idade, Math.max(1, c.anosContrato), fl)), salario: c.salario, fama: Math.round(c.fama), seguidores: c.seguidores }[m];
+  return [...pts, { rot: "Agora", v: agora, agora: true }];
+}
+const fmtEvo = (m: MetricaEvo, v: number) => m === "valor" || m === "salario" ? dinheiroCurto(v) : m === "seguidores" ? compacto(v) : String(Math.round(v));
+function dinheiroCurto(v: number): string {
+  const a = Math.abs(v), n = a >= 1e9 ? `${(v / 1e9).toFixed(1)} bi` : a >= 1e6 ? `${(v / 1e6).toFixed(a >= 1e7 ? 0 : 1)} mi` : a >= 1e3 ? `${Math.round(v / 1e3)} mil` : String(Math.round(v));
+  return `R$ ${n.replace(".", ",")}`;
+}
+function evolucaoHtml(s: Save): string {
+  const pts = pontosEvolucao(s, metricaEvo);
+  const chips = `<div class="chips evo-chips">${METRICAS.map(([k, n]) => `<button class="chip${metricaEvo === k ? " ativo" : ""}" data-evo="${k}">${n}</button>`).join("")}</div>`;
+  if (pts.length < 2) return `<p class="rotulo">Evolução</p>${chips}<p class="sub">O gráfico começa a aparecer depois da primeira temporada fechada${metricaEvo !== "ovr" ? " (esse número passou a ser guardado agora)" : ""}.</p>`;
+  const W = 340, H = 170, e = 40, d = 14, t = 16, b = 26, vs = pts.map((p) => p.v);
+  let lo = Math.min(...vs), hi = Math.max(...vs);
+  if (metricaEvo === "ovr" || metricaEvo === "fama") { lo = Math.max(0, Math.floor((lo - 3) / 5) * 5); hi = Math.min(100, Math.ceil((hi + 3) / 5) * 5); }
+  else { lo = Math.min(0, lo); hi = hi > lo ? hi * 1.08 : lo + 1; }
+  const x = (i: number) => e + (i * (W - e - d)) / (pts.length - 1), y = (v: number) => t + (1 - (v - lo) / (hi - lo || 1)) * (H - t - b);
+  const linha = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(" ");
+  const area = `${linha} L${x(pts.length - 1).toFixed(1)} ${H - b} L${e} ${H - b} Z`;
+  const passo = Math.ceil(pts.length / 6), imax = vs.indexOf(Math.max(...vs));
+  const grade = [0, 0.5, 1].map((f) => { const v = lo + f * (hi - lo); return `<line x1="${e}" x2="${W - d}" y1="${y(v)}" y2="${y(v)}" class="evo-grade"/><text x="${e - 6}" y="${y(v) + 4}" text-anchor="end" class="evo-eixo">${esc(fmtEvo(metricaEvo, v))}</text>`; }).join("");
+  const rots = pts.map((p, i) => i % passo === 0 || i === pts.length - 1 ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" class="evo-eixo${p.agora ? " agora" : ""}">${esc(p.agora ? "Agora" : "’" + p.rot.slice(2))}</text>` : "").join("");
+  const bolas = pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.v)}" r="${p.agora || i === imax ? 4.5 : 3}" class="${p.agora ? "evo-agora" : i === imax ? "evo-max" : "evo-ponto"}"><title>${esc(p.rot)}: ${esc(fmtEvo(metricaEvo, p.v))}</title></circle>`).join("");
+  const pico = pts[imax], ini = pts[0], fim = pts[pts.length - 1], dif = fim.v - ini.v;
+  return `<p class="rotulo">Evolução</p>${chips}
+    <svg class="evo" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(METRICAS.find((k) => k[0] === metricaEvo)![1])} por temporada">${grade}<path d="${area}" class="evo-area"/><path d="${linha}" class="evo-linha"/>${bolas}${rots}</svg>
+    <p class="sub evo-leg">Pico: <b>${esc(fmtEvo(metricaEvo, pico.v))}</b> (${esc(pico.rot)}) · desde ${esc(ini.rot)}: <b class="${dif >= 0 ? "pos" : "neg"}">${dif >= 0 ? "+" : "−"}${esc(fmtEvo(metricaEvo, Math.abs(dif)))}</b></p>`;
+}
+
+// ------------------------------------------------------------------ retrospectiva da temporada (abre no fim do ano e pelo perfil)
+let retro: { ano: number; passo: number } | undefined;
+function abrirRetro(ano: number) {
+  if (!save) return;
+  retro = { ano, passo: 0 };
+  $("telaRetro").innerHTML = retroHtml(save, ano, 0);
+  const d = $("dlgRetro") as HTMLDialogElement;
+  if (!d.open) d.showModal();
+}
+function retroHtml(s: Save, ano: number, passo: number): string {
+  const c = s.carreira, j = s.jogador, linhas = c.historico.filter((h) => h.ano === ano);
+  if (!linhas.length) return `<p class="sub">Sem dados dessa temporada.</p>`;
+  const fim = linhas[linhas.length - 1], ant = [...c.historico].reverse().find((h) => h.ano < ano && !h.parcial);
+  const soma = (k: "jogos" | "gols" | "assist" | "base" | "mvp" | "selRodada" | "selMes") => linhas.reduce((a, h) => a + (h[k] ?? 0), 0);
+  const jogos = soma("jogos"), nota = jogos ? linhas.reduce((a, h) => a + h.nota * h.jogos, 0) / jogos : 0;
+  const premios = linhas.flatMap((h) => h.premios ?? []);
+  const camp = linhas.flatMap((h) => [h.estadual, h.copa, ...(h.extras ?? [])].filter(Boolean)) as NonNullable<ResumoTemporada["copa"]>[];
+  const dlt = (a?: number, b?: number, f: (v: number) => string = (v) => String(Math.round(v))) => a === undefined || b === undefined || Math.round(a) === Math.round(b) ? "" : `<span class="retro-delta ${a - b >= 0 ? "pos" : "neg"}">${a - b >= 0 ? "▲" : "▼"} ${f(Math.abs(a - b))}</span>`;
+  const big = (v: string, r: string, extra = "") => `<div class="retro-num"><b>${v}</b><span>${r}</span>${extra}</div>`;
+  const clubes = [...new Set(linhas.map((h) => h.clube))];
+  // prêmios do mundo e da liga (só os do ano que acabou de fechar ficam guardados inteiros)
+  const mundoEu = c.premiosMundo?.ano === ano ? c.premiosMundo.premios.flatMap((p) => { const i = p.ranking.findIndex((x) => x.eu); return i >= 0 ? [`${i + 1}º · ${p.nome}`] : []; }) : [];
+  if (c.premiosMundo?.ano === ano && c.premiosMundo.selecao.some((x) => x.eu)) mundoEu.push("Seleção FIFA do Ano");
+  const vida = [...new Set(s.noticias.filter((n) => (n.tipo === "vida" || n.tipo === "polemica") && n.semana.includes(String(ano)) && !n.semana.startsWith("Fim") && !n.titulo.startsWith("Relíquia")).map((n) => n.titulo))].slice(0, 5).map((titulo) => ({ titulo }));
+  const ultimo = c.historico[c.historico.length - 1]?.ano === ano;
+  const slides: [string, string][] = [
+    ["Temporada", `<p class="rotulo">Retrospectiva</p><h1 class="retro-ano">${ano}</h1>
+      <p class="retro-sub">${esc(j.apelido)} · ${fim.idade} anos · ${clubes.map(esc).join(" → ")}</p>
+      ${fim.clubeId ? `<div class="retro-escudo">${escudo(fim.clubeId)}</div>` : ""}
+      <p class="retro-destaque">${fim.fase ? "Ano de formação" : fim.titulo ? "🏆 CAMPEÃO" : `${fim.posicao}º lugar · ${esc(fim.liga ?? "")}`}</p>
+      <div class="retro-nums">${big(String(fim.ovr), "OVR", dlt(fim.ovr, ant?.ovr))}${big(String(jogos || soma("base")), jogos ? "jogos" : "jogos na base")}</div>`],
+    ["Em campo", `<p class="rotulo">Em campo</p><h2>Os números</h2>
+      <div class="retro-nums tres">${big(String(soma("gols")), "gols", dlt(soma("gols"), ant?.gols))}${big(String(soma("assist")), "assistências")}${big(nota ? nota.toFixed(2).replace(".", ",") : "–", "nota média")}</div>
+      <div class="retro-nums tres">${big(String(soma("mvp")), "melhor em campo")}${big(String(soma("selRodada")), "seleção da rodada")}${big(String(soma("selMes")), "seleção do mês")}</div>
+      ${camp.length ? `<div class="retro-lista">${camp.map((k) => `<div><span>${esc(COPAS[k.id]?.curto ?? k.nome)}</span><b class="${k.campeao ? "ouro" : ""}">${esc(k.fase || "–")}</b><small>${k.jogos} j · ${k.gols} g</small></div>`).join("")}</div>` : ""}`],
+    ["Conquistas", `<p class="rotulo">Conquistas</p><h2>${premios.length + mundoEu.length ? "Para a estante" : "Sem taça desta vez"}</h2>
+      ${premios.length ? `<div class="retro-trofeus">${premios.map((x) => `<div><span>🏆</span>${esc(x)}</div>`).join("")}</div>` : `<p class="sub">Nenhum troféu neste ano. A próxima temporada é a chance de mudar isso.</p>`}
+      ${mundoEu.length ? `<p class="rotulo" style="margin-top:14px">No mundo</p><div class="retro-trofeus mundo">${mundoEu.map((x) => `<div><span>🌍</span>${esc(x)}</div>`).join("")}</div>` : ""}`],
+    ["Fora de campo", `<p class="rotulo">Fora de campo</p><h2>O ano em volta da bola</h2>
+      <div class="retro-lista">${fim.fama !== undefined ? `<div><span>Fama</span><b>${fim.fama}</b>${dlt(fim.fama, ant?.fama)}</div>` : ""}${fim.seguidores !== undefined ? `<div><span>Seguidores</span><b>${compacto(fim.seguidores)}</b>${dlt(fim.seguidores, ant?.seguidores, compacto)}</div>` : ""}${fim.valor !== undefined ? `<div><span>Valor de mercado</span><b>${dinheiroCurto(fim.valor)}</b>${dlt(fim.valor, ant?.valor, dinheiroCurto)}</div>` : ""}${fim.salario !== undefined ? `<div><span>Salário</span><b>${dinheiroCurto(fim.salario)}/mês</b>${dlt(fim.salario, ant?.salario, dinheiroCurto)}</div>` : ""}${fim.saldo !== undefined ? `<div><span>Saldo</span><b>${dinheiroCurto(fim.saldo)}</b>${dlt(fim.saldo, ant?.saldo, dinheiroCurto)}</div>` : ""}</div>
+      ${fim.fama === undefined ? `<p class="sub">Os números fora de campo passam a ser guardados a partir desta versão do jogo.</p>` : ""}
+      ${vida.length ? `<p class="rotulo" style="margin-top:14px">Na vida</p><div class="retro-vida">${vida.map((n) => `<div>${esc(n.titulo)}</div>`).join("")}</div>` : ""}`],
+    ["O que vem", `<p class="rotulo">${ultimo ? "O que vem" : "Depois disso"}</p><h2>${ultimo ? `Temporada ${ano + 1}` : `Fim de ${ano}`}</h2>
+      ${ultimo ? `<p class="retro-sub">Agora você tem ${j.idade} anos${c.encerrada || c.fase ? "" : ` · contrato até ${ANO_INICIAL + c.temporada + Math.max(0, c.anosContrato) - 1}`}.</p><p class="sub">A pré-temporada começa já. Treino, descanso e as escolhas da semana decidem o próximo capítulo.</p>` : `<p class="sub">Toque em outro ano no seu perfil para ver as outras temporadas.</p>`}`],
+  ];
+  const n = slides.length, p = Math.max(0, Math.min(n - 1, passo));
+  return `<div class="retro">
+    <div class="retro-topo"><div class="retro-pontos">${slides.map((x, i) => `<button class="${i === p ? "ativo" : i < p ? "visto" : ""}" data-retro-ir="${i}" aria-label="${esc(x[0])}"></button>`).join("")}</div><button class="fechar" data-acao="fechar-retro" aria-label="Fechar">✕</button></div>
+    <div class="retro-slide">${slides[p][1]}</div>
+    <div class="retro-nav">${p ? `<button class="botao sec" data-retro-ir="${p - 1}">Voltar</button>` : "<span></span>"}${p < n - 1 ? `<button class="botao" data-retro-ir="${p + 1}">${esc(slides[p + 1][0])} →</button>` : `<button class="botao" data-acao="fechar-retro">${ultimo && !c.encerrada ? "Bora pra próxima" : "Fechar"}</button>`}</div>
+  </div>`;
+}
+
+// ------------------------------------------------------------------ save: baixar e carregar (protege a carreira fora do navegador)
+type Downloads = { save: (r: { filename: string; data: string }) => Promise<unknown> };
+const claudeRt = (window as unknown as { claude?: { use: (n: string) => Promise<unknown> } }).claude;
+const downloadsP: Promise<Downloads | null> = claudeRt ? claudeRt.use("downloads").then((x) => x as Downloads | null).catch(() => null) : Promise.resolve(null);
+async function baixarSave() {
+  if (!save) return;
+  const conteudo = JSON.stringify({ app: "mycarrerinha", v: 1, salvoEm: new Date().toISOString(), save, plano, jogador: ler(CHAVE_JOGADOR) });
+  const nome = `mycarrerinha-${save.jogador.apelido.normalize("NFD").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "jogador"}-${ANO_INICIAL + save.carreira.temporada}.json`;
+  const dl = await Promise.race([downloadsP, new Promise<null>((r) => setTimeout(() => r(null), 800))]);
+  if (dl) {
+    try { await dl.save({ filename: nome, data: conteudo }); avisoSave("Save baixado. Guarde o arquivo: com ele você continua de onde parou em qualquer aparelho."); return; }
+    catch (e) { if ((e as { code?: string }).code === "declined") return; }
+  }
+  try {
+    const url = URL.createObjectURL(new Blob([conteudo], { type: "application/json" })), a = document.createElement("a");
+    a.href = url; a.download = nome; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    avisoSave("Save baixado. Guarde o arquivo: com ele você continua de onde parou em qualquer aparelho.");
+  } catch { avisoSave("Não deu para baixar o save aqui.", true); }
+}
+function avisoSave(msg: string, erro = false) {
+  const el = document.getElementById("avisoSave");
+  if (el) { el.textContent = msg; el.className = `sub aviso-save${erro ? " erro" : ""}`; }
+}
+function carregarSave(arquivo: File) {
+  arquivo.text().then((txt) => {
+    let d: { app?: string; save?: Save; plano?: Plano; jogador?: unknown };
+    try { d = JSON.parse(txt); } catch { avisoSave("Esse arquivo não é um save do Mycarrerinha.", true); return; }
+    if (d.app !== "mycarrerinha" || !d.save?.carreira || !d.save?.jogador) { avisoSave("Esse arquivo não é um save do Mycarrerinha.", true); return; }
+    gravar(CHAVE_SAVE, d.save);
+    if (d.plano) gravar(CHAVE_PLANO, d.plano);
+    if (d.jogador) gravar(CHAVE_JOGADOR, d.jogador);
+    location.reload();
+  }).catch(() => avisoSave("Não deu para ler o arquivo.", true));
 }
 let trofeuAberto: string | undefined, camisaAberta: string | undefined;
 /** Recordes: em cada clube por onde passou e na seleção, o top 5 da história com o jogador dentro (ou quanto falta). */
@@ -1122,7 +1250,7 @@ function mostrarResumo(r: ResumoSemana) {
   const q = r.copa, copaHtml = q ? `<section class="painel"><p class="rotulo dia-jogo">Quarta · ${esc(q.competicao ?? "Copa")}${q.rotulo ? ` · ${esc(q.rotulo)}` : ""}${q.melhorEmCampo ? " · ★ Melhor em campo" : ""}</p><h2 style="margin:4px 0">${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</h2>${q.penaltis ? `<p class="sub">${esc(q.penaltis)} venceu nos pênaltis.</p>` : ""}
       ${q.minutos > 0 ? `<div class="kv"><span>Nota</span><b>${q.nota.toFixed(1)}</b><span>Minutos</span><b>${q.minutos}</b><span>Gols / assistências</span><b>${q.gols} / ${q.assist}</b></div>` : `<p class="sub">Você não entrou em campo${q.escalacao && q.escalacao !== "banco" && q.escalacao !== "titular" ? ` (${esc(NOME_ESCALACAO[q.escalacao].toLowerCase())})` : ""}.</p>`}</section>` : "";
   const fim = r.fimDeTemporada ? `<section class="painel" style="border-color:var(--ouro)"><p class="rotulo">Fim da temporada ${r.fimDeTemporada.ano}</p><h2 style="margin:4px 0">${esc(r.fimDeTemporada.clube)} em ${r.fimDeTemporada.posicao}º${r.fimDeTemporada.titulo ? " · CAMPEÃO!" : ""}</h2>
-      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${[r.fimDeTemporada.estadual, r.fimDeTemporada.copa, ...(r.fimDeTemporada.extras ?? [])].filter(Boolean).map((k) => `<span>${esc(COPAS[k!.id].curto)}</span><b>${k!.jogos} j · ${k!.gols} g · ${esc(k!.fase ?? "")}</b>`).join("")}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p></section>` : "";
+      <div class="kv"><span>Jogos no profissional</span><b>${r.fimDeTemporada.jogos}</b><span>Gols / assistências</span><b>${r.fimDeTemporada.gols} / ${r.fimDeTemporada.assist}</b><span>Jogos na base</span><b>${r.fimDeTemporada.base}</b>${[r.fimDeTemporada.estadual, r.fimDeTemporada.copa, ...(r.fimDeTemporada.extras ?? [])].filter(Boolean).map((k) => `<span>${esc(COPAS[k!.id].curto)}</span><b>${k!.jogos} j · ${k!.gols} g · ${esc(k!.fase ?? "")}</b>`).join("")}<span>OVR</span><b>${r.fimDeTemporada.ovr}</b></div>${r.fimDeTemporada.premios?.length ? `<p class="sub" style="margin-top:8px;color:var(--ouro-claro)">🏆 ${r.fimDeTemporada.premios.map(esc).join(" · ")}</p>` : ""}<p class="sub" style="margin-top:8px">Agora você tem ${save!.jogador.idade} anos. Uma nova temporada começa com a pré-temporada.</p><button class="botao" style="width:100%;margin-top:10px" data-retro="${r.fimDeTemporada.ano}">Ver a retrospectiva de ${r.fimDeTemporada.ano}</button></section>` : "";
   $("telaResumo").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Resumo da semana</h1>${copaHtml}${partidaHtml}${fim}${r.fimDeTemporada && save!.carreira.premiosLiga ? `<section class="painel">${premiosLigaHtml(save!)}</section>` : ""}${r.fimDeTemporada && save!.carreira.premiosMundo ? `<section class="painel">${premiosMundoHtml(save!)}</section>` : ""}
     <section class="painel"><div style="display:flex;justify-content:space-between;align-items:flex-end"><div><p class="rotulo">OVR</p><div class="grande-num">${Math.round(r.ovrDepois)}</div></div><span class="delta ${r.ovrDepois - r.ovrAntes > 0 ? "pos" : ""}">${sinal(r.ovrDepois - r.ovrAntes, 2)}</span></div>
       <p class="sub" style="margin-top:6px">Mais evoluíram: ${r.ganhos.map(([a, v]) => `${NOME_AT[a]} ${sinal(v, 2)}`).join(" · ")}</p></section>
@@ -1134,7 +1262,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -1190,6 +1318,9 @@ document.addEventListener("click", (ev) => {
     const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.bbase) { buscaBase = d.bbase === "1"; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.retro) abrirRetro(+d.retro);
+  else if (d.retroIr !== undefined && retro) { retro.passo = +d.retroIr; $("telaRetro").innerHTML = retroHtml(save!, retro.ano, retro.passo); }
+  else if (d.evo) { metricaEvo = d.evo as MetricaEvo; const t = $("telaPerfil"), y = t.scrollTop; t.innerHTML = perfilHtml(save!); t.scrollTop = y; }
   else if (d.subtab || d.outras || d.fnot || d.relabre) {
     if (d.subtab) subTabela = d.subtab as typeof subTabela;
     else if (d.outras) verOutras = !verOutras;
@@ -1232,6 +1363,11 @@ document.addEventListener("click", (ev) => {
       break;
     case "desistir-aposentadoria": desistirAposentadoria(save!); salvar(); abrirPerfil(); render(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
+    case "fechar-retro": ($("dlgRetro") as HTMLDialogElement).close(); retro = undefined; break;
+    case "baixar-save": void baixarSave(); break;
+    case "carregar-save":
+      if (save && !b.dataset.certeza) { b.dataset.certeza = "1"; b.textContent = "Toque de novo: substitui a carreira atual"; break; }
+      ($("arqSave") as HTMLInputElement).click(); break;
     case "oferecer": if (save) { const r2 = oferecerJogador(save); msgMercado = { texto: r2.msg, ok: r2.ok }; salvar(); render(); } break;
     case "fechar-hist": ($("dlgHist") as HTMLDialogElement).close(); break;
     case "fechar-anuncio": gravar(CHAVE_ANUNCIO, b.dataset.chave); render(); break;
@@ -1261,5 +1397,6 @@ document.addEventListener("click", (ev) => {
 });
 $("dlgJogo").addEventListener("cancel", (ev) => ev.preventDefault());
 document.addEventListener("keydown", (ev) => { if ((ev.key === "Enter" || ev.key === " ") && (ev.target as HTMLElement).classList?.contains("card-jogador")) { ev.preventDefault(); abrirPerfil(); } });
+$("arqSave").addEventListener("change", (ev) => { const i = ev.target as HTMLInputElement, f = i.files?.[0]; if (f) carregarSave(f); i.value = ""; });
 void SEMANAS_PRE;
 render();

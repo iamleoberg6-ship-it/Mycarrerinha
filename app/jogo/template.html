@@ -102,6 +102,32 @@ tr.z-dir td:first-child { box-shadow: inset 3px 0 0 #74D394; } tr.z-play td:firs
 .abas button { background: none; border: 0; border-radius: 9px; padding: 9px 2px; font-weight: 600; font-size: 11.5px; color: var(--giz-2); cursor: pointer; }
 .abas button.ativo { background: var(--ouro); color: var(--tinta); }
 .fixo-jogar { position: sticky; bottom: 12px; z-index: 19; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+/* evolução */
+.evo-chips { flex-wrap: wrap; margin-bottom: 8px; } .evo-chips .chip { padding: 5px 11px; font-size: 12px; }
+svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; }
+.evo-grade { stroke: var(--linha); stroke-dasharray: 3 4; } .evo-eixo { fill: var(--giz-2); font-size: 10px; font-family: var(--texto); } .evo-eixo.agora { fill: var(--ouro); font-weight: 700; }
+.evo-linha { fill: none; stroke: var(--ouro); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; } .evo-area { fill: var(--ouro); opacity: .12; }
+.evo-ponto { fill: var(--campo); stroke: var(--ouro); stroke-width: 2; } .evo-max { fill: var(--ouro-claro); stroke: var(--campo); stroke-width: 2; } .evo-agora { fill: var(--ouro); stroke: var(--giz); stroke-width: 2; }
+.evo-leg { margin: 6px 0 14px; } .evo-leg .pos { color: #74D394; } .evo-leg .neg { color: var(--neg); }
+/* retrospectiva */
+#dlgRetro .tela { padding: 0; }
+.retro { min-height: min(640px, 88vh); display: flex; flex-direction: column; padding: 14px 18px 18px; background: radial-gradient(120% 60% at 50% 0%, rgba(227,179,65,.18), transparent 60%), var(--campo); }
+.retro-topo { display: flex; align-items: center; gap: 10px; } .retro-topo .fechar { position: static; }
+.retro-pontos { flex: 1; display: flex; gap: 5px; } .retro-pontos button { flex: 1; height: 4px; border: 0; border-radius: 4px; background: var(--linha); padding: 0; cursor: pointer; } .retro-pontos button.visto { background: var(--ouro-escuro); } .retro-pontos button.ativo { background: var(--ouro); }
+.retro-slide { flex: 1; padding: 18px 0 10px; animation: retroEntra .35s ease; } @keyframes retroEntra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.retro-ano { font-family: var(--display); font-weight: 900; font-size: 84px; line-height: .9; margin: 6px 0 4px; color: var(--ouro); letter-spacing: -1px; }
+.retro-sub { color: var(--giz-2); margin: 0 0 12px; } .retro-escudo svg { width: 64px; height: 64px; }
+.retro-destaque { font-size: 22px; font-weight: 800; margin: 10px 0 16px; }
+.retro-nums { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; } .retro-nums.tres { grid-template-columns: repeat(3, 1fr); }
+.retro-num { background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+.retro-num b { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; } .retro-nums.tres .retro-num b { font-size: 24px; } .retro-num span { font-size: 12px; color: var(--giz-2); }
+.retro-delta { font-size: 12px; font-weight: 700; } .retro-delta.pos { color: #74D394; } .retro-delta.neg { color: var(--neg); }
+.retro-lista { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; } .retro-lista > div { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline; padding: 9px 12px; background: var(--campo-2); border-radius: 10px; border: 1px solid var(--linha); }
+.retro-lista span { color: var(--giz-2); font-size: 13px; } .retro-lista b.ouro { color: var(--ouro); } .retro-lista small { color: var(--giz-2); }
+.retro-trofeus { display: flex; flex-direction: column; gap: 8px; } .retro-trofeus > div { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: linear-gradient(90deg, rgba(227,179,65,.18), transparent); border: 1px solid var(--ouro-escuro); font-weight: 600; } .retro-trofeus span { font-size: 22px; }
+.retro-vida { display: flex; flex-direction: column; gap: 6px; } .retro-vida > div { padding: 8px 12px; border-left: 3px solid #E58FB1; background: var(--campo-2); border-radius: 0 8px 8px 0; font-size: 14px; }
+.retro-nav { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+.aviso-save { min-height: 1em; margin: 6px 0; } .aviso-save.erro { color: var(--neg); }
 .sub-abas { display: flex; margin-bottom: 14px; border-bottom: 1px solid var(--linha); gap: 4px; }
 .sub-abas button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 4px 8px; font: inherit; font-weight: 700; font-size: 13px; color: var(--giz-2); cursor: pointer; }
 .sub-abas button.ativo { color: var(--giz); border-bottom-color: var(--ouro); }
@@ -327,6 +353,8 @@ button.rel-nivel { background: none; border: 1px solid transparent; border-radiu
 <main class="pagina" id="app"></main>
 <dialog id="dlgJogo"><div class="tela" id="telaJogo"></div></dialog>
 <dialog id="dlgResumo"><div class="tela" id="telaResumo"></div></dialog>
+<dialog id="dlgRetro" aria-label="Retrospectiva da temporada"><div class="tela" id="telaRetro"></div></dialog>
+<input type="file" id="arqSave" accept=".json,application/json" hidden>
 <dialog id="dlgPerfil" aria-label="Perfil do jogador"><div class="tela perfil" id="telaPerfil"></div></dialog>
 <dialog id="dlgHist" aria-label="Histórico do jogador"><div class="tela" id="telaHist" style="position:relative;padding:18px 16px"></div></dialog>
 <script>/*__SCRIPT__*/</script>

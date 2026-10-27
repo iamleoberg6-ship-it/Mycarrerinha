@@ -271,6 +271,8 @@ teste("Carreira jogável: temporada completa, tabela fechada e mesma semente, me
   const h = a.carreira.historico[0];
   assert.ok(h.posicao >= 1 && h.posicao <= 20);
   assert.ok(a.casa.saldo > r.dinheiroInicial, "salário entrou");
+  // fotografia do fim do ano (gráfico de evolução e retrospectiva)
+  assert.ok(h.valor! > 0 && typeof h.fama === "number" && typeof h.seguidores === "number" && typeof h.saldo === "number" && typeof h.salario === "number");
   // partida interativa: decisões mudam o placar de forma coerente
   for (let w = 0; w < 3; w++) {
     const plano = planoPadrao(), p = prepararPartida(pacote, a, plano);

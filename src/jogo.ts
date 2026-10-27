@@ -4,7 +4,7 @@ import { RNG, clamp } from "./rng.js";
 import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos, type Grupo, type Intensidade, type Participacao, type Posicao } from "./atributos.js";
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube, type Liga, type LinhaTabela, type PacoteDados } from "./liga.js";
-import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
+import { salarioMensal, valorMercado, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
@@ -52,7 +52,9 @@ export interface Stats { jogos: number; titular: number; gols: number; assist: n
   mvp?: number; selRodada?: number; selMes?: number }
 /** Campanha numa copa continental (na temporada). */
 export interface CampanhaCopa { id: CopaId; nome: string; fase: string; campeao: boolean; jogos: number; gols: number; assist: number }
-export interface ResumoTemporada { /** passagem de meia temporada (trocou de clube no meio do ano) */ parcial?: boolean; extras?: CampanhaCopa[]; mvp?: number; selRodada?: number; selMes?: number; copa?: CampanhaCopa; estadual?: CampanhaCopa; fase?: Fase; ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[] }
+export interface ResumoTemporada { /** passagem de meia temporada (trocou de clube no meio do ano) */ parcial?: boolean; extras?: CampanhaCopa[]; mvp?: number; selRodada?: number; selMes?: number; copa?: CampanhaCopa; estadual?: CampanhaCopa; fase?: Fase; ano: number; idade: number; clube: string; clubeId?: string; liga?: string; est?: EstatEstimada; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; base: number; baseGols?: number; premios?: string[];
+  /** fotografia do fim da temporada (gráfico de evolução e retrospectiva) */
+  valor?: number; salario?: number; fama?: number; seguidores?: number; saldo?: number }
 /** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
 export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" } | { k: "capa"; edicao: number; clube: string; regional?: boolean };
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
@@ -1615,6 +1617,8 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
   c.notasRodada = undefined;
   c.copas = undefined; c.statsCopa = undefined; c.suspensaoCopa = undefined; c.statsEstadual = undefined; c.suspensaoEstadual = undefined; c.statsExtra = undefined;
+  r.valor = Math.round(valorMercado(r.ovr, j.idade, Math.max(1, c.anosContrato), mundo(pacote).liga[infoLiga(c.ligaId).id]?.fLiga ?? 0.6));
+  r.salario = c.salario; r.fama = Math.round(c.fama); r.seguidores = c.seguidores; r.saldo = Math.round(s.casa.saldo);
   c.historico.push(r);
   if (titulo) { c.fama = clamp(c.fama + 5, 0, 100); c.torcida = clamp((c.torcida ?? 50) + 10, 0, 100); }
   noticia(s, "clube", `Fim da temporada ${r.ano}`, `${r.clube} terminou em ${posicao}º. ${j.apelido}: ${r.jogos} jogos no profissional, ${r.gols} gols, ${r.assist} assistências${r.base ? `, ${r.base} jogos na base` : ""}.`);
