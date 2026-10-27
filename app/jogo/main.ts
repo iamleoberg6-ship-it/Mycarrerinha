@@ -1426,7 +1426,7 @@ function abaCasa(s: Save): string {
 // ------------------------------------------------------------------ partida narrada
 let partida: Partida | undefined;
 let resultados: ResultadoDecisao[] = [];
-type ItemFila = { min: number; html?: string; cls?: string; decisao?: Decisao; gol?: "casa" | "fora"; meu?: "gol" | "assist"; texto?: string; saida?: boolean; fim?: boolean; acrescimo?: boolean };
+type ItemFila = { min: number; html?: string; cls?: string; jogador?: boolean; decisao?: Decisao; gol?: "casa" | "fora"; meu?: "gol" | "assist"; texto?: string; saida?: boolean; fim?: boolean; acrescimo?: boolean };
 let fila: ItemFila[] = [];
 let placar = [0, 0], timer = 0, minutoAtual = 0, nDec = 0, amarelos = 0, expulso = false, comemorou = false, posFeito = false, disputaFeita = false, notaMostrada = 0;
 /** Disputa de pênaltis em andamento (só no mata-mata empatado no agregado). */
@@ -1454,7 +1454,7 @@ function abrirJogo() {
   fila = [];
   if (p.clima) fila.push({ min: 0, html: esc(p.clima.texto), cls: "clima" });
   fila.push({ min: 0, html: `${esc(p.abertura || "Bola rolando.")}${p.entrada === 0 ? ` ${esc(nome)} começa jogando.` : ` ${esc(nome)} começa no banco.`}` });
-  for (const l of p.narracao ?? []) fila.push({ min: l.min, html: esc(l.texto), cls: l.cls });
+  for (const l of p.narracao ?? []) fila.push({ min: l.min, html: esc(l.texto), cls: l.cls, jogador: l.jogador || l.texto.includes(nome) });
   if (p.entrada > 0 && p.entrada <= 90) fila.push({ min: p.entrada, html: `Substituição: ${esc(nome)} entra em campo.` });
   if (p.saida < 90) fila.push({ min: p.saida, saida: true, html: `${esc(nome)} sente o cansaço e é substituído.` });
   fila.push({ min: 45, html: "Intervalo." });
@@ -1686,11 +1686,11 @@ function decidir(i: number, op: string) {
     expulso = true;
     novos.push({ min: d.min, html: `<span class="cartao vermelho"></span><span class="contra">${r.vermelho ? "Cartão vermelho direto" : "Segundo amarelo, depois o vermelho"}. ${esc(save!.jogador.apelido)} está expulso.</span>` });
     // fora de campo: some o resto das decisões, a saída por cansaço e o crédito pelos gols que ainda vão sair
-    fila = fila.filter((x) => !x.decisao && !x.saida).map((x) => (x.meu ? { ...x, meu: undefined } : x));
+    fila = fila.filter((x) => !x.decisao && !x.saida && !x.jogador).map((x) => (x.meu ? { ...x, meu: undefined } : x));
   } else if (r.sai) {
     expulso = true;
     novos.push({ min: d.min, html: `${esc(save!.jogador.apelido)} deixa o campo.` });
-    fila = fila.filter((x) => !(x.decisao && SITUACAO[x.decisao.situacao]?.momento !== "pos") && !x.saida).map((x) => (x.meu ? { ...x, meu: undefined } : x));
+    fila = fila.filter((x) => !(x.decisao && SITUACAO[x.decisao.situacao]?.momento !== "pos") && !x.saida && !x.jogador).map((x) => (x.meu ? { ...x, meu: undefined } : x));
   } else if (r.amarelo) novos.push({ min: d.min, html: `<span class="cartao"></span>Cartão amarelo para ${esc(save!.jogador.apelido)}.` });
   const re = reacaoDecisao(r, d);
   if (re && !r.vermelho && !r.sai) novos.push({ min: d.min, html: re, cls: "reacao" });

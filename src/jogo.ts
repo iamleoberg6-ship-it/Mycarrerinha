@@ -992,7 +992,10 @@ export function resolverDecisao(s: Save, p: Partida, d: Decisao, opcaoId: string
   const hab = habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op);
   const rng = rngDe(s, "decisao", d.situacao, d.min, opcaoId);
   const nivel = sortearNivel(rng, hab, nivelAdversario(p), op);
-  return { ...resolverEfeito(rng, op, nivel, { ...p.nomes, marco: String((p.ctx?.jogosPro ?? 0) + 1) }), min: d.min, nivel, situacao: d.situacao, opcao: opcaoId };
+  const r: ResultadoDecisao = { ...resolverEfeito(rng, op, nivel, { ...p.nomes, marco: String((p.ctx?.jogosPro ?? 0) + 1) }), min: d.min, nivel, situacao: d.situacao, opcao: opcaoId };
+  // lesão de verdade (duas semanas ou mais) no meio do jogo: não dá para continuar em campo
+  if ((r.lesao ?? 0) >= 2 && !r.sai && SITUACAO[d.situacao]?.momento !== "pos") r.sai = true;
+  return r;
 }
 /** Melhor opção pela nota esperada (só para a política automática; a tela não mostra nada disso). */
 export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {

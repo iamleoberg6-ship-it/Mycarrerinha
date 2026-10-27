@@ -84,7 +84,7 @@ export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | un
   return preencher(rng.pick(GOL_ADV), { ...nomes, zagMeu, X: sorteia(rng, ARTILHEIROS, elAdv) });
 }
 
-export interface LinhaNarracao { min: number; texto: string; cls?: "meu" | "contra" | "aviso" }
+export interface LinhaNarracao { min: number; texto: string; cls?: "meu" | "contra" | "aviso"; /** lance do próprio jogador (some se ele sair de campo antes) */ jogador?: boolean }
 interface Modelo { t: string; cls?: LinhaNarracao["cls"]; peso?: number; quando?: (c: CtxNarracao) => boolean }
 export interface CtxNarracao { mandante: boolean; classico: boolean; chuva: boolean; base: boolean; pos: Posicao; nota: number; entrada: number; saida: number }
 
@@ -156,7 +156,7 @@ export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, st
       const tipo = c.nota >= 7 ? (rng.chance(0.75) ? "bom" : "neutro") : c.nota <= 5.8 ? (rng.chance(0.7) ? "ruim" : "neutro") : rng.pick(["bom", "neutro", "ruim"] as const);
       const m = escolher(rng, DO_JOGADOR[tipo], c);
       if (usados.has(m.t)) continue; usados.add(m.t);
-      linhas.push({ min: rng.int(c.entrada + 2, Math.min(89, c.saida - 1)), texto: preencher(m.t, extras()), cls: tipo === "bom" ? "meu" : undefined });
+      linhas.push({ min: rng.int(c.entrada + 2, Math.min(89, c.saida - 1)), texto: preencher(m.t, extras()), cls: tipo === "bom" ? "meu" : undefined, jogador: true });
     }
   }
   return { abertura, linhas: linhas.filter((l) => l.min !== 45).sort((a, b) => a.min - b.min) };
