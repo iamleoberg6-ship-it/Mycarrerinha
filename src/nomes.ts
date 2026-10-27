@@ -92,11 +92,17 @@ export function gerarNome(rng: RNG, nacionalidade: string, usados: Set<string>):
   }
   // tudo tomado: nome composto, do jeito de cada lugar (dois sobrenomes, sobrenome duplo, dois prenomes)
   const lingua = LINGUA[nacionalidade] ?? "en";
-  for (;;) {
+  for (let t = 0; t < 400; t++) {
     const a = rng.pick(p.primeiros), b = rng.pick(p.sobrenomes), c = rng.pick(p.sobrenomes);
     const nome = lingua === "es" || lingua === "br" || lingua === "pt" ? `${a} ${b} ${c}` : lingua === "en" ? `${a} ${b}-${c}` : `${a} ${rng.pick(p.primeiros)} ${b}`;
     if (b !== c && !usados.has(nome)) { usados.add(nome); return nome; }
   }
+  // depois de muitas temporadas até os compostos acabam (os nomes de quem já se aposentou continuam guardados):
+  // vira filho, neto ou "segundo" de alguém, com um contador que sempre termina
+  const base = `${rng.pick(p.primeiros)} ${rng.pick(p.sobrenomes)}`;
+  const sufixos = lingua === "br" || lingua === "pt" ? ["Filho", "Júnior", "Neto", "Sobrinho"] : lingua === "es" ? ["hijo", "Junior"] : ["Jr.", "II", "III"];
+  for (const x of sufixos) { const nome = `${base} ${x}`; if (!usados.has(nome)) { usados.add(nome); return nome; } }
+  for (let k = 2; ; k++) { const nome = `${base} ${k}`; if (!usados.has(nome)) { usados.add(nome); return nome; } }
 }
 
 /** Nacionalidade de um estrangeiro que chega a uma liga (pesos de onde vêm os jogadores no mundo). */

@@ -2146,14 +2146,20 @@ document.addEventListener("click", (ev) => {
       // atalho de teste: o jogo segue no automático (sem mexer no mercado) até abrir a próxima janela com você profissional
       const c = save.carreira;
       let n = 0, saiu = !janelaAberta(c);
+      const vida = { familia: 0, filhos: 0, par: 0, outros: 0, amigos: 0 };
+      let erro = "";
       while (n < 60) {
-        semanaAutomatica(pacote, save, false); n++;
+        let r: ReturnType<typeof semanaAutomatica>;
+        try { r = semanaAutomatica(pacote, save, false); } catch (e) { erro = String((e as Error)?.message ?? e); console.error(e); break; }
+        n++;
+        for (const k of Object.keys(vida) as (keyof typeof vida)[]) vida[k] += r.vidaAuto?.[k] ?? 0;
         if (save.carreira.encerrada) break;
         const jan = janelaAberta(c);
         if (!jan) saiu = true;
         else if (saiu && save.jogador.idade >= 18 && !c.formacao && (mercadoDe(c).propostas.length || c.semana >= jan.fim)) break;
       }
-      plano = planoPadrao(); aba = "mercado"; msgMercado = { texto: `${n} semanas simuladas.`, ok: true }; salvar(); render(); window.scrollTo(0, 0);
+      plano = planoPadrao(); aba = "mercado"; const feito = [vida.familia && `${vida.familia}× falou com a família`, vida.par && `${vida.par} programas a dois`, vida.filhos && `${vida.filhos}× com os filhos`, vida.outros && `${vida.outros} conversas com casinhos e matches`, vida.amigos && `${vida.amigos} mensagens para amigos`].filter(Boolean);
+      msgMercado = erro ? { texto: `A simulação parou depois de ${n} semanas por um erro: ${erro}. Baixe o save (aba Vida) e mande para corrigir.`, ok: false } : { texto: `${n} semanas simuladas.${feito.length ? ` Nesse tempo, você ${feito.join(", ")}.` : ""}`, ok: true }; salvar(); render(); window.scrollTo(0, 0);
     } break;
     case "acelerar": clearTimeout(timer); avancar(); break;
     case "fimjogo": fecharSemana(); break;

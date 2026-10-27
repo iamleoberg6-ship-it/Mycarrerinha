@@ -49,10 +49,10 @@ import { gradeDeNumeros, numeroLivre, numeroParaChegada, limparNumeros, type Cam
 import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
-import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, familiaAutomatica, membro, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
-import { agirFilho, type AcaoFilho } from "./namoro.js";
+import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, acoesDe, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
+import { agirFilho, programaPreferido, type AcaoFilho } from "./namoro.js";
 import { gostosDe, MAX_ACOES_NAMORO, type Par } from "./namoro.js";
-import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, namoroAutomatico, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
+import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
 // ------------------------------------------------------------------ tipos
@@ -1016,6 +1016,8 @@ export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
 /** Resumo de uma partida do jogador (o da copa traz a competição e a fase). */
 export interface ResumoPartida { nomeCasa: string; nomeFora: string; idCasa?: string; idFora?: string; golsCasa: number; golsFora: number; nota: number; gols: number; assist: number; minutos: number; tipo: Partida["tipo"]; competicao?: string; rotulo?: string; penaltis?: string; escalacao?: Escalacao; melhorEmCampo?: boolean }
 export interface ResumoSemana {
+  /** o que o jogador fez sozinho pela vida no automático */
+  vidaAuto?: VidaAuto;
   rotulo: string; escalacao: Escalacao; partida?: ResumoPartida; copa?: ResumoPartida;
   ovrAntes: number; ovrDepois: number; ganhos: [Atributo, number][]; moral: [number, number]; cansaco: [number, number]; fama: [number, number];
   dinheiro?: { salario: number; aluguel: number; gastos?: number }; eventos: string[]; posicaoTabela: number; fimDeTemporada?: ResumoTemporada;
@@ -2496,14 +2498,48 @@ export function semanaAutomatica(pacote: PacoteDados, s: Save, decidirMercado = 
   if (s.carreira.escolhaNumero) numeroAutomatico(pacote, s);
   if (s.carreira.propPatrocinio) aceitarPatrocinio(s, "fixo");
   if (s.carreira.evento) resolverEvento(pacote, s, EVENTO[s.carreira.evento]?.opcoes[0].id ?? "");
-  { const f = familiaDe(pacote, s), ctx = ctxFamilia(pacote, s), r = rngDe(s, "familia-auto"), antes = s.casa.saldo; familiaAutomatica(f, ctx, r); void antes; }
-  namoroAutomatico(namoroDe(s.carreira), ctxNamoro(pacote, s));
+  const vida = vidaAutomatica(pacote, s);
   const plano = planoAutomatico(s);
   // quarta: jogo da copa continental
   const jc = jogoCopaDaSemana(pacote, s);
   if (jc) { const pc = prepararPartida(pacote, s, plano, jc); if (pc) concluirJogoDaCopa(pacote, s, plano, pc, decisoesAutomaticas(s, pc)); }
   const p = prepararPartida(pacote, s, plano);
-  return concluirSemana(pacote, s, plano, p, p ? decisoesAutomaticas(s, p) : []);
+  const res = concluirSemana(pacote, s, plano, p, p ? decisoesAutomaticas(s, p) : []);
+  res.vidaAuto = vida;
+  return res;
+}
+export interface VidaAuto { familia: number; filhos: number; par: number; outros: number; amigos: number }
+/** No automático o jogador não larga a vida: liga para quem da família está esfriando, sai com a parceira do jeito que ela
+ *  gosta, brinca com os filhos, responde os casinhos e os matches e manda mensagem para os amigos. Casos escondidos ficam
+ *  por conta do jogador (o automático não arrisca). */
+export function vidaAutomatica(pacote: PacoteDados, s: Save): VidaAuto {
+  const c = s.carreira, ab = semanaAbsJogo(c), v: VidaAuto = { familia: 0, filhos: 0, par: 0, outros: 0, amigos: 0 };
+  const ok = (r: { ok: boolean }, k: keyof VidaAuto) => { if (r.ok) v[k]++; };
+  // família: liga para quem está mais distante; visita quem esfriou muito
+  const f = familiaDe(pacote, s), ctxF = ctxFamilia(pacote, s);
+  const vivos = f.membros.filter((m) => !m.falecido).sort((a, b) => a.relacao - b.relacao);
+  for (const m of vivos.filter((m) => m.relacao < 72).slice(0, 3)) ok(agirFamiliaJogo(pacote, s, m.id, "ligar"), "familia");
+  if (vivos[0] && vivos[0].relacao < 45 && ab % 6 === 0) ok(agirFamiliaJogo(pacote, s, vivos[0].id, "visitar"), "familia");
+  const novo = f.membros.find((m) => acoesDe(m, ctxF).includes("indicarBase"));
+  if (novo) ok(agirFamiliaJogo(pacote, s, novo.id, "indicarBase"), "familia");
+  // filhos
+  const n = namoroDe(c);
+  (n.filhos ?? []).forEach((fi, i) => { if ((fi.relacao ?? 70) < 80) ok(agirFilhoJogo(pacote, s, i, ab % 4 === 0 ? "passear" : ab % 7 === 0 ? "levarJogo" : "brincar"), "filhos"); });
+  // o relacionamento sério: conversa sempre que esfria e um programa que ela curte a cada duas semanas
+  const p = n.par;
+  if (p && p.etapa !== "match") {
+    if (p.relacao < 75) ok(agirNamoroJogo(pacote, s, p.id, "conversar"), "par");
+    if (ab % 3 === 0 || p.relacao < 55) { const a = programaPreferido(p, ab, !!n.gravidez, s.casa.saldo, c.salario); if (a) ok(agirNamoroJogo(pacote, s, p.id, a), "par"); }
+  }
+  // casinhos e matches: responde para não sumirem
+  for (const x of [...(n.ficantes ?? [])]) if (x.relacao < 65) ok(agirNamoroJogo(pacote, s, x.id, "conversar"), "outros");
+  for (const m of [...n.matches].slice(0, 3)) if (m.conversas < 4 || m.relacao < 50) ok(agirNamoroJogo(pacote, s, m.id, "conversar"), "outros");
+  // amigos de verdade (fora do clube): uma mensagem a cada duas semanas
+  if (ab % 2 === 0) {
+    const rr = relacoesDe(c), amigos = Object.values(rr.lista).filter((x) => x.nivel >= 45 && !x.companheiro).sort((a, b) => b.nivel - a.nivel).slice(0, 2);
+    for (const x of amigos) ok(agirRelacao(pacote, s, x.nome, "mensagem"), "amigos");
+  }
+  return v;
 }
 /** Decide os lances de uma partida como a política automática (melhor opção, comemoração, pós-jogo). */
 function decisoesAutomaticas(s: Save, p: Partida): ResultadoDecisao[] {

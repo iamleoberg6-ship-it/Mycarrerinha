@@ -427,7 +427,8 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   const avisos: string[] = [];
   let moral = 0;
   arrumarNamoro(n);
-  n.matches = n.matches.filter((m) => ctx.semanaAbs - m.desde <= 6); // match sem conversa some
+  // match sem conversa some; quem segue conversando fica
+  n.matches = n.matches.filter((m) => ctx.semanaAbs - m.desde <= 6 || (m.conversas > 0 && !!m.vezes && ctx.semanaAbs - m.vezes.s <= 4));
   const p = n.par;
   // o parto (e a notícia; filho de caso vira escândalo)
   let noticiaFilho: string | undefined, escFilho = false;
@@ -530,6 +531,16 @@ export function temporadaNamoro(n: EstadoNamoro, eventos: string[], ctx?: { seme
 }
 
 /** Política automática: não usa o app (fica solteiro), só mantém quem já existe. */
+/** O programa que ela mais curte entre os que dá para fazer agora (para o automático). */
+export function programaPreferido(p: Par, semanaAbs: number, gravida: boolean, saldo: number, salario: number): AcaoNamoro | undefined {
+  const pode = acoesNamoro(p, semanaAbs, false, gravida);
+  const baratos: AcaoNamoro[] = ["serie", "cozinhar", "videogame", "piquenique", "academia", "amigasDela", "encontro", "jantar", "karaoke", ...(saldo > salario * 3 ? ["presente", "surpresa", "spa", "viagem"] as AcaoNamoro[] : [])];
+  const l = baratos.filter((a) => pode.includes(a));
+  if (!l.length) return undefined;
+  const g = gostosDe(p), curte = l.filter((a) => GOSTO_ACAO[a] && g.gosta.includes(GOSTO_ACAO[a]!) );
+  const r = new RNG(`prog|${p.id}|${semanaAbs}`);
+  return r.pick(curte.length ? curte : l.filter((a) => GOSTO_ACAO[a] !== g.odeia));
+}
 export function namoroAutomatico(n: EstadoNamoro, ctx: CtxNamoro): void {
   if (n.par && n.par.relacao < 50 && n.par.etapa !== "match") agirNamoro(n, n.par.id, "conversar", ctx);
 }
