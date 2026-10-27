@@ -17,6 +17,8 @@ export interface Marca {
   letra: "redonda" | "pesada" | "fina" | "italica";
   /** marcas de acessório só procuram quem já é muito seguido */
   seguidoresMin?: number; acessorio?: AcessorioMarca;
+  /** material esportivo: a chuteira da marca (cor do cabedal, detalhe e a cor da marca na lateral) */
+  chuteira?: [string, string, string];
 }
 
 export const NOME_CATEGORIA: Record<Categoria, string> = {
@@ -52,13 +54,13 @@ export const MARCAS: Marca[] = [
   { id: "xiaome", nome: "Xiaomé", categoria: "celular", cores: ["#FF6900", "#FFFFFF", "#1A1A1A"], simbolo: "quadrado", slogan: "Muito celular por pouco dinheiro.", peso: 0.9, famaMin: 25, letra: "redonda" },
   { id: "motorolo", nome: "Motorolo", categoria: "celular", cores: ["#001428", "#5BC2E7", "#FFFFFF"], simbolo: "asa", slogan: "Alô, alô, artilheiro.", peso: 0.8, famaMin: 15, letra: "redonda" },
   // material esportivo
-  { id: "naiki", nome: "Naiki", categoria: "material", cores: ["#111111", "#FF5A1F", "#FFFFFF"], simbolo: "chama", slogan: "Só vai.", peso: 2.0, famaMin: 60, letra: "italica" },
-  { id: "adidaz", nome: "Adidaz", categoria: "material", cores: ["#000000", "#FFFFFF", "#9A9A9A"], simbolo: "pontos", slogan: "Nada é impossível, nem de letra.", peso: 1.9, famaMin: 55, letra: "pesada" },
-  { id: "pumba", nome: "Pumba", categoria: "material", cores: ["#000000", "#E4002B", "#FFFFFF"], simbolo: "raio", slogan: "Mais rápido que a zaga.", peso: 1.4, famaMin: 40, letra: "pesada" },
-  { id: "novabalanca", nome: "Nova Balança", categoria: "material", cores: ["#CF0A2C", "#FFFFFF", "#2B2B2B"], simbolo: "balanca", slogan: "Equilíbrio de quem joga bonito.", peso: 1.3, famaMin: 35, letra: "pesada" },
-  { id: "mizumo", nome: "Mizumo", categoria: "material", cores: ["#001E62", "#FFFFFF", "#5B8BD6"], simbolo: "onda", slogan: "Chuteira de artesão.", peso: 1.0, famaMin: 20, letra: "fina" },
-  { id: "umbrela", nome: "Umbrela", categoria: "material", cores: ["#1A1A1A", "#FFFFFF", "#2E7D4F"], simbolo: "guardaChuva", slogan: "Faça chuva ou sol, faça gol.", peso: 0.8, famaMin: 10, letra: "pesada" },
-  { id: "penalte", nome: "Penaltê", categoria: "material", cores: ["#FFFFFF", "#003DA5", "#F2C200"], simbolo: "estrela", slogan: "Na marca da cal.", peso: 0.6, famaMin: 0, letra: "italica" },
+  { id: "naiki", nome: "Naiki", categoria: "material", cores: ["#111111", "#FF5A1F", "#FFFFFF"], simbolo: "chama", slogan: "Só vai.", peso: 2.0, famaMin: 60, letra: "italica", chuteira: ["#FF5A1F", "#111111", "#FFFFFF"] },
+  { id: "adidaz", nome: "Adidaz", categoria: "material", cores: ["#000000", "#FFFFFF", "#9A9A9A"], simbolo: "pontos", slogan: "Nada é impossível, nem de letra.", peso: 1.9, famaMin: 55, letra: "pesada", chuteira: ["#F4F4F2", "#111111", "#111111"] },
+  { id: "pumba", nome: "Pumba", categoria: "material", cores: ["#000000", "#E4002B", "#FFFFFF"], simbolo: "raio", slogan: "Mais rápido que a zaga.", peso: 1.4, famaMin: 40, letra: "pesada", chuteira: ["#E4002B", "#111111", "#FFFFFF"] },
+  { id: "novabalanca", nome: "Nova Balança", categoria: "material", cores: ["#CF0A2C", "#FFFFFF", "#2B2B2B"], simbolo: "balanca", slogan: "Equilíbrio de quem joga bonito.", peso: 1.3, famaMin: 35, letra: "pesada", chuteira: ["#1C1C1C", "#CF0A2C", "#CF0A2C"] },
+  { id: "mizumo", nome: "Mizumo", categoria: "material", cores: ["#001E62", "#FFFFFF", "#5B8BD6"], simbolo: "onda", slogan: "Chuteira de artesão.", peso: 1.0, famaMin: 20, letra: "fina", chuteira: ["#001E62", "#5B8BD6", "#FFFFFF"] },
+  { id: "umbrela", nome: "Umbrela", categoria: "material", cores: ["#1A1A1A", "#FFFFFF", "#2E7D4F"], simbolo: "guardaChuva", slogan: "Faça chuva ou sol, faça gol.", peso: 0.8, famaMin: 10, letra: "pesada", chuteira: ["#F4F4F2", "#2E7D4F", "#1A1A1A"] },
+  { id: "penalte", nome: "Penaltê", categoria: "material", cores: ["#FFFFFF", "#003DA5", "#F2C200"], simbolo: "estrela", slogan: "Na marca da cal.", peso: 0.6, famaMin: 0, letra: "italica", chuteira: ["#003DA5", "#F2C200", "#F2C200"] },
   // lanchonetes
   { id: "macdonaldo", nome: "MacDonaldo", categoria: "comida", cores: ["#DA291C", "#FFC72C", "#FFFFFF"], simbolo: "batata", slogan: "Amo muito tudo isso, menos perder.", peso: 1.5, famaMin: 50, letra: "redonda" },
   { id: "burguerrei", nome: "Burguer Rei", categoria: "comida", cores: ["#F5EBDC", "#D62300", "#502314"], simbolo: "coroa", slogan: "Rei da área, rei do lanche.", peso: 1.2, famaMin: 35, letra: "redonda" },

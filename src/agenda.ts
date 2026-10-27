@@ -3,14 +3,16 @@
 // e vence em poucas semanas: quem não responde fica com a primeira opção de "deixar para lá".
 import type { RNG } from "./rng.js";
 
-export type OrigemOcasiao = "amor" | "familia" | "filho" | "parca" | "convite" | "encrenca" | "exterior" | "fundacao" | "ferias" | "hobby" | "garagem" | "vestiario" | "tecnico" | "rival" | "torcida" | "cidade" | "contrato";
-export const ICONE_ORIGEM: Record<OrigemOcasiao, string> = { amor: "❤️", familia: "👨‍👩‍👧", filho: "🧒", parca: "🤙", convite: "✨", encrenca: "⚖️", exterior: "✈️", fundacao: "💛", ferias: "🏝️", hobby: "🎲", garagem: "🏎️", vestiario: "👕", tecnico: "📋", rival: "⚔️", torcida: "📣", cidade: "🏙️", contrato: "✍️" };
-export const NOME_ORIGEM: Record<OrigemOcasiao, string> = { amor: "Amor", familia: "Família", filho: "Filhos", parca: "Parças", convite: "Convite", encrenca: "Encrenca", exterior: "Vida lá fora", fundacao: "Fundação", ferias: "Férias", hobby: "Hobby", garagem: "Garagem", vestiario: "Vestiário", tecnico: "Técnico", rival: "Rival", torcida: "Torcida", cidade: "Cidade", contrato: "Contrato" };
+export type OrigemOcasiao = "amor" | "familia" | "filho" | "parca" | "convite" | "encrenca" | "exterior" | "fundacao" | "ferias" | "hobby" | "garagem" | "vestiario" | "tecnico" | "rival" | "torcida" | "cidade" | "contrato" | "acontece";
+export const ICONE_ORIGEM: Record<OrigemOcasiao, string> = { amor: "❤️", familia: "👨‍👩‍👧", filho: "🧒", parca: "🤙", convite: "✨", encrenca: "⚖️", exterior: "✈️", fundacao: "💛", ferias: "🏝️", hobby: "🎲", garagem: "🏎️", vestiario: "👕", tecnico: "📋", rival: "⚔️", torcida: "📣", cidade: "🏙️", contrato: "✍️", acontece: "⚡" };
+export const NOME_ORIGEM: Record<OrigemOcasiao, string> = { amor: "Amor", familia: "Família", filho: "Filhos", parca: "Parças", convite: "Convite", encrenca: "Encrenca", exterior: "Vida lá fora", fundacao: "Fundação", ferias: "Férias", hobby: "Hobby", garagem: "Garagem", vestiario: "Vestiário", tecnico: "Técnico", rival: "Rival", torcida: "Torcida", cidade: "Cidade", contrato: "Contrato", acontece: "Acontecimento" };
 
 /** O que uma escolha mexe na vida do jogador. */
 export interface EfeitoVida {
   moral?: number; fama?: number; torcida?: number; relTecnico?: number; cansaco?: number; dinheiro?: number; engajamento?: number; hype?: number;
   imprensa?: number; vidaNoturna?: number; desgaste?: number; pressao?: number; adaptacao?: number; impacto?: number;
+  /** semanas de lesão (gripe, pancada no treino) */
+  lesao?: number;
   /** bônus de evolução nas próximas semanas (0,03 = +3%) */
   evolucao?: number;
   /** relação com um familiar (id), um filho (índice) ou um parça (id) */

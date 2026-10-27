@@ -32,7 +32,7 @@ import { TRACOS, PAISES } from "../../src/dna";
 import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa, type TipoInvest, type AcaoEmpresa } from "../../src/negocios";
 import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
 import { ICONE_ORIGEM, NOME_ORIGEM } from "../../src/agenda";
-import { NOME_ESTILO_CHAT, type EstiloChat } from "../../src/amor";
+import { NOME_TOM } from "../../src/conversas";
 import { gostosDe, conheceGostos, NOME_GOSTO, LUGARES, NOME_PEDIDO, quimica, pensamentoDela, type Lugar } from "../../src/namoro";
 import { NOME_PERFIL, FUNCOES, type FuncaoParca } from "../../src/vida-social";
 import { LUXO, MAX_LUXO, HOBBIES, MAX_HOBBIES, CURSOS, NOME_LINGUA, NIVEL_LINGUA, cursosDisponiveis, infoCurso, linguaNativa, DOACAO, NOME_DOACAO, CUSTO_FUNDACAO, type TipoLuxo, type Hobby, type Curso, type Lingua } from "../../src/estilo";
@@ -101,7 +101,8 @@ function escudo(id: string): string {
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const info = infoClube(pacote, clubeId), [a, b] = info.cores;
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
-  return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, chuteira: mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1]] : undefined };
+  const ch = mat?.chuteira ?? (mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1], mat.cores[2]] : undefined);
+  return { cor1: a, cor2: b ?? "#FFFFFF", padrao: info.padrao, numero: s.jogador.numero, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
 }
 /** Aparência com os acessórios dos patrocinadores (óculos e fone) por cima. */
 function apDe(s: Save, forcar?: Marca): Aparencia {
@@ -712,15 +713,28 @@ function celMatch(s: Save): string {
       ? `<div class="escolha-nam"><p class="rotulo">Como vai ser o pedido?</p>${(Object.keys(NOME_PEDIDO) as (keyof typeof NOME_PEDIDO)[]).map((k) => `<button class="chip" data-nam="${p.id}" data-op="pedirCasamento" data-extra="${k}">${NOME_PEDIDO[k]}</button>`).join("")}</div>`
       : `<div class="escolha-nam"><p class="rotulo">Para onde?</p>${(Object.keys(LUGARES) as Lugar[]).map((k) => `<button class="chip" data-nam="${p.id}" data-op="${escolhaNam!.op}" data-extra="${k}">${LUGARES[k].nome}</button>`).join("")}</div>`) : "";
   const cena = (p: Par) => p.cena ? `<div class="cena"><p class="rotulo">No meio do encontro…</p><p>${esc(p.cena.texto)}</p><div class="ops">${p.cena.opcoes.map((o) => `<button data-cena="${p.id}" data-op="${o.id}"><span>${esc(o.rotulo)}</span><small>›</small></button>`).join("")}</div></div>` : "";
-  const chat = (p: Par) => { const m = chatDe(s, p.id); return m ? `<div class="chat"><div class="bolha">${esc(m)}</div><div class="chat-ops">${(Object.keys(NOME_ESTILO_CHAT) as EstiloChat[]).map((e) => `<button class="chip" data-chat="${p.id}" data-estilo="${e}">${NOME_ESTILO_CHAT[e]}</button>`).join("")}</div></div>` : ""; };
-  const acoes = (p: Par, caso = false) => acoesNamoro(p, ab, caso, !!n.gravidez).filter((a) => !(p.etapa === "match" && a === "conversar")).map((a) => `<button class="chip${a === "terminar" ? " perigo" : ""}${escolhaNam?.id === p.id && escolhaNam.op === a ? " ativo" : ""}" data-nam="${p.id}" data-op="${a}">${a === "terminar" && !caso && p.etapa === "casados" ? "Pedir o divórcio" : NOME_ACAO_NAMORO[a as AcaoNamoro]}</button>`).join("") ;
+  const chat = (p: Par) => {
+    const x = chatDe(pacote, s, p.id);
+    if (!x) return "";
+    const cv = x.conversa, nome = esc(p.nome.split(" ")[0]);
+    const bolhas = cv.hist.map((m) => m.de === "ela" ? `<div class="bolha">${esc(m.texto)}</div>` : `<div class="bolha eu">${esc(m.texto)}${m.delta !== undefined ? `<small class="${m.delta >= 0 ? "pos" : "neg"}">${m.delta >= 0 ? "+" : ""}${m.delta} ❤</small>` : ""}</div>`).join("");
+    const ops = x.opcoes.length ? `<div class="chat-respostas">${x.opcoes.map((o) => `<button data-chat="${p.id}" data-estilo="${o.id}"><span>${esc(o.texto)}</span><small>${esc(NOME_TOM[o.tom])}</small></button>`).join("")}</div>`
+      : `<p class="sub chat-fim">${cv.total >= 8 ? `${nome} adorou a conversa.` : cv.total >= 0 ? "Conversa boa." : `${nome} esfriou um pouco.`} Ela puxa outro assunto na semana que vem.${cv.convite && p.topouSair !== undefined ? ` <b>Ela topou sair.</b>` : ""}</p>`;
+    return `<details class="chat"${x.opcoes.length ? " open" : ""}><summary>💬 Conversa com ${nome}${x.opcoes.length ? " · <b>sua vez</b>" : ""}</summary><div class="chat-hist">${bolhas}</div>${ops}</details>`;
+  };
+  const PRINCIPAIS = new Set(["conversar", "convidar", "encontro", "jantar", "presente", "viagem", "pedirNamoro", "morarJunto", "pedirCasamento", "conhecerFamilia", "tentarFilho", "encontroEscondido", "assumir", "terminar"]);
+  const acoes = (p: Par, caso = false) => {
+    const bt = (a: AcaoNamoro) => `<button class="chip${a === "terminar" ? " perigo" : ""}${escolhaNam?.id === p.id && escolhaNam.op === a ? " ativo" : ""}" data-nam="${p.id}" data-op="${a}">${a === "terminar" && !caso && p.etapa === "casados" ? "Pedir o divórcio" : NOME_ACAO_NAMORO[a]}</button>`;
+    const l = acoesNamoro(p, ab, caso, !!n.gravidez).filter((a) => !(p.etapa === "match" && a === "conversar")), mais = l.filter((a) => !PRINCIPAIS.has(a));
+    return l.filter((a) => PRINCIPAIS.has(a)).map(bt).join("") + (mais.length ? `<details class="mais-programas"${mais.some((a) => escolhaNam?.id === p.id && escolhaNam.op === a) ? " open" : ""}><summary class="chip">Mais programas (${mais.length}) ▾</summary><div class="rel-acoes" style="margin:6px 0 0">${mais.map(bt).join("")}</div></details>` : "");
+  };
   const sobreEla = (p: Par) => { const g = gostosDe(p), q = quimica(p, c.vidaNoturna); return `<div class="sobre-ela">${conheceGostos(p) ? `<small>Gosta de <b>${g.gosta.map((x) => NOME_GOSTO[x]).join("</b> e <b>")}</b> · não curte <b>${NOME_GOSTO[g.odeia]}</b></small>` : `<small>Converse mais para descobrir do que ela gosta.</small>`}<div class="emp-saude"><span>Química</span><span class="rel-barra"><i style="width:${q}%;background:#E58FB1"></i></span></div><small class="pensa">💭 ${esc(pensamentoDela(p))}</small>${p.famosa ? `<small>⭐ Celebridade: vocês são o casal do momento.</small>` : ""}</div>`; };
   const barra = (p: Par, rot = NOME_ETAPA[p.etapa]) => `<div class="rel-nivel" style="margin-top:6px"><span style="color:${corRelFam(p.relacao)}">${rot} · ${Math.round(p.relacao)}</span><span class="rel-barra"><i style="width:${p.relacao}%;background:${corRelFam(p.relacao)}"></i></span></div>`;
-  const parHtml = par ? `<p class="rotulo">${par.etapa === "casados" ? "Sua esposa" : par.etapa === "noivos" ? "Sua noiva" : par.etapa === "morando" ? "Mora com você" : "Sua namorada"}</p>${cartaoPar(par, "", barra(par) + sobreEla(par))}${cena(par)}<div class="rel-acoes" style="margin-left:0">${acoes(par)}</div>${escolha(par)}` : "";
+  const parHtml = par ? `<p class="rotulo">${par.etapa === "casados" ? "Sua esposa" : par.etapa === "noivos" ? "Sua noiva" : par.etapa === "morando" ? "Mora com você" : "Sua namorada"}</p>${cartaoPar(par, "", barra(par) + sobreEla(par))}${cena(par)}${chat(par)}<div class="rel-acoes" style="margin-left:0">${acoes(par)}</div>${escolha(par)}` : "";
   const fic = n.ficantes ?? [];
   const ficHtml = fic.length ? `<p class="rotulo" style="margin-top:${par ? 14 : 0}px">Casinhos <small>(${fic.length})</small></p><p class="sub">Sem compromisso: dá para sair com mais de uma pessoa, sem esconder nada. Relacionamento sério é um só: quando você pedir alguém em namoro, os outros casinhos acabam.</p>${fic.map((x) => `${cartaoPar(x, "", barra(x, "Ficando") + sobreEla(x))}${cena(x)}${chat(x)}<div class="rel-acoes" style="margin-left:0">${acoes(x)}</div>${escolha(x)}`).join("")}` : "";
   const casos = n.casos ?? [];
-  const casosHtml = casos.length ? `<p class="rotulo" style="margin-top:14px">Casos escondidos <small>(${casos.length})</small></p><p class="sub">Quanto mais casos, encontros e fama, maior o risco de a mídia descobrir.${par ? ` Se descobrir, ${esc(par.nome.split(" ")[0])} fica sabendo.` : ""}</p>${casos.map((x) => `${cartaoPar(x, "", barra(x, x.exposto ? "Caso (já saiu na mídia)" : x.etapa === "namorando" ? "Namoro escondido" : "Caso"))}${cena(x)}<div class="rel-acoes" style="margin-left:0">${acoes(x, true)}</div>${escolha(x)}`).join("")}` : "";
+  const casosHtml = casos.length ? `<p class="rotulo" style="margin-top:14px">Casos escondidos <small>(${casos.length})</small></p><p class="sub">Quanto mais casos, encontros e fama, maior o risco de a mídia descobrir.${par ? ` Se descobrir, ${esc(par.nome.split(" ")[0])} fica sabendo.` : ""}</p>${casos.map((x) => `${cartaoPar(x, "", barra(x, x.exposto ? "Caso (já saiu na mídia)" : x.etapa === "namorando" ? "Namoro escondido" : "Caso"))}${cena(x)}${chat(x)}<div class="rel-acoes" style="margin-left:0">${acoes(x, true)}</div>${escolha(x)}`).join("")}` : "";
   const filhos = n.filhos ?? [];
   const ano = ANO_INICIAL + c.temporada, g = n.gravidez;
   const gravidezHtml = g ? `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>` : "";
@@ -1855,7 +1869,7 @@ document.addEventListener("click", (ev) => {
   else if (d.filho !== undefined && save) { const r = agirFilhoJogo(pacote, save, Number(d.filho), d.op as AcaoFilho); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.nam && save && !d.extra && (d.op === "encontro" || d.op === "convidar" || d.op === "pedirCasamento")) { escolhaNam = escolhaNam?.id === d.nam && escolhaNam.op === d.op ? undefined : { id: d.nam, op: d.op }; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.nam && save) { escolhaNam = undefined; const r = agirNamoroJogo(pacote, save, d.nam, d.op as AcaoNamoro, d.extra); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
-  else if (d.chat && save) { const r = responderChatJogo(pacote, save, d.chat, d.estilo as EstiloChat); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.chat && save) { const r = responderChatJogo(pacote, save, d.chat, d.estilo!); if (r.msg) msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.cena && save) { const r = responderCenaJogo(save, d.cena, d.op!); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.rel && save) {
     const r = agirRelacao(pacote, save, d.rel, d.op as AcaoRel, d.clube); msgRel = { texto: r.msg, ok: r.ok };

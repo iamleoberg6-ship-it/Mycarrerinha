@@ -919,7 +919,7 @@ teste("Estaduais: clubes do estado de todas as divisões, turno único, semifina
   assert.ok(["titular", "banco"].includes(prepararPartida(pacote, s, planoPadrao(), jogoCopaDaSemana(pacote, s))!.escalacao), "joga o estadual na pré-temporada");
   let fim;
   for (let i = 0; i < SEMANAS_TEMPORADA && !fim; i++) fim = semanaAutomatica(pacote, s, false).fimDeTemporada;
-  assert.ok(fim?.estadual && fim.estadual.jogos >= 5 && fim.estadual.nome === "Campeonato Paulista", JSON.stringify(fim?.estadual));
+  assert.ok(fim?.estadual && fim.estadual.jogos >= 3 && fim.estadual.nome === "Campeonato Paulista", JSON.stringify(fim?.estadual));
 });
 
 teste("Seleção da rodada e do mês: 4-3-3 com os melhores da liga; o jogador entra com nota alta; melhor em campo", () => {

@@ -123,7 +123,22 @@ export function tatuagemPescoco(id: string | undefined): string {
 }
 
 // ------------------------------------------------------------------ peças
-export interface Kit { cor1: string; cor2: string; padrao: string; numero: string; chuteira?: [string, string] }
+export interface Kit { cor1: string; cor2: string; padrao: string; numero: string; chuteira?: [string, string]; marcaChuteira?: { simbolo: string; cor: string } }
+/** A marca na lateral da chuteira (ou do tênis): o símbolo da marca de material esportivo. */
+function marcaNoCalcado(x: number, y: number, l: number, simbolo: string, cor: string): string {
+  const t = (d: string, w = 2.2) => `<path d="${d}" stroke="${cor}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const cx = x - 4 * l, cy = y + 9;
+  switch (simbolo) {
+    case "chama": return t(`M${cx - 9 * l} ${cy + 4} Q${cx} ${cy + 6} ${cx + 8 * l} ${cy - 4} Q${cx + 2 * l} ${cy + 2} ${cx - 9 * l} ${cy + 4}`, 2.4);
+    case "pontos": return [0, 1, 2].map((i) => t(`M${cx - 6 * l + i * 4.5 * l} ${cy + 6} L${cx - 2 * l + i * 4.5 * l} ${cy - 4}`, 2.2)).join("");
+    case "raio": return t(`M${cx - 8 * l} ${cy + 5} Q${cx - 2 * l} ${cy - 5} ${cx + 8 * l} ${cy - 3}`, 3);
+    case "guardaChuva": return `<path d="M${cx - 7 * l} ${cy} L${cx - 3.5 * l} ${cy - 4} L${cx} ${cy} L${cx - 3.5 * l} ${cy + 4} Z M${cx} ${cy} L${cx + 3.5 * l} ${cy - 4} L${cx + 7 * l} ${cy} L${cx + 3.5 * l} ${cy + 4} Z" fill="${cor}"/>`;
+    case "balanca": return `<text x="${cx}" y="${cy + 5}" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="12" fill="${cor}">N</text>`;
+    case "onda": return t(`M${cx - 9 * l} ${cy + 2} Q${cx - 4 * l} ${cy - 5} ${cx} ${cy + 1} T${cx + 9 * l} ${cy}`, 2.4);
+    case "estrela": return `<path d="${Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, r = i % 2 ? 2.3 : 5.2; return `${i ? "L" : "M"}${(cx + Math.cos(a) * r).toFixed(1)} ${(cy + Math.sin(a) * r).toFixed(1)}`; }).join(" ")}Z" fill="${cor}"/>`;
+    default: return "";
+  }
+}
 function padraoKit(k: Kit, g: Geo): string {
   const c2 = k.cor2, x0 = 150 - g.ombro - 60, x1 = 150 + g.ombro + 60;
   switch (k.padrao) {
@@ -199,13 +214,13 @@ function tuboPerna(g: Geo, p: Perna, t0: number, t1: number, folga: number, pont
   const ts = [t0, ...[0.25, 0.47, 0.53, 0.68, 0.87].filter((t) => t > t0 && t < t1), t1];
   return membro(ts.map((t) => [...pontoPerna(p, t), larguraPerna(g, t) + folga] as [number, number, number]), ponta);
 }
-function calcado(p: Perna, cor: string, detalhe: string, chuteira: boolean): string {
+function calcado(p: Perna, cor: string, detalhe: string, chuteira: boolean, marca?: { simbolo: string; cor: string }): string {
   const [x, y] = p.A, l = -p.lado;
   // visto de frente: o pé aponta para baixo e um pouco para fora
   const d = `M${x - 12 * l} ${y - 8} L${x + 13 * l} ${y - 8} Q${x + 17 * l} ${y + 8} ${x + 15 * l} ${y + 20} Q${x + 8 * l} ${y + 26} ${x - 6 * l} ${y + 25} L${x - 20 * l} ${y + 24} Q${x - 31 * l} ${y + 22} ${x - 28 * l} ${y + 13} Q${x - 22 * l} ${y + 3} ${x - 12 * l} ${y - 8} Z`;
   return `${contorno(d, cor)}<path d="M${x + 11 * l} ${y - 2} Q${x - 2 * l} ${y + 12} ${x - 22 * l} ${y + 14}" stroke="${detalhe}" stroke-width="3.6" fill="none" stroke-linecap="round"/>
     <path d="M${x + 15 * l} ${y + 20} Q${x + 8 * l} ${y + 26} ${x - 6 * l} ${y + 25} L${x - 20 * l} ${y + 24} Q${x - 31 * l} ${y + 22} ${x - 29 * l} ${y + 17}" stroke="${chuteira ? "#E9E4D8" : "#F7F5EF"}" stroke-width="${chuteira ? 2.6 : 5}" fill="none"/>
-    ${chuteira ? [-18, -6, 6].map((dx) => `<rect x="${x + dx * l - 2}" y="${y + 24}" width="4.5" height="5" rx="1.2" fill="#2A2A2A"/>`).join("") : `<path d="M${x - 2 * l} ${y - 4} L${x + 8 * l} ${y + 2} M${x - 6 * l} ${y} L${x + 4 * l} ${y + 6}" stroke="${detalhe}" stroke-width="1.4"/>`}`;
+    ${chuteira ? [-18, -6, 6].map((dx) => `<rect x="${x + dx * l - 2}" y="${y + 24}" width="4.5" height="5" rx="1.2" fill="#2A2A2A"/>`).join("") : `<path d="M${x - 2 * l} ${y - 4} L${x + 8 * l} ${y + 2} M${x - 6 * l} ${y} L${x + 4 * l} ${y + 6}" stroke="${detalhe}" stroke-width="1.4"/>`}${marca ? marcaNoCalcado(x, y, l, marca.simbolo, marca.cor) : ""}`;
 }
 function shortsPath(g: Geo, largo: boolean, bainhaCamisa: number): { d: string; barra: number } {
   const q = g.quadril + (largo ? 10 : 4), barra = largo ? 540 : 524, cintura = bainhaCamisa - 30, abre = largo ? 14 : 8;
@@ -270,8 +285,10 @@ export function svgCorpo(o: OpcoesCorpo): string {
       const topo = pontoPerna(p, t0 + 0.035), w = larguraPerna(g, t0 + 0.035) / 2 + 2;
       partes.push(`<path d="M${f1(topo[0] - w)} ${f1(topo[1])} L${f1(topo[0] + w)} ${f1(topo[1])}" stroke="${kit.cor2}" stroke-width="5"/>`);
     }
-    const [c1, c2] = jogo ? (kit.chuteira ?? ["#1A1A1A", "#E3B341"]) : v.casual === "social" ? ["#3B2416", "#5A3A26"] : ["#F7F5EF", "#C8C4BA"];
-    partes.push(calcado(p, c1, c2, jogo));
+    // chuteira da marca em campo; fora de campo, o tênis também é da marca (menos com roupa social)
+    const daMarca = !!kit.marcaChuteira && (jogo || v.casual !== "social");
+    const [c1, c2] = jogo ? (kit.chuteira ?? ["#1A1A1A", "#E3B341"]) : v.casual === "social" ? ["#3B2416", "#5A3A26"] : daMarca && kit.chuteira ? [kit.chuteira[0], kit.chuteira[1]] : ["#F7F5EF", "#C8C4BA"];
+    partes.push(calcado(p, c1, c2, jogo, daMarca ? kit.marcaChuteira : undefined));
   }
 
   // 2. calção (jogo) ou bermuda/calça (dia a dia)

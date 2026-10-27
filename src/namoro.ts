@@ -2,6 +2,7 @@
 // conversa, primeiro encontro, namoro, morar junto e casamento. A profissão dela mexe no jogo
 // (influencer dá fama, psicóloga dá moral, agente negocia por você...). Só a partir dos 18 anos.
 import { RNG, clamp } from "./rng.js";
+import type { Conversa } from "./conversas.js";
 
 export const IDADE_MINIMA_APP = 18;
 export type Profissao = "influencer" | "psicologa" | "agente" | "modelo" | "medica" | "jornalista" | "personal" | "nutricionista" | "advogada" | "professora" | "estudante" | "arquiteta";
@@ -80,10 +81,14 @@ export const NOME_ETAPA: Record<Etapa, string> = { match: "Deu match", saindo: "
 export interface Par extends Perfil { etapa: Etapa; relacao: number; desde: number; conversas: number; cidadeClube: string;
   /** quantas vezes vocês fizeram algo nesta semana (a 5ª conversa rende menos que a 1ª) */
   vezes?: { s: number; n: number }; conheceuFamilia?: boolean;
+  /** o bichinho que vocês adotaram juntos */
+  pet?: string;
   /** caso escondido: encontros nesta semana (aumentam o risco) e se já saiu na mídia */
   escondidos?: number; exposto?: boolean;
   /** conversa do app esperando resposta, momento do encontro esperando escolha, ela virou famosa, aniversário (semana da temporada) */
-  chat?: { msg: string; s: number }; cena?: Cena; famosa?: boolean; aniver?: number }
+  chat?: { msg: string; s: number }; cena?: Cena; famosa?: boolean; aniver?: number;
+  /** conversa da semana no chat (src/conversas.ts), assuntos recentes e a semana em que ela topou sair */
+  conversa?: Conversa; topicosVistos?: string[]; topouSair?: number }
 export interface Filho { nome: string; mae: string; ano: number; /** mãe não é a companheira atual: pensão */ pensao: boolean;
   /** relação com o pai (0–100) e a semana do último programa juntos */ relacao?: number; contato?: number; vezes?: { s: number; n: number };
   /** o filho que quer ser jogador: escolinha, base de um clube, profissional, ou largou */
@@ -171,12 +176,25 @@ export function curtir(n: EstadoNamoro, id: string, sim: boolean, ctx: CtxNamoro
 }
 
 export type AcaoNamoro = "encontro" | "conversar" | "convidar" | "pedirNamoro" | "jantar" | "presente" | "viagem" | "morarJunto" | "pedirCasamento" | "terminar"
-  | "cozinhar" | "serie" | "levarJogo" | "postarFoto" | "conhecerFamilia" | "encontroEscondido" | "assumir" | "tentarFilho";
+  | "cozinhar" | "serie" | "levarJogo" | "postarFoto" | "conhecerFamilia" | "encontroEscondido" | "assumir" | "tentarFilho"
+  | "piquenique" | "karaoke" | "videogame" | "aulaDanca" | "academia" | "surpresa" | "spa" | "amigasDela" | "eventoDela" | "viagemInternacional" | "cafeNaCama" | "adotarPet";
 export const NOME_ACAO_NAMORO: Record<AcaoNamoro, string> = {
   encontro: "Marcar um encontro", conversar: "Conversar", convidar: "Chamar para sair", pedirNamoro: "Pedir em namoro", jantar: "Jantar fora", presente: "Dar um presente",
   viagem: "Viagem de fim de semana", morarJunto: "Chamar para morar junto", pedirCasamento: "Pedir em casamento", terminar: "Terminar",
   cozinhar: "Cozinhar em casa", serie: "Maratonar uma série", levarJogo: "Levar ao jogo", postarFoto: "Postar foto juntos", conhecerFamilia: "Apresentar à família",
   encontroEscondido: "Encontro escondido", assumir: "Assumir o relacionamento", tentarFilho: "Tentar ter um filho",
+  piquenique: "Piquenique no parque", karaoke: "Noite de karaokê", videogame: "Disputa no videogame", aulaDanca: "Aula de dança juntos", academia: "Treinar juntos",
+  surpresa: "Fazer uma surpresa", spa: "Dia de spa", amigasDela: "Sair com as amigas dela", eventoDela: "Ir ao evento do trabalho dela",
+  viagemInternacional: "Viagem internacional", cafeNaCama: "Café da manhã na cama", adotarPet: "Adotar um bichinho",
+};
+/** Como cada jeito recebe cada programa (multiplica o quanto a relação sobe). */
+const JEITO_ACAO: Partial<Record<AcaoNamoro, Partial<Record<string, number>>>> = {
+  piquenique: { tranquila: 1.4, caseira: 1.3, romântica: 1.3, festeira: 0.7 }, karaoke: { festeira: 1.5, "engraçada": 1.5, caseira: 0.7, workaholic: 0.8 },
+  videogame: { competitiva: 1.6, "engraçada": 1.3, romântica: 0.7 }, aulaDanca: { romântica: 1.5, festeira: 1.4, workaholic: 0.7 },
+  academia: { aventureira: 1.4, competitiva: 1.3, caseira: 0.6 }, surpresa: { romântica: 1.6, caseira: 1.3, ciumenta: 1.3, independente: 0.8 },
+  spa: { workaholic: 1.5, tranquila: 1.4, aventureira: 0.7 }, amigasDela: { festeira: 1.5, independente: 1.2, ciumenta: 1.4, caseira: 0.8 },
+  eventoDela: { workaholic: 1.7, independente: 1.5, competitiva: 1.2 }, viagemInternacional: { aventureira: 1.5, romântica: 1.3 },
+  cafeNaCama: { romântica: 1.5, caseira: 1.4, independente: 0.9 }, adotarPet: { caseira: 1.5, romântica: 1.3, tranquila: 1.2, aventureira: 0.8 },
 };
 const ehCaso = (n: EstadoNamoro, p: Par) => !!n.casos?.some((x) => x.id === p.id);
 export function acoesNamoro(p: Par, semanaAbs: number, caso = false, gravida = false): AcaoNamoro[] {
@@ -185,15 +203,16 @@ export function acoesNamoro(p: Par, semanaAbs: number, caso = false, gravida = f
   const casa = ["cozinhar", "serie"] as AcaoNamoro[], publico = ["levarJogo", "postarFoto"] as AcaoNamoro[];
   switch (p.etapa) {
     case "match": return ["conversar", ...(p.conversas >= 2 ? ["convidar" as const] : [])];
-    case "saindo": return ["conversar", "encontro", "jantar", "serie", ...(p.relacao >= 55 ? ["pedirNamoro" as const] : []), "terminar"];
-    case "namorando": return [...filho, "conversar", "encontro", "jantar", ...casa, ...publico, "presente", "viagem", ...(!p.conheceuFamilia ? ["conhecerFamilia" as const] : []), ...(p.relacao >= 70 && semanaAbs - p.desde >= 12 ? ["morarJunto" as const] : []), "terminar"];
-    case "morando": return [...filho, "conversar", "encontro", "jantar", ...casa, ...publico, "presente", "viagem", ...(!p.conheceuFamilia ? ["conhecerFamilia" as const] : []), ...(p.relacao >= 78 && semanaAbs - p.desde >= 20 ? ["pedirCasamento" as const] : []), "terminar"];
-    case "noivos": case "casados": return [...filho, "conversar", "encontro", "jantar", ...casa, ...publico, "presente", "viagem", "terminar"];
+    case "saindo": return ["conversar", "encontro", "jantar", "serie", "piquenique", "karaoke", "videogame", "aulaDanca", ...(p.relacao >= 55 ? ["pedirNamoro" as const] : []), "terminar"];
+    case "namorando": return [...filho, "conversar", "encontro", "jantar", ...casa, ...publico, "presente", "viagem", "piquenique", "karaoke", "videogame", "aulaDanca", "academia", "surpresa", "spa", "amigasDela", ...(p.profissao !== "estudante" ? ["eventoDela" as const] : []), "viagemInternacional", ...(!p.conheceuFamilia ? ["conhecerFamilia" as const] : []), ...(p.relacao >= 70 && semanaAbs - p.desde >= 12 ? ["morarJunto" as const] : []), "terminar"];
+    case "morando": return [...filho, "conversar", "encontro", "jantar", ...casa, ...publico, "presente", "viagem", "piquenique", "karaoke", "videogame", "aulaDanca", "academia", "surpresa", "spa", "amigasDela", ...(p.profissao !== "estudante" ? ["eventoDela" as const] : []), "viagemInternacional", "cafeNaCama", ...(!p.pet ? ["adotarPet" as const] : []), ...(!p.conheceuFamilia ? ["conhecerFamilia" as const] : []), ...(p.relacao >= 78 && semanaAbs - p.desde >= 20 ? ["pedirCasamento" as const] : []), "terminar"];
+    case "noivos": case "casados": return [...filho, "conversar", "encontro", "jantar", ...casa, ...publico, "presente", "viagem", "piquenique", "karaoke", "videogame", "aulaDanca", "academia", "surpresa", "spa", "amigasDela", ...(p.profissao !== "estudante" ? ["eventoDela" as const] : []), "viagemInternacional", "cafeNaCama", ...(!p.pet ? ["adotarPet" as const] : []), "terminar"];
   }
 }
 export interface ResultadoNamoro { ok: boolean; msg: string; custo?: number; moral?: number; cansaco?: number; noticia?: string; fama?: number; engajamento?: number; torcida?: number; escandalo?: boolean }
 
-const GOSTO_ACAO: Partial<Record<AcaoNamoro, Gosto>> = { jantar: "comida", cozinhar: "comida", serie: "cinema", levarJogo: "futebol", viagem: "viagem", presente: "moda", postarFoto: "moda" };
+const GOSTO_ACAO: Partial<Record<AcaoNamoro, Gosto>> = { jantar: "comida", cozinhar: "comida", serie: "cinema", levarJogo: "futebol", viagem: "viagem", presente: "moda", postarFoto: "moda",
+  piquenique: "natureza", karaoke: "musica", videogame: "games", aulaDanca: "musica", amigasDela: "balada", viagemInternacional: "viagem", cafeNaCama: "comida", surpresa: "moda", academia: "natureza" };
 export type ModoPedido = "estadio" | "viagem" | "jantar";
 export const NOME_PEDIDO: Record<ModoPedido, string> = { estadio: "No gramado, depois do jogo", viagem: "Numa viagem romântica", jantar: "Num jantar só de vocês dois" };
 function sortearCena(rng: RNG, lugar?: Lugar): Cena {
@@ -237,7 +256,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
   // a mesma pessoa várias vezes na semana: cada programa rende menos
   if (!p.vezes || p.vezes.s !== ctx.semanaAbs) p.vezes = { s: ctx.semanaAbs, n: 0 };
   const rende = Math.max(0.2, 1 - 0.15 * p.vezes.n);
-  const gostoAcao = GOSTO_ACAO[acao], fg = fatorGosto(p, gostoAcao) * (p.jeito === "romântica" ? 1.15 : 1) * (acao === "viagem" && p.jeito === "aventureira" ? 1.4 : 1);
+  const gostoAcao = GOSTO_ACAO[acao], fg = fatorGosto(p, gostoAcao) * (p.jeito === "romântica" ? 1.15 : 1) * (acao === "viagem" && p.jeito === "aventureira" ? 1.4 : 1) * (JEITO_ACAO[acao]?.[p.jeito] ?? 1);
   const sobe = (v: number) => { p.relacao = clamp(p.relacao + v * rende * fg, 0, 100); n.feitas++; p.vezes!.n++; };
   const gc = comentarioGosto(p, gostoAcao);
   const custo = (k: number, piso: number) => Math.round(Math.max(piso, ctx.salario * k));
@@ -245,7 +264,8 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
     case "conversar": sobe(rng.int(2, 6)); p.conversas++; return { ok: true, msg: `Você e ${nome} ficaram até tarde trocando mensagem.` };
     case "convidar": {
       n.feitas++;
-      if (!rng.chance(clamp(0.3 + p.relacao / 120 + ctx.fama / 300, 0.1, 0.92))) { p.relacao = clamp(p.relacao - 3, 0, 100); return { ok: true, msg: `${nome} disse que essa semana não dá. Quem sabe na próxima.` }; }
+      const topou = p.topouSair !== undefined && ctx.semanaAbs - p.topouSair <= 2;
+      if (!topou && !rng.chance(clamp(0.3 + p.relacao / 120 + ctx.fama / 300, 0.1, 0.92))) { p.relacao = clamp(p.relacao - 3, 0, 100); return { ok: true, msg: `${nome} disse que essa semana não dá. Quem sabe na próxima.` }; }
       const lugar1 = (extra && extra in LUGARES ? extra : "barzinho") as Lugar;
       p.etapa = "saindo"; p.desde = ctx.semanaAbs; p.relacao = clamp(p.relacao + 8 * fatorGosto(p, LUGARES[lugar1].gosto), 0, 100); n.matches = n.matches.filter((x) => x.id !== p.id);
       p.cena = sortearCena(rng, lugar1);
@@ -269,6 +289,18 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       p.relacao = clamp(p.relacao + 8, 0, 100);
       return { ok: true, msg: `${nome} está grávida! O bebê chega em uns nove meses.`, moral: 8, ...(caso ? {} : { noticia: `${nome} está grávida: o jogador vai ser pai` }) };
     }
+    case "piquenique": sobe(rng.int(4, 7)); return { ok: true, msg: `Toalha xadrez, frutas e sol no parque com ${nome}.${gc}`, moral: 2, custo: 120 };
+    case "karaoke": sobe(rng.int(4, 8)); return { ok: true, msg: rng.chance(0.5) ? `Você desafinou feio e ${nome} chorou de rir.${gc}` : `Dueto romântico no karaokê: a mesa do lado aplaudiu.${gc}`, moral: 3, custo: custo(0.004, 200) };
+    case "videogame": { sobe(rng.int(3, 7)); const ganhou = rng.chance(0.5); return { ok: true, msg: ganhou ? `Você ganhou a melhor de cinco. ${nome} pediu revanche.${gc}` : `${nome} te amassou no videogame e não para de zoar.${gc}`, moral: 1 }; }
+    case "aulaDanca": { const c = custo(0.005, 300); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a aula." }; sobe(rng.int(5, 8)); return { ok: true, msg: `Aula de dança de salão com ${nome}: você pisou no pé dela três vezes, mas na última música foi.${gc}`, custo: c, moral: 2, cansaco: 3 }; }
+    case "academia": sobe(rng.int(3, 6)); return { ok: true, msg: `Treino juntos: ${nome} aguentou a série inteira e ainda te desafiou na esteira.${gc}`, cansaco: 4, moral: 1 };
+    case "surpresa": { const c = custo(0.02, 600); if (ctx.saldo < c) return { ok: false, msg: "A surpresa ficou cara demais agora." }; sobe(rng.int(7, 11)); return { ok: true, msg: `${rng.pick(["Flores e um bilhete na porta do trabalho dela", "Um jantar montado na varanda com velas", "A música preferida dela tocando quando ela chegou em casa"])}. ${nome} ficou sem palavras.${gc}`, custo: c, moral: 3 }; }
+    case "spa": { const c = custo(0.015, 800); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para o spa." }; sobe(rng.int(5, 8)); return { ok: true, msg: `Dia de spa com ${nome}: massagem, ofurô e celular desligado.`, custo: c, cansaco: -8, moral: 3 }; }
+    case "amigasDela": { sobe(rng.int(3, 7)); const r2 = rng.next(); return { ok: true, msg: r2 < 0.6 ? `As amigas de ${nome} te aprovaram: "Esse pode ficar."${gc}` : r2 < 0.9 ? `Uma das amigas fez um interrogatório. Você sobreviveu.${gc}` : `Você contou uma piada que não pegou. ${nome} riu de pena.`, moral: 1, custo: custo(0.006, 300) }; }
+    case "eventoDela": sobe(rng.int(6, 10)); return { ok: true, msg: `Você foi ao evento do trabalho de ${nome} e ficou no canto, só torcendo por ela. Ela falou disso a semana toda.`, moral: 2, cansaco: 2 };
+    case "viagemInternacional": { const c = custo(0.5, 25000); if (ctx.saldo < c) return { ok: false, msg: "Uma viagem dessas não cabe no bolso agora." }; sobe(rng.int(14, 20)); return { ok: true, msg: `${rng.pick(["Paris", "Maldivas", "Nova York", "Lisboa", "Tóquio", "Santorini"])} com ${nome}: fotos que vão durar a vida inteira. R$ ${c.toLocaleString("pt-BR")}.${gc}`, custo: c, moral: 8, cansaco: 10, engajamento: 6 }; }
+    case "cafeNaCama": sobe(rng.int(4, 7)); return { ok: true, msg: `Café da manhã na cama: pão de queijo, suco e ${nome} meio dormindo, sorrindo.${gc}`, moral: 2 };
+    case "adotarPet": { const pet = rng.pick(["Pelé", "Bolinha", "Mel", "Thor", "Pipoca", "Amora", "Zico", "Luna"]); p.pet = pet; sobe(rng.int(8, 12)); return { ok: true, msg: `Vocês adotaram ${pet}! A casa ganhou mais bagunça e mais alegria.`, moral: 6, custo: 2000, noticia: `${nome} e o jogador adotam ${pet}` }; }
     case "cozinhar": sobe(rng.int(3, 6)); return { ok: true, msg: `Você cozinhou para ${nome}. Não ficou bom, mas a intenção valeu.${gc}`, moral: 1 };
     case "serie": sobe(rng.int(2, 5)); return { ok: true, msg: `Sofá, pipoca e três episódios com ${nome}.${gc}`, cansaco: -3 };
     case "levarJogo": sobe(rng.int(4, 7)); return { ok: true, msg: `${nome} assistiu ao jogo do camarote e mandou foto da arquibancada.${gc}`, moral: 2, torcida: 0.5 };
@@ -370,7 +402,7 @@ export function efeitosNamoro(n: EstadoNamoro | undefined): EfeitosNamoro {
   if (!p || p.etapa === "match") return casinhos;
   const k = p.etapa === "saindo" ? 0.4 : p.etapa === "casados" ? 1.4 : p.etapa === "noivos" || p.etapa === "morando" ? 1.2 : 1;
   const bem = p.relacao >= 50 ? 1 : 0.4;
-  const e: EfeitosNamoro = { ...ZERO, moral: (p.relacao - 45) / 15 + Math.min(3, (n?.filhos ?? []).filter((f) => !f.pensao).length) };
+  const e: EfeitosNamoro = { ...ZERO, moral: (p.relacao - 45) / 15 + Math.min(3, (n?.filhos ?? []).filter((f) => !f.pensao).length) + (p.pet ? 0.6 : 0) };
   const f = k * bem;
   if (p.famosa) { e.fama += 0.05 * f; e.engajamento += 0.8 * f; }
   switch (p.profissao) {

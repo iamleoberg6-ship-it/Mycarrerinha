@@ -7,7 +7,9 @@ import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube
 import { salarioMensal, valorMercado, AGENTES, type TipoAgente } from "./mercado.js";
 import { novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest } from "./negocios.js";
 import { novaSaude, semanaSaude, feriasSaude, operar, riscoLesaoSaude, fatorDeclinio, recuperacaoSaude, custoEquipe, type EstadoSaude, type Staff, type ParteCorpo } from "./saude.js";
-import { semanaAmor, agendarCasamento, agendarLuaDeMel, respostaChat, mensagemDela, type EstiloChat } from "./amor.js";
+import { semanaAmor, agendarCasamento, agendarLuaDeMel } from "./amor.js";
+import { semanaAcontecimentos } from "./acontecimentos.js";
+import { conversaDaSemana, opcoesConversa, responderConversa, type Conversa, type CtxConversa, type OpcaoConversa } from "./conversas.js";
 import { novaAgenda, resolverOcasiao, vencidas, type EstadoAgenda, type EfeitoVida } from "./agenda.js";
 import { parcasIniciais, novoParca, efeitosParcas, semanaSocial, agendarFerias, temFuncao, FUNCOES, type Parca, type PerfilParca, type FuncaoParca, type CtxSocial } from "./vida-social.js";
 import { LUXO, MAX_LUXO, mesLuxo, statusLuxo, valoresEmCasa, temEsportivo, HOBBIES, MAX_HOBBIES, semanaHobbies, semanaEstudos, infoCurso, novaAdaptacao, semanaAdaptacao, moralAdaptacao, fatorAdaptacao, ocasioesExterior, linguaNativa, mesFundacao, ocasioesFundacao, ganhouCoracaoDeOuro, CUSTO_FUNDACAO, type ItemLuxo, type TipoLuxo, type EstadoHobbies, type Hobby, type EstadoEstudos, type Curso, type Adaptacao, type Fundacao } from "./estilo.js";
@@ -49,6 +51,7 @@ import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao 
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, familiaAutomatica, membro, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
 import { agirFilho, type AcaoFilho } from "./namoro.js";
+import { gostosDe, MAX_ACOES_NAMORO, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, namoroAutomatico, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
@@ -173,6 +176,10 @@ export interface Carreira {
   encerrada?: Despedida;
   /** patrocinadores: contratos ativos, proposta na mesa, marcas recusadas na temporada e números do mês para os bônus */
   patrocinios?: ContratoPatrocinio[]; propPatrocinio?: PropostaPatrocinio; recusadas?: string[]; mesStats?: { gols: number; assist: number; notas8: number };
+  /** acontecimentos da temporada já vistos (semana absoluta) */
+  acontecidos?: Record<string, number>;
+  /** o último jogo do jogador (ela comenta no chat) */
+  ultimoJogo?: { s: number; resultado: "vitoria" | "derrota" | "empate"; gols: number; nota: number; adv: string };
   /** cláusulas do contrato em vigor (multa, % de venda, bônus) */
   contrato?: ClausulasContrato;
   /** vestiário do clube atual, rival pessoal (e os de antes), torcida de cada clube, cidade onde mora e álbum */
@@ -1131,6 +1138,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   const l2 = sortearLesao(rng, c.cansaco, intensidadeAlta, j.idade, 1 - (1 - casa.lesao / 100) * (pro ? 1 : 0.6) * riscoLesaoFamilia(c.familia) * riscoLesaoSaude(saudeDe(c)));
   if (l2) { c.lesao = Math.max(c.lesao, l2.semanas); eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}${copa ? " no jogo da copa" : ""}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
   const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
+  if (pro) c.ultimoJogo = { s: semanaAbsJogo(c), resultado: res === "vitória" ? "vitoria" : res, gols, nota, adv: infoClube(pacote, adversario)?.nome ?? "" };
   noticia(s, "jogo", `${copa ? `${COPAS[copa.id].curto}: ` : ""}${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
     `${res[0].toUpperCase() + res.slice(1)}${copa ? ` pela ${copa.nome} (${copa.rotulo.toLowerCase()})` : pro ? "" : faseAmadora(c) ? ` ${ROTULO_FASE[c.fase!]}` : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: partida.casa, fora: partida.fora, gc, gf });
   return { resumo, participacao, nota, placar, placarBase };
@@ -1443,6 +1451,14 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     c.fama = clamp(c.fama + 0.02 * (m.imprensa - 50) / 50, 0, 100);
   }
   semanaVidaFora(pacote, s, eventos, !!jogoDaSemana(s) || !!jogoCopaDaSemana(pacote, s));
+  if (!fim) {
+    // acontecimentos da temporada: o gol que viraliza, a gripe, o salário atrasado...
+    const ac = semanaAcontecimentos(agendaDe(c), rngDe(s, "acontece"), { ab: semanaAbsJogo(c), semana: c.semana, ano: ANO_INICIAL + c.temporada, apelido: j.apelido, clube: infoClube(pacote, c.clubeId)?.nome ?? "", cidade: infoClube(pacote, c.clubeId)?.cidade ?? "",
+      idade: j.idade, fama: c.fama, salario: c.salario, saldo: s.casa.saldo, jogou: !!resumoPartida && resumoPartida.minutos > 0, nota: resumoPartida?.nota ?? 0, gols: resumoPartida?.gols ?? 0,
+      resultado: c.ultimoJogo && c.ultimoJogo.s >= semanaAbsJogo(c) - 1 ? c.ultimoJogo.resultado : undefined, classico: !!jogo && ehClassico(pacote, jogo.casa, jogo.fora), titular: participacao === "titular",
+      fClube: mundo(pacote).clube[idClube(c.clubeId)]?.fClube ?? 1, exterior: infoLiga(c.ligaId).regiao !== "BRA", seguranca: temFuncao(parcasDe(s), "seguranca"), temporadaBoa: forma(c) >= 7, profissional: !c.formacao && !c.fase && !c.mercado?.semClube }, (c.acontecidos ??= {}));
+    if (ac) { aplicarEfeitoVida(pacote, s, ac.ef); eventos.push(`${ac.bom ? "👍" : "👎"} ${ac.titulo}.`); noticia(s, ac.bom ? "vida" : "polemica", ac.titulo, ac.texto); }
+  }
   if (!fim) semanaDoClube(pacote, s, eventos, { jogou: !!resumoPartida && resumoPartida.minutos > 0 && resumoPartida.tipo === "profissional", titular: participacao === "titular", nota: resumoPartida?.nota ?? 0, gols: resumoPartida?.gols ?? 0, adv: jogo?.adversario, rodada: jogo?.rodada, grande: (partida?.clima?.peso ?? 1) >= 1.2 });
   checarRecordes(pacote, s, eventos);
   if (!fim) { noticiasDeLesao(pacote, s, eventos); demissaoNoMeio(pacote, s, eventos); }
@@ -1555,6 +1571,7 @@ export function aplicarEfeitoVida(pacote: PacoteDados, s: Save, ef: EfeitoVida) 
   if (ef.torcida) c.torcida = cl((c.torcida ?? 50) + ef.torcida);
   if (ef.relTecnico) c.relTecnico = cl(c.relTecnico + ef.relTecnico);
   if (ef.cansaco) c.cansaco = cl(c.cansaco + ef.cansaco);
+  if (ef.lesao) c.lesao = Math.max(c.lesao, ef.lesao);
   if (ef.dinheiro) s.casa.saldo += Math.round(ef.dinheiro);
   if (ef.engajamento) c.engajamento = cl((c.engajamento ?? 40) + ef.engajamento);
   if (ef.hype) c.hype = clamp((c.hype ?? 0) + ef.hype, -0.3, 1.5);
@@ -1928,23 +1945,34 @@ export function agirNamoroJogo(pacote: PacoteDados, s: Save, id: string, acao: A
   if (r.noticia) noticia(s, r.escandalo ? "polemica" : "vida", r.noticia, r.escandalo ? `Os programas de fofoca não falam de outra coisa.` : `${s.jogador.apelido} assumiu o relacionamento nas redes.`);
   return { ok: true, msg: r.msg };
 }
-/** Mensagem dela no chat do app (fica até você responder). */
-export function chatDe(s: Save, id: string): string | undefined {
-  const c = s.carreira, n = namoroDe(c), p = acharPar(n, id);
-  if (!p) return;
-  const ab = semanaAbsJogo(c);
-  if (!p.chat || p.chat.s !== ab) p.chat = { msg: mensagemDela(p, ab), s: ab };
-  return p.chat.msg;
+/** O jogo mais recente (para ela comentar no chat). */
+function ctxConversa(pacote: PacoteDados, s: Save, p: Par): CtxConversa {
+  const c = s.carreira, ab = semanaAbsJogo(c), u = c.ultimoJogo && ab - c.ultimoJogo.s <= 1 ? c.ultimoJogo : undefined, prox = jogoDaSemana(s);
+  return { apelido: s.jogador.apelido, clube: infoClube(pacote, c.clubeId)?.nome ?? "", adv: u?.adv, resultado: u?.resultado, gols: u?.gols, nota: u?.nota, foraDeCasa: !!prox && !prox.souCasa,
+    exterior: infoLiga(c.ligaId).regiao !== "BRA" && s.jogador.nacionalidade === "BRA", fama: c.fama, semanaAbs: ab, gostoDela: gostosDe(p).gosta[0], profissao: p.profissao };
 }
-export function responderChatJogo(pacote: PacoteDados, s: Save, id: string, e: EstiloChat): { ok: boolean; msg: string } {
+/** A conversa da semana no chat (começa um assunto novo se ainda não houver). */
+export function chatDe(pacote: PacoteDados, s: Save, id: string): { conversa: Conversa; opcoes: OpcaoConversa[] } | undefined {
+  const n = namoroDe(s.carreira), p = acharPar(n, id);
+  if (!p) return;
+  const cx = ctxConversa(pacote, s, p), cv = conversaDaSemana(p, cx);
+  return { conversa: cv, opcoes: opcoesConversa(p, cv, cx) };
+}
+export function responderChatJogo(pacote: PacoteDados, s: Save, id: string, fala: string): { ok: boolean; msg: string } {
   const c = s.carreira, n = namoroDe(c), ab = semanaAbsJogo(c), p = acharPar(n, id);
   if (!p) return { ok: false, msg: "Conversa não encontrada." };
   if (n.semana !== ab) { n.semana = ab; n.feitas = 0; }
-  if (n.feitas >= 20) return { ok: false, msg: "Já foram programas demais nesta semana." };
-  const r = respostaChat(p, e, rngDe(s, "chat", id, p.conversas));
-  p.relacao = clamp(p.relacao + r.delta, 0, 100); p.conversas++; n.feitas++; p.chat = undefined;
-  void pacote;
-  return { ok: true, msg: r.texto };
+  if (n.feitas >= MAX_ACOES_NAMORO) return { ok: false, msg: "Já foram programas demais nesta semana." };
+  const r = responderConversa(p, fala, ctxConversa(pacote, s, p), rngDe(s, "conversa", id, fala, p.conversa?.hist.length ?? 0));
+  if (!r.ok) return { ok: false, msg: "Essa conversa já acabou." };
+  n.feitas++;
+  if (r.fim) {
+    p.conversas += r.revelou ? 2 : 1;
+    if (r.convite) p.topouSair = ab;
+    const total = p.conversa?.total ?? r.delta;
+    return { ok: true, msg: `${total >= 8 ? "Ótima conversa" : total >= 0 ? "Conversa boa" : "A conversa esfriou"} (relação ${total >= 0 ? "+" : ""}${total}).${r.convite ? ` ${p.nome.split(" ")[0]} topou sair: é só marcar.` : ""}${r.revelou ? " Agora você sabe do que ela gosta." : ""}` };
+  }
+  return { ok: true, msg: "" };
 }
 export function responderCenaJogo(s: Save, id: string, opcao: string): { ok: boolean; msg: string } {
   const r = responderCena(namoroDe(s.carreira), id, opcao), c = s.carreira;
