@@ -298,6 +298,14 @@ table.hist td { vertical-align: middle; } table.hist tr.mudou td { border-top: 1
 .gosto small { font-size: 9.5px; color: var(--giz-2); } .gosto.nao { background: #E5534B1f; border-color: #E5534B55; } .gosto.nao::after { content: ""; position: absolute; left: 8px; right: 8px; top: 15px; height: 2px; background: #E5534B; transform: rotate(-30deg); } .gosto.oculto { background: #ffffff0d; border-color: var(--linha); }
 .quim { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; } .quim-ico { font-size: 20px; } .quim b { font-size: 13px; color: #FF8FB1; }
 .pensa-vis { display: flex; gap: 8px; align-items: center; margin-top: 6px; } .pensa-vis span { font-size: 26px; line-height: 1; } .pensa-vis small { color: var(--giz-2); font-size: 12px; font-style: italic; }
+.forma { display: inline-flex; gap: 3px; } .forma i { width: 8px; height: 8px; border-radius: 50%; display: block; } .forma .f-v { background: #74D394; } .forma .f-e { background: #A3B6AD; } .forma .f-d { background: #E5534B; } .forma .f-x { background: #ffffff1a; }
+.forma-th { font-size: 11px; } @media (max-width: 360px) { .forma i { width: 6px; height: 6px; } }
+.calendario { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 5px; }
+.cal-r { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 2px 4px; border-radius: 8px; background: var(--campo-2); border: 1px solid var(--linha); font-size: 11px; }
+.cal-r small { font-size: 9.5px; color: var(--giz-2); } .cal-r b { font-size: 11px; } .cal-r i { position: absolute; top: 2px; right: 3px; font-style: normal; font-size: 8px; opacity: .7; }
+.cal-esc { width: 16px; height: 18px; border-radius: 3px 3px 8px 8px; display: block; border: 1px solid #0005; }
+.cal-r.v { background: #74D3942a; border-color: #74D39466; } .cal-r.e { background: #A3B6AD22; } .cal-r.d { background: #E5534B26; border-color: #E5534B66; } .cal-r.x { opacity: .5; }
+.cal-r.agora { outline: 2px solid var(--ouro); outline-offset: 1px; } .cal-r.classico:not(.v):not(.e):not(.d) { border-color: #E5534B88; } .cal-r.folga { opacity: .4; }
 .feed-not { display: flex; flex-direction: column; gap: 18px; } .feed-cab { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 800 12px/1 var(--fonte-titulo, inherit); letter-spacing: 1.5px; text-transform: uppercase; color: var(--giz-2); }
 .feed-cab::after { content: ""; flex: 1; height: 1px; background: var(--linha); } .feed-cab i { font-style: normal; background: var(--linha); border-radius: 99px; padding: 2px 7px; font-size: 11px; }
 .feed-lista { display: flex; flex-direction: column; gap: 10px; }

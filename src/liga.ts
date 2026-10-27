@@ -132,6 +132,8 @@ export function rodadasDaLiga(n: number): [number, number][][] {
 
 export interface LinhaTabela {
   clube: string; j: number; v: number; e: number; d: number; gp: number; gc: number; pts: number;
+  /** últimos 5 resultados, do mais antigo ao mais novo (V, E, D) */
+  f?: string;
 }
 
 export function novaTabela(liga: Liga): LinhaTabela[] {
@@ -141,6 +143,7 @@ export function novaTabela(liga: Liga): LinhaTabela[] {
 export function registrar(t: LinhaTabela, gp: number, gc: number) {
   t.j++; t.gp += gp; t.gc += gc;
   if (gp > gc) { t.v++; t.pts += 3; } else if (gp === gc) { t.e++; t.pts += 1; } else t.d++;
+  t.f = ((t.f ?? "") + (gp > gc ? "V" : gp === gc ? "E" : "D")).slice(-5);
 }
 
 export function ordenar(tab: LinhaTabela[]): LinhaTabela[] {

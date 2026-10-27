@@ -10,7 +10,7 @@ import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono } from "../../src/casa";
 import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
-  ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
+  ofertasDeBase, ovr, planoPadrao, nRodadas, jogosDaRodada, ehClassico, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
@@ -406,9 +406,29 @@ function abaTabela(s: Save): string {
   }
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
   const lid = infoLiga(s.carreira.ligaId).id, feitas = Math.max(0, Math.min(nRodadas(c), c.semana - SEMANAS_PRE));
-  return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade(lid))}">${bannerComp(lid, esc(infoLiga(s.carreira.ligaId).nome), `${ANO_INICIAL + c.temporada} · ${feitas ? `${feitas} de ${nRodadas(c)} rodadas` : "antes da 1ª rodada"}`)}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table></div>`;
+  return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade(lid))}">${bannerComp(lid, esc(infoLiga(s.carreira.ligaId).nome), `${ANO_INICIAL + c.temporada} · ${feitas ? `${feitas} de ${nRodadas(c)} rodadas` : "antes da 1ª rodada"}`)}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th><th class="forma-th">Forma</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td><td>${bolinhasForma(x.f)}</td></tr>`).join("")}</tbody></table></div>${calendarioHtml(s)}`;
 }
 
+/** Os últimos 5 resultados em bolinhas (verde, cinza, vermelho). */
+const bolinhasForma = (f?: string) => `<span class="forma">${(f ?? "").padStart(5, "·").split("").map((r) => `<i class="f-${r === "V" ? "v" : r === "E" ? "e" : r === "D" ? "d" : "x"}" title="${r === "V" ? "Vitória" : r === "E" ? "Empate" : r === "D" ? "Derrota" : ""}"></i>`).join("")}</span>`;
+/** Calendário da temporada do clube: uma casinha por rodada, com resultado (passado) ou adversário (futuro). */
+function calendarioHtml(s: Save): string {
+  const c = s.carreira;
+  if (c.fase || c.formacao || c.mercado?.semClube) return "";
+  const n = nRodadas(c), atual = c.semana - SEMANAS_PRE, pl = c.placaresRodada ?? {};
+  const cel: string[] = [];
+  for (let r = 0; r < n; r++) {
+    const g = jogosDaRodada(c, r).find((x) => x.casa === c.clubeId || x.fora === c.clubeId);
+    if (!g) { cel.push(`<div class="cal-r folga"><small>${r + 1}</small><b>—</b></div>`); continue; }
+    const casa = g.casa === c.clubeId, adv = casa ? g.fora : g.casa, info = infoClube(pacote, adv), p = pl[r], cl = ehClassico(pacote, c.clubeId, adv);
+    const res = p ? (p[0] > p[1] ? "v" : p[0] === p[1] ? "e" : "d") : r < atual ? "x" : "";
+    const [k1, k2] = info?.cores ?? ["#555", "#FFF"];
+    cel.push(`<div class="cal-r ${res}${r === atual ? " agora" : ""}${cl ? " classico" : ""}" title="Rodada ${r + 1} · ${casa ? "em casa" : "fora"} contra ${esc(info?.nome ?? "")}${p ? ` · ${p[0]}×${p[1]}` : ""}"><small>${r + 1}${cl ? " 🔥" : ""}</small>
+      <span class="cal-esc" style="background:linear-gradient(135deg,${k1} 55%,${k2} 55%)"></span><b>${p ? `${p[0]}-${p[1]}` : esc((info?.nome ?? "").replace(/^(CR|SE|SC|EC|FC|CA)\s+/i, "").slice(0, 3).toUpperCase())}</b><i>${casa ? "🏠" : "✈️"}</i></div>`);
+  }
+  const v = Object.values(pl).filter(([a, b]) => a > b).length, e = Object.values(pl).filter(([a, b]) => a === b).length, d = Object.values(pl).filter(([a, b]) => a < b).length;
+  return `<p class="rotulo" style="margin-top:16px">Sua temporada <small>${v}V ${e}E ${d}D</small></p><div class="calendario">${cel.join("")}</div>`;
+}
 /** Tabela zerada (antes da primeira rodada da base). */
 const novaTabelaDe = (c: Save["carreira"]) => c.tabela.map((x) => ({ ...x, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, pts: 0 }));
 let msgEvento: { titulo: string; texto: string } | undefined;

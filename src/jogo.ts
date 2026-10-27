@@ -166,6 +166,8 @@ export interface Carreira {
   tecnico?: Tecnico; tecnicoClube?: string;
   /** pontos do clube nos últimos jogos da liga (3, 1, 0) e temporada da última troca de técnico no meio do ano */
   resultadosClube?: number[]; tecnicoTroca?: number;
+  /** placar do clube em cada rodada da liga nesta temporada (gols pró, gols contra), para o calendário */
+  placaresRodada?: Record<number, [number, number]>;
   /** tabela do campeonato da base (categoria do jogador) */
   tabelaBase?: { cat: string; t: number; tabela: LinhaTabela[] };
   /** capas de videogame (edição, clube e se foi a edição do país) */
@@ -1272,7 +1274,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       const [a, b] = meu && placarMeuJogo ? placarMeuJogo : simularPlacar(rng, clubeDe(l, g.casa).forca, clubeDe(l, g.fora).forca);
       registrar(c.tabela.find((t) => t.clube === g.casa)!, a, b);
       registrar(c.tabela.find((t) => t.clube === g.fora)!, b, a);
-      if (meu) { const [gp, gc] = g.casa === c.clubeId ? [a, b] : [b, a]; c.resultadosClube = [...(c.resultadosClube ?? []).slice(-9), gp > gc ? 3 : gp === gc ? 1 : 0]; }
+      if (meu) { const [gp, gc] = g.casa === c.clubeId ? [a, b] : [b, a]; c.resultadosClube = [...(c.resultadosClube ?? []).slice(-9), gp > gc ? 3 : gp === gc ? 1 : 0]; (c.placaresRodada ??= {})[jogo.rodada] = [gp, gc]; }
     }
     // tabela da base (sub-17 ou sub-20 do clube, conforme a idade): os mesmos confrontos, com a força dos times da base
     if (c.formacao && !c.fase) {
@@ -2234,7 +2236,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   noticiasDaVirada(pacote, s);
   // a liga pode ter mudado (acesso ou rebaixamento): a tabela nova é a da divisão em que o clube vai jogar
   const lN = ligaAtual(pacote, s);
-  c.tabela = novaTabela(lN); c.stats = statsVazias(); c.resultadosClube = [];
+  c.tabela = novaTabela(lN); c.stats = statsVazias(); c.resultadosClube = []; c.placaresRodada = {};
   const clube = clubeDe(lN, c.clubeId);
   if (c.fase) { c.anosContrato = Math.max(1, c.anosContrato); fimDeTemporadaDoCaminho(pacote, s, eventos); }
   if (c.fase) { /* várzea, academia, colégio e universidade: a passagem é pelos convites */ }
