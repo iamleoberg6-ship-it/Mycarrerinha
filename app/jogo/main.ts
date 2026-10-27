@@ -182,7 +182,7 @@ function telaSemana(s: Save): string {
       <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.fase ? ` (${NOME_FASE[c.fase].toLowerCase().replace("eua", "EUA")})` : c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
       <div class="ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span></div></div>
     <div class="barras">${barra("Moral", c.moral, 100, "#74D394")}${barra("Cansaço", c.cansaco, 100, c.cansaco > 60 ? "#EC7D69" : "#E3B341")}${barra("Forma", forma(c), 10, "#6FB7E0", forma(c).toFixed(1))}${barra("Técnico", c.relTecnico, 100, "#B9A3E8")}</div>
-    <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${c.fama.toFixed(1)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
+    <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${Math.round(c.fama)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
   </section>
 
   <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${copaHtml}${jogoHtml}${previsao}</section>
@@ -207,7 +207,7 @@ function telaSemana(s: Save): string {
     ${travados.length ? `<p class="sub" style="margin-top:6px">Quarta é dia de jogo ${(() => { const k = COPAS[jc?.copa.id ?? copaDoClube(s.carreira.copas, s.carreira.clubeId)!.id]; return `${k.prep === "do" ? "pelo" : "pela"} ${esc(k.curto)}`; })()}: só sobram quatro dias livres. O cansaço da quarta chega no domingo.</p>` : ""}
     <div class="previa"><span>Cansaço no jogo <b>${prev.cansaco}</b></span><span>Moral <b>${prev.moral}</b></span><span>Evolução <b>${sinal(prev.evolucao)}%</b></span>${prev.notaExtra ? `<span>Nota <b>+${prev.notaExtra.toFixed(2)}</b></span>` : ""}</div>
   </section>
-  <button class="botao grande" data-acao="jogar">${jc && escQ !== "lesionado" ? "Ir para o jogo de quarta" : jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
+  <button class="botao grande fixo-jogar" data-acao="jogar">${jc && escQ !== "lesionado" ? "Ir para o jogo de quarta" : jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
 
   <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", "Celular"], ["noticias", "Notícias"], ["casa", "Casa"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
   <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaCasa(s)}</section>
@@ -411,14 +411,14 @@ function blocoVida(s: Save): string {
   const sobra = liq + receitaPatrocinios(c) - g.total - (imovelAtual(s.casa).categoria === "alojamento" || ehDono(s.casa) ? 0 : imovelAtual(s.casa).aluguel);
   const pct = Math.round(100 * aliquota(c.ligaId));
   return `<p class="rotulo" style="margin-top:16px">Dinheiro do mês</p>
-    <div class="kv" style="margin-top:6px"><span>Salário bruto</span><b>${dinheiro(c.salario)}</b>${ir ? `<span>Imposto (${pct}%)</span><b class="neg">−${dinheiro(ir)}</b>` : c.formacao ? "" : `<span>Imposto</span><b>isento no Golfo</b>`}${ag ? `<span>Agente</span><b class="neg">−${dinheiro(ag)}</b>` : ""}${c.patrocinioMensal ? `<span>Campanhas (${c.mesesPatrocinio} meses)</span><b class="pos">+${dinheiro(c.patrocinioMensal)}</b>` : ""}${receitaPatrocinios(c) ? `<span>Patrocinadores (fixo)</span><b class="pos">+${dinheiro(receitaPatrocinios(c))}</b>` : ""}
+    <div class="kv" style="margin-top:6px"><span>Salário bruto</span><b>${dinheiro(c.salario)}</b>${ir ? `<span>Imposto (${pct}%)</span><b class="neg">−${dinheiro(ir)}</b>` : c.formacao ? "" : `<span>Imposto</span><b>${aliquota(c.ligaId) === 0 ? "isento no Golfo" : "isento (salário abaixo da faixa)"}</b>`}${ag ? `<span>Agente</span><b class="neg">−${dinheiro(ag)}</b>` : ""}${c.patrocinioMensal ? `<span>Campanhas (${c.mesesPatrocinio} meses)</span><b class="pos">+${dinheiro(c.patrocinioMensal)}</b>` : ""}${receitaPatrocinios(c) ? `<span>Patrocinadores (fixo)</span><b class="pos">+${dinheiro(receitaPatrocinios(c))}</b>` : ""}
     ${g.itens.filter((x) => x.valor).map((x) => `<span>${esc(x.nome)}</span><b class="neg">−${dinheiro(x.valor)}</b>`).join("")}
     ${!ehDono(s.casa) && imovelAtual(s.casa).aluguel ? `<span>Aluguel</span><b class="neg">−${dinheiro(imovelAtual(s.casa).aluguel)}</b>` : ""}
     <span><b>Sobra no mês</b></span><b class="${sobra >= 0 ? "pos" : "neg"}">${sobra >= 0 ? "" : "−"}${dinheiro(Math.abs(sobra))}</b></div>
     <p class="rotulo" style="margin-top:16px">Padrão de vida</p>
     ${ITENS_VIDA.map((k) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${VIDA[k].nome}</p><div class="chips" style="flex-wrap:wrap">${VIDA[k].niveis.map((n, i) => `<button class="chip${pd[k] === i ? " ativo" : ""}" data-vida="${k}" data-nivel="${i}">${esc(n.nome)}</button>`).join("")}</div><p class="sub" style="margin-top:4px">${esc(VIDA[k].niveis[pd[k]].texto)} ${dinheiro(Math.round(VIDA[k].niveis[pd[k]].custo * fCustoVida(c.ligaId)))}/mês${efeitoTxt(VIDA[k].niveis[pd[k]])}</p>`).join("")}
     <p class="rotulo" style="margin-top:16px">Redes sociais</p>
-    <div class="kv" style="margin-top:6px"><span>Seguidores</span><b>${compacto(c.seguidores)}</b><span>Tendência</span><b>${tendencia(s)}</b><span>Engajamento</span><b>${Math.round(c.engajamento ?? 40)}/100</b></div>
+    <div class="kv" style="margin-top:6px"><span>Seguidores</span><b>${compacto(c.seguidores)}</b><span>Tendência</span><b>${tendencia(s)}</b><span>Engajamento</span><b>${Math.round(c.engajamento ?? 40)}/100</b></div><p class="sub" style="margin-top:4px">Engajamento é o quanto seus seguidores interagem: sobe quando você posta (Redes sociais no tempo livre) e cai quando some.</p>
     <p class="sub" style="margin-top:4px">Os seguidores acompanham sua fama, o tamanho do clube e o quanto você posta. Clube grande traz torcida nova de uma vez; ficar sem postar ou ir para um clube menor faz perder aos poucos.</p>`;
 }
 const efeitoTxt = (n: { moral?: number; recuperacao?: number; evolucao?: number; fama?: number }) => {
@@ -439,11 +439,13 @@ function cardNumero(s: Save): string {
   const msg = msgNumero ? `<p class="msg-mercado ${msgNumero.ok ? "ok" : "nao"}">${esc(msgNumero.texto)}</p>` : "";
   msgNumero = undefined;
   return `<section class="painel numero-card"><p class="rotulo">${c.escolhaNumero === "chegada" ? `Chegada ao ${esc(clube.nome)}` : "Começo de temporada"} · escolha sua camisa</p>
+    ${livreAtual ? `<div class="ferr-botoes"><button class="botao" data-num-manter="1">Manter a ${atual}</button></div>` : `<p class="sub">A ${atual} já tem dono aqui: escolha outra abaixo.</p>`}
+    <details${sel || !livreAtual || msg ? " open" : ""}><summary class="sub" style="margin-top:8px">Trocar de número${lib.length ? ` · liberadas: ${lib.map((x) => x.numero).join(", ")}` : ""}</summary>
     <p class="sub">${saidas.length && c.escolhaNumero === "temporada" ? `Saíram do elenco: ${esc(saidas.join(", "))}. ` : ""}${lib.length ? `Camisas liberadas: <b>${lib.map((x) => x.numero).join(", ")}</b>. ` : ""}Toque num número livre para ficar com ele; os ocupados mostram quem usa.</p>${msg}
     <div class="grade-num">${g.map((x) => `<button class="num${x.dono ? " ocupado" : ""}${x.liberado ? " liberado" : ""}${x.meu ? " meu" : ""}${sel?.numero === x.numero ? " visto" : ""}" data-num="${x.numero}" aria-label="${x.numero}${x.dono ? `, de ${esc(x.dono)}` : ", livre"}">${x.numero}</button>`).join("")}</div>
     ${sel?.dono ? `<p class="sub" style="margin-top:8px">A <b>${sel.numero}</b> é de ${esc(sel.dono)} (${NOME_POS[sel.posicao ?? ""] ?? "Goleiro"}).</p>` : ""}
     <div class="legenda-num"><span><i class="num meu"></i>sua</span><span><i class="num liberado"></i>liberada agora</span><span><i class="num ocupado"></i>ocupada</span></div>
-    ${livreAtual ? `<button class="botao sec" data-num-manter="1" style="margin-top:8px">Manter a ${atual}</button>` : `<p class="sub" style="margin-top:8px">A ${atual} já tem dono aqui: escolha outra.</p>`}</section>`;
+    </details></section>`;
 }
 
 // ------------------------------------------------------------------ caminhos: convites de peneira, bolsa, draft
@@ -469,9 +471,9 @@ function blocoTreinoPosicao(s: Save): string {
     return `<div class="treino-pos-info"><div class="tp-barra"><i style="width:${f}%"></i><b style="left:${PODE_JOGAR}%"></b></div>
       <span>${NOME_POS[alvo]}: <b>${Math.round(f)}%</b> · ${f >= PODE_JOGAR ? "já pode jogar ali" : `joga ali a partir de ${PODE_JOGAR}%`} · faltam ~${sem} sem. para dominar${sug === alvo ? " · pedido do técnico (+30%)" : ""}. A evolução normal cai 10% enquanto treina.</span></div>`;
   })() : `<p class="sub" style="margin:4px 0 0">Escolha uma posição para treinar além do treino do clube. Quanto mais parecida com a sua e mais seus atributos combinam, mais rápido.</p>`;
-  return `<p class="rotulo" style="margin-top:8px">Treino de posição</p>
+  return `<details class="treino-pos"${msgPos ? " open" : ""}><summary class="rotulo" style="margin-top:8px">Treino de posição · ${alvo ? `${NOME_POS[alvo]} (${Math.round(fam[alvo] ?? 0)}%)` : "nenhum"}</summary>
     <div class="chips" style="flex-wrap:wrap"><button class="chip${!alvo ? " ativo" : ""}" data-tpos="">Nenhum</button>${POSICOES.filter((p) => p !== j.posicao).map((p) => `<button class="chip pos-chip${alvo === p ? " ativo" : ""}" data-tpos="${p}" title="${NOME_POS[p]}">${ICONE_POS[p]} ${NOME_POS[p]} <small>${Math.round(fam[p] ?? 0)}%</small></button>`).join("")}</div>${info}
-    ${msgPos ? `<p class="msg-mercado ${msgPos.ok ? "ok" : "nao"}" style="margin:8px 0 0">${esc(msgPos.texto)}</p>` : ""}`;
+    ${msgPos ? `<p class="msg-mercado ${msgPos.ok ? "ok" : "nao"}" style="margin:8px 0 0">${esc(msgPos.texto)}</p>` : ""}</details>`;
 }
 function blocoPosicoes(s: Save): string {
   const j = s.jogador, fam = familiaridadeDe(j);
@@ -641,17 +643,19 @@ function abaAmigos(s: Save): string {
     <p class="rotulo" style="margin-top:14px">Estrelas do mundo</p>${mundoEst.map(novo).join("")}`;
 }
 
+let subJogador: "atributos" | "visual" | "dinheiro" = "atributos";
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const visual = blocoVisual(s);
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
   const grupos: [string, Grupo][] = [["Físico", "fisico"], ["Técnico", "tecnico"], ["Tático", "tatico"]];
-  return `${visual}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
+  const sub = `<div class="chips sub-abas">${([["atributos", "Atributos"], ["visual", "Visual"], ["dinheiro", "Dinheiro e vida"]] as const).map(([k, n]) => `<button class="chip${subJogador === k ? " ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
+  if (subJogador === "visual") return sub + visual;
+  if (subJogador === "dinheiro") return sub + blocoPatrocinios(s) + blocoVida(s);
+  return `${sub}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
-    ${blocoPatrocinios(s)}
-    ${blocoVida(s)}
     ${c.historico.length ? `<p class="rotulo" style="margin-top:16px">Carreira</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">Nota</th></tr></thead><tbody>${c.historico.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.nota || "–"}</td></tr>`).join("")}</tbody></table>` : ""}`;
 }
 
@@ -904,7 +908,25 @@ function abrirPerfil() {
 }
 function abaNoticias(s: Save): string {
   casualMini = undefined;
-  return s.noticias.length ? `<div style="display:flex;flex-direction:column;gap:12px">${s.noticias.slice(0, 25).map((n, i) => `<div class="noticia ${n.tipo}">${imgNoticia(s, n, i)}<div><small>${esc(n.semana)}</small><strong>${esc(n.titulo)}</strong><span class="sub">${esc(n.texto)}</span></div></div>`).join("")}</div>` : `<p class="sub">Nada por enquanto.</p>`;
+  if (!s.noticias.length) return `<p class="sub">Nada por enquanto.</p>`;
+  const card = (n: Noticia, i: number) => `<div class="noticia ${n.tipo}">${imgNoticia(s, n, i)}<div><small>${esc(n.semana)}</small><strong>${esc(n.titulo)}</strong><span class="sub">${esc(n.texto)}</span></div></div>`;
+  // fim de temporada: as conquistas (taças, relíquias, prêmios) viram um card só, que abre a lista
+  const lista = s.noticias.slice(0, 40), out: string[] = [], feitos = new Set<string>();
+  const ehConquista = (n: Noticia) => n.img?.k === "trofeu" && n.semana.startsWith("Fim da temporada");
+  for (let i = 0; i < lista.length && out.length < 25; i++) {
+    const n = lista[i];
+    if (ehConquista(n)) {
+      if (feitos.has(n.semana)) continue;
+      const grupo = lista.map((x, k) => [x, k] as [Noticia, number]).filter(([x]) => ehConquista(x) && x.semana === n.semana);
+      if (grupo.length >= 3) {
+        feitos.add(n.semana);
+        out.push(`<details class="noticia trofeu grupo-noticias"><summary>${miniNoticia({ k: "trofeu" })}<div><small>${esc(n.semana)}</small><strong>${grupo.length} conquistas e prêmios</strong><span class="sub">${esc(grupo.slice(0, 3).map(([x]) => x.titulo).join(" · "))}${grupo.length > 3 ? "…" : ""} <b style="color:var(--ouro)">Ver tudo</b></span></div></summary><div class="grupo-lista">${grupo.map(([x, k]) => card(x, k)).join("")}</div></details>`);
+        continue;
+      }
+    }
+    out.push(card(n, i));
+  }
+  return `<div style="display:flex;flex-direction:column;gap:12px">${out.join("")}</div>`;
 }
 
 function abaCasa(s: Save): string {
@@ -1088,7 +1110,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-subjog],[data-filho],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-vis],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -1144,6 +1166,7 @@ document.addEventListener("click", (ev) => {
     const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.bbase) { buscaBase = d.bbase === "1"; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.subjog) { subJogador = d.subjog as typeof subJogador; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vtab) { vistaTabela = d.vtab as typeof vistaTabela; tabelaEscolhida = true; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.cel) { telaCel = d.cel as typeof telaCel; render(); }
   else if (d.fav && save) { alternarFavorito(relacoesDe(save.carreira), d.fav); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

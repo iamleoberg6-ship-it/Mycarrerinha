@@ -393,9 +393,11 @@ export function rotuloSemana(c: Carreira): string {
   if (c.semana >= SEMANAS_TEMPORADA) return `Mundial de Clubes ${ano} · ${["1ª rodada", "2ª rodada", "3ª rodada", "oitavas", "quartas", "semifinal", "final"][c.semana - SEMANAS_TEMPORADA] ?? "fim"}`;
   return c.semana < SEMANAS_PRE ? `Pré-temporada ${ano} · semana ${c.semana + 1}` : r > nRodadas(c) ? `Temporada ${ano} · fim de calendário` : `Temporada ${ano} · rodada ${r}`;
 }
+/** Durante o fechamento da temporada, as notícias saem com a data "Fim da temporada" (e não a da semana do calendário). */
+let rotuloFim: string | undefined;
 export function noticia(s: Save, tipo: Noticia["tipo"], titulo: string, texto: string, img?: ImgNoticia) {
-  s.noticias.unshift({ semana: rotuloSemana(s.carreira), titulo, texto, tipo, ...(img ? { img } : {}) });
-  s.noticias = s.noticias.slice(0, 60);
+  s.noticias.unshift({ semana: rotuloFim ?? rotuloSemana(s.carreira), titulo, texto, tipo, ...(img ? { img } : {}) });
+  s.noticias = s.noticias.slice(0, 80);
 }
 
 // ------------------------------------------------------------------ calendário
@@ -1535,6 +1537,10 @@ function receberReliquias(s: Save, ganhos: Ganho[], eventos: string[]) {
 }
 
 function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): ResumoTemporada {
+  rotuloFim = `Fim da temporada ${ANO_INICIAL + s.carreira.temporada}`;
+  try { return fecharTemporada(pacote, s, eventos); } finally { rotuloFim = undefined; }
+}
+function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): ResumoTemporada {
   const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador;
   const posicao = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const titulo = posicao === 1 && c.stats.jogos >= 10;
