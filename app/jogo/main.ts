@@ -265,7 +265,8 @@ function telaSemana(s: Save): string {
   </section>
   <button class="botao grande fixo-jogar" data-acao="jogar">${jc && escQ !== "lesionado" ? "Ir para o jogo de quarta" : jogo && escPrev !== "lesionado" ? "Ir para o jogo" : "Fechar a semana"}</button>
 
-  <div class="abas" role="tablist">${[["tabela", "Tabela"], ["jogador", "Jogador"], ["mercado", nProp ? `Mercado (${nProp})` : "Mercado"], ["amigos", (namoroDe(s.carreira).filhos ?? []).some((f) => f.nomear) ? "Celular 👶" : "Celular"], ["noticias", "Notícias"], ["casa", agendaDe(s.carreira).pendentes.length ? `Vida (${agendaDe(s.carreira).pendentes.length})` : "Vida"]].map(([k, n]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}">${n}</button>`).join("")}</div>
+  <div id="ancoraAbas"></div>
+  <nav class="abas" role="tablist" aria-label="Menu">${([["tabela", "Tabela", ""], ["jogador", "Jogador", ""], ["mercado", "Mercado", nProp ? String(nProp) : ""], ["amigos", "Celular", (namoroDe(s.carreira).filhos ?? []).some((f) => f.nomear) ? "👶" : ""], ["noticias", "Notícias", ""], ["casa", "Vida", agendaDe(s.carreira).pendentes.length ? String(agendaDe(s.carreira).pendentes.length) : ""]] as const).map(([k, n, badge]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}"><span class="aba-ico">${ICONE_ABA[k]}${badge ? `<i class="aba-badge">${badge}</i>` : ""}</span><span class="aba-nome">${n}</span></button>`).join("")}</nav>
   <section class="painel">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaVida(s)}</section>
   <details class="painel teste"><summary>Opções</summary><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador. Para não perder a carreira (trocar de aparelho, limpar o navegador), baixe o save de vez em quando.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></details>`;
 }
@@ -1092,6 +1093,16 @@ function abaMercadoEu(s: Save): string {
     <p class="sub" style="margin-top:12px">Janelas: semanas ${JANELAS.map((x) => `${x.ini + 1}–${x.fim + 1}`).join(" e ")} de cada temporada.</p>`;
 }
 
+/** Ícones da barra de menu de baixo (traço na cor do texto: dourado na aba ativa). */
+const ic = (d: string) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICONE_ABA: Record<string, string> = {
+  tabela: ic(`<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>`),
+  jogador: ic(`<path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3a4 4 0 0 1-8 0Z"/>`),
+  mercado: ic(`<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>`),
+  amigos: ic(`<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>`),
+  noticias: ic(`<path d="M4 5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2V5Z"/><path d="M17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3"/>`),
+  casa: ic(`<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10M10 20v-6h4v6"/>`),
+};
 let casualMini: string | undefined;
 function imgNoticia(s: Save, n: Noticia, i: number): string {
   const img = n.img;
@@ -2036,7 +2047,7 @@ document.addEventListener("click", (ev) => {
   else if (d.assessor) { const r = assessorJogo(save!, d.assessor === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.post) { const r = postarJogo(pacote, save!, d.post as TipoPost); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.pauta) { const r = responderEntrevistaJogo(pacote, save!, d.pauta); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
-  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") telaCel = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); if (b.classList.contains("aviso-mercado")) document.querySelector(".abas")?.scrollIntoView({ behavior: "smooth" }); }
+  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") telaCel = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); if (b.classList.contains("aviso-mercado") || b.closest(".abas")) document.getElementById("ancoraAbas")?.scrollIntoView({ behavior: b.closest(".abas") ? "auto" : "smooth" }); }
   else if (d.negoc && save) { const r = negociarItem(pacote, save, d.negoc, d.item as never); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.aumento && save) { const r = pedirAumento(pacote, save, forma(save.carreira)); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.prop && save) {
