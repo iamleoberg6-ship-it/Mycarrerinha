@@ -1620,6 +1620,7 @@ function abrirJogo() {
   fila.push({ min: 90, fim: true, html: "Fim de jogo." });
   ($("dlgJogo") as HTMLDialogElement).classList.toggle("jogo-grande", (p.clima?.peso ?? 1) >= 1.25);
   const idComp = p.copa ? p.copa.id : p.tipo === "base" ? "BASE" : infoLiga(save.carreira.ligaId).id, idt = identidade(idComp);
+  $("telaJogo").classList.remove("decidindo");
   $("telaJogo").innerHTML = `<div class="placar ident" style="${estiloIdent(idt)}">${p.clima ? `<p class="selo-jogo"><span>${esc(p.clima.tag)}</span></p>` : ""}<p class="comp-linha">${seloSvg(idt, 22)}<span>${p.copa ? `${esc(COPAS[p.copa.id].curto)} · ${esc(p.copa.rotulo)}${p.copa.neutro ? " · campo neutro" : ""}` : p.tipo === "base" ? `${esc(infoLiga(save.carreira.ligaId).curto)} ${categoriaBase(save.jogador.idade).replace("s", "S")}` : `${esc(infoLiga(save.carreira.ligaId).curto)} · ${esc(rotuloSemana(save.carreira))}`}</span></p>
     <div class="linha"><div class="time">${escudo(p.casa)}<span>${esc(p.nomeCasa)}</span></div><div class="gols" id="gols">0 × 0</div><div class="time dir"><span>${esc(p.nomeFora)}</span>${escudo(p.fora)}</div></div>
     <div class="min" id="minuto">0'</div><div class="placar-extra"><span id="agregado"></span><span class="nota-viva" id="notaViva"></span></div>
@@ -1890,7 +1891,9 @@ function mostrarDecisao(d: Decisao) {
   const diag = diagramaLance(d);
   el.innerHTML = `<p class="rotulo" style="color:var(--ouro)">${pos ? "Depois do jogo" : `${d.min}' · Sua decisão`}</p><h2>${esc(d.titulo)}</h2>${diag}<p class="sub" style="font-size:15px;color:var(--giz)">${esc(d.texto)}</p>
     <div class="ops">${d.opcoes.map((o, k) => `<button data-decidir="${i}" data-op="${o.id}">${diag ? `<i class="num-op n${k % 4}">${k + 1}</i>` : ""}<span>${esc(o.rotulo)}</span><small>›</small></button>`).join("")}</div>`;
-  $("lances").appendChild(el); el.scrollIntoView({ behavior: "smooth", block: "end" });
+  // na hora de decidir, o campinho ao vivo sai de cena e o placar encolhe: o diagrama do lance é que mostra o campo
+  $("telaJogo").classList.add("decidindo");
+  $("lances").appendChild(el); requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "end" }));
   $("rodapeJogo").innerHTML = `<p class="sub" style="text-align:center">Escolha uma opção.</p>`;
 }
 
@@ -1898,6 +1901,7 @@ function decidir(i: number, op: string) {
   const p = partida!, d = decisoesAbertas[i];
   if (!d) return;
   delete decisoesAbertas[i];
+  if (!Object.keys(decisoesAbertas).length) $("telaJogo").classList.remove("decidindo");
   const r = resolverDecisao(save!, p, d, op);
   const el = $(`dec${i}`);
   if (d.situacao === "disputaPenaltis" && pen) {
