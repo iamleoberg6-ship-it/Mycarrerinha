@@ -3,11 +3,11 @@
 // pessoa. A roupa acompanha a profissão (personal de top de academia, advogada de blazer, médica de jaleco...).
 import { RNG } from "../../src/rng.js";
 
-const TINTA = "#0A0A0A", TRACO = 2.6;
+const TINTA = "#2A1A12", TRACO = 1.9;
 let seq = 0;
 const novoId = (p: string) => `${p}${++seq}`;
 function mistura(a: string, b: string, t: number): string {
-  const h = (x: string) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+  const h = (x: string) => { const y = x.length === 4 ? `#${x[1]}${x[1]}${x[2]}${x[2]}${x[3]}${x[3]}` : x; return [1, 3, 5].map((i) => parseInt(y.slice(i, i + 2), 16)); };
   const [x, y] = [h(a), h(b)];
   return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("");
 }
@@ -68,8 +68,8 @@ const ROSTOS = [
   "M150 70 C188 70 205 100 203 134 C201 164 186 190 150 210 C114 190 99 164 97 134 C95 100 112 70 150 70 Z", // coração
   "M150 72 C188 72 204 102 203 140 C202 172 184 200 150 208 C116 200 98 172 97 140 C96 102 112 72 150 72 Z", // redondo
 ];
-const OMBROS = "M26 360 C32 314 80 282 128 264 L172 264 C220 282 268 314 274 360 Z";
-const PESCOCO = "M134 190 L131 266 L169 266 L166 190 Z";
+const OMBROS = "M24 360 C28 304 78 268 128 250 L172 250 C222 268 272 304 276 360 Z";
+const PESCOCO = "M134 190 L131 254 L169 254 L166 190 Z";
 
 function cabeloAtras(c: CabeloF, cor: string, esc: string): string {
   const f = (d: string) => `<path d="${d}" fill="${cor}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`;
@@ -123,25 +123,29 @@ function roupa(r: RoupaF, cor: string, pele: string, sombra: string): string {
     case "camisa": return base + p("M30 360 C34 300 76 268 124 256 L150 292 L176 256 C224 268 266 300 270 360 Z") + p("M124 256 L150 292 L136 300 L118 266 Z", clara) + p("M176 256 L150 292 L164 300 L182 266 Z", clara) + [312, 336].map((y) => `<circle cx="150" cy="${y}" r="2.4" fill="${esc}"/>`).join("");
   }
 }
-function olho(x: number, esp: boolean, f: OlhoF, cor: string, delineado: boolean, sombraOlho: string): string {
+function olho(x: number, esp: boolean, f: OlhoF, cor: string, delineado: boolean, sombraOlho: string, pele: string, sedutor: boolean, blur: string): string {
   const id = novoId("of");
   const forma: Record<OlhoF, string> = {
     amendoado: "M-14 1 Q-3 -14 14 -3 Q4 10 -14 1 Z", gatinho: "M-14 2 Q-4 -13 15 -6 Q6 10 -14 2 Z",
     redondo: "M-13 1 Q-1 -16 13 -1 Q2 12 -13 1 Z", semdobra: "M-14 1 Q-2 -10 14 -2 Q4 8 -14 1 Z",
   };
   const lid: Record<OlhoF, string> = { amendoado: "M-15 1 Q-3 -15 15 -3", gatinho: "M-15 2 Q-4 -14 16 -6", redondo: "M-14 1 Q-1 -17 14 -1", semdobra: "M-15 1 Q-2 -11 15 -2" };
-  const asa = delineado ? `<path d="M13 -4 L21 -10" stroke="${TINTA}" stroke-width="2.6" stroke-linecap="round"/>` : "";
-  const cilios = `<path d="M10 -6 L14 -10 M6 -8 L9 -12" stroke="${TINTA}" stroke-width="1.5" stroke-linecap="round"/>`;
-  return `<g transform="translate(${x} 146) scale(${esp ? -1.18 : 1.18} 1.18)"><clipPath id="${id}"><path d="${forma[f]}"/></clipPath>
-    <path d="M-15 0 Q-3 -16 17 -6 Q2 -10 -15 0 Z" fill="${sombraOlho}" opacity=".3"/>
-    <path d="${forma[f]}" fill="#FBF6EE"/><g clip-path="url(#${id})"><circle cx="1" cy="-0.5" r="6.8" fill="${cor}"/><circle cx="1" cy="-0.5" r="3" fill="#0A0A0A"/><circle cx="3.4" cy="-3" r="1.8" fill="#fff"/><circle cx="-1.5" cy="2" r="0.9" fill="#fff" opacity=".8"/></g>
+  const asa = delineado ? `<path d="M13 -4 Q18 -7 22 -11" stroke="#120A06" stroke-width="2.4" stroke-linecap="round" fill="none"/>` : "";
+  const cilios = `<path d="M12 -5 Q17 -8 19 -12 M8 -8 Q12 -11 13 -15" stroke="#120A06" stroke-width="1.3" stroke-linecap="round" fill="none"/>`;
+  const ig = novoId("ir");
+  const palpebra = sedutor ? `<path d="M-16 -16 L18 -16 L18 -4 Q2 -8 -16 -3 Z" fill="${pele}"/>` : "";
+  return `<g transform="translate(${x} 146) scale(${esp ? -1.3 : 1.3} 1.3)"><clipPath id="${id}"><path d="${forma[f]}"/></clipPath>
+    <radialGradient id="${ig}" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="${mistura(cor, "#fff", 0.45)}"/><stop offset=".6" stop-color="${cor}"/><stop offset="1" stop-color="${mistura(cor, "#000", 0.55)}"/></radialGradient>
+    <path d="M-17 1 Q-3 -20 19 -6 Q2 -12 -17 1 Z" fill="${sombraOlho}" opacity=".55" filter="url(#${blur})"/>
+    <path d="${forma[f]}" fill="#F6EEE6"/><g clip-path="url(#${id})"><path d="M-16 -12 L18 -12 L18 -2 Q0 -6 -16 -1 Z" fill="#000" opacity=".1"/><circle cx="-1" cy="-0.5" r="6.8" fill="url(#${ig})"/><circle cx="-1" cy="-0.5" r="3" fill="#0A0A0A"/><circle cx="1.6" cy="-3.2" r="2" fill="#fff"/><circle cx="-3.4" cy="2.2" r="0.9" fill="#fff" opacity=".8"/>${palpebra}</g>
     <path d="${lid[f]}" stroke="${TINTA}" stroke-width="3.2" fill="none" stroke-linecap="round"/>${asa}${cilios}
     <path d="M-12 3 Q0 7 12 0" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity=".45"/>
 </g>`;
 }
 function boca(b: BocaF, batom: string): string {
-  const esc = mistura(batom, "#000", 0.3), luz = mistura(batom, "#fff", 0.45);
-  const lab = (sup: string, inf: string) => `<path d="${inf}" fill="${batom}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="${sup}" fill="${esc}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  const esc = mistura(batom, "#000", 0.3), luz = mistura(batom, "#fff", 0.55), gl = novoId("lb");
+  const grad = `<linearGradient id="${gl}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mistura(batom, "#fff", 0.15)}"/><stop offset="1" stop-color="${mistura(batom, "#000", 0.2)}"/></linearGradient>`;
+  const lab = (sup: string, inf: string) => `${grad}<path d="${inf}" fill="url(#${gl})" stroke="${mistura(batom, "#000", 0.5)}" stroke-width="1.2" stroke-linejoin="round"/><path d="${sup}" fill="${esc}" stroke="${mistura(batom, "#000", 0.5)}" stroke-width="1.2" stroke-linejoin="round"/>`;
   switch (b) {
     case "sorriso": return `<g transform="translate(150 186) scale(1.15)">${lab("M-15 0 Q-8 -6 -2 -3 Q0 -4 2 -3 Q8 -6 15 0 Q0 1 -15 0 Z", "M-15 0 Q0 2 15 0 Q8 9 0 9 Q-8 9 -15 0 Z")}<path d="M-4 5 Q0 6.5 5 5" stroke="${luz}" stroke-width="2" stroke-linecap="round"/></g>`;
     case "sorrisao": return `<g transform="translate(150 186) scale(0.95)"><path d="M-17 -1 Q0 3 17 -1 Q10 11 0 11 Q-10 11 -17 -1 Z" fill="#8A3A40" stroke="${TINTA}" stroke-width="1.8"/><path d="M-14 0 Q0 3 14 0 L13 4.5 Q0 7 -13 4.5 Z" fill="#FBF6EE"/>${lab("M-17 -1 Q-9 -7 -2 -4 Q0 -5 2 -4 Q9 -7 17 -1 Q0 2 -17 -1 Z", "M-17 -1 Q-10 11 0 11 Q10 11 17 -1 Q10 15 0 15 Q-10 15 -17 -1 Z")}</g>`;
@@ -152,32 +156,42 @@ function boca(b: BocaF, batom: string): string {
 
 /** O retrato pronto (300 × 360): fundo, cabelo, rosto maquiado, brincos, colar e a roupa da profissão. */
 export function svgMulher(m: Mulher, roupaId: RoupaF): string {
-  const pele = PELES_F[m.pele], sombra = mistura(pele, "#4A1A08", 0.24), luzPele = mistura(pele, "#FFF5E6", 0.3);
-  const cor = CABELOS_F[m.corCabelo], escCabelo = mistura(cor, "#000", 0.35), luzCabelo = mistura(cor, "#fff", 0.35);
-  const [f1, f2] = FUNDOS[m.fundo], idf = novoId("fm"), idc = novoId("fc");
+  const peleBase = PELES_F[m.pele], sombra = mistura(peleBase, "#4A1A08", 0.24), luzPele = mistura(peleBase, "#FFF5E6", 0.3);
+  const corBase = CABELOS_F[m.corCabelo], escCabelo = mistura(corBase, "#000", 0.35), luzCabelo = mistura(corBase, "#fff", 0.35);
+  const [f1, f2] = FUNDOS[m.fundo], idf = novoId("fm"), idc = novoId("fc"), gp = novoId("gp"), gc = novoId("gc"), gn = novoId("gn"), bl = novoId("bl"), bl2 = novoId("bb");
+  const pele = `url(#${gp})`, cor = `url(#${gc})`, h = hash(JSON.stringify(m)), sedutor = h % 2 === 0, inclina = [-4, -2, 0, 2, 4][h % 5];
   const rosto = ROSTOS[m.rosto];
   const corRoupa = ROUPAS[m.corRoupa], batom = BATONS[m.batom], sombraOlho = ["#8C5A7A", "#B07A55", "#6A5A8C", "#A8687A", "#7A6048"][m.batom % 5];
-  const sobr = (esp: boolean) => `<g transform="${esp ? "translate(300 0) scale(-1 1)" : ""}"><path d="M112 124 Q124 112 141 118" stroke="${TINTA}" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M112 124 Q124 112 141 118" stroke="${m.corCabelo >= 5 && m.corCabelo <= 6 ? CABELOS_F[3] : escCabelo}" stroke-width="2.2" stroke-linecap="round" fill="none"/></g>`;
+  const sobr = (esp: boolean) => `<g transform="${esp ? "translate(300 0) scale(-1 1)" : ""}"><path d="M110 122 Q122 108 142 116 Q124 112 110 122 Z" fill="${m.corCabelo >= 5 && m.corCabelo <= 6 ? CABELOS_F[3] : escCabelo}" stroke="${m.corCabelo >= 5 && m.corCabelo <= 6 ? CABELOS_F[3] : escCabelo}" stroke-width="1.4" stroke-linejoin="round" opacity=".92"/></g>`;
   const brinco = (x: number) => m.brinco === "argola" ? `<circle cx="${x}" cy="174" r="7" fill="none" stroke="#E3B341" stroke-width="2.6"/>` : m.brinco === "ponto" ? `<circle cx="${x}" cy="168" r="3" fill="#F4F4F4" stroke="${TINTA}" stroke-width="1"/>` : m.brinco === "pendente" ? `<path d="M${x} 166 L${x} 180" stroke="#E3B341" stroke-width="1.6"/><path d="M${x} 180 l-4 6 l4 6 l4 -6 Z" fill="#E3B341" stroke="${TINTA}" stroke-width="1"/>` : "";
-  const colar = m.colar && roupaId !== "golaAlta" ? `<path d="M128 262 Q150 284 172 262" stroke="#E3B341" stroke-width="1.6" fill="none"/><circle cx="150" cy="276" r="3.2" fill="#E3B341" stroke="${TINTA}" stroke-width="1"/>` : "";
+  const colar = m.colar && roupaId !== "golaAlta" ? `<path d="M131 252 Q150 274 169 252" stroke="#E3B341" stroke-width="1.6" fill="none"/><circle cx="150" cy="266" r="3.2" fill="#E3B341" stroke="${TINTA}" stroke-width="1"/>` : "";
   return `<svg viewBox="30 30 240 288" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto do perfil">
-  <defs><linearGradient id="${idf}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${f1}"/><stop offset="1" stop-color="${f2}"/></linearGradient><clipPath id="${idc}"><path d="${rosto}"/></clipPath></defs>
+  <defs><linearGradient id="${idf}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${f1}"/><stop offset="1" stop-color="${f2}"/></linearGradient><clipPath id="${idc}"><path d="${rosto}"/></clipPath>
+    <radialGradient id="${gp}" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="${luzPele}"/><stop offset=".55" stop-color="${peleBase}"/><stop offset="1" stop-color="${sombra}"/></radialGradient>
+    <linearGradient id="${gn}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sombra}"/><stop offset=".5" stop-color="${peleBase}"/><stop offset="1" stop-color="${luzPele}"/></linearGradient>
+    <linearGradient id="${gc}" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="${luzCabelo}"/><stop offset=".35" stop-color="${corBase}"/><stop offset="1" stop-color="${escCabelo}"/></linearGradient>
+    <filter id="${bl}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter><filter id="${bl2}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs>
   <rect width="300" height="360" fill="url(#${idf})"/>
   <circle cx="240" cy="70" r="46" fill="#fff" opacity=".18"/><circle cx="56" cy="300" r="70" fill="#fff" opacity=".1"/>
-  ${cabeloAtras(m.cabelo, cor, escCabelo)}
-  <path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M134 200 Q150 224 166 200 L166 212 Q150 228 134 212 Z" fill="${sombra}" opacity=".55"/>
-  ${roupa(roupaId, corRoupa, pele, sombra)}${colar}
+  <g transform="rotate(${inclina} 150 240)">${cabeloAtras(m.cabelo, cor, escCabelo)}</g>
+  <path d="${PESCOCO}" fill="url(#${gn})" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
+  ${roupa(roupaId, corRoupa, `url(#${gn})`, sombra)}${colar}
+  <ellipse cx="150" cy="214" rx="18" ry="8" fill="${sombra}" opacity=".35" filter="url(#${bl2})"/>
+  <g transform="rotate(${inclina} 150 240)">
   <path d="${rosto}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
-  <g clip-path="url(#${idc})"><path d="M184 90 C206 130 200 176 160 212 L210 212 L210 80 Z" fill="${sombra}" opacity=".35"/></g>
+  <g clip-path="url(#${idc})"><path d="M106 150 Q112 182 136 202" stroke="${sombra}" stroke-width="10" fill="none" opacity=".45" filter="url(#${bl2})"/><path d="M194 150 Q188 182 164 202" stroke="${sombra}" stroke-width="10" fill="none" opacity=".45" filter="url(#${bl2})"/>
+    <ellipse cx="150" cy="96" rx="22" ry="10" fill="#fff" opacity=".22" filter="url(#${bl2})"/></g>
   ${brinco(97)}${brinco(203)}
-  <ellipse cx="117" cy="166" rx="12" ry="7" fill="#E8607A" opacity=".22"/><ellipse cx="183" cy="166" rx="12" ry="7" fill="#E8607A" opacity=".22"/>
+  <ellipse cx="117" cy="168" rx="13" ry="8" fill="#E8607A" opacity=".32" filter="url(#${bl})"/><ellipse cx="183" cy="168" rx="13" ry="8" fill="#E8607A" opacity=".32" filter="url(#${bl})"/>
   ${sobr(false)}${sobr(true)}
-  ${olho(127, false, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho)}${olho(173, true, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho)}
-  <path d="M148 156 Q146 166 144 170 Q150 174 156 170" stroke="${mistura(pele, "#000", 0.4)}" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="151" cy="164" r="1.6" fill="${luzPele}"/>
-  ${boca(m.boca, batom)}
-  ${m.pinta ? `<circle cx="174" cy="176" r="1.8" fill="${mistura(pele, "#000", 0.6)}"/>` : ""}
-  ${m.sardas ? [[116, 156], [123, 160], [129, 156], [171, 156], [177, 160], [184, 156]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="${mistura(pele, "#5A2A12", 0.45)}"/>`).join("") : ""}
+  ${olho(127, true, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho, luzPele, sedutor, bl)}${olho(173, false, m.olho, OLHOS_F[m.corOlho], m.delineado, sombraOlho, luzPele, sedutor, bl)}
+  <path d="M146 150 Q143 164 142 168" stroke="${sombra}" stroke-width="4" fill="none" opacity=".5" filter="url(#${bl})"/>
+  <path d="M144 169 Q150 173 156 169" stroke="${mistura(peleBase, "#000", 0.4)}" stroke-width="1.6" fill="none" stroke-linecap="round"/><ellipse cx="151" cy="163" rx="1.6" ry="3" fill="#fff" opacity=".55"/>
+  ${boca(m.boca, batom)}<ellipse cx="146" cy="191" rx="4" ry="1.6" fill="#fff" opacity=".55" filter="url(#${bl})"/>
+  ${m.pinta ? `<circle cx="174" cy="178" r="1.6" fill="${mistura(peleBase, "#000", 0.6)}"/>` : ""}
+  ${m.sardas ? [[116, 158], [123, 162], [129, 158], [171, 158], [177, 162], [184, 158]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.1" fill="${mistura(peleBase, "#5A2A12", 0.4)}"/>`).join("") : ""}
   ${cabeloFrente(m.cabelo, cor, escCabelo, luzCabelo)}
+  </g>
 </svg>`;
 }
 /** Retrato pronto de um perfil do app. */
