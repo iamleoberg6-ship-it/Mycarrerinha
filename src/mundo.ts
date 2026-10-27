@@ -322,6 +322,26 @@ export function premiosDaLiga(pacote: PacoteDados, ligaId: string, ano: number, 
     revelacao: melhor(regulares.filter((x) => (x.idade ?? 99) <= 21), (x) => x.nota + 0.02 * (x.gols + 0.5 * x.assist)),
   };
 }
+/** Todos os jogadores das ligas com a temporada atual (para os prêmios do ano): números da liga, nível, idade, nacionalidade. */
+export interface Candidato extends Selecionado { ligaId: string; ovr: number; nacionalidade: string; minimo: number }
+export function candidatosDoAno(pacote: PacoteDados): Candidato[] {
+  const e = garantir(pacote), m = mundo(pacote), out: Candidato[] = [];
+  for (const [ligaId, l] of Object.entries(m.liga)) {
+    if (ligaId === "SELECOES" || ligaId === "CONV") continue;
+    const n = rodadasDaLiga(l.clubes.length).length, minimo = Math.ceil(n * 0.5);
+    for (const c of l.clubes) for (const j of c.elenco) {
+      if (j.ovr < 68) continue; // ninguém abaixo disso entra em lista de prêmio do mundo
+      const linhas = (e.hist.get(j.nome) ?? []).filter((x) => x.t === e.temporada && x.clubeId === c.id);
+      let jogos = 0, gols = 0, assist = 0, somaNota = 0;
+      for (const x of linhas) { const st = statsDaLinha(pacote, j.nome, x); if (!st) continue; jogos += st.j; gols += st.g; assist += st.a; somaNota += st.n * st.j; }
+      if (jogos >= minimo) out.push({ nome: j.nome, clubeId: c.id, posicao: j.posicao, nota: Math.round((somaNota / jogos) * 100) / 100, gols, assist, jogos, idade: j.idade, ligaId, ovr: j.ovr, nacionalidade: j.nacionalidade, minimo });
+    }
+  }
+  return out;
+}
+/** Quem foi convocado para a seleção (nome está no elenco atual da seleção do país). */
+export const naSelecao = (pacote: PacoteDados, pais: string, nome: string) => !!mundo(pacote).clube[idSelecao(pais)]?.elenco.some((x) => x.nome === nome);
+export { montarSelecao };
 export interface LinhaRanking { nome: string; clubeId: string; valor: number; jogos: number }
 /** Artilharia ou assistências da liga até a rodada `feitas` (os outros jogadores; o do usuário entra na tela). */
 export function rankingDaLiga(pacote: PacoteDados, ligaId: string, feitas: number, tipo: "g" | "a", limite = 10): LinhaRanking[] {

@@ -12,6 +12,9 @@ import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
 import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
 import { convocado, participantesCopa, escalacaoSelecao } from "../src/jogo.js";
+import { premiosDoAno, type ContextoPremios } from "../src/premios-mundo.js";
+import type { Candidato } from "../src/mundo.js";
+import { infoLiga } from "../src/ligas.js";
 import { oferecerJogador, aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -1009,6 +1012,28 @@ teste("Seleção nacional: 44 seleções com os melhores do país, convocação 
   const e = novaCopa("COP", 4, m, (id) => w.clube[id]?.forca ?? 60, pais, (id) => confederacao(pais(id)), "cop"), rr = new RNG("cop");
   for (let sem = 40; sem <= 46; sem++) rodarSemana(e, sem, (id) => w.clube[id]?.forca ?? 60, rr);
   assert.ok(e.campeao && m.includes(e.campeao));
+});
+
+teste("Prêmios do mundo: Bola de Ouro, Melhor da Europa, Rei da América... cada júri vota do seu jeito", () => {
+  const cand = (nome: string, ligaId: string, clubeId: string, nota: number, gols: number, ovr: number, extra: Partial<Candidato> = {}): Candidato => ({ nome, ligaId, clubeId, posicao: "ATA", nota, gols, assist: 5, jogos: 30, idade: 26, ovr, nacionalidade: "BRA", minimo: 19, ...extra });
+  const base = [cand("Craque Europa", "ENG1", "EN-MCI", 7.6, 25, 90), cand("Segundo Europa", "ESP1", "ES-RMA", 7.5, 22, 89), cand("Craque Brasil", "BRA1", "PAL", 7.7, 24, 82), cand("Goleiro", "ITA1", "IT-INT", 7.45, 0, 87, { posicao: "GOL" }), cand("Joia", "GER1", "DE-FCB", 7.3, 12, 80, { idade: 19 })];
+  for (let i = 0; i < 40; i++) base.push(cand(`Jogador ${i}`, ["ENG1", "ESP1", "ITA1", "BRA1", "ARG1"][i % 5], `X${i}`, 6.8 + (i % 7) * 0.05, 5 + (i % 9), 78 + (i % 6), { posicao: ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA", "GOL"][i % 7] }));
+  const ctx = (sem: string, extra: Partial<ContextoPremios> = {}): ContextoPremios => ({ semente: sem, ano: 2027, campeaoLiga: {}, faseCopa: () => undefined, faseCopaDoMundo: () => undefined, regiaoLiga: (id) => infoLiga(id).regiao, nivelLiga: (id) => infoLiga(id).nivel, confederacao, ...extra });
+  let difere = 0, bolaEuropa = 0;
+  for (let k = 0; k < 40; k++) {
+    const p = premiosDoAno(base, ctx(`s${k}`)), v = (id: string) => p.premios.find((x) => x.id === id)?.ranking[0];
+    if (v("BOLA")!.nome !== v("UEFA")!.nome) difere++;
+    if (["Craque Europa", "Segundo Europa"].includes(v("BOLA")!.nome)) bolaEuropa++;
+    assert.equal(v("REI")!.nome, "Craque Brasil"); assert.equal(v("YASHIN")!.nome, "Goleiro"); assert.equal(v("KOPA")!.nome, "Joia");
+    assert.ok(["ENG1", "ESP1", "ITA1", "GER1"].includes(base.find((x) => x.nome === v("UEFA")!.nome)!.ligaId), "Melhor da Europa joga na Europa");
+    assert.equal(p.selecao.length, 11);
+  }
+  assert.ok(bolaEuropa >= 32, `Bola de Ouro quase sempre na Europa (${bolaEuropa}/40)`);
+  assert.ok(difere >= 2 && difere <= 18, `de vez em quando Bola de Ouro ≠ Melhor da Europa (${difere}/40)`);
+  // o usuário, com uma temporada absurda e a Champions, ganha
+  const eu = cand("Eu", "ENG1", "EN-ARS", 8.1, 38, 88, { eu: true });
+  const p = premiosDoAno([...base, eu], ctx("eu", { faseCopa: (cp, id) => (cp === "UCL" && id === "EN-ARS" ? "campeao" : undefined), campeaoLiga: { ENG1: "EN-ARS" } }));
+  assert.ok(p.premios.find((x) => x.id === "BOLA")!.ranking[0].eu && p.premios.find((x) => x.id === "UEFA")!.ranking[0].eu);
 });
 
 console.log(`\n${ok} testes passaram`);

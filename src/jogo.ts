@@ -8,6 +8,8 @@ import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
+import { premiosDoAno, type PremiosDoAno, type IdPremio } from "./premios-mundo.js";
+import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
 import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
@@ -69,6 +71,10 @@ export interface Carreira {
   statsExtra?: Partial<Record<CopaId, { jogos: number; gols: number; assist: number; notas: number[] }>>;
   /** prêmios da liga na última temporada terminada (craque, seleção, artilheiro...) */
   premiosLiga?: PremiosLiga;
+  /** prêmios do mundo da temporada passada (Bola de Ouro, Melhor da Europa, Rei da América...) */
+  premiosMundo?: PremiosDoAno;
+  /** vencedores de cada prêmio do mundo, ano a ano */
+  galeriaPremios?: Partial<Record<IdPremio, { ano: number; nome: string; clubeId: string; nacionalidade: string; eu?: boolean }[]>>;
   suspensaoEstadual?: number; statsEstadual?: { jogos: number; gols: number; assist: number; notas: number[] };
   tabelaAnterior?: { ligaId: string; ordem: string[] }; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
@@ -475,6 +481,47 @@ export const noMundial = (s: Save) => {
   const selecao = !!cop && c.selecao?.conv[`${c.temporada}-copa`] === true && cop.jogos.some((j) => j.gc === undefined && (j.casa === nat || j.fora === nat));
   return clube || selecao;
 };
+const TROFEU_PREMIO: Record<IdPremio, [string, number, [string, string]]> = {
+  BOLA: ["bola", 15, ["#E3B341", "#B8892B"]], BEST: ["estrela", 10, ["#E3B341", "#1E3A6B"]], UEFA: ["placa", 9, ["#C0C8D8", "#0B2F7A"]], REI: ["prato", 8, ["#E3B341", "#2E7D4F"]],
+  ASIA: ["placa", 6, ["#E3B341", "#8A1C1C"]], AFR: ["placa", 6, ["#E3B341", "#2E7D4F"]], KOPA: ["bola", 6, ["#C0C8D8", "#8F96A3"]], YASHIN: ["placa", 6, ["#E3B341", "#222222"]], CHUTEIRA: ["chuteira", 8, ["#E3B341", "#B8892B"]],
+};
+/** Fim da temporada: os prêmios do mundo, com o jogador do usuário concorrendo com os números da liga dele. */
+function premiosDoMundo(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev: string[]) {
+  const c = s.carreira, j = s.jogador, w = mundo(pacote), ano = r.ano;
+  const fonte = { ligas: w.liga, tabelaReal: { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((x) => x.clube) }, semente: `${s.semente}|sim`, temporada: c.temporada };
+  const campeaoLiga: Record<string, string | undefined> = {};
+  for (const id of Object.keys(w.liga)) if (id !== "SELECOES" && id !== "CONV") campeaoLiga[id] = ordemFinal(fonte, id)[0];
+  const cop = c.copas?.COP, faseDe = (e: EstadoCopa | undefined, id: string) => !e ? undefined : e.campeao === id ? "campeao" : e.chegou[id];
+  const cands: Candidato[] = candidatosDoAno(pacote);
+  const minimo = Math.ceil(nRodadas(c) * 0.5);
+  const meuCopa = c.selecao?.copas.find((x) => x.ano === ano);
+  if (!c.fase && r.jogos >= minimo) cands.push({ nome: j.apelido, clubeId: c.clubeId, posicao: j.posicao, nota: r.nota, gols: r.gols, assist: r.assist, jogos: r.jogos, idade: j.idade, ligaId: infoLiga(c.ligaId).id, ovr: ovr(j) + (c.fama - 50) / 10, nacionalidade: j.nacionalidade, minimo, eu: true });
+  const p = premiosDoAno(cands, {
+    semente: s.semente, ano, campeaoLiga, regiaoLiga: (id) => infoLiga(id).regiao, nivelLiga: (id) => infoLiga(id).nivel, confederacao,
+    faseCopa: (copa, id) => faseDe(c.copas?.[copa as CopaId], id),
+    faseCopaDoMundo: (x) => !cop ? undefined : x.eu ? (meuCopa ? (meuCopa.campeao ? "campeao" : cop.chegou[idSelecao(x.nacionalidade)]) : undefined) : naSelecao(pacote, x.nacionalidade, x.nome) ? faseDe(cop, idSelecao(x.nacionalidade)) : undefined,
+  });
+  c.premiosMundo = p;
+  const gal = (c.galeriaPremios ??= {}), nome = (x: { nome: string; eu?: boolean }) => (x.eu ? j.apelido : x.nome), clube = (id: string) => infoClube(pacote, id)?.nome ?? "";
+  for (const pr of p.premios) {
+    const v = pr.ranking[0];
+    (gal[pr.id] ??= []).push({ ano, nome: v.nome, clubeId: v.clubeId, nacionalidade: v.nacionalidade, ...(v.eu ? { eu: true } : {}) });
+    const pos = pr.ranking.findIndex((x) => x.eu);
+    if (pos === 0) {
+      const [modelo, fama, cores] = TROFEU_PREMIO[pr.id], nomeT = `${pr.nome} ${ano}`;
+      receberReliquias(s, [{ conquista: `trofeu-mundo-${pr.id}`, reliquia: { id: `rel-trofeu-mundo-${pr.id}-${ano}`, chave: `trofeu-mundo-${pr.id}`, tipo: "trofeu", nome: nomeT, legenda: `${clube(c.clubeId)} · ${ano}`, ano, cores, modelo } }], ev);
+      r.premios = [...(r.premios ?? []), nomeT];
+      c.fama = clamp(c.fama + fama, 0, 100);
+      noticia(s, "jogo", `${j.apelido} ganha ${pr.id === "BOLA" ? "a" : "o"} ${pr.nome}!`, `${j.apelido} (${clube(c.clubeId)}) é ${pr.id === "BOLA" ? "o melhor jogador do mundo" : `o vencedor do prêmio ${pr.nome}`} de ${ano}.`, { k: "trofeu" });
+    } else if (pos > 0 && (pr.id === "BOLA" || pr.id === "BEST")) {
+      c.fama = clamp(c.fama + Math.max(1, 6 - pos), 0, 100);
+      noticia(s, "jogo", `${j.apelido} é ${pos + 1}º ${pr.id === "BOLA" ? "na Bola de Ouro" : "no The Best"}`, `${nome(v)} (${clube(v.clubeId)}) venceu. ${j.apelido} terminou em ${pos + 1}º lugar.`);
+    }
+  }
+  if (p.selecao.some((x) => x.eu)) { r.premios = [...(r.premios ?? []), `Seleção do Ano ${ano}`]; c.fama = clamp(c.fama + 3, 0, 100); }
+  const bola = p.premios.find((x) => x.id === "BOLA")?.ranking[0], uefa = p.premios.find((x) => x.id === "UEFA")?.ranking[0], rei = p.premios.find((x) => x.id === "REI")?.ranking[0];
+  if (bola) noticia(s, "clube", `Bola de Ouro ${ano}: ${nome(bola)}`, `${nome(bola)} (${clube(bola.clubeId)}) é o melhor do mundo.${uefa ? ` Melhor da Europa: ${nome(uefa)}${uefa.nome !== bola.nome ? " — os votantes da UEFA discordaram" : ""}.` : ""}${rei ? ` Rei da América: ${nome(rei)}.` : ""}`, { k: "trofeu" });
+}
 /** As 32 da Copa do Mundo: por continente, as mais fortes (Europa 13, América do Sul 5, África 5, Ásia 5, Concacaf 3, Oceania 1), com as sedes garantidas. */
 export function participantesCopa(pacote: PacoteDados, t: number): string[] {
   const sel = todasSelecoes(pacote), sedes = t === 4 ? ["ESP", "POR", "MAR"] : t === 8 ? ["KSA"] : t === 12 ? ["USA", "CAN"] : [];
@@ -1432,6 +1479,8 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
       } else noticia(s, "jogo", `Fim de Copa para a ${sel.nome}`, `${sel.nome} parou: ${fase.toLowerCase()}. ${j.apelido} fez ${nc.jogos} jogos e ${nc.gols} gols. Campeã: ${infoClube(pacote, cop.campeao ?? "")?.nome ?? "–"}.`);
     }
     if (c.selecao) c.selecao.naCopa = undefined; }
+  // prêmios do mundo: cada júri vota do seu jeito (veja premios-mundo.ts)
+  premiosDoMundo(pacote, s, r, ev);
   // tabela final (vale para as vagas das copas da próxima temporada)
   c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
   c.notasRodada = undefined;
