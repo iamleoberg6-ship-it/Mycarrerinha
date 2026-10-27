@@ -109,7 +109,7 @@ body:has(.abas) { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
 #ancoraAbas { scroll-margin-top: 8px; }
 .fixo-jogar { position: sticky; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); z-index: 19; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 /* nas outras telas, o jogar vira um botão redondo flutuante acima da barra */
-.fixo-jogar.mini { position: fixed; right: 14px; bottom: calc(82px + env(safe-area-inset-bottom, 0px)); width: auto; padding: 12px 18px; border-radius: 99px; font-size: 15px; z-index: 29; }
+.fixo-jogar.mini { position: fixed; right: 14px; bottom: calc(82px + env(safe-area-inset-bottom, 0px)); width: 56px; height: 56px; padding: 0; border-radius: 50%; font-size: 20px; display: grid; place-items: center; z-index: 29; }
 @media (min-width: 720px) { .fixo-jogar.mini { right: calc(50% - 320px); bottom: 96px; } }
 .marca { display: flex; align-items: center; justify-content: flex-start; gap: 10px; } .marca .engrenagem { margin-left: auto; background: none; border: 1px solid var(--linha); color: var(--giz-2); border-radius: 12px; width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer; flex: none; }
 .marca .engrenagem.ativo { color: var(--ouro); border-color: var(--ouro); }
@@ -159,7 +159,6 @@ svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2);
 .escolha-nam { margin: 8px 0; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border: 1px dashed #6B3A55; border-radius: 12px; } .escolha-nam .rotulo { width: 100%; margin: 0; } .escolha-nam .chip { font-size: 12.5px; padding: 6px 10px; }
 .cena { margin: 8px 0; padding: 12px; border-radius: 12px; border: 1px solid #E58FB1; background: rgba(229,143,177,.07); } .cena p { margin: 4px 0; } .cena .ops { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; } .cena .ops button { text-align: left; background: var(--campo-3); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; color: var(--giz); font: inherit; cursor: pointer; display: flex; justify-content: space-between; } .cena .ops button:hover { border-color: #E58FB1; } .cena .ops small { color: var(--giz-2); }
 /* aba Vida */
-.sub-abas.rolar { overflow-x: auto; scrollbar-width: none; } .sub-abas.rolar::-webkit-scrollbar { display: none; } .sub-abas.rolar button { flex: 1 0 auto; padding: 10px 7px 8px; font-size: 12px; }
 .ocasiao { border-color: var(--linha); } .ocasiao h2 { font-size: 20px; margin: 4px 0; } .ocasiao .rotulo { display: flex; justify-content: space-between; gap: 8px; } .ocasiao .prazo { color: var(--giz-2); text-transform: none; letter-spacing: 0; font-weight: 500; }
 .ocasiao .ops { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; } .ocasiao .ops button { text-align: left; background: var(--campo-3); border: 1px solid var(--linha); border-radius: 12px; padding: 11px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; color: var(--giz); font: inherit; } .ocasiao .ops button:hover { border-color: var(--ouro); } .ocasiao .ops small { color: var(--giz-2); }
 .ocasiao.o-familia, .ocasiao.o-filho { border-left: 3px solid #F3B6CC; } .ocasiao.o-encrenca { border-left: 3px solid var(--neg); } .ocasiao.o-convite { border-left: 3px solid var(--ouro); } .ocasiao.o-parca { border-left: 3px solid #6FB7E0; } .ocasiao.o-ferias, .ocasiao.o-exterior { border-left: 3px solid #74D394; } .ocasiao.o-fundacao { border-left: 3px solid #E58FB1; }
@@ -205,8 +204,10 @@ svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2);
 .retro-vida { display: flex; flex-direction: column; gap: 6px; } .retro-vida > div { padding: 8px 12px; border-left: 3px solid #E58FB1; background: var(--campo-2); border-radius: 0 8px 8px 0; font-size: 14px; }
 .retro-nav { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
 .aviso-save { min-height: 1em; margin: 6px 0; } .aviso-save.erro { color: var(--neg); }
-.sub-abas { display: flex; margin-bottom: 14px; border-bottom: 1px solid var(--linha); gap: 4px; }
-.sub-abas button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 2px 8px; font: inherit; font-weight: 700; font-size: 12.5px; color: var(--giz-2); cursor: pointer; }
+/* abas secundárias: uma só cara em todas as telas, rolam na horizontal com a borda direita esmaecida */
+.sub-abas { display: flex; margin-bottom: 14px; border-bottom: 1px solid var(--linha); gap: 4px; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); padding-right: 12px; }
+.sub-abas::-webkit-scrollbar { display: none; }
+.sub-abas button { flex: 0 0 auto; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 9px 8px; font: inherit; font-weight: 700; font-size: 12.5px; color: var(--giz-2); cursor: pointer; white-space: nowrap; }
 .sub-abas button.ativo { color: var(--giz); border-bottom-color: var(--ouro); }
 .chip.outras { border-style: dashed; }
 details.dobra > summary { cursor: pointer; }
@@ -373,6 +374,15 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 .delta.pos { color: var(--pos); } .delta.neg { color: var(--neg); }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 15px; }
 .kv span:nth-child(odd) { color: var(--giz-2); }
+.kv b { text-align: right; overflow-wrap: anywhere; min-width: 0; }
+.dinheiro-nw { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.resumo-contrato { border: 1px solid var(--linha); border-radius: 14px; padding: 10px 14px; background: var(--campo-2); }
+.resumo-contrato > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: center; font-size: 14.5px; color: var(--giz); }
+.resumo-contrato > summary::-webkit-details-marker { display: none; }
+.resumo-contrato > summary::after { content: "▾"; color: var(--giz-2); margin-left: 4px; }
+.resumo-contrato[open] > summary::after { content: "▴"; }
+.resumo-contrato[open] { padding-bottom: 14px; } .resumo-contrato > summary + * { margin-top: 10px; }
+.dica-barra { font-size: 10px; color: var(--giz-2); opacity: .8; letter-spacing: .02em; }
 .teste summary { cursor: pointer; font-weight: 600; color: var(--giz-2); }
 /* partida: clima, nota ao vivo, reações, pênaltis */
 .selo-jogo { text-align: center; margin: 0 0 6px; } .selo-jogo span { display: inline-block; font-family: var(--display); font-weight: 900; letter-spacing: .12em; font-size: 13px; padding: 3px 12px; border-radius: 999px; background: var(--ouro); color: var(--tinta); animation: pulsa 2.4s ease-in-out infinite; }
@@ -423,9 +433,7 @@ button.rel-nivel { background: none; border: 1px solid transparent; border-radiu
 
 /* celular: contatos, busca e app de namoro */
 .celular { display: flex; flex-direction: column; gap: 6px; }
-.cel-abas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 999px; padding: 4px; margin-bottom: 8px; }
-.cel-abas button { background: transparent; border: 0; color: var(--giz-2); border-radius: 999px; padding: 8px 6px; font: 600 13px var(--texto); cursor: pointer; }
-.cel-abas button.ativo { background: var(--ouro); color: var(--tinta); }
+
 .fav { flex: none; background: none; border: 0; color: #4A5A53; font-size: 18px; line-height: 1; padding: 4px; cursor: pointer; align-self: center; }
 .fav.on { color: var(--ouro); }
 .avatar-fam { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--campo-3); border: 2px solid var(--c); color: var(--giz); font: 800 14px var(--display); }
