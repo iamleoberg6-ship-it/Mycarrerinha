@@ -99,15 +99,22 @@ tr.z-dir td:first-child { box-shadow: inset 3px 0 0 #74D394; } tr.z-play td:firs
 .cel.ativo::after { background: var(--tinta); width: 12px; height: 12px; }
 
 /* barra de menu fixa embaixo, como nos apps */
-.abas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(6, 1fr); background: color-mix(in srgb, var(--campo-2) 94%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--linha); box-shadow: 0 -6px 18px rgba(0,0,0,.35); padding: 6px max(4px, env(safe-area-inset-right, 0px)) max(6px, env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
+.abas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(7, 1fr); background: color-mix(in srgb, var(--campo-2) 94%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--linha); box-shadow: 0 -6px 18px rgba(0,0,0,.35); padding: 6px max(4px, env(safe-area-inset-right, 0px)) max(6px, env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
 .abas button { background: none; border: 0; padding: 4px 0 2px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--giz-2); cursor: pointer; font-family: inherit; font-weight: 600; font-size: 10.5px; line-height: 1.1; -webkit-tap-highlight-color: transparent; }
-.abas button .aba-ico { position: relative; display: grid; place-items: center; width: 44px; height: 28px; border-radius: 99px; transition: background .2s; }
+.abas button .aba-ico { position: relative; display: grid; place-items: center; width: 40px; height: 28px; border-radius: 99px; transition: background .2s; }
 .abas button.ativo { color: var(--ouro); } .abas button.ativo .aba-ico { background: color-mix(in srgb, var(--ouro) 18%, transparent); }
 .aba-badge { position: absolute; top: -3px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 99px; background: #E5534B; color: #fff; font-family: inherit; font-weight: 800; font-size: 10px; line-height: 16px; font-style: normal; text-align: center; box-shadow: 0 0 0 2px var(--campo-2); }
-@media (min-width: 720px) { .abas { left: 50%; right: auto; transform: translateX(-50%); width: min(640px, 100%); bottom: 12px; border: 1px solid var(--linha); border-radius: 18px; padding: 6px; } }
+@media (min-width: 720px) { .abas { left: 50%; right: auto; transform: translateX(-50%); width: min(680px, 100%); bottom: 12px; border: 1px solid var(--linha); border-radius: 18px; padding: 6px; } }
 body:has(.abas) { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
 #ancoraAbas { scroll-margin-top: 8px; }
 .fixo-jogar { position: sticky; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); z-index: 19; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+/* nas outras telas, o jogar vira um botão redondo flutuante acima da barra */
+.fixo-jogar.mini { position: fixed; right: 14px; bottom: calc(82px + env(safe-area-inset-bottom, 0px)); width: auto; padding: 12px 18px; border-radius: 99px; font-size: 15px; z-index: 29; }
+@media (min-width: 720px) { .fixo-jogar.mini { right: calc(50% - 320px); bottom: 96px; } }
+.marca { display: flex; align-items: center; justify-content: flex-start; gap: 10px; } .marca .engrenagem { margin-left: auto; background: none; border: 1px solid var(--linha); color: var(--giz-2); border-radius: 12px; width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer; flex: none; }
+.marca .engrenagem.ativo { color: var(--ouro); border-color: var(--ouro); }
+.pend-titulo { display: flex; align-items: center; gap: 8px; margin: 18px 4px 8px; } .pend-titulo i { font-style: normal; background: #E5534B; color: #fff; border-radius: 99px; padding: 1px 8px; font-size: 12px; }
+.pendencias { display: flex; flex-direction: column; gap: 10px; } .pendencias > * { margin: 0 !important; }
 /* evolução */
 .evo-chips { flex-wrap: wrap; margin-bottom: 8px; } .evo-chips .chip { padding: 5px 11px; font-size: 12px; }
 svg.evo { width: 100%; height: auto; display: block; background: var(--campo-2); border: 1px solid var(--linha); border-radius: 12px; }
