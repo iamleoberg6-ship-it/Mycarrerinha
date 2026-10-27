@@ -15,13 +15,14 @@ export type EstadualId = "PAU" | "CAR" | "MIN" | "GAU" | "PRN" | "CAT" | "BAI" |
 // Copa Intercontinental (todo ano, campeões da temporada anterior, jogos únicos em campo neutro) e Mundial de Clubes
 // (a cada quatro anos, 32 clubes, no fim da temporada): os participantes são definidos em src/jogo.ts (precisam do
 // histórico das copas da carreira).
-export type CopaId = "LIB" | "UCL" | "ACL" | "INT" | "MUN" | EstadualId;
+export type CopaId = "LIB" | "UCL" | "ACL" | "CON" | "INT" | "MUN" | EstadualId;
 export interface InfoCopa { id: CopaId; nome: string; curto: string; regiao: string; cores: [string, string]; prep: "da" | "do"; uf?: string; vagas?: number }
 const est = (id: EstadualId, nome: string, curto: string, uf: string, cores: [string, string], vagas = 8): InfoCopa => ({ id, nome, curto, regiao: "Brasil", cores, prep: "do", uf, vagas });
 export const COPAS: Record<CopaId, InfoCopa> = {
   LIB: { id: "LIB", nome: "Copa Libertadora da América", curto: "Libertadora", regiao: "América do Sul", cores: ["#E3B341", "#1F3A5F"], prep: "da" },
   UCL: { id: "UCL", nome: "Champions Ligue", curto: "Champions", regiao: "Europa", cores: ["#0B1F5C", "#C9D3E6"], prep: "da" },
   ACL: { id: "ACL", nome: "Champions Ligue Asiática", curto: "Champions Asiática", regiao: "Ásia", cores: ["#0B6B6B", "#E3B341"], prep: "da" },
+  CON: { id: "CON", nome: "Concachampions", curto: "Concachampions", regiao: "América do Norte", cores: ["#0B2F7A", "#C8102E"], prep: "da" },
   INT: { id: "INT", nome: "Copa Intercontinental", curto: "Intercontinental", regiao: "Mundo", cores: ["#C9A14A", "#1F1F1F"], prep: "da" },
   MUN: { id: "MUN", nome: "Mundial de Clubes", curto: "Mundial", regiao: "Mundo", cores: ["#C9A14A", "#0B2F7A"], prep: "do" },
   PAU: est("PAU", "Campeonato Paulista", "Paulistão", "SP", ["#C8102E", "#111111"]),
@@ -50,11 +51,15 @@ const VAGAS: Partial<Record<CopaId, [string, number][]>> = {
   LIB: [["BRA1", 7], ["ARG1", 6], ["URU1", 3], ["COL1", 3], ["CHI1", 3], ["PAR1", 3], ["ECU1", 3]],
   UCL: [["ENG1", 5], ["ESP1", 5], ["ITA1", 5], ["GER1", 5], ["FRA1", 4], ["POR1", 3], ["NED1", 3], ["TUR1", 1]],
   ACL: [["KSA1", 4]],
+  // Concachampions: os 8 melhores da Liga MX e da MLS (os clubes do Canadá jogam a MLS)
+  CON: [["MEX1", 8], ["USA1", 8]],
 };
 const REGIAO_CONV: Partial<Record<CopaId, string[]>> = { LIB: ["SUL"], UCL: ["EUR"], ACL: ["ASO", "ASL"] };
 
 /** Semanas (da temporada) de cada fase; ida e volta usam duas semanas. */
 /** Intercontinental: semanas livres de todas as copas. Mundial: depois da última rodada (semanas 40 a 46). */
+/** Concachampions: mata-mata em ida e volta (16 clubes) e final em jogo único na casa do mais bem colocado. */
+export const SEMANAS_CON = { oitavas: [5, 7], quartas: [12, 14], semi: [20, 21], final: [25] } as const;
 export const SEMANAS_INT = { derby: [17], desafio: [27], final: [34] } as const;
 export const SEMANAS_MUN = { grupos: [40, 41, 42], oitavas: [43], quartas: [44], semi: [45], final: [46] } as const;
 export const ehMundial = (temporada: number) => temporada % 4 === 3; // 2029, 2033...
@@ -139,6 +144,14 @@ export function novaCopa(id: CopaId, temporada: number, clubes: string[], forca:
   const e: EstadoCopa = { id, temporada, clubes, tabelas: {}, jogos: [], fase: fase0, chegou: Object.fromEntries(clubes.map((c) => [c, fase0])) };
   const linha = (c: string): LinhaTabela => ({ clube: c, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, pts: 0 });
   let n = 0;
+  if (id === "CON") {
+    // clubes: os 8 mexicanos e depois os 8 da MLS, cada lista do mais bem colocado para o pior: 1º do México × 8º da MLS...
+    const mx = clubes.slice(0, 8), us = clubes.slice(8, 16);
+    e.fase = "oitavas"; for (const c of clubes) e.chegou[c] = "oitavas";
+    // o mais bem colocado na tabela do seu país decide em casa
+    mx.forEach((c, i) => serie(e, "oitavas", `oitavas-${i + 1}`, i <= 3 ? c : us[7 - i], i <= 3 ? us[7 - i] : c, SEMANAS_CON.oitavas));
+    return e;
+  }
   if (id === "INT") {
     // clubes: [Concacaf (México/EUA), Libertadora, Asiática, Champions]. Dérbi: os dois americanos.
     const [nam, sul] = clubes;
@@ -243,6 +256,15 @@ function proximaFase(e: EstadoCopa, forca: (c: string) => number) {
   const marca = (cs: string[], fase: string) => cs.forEach((c) => (e.chegou[c] = fase));
   const vencedores = (fase: string) => serieDe(e, fase).map((s) => vencedorSerie(e, s)!);
   const pares = (cs: string[], fase: string, sem: readonly number[], neutro = false) => { for (let i = 0; i < cs.length; i += 2) serie(e, fase, `${fase}-${i / 2 + 1}`, cs[i], cs[i + 1], sem, neutro); };
+  if (e.id === "CON") {
+    const S = SEMANAS_CON, semente = (c: string) => e.clubes.indexOf(c) % 8; // posição na tabela do país (decide o mando)
+    const melhorPrimeiro = (cs: string[]) => { const o: string[] = []; for (let i = 0; i < cs.length; i += 2) o.push(...(semente(cs[i]) <= semente(cs[i + 1]) ? [cs[i], cs[i + 1]] : [cs[i + 1], cs[i]])); return o; };
+    if (e.fase === "oitavas") { const cs = melhorPrimeiro(vencedores("oitavas")); marca(cs, "quartas"); pares(cs, "quartas", S.quartas); e.fase = "quartas"; }
+    else if (e.fase === "quartas") { const cs = melhorPrimeiro(vencedores("quartas")); marca(cs, "semi"); pares(cs, "semi", S.semi); e.fase = "semi"; }
+    else if (e.fase === "semi") { const cs = melhorPrimeiro(vencedores("semi")); marca(cs, "final"); pares(cs, "final", S.final); e.fase = "final"; }
+    else if (e.fase === "final") { e.campeao = vencedores("final")[0]; e.fase = "fim"; }
+    return;
+  }
   if (e.id === "INT") {
     // a ordem dos clubes em e.clubes: [Concacaf, Libertadora, Asiática, Champions]
     if (e.fase === "derby") { const v = vencedores("derby")[0]; marca([v, e.clubes[2]], "desafio"); serie(e, "desafio", "desafio-1", v, e.clubes[2], SEMANAS_INT.desafio, true); e.fase = "desafio"; }

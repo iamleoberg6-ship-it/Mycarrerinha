@@ -394,7 +394,7 @@ export function copasDe(pacote: PacoteDados, s: Save): Partial<Record<CopaId, Es
   const copas: Partial<Record<CopaId, EstadoCopa>> = Object.fromEntries((Object.keys(COPAS) as CopaId[]).filter((id) => id !== "INT" && id !== "MUN").map((id) => [id, novaCopa(id, c.temporada, classificados(fonte, id), forca, pais, regiaoNaCopa, s.semente)]));
   // Intercontinental: campeões da temporada passada (Concacaf = campeão mexicano, Libertadora, Asiática, Champions)
   const p = palmaresDe(pacote, s, c.temporada - 1);
-  const ints = [p.ordens.MEX1?.[0], p.campeoes.LIB, p.campeoes.ACL, p.campeoes.UCL];
+  const ints = [p.campeoes.CON ?? p.ordens.MEX1?.[0], p.campeoes.LIB, p.campeoes.ACL, p.campeoes.UCL];
   if (ints.every(Boolean) && new Set(ints).size === 4) copas.INT = novaCopa("INT", c.temporada, ints as string[], forca, pais, regiaoNaCopa, s.semente);
   // Mundial de Clubes: a cada quatro anos, 32 clubes, no fim da temporada
   if (ehMundial(c.temporada)) copas.MUN = novaCopa("MUN", c.temporada, participantesMundial(pacote, s, c.temporada), forca, pais, (id) => confederacao(pais(id) || w.info[id]?.pais || ""), s.semente);
@@ -416,7 +416,7 @@ export function palmaresDe(pacote: PacoteDados, s: Save, t: number): Palmares {
   const w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60, pais = (id: string) => w.clube[id]?.pais ?? "";
   const fonte = { ligas: w.liga, semente: `${s.semente}|sim`, temporada: t, cidade: (id: string) => w.info[id]?.cidade ?? "" };
   const p: Palmares = { campeoes: {}, chegou: {}, ordens: Object.fromEntries(LIGAS_PALMARES.map((l) => [l, ordemFinal(fonte, l)])) };
-  for (const id of ["LIB", "UCL", "ACL"] as CopaId[]) {
+  for (const id of ["LIB", "UCL", "ACL", "CON"] as CopaId[]) {
     const e = novaCopa(id, t, classificados(fonte, id), forca, pais, regiaoNaCopa, `${s.semente}|sim`), rng = new RNG(`${s.semente}|sim|${id}|${t}`);
     for (let sem = 0; sem < SEMANAS_TEMPORADA; sem++) rodarSemana(e, sem, forca, rng);
     p.campeoes[id] = e.campeao; p.chegou[id] = e.chegou;
@@ -446,14 +446,7 @@ export function participantesMundial(pacote: PacoteDados, s: Save, t: number): s
     }
     lista.push(...sel);
   };
-  porCopa("UCL", 12); porCopa("LIB", 6); porCopa("ACL", 4);
-  // Concacaf: campeões de México e EUA, depois os mais bem colocados
-  const nam: string[] = [];
-  for (const p of ps) for (const l of ["MEX1", "USA1"]) { const ch = p.ordens[l]?.[0]; if (ch && !nam.includes(ch)) nam.push(ch); }
-  const pos: Record<string, number> = {};
-  for (const p of ps) for (const l of ["MEX1", "USA1"]) (p.ordens[l] ?? []).forEach((cl, i) => (pos[cl] = (pos[cl] ?? 0) + Math.max(0, 10 - i)));
-  for (const cl of Object.keys(pos).sort((a, b) => pos[b] - pos[a])) { if (nam.length >= 4) break; if (!nam.includes(cl)) nam.push(cl); }
-  lista.push(...nam.slice(0, 4));
+  porCopa("UCL", 12); porCopa("LIB", 6); porCopa("ACL", 4); porCopa("CON", 4);
   // África e Oceania (convidados) e o país-sede
   lista.push(...Object.values(w.clube).filter((c) => c.ligaId === "CONV" && confederacao(c.pais) === "CAF").sort((a, b) => b.forca - a.forca).slice(0, 4).map((c) => c.id));
   lista.push(...Object.values(w.clube).filter((c) => c.ligaId === "CONV" && confederacao(c.pais) === "OFC").map((c) => c.id).slice(0, 1));
@@ -1318,7 +1311,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   {
     const w2 = mundo(pacote), fonteP = { ligas: w2.liga, tabelaReal: { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((x) => x.clube) }, semente: `${s.semente}|sim`, temporada: c.temporada };
     const p: Palmares = { campeoes: {}, chegou: {}, ordens: Object.fromEntries(LIGAS_PALMARES.map((l) => [l, ordemFinal(fonteP, l)])) };
-    for (const id of ["LIB", "UCL", "ACL", "INT", "MUN"] as CopaId[]) { const e = c.copas?.[id]; if (e) { p.campeoes[id] = e.campeao; if (id !== "INT" && id !== "MUN") p.chegou[id] = e.chegou; } }
+    for (const id of ["LIB", "UCL", "ACL", "CON", "INT", "MUN"] as CopaId[]) { const e = c.copas?.[id]; if (e) { p.campeoes[id] = e.campeao; if (id !== "INT" && id !== "MUN") p.chegou[id] = e.chegou; } }
     (c.palmares ??= {})[c.temporada] = p;
     for (const k of Object.keys(c.palmares)) if (+k < c.temporada - 4) delete c.palmares[+k];
   }

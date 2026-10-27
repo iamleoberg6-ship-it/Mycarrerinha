@@ -949,6 +949,12 @@ teste("Intercontinental todo ano e Mundial de Clubes a cada quatro anos, com os 
   const int = copasDe(pacote, s).INT!;
   assert.equal(int.clubes.length, 4);
   assert.deepEqual(int.clubes.map((x) => confederacao(pais(x))), ["CONCACAF", "CONMEBOL", "AFC", "UEFA"]);
+  // Concachampions: 8 do México e 8 da MLS, mata-mata, um campeão
+  const fonteC = { ligas: w.liga, semente: "con", temporada: 0 };
+  const cl = classificados(fonteC, "CON"), con = novaCopa("CON", 0, cl, (id) => w.clube[id]?.forca ?? 60, pais, regiaoNaCopa, "con"), rc = new RNG("con");
+  assert.equal(new Set(cl).size, 16);
+  for (let sem = 0; sem < 40; sem++) rodarSemana(con, sem, (id) => w.clube[id]?.forca ?? 60, rc);
+  assert.ok(con.campeao && con.jogos.length === 16 + 8 + 4 + 1, `${con.jogos.length}`);
   const forca = (id: string) => w.clube[id]?.forca ?? 60, rng = new RNG("int");
   for (let sem = 0; sem < 40; sem++) rodarSemana(int, sem, forca, rng);
   assert.ok(int.campeao && int.jogos.length === 3 && int.jogos.every((j) => j.neutro && [17, 27, 34].includes(j.semana)));
