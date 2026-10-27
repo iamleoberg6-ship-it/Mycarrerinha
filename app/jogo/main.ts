@@ -35,6 +35,8 @@ import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_AC
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
 import type { LinhaPremio, PremioMundo } from "../../src/premios-mundo";
+import { trocasDeTecnicoEm, lesoesDaTemporada } from "../../src/mundo";
+import { NOME_ESTILO } from "../../src/tecnicos";
 import { infoClube, idSelecao, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
 import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
@@ -633,17 +635,28 @@ function abaJogador(s: Save): string {
 const milhoes = (euros: number) => `€ ${(euros / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
 const NOME_TIPO: Record<PropostaSave["tipo"], string> = { transferencia: "Transferência", livre: "Sem custo", emprestimo: "Empréstimo", renovacao: "Renovação" };
 // ------------------------------------------------------------------ janela de transferências do mundo
-let vistaMercado: "eu" | "mundo" = "eu", janelaVista: string | undefined, filtroJanela: "todas" | "liga" | "clube" | "base" | "aposentadorias" | "livres" = "todas";
+let vistaMercado: "eu" | "mundo" = "eu", janelaVista: string | undefined, filtroJanela: "todas" | "liga" | "clube" | "base" | "aposentadorias" | "livres" | "tecnicos" | "lesoes" = "todas";
 const NOME_NEGOCIO: Record<Negocio["tipo"], string> = { transferencia: "", livre: "Livre", exterior: "", base: "Subiu da base", aposentadoria: "Aposentou" };
 function janelaHtml(s: Save): string {
   const c = s.carreira, anos = janelasFeitas(pacote);
-  const filtros: [typeof filtroJanela, string][] = [["todas", "Maiores"], ["liga", infoLiga(c.ligaId).curto], ["clube", "Meu clube"], ["base", "Da base"], ["aposentadorias", "Aposentadorias"], ["livres", "Agentes livres"]];
+  const filtros: [typeof filtroJanela, string][] = [["todas", "Maiores"], ["liga", infoLiga(c.ligaId).curto], ["clube", "Meu clube"], ["base", "Da base"], ["aposentadorias", "Aposentadorias"], ["livres", "Agentes livres"], ["tecnicos", "Técnicos"], ["lesoes", "Lesões"]];
   const chipsFiltro = `<div class="chips" style="flex-wrap:wrap;margin:8px 0">${filtros.map(([k, n]) => `<button class="chip${filtroJanela === k ? " ativo" : ""}" data-fjanela="${k}">${esc(n)}</button>`).join("")}</div>`;
   const clube = (id?: string, fora = "Estava sem clube") => id ? `<span class="neg-clube">${escudo(id)}<span>${esc(nomeDe(id))}</span></span>` : `<span class="neg-clube sub">${fora}</span>`;
   if (filtroJanela === "livres") {
     const al = agentesLivres(pacote);
     return `${chipsFiltro}<p class="sub" style="margin-bottom:8px">${al.length ? `${al.length} jogadores sem clube: dispensados, fim de contrato, garotos que não subiram. Contratar um deles não custa taxa.` : "Ninguém sem clube ainda: o banco de agentes livres começa a encher na primeira janela."}</p>
       ${al.slice(0, 40).map((x) => `<div class="negocio"><div class="neg-topo"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button><span class="neg-valor">Livre</span></div><small class="sub">${esc(NOME_POS[x.posicao] ?? "Goleiro")} · ${x.idade} anos · OVR ${x.ovr}</small><div class="neg-rota">${clube(x.de)} <span class="sub">· último clube, sem clube desde ${ANO_INICIAL + x.desde}</span></div></div>`).join("")}${al.length > 40 ? `<p class="sub" style="margin-top:6px">E mais ${al.length - 40}.</p>` : ""}`;
+  }
+  if (filtroJanela === "tecnicos") {
+    const w = mundo(pacote), linhas = anos.length ? anos.filter((a) => !a.meio).slice(0, 3).flatMap((a) => trocasDeTecnicoEm(pacote, a.t)) : [];
+    const meu = c.tecnico;
+    return `${chipsFiltro}${meu ? `<div class="negocio meu"><div class="neg-topo"><b>${esc(meu.nome)}</b><span class="neg-valor">${esc(NOME_ESTILO[meu.estilo][0])}</span></div><small class="sub">Seu técnico no ${esc(nomeDe(c.clubeId))} · ${meu.idade} anos · desde ${ANO_INICIAL + meu.desde} · ${esc(NOME_ESTILO[meu.estilo][1])}</small></div>` : ""}
+      ${linhas.length ? [...linhas].sort((a, b) => b.t - a.t || (w.clube[b.clubeId]?.forca ?? 0) - (w.clube[a.clubeId]?.forca ?? 0)).slice(0, 40).map((x) => `<div class="negocio"><div class="neg-topo"><span class="neg-clube">${escudo(x.clubeId)}<b>${esc(nomeDe(x.clubeId))}</b></span><span class="neg-valor">${ANO_INICIAL + x.t}</span></div><small class="sub">Sai ${esc(x.saiu ?? "–")}${x.motivo === "aposentou" ? " (aposentado)" : x.motivo === "levado" ? " (levado por um clube maior)" : " (demitido)"} · chega ${esc(x.entrou)}${x.de ? ` (do ${esc(nomeDe(x.de))})` : ""}</small></div>`).join("") : `<p class="sub">A dança dos técnicos começa na virada da temporada.</p>`}`;
+  }
+  if (filtroJanela === "lesoes") {
+    const rod = c.semana - SEMANAS_PRE, ls = lesoesDaTemporada(pacote).filter((x) => x.fim > rod && x.ini <= rod + 2).sort((a, b) => b.ovr - a.ovr).slice(0, 40);
+    return `${chipsFiltro}<p class="sub" style="margin-bottom:8px">Lesões graves no mundo agora (e as que vêm nas próximas rodadas). Quem fica fora não joga, não soma números e perde terreno nos prêmios.</p>
+      ${ls.map((x) => `<div class="negocio${x.clubeId === c.clubeId ? " meu" : ""}"><div class="neg-topo"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button><span class="neg-valor">${x.fim - Math.max(rod, x.ini)} sem.</span></div><small class="sub">${esc(nomeDe(x.clubeId))} · OVR ${x.ovr} · ${esc(x.tipo)} · fora das rodadas ${x.ini + 1} a ${x.fim}</small></div>`).join("") || `<p class="sub">Ninguém machucado agora.</p>`}`;
   }
   if (!anos.length) return `${chipsFiltro}<p class="sub">A primeira janela do mundo abre na virada da temporada: transferências, reforços, garotos que sobem da base e aposentadorias aparecem aqui.</p>`;
   const chave = (x: { t: number; meio: boolean }) => `${x.t}${x.meio ? "m" : ""}`;
@@ -791,7 +804,7 @@ function perfilHtml(s: Save): string {
       <div class="chips-lista">${pf.fortes.map((x) => `<span class="chip-info pos">+ ${esc(x)}</span>`).join("")}${pf.fracos.map((x) => `<span class="chip-info neg">− ${esc(x)}</span>`).join("")}${j.tracos.map((x) => `<span class="chip-info">★ ${esc(TRACOS[x]?.nome ?? x)}</span>`).join("")}</div>
 
       <p class="rotulo">Reputação</p>
-      <div class="barras">${barra(`Torcida · ${rotuloTorcida(torc)}`, torc, 100, "#74D394")}${barra(`Técnico · ${rotuloTecnico(c.relTecnico)}`, c.relTecnico, 100, "#B9A3E8")}${barra(`Mundo · ${rotuloFama(c.fama)}`, c.fama, 100, "#E3B341")}</div>
+      <div class="barras">${barra(`Torcida · ${rotuloTorcida(torc)}`, torc, 100, "#74D394")}${barra(`Técnico${c.tecnico ? ` ${c.tecnico.nome}` : ""} · ${rotuloTecnico(c.relTecnico)}`, c.relTecnico, 100, "#B9A3E8")}${barra(`Mundo · ${rotuloFama(c.fama)}`, c.fama, 100, "#E3B341")}</div>
 
       <p class="rotulo">Clubes</p>
       <div class="lista-clubes">${clubes.map((k) => { const id = idClube(k); return `<div class="linha-clube">${id ? escudo(id) : ""}<div><b>${esc(k.clube)}</b><small>${k.de === k.ate ? k.de : `${k.de}–${k.ate}`}</small></div><span>${k.jogos} j · ${k.gols} g · ${k.assist} a${k.titulos ? ` · 🏆 ${k.titulos}` : ""}</span></div>`; }).join("") || `<p class="sub">Ainda na base.</p>`}</div>

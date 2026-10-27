@@ -8,6 +8,8 @@ import { salarioMensal, AGENTES, type TipoAgente } from "./mercado.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
+import { bonusDoTecnico, chanceDeDemissao, NOME_ESTILO, type Tecnico } from "./tecnicos.js";
+import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, lesoesQueComecam } from "./mundo.js";
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
 import { premiosDoAno, type PremiosDoAno, type IdPremio } from "./premios-mundo.js";
 import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
@@ -111,6 +113,10 @@ export interface Carreira {
   torcidaMax?: Record<string, number>;
   /** melhor posição já anunciada em cada lista de recordes (chave: clube-gols-FLA, sel-jogos, liga-BRA1-3...) */
   recordes?: Record<string, number>;
+  /** técnico do clube do jogador (decidido pelos resultados reais) e de qual clube ele é */
+  tecnico?: Tecnico; tecnicoClube?: string;
+  /** pontos do clube nos últimos jogos da liga (3, 1, 0) e temporada da última troca de técnico no meio do ano */
+  resultadosClube?: number[]; tecnicoTroca?: number;
   /** aposentadoria anunciada (vale no fim desta temporada) */
   aposentadoria?: { temporada: number };
   /** carreira encerrada: a despedida */
@@ -184,8 +190,12 @@ export const ovrEm = (j: Jogador, p: Posicao) => calcOvr(j.at, p) - penalidade(f
 export function sincronizar(pacote: PacoteDados, s: Save) {
   const antes = versaoMundo();
   sincronizarMundo(pacote, s.semente, s.carreira.temporada, s.carreira.semana);
-  if (versaoMundo() === antes) return;
   const c = s.carreira;
+  if (c.tecnicoClube !== c.clubeId && !c.fase) {
+    const t = tecnicoDoClube(pacote, idClube(c.clubeId));
+    c.tecnico = t ? { ...t } : tecnicoLivrePara(pacote, idClube(c.clubeId), `${c.temporada}-chegada`); c.tecnicoClube = c.clubeId; c.resultadosClube = [];
+  }
+  if (versaoMundo() === antes) return;
   // fechou a janela do meio do ano: as notícias saem uma vez
   const meio = janelaDoMeioAtual(pacote);
   if (meio && c.meioNoticiado !== c.temporada) { c.meioNoticiado = c.temporada; noticiasDaVirada(pacote, s, meio, "meio"); }
@@ -212,6 +222,12 @@ function saidasComNumero(pacote: PacoteDados, s: Save) {
 export function elencoAtual(pacote: PacoteDados, s: Save) {
   sincronizar(pacote, s);
   return mundo(pacote).clube[idClube(s.carreira.clubeId)].elenco;
+}
+/** O elenco do clube sem quem está fora por lesão grave nesta rodada. */
+export function elencoDisponivel(pacote: PacoteDados, s: Save, clubeId = s.carreira.clubeId) {
+  sincronizar(pacote, s);
+  const fora = lesionadosDoClube(pacote, idClube(clubeId), s.carreira.semana - SEMANAS_PRE), el = mundo(pacote).clube[idClube(clubeId)]?.elenco ?? [];
+  return fora.size ? el.filter((x) => !fora.has(x.nome)) : el;
 }
 /** O time da base do clube na categoria do jogador (sub-17 até 17 anos; sub-20 depois). */
 export function timeDaBase(pacote: PacoteDados, clubeId: string, idade: number): JogadorNPC[] {
@@ -384,9 +400,9 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   if (!copa && c.semana < SEMANAS_PRE) return "semJogo";
   if (copa ? (estadual ? c.suspensaoEstadual : c.suspensaoCopa) : c.suspensao) return "suspenso";
   if (copa) { const e = escalacao(pacote, { ...s, carreira: { ...c, suspensao: 0, semana: Math.max(c.semana, SEMANAS_PRE) } }, cansacoPrevisto); return e === "base" ? "fora" : e; }
-  const elenco = elencoAtual(pacote, s);
-  const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade);
-  const rank = elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) > meu).length;
+  const elenco = elencoDisponivel(pacote, s), tec = c.tecnico;
+  const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade) + bonusDoTecnico(tec, j.posicao, j.idade);
+  const rank = elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) + bonusDoTecnico(tec, x.posicao, x.idade) > meu).length;
   const vagas = VAGAS_433[j.posicao];
   if (rank < vagas) return "titular";
   if (rank <= vagas + 1) return "banco";
@@ -760,7 +776,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const classico = !cj && (cp(jogo.casa).cidade === cp(jogo.fora).cidade || [jogo.casa, jogo.fora].sort().join("-") in CLASSICOS_EXTRA);
   const chuva = rngN.chance(0.14);
   const naBase = base && !amador;
-  const elMeu = elencoDe({ ...meuClube, elenco: naBase ? timeDaBase(pacote, c.clubeId, j.idade) : selecaoJogo ? meuClube.elenco : elencoAtual(pacote, s) }, false), elAdv = elencoDe(naBase ? { ...adv, elenco: timeDaBase(pacote, adv.id, j.idade) } : adv, false);
+  const elMeu = elencoDe({ ...meuClube, elenco: naBase ? timeDaBase(pacote, c.clubeId, j.idade) : selecaoJogo ? meuClube.elenco : elencoDisponivel(pacote, s) }, false), elAdv = elencoDe(naBase ? { ...adv, elenco: timeDaBase(pacote, adv.id, j.idade) } : selecaoJogo ? adv : { ...adv, elenco: elencoDisponivel(pacote, s, adv.id) }, false);
   const estadio = cj?.neutro ? `estádio da ${NOME_FASE[cj.fase].toLowerCase()}` : base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
   const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(meuId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao });
   const posTab = posicaoNaTabela(undefined, s), reta = c.semana >= SEMANAS_PRE + 28;
@@ -930,7 +946,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   c.formaUlt = [...c.formaUlt.slice(-4), nota];
   if (pro) c.torcida = clamp((c.torcida ?? 50) + (nota - 6.5) * (copa ? 2 : 1.5) + gols, 0, 100);
   c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
-  c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5), 0, 100);
+  c.relTecnico = clamp(c.relTecnico + (nota - 6.5) * (pro ? 1 : 1.5) * (c.tecnico?.estilo === "linha-dura" ? 1.5 : 1), 0, 100);
   const grande = (mundo(pacote).clube[c.clubeId] ?? clubeDe(l, c.clubeId)).forca >= 75 ? 1.5 : 1, vitrine = copa && !ehEstadual(copa.id) ? 1.5 : 1;
   c.fama = clamp(c.fama + (1 - c.fama / 110) * (pro ? vitrine * grande * (0.5 * gols + (nota >= 8 ? 0.3 : 0)) : 0.1 * gols + (nota >= 8 ? 0.1 : 0)), 0, 100);
   c.cansaco = clamp(c.cansaco + (30 * minutos) / 90, 0, 100);
@@ -1001,6 +1017,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const prev = previaPlano(s, plano);
   c.cansaco = prev.cansaco; c.moral = prev.moral;
   c.relTecnico = clamp(c.relTecnico + cont("video") + (cont("treino") >= 2 ? 1 : 0), 0, 100);
+  if (c.tecnico?.estilo === "motivador" && !c.fase && !c.mercado?.semClube) c.moral = clamp(c.moral + 1, 0, 100);
   if (cont("redes")) {
     c.engajamento = clamp((c.engajamento ?? 40) + 9 * cont("redes"), 0, 100);
     c.fama = clamp(c.fama + 0.15 * cont("redes"), 0, 100); c.exposicao = clamp(c.exposicao + 2 * cont("redes"), 0, 100);
@@ -1057,6 +1074,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       const [a, b] = meu && placarMeuJogo ? placarMeuJogo : simularPlacar(rng, clubeDe(l, g.casa).forca, clubeDe(l, g.fora).forca);
       registrar(c.tabela.find((t) => t.clube === g.casa)!, a, b);
       registrar(c.tabela.find((t) => t.clube === g.fora)!, b, a);
+      if (meu) { const [gp, gc] = g.casa === c.clubeId ? [a, b] : [b, a]; c.resultadosClube = [...(c.resultadosClube ?? []).slice(-9), gp > gc ? 3 : gp === gc ? 1 : 0]; }
     }
   }
 
@@ -1185,6 +1203,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     }
   }
   checarRecordes(pacote, s, eventos);
+  if (!fim) { noticiasDeLesao(pacote, s, eventos); demissaoNoMeio(pacote, s, eventos); }
   return {
     rotulo, escalacao: partida?.escalacao ?? (c.semana - 1 < SEMANAS_PRE ? "semJogo" : "fora"), partida: resumoPartida, ...(quarta ? { copa: quarta.resumo } : {}),
     ovrAntes, ovrDepois: ovr(j), ganhos, moral: [moral0, c.moral], cansaco: [cansaco0, c.cansaco], fama: [fama0, c.fama], dinheiro, eventos,
@@ -1520,6 +1539,8 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   // prêmios do mundo: cada júri vota do seu jeito (veja premios-mundo.ts)
   premiosDoMundo(pacote, s, r, ev);
   if (c.selecao) { c.selecao.naTorneio = undefined; c.selecao.naCopa = undefined; }
+  // técnico do clube do jogador: a campanha real decide se ele fica
+  avaliarTecnico(pacote, s, posicao, ev);
   // tabela final (vale para as vagas das copas da próxima temporada)
   c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
   c.notasRodada = undefined;
@@ -1533,7 +1554,7 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   sincronizar(pacote, s);
   noticiasDaVirada(pacote, s);
-  c.tabela = novaTabela(l); c.stats = statsVazias();
+  c.tabela = novaTabela(l); c.stats = statsVazias(); c.resultadosClube = [];
   const clube = clubeDe(l, c.clubeId);
   if (c.fase) { c.anosContrato = Math.max(1, c.anosContrato); fimDeTemporadaDoCaminho(pacote, s, eventos); }
   if (c.fase) { /* várzea, academia, colégio e universidade: a passagem é pelos convites */ }
@@ -1565,6 +1586,59 @@ function fimDeTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resumo
   }
   if (escolheNumero(c) && !c.escolhaNumero) c.escolhaNumero = "temporada";
   return r;
+}
+
+// ------------------------------------------------------------------ técnicos e lesões dos outros
+/** Troca o técnico do clube do jogador: notícia, e a relação começa de novo (o novo julga pelo nível e pela fama). */
+function trocarTecnico(pacote: PacoteDados, s: Save, motivo: "demitido" | "aposentou", eventos: string[]) {
+  const c = s.carreira, j = s.jogador, velho = c.tecnico, clube = infoClube(pacote, c.clubeId);
+  const novo = tecnicoLivrePara(pacote, idClube(c.clubeId), `${c.temporada}-${c.semana}`);
+  c.tecnico = novo; c.tecnicoClube = c.clubeId;
+  const forcaClube = mundo(pacote).clube[idClube(c.clubeId)]?.forca ?? 70;
+  c.relTecnico = Math.round(clamp(50 + (c.fama - 50) / 8 + (ovr(j) - forcaClube) / 2, 25, 75));
+  const est = NOME_ESTILO[novo.estilo];
+  noticia(s, "clube", `${velho ? `${velho.nome} ${motivo === "aposentou" ? "se aposenta" : "é demitido"}` : "Técnico novo"} no ${clube.nome}`, `${novo.nome} (${NOME_PAIS_CURTO[novo.nacionalidade] ?? novo.nacionalidade}, ${novo.idade} anos) é o novo técnico. Estilo: ${est[0].toLowerCase()}. ${est[1]}`);
+  eventos.push(`Técnico novo: ${novo.nome} (${est[0].toLowerCase()}).`);
+}
+const NOME_PAIS_CURTO: Record<string, string> = { BRA: "brasileiro", ARG: "argentino", POR: "português", ESP: "espanhol", ITA: "italiano", GER: "alemão", FRA: "francês", ENG: "inglês", NED: "holandês", URU: "uruguaio", MEX: "mexicano", TUR: "turco", USA: "americano", KSA: "saudita", COL: "colombiano", CHI: "chileno", PAR: "paraguaio", ECU: "equatoriano" };
+/** Fim da temporada: campanha contra a força do elenco (e o rebaixamento); técnico velho se aposenta. */
+function avaliarTecnico(pacote: PacoteDados, s: Save, posicao: number, eventos: string[]) {
+  const c = s.carreira;
+  if (c.fase || !c.tecnico || c.mercado?.semClube) return;
+  const l = mundo(pacote).liga[infoLiga(c.ligaId).id], tec = c.tecnico;
+  if (!l) return;
+  tec.idade++;
+  const esp = [...l.clubes].sort((a, b) => b.forca - a.forca).findIndex((x) => x.id === idClube(c.clubeId)) + 1;
+  const r = rngDe(s, "tecnico-fim");
+  if (tec.idade >= 70) trocarTecnico(pacote, s, "aposentou", eventos);
+  else if (esp && r.chance(chanceDeDemissao(posicao, esp, l.clubes.length, l.rebaixados, c.temporada - tec.desde))) trocarTecnico(pacote, s, "demitido", eventos);
+}
+/** No meio do campeonato: time muito abaixo do esperado e mal nos últimos jogos derruba o técnico. */
+function demissaoNoMeio(pacote: PacoteDados, s: Save, eventos: string[]) {
+  const c = s.carreira, rod = c.semana - SEMANAS_PRE, n = nRodadas(c);
+  if (c.fase || !c.tecnico || c.mercado?.semClube || rod < 10 || rod > n - 4 || c.tecnicoTroca === c.temporada) return;
+  const l = mundo(pacote).liga[infoLiga(c.ligaId).id];
+  if (!l) return;
+  const ord = ordenar(c.tabela), pos = ord.findIndex((t) => t.clube === c.clubeId) + 1;
+  const esp = [...l.clubes].sort((a, b) => b.forca - a.forca).findIndex((x) => x.id === idClube(c.clubeId)) + 1;
+  const ultimos = (c.resultadosClube ?? []).slice(-5), pts = ultimos.reduce((a, x) => a + x, 0);
+  const z4 = l.rebaixados && pos > l.clubes.length - l.rebaixados;
+  if (!esp || ultimos.length < 5 || pts > 4 || (pos < esp + 5 && !z4)) return;
+  if (rngDe(s, "tecnico-meio").chance(z4 ? 0.22 : 0.14)) { trocarTecnico(pacote, s, "demitido", eventos); c.tecnicoTroca = c.temporada; }
+}
+/** Lesões graves que começam nesta rodada: do clube do jogador (com aviso se abre a vaga dele) e dos craques do mundo. */
+function noticiasDeLesao(pacote: PacoteDados, s: Save, eventos: string[]) {
+  const c = s.carreira, j = s.jogador, rod = c.semana - SEMANAS_PRE;
+  if (rod < 0 || c.fase) return;
+  const meu = idClube(c.clubeId), nome = (id: string) => infoClube(pacote, id)?.nome ?? id;
+  const ls = lesoesQueComecam(pacote, rod), semanas = (x: { ini: number; fim: number }) => x.fim - x.ini;
+  for (const x of ls.filter((x) => x.clubeId === meu)) {
+    const rival = (mundo(pacote).clube[meu]?.elenco.find((y) => y.nome === x.nome)?.posicao) === j.posicao;
+    noticia(s, "lesao", `${x.nome} fora por ${semanas(x)} semanas`, `${x.nome} (${nome(x.clubeId)}) sofreu ${x.tipo}.${rival ? ` Ele joga na sua posição: abre espaço no time.` : ""}`);
+    if (rival) eventos.push(`${x.nome}, da sua posição, se machucou: abre espaço no time.`);
+  }
+  for (const x of ls.filter((x) => x.clubeId !== meu && x.ovr >= 84).sort((a, b) => b.ovr - a.ovr).slice(0, 2))
+    noticia(s, "lesao", `${x.nome} se machuca`, `Golpe para o ${nome(x.clubeId)}: ${x.nome} sofreu ${x.tipo} e fica fora por ${semanas(x)} semanas.`);
 }
 
 // ------------------------------------------------------------------ recordes e aposentadoria
@@ -1714,6 +1788,12 @@ function noticiasDaVirada(pacote: PacoteDados, s: Save, v = viradaAtual(pacote),
   if (contr.length) noticia(s, "clube", `Reforços do ${nome(id)}${quando === "meio" ? " no meio do ano" : ""}`, `Chegaram: ${contr.slice(0, 6).map((x) => `${x.nome}${x.de ? ` (${nome(x.de)})` : ""}`).join(", ")}.`);
   const sa = (v.saidas[id] ?? []).filter((x) => x.motivo === "vendido");
   if (quando === "meio" && sa.length) noticia(s, "clube", `Saídas do ${nome(id)} no meio do ano`, sa.map((x) => `${x.nome} (${nome(x.para!)})`).join(", ") + ".");
+  // dança dos técnicos nos grandes e na liga do jogador
+  if (quando === "virada") {
+    const w = mundo(pacote), lid = infoLiga(c.ligaId).id;
+    const tr = trocasDeTecnico(pacote).filter((x) => x.clubeId !== id && ((w.clube[x.clubeId]?.forca ?? 0) >= 79 || w.clube[x.clubeId]?.ligaId === lid)).sort((a, b) => (w.clube[b.clubeId]?.forca ?? 0) - (w.clube[a.clubeId]?.forca ?? 0)).slice(0, 5);
+    if (tr.length) noticia(s, "clube", "Dança dos técnicos", tr.map((x) => `${nome(x.clubeId)}: sai ${x.saiu ?? "–"}${x.motivo === "aposentou" ? " (aposentado)" : x.motivo === "levado" ? "" : " (demitido)"}, chega ${x.entrou}${x.de ? ` (do ${nome(x.de)})` : ""}`).join(". ") + ".");
+  }
   const dest = [...v.destaques].sort((a, b) => b.ovr - a.ovr).slice(0, 3);
   for (const x of dest) {
     if (x.motivo === "aposentou") noticia(s, "clube", `${x.nome} pendura as chuteiras`, `Aos ${x.idade} anos, ${x.nome} anuncia a aposentadoria. Último clube: ${nome(x.de!)}.`);

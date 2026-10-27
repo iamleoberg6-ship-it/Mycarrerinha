@@ -8,7 +8,9 @@ import dados from "../data/mundo-2026.json";
 import { CONVIDADOS, clubeConvidado } from "./convidados.js";
 import { gerarNome } from "./nomes.js";
 import { CLUBES_EXTRA, clubeExtra } from "./ligas-extra.js";
-import { RNG } from "./rng.js";
+import { RNG, clamp } from "./rng.js";
+import { gerarTecnico, chanceDeDemissao, type Tecnico, type TrocaTecnico } from "./tecnicos.js";
+import { ordemFinal } from "./copas.js";
 import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
 import { gerarStats, statsAte, type StatsNPC } from "./estatisticas.js";
 import { VAGAS_433 } from "./partida.js";
@@ -137,11 +139,16 @@ export const todasSelecoes = (pacote: PacoteDados) => SELECOES.map((x) => mundo(
 
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
-let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }> } | undefined;
+let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }>;
+  /** técnico de cada clube profissional, técnicos sem clube e as trocas de cada virada */
+  tecnicos: Record<string, Tecnico>; tecLivres: Tecnico[]; trocas: Record<number, TrocaTecnico[]>; nomesTec: Set<string>;
+  /** lesões graves da temporada (rodadas da liga em que o jogador fica fora) */
+  lesoes: Map<string, Lesao> } | undefined;
+export interface Lesao { t: number; clubeId: string; ini: number; fim: number; tipo: string; ovr: number }
 /** Uma temporada na carreira de um jogador do mundo. */
 /** `liga`: o que a temporada imaginada precisa (fila na posição, titulares, força do clube, média da liga, rodadas);
  *  as estatísticas são sorteadas só quando alguém olha (st guarda o resultado). */
-export interface LinhaHistorico { t: number; clubeId: string; idade: number; ovr: number; pot: number; posicao: string; base: boolean; meio?: boolean; liga?: [number, number, number, number, number, number?, number?]; st?: StatsNPC }
+export interface LinhaHistorico { t: number; clubeId: string; idade: number; ovr: number; pot: number; posicao: string; base: boolean; meio?: boolean; les?: [number, number]; liga?: [number, number, number, number, number, number?, number?]; st?: StatsNPC }
 const VAGAS: Record<string, number> = { GOL: 1, ...VAGAS_433 };
 function registrarTemporada(m: Mundo) {
   const e = estado!, add = (j: JogadorNPC, clubeId: string, base: boolean) => {
@@ -164,6 +171,118 @@ function registrarTemporada(m: Mundo) {
     }
   }
   for (const lista of Object.values(e.virada?.saidas ?? {})) for (const x of lista) if (x.motivo === "aposentou") e.saiu.set(x.nome, { t: e.temporada, motivo: "aposentou" });
+  sortearLesoes(m);
+}
+const TIPOS_LESAO: [string, number, number][] = [["lesão muscular grave", 5, 9], ["fratura", 8, 14], ["lesão no tornozelo", 6, 11], ["ruptura do ligamento do joelho", 18, 28]];
+/** Lesões graves da temporada nas ligas profissionais: mais comuns depois dos 30; a de ligamento tira o resto do ano. */
+function sortearLesoes(m: Mundo) {
+  const e = estado!;
+  for (const [k, v] of e.lesoes) if (v.t < e.temporada - 1) e.lesoes.delete(k);
+  for (const l of m.ligas) {
+    const n = rodadasDaLiga(l.clubes.length).length;
+    for (const c of l.clubes) for (const j of c.elenco) {
+      const r = new RNG(`${e.semente}|lesao|${e.temporada}|${j.nome}`);
+      if (!r.chance(0.022 + (j.idade >= 30 ? 0.014 : 0) + (j.idade >= 33 ? 0.01 : 0))) continue;
+      const [tipo, a, b] = r.pick(TIPOS_LESAO), dur = r.int(a, b), ini = r.int(0, Math.max(0, n - 4));
+      const les: Lesao = { t: e.temporada, clubeId: c.id, ini, fim: Math.min(n, ini + dur), tipo, ovr: j.ovr };
+      e.lesoes.set(j.nome, les);
+      const linha = e.hist.get(j.nome)?.at(-1);
+      if (linha && linha.t === e.temporada) linha.les = [les.ini, les.fim];
+    }
+  }
+}
+/** Lesão grave do jogador nesta temporada (rodadas da liga), se houver. */
+export function lesaoDe(pacote: PacoteDados, nome: string): Lesao | undefined {
+  const e = garantir(pacote), x = e.lesoes.get(nome);
+  return x && x.t === e.temporada ? x : undefined;
+}
+/** Quem do clube está fora por lesão grave na rodada. */
+export function lesionadosDoClube(pacote: PacoteDados, clubeId: string, rodada: number): Set<string> {
+  const e = garantir(pacote), out = new Set<string>();
+  for (const [nome, x] of e.lesoes) if (x.t === e.temporada && x.clubeId === clubeId && rodada >= x.ini && rodada < x.fim) out.add(nome);
+  return out;
+}
+/** Lesões graves que começam na rodada (para as notícias). */
+export function lesoesQueComecam(pacote: PacoteDados, rodada: number): (Lesao & { nome: string })[] {
+  const e = garantir(pacote), out: (Lesao & { nome: string })[] = [];
+  for (const [nome, x] of e.lesoes) if (x.t === e.temporada && x.ini === rodada) out.push({ nome, ...x });
+  return out;
+}
+
+/** Lesão longa deixa marca: quem ficou meio ano fora volta um pouco pior. */
+function sequelas(m: Mundo) {
+  const e = estado!, longas = new Map([...e.lesoes].filter(([, x]) => x.t === e.temporada && x.fim - x.ini >= 15));
+  if (!longas.size) return;
+  for (const l of m.ligas) for (const c of l.clubes) for (const j of c.elenco) if (longas.has(j.nome)) {
+    const d = new RNG(`${e.semente}|sequela|${e.temporada}|${j.nome}`).int(1, 3);
+    j.ovr = Math.max(30, j.ovr - d); if (j.pot !== undefined) j.pot = Math.max(j.ovr, j.pot - d);
+  }
+}
+// ------------------------------------------------------------------ técnicos
+function tecnicosIniciais() {
+  const m = cache!.m, tecnicos: Record<string, Tecnico> = {}, nomesTec = new Set<string>();
+  for (const l of m.ligas) for (const c of l.clubes) tecnicos[c.id] = { ...gerarTecnico(new RNG(`tecnico|${c.id}`), (m.info[c.id]?.forca ?? c.forca) + new RNG(`tecnico-rep|${c.id}`).normal(0, 3), c.pais, nomesTec, 0), desde: -new RNG(`tecnico-desde|${c.id}`).int(0, 4) };
+  const r = new RNG("tecnicos-livres"), tecLivres = Array.from({ length: 60 }, () => gerarTecnico(r, r.range(58, 86), r.pick(["BRA", "ARG", "POR", "ESP", "ITA", "GER", "FRA", "ENG", "NED", "URU", "MEX", "TUR"]), nomesTec, 0));
+  return { tecnicos, tecLivres, trocas: {} as Record<number, TrocaTecnico[]>, nomesTec };
+}
+/** Fim da temporada nos outros clubes: demissões pela campanha, aposentadorias, e as contratações (livres ou levados de clubes menores). */
+function virarTecnicos(m: Mundo, semente: string) {
+  const e = estado!, t = e.temporada, trocas: TrocaTecnico[] = [];
+  const fonte = { ligas: m.liga, semente: `${semente}|sim`, temporada: t };
+  const vagas: { c: Clube; saiu?: string }[] = [], bons: { c: Clube; tec: Tecnico }[] = [];
+  for (const l of m.ligas) {
+    const ordem = ordemFinal(fonte, l.id), porForca = [...l.clubes].sort((a, b) => b.forca - a.forca).map((c) => c.id);
+    for (const c of l.clubes) {
+      const tec = e.tecnicos[c.id], r = new RNG(`${semente}|tecnico|${t}|${c.id}`);
+      if (!tec) continue;
+      tec.idade++;
+      const pos = ordem.indexOf(c.id) + 1, esp = porForca.indexOf(c.id) + 1;
+      if (pos && pos <= esp - 3) { tec.rep = clamp(tec.rep + 2, 45, 95); bons.push({ c, tec }); } else if (pos && pos >= esp + 3) tec.rep = clamp(tec.rep - 1, 45, 95);
+      const aposenta = tec.idade >= 70 || (tec.idade >= 66 && r.chance(0.3));
+      if (aposenta || (pos && r.chance(chanceDeDemissao(pos, esp, l.clubes.length, l.rebaixados, t - tec.desde)))) {
+        delete e.tecnicos[c.id];
+        if (!aposenta) e.tecLivres.push({ ...tec, rep: clamp(tec.rep - 4, 45, 95), ultimo: c.id });
+        vagas.push({ c, saiu: `${tec.nome}|${aposenta ? "aposentou" : "demitido"}` });
+      }
+    }
+  }
+  vagas.sort((a, b) => b.c.forca - a.c.forca);
+  for (const v of vagas) {
+    const r = new RNG(`${semente}|contrata|${t}|${v.c.id}`), alvo = m.info[v.c.id]?.forca ?? v.c.forca;
+    const [saiu, motivo] = (v.saiu ?? "").split("|") as [string, TrocaTecnico["motivo"]];
+    // clube grande pode tirar quem fez milagre num clube menor
+    const levar = bons.filter((b) => b.c.forca < v.c.forca - 4 && e.tecnicos[b.c.id] === b.tec && b.tec.rep >= alvo - 8).sort((a, b) => b.tec.rep - a.tec.rep)[0];
+    let novo: Tecnico | undefined, de: string | undefined;
+    if (levar && r.chance(0.45)) { novo = levar.tec; de = levar.c.id; delete e.tecnicos[levar.c.id]; vagas.push({ c: levar.c, saiu: `${levar.tec.nome}|levado` }); }
+    else {
+      const cand = e.tecLivres.filter((x) => x.rep >= alvo - 7 && x.rep <= alvo + 5 && x.idade < 68 && x.ultimo !== v.c.id).sort((a, b) => b.rep - a.rep).slice(0, 4);
+      if (cand.length) { novo = r.pick(cand); e.tecLivres.splice(e.tecLivres.indexOf(novo), 1); }
+      else novo = gerarTecnico(r, alvo - 3 + r.normal(0, 2), v.c.pais, e.nomesTec, t + 1);
+    }
+    novo.desde = t + 1;
+    e.tecnicos[v.c.id] = novo;
+    trocas.push({ clubeId: v.c.id, ...(saiu ? { saiu } : {}), entrou: novo.nome, motivo: motivo ?? "demitido", ...(de ? { de } : {}), t: t + 1 });
+  }
+  e.tecLivres = e.tecLivres.filter((x) => x.idade < 70).sort((a, b) => b.rep - a.rep).slice(0, 200);
+  for (const x of e.tecLivres) x.idade++;
+  e.trocas[t + 1] = trocas;
+}
+/** Técnico de um clube no mundo (o do clube do jogador é o da carreira, veja jogo.ts). */
+export const tecnicoDoClube = (pacote: PacoteDados, clubeId: string): Tecnico | undefined => garantir(pacote).tecnicos[clubeId];
+/** Trocas de técnico na virada para a temporada t. */
+export const trocasDeTecnicoEm = (pacote: PacoteDados, t: number): TrocaTecnico[] => garantir(pacote).trocas[t] ?? [];
+/** Lesões graves da temporada atual (todas), com o nome. */
+export function lesoesDaTemporada(pacote: PacoteDados): (Lesao & { nome: string })[] {
+  const e = garantir(pacote);
+  return [...e.lesoes].filter(([, x]) => x.t === e.temporada).map(([nome, x]) => ({ nome, ...x }));
+}
+/** Trocas de técnico na virada para a temporada atual. */
+export const trocasDeTecnico = (pacote: PacoteDados): TrocaTecnico[] => { const e = garantir(pacote); return e.trocas[e.temporada] ?? []; };
+/** Um técnico sem clube para o clube do jogador (o melhor do tamanho dele; se não houver, um novo). */
+export function tecnicoLivrePara(pacote: PacoteDados, clubeId: string, chave: string): Tecnico {
+  const e = garantir(pacote), m = mundo(pacote), alvo = m.info[clubeId]?.forca ?? m.clube[clubeId]?.forca ?? 70, r = new RNG(`${e.semente}|tec-usuario|${chave}`);
+  const cand = e.tecLivres.filter((x) => x.rep >= alvo - 7 && x.rep <= alvo + 5 && x.idade < 68 && x.ultimo !== clubeId).sort((a, b) => b.rep - a.rep).slice(0, 4);
+  return { ...(cand.length ? r.pick(cand) : gerarTecnico(r, alvo - 3, m.clube[clubeId]?.pais ?? "BRA", e.nomesTec, e.temporada)), desde: e.temporada };
 }
 let versao = 0;
 /** Muda a cada vez que o mundo muda (caches de quem lê o mundo comparam com isto). */
@@ -184,13 +303,15 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     const usados = new Set([...Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)), ...nomesSelecao]);
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados, c.id);
-    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map() };
+    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map() };
     registrarTemporada(m);
   }
   const e = estado;
   const fazerMeio = () => { e.meio[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, true, e.livres); e.feitoMeio = true; registrarMeio(m); };
   while (e.temporada < temporada) {
     if (!e.feitoMeio) fazerMeio();
+    virarTecnicos(m, semente);
+    sequelas(m);
     e.temporada++; e.feitoMeio = false;
     e.virada = e.viradas[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, false, e.livres); registrarTemporada(m);
   }
@@ -236,7 +357,7 @@ export function historicoDe(pacote: PacoteDados, nome: string): { linhas: LinhaH
 export function statsDaLinha(pacote: PacoteDados, nome: string, x: LinhaHistorico): StatsNPC | undefined {
   if (x.st || !x.liga) return x.st;
   const [rank, vagas, forca, media, n, ini, fim] = x.liga;
-  x.st = gerarStats(new RNG(`${garantir(pacote).semente}|stats|${x.t}|${x.clubeId}|${nome}`), { nome, posicao: x.posicao as JogadorNPC["posicao"], ovr: x.ovr, idade: x.idade, nacionalidade: "" }, rank, vagas, forca, media, n, ini ?? 0, fim ?? n);
+  x.st = gerarStats(new RNG(`${garantir(pacote).semente}|stats|${x.t}|${x.clubeId}|${nome}`), { nome, posicao: x.posicao as JogadorNPC["posicao"], ovr: x.ovr, idade: x.idade, nacionalidade: "" }, rank, vagas, forca, media, n, ini ?? 0, fim ?? n, x.les);
   return x.st;
 }
 /** Uma movimentação da janela de transferências do mundo (na virada para a temporada t). */

@@ -17,7 +17,8 @@ import { premiosDoAno, type ContextoPremios } from "../src/premios-mundo.js";
 import type { Candidato } from "../src/mundo.js";
 import { infoLiga } from "../src/ligas.js";
 import { comJogador, recordesDoClube } from "../src/recordes.js";
-import { anunciarAposentadoria, desistirAposentadoria, recordesDoJogador } from "../src/jogo.js";
+import { anunciarAposentadoria, desistirAposentadoria, recordesDoJogador, elencoDisponivel, sincronizar } from "../src/jogo.js";
+import { tecnicoDoClube, trocasDeTecnicoEm, lesoesDaTemporada } from "../src/mundo.js";
 import { oferecerJogador, aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
@@ -1094,6 +1095,30 @@ teste("Recordes e aposentadoria: top 5 histórico com o jogador dentro, anúncio
   const d = s.carreira.encerrada!;
   assert.ok(d && d.motivo === "anunciada" && d.ano === 2026 && d.nivel.titulo && d.texto.includes("encerra a carreira"));
   assert.ok(recordesDoJogador(pacote, s).some((x) => x.chave === "clube-gols-FLA"));
+});
+
+teste("Mundo vivo: técnicos demitidos e contratados, lesões graves que tiram jogos, elenco sem os machucados", () => {
+  const w = mundo(pacote);
+  for (let t = 1; t <= 3; t++) {
+    sincronizarMundo(pacote, "vivo", t);
+    const pro = w.ligas.flatMap((l) => l.clubes);
+    assert.ok(pro.every((c) => tecnicoDoClube(pacote, c.id)), "todo clube tem técnico");
+    const tr = trocasDeTecnicoEm(pacote, t);
+    assert.ok(tr.length > pro.length * 0.1 && tr.length < pro.length * 0.5, `${tr.length}/${pro.length}`);
+    assert.ok(tr.every((x) => x.saiu?.split("|")[0] !== x.entrou), "não recontrata quem saiu");
+    const ls = lesoesDaTemporada(pacote);
+    assert.ok(ls.length > 100);
+    const x = ls.find((y) => y.fim - y.ini >= 10 && historicoDe(pacote, y.nome).linhas.at(-1)?.les)!;
+    const linha = historicoDe(pacote, x.nome).linhas.at(-1)!, st = statsDaLinha(pacote, x.nome, linha)!;
+    assert.ok(st.jr!.every((r) => r < x.ini || r >= x.fim), "não joga machucado");
+  }
+  const r = criarJogador({ nome: "Teste Vivo", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "vivo" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "FLA", "vivo");
+  s.carreira.formacao = false; sincronizar(pacote, s);
+  assert.ok(s.carreira.tecnico?.nome && s.carreira.tecnicoClube === "FLA");
+  const les = lesoesDaTemporada(pacote).find((y) => y.clubeId === "FLA");
+  if (les) { s.carreira.semana = SEMANAS_TEMPORADA - 40 + 2 + les.ini; assert.ok(!elencoDisponivel(pacote, s).some((y) => y.nome === les.nome)); }
+  sincronizarMundo(pacote, "", 0);
 });
 
 console.log(`\n${ok} testes passaram`);
