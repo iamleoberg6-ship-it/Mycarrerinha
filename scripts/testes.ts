@@ -1402,7 +1402,7 @@ teste("Casinhos x namoro sério: vários casinhos às claras, namoro é um só",
   // pede a Bia em namoro: vira o relacionamento sério e a Ana sai de cena
   n.ficantes!.find((x) => x.id === "Bia")!.relacao = 95;
   for (let k = 0; k < 10 && !n.par; k++) agirNamoro(n, "Bia", "pedirNamoro", { ...ctx, semanaAbs: 120 + k });
-  assert.equal(n.par?.id, "Bia"); assert.equal(n.ficantes!.length, 0); assert.ok(n.ex.includes("Ana Silva"));
+  assert.equal((n.par as Par | undefined)?.id, "Bia"); assert.equal(n.ficantes!.length, 0); assert.ok(n.ex.includes("Ana Silva"));
   // namorando sério: chamar outra pessoa para sair é caso escondido
   for (let k = 0; k < 10 && n.matches.some((x) => x.id === "Carol"); k++) agirNamoro(n, "Carol", "convidar", { ...ctx, semanaAbs: 140 + k });
   assert.equal(n.casos!.length, 1);
