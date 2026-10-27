@@ -1391,4 +1391,24 @@ teste("Vida no clube: vestiário, cidade, rival, torcida, cláusulas e álbum", 
     assert.ok(tv.aceitar(pacote, s, p!.id).ok); assert.ok(s.carreira.contrato && s.carreira.contrato.multa > 0);
   }
 });
+teste("Casinhos x namoro sério: vários casinhos às claras, namoro é um só", () => {
+  const n = novoNamoro(), ctx = { semente: "fic", semanaAbs: 100, idadeJogador: 24, fama: 60, cidade: "Rio de Janeiro", salario: 1e5, saldo: 1e7, vidaNoturna: 30 };
+  const mk = (id: string, rel = 70): Par => ({ id, nome: `${id} Silva`, idade: 24, cidade: "Rio", profissao: "medica", jeito: "tranquila", bio: "", interesse: 90, etapa: "match", relacao: rel, desde: 100, conversas: 3, cidadeClube: "Rio" });
+  n.matches = [mk("Ana"), mk("Bia"), mk("Carol")];
+  // chama duas para sair: viram casinhos, nenhuma é caso escondido e nenhuma é "a principal"
+  for (const id of ["Ana", "Bia"]) for (let k = 0; k < 10 && n.matches.some((x) => x.id === id); k++) { agirNamoro(n, id, "convidar", { ...ctx, semanaAbs: 100 + k }); }
+  assert.equal(n.ficantes!.length, 2); assert.equal(n.casos!.length, 0); assert.equal(n.par, undefined);
+  assert.ok(efeitosNamoro(n).moral > 0, "casinho dá um pouco de moral");
+  // pede a Bia em namoro: vira o relacionamento sério e a Ana sai de cena
+  n.ficantes!.find((x) => x.id === "Bia")!.relacao = 95;
+  for (let k = 0; k < 10 && !n.par; k++) agirNamoro(n, "Bia", "pedirNamoro", { ...ctx, semanaAbs: 120 + k });
+  assert.equal(n.par?.id, "Bia"); assert.equal(n.ficantes!.length, 0); assert.ok(n.ex.includes("Ana Silva"));
+  // namorando sério: chamar outra pessoa para sair é caso escondido
+  for (let k = 0; k < 10 && n.matches.some((x) => x.id === "Carol"); k++) agirNamoro(n, "Carol", "convidar", { ...ctx, semanaAbs: 140 + k });
+  assert.equal(n.casos!.length, 1);
+  // save antigo: "saindo" como principal vira casinho
+  const v = novoNamoro(); v.par = { ...mk("Duda"), etapa: "saindo" }; v.casos = [{ ...mk("Eva"), etapa: "saindo" }];
+  semanaNamoro(v, { ...ctx, semanaAbs: 200 });
+  assert.equal(v.par, undefined); assert.equal(v.ficantes!.length, 2); assert.equal(v.casos!.length, 0);
+});
 console.log(`\n${ok} testes passaram`);

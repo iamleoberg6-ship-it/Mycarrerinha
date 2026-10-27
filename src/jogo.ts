@@ -49,7 +49,7 @@ import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao 
 import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, familiaAutomatica, membro, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
 import { agirFilho, type AcaoFilho } from "./namoro.js";
-import { novoNamoro, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, namoroAutomatico, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
+import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, namoroAutomatico, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
 // ------------------------------------------------------------------ tipos
@@ -1528,7 +1528,7 @@ export function familiaDe(pacote: PacoteDados, s: Save): EstadoFamilia {
   const c = s.carreira, j = s.jogador;
   return (c.familia ??= gerarFamilia(pacote, { semente: s.semente, nome: j.nome, pais: j.pais, origem: j.familia, idade: j.idade - c.temporada, ano: ANO_INICIAL, escolha: c.escolhaFamilia }));
 }
-export const namoroDe = (c: Carreira): EstadoNamoro => (c.namoro ??= novoNamoro());
+export const namoroDe = (c: Carreira): EstadoNamoro => { const n = (c.namoro ??= novoNamoro()); arrumarNamoro(n); return n; };
 export const agendaDe = (c: Carreira): EstadoAgenda => (c.agenda ??= novaAgenda());
 export const parcasDe = (s: Save): Parca[] => (s.carreira.parcas ??= parcasIniciais(rngDe(s, "parcas-iniciais"), s.jogador.nacionalidade, ANO_INICIAL + s.carreira.temporada));
 export const luxoDe = (c: Carreira): ItemLuxo[] => (c.luxo ??= []);
@@ -1930,14 +1930,14 @@ export function agirNamoroJogo(pacote: PacoteDados, s: Save, id: string, acao: A
 }
 /** Mensagem dela no chat do app (fica até você responder). */
 export function chatDe(s: Save, id: string): string | undefined {
-  const c = s.carreira, n = namoroDe(c), p = n.matches.find((x) => x.id === id) ?? (n.par?.id === id ? n.par : undefined);
+  const c = s.carreira, n = namoroDe(c), p = acharPar(n, id);
   if (!p) return;
   const ab = semanaAbsJogo(c);
   if (!p.chat || p.chat.s !== ab) p.chat = { msg: mensagemDela(p, ab), s: ab };
   return p.chat.msg;
 }
 export function responderChatJogo(pacote: PacoteDados, s: Save, id: string, e: EstiloChat): { ok: boolean; msg: string } {
-  const c = s.carreira, n = namoroDe(c), ab = semanaAbsJogo(c), p = n.matches.find((x) => x.id === id) ?? (n.par?.id === id ? n.par : undefined);
+  const c = s.carreira, n = namoroDe(c), ab = semanaAbsJogo(c), p = acharPar(n, id);
   if (!p) return { ok: false, msg: "Conversa não encontrada." };
   if (n.semana !== ab) { n.semana = ab; n.feitas = 0; }
   if (n.feitas >= 20) return { ok: false, msg: "Já foram programas demais nesta semana." };

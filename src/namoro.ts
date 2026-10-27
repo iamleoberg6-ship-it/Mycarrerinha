@@ -94,12 +94,29 @@ export interface EstadoNamoro {
   /** perfis do dia no app (renovam toda semana) e a semana em que foram gerados */
   baralho: Perfil[]; geradoEm: number; vistos: number;
   matches: Par[]; par?: Par; semana: number; feitas: number; ex: string[];
-  /** relacionamentos paralelos (amantes), filhos e escândalos na mídia */
+  /** casinhos: gente com quem está saindo, sem compromisso (pode ser mais de uma, nada escondido) */
+  ficantes?: Par[];
+  /** relacionamentos paralelos escondidos (só existe traição quando há namoro sério), filhos e escândalos na mídia */
   casos?: Par[]; filhos?: Filho[]; escandalos?: number; gravidez?: Gravidez;
   /** mudança de cidade esperando a decisão do casal (e a cidade já decidida) */
   mudanca?: string; mudancaDecidida?: string;
 }
-export const novoNamoro = (): EstadoNamoro => ({ baralho: [], geradoEm: -1, vistos: 0, matches: [], semana: -1, feitas: 0, ex: [], casos: [], filhos: [] });
+export const novoNamoro = (): EstadoNamoro => ({ baralho: [], geradoEm: -1, vistos: 0, matches: [], semana: -1, feitas: 0, ex: [], ficantes: [], casos: [], filhos: [] });
+/** Relacionamento sério (namoro em diante): só um por vez. "Saindo" é casinho e pode ter vários. */
+export const ehSerio = (p?: Par) => !!p && p.etapa !== "match" && p.etapa !== "saindo";
+/** Saves de antes: quem estava só "saindo" era tratado como relacionamento principal; agora vira casinho.
+ *  Sem namoro sério, não existe caso escondido: os casos viram casinhos (ou o namoro escondido vira o namoro). */
+export function arrumarNamoro(n: EstadoNamoro) {
+  n.ficantes ??= []; n.casos ??= [];
+  if (n.par && !ehSerio(n.par)) { if (n.par.etapa === "saindo") n.ficantes.push(n.par); n.par = undefined; }
+  if (!n.par && n.casos.length) {
+    const serio = n.casos.filter((x) => ehSerio(x)).sort((a, b) => b.relacao - a.relacao)[0];
+    if (serio) n.par = serio;
+    for (const x of n.casos) if (x !== serio) { x.etapa = "saindo"; n.ficantes.push(x); }
+    n.casos = [];
+  }
+}
+export const acharPar = (n: EstadoNamoro, id: string): Par | undefined => n.par?.id === id ? n.par : n.ficantes?.find((x) => x.id === id) ?? n.casos?.find((x) => x.id === id) ?? n.matches.find((x) => x.id === id);
 export const MAX_ACOES_NAMORO = 20;
 
 export interface CtxNamoro { ano?: number; semente: string; semanaAbs: number; idadeJogador: number; fama: number; cidade: string; salario: number; saldo: number; vidaNoturna: number }
@@ -186,7 +203,7 @@ function sortearCena(rng: RNG, lugar?: Lugar): Cena {
 }
 /** A escolha no meio do encontro. */
 export function responderCena(n: EstadoNamoro, id: string, opcao: string): ResultadoNamoro {
-  const p = n.par?.id === id ? n.par : n.casos?.find((x) => x.id === id);
+  const p = acharPar(n, id);
   if (!p?.cena) return { ok: false, msg: "Esse momento já passou." };
   const c = CENAS.find((x) => x.tipo === p.cena!.tipo), o = c?.opcoes.find((x) => x.id === opcao);
   p.cena = undefined;
@@ -210,8 +227,8 @@ export function pensamentoDela(p: Par): string {
 
 export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: CtxNamoro, extra?: string): ResultadoNamoro {
   if (n.semana !== ctx.semanaAbs) { n.semana = ctx.semanaAbs; n.feitas = 0; }
-  n.casos ??= []; n.filhos ??= [];
-  const p = n.par?.id === id ? n.par : n.casos.find((x) => x.id === id) ?? n.matches.find((x) => x.id === id);
+  arrumarNamoro(n); n.casos ??= []; n.filhos ??= []; n.ficantes ??= [];
+  const p = acharPar(n, id);
   if (!p) return { ok: false, msg: "Conversa não encontrada." };
   if (acao !== "terminar" && n.feitas >= MAX_ACOES_NAMORO) return { ok: false, msg: `Já foram ${MAX_ACOES_NAMORO} programas nesta semana.` };
   const caso = ehCaso(n, p);
@@ -232,9 +249,10 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       const lugar1 = (extra && extra in LUGARES ? extra : "barzinho") as Lugar;
       p.etapa = "saindo"; p.desde = ctx.semanaAbs; p.relacao = clamp(p.relacao + 8 * fatorGosto(p, LUGARES[lugar1].gosto), 0, 100); n.matches = n.matches.filter((x) => x.id !== p.id);
       p.cena = sortearCena(rng, lugar1);
-      if (n.par) { n.casos.push(p); return { ok: true, msg: `Você saiu escondido com ${nome}. Agora é um caso: cuidado com a mídia (e com ${n.par.nome.split(" ")[0]}).`, moral: 2 }; }
-      n.par = p;
-      return { ok: true, msg: `Primeiro encontro com ${nome}: ${LUGARES[lugar1].nome.toLowerCase()}.${comentarioGosto(p, LUGARES[lugar1].gosto)}`, moral: 3 };
+      if (n.par) { n.casos.push(p); return { ok: true, msg: `Você saiu escondido com ${nome}. Você namora sério, então isso é um caso: cuidado com a mídia (e com ${n.par.nome.split(" ")[0]}).`, moral: 2 }; }
+      n.ficantes.push(p);
+      const outros = n.ficantes.length - 1;
+      return { ok: true, msg: `Primeiro encontro com ${nome}: ${LUGARES[lugar1].nome.toLowerCase()}.${comentarioGosto(p, LUGARES[lugar1].gosto)}${outros ? ` Sem compromisso: você está saindo com ${outros + 1} pessoas.` : ""}`, moral: 3 };
     }
     case "encontro": {
       const lugar = (extra && extra in LUGARES ? extra : "restaurante") as Lugar, L = LUGARES[lugar];
@@ -281,7 +299,11 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       if (caso) { if (!rng.chance(clamp((p.relacao - 35) / 45, 0.15, 0.95))) return { ok: true, msg: `${nome} quer mais que um caso, mas ainda não confia em você.` }; p.etapa = "namorando"; return { ok: true, msg: `${nome} topou um namoro escondido. Duas vidas ao mesmo tempo.`, moral: 3 }; }
       if (!rng.chance(clamp((p.relacao - 35) / 45, 0.15, 0.95))) { p.relacao = clamp(p.relacao - 6, 0, 100); return { ok: true, msg: `${nome} pediu um pouco mais de tempo.` }; }
       p.etapa = "namorando"; p.desde = ctx.semanaAbs; sobe(6); n.feitas--;
-      return { ok: true, msg: `${nome} disse sim. Agora é namoro!`, moral: 6, noticia: `${nome} é a namorada nova do jogador` };
+      // namoro sério é um só: os outros casinhos acabam
+      const outros = n.ficantes.filter((x) => x.id !== p.id);
+      n.ficantes = []; n.par = p;
+      for (const x of outros) n.ex.push(x.nome);
+      return { ok: true, msg: `${nome} disse sim. Agora é namoro!${outros.length ? ` Você avisou ${outros.map((x) => x.nome.split(" ")[0]).join(" e ")} que agora namora sério.` : ""}`, moral: 6, noticia: `${nome} é a namorada nova do jogador` };
     }
     case "jantar": { const c = custo(0.015, 250); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para jantar fora." }; sobe(6); return { ok: true, msg: `Jantar com ${nome}: R$ ${c.toLocaleString("pt-BR")}.${gc}`, custo: c, moral: 2 }; }
     case "presente": { const c = custo(0.04, 500); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(7); return { ok: true, msg: `Presente para ${nome}: R$ ${c.toLocaleString("pt-BR")}.${gc}`, custo: c }; }
@@ -308,6 +330,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
     case "terminar": {
       n.ex.push(p.nome);
       if (caso) { n.casos = n.casos.filter((x) => x.id !== p.id); return { ok: true, msg: `Você encerrou o caso com ${nome}.`, moral: -1 }; }
+      if (n.ficantes.some((x) => x.id === p.id)) { n.ficantes = n.ficantes.filter((x) => x.id !== p.id); return { ok: true, msg: `Você parou de sair com ${nome}.`, moral: -1 }; }
       n.par = undefined;
       if (p.etapa === "casados" || p.etapa === "noivos") {
         const div = p.etapa === "casados" ? Math.round(ctx.saldo * 0.3) : 0;
@@ -341,8 +364,10 @@ export interface EfeitosNamoro { moral: number; fama: number; engajamento: numbe
 const ZERO: EfeitosNamoro = { moral: 0, fama: 0, engajamento: 0, recuperacao: 0, evolucao: 0, torcida: 0, pressao: 0, noite: 0, agente: 0, luvas: 0, conforto: 0 };
 /** O que ela muda na sua semana, conforme a profissão e o quão sério é. */
 export function efeitosNamoro(n: EstadoNamoro | undefined): EfeitosNamoro {
-  const p = n?.par;
-  if (!p || p.etapa === "match") return { ...ZERO };
+  const p = n?.par, fic = (n?.ficantes ?? []).filter((x) => x.relacao >= 40).length;
+  // casinhos: um pouco de moral e de balada, sem os efeitos de um relacionamento sério
+  const casinhos = { ...ZERO, moral: Math.min(2, 0.5 * fic), noite: 0.15 * fic };
+  if (!p || p.etapa === "match") return casinhos;
   const k = p.etapa === "saindo" ? 0.4 : p.etapa === "casados" ? 1.4 : p.etapa === "noivos" || p.etapa === "morando" ? 1.2 : 1;
   const bem = p.relacao >= 50 ? 1 : 0.4;
   const e: EfeitosNamoro = { ...ZERO, moral: (p.relacao - 45) / 15 + Math.min(3, (n?.filhos ?? []).filter((f) => !f.pensao).length) };
@@ -369,6 +394,7 @@ export function efeitosNamoro(n: EstadoNamoro | undefined): EfeitosNamoro {
 export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?: string }): { avisos: string[]; moral: number; noticia?: string; escandalo?: boolean; custo?: number } {
   const avisos: string[] = [];
   let moral = 0;
+  arrumarNamoro(n);
   n.matches = n.matches.filter((m) => ctx.semanaAbs - m.desde <= 6); // match sem conversa some
   const p = n.par;
   // o parto (e a notícia; filho de caso vira escândalo)
@@ -385,6 +411,16 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   // filhos: sem atenção a relação esfria (mais rápido quando moram longe)
   for (const f of n.filhos ?? []) { f.relacao ??= 70; f.relacao = clamp(f.relacao - (f.pensao ? 1.2 : 0.5), 0, 100); if (f.relacao < 30) moral -= 0.5; }
   if (noticiaFilho && !p) return { avisos, moral, noticia: noticiaFilho, escandalo: escFilho };
+  // casinhos: esfriam sem atenção; a ciumenta não gosta de saber que não é a única
+  for (const x of [...(n.ficantes ?? [])]) {
+    x.relacao = clamp(x.relacao - 1.5, 0, 100);
+    const nm = x.nome.split(" ")[0];
+    if (x.relacao < 20) { n.ficantes = n.ficantes!.filter((y) => y.id !== x.id); n.ex.push(x.nome); avisos.push(`${nm} parou de responder. O casinho acabou.`); continue; }
+    if ((n.ficantes?.length ?? 0) >= 2 && x.jeito === "ciumenta" && new RNG(`${ctx.semente}|ciume-fic|${x.id}|${ctx.semanaAbs}`).chance(0.08)) {
+      x.relacao = clamp(x.relacao - 8, 0, 100);
+      avisos.push(`${nm} viu você com outra e ficou chateada: quer saber se é só ela.`);
+    }
+  }
   // casos escondidos: esfriam sem atenção; quanto mais casos, encontros e fama, maior o risco de a mídia descobrir
   let noticiaCaso: string | undefined, escandalo = false;
   for (const x of [...(n.casos ?? [])]) {

@@ -29,7 +29,8 @@ const MSG: Record<string, string[]> = {
 };
 export function mensagemDela(p: Par, semanaAbs: number): string {
   const l = MSG[p.jeito] ?? MSG.tranquila;
-  return l[(semanaAbs + p.conversas) % l.length];
+  let h = 0; for (const ch of p.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return l[(semanaAbs + p.conversas + h) % l.length];
 }
 /** A sua resposta no chat: certa para o jeito dela, sobe bem; errada, esfria; se gabar quase sempre pega mal. */
 export function respostaChat(p: Par, e: EstiloChat, rng: RNG): { delta: number; texto: string } {
