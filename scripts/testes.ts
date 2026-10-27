@@ -11,7 +11,7 @@ import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstad
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
 import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga } from "../src/mundo.js";
-import { aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
+import { oferecerJogador, aceitar, mercadoDe, semanaDoMercado, trocarAgente, podeContratarAgente, mudarDeClube, fimDaTemporadaNoMercado, contratoVencido, papelNoClube, pedirParaSair, type PropostaSave } from "../src/transferencias.js";
 import { CONQUISTAS, reliquiasDaPartida, premiosDaTemporada, type DadosPartida } from "../src/reliquias.js";
 import { bonusJovem, chanceSubir, culturaBase } from "../src/identidade.js";
 import { alvoSeguidores, semanaRedes, imposto } from "../src/vida.js";
@@ -465,9 +465,9 @@ teste("Mercado: transferência para outra liga, empréstimo, renovação, agente
   assert.equal(podeContratarAgente(s, "top").ok, false);
   c.fama = 40; mercadoDe(c).agenteDesde = undefined;
   assert.ok(trocarAgente(s, "top").ok); assert.equal(c.agente, "top");
-  // contrato vencido: assina com outro clube ou fica com contrato curto
+  // contrato vencido: vira agente livre (sem salário, escolhe entre as propostas)
   c.anosContrato = 0; const antes = c.clubeId; eventos = [];
-  assert.ok(contratoVencido(pacote, s, eventos)); assert.ok(c.anosContrato >= 1); assert.ok(eventos.length === 1, antes);
+  assert.ok(contratoVencido(pacote, s, eventos)); assert.ok(mercadoDe(c).semClube && c.salario === 0); assert.ok(eventos.length === 1, antes);
   // papel no clube faz sentido
   for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 90;
   assert.equal(papelNoClube(w.liga.BRA2.clubes[0], s), "titular");
@@ -968,6 +968,24 @@ teste("Intercontinental todo ano e Mundial de Clubes a cada quatro anos, com os 
   for (let sem = 40; sem <= 46; sem++) rodarSemana(e, sem, forca, r2);
   assert.ok(e.campeao && m.includes(e.campeao));
   assert.equal(e.jogos.length, 48 + 8 + 4 + 2 + 1);
+});
+
+teste("Sem clube: fim de contrato vira agente livre, não joga, propostas chegam a qualquer semana, assinar acaba a fase", () => {
+  const r = criarJogador({ nome: "Teste Livre", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "livre" });
+  const s = novoJogo(pacote, { resultado: r, aparencia: {}, clube: null }, "BOT", "livre");
+  for (const k of ATRIBUTOS) s.jogador.at[k] = 74;
+  s.jogador.idade = 27; s.carreira.formacao = false; s.carreira.salario = 200000; s.carreira.anosContrato = 0; s.carreira.semana = 10;
+  const ev: string[] = [];
+  contratoVencido(pacote, s, ev);
+  const m = mercadoDe(s.carreira);
+  assert.ok(m.semClube && s.carreira.salario === 0, "agente livre");
+  assert.equal(escalacao(pacote, s), "semJogo"); assert.equal(prepararPartida(pacote, s, planoPadrao()), undefined);
+  assert.ok(oferecerJogador(s).ok); assert.ok(!oferecerJogador(s).ok, "já está oferecendo");
+  m.propostas = [];
+  for (let i = 0; i < 8 && !m.propostas.length; i++) semanaAutomatica(pacote, s, false);
+  assert.ok(m.propostas.length > 0 && m.propostas.every((p) => p.taxa === 0), "propostas sem taxa fora da janela");
+  assert.ok(aceitar(pacote, s, m.propostas[0].id).ok);
+  assert.ok(!m.semClube && s.carreira.salario > 0 && s.carreira.anosContrato > 0, "assinou");
 });
 
 console.log(`\n${ok} testes passaram`);

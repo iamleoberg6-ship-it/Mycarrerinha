@@ -9,7 +9,7 @@ import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from ".
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono } from "../../src/casa";
 import {
-  ACOES, NOME_ESCALACAO, SEMANAS_PRE, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
+  ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
@@ -40,7 +40,7 @@ import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
-import { AGENTE_INFO, NOME_PAPEL, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
+import { AGENTE_INFO, NOME_PAPEL, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, type TipoAgente } from "../../src/mercado";
 import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, aparenciaCompat, type Aparencia } from "../criacao/avatar";
@@ -158,8 +158,9 @@ function telaSemana(s: Save): string {
     const q = m.resumo;
     return `<p class="rotulo dia-jogo">Quarta · ${esc(q.competicao ?? "Copa")} · encerrado</p><p style="margin:2px 0 8px;font-size:15px"><b>${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</b>${q.minutos > 0 ? ` <span class="sub">· nota ${q.nota.toFixed(1)}</span>` : ""}${q.penaltis ? ` <span class="sub">· ${esc(q.penaltis)} nos pênaltis</span>` : ""}</p><p class="rotulo dia-jogo">Domingo · ${esc(infoLiga(c.ligaId).curto)}</p>`;
   })();
-  const jogoHtml = jogo ? `<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(nomeDe(jogo.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(jogo.fora))}</span>${escudo(jogo.fora)}</div></div>
+  const jogoHtml = jogo && !c.mercado?.semClube ? `<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(nomeDe(jogo.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(jogo.fora))}</span>${escudo(jogo.fora)}</div></div>
       <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(infoLiga(c.ligaId).curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
+    : c.mercado?.semClube ? `<p class="sub"><b style="color:var(--ouro)">Sem clube.</b> Você treina por conta própria e não joga. As propostas chegam no Mercado; o agente pode te oferecer aos clubes.</p>`
     : c.semana >= SEMANAS_PRE + nRodadas(c) && c.copas?.MUN?.clubes.includes(c.clubeId) ? (jc ? "" : `<p class="sub">Semana do Mundial de Clubes.</p>`)
     : c.semana < SEMANAS_PRE ? `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>` : `<p class="sub">A ${esc(infoLiga(c.ligaId).curto)} já terminou. Semana de treino até o fim do calendário.</p>`;
   const previsao = escPrev === "semJogo" || (!jogo && c.semana >= SEMANAS_PRE) ? "" : `<div><span class="tag ${tagCls}">${escPrev === "base" ? `Jogo da base (${categoriaBase(j.idade)})${reservaNaBase(pacote, s, prev.cansaco) ? " · reserva" : " · titular"}` : `Previsão: ${NOME_ESCALACAO[escPrev].toLowerCase()}`}</span></div>`;
@@ -645,6 +646,7 @@ function abaMercado(s: Save): string {
   const chips = `<div class="chips" style="margin-bottom:12px"><button class="chip${vistaMercado === "eu" ? " ativo" : ""}" data-vmerc="eu">Minha carreira</button><button class="chip${vistaMercado === "mundo" ? " ativo" : ""}" data-vmerc="mundo">Janela do mundo</button></div>`;
   return chips + (vistaMercado === "mundo" ? janelaHtml(s) : abaMercadoEu(s));
 }
+const rotuloDaSemanaAbs = (abs: number) => { const t = Math.floor(abs / SEMANAS_TEMPORADA), sem = abs % SEMANAS_TEMPORADA; return `semana ${sem + 1} de ${ANO_INICIAL + t}`; };
 function abaMercadoEu(s: Save): string {
   const c = s.carreira, j = s.jogador, m = mercadoDe(c), w = mundo(pacote), meu = w.clube[c.clubeId], jan = janelaAberta(c);
   const ligaNome = infoLiga(c.ligaId).curto, papel = papelNoClube(meu, s);
@@ -677,7 +679,12 @@ function abaMercadoEu(s: Save): string {
       ${atual ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Contratar</button>${pode.ok ? "" : `<small class="sub">${esc(pode.msg)}</small>`}`}</div>`;
   }).join("");
   const hist = m.transferencias.length ? `<p class="rotulo" style="margin-top:16px">Transferências</p><div class="kv">${m.transferencias.map((t) => `<span>${2026 + t.temporada}</span><b>${esc(nomeDe(t.de))} → ${esc(nomeDe(t.para))}${t.tipo === "emprestimo" ? " (empréstimo)" : t.taxa ? ` · ${milhoes(t.taxa)}` : t.tipo === "livre" ? " (de graça)" : ""}</b>`).join("")}</div>` : "";
-  return `${aviso}<p class="rotulo">Seu contrato</p>${contrato}
+  const sc = m.semClube;
+  const semClube = sc ? `<section class="painel" style="border-color:var(--ouro);margin-bottom:12px"><p class="rotulo" style="color:var(--ouro)">Agente livre</p>
+      <p style="margin:4px 0">Você está sem clube desde ${esc(rotuloDaSemanaAbs(sc.desde))}. Último clube: <b>${esc(nomeDe(sc.ultimo))}</b>, último salário ${dinheiro(sc.salario)}/mês.</p>
+      <p class="sub">Pode assinar a qualquer momento, sem taxa. Quanto mais tempo parado, menos propostas chegam, os salários caem e a moral sofre. Você treina sozinho e não joga.</p>
+      ${(sc.oferecendoAte ?? -1) >= semanaAbsJogo(c) ? `<p class="sub" style="color:var(--ouro-claro)">O agente está oferecendo você aos clubes.</p>` : `<button class="botao peq" data-acao="oferecer" style="margin-top:8px">Pedir ao agente para me oferecer</button>`}</section>` : "";
+  return `${aviso}${semClube}${sc ? "" : `<p class="rotulo">Seu contrato</p>${contrato}`}
     <p class="rotulo" style="margin-top:16px">Propostas</p>${props}
     <p class="rotulo" style="margin-top:16px">Agente</p><div style="display:flex;flex-direction:column;gap:8px">${agentes}</div>${hist}
     <p class="sub" style="margin-top:12px">Janelas: semanas ${JANELAS.map((x) => `${x.ini + 1}–${x.fim + 1}`).join(" e ")} de cada temporada.</p>`;
@@ -1063,6 +1070,7 @@ document.addEventListener("click", (ev) => {
     case "jogar": abrirJogo(); break;
     case "perfil": abrirPerfil(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
+    case "oferecer": if (save) { const r2 = oferecerJogador(save); msgMercado = { texto: r2.msg, ok: r2.ok }; salvar(); render(); } break;
     case "fechar-hist": ($("dlgHist") as HTMLDialogElement).close(); break;
     case "fechar-anuncio": gravar(CHAVE_ANUNCIO, b.dataset.chave); render(); break;
     case "sair": case "ficar": if (save) { const r = pedirParaSair(save, d.acao === "sair"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); } break;

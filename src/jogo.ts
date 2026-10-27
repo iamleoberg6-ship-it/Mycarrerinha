@@ -363,6 +363,7 @@ export const NOME_ESCALACAO: Record<Escalacao, string> = {
 };
 export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carreira.cansaco, copa = false, estadual = false): Escalacao {
   const c = s.carreira, j = s.jogador;
+  if (c.mercado?.semClube) return "semJogo"; // sem clube: treina sozinho, não joga
   if (c.lesao > 0) return "lesionado";
   if (!copa && c.semana < SEMANAS_PRE) return "semJogo";
   if (copa ? (estadual ? c.suspensaoEstadual : c.suspensaoCopa) : c.suspensao) return "suspenso";
@@ -462,14 +463,14 @@ export const sedeDoMundial = (t: number) => SEDES[Math.floor((t - 3) / 4) % SEDE
 /** Jogo da copa do clube do jogador nesta semana (quarta), se ele é profissional e o clube está na copa. */
 export function jogoCopaDaSemana(pacote: PacoteDados, s: Save): { copa: EstadoCopa; jogo: JogoCopa } | undefined {
   const c = s.carreira;
-  if (c.fase) return;
+  if (c.fase || c.mercado?.semClube) return;
   const r = jogoDoClubeNaSemana(copasDe(pacote, s), c.clubeId, c.semana);
   return r && r.jogo.gc === undefined ? r : undefined;
 }
 /** Dias da semana (0 = segunda) travados por jogo de copa: só se joga. */
 export function diasTravados(s: Save): number[] {
   const c = s.carreira;
-  if (c.fase) return [];
+  if (c.fase || c.mercado?.semClube) return [];
   const r = jogoDoClubeNaSemana(c.copas, c.clubeId, c.semana);
   return r && (r.jogo.gc === undefined || c.meioSemana?.semana === c.semana) ? [2] : [];
 }
@@ -552,6 +553,7 @@ function forcaDaBase(pacote: PacoteDados, clubeId: string, idade: number, forcaP
 /** Prepara a partida da semana (domingo, liga) ou, com `copa`, a de quarta pela copa continental. */
 export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa?: { copa: EstadoCopa; jogo: JogoCopa }): Partida | undefined {
   sincronizar(pacote, s);
+  if (s.carreira.mercado?.semClube) return; // sem clube: não tem jogo
   const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, W = mundo(pacote);
   const cj = copa?.jogo;
   const jogo = cj ? { casa: cj.casa, fora: cj.fora, souCasa: cj.casa === c.clubeId, adversario: cj.casa === c.clubeId ? cj.fora : cj.casa } : jogoDaSemana(s);

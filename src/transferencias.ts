@@ -39,8 +39,11 @@ export interface DadosMercado {
   semRenovacao?: number;
   /** semana absoluta da última troca de agente */
   agenteDesde?: number;
+  /** sem clube (agente livre): desde quando, de onde saiu, o último salário e até quando o agente está oferecendo o jogador */
+  semClube?: { desde: number; ultimo: string; salario: number; oferecendoAte?: number };
   seq: number;
 }
+export const estaSemClube = (c: Carreira) => !!c.mercado?.semClube;
 export const mercadoDe = (c: Carreira): DadosMercado => (c.mercado ??= { propostas: [], transferencias: [], seq: 0 });
 
 // ------------------------------------------------------------------ calendário do mercado
@@ -108,7 +111,9 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   const c = s.carreira, j = s.jogador, m = mercadoDe(c), agora = semanaAbs(c), w = mundo(pacote);
   const caiu = m.propostas.filter((p) => p.expira <= agora);
   m.propostas = m.propostas.filter((p) => p.expira > agora);
-  if (caiu.length) eventos.push(`${caiu.length === 1 ? "Uma proposta expirou" : `${caiu.length} propostas expiraram`} com o fim da janela.`);
+  if (caiu.length) eventos.push(`${caiu.length === 1 ? "Uma proposta expirou" : `${caiu.length} propostas expiraram`}${m.semClube ? "" : " com o fim da janela"}.`);
+  // agente livre: assina a qualquer momento (fora da janela também)
+  if (m.semClube) { semanaSemClube(pacote, s, rng, eventos); return; }
   const jan = janelaAberta(c);
   if (!jan || c.formacao || j.idade < 18) return;
   const clube = w.clube[c.clubeId], l = ligaAtual(pacote, s);
@@ -187,9 +192,11 @@ export function propostaPorIndicacao(pacote: PacoteDados, s: Save, clubeId: stri
 function paraSave(pacote: PacoteDados, s: Save, p: Proposta): PropostaSave {
   const m = mercadoDe(s.carreira), livre = !p.taxa;
   // para tirar o jogador de onde está, o clube tenta cobrir o salário atual, mas só até onde a folha aguenta
-  const salario = Math.round(Math.min(tetoSalarial(p.clube, p.liga), Math.max(p.salario, Math.min(p.salario * 1.3, s.carreira.salario * (s.jogador.idade <= 30 ? 1.05 : 0.85)))));
-  const luvas = Math.round(livre ? salario * 3 : p.taxa * CAMBIO * 0.03);
-  return nova(m, { tipo: livre ? "livre" : "transferencia", clubeId: p.clube.id, ligaId: p.liga.id, salario, anos: p.anos, taxa: Math.round(p.taxa), luvas, papel: papelNoClube(p.clube, s), interesse: p.interesse, expira: fimDaJanela(s.carreira) });
+  // sem clube, a referência é o último salário (e quem está parado há tempo aceita menos)
+  const sc = m.semClube, base = sc ? sc.salario * Math.max(0.6, 0.95 - (semanaAbs(s.carreira) - sc.desde) * 0.02) : s.carreira.salario;
+  const salario = Math.round(Math.min(tetoSalarial(p.clube, p.liga), Math.max(p.salario, Math.min(p.salario * 1.3, base * (s.jogador.idade <= 30 ? 1.05 : 0.85)))));
+  const luvas = Math.round(livre ? salario * (sc ? 1.5 : 3) : p.taxa * CAMBIO * 0.03);
+  return nova(m, { tipo: livre ? "livre" : "transferencia", clubeId: p.clube.id, ligaId: p.liga.id, salario, anos: p.anos, taxa: Math.round(p.taxa), luvas, papel: papelNoClube(p.clube, s), interesse: p.interesse, expira: sc ? semanaAbs(s.carreira) + 3 : fimDaJanela(s.carreira) });
 }
 
 // ------------------------------------------------------------------ ações do jogador
@@ -319,6 +326,7 @@ function receberLuvas(s: Save, luvas: number) {
 export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo: TipoProposta, taxa: number, ordemFixa?: string[]) {
   const c = s.carreira, m = mercadoDe(c), w = mundo(pacote), de = c.clubeId, ligaDe = infoLiga(c.ligaId).id;
   const seg0 = c.seguidores;
+  m.semClube = undefined; // assinou: acabou a fase sem clube
   c.seguidores = saltoTransferencia(c.seguidores, alvoDeSeguidores(pacote, s, destino.id));
   c.clubeId = destino.id; c.ligaId = destino.ligaId;
   if (destino.ligaId !== ligaDe) {
@@ -378,20 +386,43 @@ export function contratoVencido(pacote: PacoteDados, s: Save, eventos: string[])
   if (c.formacao || c.anosContrato > 0) return false;
   const perfil = { ...perfilDe(pacote, s), clubeAtual: null, anosContrato: 0 };
   const props = gerarPropostas(new RNG(`${s.semente}|livre|${c.temporada}`), perfil, w.ligas, c.fama).filter((p) => p.clube.id !== c.clubeId && golfoQuer(p, s));
-  const origem = w.clube[c.clubeId];
-  if (!props.length) {
-    c.anosContrato = 1; c.salario = Math.round(c.salario * 0.85);
-    eventos.push(`Sem propostas, você ficou no ${origem.nome} com contrato de 1 ano e salário menor.`);
-    noticia(s, "clube", "Contrato curto", `Sem mercado, ${s.jogador.apelido} fica no ${origem.nome} por mais um ano.`);
-    return true;
-  }
-  const melhor = props.sort((a, b) => b.interesse - a.interesse || b.salario - a.salario)[0];
-  const p = paraSave(pacote, s, melhor);
-  c.salario = p.salario; c.anosContrato = p.anos;
-  mudarDeClube(pacote, s, melhor.clube, "livre", 0);
-  receberLuvas(s, p.luvas);
-  eventos.push(`Contrato encerrado: de graça, você assinou com o ${melhor.clube.nome}.`);
+  const origem = w.clube[c.clubeId], m = mercadoDe(c);
+  // o contrato acabou: o jogador vira agente livre e escolhe entre as propostas (as que chegarem)
+  if (m.semClube) return false;
+  m.semClube = { desde: semanaAbs(c), ultimo: c.clubeId, salario: c.salario };
+  c.salario = 0; c.anosContrato = 0;
+  m.propostas = m.propostas.filter((p) => p.tipo !== "renovacao" && p.tipo !== "emprestimo");
+  for (const p of props.sort((a, b) => b.interesse - a.interesse || b.salario - a.salario).slice(0, 3)) m.propostas.push(paraSave(pacote, s, p));
+  eventos.push(`Fim de contrato com o ${origem.nome}: você está sem clube.${props.length ? ` ${Math.min(3, props.length)} ${props.length === 1 ? "proposta chegou" : "propostas chegaram"}.` : " Ainda sem propostas."}`);
+  noticia(s, "clube", `${s.jogador.apelido} está sem clube`, `O contrato com o ${origem.nome} terminou e ${s.jogador.apelido} é agente livre: pode assinar com qualquer clube, sem taxa.`);
   return true;
+}
+
+/** Semana de quem está sem clube: propostas chegam (mais com o agente oferecendo, menos com o tempo parado), a moral cai. */
+export function semanaSemClube(pacote: PacoteDados, s: Save, rng: RNG, eventos: string[]) {
+  const c = s.carreira, m = mercadoDe(c), sc = m.semClube!, agora = semanaAbs(c), w = mundo(pacote);
+  const parado = agora - sc.desde;
+  if (parado >= 3) c.moral = Math.max(0, c.moral - 2);
+  if (m.propostas.length >= 4) return;
+  const oferecendo = (sc.oferecendoAte ?? -1) >= agora;
+  const chance = Math.max(0.15, 0.55 - parado * 0.02) + (oferecendo ? 0.3 : 0);
+  if (!rng.chance(chance)) return;
+  const perfil = { ...perfilDe(pacote, s), clubeAtual: null, anosContrato: 0 };
+  const props = gerarPropostas(rng, perfil, w.ligas, c.fama).filter((p) => golfoQuer(p, s) && !m.propostas.some((x) => x.clubeId === p.clube.id));
+  const nova1 = props.sort((a, b) => b.interesse - a.interesse)[0];
+  if (!nova1) return;
+  const p = paraSave(pacote, s, nova1);
+  m.propostas.push(p);
+  eventos.push(`Proposta para quem está sem clube: ${nova1.clube.nome}.`);
+  noticia(s, "clube", `${nova1.clube.nome} quer ${s.jogador.apelido}`, `O ${nova1.clube.nome} oferece ${p.anos} ${p.anos === 1 ? "ano" : "anos"} de contrato ao agente livre ${s.jogador.apelido}.`);
+}
+/** O agente sai oferecendo o jogador sem clube pelas próximas quatro semanas (mais propostas). */
+export function oferecerJogador(s: Save): { ok: boolean; msg: string } {
+  const c = s.carreira, sc = mercadoDe(c).semClube, agora = semanaAbs(c);
+  if (!sc) return { ok: false, msg: "Você tem clube." };
+  if ((sc.oferecendoAte ?? -1) >= agora) return { ok: false, msg: "O agente já está oferecendo você aos clubes." };
+  sc.oferecendoAte = agora + 4;
+  return { ok: true, msg: "O agente vai ligar para os clubes nas próximas quatro semanas." };
 }
 
 /** Política automática (testes e balanceamento): o que um jogador sensato faria com as propostas da semana. */
