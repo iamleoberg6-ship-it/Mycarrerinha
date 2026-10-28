@@ -3,7 +3,7 @@ import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { camisaCostas } from "../visual/camisas";
-import { kitVisual, calcaoDoClube } from "../../src/reliquias";
+import { kitVisual, calcaoDoClube, numeroCorClube } from "../../src/reliquias";
 import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
@@ -119,7 +119,7 @@ function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const info = infoClube(pacote, clubeId), [a, b] = info.cores;
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
   const ch = mat?.chuteira ?? (mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1], mat.cores[2]] : undefined);
-  return { cor1: a, cor2: b ?? "#FFFFFF", escudo: { chave: idClube(clubeId), nome: info.nome }, calcao: calcaoDoClube(clubeId), padrao: info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
+  return { cor1: a, cor2: b ?? "#FFFFFF", escudo: { chave: idClube(clubeId), nome: info.nome }, numeroCor: numeroCorClube(clubeId), calcao: calcaoDoClube(clubeId), padrao: info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
 }
 /** Aparência com os acessórios dos patrocinadores (óculos e fone) por cima. */
 function apDe(s: Save, forcar?: Marca): Aparencia {

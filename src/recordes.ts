@@ -7,6 +7,11 @@ import { gerarNome } from "./nomes.js";
 export interface Lenda { nome: string; valor: number; eu?: boolean }
 export interface Recordes { gols: Lenda[]; jogos: Lenda[] }
 
+/** Lendas reais dos recordes de gols (números oficiais, só partidas oficiais). Entram na lista do clube. */
+const LENDAS_REAIS: Record<string, Lenda[]> = {
+  SAN: [{ nome: "Pelé", valor: 643 }],
+  "ES-BAR": [{ nome: "Lionel Messi", valor: 672 }],
+};
 const cacheClube = new Map<string, Recordes>();
 /** Os 5 maiores artilheiros e os 5 que mais jogaram na história do clube (antes do jogador). */
 export function recordesDoClube(clubeId: string, forca: number, pais: string): Recordes {
@@ -20,6 +25,8 @@ export function recordesDoClube(clubeId: string, forca: number, pais: string): R
     gols: [1, 0.82, 0.7, 0.62, 0.56].map((f) => ({ nome: nome(), valor: Math.round(topG * f * rng.range(0.97, 1.03)) })).sort((a, b) => b.valor - a.valor),
     jogos: [1, 0.9, 0.84, 0.78, 0.74].map((f) => ({ nome: nome(), valor: Math.round(topJ * f * rng.range(0.98, 1.02)) })).sort((a, b) => b.valor - a.valor),
   };
+  const lendas = LENDAS_REAIS[clubeId];
+  if (lendas) r.gols = [...lendas, ...r.gols].sort((a, b) => b.valor - a.valor).slice(0, 5);
   cacheClube.set(clubeId, r);
   return r;
 }

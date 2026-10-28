@@ -59,10 +59,12 @@ const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terc
 };
 /** Cores, desenho e terceira cor com que a camisa é desenhada (o clube tem prioridade sobre o que foi guardado). */
 /** Calção de clubes cujo uniforme real não usa a cor 2 (Santos: calção branco, com o preto só na gola e nas mangas). */
+/** Cor do número de clubes que usam número de outra cor (Vasco: sempre vermelho). */
+export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId === "VAS" ? "#C8102E" : undefined);
 export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" ? "#FFFFFF" : undefined);
-export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; terceira?: string } {
-  const k = r.clubeId ? KIT_VISUAL[r.clubeId] : undefined;
-  return k ? { cores: k.cores, modelo: k.modelo, terceira: k.terceira } : { cores: r.cores, modelo: r.modelo };
+export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; terceira?: string; numeroCor?: string } {
+  const k = r.clubeId ? KIT_VISUAL[r.clubeId] : undefined, numeroCor = numeroCorClube(r.clubeId);
+  return k ? { cores: k.cores, modelo: k.modelo, terceira: k.terceira, numeroCor } : { cores: r.cores, modelo: r.modelo, numeroCor };
 }
 /** As bolas mudam de competição para competição e de ano para ano. */
 const BOLA_BASE: [string, string][] = [["#262626", "#262626"], ["#1B98E0", "#262626"], ["#C0392B", "#262626"]];

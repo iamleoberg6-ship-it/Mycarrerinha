@@ -29,7 +29,7 @@ function padrao(modelo: string, c2: string, c3: string): string {
   }
 }
 
-export interface DadosCamisa { cores: [string, string]; modelo: string; /** terceira cor (faixa de baixo do padrão duasFaixasH) */ terceira?: string; numero?: string; /** clube (id ou nome): escolhe a fonte de nome e número */ chave?: string }
+export interface DadosCamisa { cores: [string, string]; modelo: string; /** cor do número, quando o clube usa outra (Vasco) */ numeroCor?: string; /** terceira cor (faixa de baixo do padrão duasFaixasH) */ terceira?: string; numero?: string; /** clube (id ou nome): escolhe a fonte de nome e número */ chave?: string }
 
 /** SVG (viewBox 0 0 80 104) da camisa pendurada, de costas, com nome e número. */
 export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): string {
@@ -60,6 +60,6 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
       <path d="M17 33 C20 50 19 70 17 92 M63 33 C60 50 61 70 63 92" stroke="#000" stroke-opacity=".12" stroke-width="1.2" fill="none"/>
     </g>
     ${sobrenome ? `<text ${attrFonte(fonte, fs, true)} x="40" y="35" text-anchor="middle" fill="${tinta}" stroke="${borda}" stroke-width=".5" paint-order="stroke">${sobrenome}</text>` : ""}
-    ${c.numero ? `<text x="40" y="${f1(sobrenome ? 74 : 70)}" text-anchor="middle" ${attrFonte(fonte, c.numero.length > 2 ? 24 : 32)} fill="${tinta}" stroke="${borda}" stroke-width="1" paint-order="stroke">${c.numero}</text>` : ""}
+    ${c.numero ? `<text x="40" y="${f1(sobrenome ? 74 : 70)}" text-anchor="middle" ${attrFonte(fonte, c.numero.length > 2 ? 24 : 32)} fill="${c.numeroCor ?? tinta}" stroke="${borda}" stroke-width="1" paint-order="stroke">${c.numero}</text>` : ""}
   </svg>`;
 }
