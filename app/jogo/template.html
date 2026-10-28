@@ -276,17 +276,11 @@ table.hist td { vertical-align: middle; } table.hist tr.mudou td { border-top: 1
 .armario.camisas { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
 .camisa-cel { background: linear-gradient(180deg, #24382F, var(--campo-2)); border: 1px solid var(--linha); border-radius: 12px; padding: 8px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--giz); font: inherit; cursor: pointer; }
 .camisa-cel svg { width: 62px; height: 80px; filter: drop-shadow(0 3px 4px rgba(0,0,0,.4)); } .camisa-cel small { font-size: 10.5px; color: var(--giz-2); text-align: center; line-height: 1.2; }
-.armario.camisas { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
-.camisa-cel { perspective: 900px; padding: 0; overflow: visible; min-height: 168px; }
-.camisa-cel .flip-in { position: relative; display: block; width: 100%; min-height: 168px; transition: transform .6s cubic-bezier(.3,.7,.3,1); transform-style: preserve-3d; }
-.camisa-cel.virada .flip-in { transform: rotateY(180deg); }
-.camisa-cel .face { position: absolute; inset: 0; box-sizing: border-box; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px 6px; background: linear-gradient(180deg, #24382F, var(--campo-2)); border: 1px solid var(--linha); }
-.camisa-cel .face.frente { justify-content: flex-start; padding-top: 8px; }
-.camisa-cel .verso { transform: rotateY(180deg); align-items: flex-start; text-align: left; font-size: 11px; color: var(--giz); overflow: hidden; }
-.camisa-cel .verso b { font-family: var(--display); font-size: 16px; color: var(--ouro); line-height: 1.05; }
-.camisa-cel .verso small { color: var(--giz-2); font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; margin-top: 3px; }
-.camisa-cel .verso span { line-height: 1.25; }
-@media (prefers-reduced-motion: reduce) { .camisa-cel .flip-in { transition: none; } }
+#dlgCamisa { max-width: min(92vw, 380px); }
+.camisa-det { display: flex; flex-direction: column; align-items: center; gap: 10px; max-height: 80vh; overflow-y: auto; padding: 4px; }
+.camisa-det .camisa-det-svg svg { width: 120px; height: 150px; }
+.camisa-det dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; width: 100%; font-size: 14px; }
+.camisa-det dt { color: var(--giz-2); } .camisa-det dd { margin: 0; color: var(--giz); }
 .camisa-cel.apagada svg { filter: none; opacity: .8; } .camisa-cel.apagada small { opacity: .6; }
 .camisa-cel.ativo { border-color: var(--ouro); box-shadow: 0 0 0 1px var(--ouro); }
 .trofeu-cel.ativo { border-color: var(--ouro); box-shadow: 0 0 0 1px var(--ouro); }
@@ -609,6 +603,7 @@ dialog.jogo-grande .placar.ident { background-image: radial-gradient(120% 140% a
 <body>
 <main class="pagina" id="app"></main>
 <dialog id="dlgAgentes" aria-label="Agentes"><div class="tela" id="telaAgentes"></div></dialog>
+<dialog id="dlgCamisa" aria-label="Camisa"><div class="tela" id="telaCamisa"></div></dialog>
 <dialog id="dlgJogo"><div class="tela" id="telaJogo"></div></dialog>
 <dialog id="dlgResumo"><div class="tela" id="telaResumo"></div></dialog>
 <dialog id="dlgRetro" aria-label="Retrospectiva da temporada"><div class="tela" id="telaRetro"></div></dialog>

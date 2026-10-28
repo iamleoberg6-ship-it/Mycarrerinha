@@ -1102,7 +1102,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   const craque = partida.nomes.craque;
   if (craque && decisoes.some((d) => d.situacao === "camisa" && d.opcao === "trocar")) {
     const info = infoClube(pacote, adversario), ano = ANO_INICIAL + c.temporada;
-    receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${craque.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", nome: `Camisa de ${craque}`, legenda: `${info?.nome ?? ""}${partida.tipo === "base" ? ` ${categoriaBase(j.idade)}` : ""} · troca no apito final · ${ano}`, ano, cores: [info?.cores[0] ?? "#FFFFFF", info?.cores[1] ?? "#111111"], modelo: info?.padrao ?? "lisa", numero: String(1 + (craque.length * 7) % 30) } }], eventos);
+    receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${craque.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", clubeId: adversario, nome: `Camisa de ${craque}`, legenda: `${info?.nome ?? ""}${partida.tipo === "base" ? ` ${categoriaBase(j.idade)}` : ""} · troca no apito final · ${ano}`, ano, cores: [info?.cores[0] ?? "#FFFFFF", info?.cores[1] ?? "#111111"], modelo: info?.padrao ?? "lisa", numero: String(1 + (craque.length * 7) % 30) } }], eventos);
   }
   const resumo: ResumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, idCasa: partida.casa, idFora: partida.fora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo, escalacao: partida.escalacao,
     ...(copa ? { competicao: copa.nome, rotulo: copa.rotulo } : {}) };
@@ -1439,7 +1439,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
           if (r4.chance(chanceCamisa(x.nivel, c.fama, e.fama))) {
             x.camisa = true; subir(x, 8);
             const info = infoClube(pacote, e.clubeId);
-            receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${e.nome.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", nome: `Camisa de ${e.nome}`, legenda: `${info.nome} · troca depois do jogo · ${ano}`, ano, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: info.padrao, numero: String(e.numero) } }], eventos);
+            receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${e.nome.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", clubeId: e.clubeId, nome: `Camisa de ${e.nome}`, legenda: `${info.nome} · troca depois do jogo · ${ano}`, ano, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: info.padrao, numero: String(e.numero) } }], eventos);
             eventos.push(`${e.nome} trocou de camisa com você no fim do jogo!`);
           } else { subir(x, -2); eventos.push(`Você pediu, mas ${e.nome} trocou a camisa com outro jogador.`); }
         }

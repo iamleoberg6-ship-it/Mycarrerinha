@@ -1603,7 +1603,7 @@ function carregarSave(arquivo: File) {
     location.reload();
   }).catch(() => avisoSave("Não deu para ler o arquivo.", true));
 }
-let trofeuAberto: string | undefined, camisaAberta: string | undefined;
+let trofeuAberto: string | undefined;
 /** Recordes: em cada clube por onde passou e na seleção, o top 5 da história com o jogador dentro (ou quanto falta). */
 function recordesHtml(s: Save): string {
   const listas = recordesDoJogador(pacote, s);
@@ -1647,18 +1647,24 @@ function armarioCamisas(s: Save): string {
   const minhas = (s.casa.reliquias ?? []).filter((r) => r.tipo === "camisa").sort((a, b) => a.ano - b.ano);
   if (!minhas.length) return `<p class="rotulo">Armário de camisas</p><p class="sub">Nenhuma ainda. A estreia, o primeiro gol e as trocas com craques vêm parar aqui.</p>`;
   const nomeCostas = (r: Reliquia) => (r.chave === "camisa-troca" ? r.nome.replace(/^Camisa d[eoa] /, "") : s.jogador.apelido);
-  // cada card vira: a frente é a camisa, o verso conta de quem é, de que clube, de quando e de qual jogo
   return `<p class="rotulo">Armário de camisas <small>(${minhas.length})</small></p>
-      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " virada" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}" aria-label="${esc(x.nome)}. Toque para virar">
-        <span class="flip-in">
-          <span class="face frente">${camisaCostas({ ...kitVisual(x), numero: x.numero, chave: x.clubeId ?? chaveCamisa(x.legenda) }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></span>
-          <span class="face verso"><b>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</b>
-            <small>De</small><span>${esc(nomeCostas(x))}</span>
-            <small>Clube</small><span>${esc(x.clubeId ? infoClube(pacote, x.clubeId).nome : "–")}</span>
-            <small>Ano</small><span>${x.ano}</span>
-            <small>Jogo</small><span>${esc(x.legenda)}</span></span>
-        </span></button>`).join("")}</div>
-      <p class="sub">Toque numa camisa para virar e ver a história dela.</p>`;
+      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel" data-camisa="${esc(x.id)}" aria-label="${esc(x.nome)}: ver detalhes">${camisaCostas({ ...kitVisual({ ...x, clubeId: clubeDaCamisa(x) }), numero: x.numero, chave: clubeDaCamisa(x) ?? chaveCamisa(x.legenda) }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></button>`).join("")}</div>
+      <p class="sub">Toque numa camisa para ver a história dela.</p>`;
+}
+/** Camisa do armário: o clube guardado ou, em saves antigos, o que a legenda diz. */
+type Camisa = NonNullable<Save["casa"]["reliquias"]>[number];
+function clubeDaCamisa(x: Camisa): string | undefined {
+  return x.clubeId ?? Object.values(mundo(pacote).info).find((i) => x.legenda.startsWith(i.nome))?.id;
+}
+/** Pop-up da camisa: de quem é, de que clube, de quando, de qual jogo e o número. */
+function camisaDetalheHtml(s: Save, x: Camisa): string {
+  const cid = clubeDaCamisa(x), nomeClube = cid ? infoClube(pacote, cid).nome : "–";
+  const de = x.chave === "camisa-troca" ? x.nome.replace(/^Camisa d[aeo] /, "") : s.jogador.apelido;
+  return `<div class="camisa-det"><div class="camisa-det-svg">${camisaCostas({ ...kitVisual({ ...x, clubeId: cid }), numero: x.numero, chave: cid ?? chaveCamisa(x.legenda) }, de)}</div>
+    <b>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</b>
+    <dl><dt>De</dt><dd>${esc(de)}</dd><dt>Clube</dt><dd>${esc(nomeClube)}</dd><dt>Ano</dt><dd>${x.ano}</dd><dt>Número</dt><dd>${esc(String(x.numero))}</dd><dt>Jogo</dt><dd>${esc(x.legenda)}</dd></dl>
+    <p class="sub">É uma relíquia: dá para pendurar na parede na aba Casa.</p>
+    <form method="dialog"><button class="botao peq">Fechar</button></form></div>`;
 }
 function abrirPerfil() {
   if (!save) return;
@@ -2307,11 +2313,7 @@ document.addEventListener("click", (ev) => {
     if (rv.ok && d.tat) trajeVisto = tatuagemVisivel(areaTat, visualDe(save.jogador), "jogo") ? "jogo" : "casual";
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
-  else if (d.camisa && save) {
-    // vira só o card tocado (sem refazer a tela, para a animação aparecer)
-    const abrir = camisaAberta !== d.camisa; camisaAberta = abrir ? d.camisa : undefined;
-    document.querySelectorAll<HTMLElement>(".camisa-cel").forEach((el) => { const on = abrir && el.dataset.camisa === d.camisa; el.classList.toggle("virada", on); el.setAttribute("aria-expanded", String(on)); });
-  }
+  else if (d.camisa && save) { const x = (save.casa.reliquias ?? []).find((r) => r.id === d.camisa); if (x) { $("telaCamisa").innerHTML = camisaDetalheHtml(save, x); ($("dlgCamisa") as HTMLDialogElement).showModal(); } }
   else if (d.trofeu && save) { trofeuAberto = trofeuAberto === d.trofeu ? undefined : d.trofeu; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
   else if ((d.num || d.numManter) && save) {
     const n = d.numManter ? +save.jogador.numero : +d.num!, g = gradeDoClube(pacote, save);
