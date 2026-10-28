@@ -5,6 +5,7 @@ import { fonteCamisa, attrFonte } from "./fontes-camisa";
 import { svgFoto, foneNoPescoco, PELES, CORES_ROUPA, escurecer, luminancia, type Aparencia } from "../criacao/avatar";
 import type { Visual, AreaTatuagem } from "../../src/visual";
 import { tatuagemVisivel } from "../../src/visual";
+import { corpoEscudo } from "./escudos";
 
 const TINTA = "#0A0A0A", TRACO = 2.8, TINTA_TAT = "#1F2A36";
 type P = [number, number];
@@ -124,7 +125,7 @@ export function tatuagemPescoco(id: string | undefined): string {
 }
 
 // ------------------------------------------------------------------ peças
-export interface Kit { cor1: string; cor2: string; /** cor do calção, quando o uniforme real não usa a cor 2 */ calcao?: string; padrao: string; numero: string; /** clube (id): fonte do número */ fonte?: string; chuteira?: [string, string]; marcaChuteira?: { simbolo: string; cor: string } }
+export interface Kit { cor1: string; cor2: string; /** escudo do clube no peito: o mesmo das listas */ escudo?: { chave: string; nome?: string }; /** cor do calção, quando o uniforme real não usa a cor 2 */ calcao?: string; padrao: string; numero: string; /** clube (id): fonte do número */ fonte?: string; chuteira?: [string, string]; marcaChuteira?: { simbolo: string; cor: string } }
 /** A marca na lateral da chuteira (ou do tênis): o símbolo da marca de material esportivo. */
 function marcaNoCalcado(x: number, y: number, l: number, simbolo: string, cor: string): string {
   const t = (d: string, w = 2.2) => `<path d="${d}" stroke="${cor}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -395,7 +396,8 @@ export function svgCorpo(o: OpcoesCorpo): string {
   if (jogo) {
     partes.push(`<path d="M123 230 L150 264 L177 230 L170 233 L150 255 L130 233 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="2" stroke-linejoin="round"/>`);
     const ex = 150 + g.peito * 0.48, ey = 300;
-    partes.push(`<path d="M${ex - 9} ${ey - 10} H${ex + 9} V${ey} Q${ex + 9} ${ey + 8} ${ex} ${ey + 12} Q${ex - 9} ${ey + 8} ${ex - 9} ${ey} Z" fill="${kit.cor2}" stroke="${TINTA}" stroke-width="1.4"/><path d="M${ex - 9} ${ey - 3} H${ex + 9} V${ey + 2} H${ex - 9} Z" fill="${kit.cor1}" opacity=".9"/>`);
+    if (kit.escudo) partes.push(`<g transform="translate(${f1(ex - 9.75)} ${f1(ey - 10.5)}) scale(0.75)">${corpoEscudo(kit.escudo.chave, kit.cor1, kit.cor2, kit.escudo.nome)}</g>`);
+    else partes.push(`<path d="M${ex - 9} ${ey - 10} H${ex + 9} V${ey} Q${ex + 9} ${ey + 8} ${ex} ${ey + 12} Q${ex - 9} ${ey + 8} ${ex - 9} ${ey} Z" fill="${kit.cor2}" stroke="${TINTA}" stroke-width="1.4"/><path d="M${ex - 9} ${ey - 3} H${ex + 9} V${ey + 2} H${ex - 9} Z" fill="${kit.cor1}" opacity=".9"/>`);
   } else if (v.casual === "social") {
     partes.push(`<path d="M124 228 L150 248 L138 262 L116 236 Z M176 228 L150 248 L162 262 L184 236 Z" fill="${mistura(camisaCor, "#000000", 0.08)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M150 248 V${camisa.bainha}" stroke="${TINTA}" stroke-width="1.3"/>${[272, 302, 332, 362, 392, 422].map((y) => `<circle cx="154" cy="${y}" r="2" fill="${escurecer(camisaCor, 0.6)}"/>`).join("")}`);
   } else if (v.casual === "jaqueta") {
