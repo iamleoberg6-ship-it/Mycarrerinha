@@ -1,5 +1,6 @@
 // Carreira completa de um jogador, semana a semana. As decisões vêm de uma "política"
 // (no jogo, do usuário; no balanceamento, de uma IA simples), para o motor rodar sem interface.
+import { FAMILIA, AGENTE_INICIAL, AGENTE_MEDIO, AGENTE_TOP, comissaoDo, nivelDoAgente } from "./agentes-banco.js";
 import { RNG, clamp } from "./rng.js";
 import {
   type Atributos, type Posicao, type Grupo, type Personalidade, type Participacao, type Intensidade,
@@ -8,7 +9,7 @@ import {
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { type Liga, type Clube, type LinhaTabela, tabelaTurnoReturno, novaTabela, registrar, ordenar } from "./liga.js";
 import {
-  type TipoAgente, type Proposta, AGENTES, valorMercado, salarioMensal, gerarPropostas, clubeAceitaVenda, seguidoresDaFama,
+  type TipoAgente, type Proposta, valorMercado, salarioMensal, gerarPropostas, clubeAceitaVenda, seguidoresDaFama,
   ambientacaoInicial, deltaAmbientacao, fAmb, filaNaPosicao,
 } from "./mercado.js";
 
@@ -124,9 +125,9 @@ export class Carreira {
       + (4 + 4 * ambicao) * Math.log(p.salario / Math.max(3000, this.contrato.salario)) + 3 * (this.liga.nivel - p.liga.nivel);
   }
   private atualizarAgente() {
-    if (this.agente !== "top" && (this.ovr >= 75 || this.fama >= 50)) this.agente = "top";
-    else if ((this.agente === "pai" || this.agente === "iniciante") && (this.ovr >= 65 || this.fama >= 20)) this.agente = "experiente";
-    else if (this.agente === "pai" && this.idade >= 18 && this.ovr >= 55 && this.origem !== "humilde") this.agente = "iniciante";
+    if (nivelDoAgente(this.agente) < 5 && (this.ovr >= 75 || this.fama >= 50)) this.agente = AGENTE_TOP;
+    else if (nivelDoAgente(this.agente) < 3 && (this.ovr >= 65 || this.fama >= 20)) this.agente = AGENTE_MEDIO;
+    else if (this.agente === "pai" && this.idade >= 18 && this.ovr >= 55 && this.origem !== "humilde") this.agente = AGENTE_INICIAL;
   }
 
   // ---------- semana ----------
@@ -198,7 +199,7 @@ export class Carreira {
   private rendaLiquidaMensal(): number {
     const s = this.contrato.salario;
     const ir = 0.275 * Math.max(0, s - 5000);
-    return s - ir - AGENTES[this.agente].comissao * s + this.patrocinioAnual / 12;
+    return s - ir - comissaoDo(this.agente) * s + this.patrocinioAnual / 12;
   }
   private temPersonal() { return this.rendaLiquidaMensal() >= 60000; }
   private temNutricionista() { return this.rendaLiquidaMensal() >= 40000; }
@@ -259,7 +260,7 @@ export class Carreira {
       const importancia = this.ovr >= this.clube.forca + 5 ? 1.6 : fila < VAGAS_433[this.posicao] ? 1.3 : 1.0;
       if (!clubeAceitaVenda(this.rng, melhor.p, this.vm, importancia)) return;
     }
-    const luvas = (livre ? 6 : 1) * melhor.p.salario * (1 - AGENTES[this.agente].comissao);
+    const luvas = (livre ? 6 : 1) * melhor.p.salario * (1 - comissaoDo(this.agente));
     this.caixa += luvas * 0.725;
     this.entrarNoClube(melhor.p.liga, melhor.p.clube, { salario: melhor.p.salario, anos: melhor.p.anos });
   }

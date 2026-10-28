@@ -5,10 +5,11 @@ import { RNG, clamp } from "./rng.js";
 import type { Posicao } from "./atributos.js";
 import type { Clube, Liga } from "./liga.js";
 import { VAGAS_433 } from "./partida.js";
+import { FAMILIA, perfilAgente, type TipoAgente } from "./agentes-banco.js";
+export type { TipoAgente } from "./agentes-banco.js";
 
 export const CAMBIO = 6.0; // R$ por euro, fixo no MVP
 
-export type TipoAgente = "pai" | "iniciante" | "experiente" | "top";
 /** Ligas de cada país (divisões de cima e amadoras de fora, quando existem no jogo). */
 export const LIGAS_DO_PAIS: Record<string, string[]> = {
   BRA: ["BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`)],
@@ -28,34 +29,34 @@ export const VIZINHOS: Record<string, string[]> = {
  *  e os grandes do próprio país só aparecem para o agente experiente. Brasil fica fora: o mercado local é grande o bastante. */
 export const ALCANCE_REGIONAL = new Set(["POR", "URU", "PAR", "ECU", "CHI", "CRO", "MAR"]);
 
-/** Ligas que o agente alcança para um jogador deste país. "todas" = o mundo inteiro. */
+/** Ligas que o agente alcança. A família conhece só o país do jogador; o agente do banco, o mercado do próprio país
+ *  (nível 1 e 2), mais os vizinhos (nível 3 e 4), e o mundo todo no nível 5. "todas" = o mundo inteiro. */
 export function ligasDoAgente(t: TipoAgente, nacionalidade: string): string[] | "todas" {
-  if (t === "top") return "todas";
-  const casa = LIGAS_DO_PAIS[nacionalidade] ?? [];
-  if (t !== "experiente") return casa;
-  const vizinhas = (VIZINHOS[nacionalidade] ?? []).flatMap((x) => LIGAS_DO_PAIS[x] ?? []);
+  if (t === FAMILIA) return LIGAS_DO_PAIS[nacionalidade] ?? [];
+  const p = perfilAgente(t), pais = p.pais ?? nacionalidade, casa = LIGAS_DO_PAIS[pais] ?? [];
+  if (p.nivel >= 5) return "todas";
+  if (p.nivel <= 2) return casa;
+  const vizinhas = (VIZINHOS[pais] ?? []).flatMap((x) => LIGAS_DO_PAIS[x] ?? []);
   return [...new Set([...casa, ...vizinhas])];
 }
 
-/** Só clubes regionais: o agente local de um país pequeno não chega aos três maiores da liga de casa. */
+/** O país cujo mercado o agente conhece: o do jogador (família) ou o do próprio agente. */
+const paisDoAgente = (t: TipoAgente, nacionalidade: string) => t === FAMILIA ? nacionalidade : perfilAgente(t).pais ?? nacionalidade;
+
+/** Só clubes regionais: agente de nível baixo de país pequeno não chega aos três maiores da liga de casa. */
 export function alcanceSoRegional(t: TipoAgente, nacionalidade: string): boolean {
-  return t !== "top" && t !== "experiente" && ALCANCE_REGIONAL.has(nacionalidade);
+  if (t === FAMILIA) return ALCANCE_REGIONAL.has(nacionalidade);
+  return perfilAgente(t).nivel <= 2 && ALCANCE_REGIONAL.has(paisDoAgente(t, nacionalidade));
 }
 /** Os três clubes mais fortes de uma liga (os "grandes" que o agente regional não alcança). */
 const grandesDaLiga = (liga: Liga) => new Set([...liga.clubes].sort((a, b) => b.forca - a.forca).slice(0, 3).map((c) => c.id));
 /** O agente consegue levar o jogador a este clube? */
 export function clubeAlcancado(t: TipoAgente, nacionalidade: string, liga: Liga, clube: Clube): boolean {
   if (!alcanceSoRegional(t, nacionalidade)) return true;
-  if (!(LIGAS_DO_PAIS[nacionalidade] ?? []).includes(liga.id)) return true; // ligas vizinhas: o alcance regional não as corta
+  if (!(LIGAS_DO_PAIS[paisDoAgente(t, nacionalidade)] ?? []).includes(liga.id)) return true; // ligas vizinhas: o alcance regional não as corta
   return !grandesDaLiga(liga).has(clube.id);
 }
 
-export const AGENTES: Record<TipoAgente, { comissao: number; bonus: number; alcance: number }> = {
-  pai: { comissao: 0, bonus: -0.1, alcance: 1.0 },
-  iniciante: { comissao: 0.05, bonus: 0, alcance: 1.0 },
-  experiente: { comissao: 0.08, bonus: 0.1, alcance: 1.5 },
-  top: { comissao: 0.1, bonus: 0.2, alcance: 2.0 },
-};
 
 export function fIdadeVM(idade: number): number {
   if (idade <= 21) return 1.5;
@@ -91,7 +92,7 @@ export function salarioMensal(o: { ovr: number; idade: number; liga: Liga; clube
   const vm = valorMercado(o.ovr, o.idade, 3, o.liga.fLiga);
   const piso = o.formacao ? (o.liga.nivel >= 5 ? 1500 : 3000) : o.liga.id.startsWith("BRA4") ? 2500 : o.liga.id === "BRA3" ? 5000 : 8000;
   const base = Math.max(piso, (0.1 * vm * o.clube.fClube * CAMBIO * o.liga.fSalario) / 12);
-  const pedido = base * (1 + AGENTES[o.agente].bonus) * (1 + o.fama / 200);
+  const pedido = base * (1 + perfilAgente(o.agente).bonus) * (1 + o.fama / 200);
   return Math.max(piso, Math.min(pedido, tetoSalarial(o.clube, o.liga)));
 }
 
@@ -185,7 +186,7 @@ export function passaFiltros(p: PerfilMercado, clube: Clube, liga: Liga, vm: num
 
 /** forcado: o jogador pediu para ser negociado para esse mercado (ignora o alcance do agente e aceita interesse menor). */
 export function gerarPropostas(rng: RNG, p: PerfilMercado, mundo: Liga[], fama: number, forcado = false): Proposta[] {
-  const ag = AGENTES[p.agente];
+  const ag = perfilAgente(p.agente);
   const alcanca = ligasDoAgente(p.agente, p.nacionalidade);
   const candidatas: Proposta[] = [];
   for (const liga of mundo) {

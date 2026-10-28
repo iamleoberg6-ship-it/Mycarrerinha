@@ -5,7 +5,9 @@ import { RNG, clamp } from "./rng.js";
 import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos, type Grupo, type Intensidade, type Participacao, type Posicao } from "./atributos.js";
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube, type Liga, type LinhaTabela, type PacoteDados } from "./liga.js";
-import { salarioMensal, valorMercado, AGENTES, type TipoAgente } from "./mercado.js";
+import { salarioMensal, valorMercado, type TipoAgente } from "./mercado.js";
+import { comissaoDo, AGENTE_LEGADO } from "./agentes-banco.js";
+import type { NegAgente } from "./agentes.js";
 import { custoConsultores, tickConsultores, type DadosConsultores } from "./consultores.js";
 import { novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest } from "./negocios.js";
 import { novaSaude, semanaSaude, feriasSaude, operar, riscoLesaoSaude, fatorDeclinio, recuperacaoSaude, custoEquipe, type EstadoSaude, type Staff, type ParteCorpo } from "./saude.js";
@@ -134,6 +136,8 @@ export interface Carreira {
   tabelasReais?: TabelasReais; piramideDesde?: number; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
   ligaId?: string;
+  /** comissão acordada com o agente do banco (sem ela, vale a de referência) e conversa de comissão em aberto */
+  comissaoAgente?: number; negAgente?: NegAgente;
   /** consultores contratados (além do agente principal) e conversa em aberto */
   consultores?: DadosConsultores;
   /** propostas, empréstimo, histórico de transferências, agente */
@@ -214,6 +218,7 @@ export const ligaAtual = (pacote: PacoteDados, s: Save): Liga => mundo(pacote).l
 /** Saves de antes das ligas reais: clubes e ligas antigas viram os equivalentes atuais. Devolve true se mudou algo. */
 export function migrarSave(pacote: PacoteDados, s: Save): boolean {
   const c = s.carreira, w = mundo(pacote);
+  if (AGENTE_LEGADO[c.agente]) c.agente = AGENTE_LEGADO[c.agente];
   if (w.clube[c.clubeId]) sincronizar(pacote, s);
   const existe = (id: string) => !!w.clube[id];
   if (existe(c.clubeId) && (c.ligaId ?? "BRA1") === w.info[c.clubeId].ligaId && c.ordem.every(existe)) return false;
@@ -1485,7 +1490,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
 
 export function salarioLiquido(c: Carreira): number {
   const s = c.salario, ir = c.formacao ? 0 : imposto(s, c.ligaId);
-  return s - ir - AGENTES[c.agente].comissao * s - custoConsultores(c.consultores?.lista ?? [], s) + c.patrocinioMensal;
+  return s - ir - comissaoDo(c.agente, c.comissaoAgente) * s - custoConsultores(c.consultores?.lista ?? [], s) + c.patrocinioMensal;
 }
 export function contextoEvento(pacote: PacoteDados, s: Save): CtxEvento {
   const c = s.carreira, info = infoClube(pacote, c.clubeId), li = infoLiga(c.ligaId);

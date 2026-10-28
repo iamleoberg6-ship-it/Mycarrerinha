@@ -59,9 +59,11 @@ import { infoLiga } from "../../src/ligas";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
 import { consultorIniciar, consultorResponder } from "../../src/transferencias";
 import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, TETO_SALARIO, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
-import { AGENTE_INFO, textoAgente, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClausulas, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
+import { infoAgente, agenteIniciar, agenteResponder, textoAgente, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClausulas, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
-import { AGENTES, ligasDoAgente, alcanceSoRegional, type TipoAgente } from "../../src/mercado";
+import { ligasDoAgente, alcanceSoRegional, type TipoAgente } from "../../src/mercado";
+import { BANCO, FAMILIA, comissaoDo, perfilAgente } from "../../src/agentes-banco";
+import type { RespostaAgente } from "../../src/agentes";
 import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, luminancia, type Aparencia } from "../criacao/avatar";
 import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
@@ -556,6 +558,28 @@ function cardEvento(s: Save): string {
   return `<section class="painel evento"><p class="rotulo">Fora de campo</p><h2>${esc(e.titulo)}</h2><p class="sub">${esc(e.texto)}</p>
     <div class="ferr-botoes">${e.opcoes.map((o) => `<button class="botao sec" data-evento="${o.id}">${esc(o.rotulo)}${o.custo < 0 ? `<small>${dinheiro(-o.custo)}</small>` : ""}</button>`).join("")}</div></section>`;
 }
+/** Agentes: a família, os agentes do banco que aceitam você (com a conversa de comissão) e os demais. */
+function agentesHtml(s: Save): string {
+  const c = s.carreira, pct = (x: number) => `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  const cartao = (t: TipoAgente) => {
+    const a = infoAgente(t), atual = c.agente === t, pode = podeContratarAgente(s, t), ligas = ligasDoAgente(t, s.jogador.pais);
+    const alcance = ligas === "todas" ? "Todas as ligas" : alcanceCurto(ligas);
+    const com = comissaoDo(t, atual ? c.comissaoAgente : undefined);
+    const botao = t === FAMILIA ? `<button class="botao sec peq" data-agente="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Voltar para a família</button>` : `<button class="botao sec peq" data-agente-iniciar="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Negociar</button>`;
+    return `<div class="agente${atual ? " atual" : ""}"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span><p class="sub" style="margin:2px 0">${esc(textoAgente(t, s.jogador.pais))}</p><small class="sub">Comissão: ${pct(com)} · Alcance: ${esc(alcance)}${alcanceSoRegional(t, s.jogador.pais) ? " (sem os grandes)" : ""}</small></div>
+      ${atual ? `<span class="tag titular">Seu agente</span>` : `${botao}${pode.ok ? "" : `<small class="sub">${esc(pode.msg)}</small>`}`}</div>`;
+  };
+  const n = c.negAgente;
+  const painel = n ? `<div class="agente atual"><div><b>Conversa com ${esc(infoAgente(n.id).quem)}</b><p class="sub" style="margin:2px 0">Ele pede ${pct(n.pedido)} de comissão. Rodada ${n.rodada} de 4.</p>
+    <div class="ferr-botoes"><button class="botao peq" data-agente-resp="aceitar">Aceitar</button><button class="botao sec peq" data-agente-resp="recusar">Recusar</button></div>
+    <div class="ferr-botoes" style="margin-top:6px">${[0.7, 0.85, 1].map((f) => `<button class="botao sec peq" data-agente-resp="contra" data-com="${Math.round(n.pedido * f * 10000) / 10000}">Oferecer ${pct(n.pedido * f)}</button>`).join("")}</div></div></div>` : "";
+  const ordem = [...BANCO].sort((x, y) => y.nivel - x.nivel || x.id.localeCompare(y.id));
+  const aceitam = ordem.filter((a) => c.agente === a.id || podeContratarAgente(s, a.id).ok || !!perfilAgente(a.id).requisito && (c.fama >= perfilAgente(a.id).requisito.fama || ovr(s.jogador) >= perfilAgente(a.id).requisito.ovr));
+  const dos = ordem.filter((a) => !aceitam.includes(a));
+  const cartoes = (xs: { id: string }[]) => xs.map((a) => cartao(a.id)).join("");
+  return `${painel}<div style="display:flex;flex-direction:column;gap:8px">${cartao(FAMILIA)}${cartoes(aceitam)}</div>
+    ${dos.length ? `<details class="resumo-contrato" style="margin-top:8px"><summary><span>Outros agentes (${dos.length})</span><span class="sub">não aceitam você ainda</span></summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${cartoes(dos)}</div></details>` : ""}`;
+}
 /** Consultores: equipe, vagas e a conversa em aberto (ver claude/conceito-mercado-agentes.md). */
 function consultoresHtml(s: Save): string {
   const c = s.carreira, d = c.consultores ?? novosConsultores(), n = d.negociacao, total = vagas(c.fama);
@@ -591,7 +615,7 @@ function blocoPatrocinios(s: Save): string {
 }
 function blocoVida(s: Save): string {
   const c = s.carreira, pd = padraoDe(c), g = gastosDoMes(pd, c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa));
-  const ir = c.formacao ? 0 : imposto(c.salario, c.ligaId), ag = AGENTES[c.agente].comissao * c.salario, liq = salarioLiquido(c);
+  const ir = c.formacao ? 0 : imposto(c.salario, c.ligaId), ag = comissaoDo(c.agente, c.comissaoAgente) * c.salario, liq = salarioLiquido(c);
   const sobra = liq + receitaPatrocinios(c) - g.total - (imovelAtual(s.casa).categoria === "alojamento" || ehDono(s.casa) ? 0 : imovelAtual(s.casa).aluguel);
   const pct = Math.round(100 * aliquota(c.ligaId));
   return `<p class="rotulo" style="margin-top:16px">Dinheiro do mês</p>
@@ -1168,11 +1192,6 @@ function abaMercadoEu(s: Save): string {
       <div class="ferr-botoes">${botoes}</div></div></div>`;
   };
   const props = m.propostas.length ? `<div class="ofertas">${m.propostas.map(card).join("")}</div>` : `<p class="sub">${jan ? "Nenhuma proposta por enquanto. Elas chegam ao longo da janela; jogar bem e ter um bom agente ajudam." : "Fora da janela de transferências. Jogue bem: os clubes estão olhando."}</p>`;
-  const agentes = (Object.keys(AGENTE_INFO) as TipoAgente[]).map((t) => {
-    const a = AGENTE_INFO[t], atual = c.agente === t, pode = podeContratarAgente(s, t), alcance = ligasDoAgente(t, s.jogador.pais) === "todas" ? "Todas as ligas" : alcanceCurto(ligasDoAgente(t, s.jogador.pais) as string[]);
-    return `<div class="agente${atual ? " atual" : ""}"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span><p class="sub" style="margin:2px 0">${esc(textoAgente(t, s.jogador.pais))}</p><small class="sub">Alcance: ${esc(alcance)}${alcanceSoRegional(t, s.jogador.pais) ? " (sem os grandes)" : ""}</small></div>
-      ${atual ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Contratar</button>${pode.ok ? "" : `<small class="sub">${esc(pode.msg)}</small>`}`}</div>`;
-  }).join("");
   const hist = m.transferencias.length ? `<p class="rotulo" style="margin-top:16px">Transferências</p><div class="kv">${m.transferencias.map((t) => `<span>${2026 + t.temporada}</span><b>${esc(nomeDe(t.de))} → ${esc(nomeDe(t.para))}${t.tipo === "emprestimo" ? " (empréstimo)" : t.taxa ? ` · ${milhoes(t.taxa)}` : t.tipo === "livre" ? " (de graça)" : ""}</b>`).join("")}</div>` : "";
   const sc = m.semClube;
   const semClube = sc ? `<section class="painel" style="border-color:var(--ouro);margin-bottom:12px"><p class="rotulo" style="color:var(--ouro)">Agente livre</p>
@@ -1183,7 +1202,7 @@ function abaMercadoEu(s: Save): string {
   return `${aviso}${semClube}
     <p class="rotulo" style="margin-top:0">Propostas${m.propostas.length ? ` <small>(${m.propostas.length})</small>` : ""}</p>${props}
     ${sc ? "" : `<p class="rotulo" style="margin-top:16px">Seu contrato</p>${resumoContrato}`}
-    <p class="rotulo" style="margin-top:16px">Agente</p><div style="display:flex;flex-direction:column;gap:8px">${agentes}</div>${consultoresHtml(s)}${hist}
+    <p class="rotulo" style="margin-top:16px">Agente</p>${agentesHtml(s)}${consultoresHtml(s)}${hist}
     <p class="sub" style="margin-top:12px">Janelas: semanas ${JANELAS.map((x) => `${x.ini + 1}–${x.fim + 1}`).join(" e ")} de cada temporada.</p>`;
 }
 
@@ -2104,7 +2123,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -2150,6 +2169,12 @@ document.addEventListener("click", (ev) => {
     msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render();
     if (r.ok && (d.op === "aceitar" || d.op === "forcar")) window.scrollTo({ top: 0, behavior: "smooth" });
   } else if (d.agente && save) { const r = trocarAgente(save, d.agente as TipoAgente); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
+  else if (d.agenteIniciar && save) { const r = agenteIniciar(save, d.agenteIniciar); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
+  else if (d.agenteResp && save) {
+    const resp: RespostaAgente = d.agenteResp === "aceitar" ? { tipo: "aceitar" } : d.agenteResp === "recusar" ? { tipo: "recusar" } : { tipo: "contrapor", comissao: +d.com! };
+    const r = agenteResponder(save, resp);
+    msgMercado = { texto: r.msg, ok: r.status === "fechou" || r.status === "continua" }; salvar(); render();
+  }
   else if (d.consIniciar && save) { const r = consultorIniciar(save, d.consIniciar as Especialidade); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.cons && save) {
     const resp: RespostaConsultor = d.cons === "aceitar" ? { tipo: "aceitar" } : d.cons === "recusar" ? { tipo: "recusar" } : { tipo: "contrapor", oferta: { modelo: d.modelo as Oferta["modelo"], valor: +d.valor! } };

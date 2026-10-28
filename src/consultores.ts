@@ -2,7 +2,7 @@
 // (proposta, contraproposta, aceitar, recusar), com preço de reserva oculto e piso. Ver claude/conceito-mercado-agentes.md.
 // Fase 1: Negociador, Networking e Jurídico; modelos percentual e fixo; teto de 15% do salário para a equipe toda.
 import { RNG } from "./rng.js";
-import { AGENTES, type TipoAgente } from "./mercado.js";
+import { comissaoDo, type TipoAgente } from "./agentes-banco.js";
 
 export type Especialidade = "negociador" | "networking" | "juridico";
 /** Especialidades disponíveis nesta fase. As outras (imagem, preparador, mental, imprensa, financeiro, exterior) entram depois. */
@@ -41,7 +41,7 @@ export const eficacia = (degrau: number, desconto: number) => (0.5 + 0.1 * degra
 export const custoConsultores = (lista: Consultor[], salario: number) => lista.reduce((a, c) => a + valorOferta(c.oferta, salario), 0);
 /** Cabe no teto da equipe toda (consultores + comissão do agente principal sobre o salário)? */
 export const cabeNoTeto = (lista: Consultor[], nova: Oferta, salario: number, agente: TipoAgente) =>
-  AGENTES[agente].comissao * salario + custoConsultores(lista, salario) + valorOferta(nova, salario) <= TETO_SALARIO * salario + 0.5;
+  comissaoDo(agente) * salario + custoConsultores(lista, salario) + valorOferta(nova, salario) <= TETO_SALARIO * salario + 0.5;
 /** Efeito de cada especialidade (soma das eficácias). Usado pela habilidade de negociação. */
 export function efeitoConsultores(d: DadosConsultores | undefined): Record<Especialidade, number> {
   const r: Record<Especialidade, number> = { negociador: 0, networking: 0, juridico: 0 };

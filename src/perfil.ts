@@ -103,7 +103,7 @@ export function definirPerfil(r: ResultadoCriacao): PerfilCraque {
         remetente: "Empresário de jogadores", titulo: "Proposta de representação",
         texto: "Vi seus jogos. Quero te representar: cuido da carreira e fico com 5% do que você ganhar. Seu pai pode continuar perto.",
         opcoes: [
-          { id: "assinar", rotulo: "Assinar com o empresário", resultado: "Agora você tem um agente profissional. Mais portas, mas parte do salário fica com ele.", efeitos: { agente: "iniciante" } },
+          { id: "assinar", rotulo: "Assinar com o empresário", resultado: "Agora você tem um agente profissional. Mais portas, mas parte do salário fica com ele.", efeitos: { agente: "ag05" } },
           { id: "pai", rotulo: "Continuar com o pai", resultado: "Seu pai segue cuidando de tudo. Sem comissão, com menos contatos.", efeitos: {} },
         ],
       },

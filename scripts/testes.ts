@@ -70,7 +70,7 @@ teste("Valor de mercado bate com a tabela do documento", () => {
 teste("Salário do exemplo do documento (OVR 75, 24 anos, Brasil) ≈ R$ 420 mil", () => {
   const liga = ligaDoPacote(pacote);
   const clube = { ...liga.clubes[0], fClube: 1 };
-  const s = salarioMensal({ ovr: 75, idade: 24, liga, clube, agente: "iniciante", fama: 0 });
+  const s = salarioMensal({ ovr: 75, idade: 24, liga, clube, agente: AGENTE_INICIAL, fama: 0 });
   assert.ok(Math.abs(s - 421700) < 2000, String(s));
 });
 
@@ -393,7 +393,7 @@ teste("Vida: seguidores com teto, imposto por país, teto salarial e eventos for
   assert.equal(imposto(1e6, "KSA1"), 0); assert.ok(imposto(1e6, "ENG1") > imposto(1e6, "BRA1"));
   const w = mundo(pacote);
   assert.ok(tetoSalarial(w.clube["SA-HIL"], w.liga.KSA1) > tetoSalarial(w.clube["EN-MCI"], w.liga.ENG1), "o Golfo paga mais");
-  assert.ok(salarioMensal({ ovr: 92, idade: 27, liga: w.liga.BRA2, clube: w.clube.SBE, agente: "top", fama: 100 }) <= tetoSalarial(w.clube.SBE, w.liga.BRA2));
+  assert.ok(salarioMensal({ ovr: 92, idade: 27, liga: w.liga.BRA2, clube: w.clube.SBE, agente: AGENTE_TOP, fama: 100 }) <= tetoSalarial(w.clube.SBE, w.liga.BRA2));
   // eventos: aparecem, resolvem e não repetem os únicos
   const r = criarJogador({ nome: "Vida", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "MEI", semente: "vida" });
   const sv = novoJogo(pacote, { resultado: r, aparencia: {}, clube: "FLA" }, "FLA", "vida");
@@ -473,9 +473,9 @@ teste("Mercado: transferência para outra liga, empréstimo, renovação, agente
   assert.ok(aceitar(pacote, s, "x3").ok); assert.equal(c.anosContrato, 4); assert.equal(c.salario, 150000);
   // agente: superagente exige fama ou nível
   c.fama = 0; for (const k of Object.keys(s.jogador.at) as (keyof typeof s.jogador.at)[]) s.jogador.at[k] = 60;
-  assert.equal(podeContratarAgente(s, "top").ok, false);
+  assert.equal(podeContratarAgente(s, AGENTE_TOP).ok, false);
   c.fama = 40; mercadoDe(c).agenteDesde = undefined;
-  assert.ok(trocarAgente(s, "top").ok); assert.equal(c.agente, "top");
+  assert.ok(trocarAgente(s, AGENTE_TOP).ok); assert.equal(c.agente, AGENTE_TOP);
   // contrato vencido: vira agente livre (sem salário, escolhe entre as propostas)
   c.anosContrato = 0; const antes = c.clubeId; eventos = [];
   assert.ok(contratoVencido(pacote, s, eventos)); assert.ok(mercadoDe(c).semClube && (c.salario as number) === 0); assert.ok(eventos.length === 1, antes);
@@ -1411,6 +1411,9 @@ teste("Casinhos x namoro sério: vários casinhos às claras, namoro é um só",
   semanaNamoro(v, { ...ctx, semanaAbs: 200 });
   assert.equal(v.par, undefined); assert.equal(v.ficantes!.length, 2); assert.equal(v.casos!.length, 0);
 });
+import { AGENTE_INICIAL, AGENTE_MEDIO, AGENTE_TOP, BANCO, FAMILIA, perfilAgente, comissaoDo, nivelDoAgente } from "../src/agentes-banco.js";
+import { iniciarNegAgente, responderAgente, habilidadeDoAgente } from "../src/agentes.js";
+import { ligasDoAgente, alcanceSoRegional } from "../src/mercado.js";
 import { novosConsultores, iniciarNegociacao, responder, vagas, eficacia, efeitoConsultores, tickConsultores, custoConsultores, cabeNoTeto, valorOferta } from "../src/consultores.js";
 
 teste("Consultores: vagas por fama, negociação fecha, desiste no piso, teto da equipe e efeitos", () => {
@@ -1432,10 +1435,10 @@ teste("Consultores: vagas por fama, negociação fecha, desiste no piso, teto da
   // teto: agente top cobra 10% do salário; pedir mais um consultor de 9,6% estoura 15%
   const d2 = novosConsultores();
   iniciarNegociacao(d2, "negociador", 80, salario, new RNG("cons-2"));
-  const r3 = responder(d2, { tipo: "aceitar" }, salario, "top", 3);
+  const r3 = responder(d2, { tipo: "aceitar" }, salario, AGENTE_TOP, 3);
   assert.equal(r3.status, "continua", "não cabe no teto com o agente top");
-  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.04 }, salario, "top"), true);
-  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.06 }, salario, "top"), false);
+  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.04 }, salario, AGENTE_TOP), true);
+  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.06 }, salario, AGENTE_TOP), false);
   // eficácia cai com o desconto; efeito entra por especialidade
   assert.ok(eficacia(4, 0.5) < eficacia(4, 0));
   assert.ok(efeitoConsultores(d).negociador > 0 && efeitoConsultores(d).juridico === 0);
@@ -1445,6 +1448,26 @@ teste("Consultores: vagas por fama, negociação fecha, desiste no piso, teto da
   const notas = tickConsultores(d, d.lista[0].ate, new RNG("cons-3"));
   assert.equal(d.lista.length, 0);
   assert.ok(notas.some((x) => /terminou/.test(x)));
+});
+
+teste("Banco de agentes: 40 agentes em 5 níveis, alcance pelo país do agente, comissão negociada", () => {
+  assert.equal(BANCO.length, 40);
+  const porNivel = [1, 2, 3, 4, 5].map((n) => BANCO.filter((a) => a.nivel === n).length);
+  assert.deepEqual(porNivel, [10, 10, 10, 6, 4]);
+  assert.equal(ligasDoAgente(AGENTE_TOP, "BRA"), "todas");
+  assert.ok(alcanceSoRegional(BANCO.find((a) => a.nivel === 1 && a.pais === "URU")!.id, "BRA"), "agente local de país pequeno é regional");
+  assert.equal(alcanceSoRegional(AGENTE_MEDIO, "BRA"), false);
+  assert.ok(Array.isArray(ligasDoAgente(AGENTE_MEDIO, "BRA")) && (ligasDoAgente(AGENTE_MEDIO, "BRA") as string[]).includes("BRA1"));
+  assert.equal(comissaoDo(FAMILIA), 0);
+  assert.equal(comissaoDo(AGENTE_TOP, 0.07), 0.07, "comissão negociada vale no lugar da referência");
+  // conversa com o agente: aceitar fecha no pedido; abaixo do piso desiste; habilidade cai com comissão menor
+  const rng = new RNG("ag-1");
+  const n = iniciarNegAgente(AGENTE_MEDIO, rng);
+  assert.ok(n.pedido > perfilAgente(AGENTE_MEDIO).comissao, "agente pede acima da referência");
+  assert.equal(responderAgente({ ...n }, { tipo: "aceitar" }).status, "fechou");
+  assert.equal(responderAgente({ ...n }, { tipo: "contrapor", comissao: 0.001 }).status, "desistiu");
+  assert.ok(habilidadeDoAgente(AGENTE_MEDIO, 0.02) < habilidadeDoAgente(AGENTE_MEDIO), "pagar menos reduz a habilidade");
+  assert.equal(habilidadeDoAgente(FAMILIA), 0);
 });
 
 console.log(`\n${ok} testes passaram`);

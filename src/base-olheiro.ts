@@ -2,10 +2,11 @@
 // O potencial exato é um serviço: só o olheiro (pai treinador que conhece a base, ou um agente experiente/superagente)
 // revela a joia e a promessa. Sem ele, o garoto aparece sem rótulo, e o jogador só vê o nível de hoje.
 import type { TipoAgente } from "./mercado.js";
+import { nivelDoAgente } from "./agentes-banco.js";
 
 /** Quem tem acesso ao olheiro: o pai treinador (conhece a base) e os agentes experiente e superagente. */
 export const temOlheiro = (agente: TipoAgente, paiTreinador: boolean): boolean =>
-  paiTreinador || agente === "experiente" || agente === "top";
+  paiTreinador || nivelDoAgente(agente) >= 3;
 
 /** Rótulo do garoto: só aparece com olheiro. Sem ele, o potencial fica oculto. */
 export function rotuloPotencial(j: { ovr: number; pot?: number }, olheiro: boolean): string {

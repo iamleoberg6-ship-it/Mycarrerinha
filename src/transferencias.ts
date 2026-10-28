@@ -4,8 +4,10 @@ import { RNG, clamp } from "./rng.js";
 import { paiExJogador } from "./familia.js";
 import { efeitosNamoro } from "./namoro.js";
 import { PAISES } from "./dna.js";
-import { novosConsultores, iniciarNegociacao, responder, efeitoConsultores, type DadosConsultores, type Especialidade, type RespostaConsultor, type ResultadoConsultor } from "./consultores.js";
-import { VIZINHOS, alcanceSoRegional, AGENTES, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
+import { novosConsultores, iniciarNegociacao, responder, efeitoConsultores, custoConsultores, TETO_SALARIO, type Especialidade, type RespostaConsultor, type ResultadoConsultor } from "./consultores.js";
+import { FAMILIA, agenteDoBanco, perfilAgente, comissaoDo, BANCO, nivelDoAgente } from "./agentes-banco.js";
+import { iniciarNegAgente, responderAgente, habilidadeDoAgente, COMISSAO_MAX, type RespostaAgente, type ResultadoAgente } from "./agentes.js";
+import { VIZINHOS, alcanceSoRegional, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
 import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { mundo, infoClube } from "./mundo.js";
@@ -79,30 +81,76 @@ const fimDaJanela = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + (janelaAb
 
 // ------------------------------------------------------------------ agentes
 export interface InfoAgente { nome: string; quem: string; texto?: string; requisito?: { fama: number; ovr: number } }
-export const AGENTE_INFO: Record<TipoAgente, InfoAgente> = {
-  pai: { nome: "Família", quem: "Seu pai cuida de tudo" },
-  iniciante: { nome: "Agente iniciante", quem: "Rodrigo Prates" },
-  experiente: { nome: "Agente experiente", quem: "Márcia Valente", requisito: { fama: 12, ovr: 64 } },
-  top: { nome: "Superagente", quem: "Vítor Alencar", texto: "Cobra 10%. Fala com qualquer clube do mundo e arranca os melhores contratos.", requisito: { fama: 30, ovr: 72 } },
-};
-/** Descrição do agente conforme o país do jogador: o que ele alcança em casa e nos vizinhos. */
-export function textoAgente(t: TipoAgente, nacionalidade: string): string {
-  const pais = PAISES.find((x) => x.id === nacionalidade), local = pais?.local ?? "no país";
-  const vizinhos = (VIZINHOS[nacionalidade] ?? []).map((v) => PAISES.find((x) => x.id === v)?.nome).filter(Boolean).join(", ");
-  const regional = alcanceSoRegional(t, nacionalidade);
-  switch (t) {
-    case "pai": return `Não cobra nada, mas conhece ${regional ? "só os clubes regionais" : "só o futebol"} ${local}${regional ? ", sem os grandes" : ""}. Não conhece ninguém fora. Negocia mal.`;
-    case "iniciante": return `Cobra 5% do salário. Contatos ${regional ? "só nos clubes regionais" : "só"} ${local}${regional ? ", sem os grandes" : ""}. Negociação razoável.`;
-    case "experiente": return `Cobra 8%. Abre portas ${local}, inclusive nos grandes${vizinhos ? `, e nos países vizinhos (${vizinhos})` : ""}. Consegue salários melhores.`;
-    case "top": return "Cobra 10%. Fala com qualquer clube do mundo e arranca os melhores contratos.";
-  }
+const NOME_NIVEL = ["Família", "Agente de base", "Agente local", "Agente de clube", "Agente de elite", "Superagente"];
+/** Nome, quem é e a frase de apresentação. A família não tem requisito. */
+export function infoAgente(t: TipoAgente): InfoAgente {
+  if (t === FAMILIA) return { nome: "Família", quem: "Seu pai cuida de tudo" };
+  const a = agenteDoBanco(t);
+  if (!a) return { nome: "Agente", quem: "Sem nome" };
+  return { nome: NOME_NIVEL[a.nivel], quem: a.nome, texto: a.frase, requisito: perfilAgente(t).requisito };
 }
-const HABILIDADE_AGENTE: Record<TipoAgente, number> = { pai: 0, iniciante: 0.1, experiente: 0.2, top: 0.3 };
-/** Habilidade de negociação: o agente, o pai ex-jogador (quando é ele quem cuida) e a namorada agente. */
+/** Descrição do agente conforme o país dele: o que alcança e quanto cobra (referência). */
+export function textoAgente(t: TipoAgente, nacionalidade: string): string {
+  if (t === FAMILIA) {
+    const pais = PAISES.find((x) => x.id === nacionalidade), local = pais?.local ?? "no país";
+    const regional = alcanceSoRegional(t, nacionalidade);
+    return `Não cobra nada, mas conhece ${regional ? "só os clubes regionais" : "só o futebol"} ${local}${regional ? ", sem os grandes" : ""}. Não conhece ninguém fora. Negocia mal.`;
+  }
+  const a = agenteDoBanco(t), p = perfilAgente(t);
+  if (!a) return "";
+  const nomePais = PAISES.find((x) => x.id === a.pais)?.nome ?? a.pais;
+  const vizinhos = (VIZINHOS[a.pais] ?? []).map((v) => PAISES.find((x) => x.id === v)?.nome).filter(Boolean).join(", ");
+  const alcance = a.nivel >= 5 ? "Fala com clubes do mundo inteiro." : a.nivel <= 2 ? `Abre portas ${alcanceSoRegional(t, nacionalidade) ? "só nos clubes regionais" : `no mercado de ${nomePais}`}.` : `Abre portas no mercado de ${nomePais}${vizinhos ? ` e nos vizinhos (${vizinhos})` : ""}.`;
+  return `${a.frase} Pede ${Math.round(p.comissao * 100)}% de comissão, na referência. ${alcance}`;
+}
+/** Habilidade de negociação: o agente, o pai ex-jogador (quando é ele quem cuida), a namorada agente e os consultores. */
 export const habilidadeAgente = (s: Save) => {
   const ef = efeitoConsultores(s.carreira.consultores);
-  return HABILIDADE_AGENTE[s.carreira.agente] + (s.carreira.agente === "pai" && paiExJogador(s.carreira.familia) ? 0.1 : 0) + efeitosNamoro(s.carreira.namoro).agente + 0.15 * ef.negociador + 0.1 * ef.networking + 0.05 * ef.juridico;
+  return habilidadeDoAgente(s.carreira.agente, s.carreira.comissaoAgente) + (s.carreira.agente === FAMILIA && paiExJogador(s.carreira.familia) ? 0.1 : 0) + efeitosNamoro(s.carreira.namoro).agente + 0.15 * ef.negociador + 0.1 * ef.networking + 0.05 * ef.juridico;
 };
+export function podeContratarAgente(s: Save, t: TipoAgente): { ok: boolean; msg: string } {
+  const c = s.carreira, r = perfilAgente(t).requisito, m = mercadoDe(c);
+  if (c.agente === t) return { ok: false, msg: "Já é o seu agente." };
+  if (c.negAgente) return { ok: false, msg: "Já há uma conversa aberta com um agente." };
+  if (t !== FAMILIA && !agenteDoBanco(t)) return { ok: false, msg: "Agente desconhecido." };
+  if (r && c.fama < r.fama && ovr(s.jogador) < r.ovr) return { ok: false, msg: `Só aceita jogador com fama ${r.fama}+ ou nível ${r.ovr}+.` };
+  if (m.agenteDesde !== undefined && semanaAbs(c) - m.agenteDesde < 10) return { ok: false, msg: `Trocou de agente há pouco. Espere mais ${10 - (semanaAbs(c) - m.agenteDesde)} semanas.` };
+  return { ok: true, msg: "" };
+}
+/** Troca de agente. Com comissão negociada, ela passa a valer; a família não cobra. */
+export function trocarAgente(s: Save, t: TipoAgente, comissao?: number): { ok: boolean; msg: string } {
+  const ok = podeContratarAgente(s, t);
+  if (!ok.ok) return ok;
+  const c = s.carreira, antes = c.agente;
+  c.agente = t; c.comissaoAgente = t === FAMILIA ? undefined : comissaoDo(t, comissao); c.negAgente = undefined;
+  mercadoDe(c).agenteDesde = semanaAbs(c);
+  if (antes === FAMILIA) c.moral = clamp(c.moral - 2, 0, 100);
+  noticia(s, "clube", "Novo agente", t === FAMILIA ? `${s.jogador.apelido} volta a ser representado pela família.` : `${s.jogador.apelido} agora é representado por ${infoAgente(t).quem}.`);
+  return { ok: true, msg: t === FAMILIA ? "A família volta a cuidar da sua carreira." : `${infoAgente(t).quem} é seu novo agente.` };
+}
+/** Abre a conversa de comissão com um agente do banco. */
+export function agenteIniciar(s: Save, t: TipoAgente): { ok: boolean; msg: string } {
+  const ok = podeContratarAgente(s, t);
+  if (!ok.ok) return ok;
+  s.carreira.negAgente = iniciarNegAgente(t, rngAcao(s, "agente", t, semanaAbs(s.carreira)));
+  return { ok: true, msg: `${infoAgente(t).quem} pediu para conversar sobre a comissão.` };
+}
+/** Resposta do jogador na conversa com o agente. Ao fechar, o agente passa a representar o jogador. */
+export function agenteResponder(s: Save, resp: RespostaAgente): ResultadoAgente {
+  const c = s.carreira, n = c.negAgente;
+  if (!n) return { status: "erro", msg: "Não há conversa aberta com um agente." };
+  const r = responderAgente(n, resp);
+  if (r.status === "fechou") {
+    const com = r.comissao ?? n.pedido;
+    if (AGENTE_TETO_OK(s, com)) { trocarAgente(s, n.id, com); return { ...r, msg: `${r.msg} ${infoAgente(n.id).quem} é seu novo agente.` }; }
+    return { status: "continua", msg: "Com essa comissão a equipe passa de 15% do salário. Peça menos." };
+  }
+  if (r.status === "desistiu" || r.status === "recusou") c.negAgente = undefined;
+  return r;
+}
+/** A comissão do agente, somada aos consultores, cabe no teto de 15% do salário? */
+const AGENTE_TETO_OK = (s: Save, comissao: number) => comissao <= COMISSAO_MAX + 1e-9 && comissao * s.carreira.salario + custoConsultores(s.carreira.consultores?.lista ?? [], s.carreira.salario) <= TETO_SALARIO * s.carreira.salario + 0.5;
+
 /** Consultores: abre a conversa com um especialista (contratação ou renovação). */
 export function consultorIniciar(s: Save, esp: Especialidade): { ok: boolean; msg: string } {
   const c = s.carreira;
@@ -118,23 +166,6 @@ export function consultorResponder(s: Save, resp: RespostaConsultor): ResultadoC
   if (r.status === "desistiu" || r.status === "recusou") noticia(s, "clube", "Conversa encerrada", r.msg);
   return r;
 }
-export function podeContratarAgente(s: Save, t: TipoAgente): { ok: boolean; msg: string } {
-  const c = s.carreira, r = AGENTE_INFO[t].requisito, m = mercadoDe(c);
-  if (c.agente === t) return { ok: false, msg: "Já é o seu agente." };
-  if (r && c.fama < r.fama && ovr(s.jogador) < r.ovr) return { ok: false, msg: `Só aceita jogador com fama ${r.fama}+ ou nível ${r.ovr}+.` };
-  if (m.agenteDesde !== undefined && semanaAbs(c) - m.agenteDesde < 10) return { ok: false, msg: `Trocou de agente há pouco. Espere mais ${10 - (semanaAbs(c) - m.agenteDesde)} semanas.` };
-  return { ok: true, msg: "" };
-}
-export function trocarAgente(s: Save, t: TipoAgente): { ok: boolean; msg: string } {
-  const ok = podeContratarAgente(s, t);
-  if (!ok.ok) return ok;
-  const c = s.carreira, antes = c.agente;
-  c.agente = t; mercadoDe(c).agenteDesde = semanaAbs(c);
-  if (antes === "pai") c.moral = clamp(c.moral - 2, 0, 100);
-  noticia(s, "clube", "Novo agente", t === "pai" ? `${s.jogador.apelido} volta a ser representado pela família.` : `${s.jogador.apelido} agora é representado por ${AGENTE_INFO[t].quem}.`);
-  return { ok: true, msg: t === "pai" ? "A família volta a cuidar da sua carreira." : `${AGENTE_INFO[t].quem} é seu novo agente.` };
-}
-
 // ------------------------------------------------------------------ papel no clube
 export function papelNoClube(clube: Clube, s: Save): Papel {
   const j = s.jogador, meu = pontuacaoTitular(ovr(j), 6.5, 50, 0) + bonusJovem(clube.id, j.idade);
@@ -466,9 +497,9 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
 
 function receberLuvas(s: Save, luvas: number) {
   if (!luvas) return;
-  const liquido = Math.round(luvas * (1 - AGENTES[s.carreira.agente].comissao));
+  const liquido = Math.round(luvas * (1 - comissaoDo(s.carreira.agente, s.carreira.comissaoAgente)));
   s.casa.saldo += liquido;
-  noticia(s, "dinheiro", "Luvas", `R$ ${liquido.toLocaleString("pt-BR")} de luvas na conta${AGENTES[s.carreira.agente].comissao ? " (já descontada a comissão do agente)" : ""}.`);
+  noticia(s, "dinheiro", "Luvas", `R$ ${liquido.toLocaleString("pt-BR")} de luvas na conta${comissaoDo(s.carreira.agente, s.carreira.comissaoAgente) ? " (já descontada a comissão do agente)" : ""}.`);
 }
 
 /** Troca de clube no meio da carreira: liga, tabela, técnico novo, moradia. */
@@ -580,7 +611,7 @@ export function oferecerJogador(s: Save): { ok: boolean; msg: string } {
 export function decidirAutomatico(pacote: PacoteDados, s: Save) {
   const c = s.carreira, m = mercadoDe(c), w = mundo(pacote);
   // agente: o melhor disponível
-  for (const t of ["top", "experiente", "iniciante"] as TipoAgente[]) { if (t === c.agente) break; if (podeContratarAgente(s, t).ok) { trocarAgente(s, t); break; } }
+  for (const a of [...BANCO].sort((x, y) => y.nivel - x.nivel)) { if (nivelDoAgente(a.id) <= nivelDoAgente(c.agente)) continue; if (podeContratarAgente(s, a.id).ok) { trocarAgente(s, a.id, perfilAgente(a.id).comissao); break; } }
   for (const p of [...m.propostas]) {
     if (!m.propostas.includes(p)) continue;
     if (p.tipo === "renovacao") { if (!p.negociada) negociar(pacote, s, p.id); if (m.propostas.includes(p)) aceitar(pacote, s, p.id); continue; }
