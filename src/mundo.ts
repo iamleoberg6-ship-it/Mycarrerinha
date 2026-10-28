@@ -551,7 +551,7 @@ export function ondeJoga(pacote: PacoteDados, nome: string) {
 
 /** Padrão das camisas da Série A (só cores e desenho, nada de escudo). */
 const PADRAO_BRA1: Record<string, string> = {
-  FLA: "listrasH", FLU: "listrasV", BOT: "listrasV", VAS: "faixa", GRE: "listrasV", CAM: "listrasV", BAH: "listrasH", VIT: "listrasH", CAP: "listrasH",
+  FLA: "listrasH", FLU: "listrasV", BOT: "listrasV", VAS: "faixa", GRE: "listrasV", CAM: "listrasV", BAH: "listrasV", VIT: "listrasH", CAP: "diagonais",
   SPA: "faixaH", SAN: "lisa", PAL: "lisa", COR: "lisa", INT: "lisa", CRU: "lisa", CFC: "lisa", RBB: "lisa", MIR: "lisa", REM: "lisa", CHA: "lisa",
 };
 

@@ -49,7 +49,7 @@ export const CONQUISTA: Record<string, Conquista> = Object.fromEntries(CONQUISTA
 // ------------------------------------------------------------------ aparência
 /** Desenho da camisa de cada clube (paródia: só cores e padrão). */
 const PADRAO_CAMISA: Record<string, string> = {
-  FLA: "listrasH", FLU: "listrasV", BOT: "listrasV", VAS: "faixa", GRE: "listrasV", CAM: "listrasV", BAH: "listrasH", VIT: "listrasH", CAP: "listrasH",
+  FLA: "listrasH", FLU: "listrasV", BOT: "listrasV", VAS: "faixa", GRE: "listrasV", CAM: "listrasV", BAH: "listrasV", VIT: "listrasH", CAP: "diagonais",
   SPA: "faixaH", SAN: "lisa", PAL: "lisa", COR: "lisa", INT: "lisa", CRU: "lisa", CFC: "lisa", RBB: "lisa", MIR: "lisa", REM: "lisa", CHA: "lisa",
 };
 export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa";
