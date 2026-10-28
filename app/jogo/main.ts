@@ -67,6 +67,9 @@ import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visu
 import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota, catEvento } from "./visuais";
 import { vestiarioDe, albumDe } from "../../src/clube-vivo";
 import { perfilCidade, NOME_CLIMA, inverno } from "../../src/cidades";
+import { temOlheiro, rotuloPotencial, disputaNaPosicao } from "../../src/base-olheiro";
+import { VAGAS_433 } from "../../src/partida";
+import { paiTreinador } from "../../src/familia";
 import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
 import { svgComodo } from "../casa/iso";
 
@@ -764,13 +767,20 @@ function celBusca(s: Save): string {
   const meuClube = cl?.id === s.carreira.clubeId, acoes: AcaoRel[] = meuClube ? ["mensagem", "jantar"] : ["mensagem"];
   const linha = (j: JogadorNPC, extra = "") => linhaRel(s, rr.lista[j.nome] ?? { nome: j.nome, clubeId: cl!.id, nivel: 0, desde: 0 }, acoes, ` · ${NOME_POS[j.posicao] ?? "Goleiro"} · OVR ${j.ovr} · ${j.idade} anos${extra}`, cl!.id);
   const base = cl ? baseDoClube(pacote, cl.id) : [], nb = cl ? nivelDaBase(pacote, cl.id) : undefined;
-  const olheiro = (j: JogadorNPC) => { const p = j.pot ?? j.ovr; return p >= 86 ? " · <b style=\"color:var(--ouro)\">joia</b>" : p >= 78 && p - j.ovr >= 10 ? " · promessa" : ""; };
+  const veOlheiro = temOlheiro(s.carreira.agente, paiTreinador(familiaDe(pacote, s)));
+  const olheiro = (j: JogadorNPC) => { const r = rotuloPotencial(j, veOlheiro); return r ? ` · ${r === "joia" ? "<b style=\"color:var(--ouro)\">joia</b>" : r}` : ""; };
+  // a disputa do próprio garoto na base: quem está na frente na posição
+  const disputa = cl && cl.id === s.carreira.clubeId && s.carreira.formacao && !s.carreira.fase && base.length ? (() => {
+    const d = disputaNaPosicao(base, s.jogador.posicao, Math.round(ovr(s.jogador)), VAGAS_433[s.jogador.posicao]);
+    const linhas = d.mesma.slice(0, 4).map((x) => `<div class="kv"><span>${NOME_POS[x.posicao] ?? ""} · ${x.idade} anos</span><b>${esc(x.nome)} · OVR ${x.ovr}</b></div>`).join("");
+    return `<p class="rotulo" style="margin-top:12px">Disputa na sua posição</p>${linhas}<p class="sub" style="margin-top:6px">${d.titular ? "Você está entre os titulares da base." : `${d.acima} garoto(s) acima de você na posição: começa no banco até passar deles.`}</p>`;
+  })() : "";
   const abas = cl && base.length ? `<div class="chips" style="margin-top:10px"><button class="chip${buscaBase ? "" : " ativo"}" data-bbase="0">Profissional</button><button class="chip${buscaBase ? " ativo" : ""}" data-bbase="1">Base (${base.length})</button></div>` : "";
   const lista = !cl ? `<p class="sub">Toque num clube para ver o elenco.</p>`
     : buscaBase && base.length ? `<p class="sub" style="margin:8px 0">${esc(ESTRUTURAS[nb!.estrutura])} · ${esc(NOME_CULTURA[nb!.cultura as Cultura])}. ${nb!.cultura >= 4 ? "Sobem vários garotos por temporada." : nb!.cultura <= 2 ? "Garoto só sobe se estiver pronto." : ""}</p>
         ${[["Sub-17", base.filter((j) => j.idade <= 17)], ["Sub-20", base.filter((j) => j.idade >= 18)]].map(([n, l]) => `<p class="rotulo" style="margin-top:10px">${n}</p>${(l as JogadorNPC[]).map((j) => linha(j, olheiro(j))).join("")}`).join("")}`
     : [...cl.elenco].sort((a, b) => b.ovr - a.ovr).map((j) => linha(j)).join("");
-  return `${chipsLiga}<p class="rotulo" style="margin-top:12px">${esc(infoLiga(l.id).nome)}</p>${chipsClube}${cl ? `<p class="rotulo" style="margin-top:12px">${buscaBase && base.length ? "Base" : "Elenco"} do ${esc(cl.nome)}</p>` : ""}${abas}${lista}`;
+  return `${chipsLiga}<p class="rotulo" style="margin-top:12px">${esc(infoLiga(l.id).nome)}</p>${chipsClube}${cl ? `<p class="rotulo" style="margin-top:12px">${buscaBase && base.length ? "Base" : "Elenco"} do ${esc(cl.nome)}</p>` : ""}${abas}${buscaBase ? disputa : ""}${lista}`;
 }
 function cartaoPar(p: Par | Perfil, botoes: string, extra = ""): string {
   const prof = PROFISSOES[p.profissao];
