@@ -58,6 +58,8 @@ const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terc
   SPA: { cores: ["#FFFFFF", "#C8102E"], modelo: "duasFaixasH", terceira: "#111111" },
 };
 /** Cores, desenho e terceira cor com que a camisa é desenhada (o clube tem prioridade sobre o que foi guardado). */
+/** Calção de clubes cujo uniforme real não usa a cor 2 (Santos: calção branco, com o preto só na gola e nas mangas). */
+export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" ? "#FFFFFF" : undefined);
 export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; terceira?: string } {
   const k = r.clubeId ? KIT_VISUAL[r.clubeId] : undefined;
   return k ? { cores: k.cores, modelo: k.modelo, terceira: k.terceira } : { cores: r.cores, modelo: r.modelo };

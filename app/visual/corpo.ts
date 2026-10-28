@@ -124,7 +124,7 @@ export function tatuagemPescoco(id: string | undefined): string {
 }
 
 // ------------------------------------------------------------------ peças
-export interface Kit { cor1: string; cor2: string; padrao: string; numero: string; /** clube (id): fonte do número */ fonte?: string; chuteira?: [string, string]; marcaChuteira?: { simbolo: string; cor: string } }
+export interface Kit { cor1: string; cor2: string; /** cor do calção, quando o uniforme real não usa a cor 2 */ calcao?: string; padrao: string; numero: string; /** clube (id): fonte do número */ fonte?: string; chuteira?: [string, string]; marcaChuteira?: { simbolo: string; cor: string } }
 /** A marca na lateral da chuteira (ou do tênis): o símbolo da marca de material esportivo. */
 function marcaNoCalcado(x: number, y: number, l: number, simbolo: string, cor: string): string {
   const t = (d: string, w = 2.2) => `<path d="${d}" stroke="${cor}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -301,7 +301,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   // 2. calção (jogo) ou bermuda/calça (dia a dia)
   if (jogo) {
     const sh = shortsPath(g, v.caimento === "largo", camisa.bainha);
-    const corShort = claroDemais(kit.cor1) || kit.padrao !== "lisa" ? kit.cor2 : kit.cor2;
+    const corShort = kit.calcao ?? kit.cor2;
     const listra = luz(corShort) > 0.5 ? kit.cor1 === corShort ? "#1A1A1A" : kit.cor1 : claroDemais(kit.cor1) ? "#F2F0EA" : kit.cor1;
     partes.push(`<clipPath id="shc${gradSeq}"><path d="${sh.d}"/></clipPath>`, contorno(sh.d, corShort));
     const q = g.quadril + (v.caimento === "largo" ? 10 : 4), ab = v.caimento === "largo" ? 14 : 8;
