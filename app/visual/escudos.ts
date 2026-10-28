@@ -44,7 +44,9 @@ const inicial = (nome?: string) => {
 export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: string, borda = 1.6): string {
   const c2 = c2r && c2r.toLowerCase() !== c1.toLowerCase() ? c2r : c1.toLowerCase() === "#ffffff" ? "#0A0A0A" : "#FFFFFF";
   const { forma, desenho } = modeloEscudo(chave), d = FORMAS[forma], id = `escR${forma}`;
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${DESENHOS[desenho](c1, c2, inicial(nome))}</g><path d="${d}" fill="none" stroke="${TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  // Corinthians: um filete vermelho por dentro do contorno (o detalhe da marca, sem mudar o formato)
+  const detalhe = chave === "COR" ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="#D0102C" stroke-width="1.1"/>` : "";
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${DESENHOS[desenho](c1, c2, inicial(nome))}</g>${detalhe}<path d="${d}" fill="none" stroke="${TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {

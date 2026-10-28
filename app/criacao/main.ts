@@ -42,7 +42,7 @@ const CLUBES: ClubeCoracao[] = [
   { id: "BOT", nome: "Botafuego FR", apelido: "Glorioso", camisa: { cor1: "#F4F4F2", cor2: "#111111", estilo: "listrasV" } },
   { id: "CRU", nome: "Cruzador EC", apelido: "Raposa", camisa: { cor1: "#003DA5", cor2: "#FFFFFF", estilo: "lisa" } },
   { id: "CAM", nome: "Atlético das Minas", apelido: "Galo", camisa: { cor1: "#F4F4F2", cor2: "#111111", estilo: "listrasV" } },
-  { id: "GRE", nome: "Grêmio Gaúcho", apelido: "Imortal", camisa: { cor1: "#0D80BF", cor2: "#111111", estilo: "listrasV" } },
+  { id: "GRE", nome: "Grêmio Gaúcho", apelido: "Imortal", camisa: { cor1: "#0A5A96", cor2: "#111111", estilo: "listrasV" } },
   { id: "INT", nome: "SC Colorado Gaúcho", apelido: "Colorado", camisa: { cor1: "#C8102E", cor2: "#FFFFFF", estilo: "lisa" } },
   { id: "BAH", nome: "EC Bahiano", apelido: "Tricolor de Aço", camisa: { cor1: "#F4F4F2", cor2: "#0047AB", cor3: "#C8102E", estilo: "faixaH" } },
   { id: "VIT", nome: "EC Vitorioso", apelido: "Leão da Barra", camisa: { cor1: "#C8102E", cor2: "#111111", estilo: "listrasH" } },

@@ -17,7 +17,7 @@ export const CLUBES_CASA: ClubeCasa[] = [
   { id: "BOT", nome: "Botafuego FR", apelido: "Glorioso", cores: ["#000000", "#FFFFFF"], forca: 72 },
   { id: "VIT", nome: "EC Vitorioso", apelido: "Leão da Barra", cores: ["#C8102E", "#000000"], forca: 67 },
   { id: "SAN", nome: "Santista FC", apelido: "Peixe", cores: ["#FFFFFF", "#000000"], forca: 70 },
-  { id: "GRE", nome: "Grêmio Gaúcho FBPA", apelido: "Imortal", cores: ["#0D80BF", "#000000", "#FFFFFF"], forca: 70 },
+  { id: "GRE", nome: "Grêmio Gaúcho FBPA", apelido: "Imortal", cores: ["#0A5A96", "#000000", "#FFFFFF"], forca: 70 },
   { id: "MIR", nome: "Mirasol FC", apelido: "Leão Caipira", cores: ["#FFD100", "#00843D"], forca: 66 },
   { id: "VAS", nome: "CR Navegantes da Gama", apelido: "Gigante da Colina", cores: ["#000000", "#FFFFFF"], forca: 68 },
   { id: "INT", nome: "SC Colorado Gaúcho", apelido: "Colorado", cores: ["#C8102E", "#FFFFFF"], forca: 70 },
