@@ -1323,6 +1323,8 @@ function perfilHtml(s: Save): string {
   const atual: ResumoTemporada | undefined = c.stats.jogos || c.stats.base ? { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: info.nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: c.stats.notas.length ? c.stats.notas.reduce((a, b) => a + b, 0) / c.stats.notas.length : 0, posicao: 0, titulo: false, base: c.stats.base, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`) } : undefined;
   const hist = [...c.historico, ...(atual ? [atual] : [])];
   const t = totaisDaCarreira(hist), clubes = clubesDaCarreira(hist.filter((h) => h.jogos || h === hist[0]));
+  // Libertadores, Paulistão e outras campanhas da temporada em andamento ainda não estão no histórico
+  for (const x of [c.statsCopa, c.statsEstadual, ...Object.values(c.statsExtra ?? {})]) if (x) { t.jogos += x.jogos; t.gols += x.gols; t.assist += x.assist; }
   const est = t.est ?? estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`);
   const pers = personalidade({ ...j.personalidade, carisma: j.personalidade.carisma ?? 10 }), estilo = estiloDeJogo(j.at, j.posicao), pf = pontos(j.at, j.posicao);
   const vm = valorMercado(ovr(j), j.idade, c.anosContrato, w.liga[infoLiga(c.ligaId).id].fLiga);
