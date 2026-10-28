@@ -96,7 +96,7 @@ if (save && migrarSave(pacote, save)) gravar(CHAVE_SAVE, save);
 if (save && (save.jogador.aparencia as { v?: number } | undefined)?.v === 2) { save.jogador.aparencia = aparenciaCompat(save.jogador.aparencia); gravar(CHAVE_SAVE, save); }
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
-let aba: "semana" | "tabela" | "jogador" | "noticias" | "casa" | "mercado" | "amigos" = "semana";
+let aba: "semana" | "carreira" | "pessoas" | "mercado" | "vida" | "imprensa" = "semana";
 /** semana em que as sub-abas foram vistas pela última vez: cada semana nova volta ao começo de cada aba */
 let ultimaSemanaVista = -1;
 let verOpcoes = false;
@@ -274,10 +274,10 @@ function telaSemana(s: Save): string {
   nPendencias = pend.length;
   const rotuloJogar = jc && escQ !== "lesionado" ? (aba === "semana" ? "Ir para o jogo de quarta" : "Jogo de quarta") : jogo && escPrev !== "lesionado" ? (aba === "semana" ? "Ir para o jogo" : "Jogar") : (aba === "semana" ? "Fechar a semana" : "Fechar semana");
   const botaoJogar = aba === "semana" ? `<button class="botao grande fixo-jogar" data-acao="jogar">${rotuloJogar}</button>` : `<button class="botao grande fixo-jogar mini" data-acao="jogar" aria-label="${rotuloJogar}" title="${rotuloJogar}"><span aria-hidden="true">▶</span></button>`;
-  const nav = `<nav class="abas" role="tablist" aria-label="Menu">${([["semana", "Semana", pend.length ? String(pend.length) : ""], ["tabela", "Tabela", ""], ["jogador", "Jogador", ""], ["mercado", "Mercado", nProp ? String(nProp) : ""], ["amigos", "Celular", (namoroDe(s.carreira).filhos ?? []).some((f) => f.nomear) ? "👶" : ""], ["noticias", "Notícias", ""], ["casa", "Vida", agendaDe(s.carreira).pendentes.length ? String(agendaDe(s.carreira).pendentes.length) : ""]] as const).map(([k, n, badge]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}"><span class="aba-ico">${ICONE_ABA[k]}${badge ? `<i class="aba-badge">${badge}</i>` : ""}</span><span class="aba-nome">${n}</span></button>`).join("")}</nav>`;
+  const nav = `<nav class="abas" role="tablist" aria-label="Menu">${([["semana", "Semana", pend.length ? String(pend.length) : ""], ["carreira", "Carreira", ""], ["pessoas", "Pessoas", (namoroDe(s.carreira).filhos ?? []).some((f) => f.nomear) ? "👶" : ""], ["mercado", "Mercado", nProp ? String(nProp) : ""], ["vida", "Vida", agendaDe(s.carreira).pendentes.length ? String(agendaDe(s.carreira).pendentes.length) : ""], ["imprensa", "Imprensa", ""]] as const).map(([k, n, badge]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}"><span class="aba-ico">${ICONE_ABA[k]}${badge ? `<i class="aba-badge">${badge}</i>` : ""}</span><span class="aba-nome">${n}</span></button>`).join("")}</nav>`;
   const cabecalho = `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}${c.aposentadoria ? " · última temporada" : ""}</span><button class="engrenagem${verOpcoes ? " ativo" : ""}" data-acao="opcoes" aria-label="Opções: salvar, carregar e simular" aria-expanded="${verOpcoes}">${ic(`<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>`)}</button></header>
   ${verOpcoes ? opcoesHtml(s) : ""}`;
-  if (aba !== "semana") return `${cabecalho}<section class="painel tela-aba">${aba === "tabela" ? abaTabela(s) : aba === "jogador" ? abaJogador(s) : aba === "noticias" ? abaNoticias(s) : aba === "mercado" ? abaMercado(s) : aba === "amigos" ? abaCelular(s) : abaVida(s)}</section>${botaoJogar}${nav}`;
+  if (aba !== "semana") return `${cabecalho}<section class="painel tela-aba">${aba === "carreira" ? abaJogador(s) : aba === "pessoas" ? abaPessoas(s) : aba === "mercado" ? abaMercado(s) : aba === "vida" ? abaVida(s) : abaImprensa(s)}</section>${botaoJogar}${nav}`;
   return `${cabecalho}
   <section class="painel card-jogador" data-acao="perfil" role="button" tabindex="0" aria-label="Abrir o perfil do jogador">
     <div class="jogador"><div class="foto">${foto(s)}</div>
@@ -309,7 +309,7 @@ function telaSemana(s: Save): string {
 let nPendencias = 0;
 /** Proposta de negócio e pedido de entrevista: atalhos que levam direto ao lugar de responder. */
 function cardNegocioMidia(s: Save): string {
-  return `${(() => { const n = negociosDe(s.carreira), m = midiaDe(s); return (n.proposta ? `<button class="painel aviso-mercado" data-aba="jogador" data-ir="negocios"><span>💼</span><span><b>Proposta de negócio: ${esc(n.proposta.titulo)}</b><small>Tocar para responder ›</small></span></button>` : "") + (m.pauta ? `<button class="painel aviso-mercado" data-aba="amigos" data-ir="redes"><span>🎤</span><span><b>Pedido de entrevista</b><small>${esc(tituloDaPauta(m.pauta))} · tocar para responder ›</small></span></button>` : ""); })()}`;
+  return `${(() => { const n = negociosDe(s.carreira), m = midiaDe(s); return (n.proposta ? `<button class="painel aviso-mercado" data-aba="carreira" data-ir="negocios"><span>💼</span><span><b>Proposta de negócio: ${esc(n.proposta.titulo)}</b><small>Tocar para responder ›</small></span></button>` : "") + (m.pauta ? `<button class="painel aviso-mercado" data-aba="amigos" data-ir="redes"><span>🎤</span><span><b>Pedido de entrevista</b><small>${esc(tituloDaPauta(m.pauta))} · tocar para responder ›</small></span></button>` : ""); })()}`;
 }
 /** Painel de opções (abre pela engrenagem do topo). */
 function opcoesHtml(s: Save): string {
@@ -816,7 +816,7 @@ function abrirHistorico(nome: string) {
 }
 
 // ------------------------------------------------------------------ celular: contatos, busca e app de namoro
-let telaCel: "contatos" | "busca" | "match" | "redes" = "contatos", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
+let telaCel: "contatos" | "busca" | "match" | "agente" | "parcas" = "contatos", subImprensa: "noticias" | "redes" = "noticias", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
 const iniciais = (nome: string) => nome.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n >= 40 ? "#6FB7E0" : n >= 20 ? "#C9A24D" : "#EC7D69");
 function linhaFam(s: Save, m: Familiar): string {
@@ -827,11 +827,30 @@ function linhaFam(s: Save, m: Familiar): string {
     <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
-function abaCelular(s: Save): string {
-  const abas = `<div class="sub-abas rolar" role="tablist">${([["contatos", "Contatos"], ["busca", "Buscar"], ["match", "Match"], ["redes", midiaDe(s).pauta ? "Redes •" : "Redes"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
-  const msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
+function abaPessoas(s: Save): string {
+  const abas = `<div class="sub-abas rolar" role="tablist">${([["contatos", "Contatos"], ["busca", "Buscar"], ["match", "Match"], ["agente", "Agente"], ["parcas", "Parças"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
+  let msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
   msgRel = undefined;
-  return `<div class="celular">${abas}${msg}${telaCel === "busca" ? celBusca(s) : telaCel === "match" ? celMatch(s) : telaCel === "redes" ? celRedes(s) : celContatos(s)}</div>`;
+  let corpo: string;
+  if (telaCel === "agente") {
+    msg = msgMercado ? `<p class="msg-mercado ${msgMercado.ok ? "ok" : "nao"}">${esc(msgMercado.texto)}</p>` : "";
+    msgMercado = undefined;
+    corpo = agentesHtml(s) + consultoresHtml(s);
+  } else if (telaCel === "parcas") {
+    msg = msgVida ? `<p class="msg-mercado ${msgVida.ok ? "ok" : "nao"}">${esc(msgVida.texto)}</p>` : "";
+    msgVida = undefined;
+    corpo = vidaParcas(s);
+  } else corpo = telaCel === "busca" ? celBusca(s) : telaCel === "match" ? celMatch(s) : celContatos(s);
+  return `<div class="celular">${abas}${msg}${corpo}</div>`;
+}
+function abaImprensa(s: Save): string {
+  const abas = `<div class="sub-abas rolar" role="tablist">${([["noticias", "Notícias"], ["redes", midiaDe(s).pauta ? "Redes •" : "Redes"]] as const).map(([k, n]) => `<button class="${subImprensa === k ? "ativo" : ""}" data-subimp="${k}" role="tab" aria-selected="${subImprensa === k}">${n}</button>`).join("")}</div>`;
+  if (subImprensa === "redes") {
+    const msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
+    msgRel = undefined;
+    return `<div class="celular">${abas}${msg}${celRedes(s)}</div>`;
+  }
+  return abas + abaNoticias(s);
 }
 const ICONE_POST: Record<string, string> = { torcedor: "🗣️", rival: "😈", jornalista: "🎙️", meme: "😂", fa: "💛" };
 function celRedes(s: Save): string {
@@ -964,7 +983,7 @@ function abaAmigos(s: Save): string {
     ${aposentados.length ? `<details class="dobra" style="margin-top:14px"><summary class="rotulo">Aposentados (${aposentados.length})</summary>${aposentados.slice(0, 20).map((x) => linhaRel(s, x, ["mensagem"])).join("")}</details>` : ""}`;
 }
 
-let subJogador: "atributos" | "clube" | "saude" | "negocios" | "visual" | "dinheiro" = "atributos";
+let subJogador: "atributos" | "clube" | "tabela" | "saude" | "negocios" | "visual" = "atributos";
 let msgJog: { ok: boolean; texto: string } | undefined, operarCerteza: string | undefined;
 
 // ------------------------------------------------------------------ saúde e longevidade
@@ -1119,12 +1138,12 @@ function abaJogador(s: Save): string {
   const visual = blocoVisual(s);
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
   const grupos: [string, Grupo][] = [["Físico", "fisico"], ["Técnico", "tecnico"], ["Tático", "tatico"]];
-  const sub = `<div class="sub-abas rolar">${([["atributos", "Atributos"], ["clube", "Clube"], ["saude", "Saúde"], ["negocios", "Negócios"], ["dinheiro", "Dinheiro"], ["visual", "Visual"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
+  const sub = `<div class="sub-abas rolar">${([["atributos", "Atributos"], ["clube", "Clube"], ["tabela", "Tabela"], ["saude", "Saúde"], ["negocios", "Negócios"], ["visual", "Visual"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
   const msg = msgJog ? `<p class="msg-mercado ${msgJog.ok ? "ok" : "nao"}">${esc(msgJog.texto)}</p>` : "";
   msgJog = undefined;
   if (subJogador === "visual") return sub + visual;
   if (subJogador === "clube") return sub + msg + blocoClube(s);
-  if (subJogador === "dinheiro") return sub + blocoPatrocinios(s) + blocoVida(s);
+  if (subJogador === "tabela") return sub + abaTabela(s);
   if (subJogador === "saude") return sub + msg + blocoSaude(s);
   if (subJogador === "negocios") return sub + msg + blocoNegocios(s);
   return `${sub}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
@@ -1257,13 +1276,17 @@ function abaMercadoEu(s: Save): string {
   return `${aviso}${semClube}
     <p class="rotulo" style="margin-top:0">Propostas${m.propostas.length ? ` <small>(${m.propostas.length})</small>` : ""}</p>${props}
     ${sc ? "" : `<p class="rotulo" style="margin-top:16px">Seu contrato</p>${resumoContrato}`}
-    <p class="rotulo" style="margin-top:16px">Agente</p>${agentesHtml(s)}${consultoresHtml(s)}${hist}
+    <p class="sub" style="margin-top:16px">Agente e consultores ficam na aba Pessoas.</p>${hist}
     <p class="sub" style="margin-top:12px">Janelas: semanas ${JANELAS.map((x) => `${x.ini + 1}–${x.fim + 1}`).join(" e ")} de cada temporada.</p>`;
 }
 
 /** Ícones da barra de menu de baixo (traço na cor do texto: dourado na aba ativa). */
 const ic = (d: string) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICONE_ABA: Record<string, string> = {
+  carreira: ic(`<path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3a4 4 0 0 1-8 0Z"/>`),
+  pessoas: ic(`<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.6c2.6 0 5 1.6 5 4.4"/>`),
+  vida: ic(`<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10M10 20v-6h4v6"/>`),
+  imprensa: ic(`<path d="M4 5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2V5Z"/><path d="M17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3"/>`),
   semana: ic(`<circle cx="12" cy="12" r="9"/><path d="m12 7 3.5 2.5-1.3 4h-4.4l-1.3-4Z"/><path d="M12 3v4M20.5 9.5 15.5 9.5M17.5 19.5l-3.3-6M6.5 19.5l3.3-6M3.5 9.5h5"/>`),
   tabela: ic(`<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>`),
   jogador: ic(`<path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3a4 4 0 0 1-8 0Z"/>`),
@@ -1666,7 +1689,7 @@ function abaNoticias(s: Save): string {
 const ICO_TIPO_NOT: Record<Noticia["tipo"], string> = { jogo: "⚽", clube: "🏟️", vida: "🌴", dinheiro: "💰", polemica: "🔥", lesao: "🩹" };
 
 // ------------------------------------------------------------------ vida fora de campo (aba Vida)
-let subVida: "agenda" | "casa" | "cidade" | "parcas" | "garagem" | "rotina" | "fundacao" = "agenda";
+let subVida: "agenda" | "casa" | "cidade" | "dinheiro" | "garagem" | "rotina" | "fundacao" = "agenda";
 let msgVida: { ok: boolean; texto: string } | undefined, afastarCerteza: string | undefined;
 /** Cena de cabeçalho de cada tipo de momento: cores do fundo, ícone principal e dois enfeites. */
 const CENA_ORIGEM: Record<string, [string, string, string, string, string]> = {
@@ -1684,20 +1707,20 @@ function htmlOcasiao(s: Save, o: ReturnType<typeof agendaDe>["pendentes"][number
     <div class="ops">${o.opcoes.map((x) => `<button data-oca="${o.uid}" data-op="${x.id}"><span>${esc(x.rotulo)}</span>${iconesEfeito(x.ef as unknown as Record<string, unknown>, !!x.risco)}</button>`).join("")}</div>${compacto ? "" : ""}</section>`;
 }
 function cardAgenda(s: Save): string {
-  const a = agendaDe(s.carreira), m = msgVida && aba !== "casa" ? msgVida : undefined;
+  const a = agendaDe(s.carreira), m = msgVida && aba !== "vida" ? msgVida : undefined;
   if (m) msgVida = undefined;
   const res = m ? `<section class="painel ocasiao feita"><p>${esc(m.texto)}</p></section>` : "";
   if (!a.pendentes.length) return res;
   const o = a.pendentes[0], mais = a.pendentes.length - 1;
-  return res + htmlOcasiao(s, o, true) + (mais ? `<button class="painel aviso-mercado" data-aba="casa" data-ir="agenda"><span>📅</span><span><b>Mais ${mais} ${mais === 1 ? "momento" : "momentos"} na agenda</b><small>Responda na aba Vida.</small></span></button>` : "");
+  return res + htmlOcasiao(s, o, true) + (mais ? `<button class="painel aviso-mercado" data-aba="vida" data-ir="agenda"><span>📅</span><span><b>Mais ${mais} ${mais === 1 ? "momento" : "momentos"} na agenda</b><small>Responda na aba Vida.</small></span></button>` : "");
 }
 function abaVida(s: Save): string {
   const a = agendaDe(s.carreira), n = a.pendentes.length;
-  const subs: [typeof subVida, string][] = [["agenda", n ? `Agenda (${n})` : "Agenda"], ["casa", "Casa"], ["cidade", "Cidade"], ["parcas", "Parças"], ["garagem", "Garagem"], ["rotina", "Rotina"], ["fundacao", "Fundação"]];
+  const subs: [typeof subVida, string][] = [["agenda", n ? `Agenda (${n})` : "Agenda"], ["casa", "Casa"], ["cidade", "Cidade"], ["dinheiro", "Dinheiro"], ["garagem", "Garagem"], ["rotina", "Rotina"], ["fundacao", "Fundação"]];
   const sub = `<div class="sub-abas rolar">${subs.map(([k, t]) => `<button class="${subVida === k ? "ativo" : ""}" data-subvida="${k}">${t}</button>`).join("")}</div>`;
   const msg = msgVida ? `<p class="msg-mercado ${msgVida.ok ? "ok" : "nao"}">${esc(msgVida.texto)}</p>` : "";
   msgVida = undefined;
-  const corpo = subVida === "cidade" ? blocoCidade(s) : subVida === "casa" ? abaCasa(s) : subVida === "parcas" ? vidaParcas(s) : subVida === "garagem" ? vidaGaragem(s) : subVida === "rotina" ? vidaRotina(s) : subVida === "fundacao" ? vidaFundacao(s) : vidaAgenda(s);
+  const corpo = subVida === "cidade" ? blocoCidade(s) : subVida === "casa" ? abaCasa(s) : subVida === "dinheiro" ? blocoPatrocinios(s) + blocoVida(s) : subVida === "garagem" ? vidaGaragem(s) : subVida === "rotina" ? vidaRotina(s) : subVida === "fundacao" ? vidaFundacao(s) : vidaAgenda(s);
   return sub + msg + corpo;
 }
 function vidaAgenda(s: Save): string {
@@ -2181,7 +2204,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2220,7 +2243,7 @@ document.addEventListener("click", (ev) => {
   else if (d.assessor) { const r = assessorJogo(save!, d.assessor === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.post) { const r = postarJogo(pacote, save!, d.post as TipoPost); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.pauta) { const r = responderEntrevistaJogo(pacote, save!, d.pauta); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
-  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") telaCel = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); window.scrollTo(0, 0); }
+  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") subImprensa = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); window.scrollTo(0, 0); }
   else if (d.negoc && save) { const r = negociarItem(pacote, save, d.negoc, d.item as never); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.aumento && save) { const r = pedirAumento(pacote, save, forma(save.carreira)); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.prop && save) {
@@ -2298,6 +2321,7 @@ document.addEventListener("click", (ev) => {
     else relAberto = relAberto === d.relabre ? undefined : d.relabre;
     const y = window.scrollY; render(); window.scrollTo(0, y);
   }
+  else if (d.subimp) { subImprensa = d.subimp as typeof subImprensa; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.subjog) { subJogador = d.subjog as typeof subJogador; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vtab) { vistaTabela = d.vtab as typeof vistaTabela; tabelaEscolhida = true; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.cel) { telaCel = d.cel as typeof telaCel; render(); }
@@ -2317,7 +2341,7 @@ document.addEventListener("click", (ev) => {
   else if (d.cena && save) { const r = responderCenaJogo(save, d.cena, d.op!); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.rel && save) {
     const r = agirRelacao(pacote, save, d.rel, d.op as AcaoRel, d.clube); msgRel = { texto: r.msg, ok: r.ok };
-    if (d.op === "camisa" && aba !== "amigos") msgRel = undefined;
+    if (d.op === "camisa" && aba !== "pessoas") msgRel = undefined;
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.tpos !== undefined && save) { msgPos = { texto: treinarPosicao(save, (d.tpos || undefined) as never), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
