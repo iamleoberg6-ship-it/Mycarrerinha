@@ -1354,7 +1354,7 @@ function perfilHtml(s: Save): string {
   const [c1, c2] = info.cores;
   const camp = campanhasAtuais(c), atual: ResumoTemporada | undefined = c.stats.jogos || c.stats.base || camp.copa || camp.estadual || camp.extras?.length ? { ...camp, ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: info.nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: c.stats.notas.length ? c.stats.notas.reduce((a, b) => a + b, 0) / c.stats.notas.length : 0, posicao: 0, titulo: false, base: c.stats.base, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`) } : undefined;
   const hist = [...c.historico, ...(atual ? [atual] : [])];
-  const t = totaisDaCarreira(hist), clubes = clubesDaCarreira(hist.filter((h) => comCampanhas(h).jogos || h === hist[0]).map(comCampanhas));
+  const t = totaisDaCarreira(hist, c.selecao), clubes = clubesDaCarreira(hist.filter((h) => comCampanhas(h).jogos || h === hist[0]).map(comCampanhas));
   // a seleção entra nos totais da carreira (os amistosos não contam)
   if (c.selecao) { t.jogos += c.selecao.jogos; t.gols += c.selecao.gols; t.assist += c.selecao.assist; }
   const est = t.est ?? estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`);

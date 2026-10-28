@@ -99,7 +99,7 @@ export function estiloDeJogo(at: Atributos, pos: Posicao): { nome: string; texto
 }
 
 // ------------------------------------------------------------------ carreira
-export interface Temporada { ano: number; idade: number; clube: string; clubeId?: string; liga?: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; premios?: string[]; est?: EstatEstimada; copa?: { nome: string; campeao: boolean; jogos: number; gols: number; assist: number }; estadual?: { nome: string; campeao: boolean; jogos: number; gols: number; assist: number }; extras?: { nome: string; campeao: boolean; jogos: number; gols: number; assist: number }[] }
+export interface Temporada { ano: number; idade: number; clube: string; clubeId?: string; liga?: string; ovr: number; jogos: number; gols: number; assist: number; nota: number; posicao: number; titulo: boolean; premios?: string[]; est?: EstatEstimada; copa?: { nome: string; campeao: boolean; jogos: number; gols: number; assist: number; nota?: number }; estadual?: { nome: string; campeao: boolean; jogos: number; gols: number; assist: number; nota?: number }; extras?: { nome: string; campeao: boolean; jogos: number; gols: number; assist: number; nota?: number }[] }
 export interface ResumoClube { clube: string; clubeId?: string; de: number; ate: number; jogos: number; gols: number; assist: number; titulos: number }
 export function clubesDaCarreira(hist: Temporada[]): ResumoClube[] {
   const out: ResumoClube[] = [];
@@ -116,11 +116,18 @@ export function comCampanhas(h: Temporada): Temporada {
   const cs = [h.copa, h.estadual, ...(h.extras ?? [])].filter((x): x is NonNullable<typeof x> => !!x);
   return { ...h, jogos: h.jogos + cs.reduce((a, x) => a + x.jogos, 0), gols: h.gols + cs.reduce((a, x) => a + x.gols, 0), assist: h.assist + cs.reduce((a, x) => a + x.assist, 0) };
 }
-export function totaisDaCarreira(hist: Temporada[]) {
+export function totaisDaCarreira(hist: Temporada[], sel?: { notaSoma?: number; notaJogos?: number }) {
   // jogos de copa continental contam no total da carreira
   const ext = (h: Temporada, k: "jogos" | "gols" | "assist") => (h.extras ?? []).reduce((a, x) => a + x[k], 0);
   const jogos = hist.reduce((a, h) => a + h.jogos + (h.copa?.jogos ?? 0) + (h.estadual?.jogos ?? 0) + ext(h, "jogos"), 0), gols = hist.reduce((a, h) => a + h.gols + (h.copa?.gols ?? 0) + (h.estadual?.gols ?? 0) + ext(h, "gols"), 0), assist = hist.reduce((a, h) => a + h.assist + (h.copa?.assist ?? 0) + (h.estadual?.assist ?? 0) + ext(h, "assist"), 0);
-  const nota = jogos ? hist.reduce((a, h) => a + h.nota * h.jogos, 0) / jogos : 0;
+  // nota média: cada jogo pesa com a própria nota (liga, copa, estadual, extras e seleção); campanhas sem nota (saves antigos) ficam fora
+  let somaN = 0, pesoN = 0;
+  for (const h of hist) {
+    if (h.jogos) { somaN += h.nota * h.jogos; pesoN += h.jogos; }
+    for (const x of [h.copa, h.estadual, ...(h.extras ?? [])]) if (x?.nota !== undefined && x.jogos) { somaN += x.nota * x.jogos; pesoN += x.jogos; }
+  }
+  if (sel?.notaJogos) { somaN += sel.notaSoma ?? 0; pesoN += sel.notaJogos; }
+  const nota = pesoN ? somaN / pesoN : 0;
   const comEst = hist.filter((h) => h.est && h.jogos);
   const pj = comEst.reduce((a, h) => a + h.jogos, 0);
   const est = pj ? { passe: Math.round(comEst.reduce((a, h) => a + h.est!.passe * h.jogos, 0) / pj), chute: Math.round(comEst.reduce((a, h) => a + h.est!.chute * h.jogos, 0) / pj), drible: +(comEst.reduce((a, h) => a + h.est!.drible * h.jogos, 0) / pj).toFixed(1), desarme: +(comEst.reduce((a, h) => a + h.est!.desarme * h.jogos, 0) / pj).toFixed(1) } : undefined;
