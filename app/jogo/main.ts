@@ -14,7 +14,7 @@ import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono } from "../../src/casa";
 import {
   ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
-  ofertasDeBase, ovr, planoPadrao, nRodadas, jogosDaRodada, ehClassico, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, salarioLiquido,
+  ofertasDeBase, ovr, planoPadrao, nRodadas, jogosDaRodada, ehClassico, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, campanhasAtuais, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
@@ -31,7 +31,7 @@ import { anuncioTransferencia, miniNoticia, capaVideogame } from "../visual/cart
 import { svgEscudo } from "../visual/escudos";
 import { fotoDoPerfil } from "../visual/mulheres";
 import { trofeuSvg } from "../casa/iso";
-import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
+import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, comCampanhas, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
 import { TRACOS, PAISES } from "../../src/dna";
 import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa, type TipoInvest, type AcaoEmpresa } from "../../src/negocios";
 import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
@@ -1150,7 +1150,7 @@ function abaJogador(s: Save): string {
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
-    ${c.historico.length ? `<p class="rotulo" style="margin-top:16px">Carreira</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">Nota</th></tr></thead><tbody>${c.historico.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.nota || "–"}</td></tr>`).join("")}</tbody></table>` : ""}`;
+    ${c.historico.length ? `<p class="rotulo" style="margin-top:16px">Carreira</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">Nota</th></tr></thead><tbody>${c.historico.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}</td><td class="n">${h.ovr}</td><td class="n">${comCampanhas(h).jogos}</td><td class="n">${comCampanhas(h).gols}</td><td class="n">${h.nota || "–"}</td></tr>`).join("")}</tbody></table>` : ""}`;
 }
 
 // ------------------------------------------------------------------ mercado
@@ -1327,6 +1327,15 @@ function radar(at: Record<Atributo, number>): string {
 }
 const tile = (valor: string, rotulo: string, icone?: string) => `<div class="tile${icone ? " com-ico" : ""}">${icone ? `<i aria-hidden="true">${icone}</i>` : ""}<b>${valor}</b><span>${rotulo}</span></div>`;
 /** Barras de gols (dourado) e assistências (verde) por temporada. */
+/** Registro pela seleção no perfil: convocações, jogos, gols, estreia e as copas disputadas (amistosos não entram). */
+function selecaoPerfilHtml(s: Save): string {
+  const sl = s.carreira.selecao, nat = idSelecao(s.jogador.nacionalidade), nome = infoClube(pacote, nat)?.nome ?? "";
+  const linhas = sl?.copas ?? [];
+  return `<p class="rotulo">Seleção${nome ? ` · ${esc(nome)}` : ""}</p>
+    <div class="tiles">${tile(String(sl?.convocacoes ?? 0), "Convocações", "📨")}${tile(String(sl?.jogos ?? 0), "Jogos", "🏟️")}${tile(String(sl?.gols ?? 0), "Gols", "⚽")}${tile(String(sl?.assist ?? 0), "Assistências", "👟")}</div>
+    <p class="sub">${sl?.estreia ? `Estreia em ${sl.estreia}.` : "Ainda sem jogo pela seleção. Convocações e estreia aparecem aqui."}</p>
+    ${linhas.length ? `<table><thead><tr><th>Ano</th><th>Competição</th><th class="n">J</th><th class="n">G</th><th class="n">A</th></tr></thead><tbody>${linhas.map((x) => `<tr><td>${x.ano}</td><td>${esc(x.id ? COPAS[x.id].nome : "Seleção")} · ${esc(x.fase)}${x.campeao ? " 🏆" : ""}</td><td class="n">${x.jogos}</td><td class="n">${x.gols}</td><td class="n">${x.assist ?? 0}</td></tr>`).join("")}</tbody></table>` : ""}`;
+}
 function barrasCarreira(hist: { ano: number; jogos: number; gols: number; assist: number; titulo?: boolean }[]): string {
   const h = hist.filter((x) => x.jogos > 0).slice(-14);
   if (h.length < 2) return "";
@@ -1343,11 +1352,11 @@ function barrasCarreira(hist: { ano: number; jogos: number; gols: number; assist
 function perfilHtml(s: Save): string {
   const j = s.jogador, c = s.carreira, info = infoClube(pacote, c.clubeId), w = mundo(pacote);
   const [c1, c2] = info.cores;
-  const atual: ResumoTemporada | undefined = c.stats.jogos || c.stats.base ? { ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: info.nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: c.stats.notas.length ? c.stats.notas.reduce((a, b) => a + b, 0) / c.stats.notas.length : 0, posicao: 0, titulo: false, base: c.stats.base, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`) } : undefined;
+  const camp = campanhasAtuais(c), atual: ResumoTemporada | undefined = c.stats.jogos || c.stats.base || camp.copa || camp.estadual || camp.extras?.length ? { ...camp, ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: info.nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: c.stats.notas.length ? c.stats.notas.reduce((a, b) => a + b, 0) / c.stats.notas.length : 0, posicao: 0, titulo: false, base: c.stats.base, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`) } : undefined;
   const hist = [...c.historico, ...(atual ? [atual] : [])];
-  const t = totaisDaCarreira(hist), clubes = clubesDaCarreira(hist.filter((h) => h.jogos || h === hist[0]));
-  // Libertadores, Paulistão e outras campanhas da temporada em andamento ainda não estão no histórico
-  for (const x of [c.statsCopa, c.statsEstadual, ...Object.values(c.statsExtra ?? {})]) if (x) { t.jogos += x.jogos; t.gols += x.gols; t.assist += x.assist; }
+  const t = totaisDaCarreira(hist), clubes = clubesDaCarreira(hist.filter((h) => comCampanhas(h).jogos || h === hist[0]).map(comCampanhas));
+  // a seleção entra nos totais da carreira (os amistosos não contam)
+  if (c.selecao) { t.jogos += c.selecao.jogos; t.gols += c.selecao.gols; t.assist += c.selecao.assist; }
   const est = t.est ?? estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`);
   const pers = personalidade({ ...j.personalidade, carisma: j.personalidade.carisma ?? 10 }), estilo = estiloDeJogo(j.at, j.posicao), pf = pontos(j.at, j.posicao);
   const vm = valorMercado(ovr(j), j.idade, c.anosContrato, w.liga[infoLiga(c.ligaId).id].fLiga);
@@ -1379,8 +1388,10 @@ function perfilHtml(s: Save): string {
       <p class="rotulo">Carreira</p>
       <div class="tiles">${tile(String(t.jogos), "Jogos", "🏟️")}${tile(String(t.gols), "Gols", "⚽")}${tile(String(t.assist), "Assistências", "👟")}${tile(String(t.gols + t.assist), "G/A (gols + assist.)", "🎯")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média", "⭐")}${tile(String(t.titulos.length), "Títulos", "🏆")}${tile(String(t.premios.length), "Prêmios", "🌟")}</div>
       ${(() => { const soma = (k: "mvp" | "selRodada" | "selMes") => c.historico.reduce((a, h) => a + (h[k] ?? 0), 0) + (c.stats[k] ?? 0); return `<div class="tiles">${tile(String(soma("mvp")), "Melhor em campo", "🥇")}${tile(String(soma("selRodada")), "Seleção da rodada", "📋")}${tile(String(soma("selMes")), "Seleção do mês", "🗓️")}</div>`; })()}
-      ${barrasCarreira(hist)}
+      ${barrasCarreira(hist.map(comCampanhas))}
       ${(() => { const cl = clubes.filter((k) => k.assist > 0).sort((a, b) => b.assist - a.assist); if (!cl.length) return ""; const max = Math.max(...cl.map((k) => k.assist)); return `<p class="rotulo">Assistências por clube</p><div class="barras">${cl.map((k) => barra(esc(k.clube), k.assist, max, "#74D394", `${k.assist} · ${k.jogos} j`)).join("")}</div>`; })()}
+
+      ${selecaoPerfilHtml(s)}
 
       <p class="rotulo">Estatísticas <small>(média da carreira, estimada pelo scout)</small></p>
       <div class="tiles">${tile(`${est.passe}%`, "Passes certos")}${tile(`${est.chute}%`, "Chutes no gol")}${tile(String(est.drible).replace(".", ","), "Dribles por jogo")}${tile(String(est.desarme).replace(".", ","), "Desarmes por jogo")}${tile(t.jogos ? (t.gols / t.jogos).toFixed(2).replace(".", ",") : "–", "Gols por jogo")}${tile(t.jogos ? ((t.gols + t.assist) / t.jogos).toFixed(2).replace(".", ",") : "–", "G/A por jogo")}${tile(t.jogos ? (t.assist / t.jogos).toFixed(2).replace(".", ",") : "–", "Assistências por jogo")}${tile(minGol ? `${minGol}'` : "–", "Minutos por gol")}</div>
@@ -1414,7 +1425,7 @@ function perfilHtml(s: Save): string {
       ${linhaDaVidaHtml(s)}
       ${albumHtml(s)}
       <p class="rotulo">Temporada a temporada <small>(toque no ano para ver a retrospectiva)</small></p>
-      <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${c.historico.includes(h) ? `<button class="nome-hist" data-retro="${h.ano}">${h.ano}</button>` : h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}${(h as { parcial?: boolean }).parcial ? " <small class=\"sub\">(até a troca)</small>" : ""}</td><td class="n">${h.ovr}</td><td class="n">${h.jogos}</td><td class="n">${h.gols}</td><td class="n">${h.assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
+      <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${c.historico.includes(h) ? `<button class="nome-hist" data-retro="${h.ano}">${h.ano}</button>` : h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}${(h as { parcial?: boolean }).parcial ? " <small class=\"sub\">(até a troca)</small>" : ""}</td><td class="n">${h.ovr}</td><td class="n">${comCampanhas(h).jogos}</td><td class="n">${comCampanhas(h).gols}</td><td class="n">${comCampanhas(h).assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
     </div>`;
 }
 // ------------------------------------------------------------------ evolução da carreira (gráfico no perfil)

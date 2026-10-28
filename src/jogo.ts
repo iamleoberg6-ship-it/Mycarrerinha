@@ -111,7 +111,7 @@ export interface Carreira {
   /** nota, gols e assistências do jogador em cada rodada da liga (para a seleção da rodada e do mês) */
   notasRodada?: Record<number, { nota: number; gols: number; assist: number }>;
   /** seleção nacional: jogos, gols e assistências na carreira, convocações, estreia, Copas do Mundo e convocação de cada data */
-  selecao?: { jogos: number; gols: number; assist: number; convocacoes: number; estreia?: number; copas: { ano: number; fase: string; jogos: number; gols: number; campeao: boolean; id?: CopaId }[]; conv: Record<string, boolean>; naTorneio?: Partial<Record<CopaId, { jogos: number; gols: number; assist: number }>>; naCopa?: { jogos: number; gols: number; assist: number } };
+  selecao?: { jogos: number; gols: number; assist: number; convocacoes: number; estreia?: number; copas: { ano: number; fase: string; jogos: number; gols: number; assist?: number; campeao: boolean; id?: CopaId }[]; conv: Record<string, boolean>; naTorneio?: Partial<Record<CopaId, { jogos: number; gols: number; assist: number }>>; naCopa?: { jogos: number; gols: number; assist: number } };
   /** o que ficou das copas de cada temporada (Intercontinental e Mundial usam) */
   palmares?: Record<number, Palmares>;
   /** estatísticas na Intercontinental e no Mundial */
@@ -482,6 +482,18 @@ export function fecharPassagemNoClube(pacote: PacoteDados, s: Save) {
   c.stats = statsVazias(); c.statsCopa = undefined; c.statsEstadual = undefined; c.notasRodada = undefined;
 }
 
+/** Campanhas da temporada em andamento (copa, estadual, Mundial de Clubes…), no mesmo formato que entram no histórico. */
+export function campanhasAtuais(c: Carreira): Pick<ResumoTemporada, "copa" | "estadual" | "extras"> {
+  const out: Pick<ResumoTemporada, "copa" | "estadual" | "extras"> = {};
+  const minhas = Object.values(c.copas ?? {}).filter((e) => e && e.clubes.includes(c.clubeId)) as EstadoCopa[];
+  for (const ec of minhas) {
+    const estadual = ehEstadual(ec.id), extra = ec.id === "INT" || ec.id === "MUN", sc = estadual ? c.statsEstadual : extra ? c.statsExtra?.[ec.id] : c.statsCopa;
+    if (!sc?.jogos) continue;
+    const camp = { id: ec.id, nome: COPAS[ec.id].nome, fase: NOME_FASE[ec.chegou[c.clubeId]] ?? "", campeao: ec.campeao === c.clubeId, jogos: sc.jogos, gols: sc.gols, assist: sc.assist };
+    if (extra) (out.extras ??= []).push(camp); else out[estadual ? "estadual" : "copa"] = camp;
+  }
+  return out;
+}
 export function rotuloSemana(c: Carreira): string {
   const ano = ANO_INICIAL + c.temporada;
   const r = c.semana - SEMANAS_PRE + 1;
@@ -1112,7 +1124,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
       if ([1, 10, 25, 50, 100].includes(total)) receberReliquias(s, [{ conquista: `trofeu-mvp-${total}`, reliquia: { id: `rel-trofeu-mvp-${total}`, chave: `trofeu-mvp-${total}`, tipo: "trofeu", nome: total === 1 ? "Primeiro prêmio de melhor em campo" : `${total} prêmios de melhor em campo`, legenda: `${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ano}`, ano, cores: ["#E3B341", "#9A7420"], modelo: "estrela" } }], eventos);
     }
   }
-  if (copa && ehDeSelecao(copa.id)) {
+  if (copa && ehDeSelecao(copa.id) && copa.fase !== "amistoso") {
     const sl = (c.selecao ??= { jogos: 0, gols: 0, assist: 0, convocacoes: 0, copas: [], conv: {} });
     sl.jogos++; sl.gols += gols; sl.assist += assist;
     if (copa.id !== "SEL") { const nc = ((sl.naTorneio ??= {})[copa.id] ??= { jogos: 0, gols: 0, assist: 0 }); nc.jogos++; nc.gols += gols; nc.assist += assist; }
@@ -1122,6 +1134,8 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
       const sel = selecaoDe(pacote, j.nacionalidade)!, info = infoClube(pacote, sel.id);
       receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: "lisa", numero: j.numero } }], eventos);
     }
+  } else if (copa && ehDeSelecao(copa.id)) {
+    // amistoso da seleção: não entra em nenhuma estatística
   } else if (copa) { const vazio = () => ({ jogos: 0, gols: 0, assist: 0, notas: [] as number[] }); const sc = ehEstadual(copa.id) ? (c.statsEstadual ??= vazio()) : copa.id === "INT" || copa.id === "MUN" ? ((c.statsExtra ??= {})[copa.id] ??= vazio()) : (c.statsCopa ??= vazio()); sc.jogos++; sc.gols += gols; sc.assist += assist; sc.notas.push(nota); }
   else if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota); }
   else { c.stats.base++; c.stats.baseGols += gols; (c.stats.baseNotas ??= []).push(nota); }
@@ -2215,7 +2229,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     if (!cop || !nc || !c.selecao) continue;
     const campeao = cop.campeao === nat, sel = selecaoDe(pacote, j.nacionalidade)!, nomeC = COPAS[id].nome;
     const fase = campeao ? "Campeão" : id === "FIN" ? "Vice" : NOME_FASE[cop.chegou[nat]] ?? "Fase de grupos";
-    c.selecao.copas.push({ ano: r.ano, fase, jogos: nc.jogos, gols: nc.gols, campeao, id });
+    c.selecao.copas.push({ ano: r.ano, fase, jogos: nc.jogos, gols: nc.gols, assist: nc.assist, campeao, id });
     (r.extras ??= []).push({ id, nome: nomeC, fase, campeao, jogos: nc.jogos, gols: nc.gols, assist: nc.assist });
     if (campeao) {
       const nomeT = `Taça da ${nomeC} ${r.ano}`;

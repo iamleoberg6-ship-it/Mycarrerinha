@@ -111,6 +111,11 @@ export function clubesDaCarreira(hist: Temporada[]): ResumoClube[] {
   }
   return out;
 }
+/** A temporada com as campanhas de copa, estadual e extras somadas (jogos, gols e assistências). */
+export function comCampanhas(h: Temporada): Temporada {
+  const cs = [h.copa, h.estadual, ...(h.extras ?? [])].filter((x): x is NonNullable<typeof x> => !!x);
+  return { ...h, jogos: h.jogos + cs.reduce((a, x) => a + x.jogos, 0), gols: h.gols + cs.reduce((a, x) => a + x.gols, 0), assist: h.assist + cs.reduce((a, x) => a + x.assist, 0) };
+}
 export function totaisDaCarreira(hist: Temporada[]) {
   // jogos de copa continental contam no total da carreira
   const ext = (h: Temporada, k: "jogos" | "gols" | "assist") => (h.extras ?? []).reduce((a, x) => a + x[k], 0);
