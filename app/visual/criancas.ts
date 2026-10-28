@@ -8,13 +8,17 @@ import { PACOTE_MULHERES, CABELOS_F, mulherDoPerfil, svgMulher, type Mulher, typ
 import { FOTOS_IA } from "./fotos-ia";
 
 // ------------------------------------------------------------------ traços dos pais
-/** As 27 fotos do app, olhadas uma a uma: pele, textura e cor do cabelo (a natural, não a tingida), olhos, sardas. */
+/** As 40 fotos do app (27 do pacote 1, 13 do pacote 2), olhadas uma a uma: pele, textura e cor do cabelo (a natural, não a tingida), olhos, sardas. */
 const T = (pele: number, textura: Textura, corCabelo: number, olhos: number, sardas = false, olhoPuxado = false): Tracos => ({ pele, textura, corCabelo, olhos, sardas, olhoPuxado });
 export const TRACOS_FOTOS: Tracos[] = [
   T(3, "ondulado", 1, 0), T(0, "liso", 5, 4), T(6, "crespo", 0, 0), T(1, "liso", 0, 3), T(2, "cacheado", 4, 1), T(0, "ondulado", 6, 3, true), T(6, "crespo", 0, 0),
   T(0, "liso", 0, 0, false, true), T(3, "ondulado", 3, 1), T(6, "liso", 0, 0), T(2, "liso", 3, 1), T(3, "ondulado", 1, 1), T(2, "ondulado", 5, 1), T(6, "crespo", 0, 0),
   T(0, "liso", 3, 4), T(3, "cacheado", 1, 1), T(4, "ondulado", 0, 0), T(0, "liso", 0, 0), T(5, "ondulado", 1, 0), T(3, "liso", 3, 1), T(1, "ondulado", 4, 1),
   T(4, "cacheado", 2, 1), T(3, "liso", 0, 0), T(7, "crespo", 0, 0), T(1, "ondulado", 6, 1), T(3, "liso", 0, 0), T(1, "ondulado", 5, 1),
+  // pacote 2 (fotos 28 a 40)
+  T(2, "ondulado", 2, 1), T(6, "crespo", 0, 0), T(1, "liso", 0, 0), T(4, "crespo", 0, 1, true), T(1, "ondulado", 6, 1),
+  T(5, "crespo", 0, 0), T(3, "liso", 1, 0), T(3, "cacheado", 3, 1), T(6, "crespo", 0, 0), T(2, "ondulado", 2, 1),
+  T(6, "crespo", 0, 0), T(0, "ondulado", 6, 4, true), T(3, "liso", 0, 0),
 ];
 const hash = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
 /** Traços da mãe pelo id do perfil dela (a mesma foto que aparece no app). */
