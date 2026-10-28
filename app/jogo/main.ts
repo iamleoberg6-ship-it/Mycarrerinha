@@ -1353,8 +1353,10 @@ function perfilHtml(s: Save): string {
 
       <p class="rotulo">Carreira</p>
       <div class="tiles">${tile(String(t.jogos), "Jogos", "🏟️")}${tile(String(t.gols), "Gols", "⚽")}${tile(String(t.assist), "Assistências", "👟")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média", "⭐")}${tile(String(t.titulos.length), "Títulos", "🏆")}${tile(String(t.premios.length), "Prêmios", "🌟")}</div>
+      ${(() => { const ga = t.gols + t.assist, por = (n: number) => (t.jogos ? (n / t.jogos).toFixed(2).replace(".", ",") : "–"); return `<div class="tiles">${tile(String(ga), "G/A (gols + assist.)", "🎯")}${tile(por(ga), "G/A por jogo", "📈")}${tile(por(t.assist), "Assistências por jogo", "🅰️")}${tile(ga ? `${Math.round((t.assist / ga) * 100)}%` : "–", "Parte das assistências", "🧠")}</div>`; })()}
       ${(() => { const soma = (k: "mvp" | "selRodada" | "selMes") => c.historico.reduce((a, h) => a + (h[k] ?? 0), 0) + (c.stats[k] ?? 0); return `<div class="tiles">${tile(String(soma("mvp")), "Melhor em campo", "🥇")}${tile(String(soma("selRodada")), "Seleção da rodada", "📋")}${tile(String(soma("selMes")), "Seleção do mês", "🗓️")}</div>`; })()}
       ${barrasCarreira(hist)}
+      ${(() => { const cl = clubes.filter((k) => k.assist > 0).sort((a, b) => b.assist - a.assist); if (!cl.length) return ""; const max = Math.max(...cl.map((k) => k.assist)); return `<p class="rotulo">Assistências por clube</p><div class="barras">${cl.map((k) => barra(esc(k.clube), k.assist, max, "#74D394", `${k.assist} · ${k.jogos} j`)).join("")}</div>`; })()}
 
       <p class="rotulo">Estatísticas <small>(média da carreira, estimada pelo scout)</small></p>
       <div class="tiles">${tile(`${est.passe}%`, "Passes certos")}${tile(`${est.chute}%`, "Chutes no gol")}${tile(String(est.drible).replace(".", ","), "Dribles por jogo")}${tile(String(est.desarme).replace(".", ","), "Desarmes por jogo")}${tile(t.jogos ? (t.gols / t.jogos).toFixed(2).replace(".", ",") : "–", "Gols por jogo")}${tile(minGol ? `${minGol}'` : "–", "Minutos por gol")}</div>
