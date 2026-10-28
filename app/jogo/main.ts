@@ -2072,7 +2072,7 @@ function mostrarDecisao(d: Decisao) {
     <div class="ops">${d.opcoes.map((o, k) => `<button data-decidir="${i}" data-op="${o.id}">${diag ? `<i class="num-op n${k % 4}">${k + 1}</i>` : ""}<span>${esc(o.rotulo)}</span><small>›</small></button>`).join("")}</div>`;
   // na hora de decidir, o campinho ao vivo sai de cena e o placar encolhe: o diagrama do lance é que mostra o campo
   $("telaJogo").classList.add("decidindo");
-  $("lances").appendChild(el); requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "end" }));
+  $("lances").appendChild(el); requestAnimationFrame(() => el.scrollIntoView({ block: "end" }));
   $("rodapeJogo").innerHTML = `<p class="sub" style="text-align:center">Escolha uma opção.</p>`;
 }
 

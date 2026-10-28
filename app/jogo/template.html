@@ -358,7 +358,8 @@ dialog::backdrop { background: rgba(3, 8, 6, .85); }
 .lance.aviso { color: var(--giz-2); font-style: italic; }
 .lance .detalhe { font-weight: 500; color: var(--giz); font-size: 14px; }
 @keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.decisao { background: var(--campo-2); border: 1px solid var(--ouro); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; animation: entra .35s ease both; }
+.decisao { background: var(--campo-2); border: 1px solid var(--ouro); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; animation: decisaoAparece .3s ease both; }
+@keyframes decisaoAparece { from { opacity: 0; } to { opacity: 1; } }
 .decisao .ops { display: flex; flex-direction: column; gap: 8px; }
 .decisao .ops button { text-align: left; background: var(--campo-3); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
 .decisao .ops button:hover { border-color: var(--ouro); }

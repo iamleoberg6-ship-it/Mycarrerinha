@@ -90,7 +90,8 @@ export function responder(d: DadosConsultores, resp: RespostaConsultor, salario:
     d.reputacao = Math.min(10, d.reputacao + 1);
     return encerrar("desistiu", "Não consigo fechar nesse nível. Tenho outros clientes. Até mais.");
   }
-  const alvo = (v + valorOferta(n.pedido, salario)) / 2;
+  // nunca abaixo da reserva: o pedido cai até a reserva, mas não além dela
+  const alvo = Math.max(n.reserva, (v + valorOferta(n.pedido, salario)) / 2);
   n.pedido = oferta.modelo === "percentual" ? { modelo: "percentual", valor: Math.round((alvo / salario) * 10000) / 10000 } : { modelo: "fixo", valor: Math.round(alvo) };
   const perto = v >= 0.8 * n.reserva;
   return { status: "continua", msg: `${perto ? "Estamos perto." : "Ainda está longe do que eu aceito."} Meu pedido agora é ${pedidoTexto(n.pedido)}.` };

@@ -142,8 +142,12 @@ export function agenteResponder(s: Save, resp: RespostaAgente): ResultadoAgente 
   const r = responderAgente(n, resp);
   if (r.status === "fechou") {
     const com = r.comissao ?? n.pedido;
-    if (AGENTE_TETO_OK(s, com)) { trocarAgente(s, n.id, com); return { ...r, msg: `${r.msg} ${infoAgente(n.id).quem} é seu novo agente.` }; }
-    return { status: "continua", msg: "Com essa comissão a equipe passa de 15% do salário. Peça menos." };
+    if (!AGENTE_TETO_OK(s, com)) return { status: "continua", msg: "Com essa comissão a equipe passa de 15% do salário. Peça menos." };
+    // a conversa em aberto impede a troca: fecha antes, e reabre se a troca for recusada (ex.: prazo)
+    c.negAgente = undefined;
+    const t = trocarAgente(s, n.id, com);
+    if (!t.ok) { c.negAgente = n; return { status: "continua", msg: t.msg }; }
+    return { ...r, msg: `${r.msg} ${infoAgente(n.id).quem} é seu novo agente.` };
   }
   if (r.status === "desistiu" || r.status === "recusou") c.negAgente = undefined;
   return r;

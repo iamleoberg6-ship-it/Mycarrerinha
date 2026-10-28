@@ -33,7 +33,8 @@ export function responderAgente(n: NegAgente, resp: RespostaAgente): ResultadoAg
   if (resp.tipo === "aceitar" || c >= n.reserva) return { status: "fechou", msg: `Fechado: ${pct(c)} de comissão.`, comissao: c };
   n.rodada++;
   if (n.rodada > MAX_RODADAS_AGENTE) return { status: "desistiu", msg: "Não consigo fechar nesse nível. Tenho outros clientes. Até mais." };
-  n.pedido = Math.round(((c + n.pedido) / 2) * 10000) / 10000;
+  // o pedido cai em direção à contraproposta, mas nunca abaixo da reserva: abaixo dela ele não aceitaria
+  n.pedido = Math.max(n.reserva, Math.round(((c + n.pedido) / 2) * 10000) / 10000);
   return { status: "continua", msg: `${c >= 0.8 * n.reserva ? "Estamos perto." : "Ainda longe do que eu aceito."} Minha comissão agora é ${pct(n.pedido)}.` };
 }
 

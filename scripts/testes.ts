@@ -1416,6 +1416,18 @@ import { iniciarNegAgente, responderAgente, habilidadeDoAgente } from "../src/ag
 import { ligasDoAgente, alcanceSoRegional } from "../src/mercado.js";
 import { novosConsultores, iniciarNegociacao, responder, vagas, eficacia, efeitoConsultores, tickConsultores, custoConsultores, cabeNoTeto, valorOferta } from "../src/consultores.js";
 
+teste("Negociação: o pedido nunca cai abaixo da reserva (o agente não aceita menos do que aceitaria)", () => {
+  for (const seed of ["a", "b", "c", "d"]) {
+    const n = iniciarNegAgente("ag21", new RNG("neg-" + seed));
+    const reserva = n.reserva;
+    // o jogador oferece cada vez menos; o pedido não pode descer abaixo da reserva
+    for (const c of [n.pedido * 0.9, 0.03, 0.01]) {
+      const r = responderAgente(n, { tipo: "contrapor", comissao: c });
+      if (r.status !== "continua") break;
+      assert.ok(n.pedido >= reserva - 1e-9, `pedido ${n.pedido} abaixo da reserva ${reserva}`);
+    }
+  }
+});
 teste("Consultores: vagas por fama, negociação fecha, desiste no piso, teto da equipe e efeitos", () => {
   assert.deepEqual([0, 25, 45, 70].map(vagas), [2, 3, 4, 5]);
   const salario = 20000, d = novosConsultores(), rng = new RNG("cons-1");
