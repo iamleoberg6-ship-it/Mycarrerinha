@@ -13,19 +13,21 @@ const luz = (c: string) => { const [r, g, b] = hex(c); return (0.2126 * r + 0.71
 
 const CORPO = "M30 8 C36 12 44 12 50 8 L66 13 L79 33 L68 41 L63 33 L63 92 C49 95 31 95 17 92 L17 33 L12 41 L1 33 L14 13 Z";
 
-function padrao(modelo: string, c2: string): string {
+function padrao(modelo: string, c2: string, c3: string): string {
   switch (modelo) {
     case "listrasV": return Array.from({ length: 6 }, (_, i) => `<rect x="${8 + i * 12}" y="0" width="6" height="100" fill="${c2}"/>`).join("");
     case "listrasH": return Array.from({ length: 7 }, (_, i) => `<rect x="0" y="${22 + i * 11}" width="80" height="5.5" fill="${c2}"/>`).join("");
     case "faixa": return `<path d="M10 12 L24 8 L70 92 L56 96 Z" fill="${c2}"/>`;
     case "faixaH": return `<rect x="0" y="44" width="80" height="14" fill="${c2}"/>`;
+    /** duas faixas cruzando o meio: a de cima na cor 2, a de baixo na cor 3 (ex.: vermelha e preta sobre o branco) */
+    case "duasFaixasH": return `<rect x="0" y="40" width="80" height="8" fill="${c2}"/><rect x="0" y="49" width="80" height="8" fill="${c3}"/>`;
     case "metade": return `<rect x="40" y="0" width="40" height="100" fill="${c2}"/>`;
     case "centro": return `<rect x="0" y="0" width="22" height="100" fill="${c2}"/><rect x="58" y="0" width="22" height="100" fill="${c2}"/>`;
     default: return "";
   }
 }
 
-export interface DadosCamisa { cores: [string, string]; modelo: string; numero?: string; /** clube (id ou nome): escolhe a fonte de nome e número */ chave?: string }
+export interface DadosCamisa { cores: [string, string]; modelo: string; /** terceira cor (faixa de baixo do padrão duasFaixasH) */ terceira?: string; numero?: string; /** clube (id ou nome): escolhe a fonte de nome e número */ chave?: string }
 
 /** SVG (viewBox 0 0 80 104) da camisa pendurada, de costas, com nome e número. */
 export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): string {
@@ -49,7 +51,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
     <clipPath id="${id}c"><path d="${CORPO}"/></clipPath></defs>
     <path d="M40 1 C44 1 45 5 41 7 L40 8 M33 9 L40 5 L47 9" stroke="#9aa5a0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
     <path d="${CORPO}" fill="${a}"/>
-    <g clip-path="url(#${id}c)">${padrao(c.modelo, b)}
+    <g clip-path="url(#${id}c)">${padrao(c.modelo, b, c.terceira ?? "#111111")}
       <rect width="80" height="104" fill="url(#${id}g)"/><rect width="80" height="104" fill="url(#${id}l)"/>
       <path d="M1.5 34 L12 41.5 M68 41.5 L78.5 34" stroke="${b}" stroke-width="3" fill="none" opacity=".9"/>
       <path d="M30 8 C36 12 44 12 50 8" stroke="${b}" stroke-width="3.2" fill="none"/>

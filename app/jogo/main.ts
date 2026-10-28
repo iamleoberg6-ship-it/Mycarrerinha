@@ -3,6 +3,7 @@ import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { camisaCostas } from "../visual/camisas";
+import { kitVisual } from "../../src/reliquias";
 import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
@@ -1611,7 +1612,7 @@ function armarioCamisas(s: Save): string {
   const nomeCostas = (r: Reliquia) => (r.chave === "camisa-troca" ? r.nome.replace(/^Camisa d[eoa] /, "") : s.jogador.apelido);
   const r = minhas.find((x) => x.id === camisaAberta);
   return `<p class="rotulo">Armário de camisas <small>(${minhas.length})</small></p>
-      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " ativo" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}">${camisaCostas({ cores: x.cores, modelo: x.modelo, numero: x.numero, chave: x.clubeId ?? chaveCamisa(x.legenda) }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></button>`).join("")}</div>
+      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " ativo" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}">${camisaCostas({ ...kitVisual(x), numero: x.numero, chave: x.clubeId ?? chaveCamisa(x.legenda) }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></button>`).join("")}</div>
       ${r ? `<div class="trofeu-detalhe"><b>${esc(r.nome)}</b><div>${esc(r.legenda)}</div><small>É uma relíquia: dá para pendurar na parede na aba Casa.</small></div>` : `<p class="sub">Toque numa camisa para ver a história dela.</p>`}`;
 }
 function abrirPerfil() {
