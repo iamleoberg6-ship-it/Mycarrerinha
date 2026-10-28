@@ -308,7 +308,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
     partes.push(`<g clip-path="url(#shc${gradSeq})"><path d="M${150 - q + 6} ${camisa.bainha - 30} L${150 - q - ab + 8} ${sh.barra + 10} M${150 + q - 6} ${camisa.bainha - 30} L${150 + q + ab - 8} ${sh.barra + 10}" stroke="${listra}" stroke-width="6"/></g>`);
     partes.push(sombraLado(sh.d, 150, 150 + g.quadril + 12, 0.3));
     partes.push(`<path d="M150 ${sh.barra - 30} L150 ${camisa.bainha}" stroke="${TINTA}" stroke-width="1.2" opacity=".35"/>`);
-    partes.push(`<text x="${150 - g.quadril * 0.55}" y="${sh.barra - 10}" text-anchor="middle" ${attrFonte(fonteCamisa(kit.fonte), 15)} fill="${luz(corShort) > 0.5 ? "#1A1A1A" : "#F2F0EA"}">${kit.numero}</text>`);
+    partes.push(`<text x="${150 - g.quadril * 0.55}" y="${sh.barra - 10}" text-anchor="middle" ${attrFonte(fonteCamisa(kit.fonte ?? `${kit.cor1}${kit.cor2}`), 15)} fill="${luz(corShort) > 0.5 ? "#1A1A1A" : "#F2F0EA"}">${kit.numero}</text>`);
   } else {
     const t1 = v.perna === "calca" ? 0.97 : 0.4, corCalca = v.perna === "calca" ? (v.casual === "social" ? "#2B2F36" : v.casual === "moletom" ? "#7F8389" : "#2E3F5C") : (v.casual === "regata" ? "#4F6E9C" : "#B9A58A");
     const pernas = g.pernas.map((p) => tuboPerna(g, p, 0, t1, v.perna === "calca" ? 8 : 12)).join(" ");

@@ -136,7 +136,7 @@ export interface Item {
 }
 /** Lembrança conquistada na carreira: camisa, bola ou troféu. Vive no save e vira item da casa. */
 export interface Reliquia {
-  id: string; chave: string; tipo: "camisa" | "bola" | "trofeu";
+  id: string; chave: string; tipo: "camisa" | "bola" | "trofeu"; /** camisa: clube de origem (escolhe a fonte do número) */ clubeId?: string;
   nome: string; legenda: string; ano: number;
   /** camisa: cores do clube; bola: cores da bola da competição; troféu: metal (ouro, prata, bronze) */
   cores: [string, string];

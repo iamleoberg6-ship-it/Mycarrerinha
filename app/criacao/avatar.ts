@@ -539,7 +539,7 @@ function uniforme(c: Camisa, numero: string | undefined, pele: string, sombraPel
     <path d="${TRONCO_V}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
     <path d="${GOLA_V}" fill="${golaCor}" stroke="${TINTA}" stroke-width="${TRACO * 0.8}" stroke-linejoin="round"/>
     <path d="M118 224 L150 262 L182 224" fill="none" stroke="${friso}" stroke-width="1.8" stroke-linejoin="round"/>
-    ${numero ? `<text x="98" y="318" text-anchor="middle" ${attrFonte(fonteCamisa(c.fonte), 32)} fill="${corNumero}" stroke="${TINTA}" stroke-width="1.4" paint-order="stroke">${numero}</text>` : ""}`;
+    ${numero ? `<text x="98" y="318" text-anchor="middle" ${attrFonte(fonteCamisa(c.fonte ?? `${c.cor1}${c.cor2}`), 32)} fill="${corNumero}" stroke="${TINTA}" stroke-width="1.4" paint-order="stroke">${numero}</text>` : ""}`;
 }
 
 function roupaSocial(tipo: RoupaSocial, corIdx: number, pele: string, sombraPele: string, hach: string): string {

@@ -1,6 +1,7 @@
 // Desenho isométrico dos cômodos no estilo do jogo: traço preto, faces em dois tons (luz vindo da esquerda).
 // Eixos: x vai para a direita-baixo, y para a esquerda-baixo, z para cima. Unidade: um ladrilho de meio metro.
 // As paredes de trás ficam em x=0 (parede da esquerda) e y=0 (parede da direita); a frente fica aberta.
+import { fonteCamisa } from "../visual/fontes-camisa";
 import {
   ESTILOS, ITENS, REVEST, TIPOS, acabamento, area, comodoDe, coresDoClube, imovelAtual, travado,
   type Acabamento, type Comodo, type EstadoCasa, type Imovel, type Item, type Reliquia, type Vista,
@@ -789,9 +790,11 @@ function camisaQuadro(p: "esq" | "dir", pos: number, r: Reliquia | undefined): s
   sv += poli([P(pos - 0.2, 4.02), P(pos, 3.86), P(pos + 0.2, 4.02), P(pos, 3.94)], sh(c2), 0.7);
   // número nas costas... ou no peito: plano da parede, lendo da esquerda para a direita
   if (r?.numero) {
+    // a fonte é a do clube da camisa (mesma das outras telas); sem clube guardado, pelo nome da legenda
+    const fonteNumero = fonteCamisa(r.clubeId ?? r.legenda.split(" · ")[0]);
     const [ox, oy] = P(pos, 3.05), k = 0.1, bx = p === "dir" ? A * k : A * k, by = p === "dir" ? B * k : -B * k;
     const tinta = lum(c1) > 0.55 ? "#1C1C1C" : "#FFFFFF", contorno = lum(c1) > 0.55 ? "#FFFFFF" : "#1C1C1C";
-    sv += `<text transform="matrix(${f1(bx)} ${f1(by)} 0 ${f1(H * k)} ${f1(ox)} ${f1(oy)})" font-family="'Barlow Condensed', Arial Narrow, sans-serif" font-weight="800" font-size="5.2" text-anchor="middle" dominant-baseline="middle" fill="${tinta}" stroke="${contorno}" stroke-width="0.35" paint-order="stroke">${r.numero}</text>`;
+    sv += `<text transform="matrix(${f1(bx)} ${f1(by)} 0 ${f1(H * k)} ${f1(ox)} ${f1(oy)})" font-family="${fonteNumero.familia}" font-weight="${fonteNumero.peso}" font-size="${f1(5.2 * fonteNumero.escala)}" text-anchor="middle" dominant-baseline="middle" fill="${tinta}" stroke="${contorno}" stroke-width="0.35" paint-order="stroke">${r.numero}</text>`;
   }
   sv += poli(quadParede(p, pos - 0.3, pos + 0.3, 2.28, 2.42), "#E3B341", 0.6);
   return sv;

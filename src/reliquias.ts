@@ -76,7 +76,7 @@ export interface Ganho { conquista: string; reliquia: Reliquia }
 
 const camisa = (chave: string, id: string, nome: string, legenda: string, d: DadosPartida, numero = d.numero): Ganho => ({
   conquista: chave,
-  reliquia: { id: `rel-camisa-${id}`, chave, tipo: "camisa", nome, legenda, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: d.padrao ?? padraoCamisa(d.clubeId), numero },
+  reliquia: { id: `rel-camisa-${id}`, chave, tipo: "camisa", nome, legenda, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: d.padrao ?? padraoCamisa(d.clubeId), numero, clubeId: d.clubeId },
 });
 const bola = (chave: string, id: string, nome: string, legenda: string, d: DadosPartida): Ganho => ({
   conquista: chave,
@@ -143,7 +143,7 @@ export function premiosDaTemporada(rng: RNG, d: DadosTemporada): Ganho[] {
   const alvoCraque = 7.25 + ruido(0.12), alvoSelecao = 6.95 + ruido(0.08);
   if (d.titulo) {
     g.push(trofeu("trofeu-campeao", `Taça de campeão ${d.ano}`, `${d.clubeNome} · ${liga} ${d.ano}`, d.ano, TACA_DO_TORNEIO[d.ligaId ?? ""] ?? "taca", OURO));
-    g.push({ conquista: "camisa-titulo", reliquia: { id: `rel-camisa-titulo-${d.ano}`, chave: "camisa-titulo", tipo: "camisa", nome: `Camisa do título ${d.ano}`, legenda: `${d.clubeNome} campeão · ${d.ano}`, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: d.padrao ?? padraoCamisa(d.clubeId), numero: d.numero } });
+    g.push({ conquista: "camisa-titulo", reliquia: { id: `rel-camisa-titulo-${d.ano}`, chave: "camisa-titulo", tipo: "camisa", nome: `Camisa do título ${d.ano}`, legenda: `${d.clubeNome} campeão · ${d.ano}`, ano: d.ano, cores: [d.cores[0] ?? "#2E7D4F", d.cores[1] ?? "#FFFFFF"], modelo: d.padrao ?? padraoCamisa(d.clubeId), numero: d.numero, clubeId: d.clubeId } });
   }
   if (d.jogos >= 15 && d.gols >= alvoGols) g.push(trofeu("trofeu-artilheiro", `Artilheiro ${d.ano}`, `${d.gols} gols · ${liga} ${d.ano}`, d.ano, "chuteira", OURO));
   if (d.jogos >= 15 && d.assist >= alvoAssist) g.push(trofeu("trofeu-garcom", `Rei das assistências ${d.ano}`, `${d.assist} assistências · ${liga} ${d.ano}`, d.ano, "prato", OURO));
