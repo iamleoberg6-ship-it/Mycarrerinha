@@ -1,6 +1,6 @@
 // Consultores: especialistas que o jogador contrata além do agente principal. A negociação é uma conversa
 // (proposta, contraproposta, aceitar, recusar), com preço de reserva oculto e piso. Ver claude/conceito-mercado-agentes.md.
-// Fase 1: Negociador, Networking e Jurídico; modelos percentual e fixo; teto de 15% do salário para a equipe toda.
+// Fase 1: Negociador, Networking e Jurídico; modelos percentual e fixo.
 import { RNG } from "./rng.js";
 import { comissaoDo, type TipoAgente } from "./agentes-banco.js";
 
@@ -13,7 +13,6 @@ export const NOME_DEGRAU = ["Iniciante", "Júnior", "Sênior", "Estrela", "Lend�
 const TAXA = [0.01, 0.02, 0.04, 0.06, 0.08];
 /** Pedido de abertura: 20% acima da tabela. */
 const ABERTURA = 1.2;
-export const TETO_SALARIO = 0.15;
 /** Abaixo desta fração da tabela, o consultor nem conversa. */
 export const PISO = 0.4;
 /** Desconto (fração da tabela) a partir do qual o consultor pode largar o contrato e a reputação de barganha sobe. */
@@ -39,9 +38,6 @@ export const descontoDe = (o: Oferta, tabela: number, salario: number) => Math.m
 /** Eficácia do consultor: sobe com o degrau e cai com o desconto (quem paga pouco se dedica menos). */
 export const eficacia = (degrau: number, desconto: number) => (0.5 + 0.1 * degrau) * (1 - 0.5 * desconto);
 export const custoConsultores = (lista: Consultor[], salario: number) => lista.reduce((a, c) => a + valorOferta(c.oferta, salario), 0);
-/** Cabe no teto da equipe toda (consultores + comissão do agente principal sobre o salário)? */
-export const cabeNoTeto = (lista: Consultor[], nova: Oferta, salario: number, agente: TipoAgente) =>
-  comissaoDo(agente) * salario + custoConsultores(lista, salario) + valorOferta(nova, salario) <= TETO_SALARIO * salario + 0.5;
 /** Efeito de cada especialidade (soma das eficácias). Usado pela habilidade de negociação. */
 export function efeitoConsultores(d: DadosConsultores | undefined): Record<Especialidade, number> {
   const r: Record<Especialidade, number> = { negociador: 0, networking: 0, juridico: 0 };
@@ -74,9 +70,6 @@ export function responder(d: DadosConsultores, resp: RespostaConsultor, salario:
   if (resp.tipo === "contrapor" && v < PISO * n.tabela) {
     d.reputacao = Math.min(10, d.reputacao + 1);
     return encerrar("desistiu", "Esse valor nem dá para conversar. Até mais.");
-  }
-  if (!cabeNoTeto(d.lista, oferta, salario, agente)) {
-    return { status: "continua", msg: "Sua equipe já está no limite de 15% do salário. Para caber, a proposta precisa ser menor." };
   }
   if (resp.tipo === "aceitar" || v >= n.reserva) {
     const desconto = descontoDe(oferta, n.tabela, salario);

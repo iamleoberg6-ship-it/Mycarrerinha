@@ -1411,10 +1411,10 @@ teste("Casinhos x namoro sério: vários casinhos às claras, namoro é um só",
   semanaNamoro(v, { ...ctx, semanaAbs: 200 });
   assert.equal(v.par, undefined); assert.equal(v.ficantes!.length, 2); assert.equal(v.casos!.length, 0);
 });
-import { AGENTE_INICIAL, AGENTE_MEDIO, AGENTE_TOP, BANCO, FAMILIA, perfilAgente, comissaoDo, nivelDoAgente } from "../src/agentes-banco.js";
+import { AGENTE_INICIAL, AGENTE_MEDIO, AGENTE_TOP, BANCO, FAMILIA, perfilAgente, comissaoDo, nivelDoAgente, habilidadesDoAgente } from "../src/agentes-banco.js";
 import { iniciarNegAgente, responderAgente, habilidadeDoAgente } from "../src/agentes.js";
 import { ligasDoAgente, alcanceSoRegional } from "../src/mercado.js";
-import { novosConsultores, iniciarNegociacao, responder, vagas, eficacia, efeitoConsultores, tickConsultores, custoConsultores, cabeNoTeto, valorOferta } from "../src/consultores.js";
+import { novosConsultores, iniciarNegociacao, responder, vagas, eficacia, efeitoConsultores, tickConsultores, custoConsultores, valorOferta } from "../src/consultores.js";
 
 teste("Negociação: o pedido nunca cai abaixo da reserva (o agente não aceita menos do que aceitaria)", () => {
   for (const seed of ["a", "b", "c", "d"]) {
@@ -1444,13 +1444,15 @@ teste("Consultores: vagas por fama, negociação fecha, desiste no piso, teto da
   assert.equal(r2.status, "desistiu");
   assert.equal(d.reputacao, 1);
   assert.equal(d.negociacao, undefined);
-  // teto: agente top cobra 10% do salário; pedir mais um consultor de 9,6% estoura 15%
+  // sem teto de 15%: a equipe pode passar do que antes era o limite e a contratação fecha
   const d2 = novosConsultores();
   iniciarNegociacao(d2, "negociador", 80, salario, new RNG("cons-2"));
   const r3 = responder(d2, { tipo: "aceitar" }, salario, AGENTE_TOP, 3);
-  assert.equal(r3.status, "continua", "não cabe no teto com o agente top");
-  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.04 }, salario, AGENTE_TOP), true);
-  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.06 }, salario, AGENTE_TOP), false);
+  assert.equal(r3.status, "fechou", "fecha mesmo acima de 15% do salário");
+  // estrelas por tópico: cada agente tem a sua combinação, e há agentes com notas diferentes em tópicos diferentes
+  const estrelasTopicos = BANCO.map((a) => habilidadesDoAgente(a.id));
+  assert.ok(estrelasTopicos.some((n) => n.negociacao !== n.rede || n.rede !== n.salario), "tópicos com notas diferentes");
+  assert.ok(estrelasTopicos.every((n) => [n.negociacao, n.rede, n.salario].every((x) => x >= 1 && x <= 5)), "estrelas entre 1 e 5");
   // eficácia cai com o desconto; efeito entra por especialidade
   assert.ok(eficacia(4, 0.5) < eficacia(4, 0));
   assert.ok(efeitoConsultores(d).negociador > 0 && efeitoConsultores(d).juridico === 0);

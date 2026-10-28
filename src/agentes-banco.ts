@@ -63,11 +63,11 @@ export interface PerfilAgente { comissao: number; bonus: number; habilidade: num
 export const agenteDoBanco = (t: TipoAgente) => BANCO.find((a) => a.id === t);
 export const nivelDoAgente = (t: TipoAgente) => t === FAMILIA ? 0 : agenteDoBanco(t)?.nivel ?? 1;
 
-/** Perfil fixo de um agente (sem a comissão negociada). A família não cobra e não tem requisito. */
+/** Perfil fixo de um agente (sem a comissão negociada). A família não cobra e não tem requisito. O nível dá o acesso; cada tópico vem das estrelas dele. */
 export function perfilAgente(t: TipoAgente): PerfilAgente {
   if (t === FAMILIA) return { comissao: 0, bonus: -0.1, habilidade: 0, alcance: 1, nivel: 0, pais: null, requisito: { fama: 0, ovr: 0 } };
-  const a = agenteDoBanco(t) ?? BANCO[0];
-  return { comissao: COMISSAO_NIVEL[a.nivel], bonus: BONUS_NIVEL[a.nivel], habilidade: HABILIDADE_NIVEL[a.nivel], alcance: ALCANCE_NIVEL[a.nivel], nivel: a.nivel, pais: a.pais, requisito: { fama: REQ_FAMA[a.nivel], ovr: REQ_OVR[a.nivel] } };
+  const a = agenteDoBanco(t) ?? BANCO[0], st = habilidadesDoAgente(a.id);
+  return { comissao: COMISSAO_NIVEL[a.nivel], bonus: BONUS_NIVEL[a.nivel], habilidade: HABILIDADE_NIVEL[st.negociacao], alcance: ALCANCE_NIVEL[st.rede], nivel: a.nivel, pais: a.pais, requisito: { fama: REQ_FAMA[a.nivel], ovr: REQ_OVR[a.nivel] } };
 }
 /** Comissão que vale: a negociada, se houver; senão a de referência do agente. */
 export const comissaoDo = (t: TipoAgente, acordada?: number) => t === FAMILIA ? 0 : acordada ?? perfilAgente(t).comissao;
@@ -75,14 +75,13 @@ export const comissaoDo = (t: TipoAgente, acordada?: number) => t === FAMILIA ? 
 /** Agentes com id de referência para a simulação de fundo (carreira headless). */
 export const AGENTE_INICIAL = "ag05", AGENTE_MEDIO = "ag21", AGENTE_TOP = "ag37";
 const hashId = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
-/** Habilidades mostradas na tela de agentes (1 a 5 estrelas): negociação com clubes e rede de contatos. */
-export function habilidadesDoAgente(id: string): { negociacao: number; rede: number } {
+/** Estrelas (1 a 5) de cada tópico. Cada agente tem a sua combinação: em alguns tópicos ele é bom, em outros nem tanto. Uma minoria é igual em tudo (o próprio nível). */
+export function habilidadesDoAgente(id: string): { negociacao: number; rede: number; salario: number } {
   const a = agenteDoBanco(id);
-  if (!a) return { negociacao: 1, rede: 1 };
+  if (!a) return { negociacao: 1, rede: 1, salario: 1 };
   const h = hashId(id);
-  const negociacao = Math.min(5, Math.max(1, a.nivel + (h % 3) - 1));
-  const rede = a.nivel >= 3 ? a.nivel : a.pais === "BRA" ? 2 : 1 + (h % 2);
-  return { negociacao, rede };
+  const nota = (topico: string) => (h % 5 === 0 ? a.nivel : Math.min(5, Math.max(1, a.nivel + (hashId(`${id}|${topico}`) % 5) - 2)));
+  return { negociacao: nota("negociacao"), rede: nota("rede"), salario: nota("salario") };
 }
 /** Saves antigos: os quatro agentes fixos viram agentes do banco. */
 export const AGENTE_LEGADO: Record<string, string> = { iniciante: AGENTE_INICIAL, experiente: AGENTE_MEDIO, top: AGENTE_TOP };

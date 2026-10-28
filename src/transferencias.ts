@@ -4,8 +4,8 @@ import { RNG, clamp } from "./rng.js";
 import { paiExJogador } from "./familia.js";
 import { efeitosNamoro } from "./namoro.js";
 import { PAISES } from "./dna.js";
-import { novosConsultores, iniciarNegociacao, responder, efeitoConsultores, custoConsultores, TETO_SALARIO, type Especialidade, type RespostaConsultor, type ResultadoConsultor } from "./consultores.js";
-import { FAMILIA, agenteDoBanco, perfilAgente, comissaoDo, BANCO, nivelDoAgente } from "./agentes-banco.js";
+import { novosConsultores, iniciarNegociacao, responder, efeitoConsultores, custoConsultores, type Especialidade, type RespostaConsultor, type ResultadoConsultor } from "./consultores.js";
+import { FAMILIA, agenteDoBanco, perfilAgente, comissaoDo, BANCO, nivelDoAgente, habilidadesDoAgente } from "./agentes-banco.js";
 import { iniciarNegAgente, responderAgente, habilidadeDoAgente, COMISSAO_MAX, type RespostaAgente, type ResultadoAgente } from "./agentes.js";
 import { VIZINHOS, alcanceSoRegional, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
 import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
@@ -142,7 +142,7 @@ export function agenteResponder(s: Save, resp: RespostaAgente): ResultadoAgente 
   const r = responderAgente(n, resp);
   if (r.status === "fechou") {
     const com = r.comissao ?? n.pedido;
-    if (!AGENTE_TETO_OK(s, com)) return { status: "continua", msg: "Com essa comissão a equipe passa de 15% do salário. Peça menos." };
+    if (com > COMISSAO_MAX + 1e-9) return { status: "continua", msg: "Esse agente não aceita comissão acima de 12%. Peça menos." };
     // a conversa em aberto impede a troca: fecha antes, e reabre se a troca for recusada (ex.: prazo)
     c.negAgente = undefined;
     const t = trocarAgente(s, n.id, com);
@@ -152,8 +152,6 @@ export function agenteResponder(s: Save, resp: RespostaAgente): ResultadoAgente 
   if (r.status === "desistiu" || r.status === "recusou") c.negAgente = undefined;
   return r;
 }
-/** A comissão do agente, somada aos consultores, cabe no teto de 15% do salário? */
-const AGENTE_TETO_OK = (s: Save, comissao: number) => comissao <= COMISSAO_MAX + 1e-9 && comissao * s.carreira.salario + custoConsultores(s.carreira.consultores?.lista ?? [], s.carreira.salario) <= TETO_SALARIO * s.carreira.salario + 0.5;
 
 /** Consultores: abre a conversa com um especialista (contratação ou renovação). */
 export function consultorIniciar(s: Save, esp: Especialidade): { ok: boolean; msg: string } {
@@ -344,7 +342,8 @@ export function negociarItem(pacote: PacoteDados, s: Save, id: string, item: Ite
   if (rngAcao(s, "item", id, item).chance(chance)) {
     const teto = tetoSalarial(mundo(pacote).clube[p.clubeId], mundo(pacote).liga[p.ligaId]) * 1.05;
     switch (item) {
-      case "salario": p.salario = Math.round(Math.min(p.salario * (1.07 + hab * 0.3), Math.max(p.salario, teto))); return { ok: true, msg: `${Nome} subiu o salário para R$ ${p.salario.toLocaleString("pt-BR")}.` };
+      case "salario": { const estrelaSal = s.carreira.agente === FAMILIA ? 1 : habilidadesDoAgente(s.carreira.agente).salario; p.salario = Math.round(Math.min(p.salario * (1.07 + estrelaSal * 0.02), Math.max(p.salario, teto))); }
+        return { ok: true, msg: `${Nome} subiu o salário para R$ ${p.salario.toLocaleString("pt-BR")}.` };
       case "luvas": p.luvas = Math.round(Math.max(p.luvas * 1.4, p.salario)); return { ok: true, msg: `Luvas de R$ ${p.luvas.toLocaleString("pt-BR")}.` };
       case "multa": p.multa = Math.round((p.multa! * 0.55) / 1e5) * 1e5; return { ok: true, msg: `Multa rescisória baixou para € ${(p.multa / 1e6).toFixed(1)} mi.` };
       case "venda": p.pctVenda = Math.min(20, 10 + Math.round(hab * 20)); return { ok: true, msg: `${p.pctVenda}% de uma venda futura ficam com você.` };

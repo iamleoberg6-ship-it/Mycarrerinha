@@ -59,7 +59,7 @@ import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
 import { consultorIniciar, consultorResponder } from "../../src/transferencias";
-import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, TETO_SALARIO, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
+import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
 import { infoAgente, agenteIniciar, agenteResponder, textoAgente, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClausulas, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { ligasDoAgente, alcanceSoRegional, type TipoAgente } from "../../src/mercado";
@@ -564,7 +564,7 @@ function agentesHtml(s: Save): string {
   const c = s.carreira, pct = (x: number) => `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
   const n = c.negAgente, a = infoAgente(c.agente), com = comissaoDo(c.agente, c.comissaoAgente), h = habilidadesDoAgente(c.agente);
   const resumo = `<div class="agente atual"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span>
-    <p class="sub" style="margin:2px 0">Comissão ${pct(com)}${c.agente === FAMILIA ? "" : ` · Negociação ${estrelas(h.negociacao)} · Rede ${estrelas(h.rede)}`}</p></div></div>`;
+    <p class="sub" style="margin:2px 0">Comissão ${pct(com)}${c.agente === FAMILIA ? "" : ` · Negociação ${estrelas(h.negociacao)} · Rede ${estrelas(h.rede)} · Salário ${estrelas(h.salario)}`}</p></div></div>`;
   const painel = n ? `<div class="agente atual"><div><b>Conversa com ${esc(infoAgente(n.id).quem)}</b><p class="sub" style="margin:2px 0">Ele pede ${pct(n.pedido)} de comissão. Rodada ${n.rodada} de 4.</p>
     <div class="ferr-botoes"><button class="botao peq" data-agente-resp="aceitar">Aceitar</button><button class="botao sec peq" data-agente-resp="recusar">Recusar</button></div>
     <div class="ferr-botoes" style="margin-top:6px">${[0.7, 0.85, 1].map((f) => `<button class="botao sec peq" data-agente-resp="contra" data-com="${Math.round(n.pedido * f * 10000) / 10000}">Oferecer ${pct(n.pedido * f)}</button>`).join("")}</div></div></div>` : "";
@@ -583,6 +583,7 @@ function valorAgente(col: string, a: AgenteBanco): string | number {
     case "nivel": return a.nivel;
     case "negociacao": return h.negociacao;
     case "rede": return h.rede;
+    case "salario": return h.salario;
     case "comissao": return p.comissao;
     case "exige": return p.requisito.fama;
     default: return 0;
@@ -606,11 +607,11 @@ function telaAgentesHtml(s: Save): string {
     const pode = podeContratarAgente(s, id);
     return pode.ok ? `<button class="botao sec peq" data-agente-iniciar="${id}">Negociar</button>` : `<small class="sub">${esc(pode.msg || "Não aceita você")}</small>`;
   };
-  const familia = `<tr class="${c.agente === FAMILIA ? "atual" : ""}"><td><b>Família</b><br><small class="sub">Seu pai cuida de tudo. Não cobra, mas conhece pouca gente.</small></td><td>${esc(paisNomeAgente(s.jogador.pais))}</td><td>—</td><td>—</td><td>—</td><td>0%</td><td>Local</td><td>Sem exigência</td><td>${c.agente === FAMILIA ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${FAMILIA}">Voltar para a família</button>`}</td></tr>`;
+  const familia = `<tr class="${c.agente === FAMILIA ? "atual" : ""}"><td><b>Família</b><br><small class="sub">Seu pai cuida de tudo. Não cobra, mas conhece pouca gente.</small></td><td>${esc(paisNomeAgente(s.jogador.pais))}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0%</td><td>Local</td><td>Sem exigência</td><td>${c.agente === FAMILIA ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${FAMILIA}">Voltar para a família</button>`}</td></tr>`;
   const linhas = lista.map((a) => {
     const h = habilidadesDoAgente(a.id), p = perfilAgente(a.id), ligas = ligasDoAgente(a.id, s.jogador.pais);
     const alcance = ligas === "todas" ? "Mundo" : alcanceCurto(ligas);
-    return `<tr class="${c.agente === a.id ? "atual" : ""}"><td><b>${esc(a.nome)}</b><br><small class="sub">${esc(a.frase)}</small></td><td>${esc(paisNomeAgente(a.pais))}</td><td>${estrelas(a.nivel)}</td><td>${estrelas(h.negociacao)}</td><td>${estrelas(h.rede)}</td><td>${pct(p.comissao)}</td><td>${esc(alcance)}</td><td>${p.requisito.fama ? `fama ${p.requisito.fama}+ ou nível ${p.requisito.ovr}+` : "Sem exigência"}</td><td>${situacao(a.id)}</td></tr>`;
+    return `<tr class="${c.agente === a.id ? "atual" : ""}"><td><b>${esc(a.nome)}</b><br><small class="sub">${esc(a.frase)}</small></td><td>${esc(paisNomeAgente(a.pais))}</td><td>${estrelas(a.nivel)}</td><td>${estrelas(h.negociacao)}</td><td>${estrelas(h.rede)}</td><td>${estrelas(h.salario)}</td><td>${pct(p.comissao)}</td><td>${esc(alcance)}</td><td>${p.requisito.fama ? `fama ${p.requisito.fama}+ ou nível ${p.requisito.ovr}+` : "Sem exigência"}</td><td>${situacao(a.id)}</td></tr>`;
   }).join("");
   return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Agentes</h2><button class="botao sec peq" data-ag-fechar="1">Fechar</button></div>
     <div class="ferr-botoes" style="margin:10px 0;flex-wrap:wrap">
@@ -620,7 +621,7 @@ function telaAgentesHtml(s: Save): string {
     </div>
     <p class="sub" style="margin:0 0 6px">Mostrando ${lista.length} de ${BANCO.length}. Clique no cabeçalho para ordenar.</p>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr>${th("nome", "Agente")}${th("pais", "País")}${th("nivel", "Nível")}${th("negociacao", "Negociação")}${th("rede", "Rede")}${th("comissao", "Comissão")}<th>Alcance</th>${th("exige", "Exige")}<th>Situação</th></tr></thead>
+      <thead><tr>${th("nome", "Agente")}${th("pais", "País")}${th("nivel", "Nível")}${th("negociacao", "Negociação")}${th("rede", "Rede")}${th("salario", "Salário")}${th("comissao", "Comissão")}<th>Alcance</th>${th("exige", "Exige")}<th>Situação</th></tr></thead>
       <tbody>${familia}${linhas}</tbody></table></div>`;
 }
 function renderAgentesDialog() { if (save) $("telaAgentes").innerHTML = telaAgentesHtml(save); }
@@ -654,7 +655,7 @@ function consultoresHtml(s: Save): string {
     corpo = `<div class="ferr-botoes">${abrir || `<small class="sub">Você já tem todas as especialidades disponíveis.</small>`}</div>`;
   }
   return `<p class="rotulo" style="margin-top:16px">Consultores <small>(${d.lista.length}/${total} vagas)</small></p>
-    <p class="sub" style="margin-bottom:8px">Especialistas que negociam e trabalham por você. A equipe toda, com o agente, não passa de ${Math.round(TETO_SALARIO * 100)}% do salário.</p>
+    <p class="sub" style="margin-bottom:8px">Especialistas que negociam e trabalham por você.</p>
     <div style="display:flex;flex-direction:column;gap:8px">${lista}${corpo}</div>`;
 }
 /** Alcance do agente em poucas palavras: o Brasil inteiro vira "Brasil (todas as divisões)". */
