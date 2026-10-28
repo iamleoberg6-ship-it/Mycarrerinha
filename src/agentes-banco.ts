@@ -74,5 +74,15 @@ export const comissaoDo = (t: TipoAgente, acordada?: number) => t === FAMILIA ? 
 
 /** Agentes com id de referência para a simulação de fundo (carreira headless). */
 export const AGENTE_INICIAL = "ag05", AGENTE_MEDIO = "ag21", AGENTE_TOP = "ag37";
+const hashId = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
+/** Habilidades mostradas na tela de agentes (1 a 5 estrelas): negociação com clubes e rede de contatos. */
+export function habilidadesDoAgente(id: string): { negociacao: number; rede: number } {
+  const a = agenteDoBanco(id);
+  if (!a) return { negociacao: 1, rede: 1 };
+  const h = hashId(id);
+  const negociacao = Math.min(5, Math.max(1, a.nivel + (h % 3) - 1));
+  const rede = a.nivel >= 3 ? a.nivel : a.pais === "BRA" ? 2 : 1 + (h % 2);
+  return { negociacao, rede };
+}
 /** Saves antigos: os quatro agentes fixos viram agentes do banco. */
 export const AGENTE_LEGADO: Record<string, string> = { iniciante: AGENTE_INICIAL, experiente: AGENTE_MEDIO, top: AGENTE_TOP };

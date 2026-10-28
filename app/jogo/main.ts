@@ -62,7 +62,7 @@ import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, TETO_SALARIO, novosConsultores, 
 import { infoAgente, agenteIniciar, agenteResponder, textoAgente, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClausulas, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { ligasDoAgente, alcanceSoRegional, type TipoAgente } from "../../src/mercado";
-import { BANCO, FAMILIA, comissaoDo, perfilAgente } from "../../src/agentes-banco";
+import { BANCO, FAMILIA, comissaoDo, perfilAgente, habilidadesDoAgente, type AgenteBanco } from "../../src/agentes-banco";
 import type { RespostaAgente } from "../../src/agentes";
 import { svgFoto, APARENCIA_PADRAO, CORES_ROUPA, NOMES_ROUPA, CORES_CABELO, NOMES_CABELO_COR, ROSTOS, CABELOS, OLHOS, NARIZES, BOCAS, BARBAS, ACESSORIOS, PIERCINGS, aparenciaCompat, luminancia, type Aparencia } from "../criacao/avatar";
 import { acessoriosAtivos, type Marca } from "../../src/marcas";
@@ -558,27 +558,81 @@ function cardEvento(s: Save): string {
   return `<section class="painel evento"><p class="rotulo">Fora de campo</p><h2>${esc(e.titulo)}</h2><p class="sub">${esc(e.texto)}</p>
     <div class="ferr-botoes">${e.opcoes.map((o) => `<button class="botao sec" data-evento="${o.id}">${esc(o.rotulo)}${o.custo < 0 ? `<small>${dinheiro(-o.custo)}</small>` : ""}</button>`).join("")}</div></section>`;
 }
-/** Agentes: a família, os agentes do banco que aceitam você (com a conversa de comissão) e os demais. */
+/** Agentes: o atual, a conversa de comissão em aberto e o botão que abre a tela completa. */
 function agentesHtml(s: Save): string {
   const c = s.carreira, pct = (x: number) => `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
-  const cartao = (t: TipoAgente) => {
-    const a = infoAgente(t), atual = c.agente === t, pode = podeContratarAgente(s, t), ligas = ligasDoAgente(t, s.jogador.pais);
-    const alcance = ligas === "todas" ? "Todas as ligas" : alcanceCurto(ligas);
-    const com = comissaoDo(t, atual ? c.comissaoAgente : undefined);
-    const botao = t === FAMILIA ? `<button class="botao sec peq" data-agente="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Voltar para a família</button>` : `<button class="botao sec peq" data-agente-iniciar="${t}" ${pode.ok ? "" : "disabled"} title="${esc(pode.msg)}">Negociar</button>`;
-    return `<div class="agente${atual ? " atual" : ""}"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span><p class="sub" style="margin:2px 0">${esc(textoAgente(t, s.jogador.pais))}</p><small class="sub">Comissão: ${pct(com)} · Alcance: ${esc(alcance)}${alcanceSoRegional(t, s.jogador.pais) ? " (sem os grandes)" : ""}</small></div>
-      ${atual ? `<span class="tag titular">Seu agente</span>` : `${botao}${pode.ok ? "" : `<small class="sub">${esc(pode.msg)}</small>`}`}</div>`;
-  };
-  const n = c.negAgente;
+  const n = c.negAgente, a = infoAgente(c.agente), com = comissaoDo(c.agente, c.comissaoAgente), h = habilidadesDoAgente(c.agente);
+  const resumo = `<div class="agente atual"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span>
+    <p class="sub" style="margin:2px 0">Comissão ${pct(com)}${c.agente === FAMILIA ? "" : ` · Negociação ${estrelas(h.negociacao)} · Rede ${estrelas(h.rede)}`}</p></div></div>`;
   const painel = n ? `<div class="agente atual"><div><b>Conversa com ${esc(infoAgente(n.id).quem)}</b><p class="sub" style="margin:2px 0">Ele pede ${pct(n.pedido)} de comissão. Rodada ${n.rodada} de 4.</p>
     <div class="ferr-botoes"><button class="botao peq" data-agente-resp="aceitar">Aceitar</button><button class="botao sec peq" data-agente-resp="recusar">Recusar</button></div>
     <div class="ferr-botoes" style="margin-top:6px">${[0.7, 0.85, 1].map((f) => `<button class="botao sec peq" data-agente-resp="contra" data-com="${Math.round(n.pedido * f * 10000) / 10000}">Oferecer ${pct(n.pedido * f)}</button>`).join("")}</div></div></div>` : "";
-  const ordem = [...BANCO].sort((x, y) => y.nivel - x.nivel || x.id.localeCompare(y.id));
-  const aceitam = ordem.filter((a) => c.agente === a.id || podeContratarAgente(s, a.id).ok || !!perfilAgente(a.id).requisito && (c.fama >= perfilAgente(a.id).requisito.fama || ovr(s.jogador) >= perfilAgente(a.id).requisito.ovr));
-  const dos = ordem.filter((a) => !aceitam.includes(a));
-  const cartoes = (xs: { id: string }[]) => xs.map((a) => cartao(a.id)).join("");
-  return `${painel}<div style="display:flex;flex-direction:column;gap:8px">${cartao(FAMILIA)}${cartoes(aceitam)}</div>
-    ${dos.length ? `<details class="resumo-contrato" style="margin-top:8px"><summary><span>Outros agentes (${dos.length})</span><span class="sub">não aceitam você ainda</span></summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${cartoes(dos)}</div></details>` : ""}`;
+  return `${painel}${resumo}<div class="ferr-botoes" style="margin-top:8px"><button class="botao sec peq" data-ag-abrir="1">Ver todos os agentes (${BANCO.length + 1})</button></div>`;
+}
+/** Estrelas de 1 a 5 (habilidades e nível). */
+/** Ordenação e filtros da tela de agentes (ficam entre aberturas). */
+let agOrd = { col: "negociacao", desc: true };
+let agFiltro = { pais: "", nivelMin: 0, soAceitam: false };
+const paisNomeAgente = (id: string) => PAISES.find((x) => x.id === id)?.nome ?? id;
+function valorAgente(col: string, a: AgenteBanco): string | number {
+  const h = habilidadesDoAgente(a.id), p = perfilAgente(a.id);
+  switch (col) {
+    case "nome": return a.nome;
+    case "pais": return paisNomeAgente(a.pais);
+    case "nivel": return a.nivel;
+    case "negociacao": return h.negociacao;
+    case "rede": return h.rede;
+    case "comissao": return p.comissao;
+    case "exige": return p.requisito.fama;
+    default: return 0;
+  }
+}
+/** Tela completa de agentes: tabela com estrelas, ordenação por coluna e filtros. */
+function telaAgentesHtml(s: Save): string {
+  const c = s.carreira, pct = (x: number) => `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  const aceitaJogador = (id: string) => { const r = perfilAgente(id).requisito; return c.fama >= r.fama || ovr(s.jogador) >= r.ovr; };
+  const paises = [...new Set(BANCO.map((a) => a.pais))].sort((x, y) => paisNomeAgente(x).localeCompare(paisNomeAgente(y), "pt-BR"));
+  const lista = BANCO.filter((a) => (!agFiltro.pais || a.pais === agFiltro.pais) && a.nivel >= agFiltro.nivelMin && (!agFiltro.soAceitam || aceitaJogador(a.id) || c.agente === a.id));
+  lista.sort((x, y) => {
+    const vx = valorAgente(agOrd.col, x), vy = valorAgente(agOrd.col, y);
+    const r = typeof vx === "string" ? vx.localeCompare(String(vy), "pt-BR") : (vx as number) - (vy as number);
+    return agOrd.desc ? -r : r;
+  });
+  const th = (col: string, rot: string) => `<th><button class="ag-ord" data-ag-ord="${col}">${rot}${agOrd.col === col ? (agOrd.desc ? " ▼" : " ▲") : ""}</button></th>`;
+  const situacao = (id: string) => {
+    if (c.agente === id) return `<span class="tag titular">Seu agente</span>`;
+    if (c.negAgente?.id === id) return `<small class="sub">Em conversa</small>`;
+    const pode = podeContratarAgente(s, id);
+    return pode.ok ? `<button class="botao sec peq" data-agente-iniciar="${id}">Negociar</button>` : `<small class="sub">${esc(pode.msg || "Não aceita você")}</small>`;
+  };
+  const familia = `<tr class="${c.agente === FAMILIA ? "atual" : ""}"><td><b>Família</b><br><small class="sub">Seu pai cuida de tudo. Não cobra, mas conhece pouca gente.</small></td><td>${esc(paisNomeAgente(s.jogador.pais))}</td><td>—</td><td>—</td><td>—</td><td>0%</td><td>Local</td><td>Sem exigência</td><td>${c.agente === FAMILIA ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${FAMILIA}">Voltar para a família</button>`}</td></tr>`;
+  const linhas = lista.map((a) => {
+    const h = habilidadesDoAgente(a.id), p = perfilAgente(a.id), ligas = ligasDoAgente(a.id, s.jogador.pais);
+    const alcance = ligas === "todas" ? "Mundo" : alcanceCurto(ligas);
+    return `<tr class="${c.agente === a.id ? "atual" : ""}"><td><b>${esc(a.nome)}</b><br><small class="sub">${esc(a.frase)}</small></td><td>${esc(paisNomeAgente(a.pais))}</td><td>${estrelas(a.nivel)}</td><td>${estrelas(h.negociacao)}</td><td>${estrelas(h.rede)}</td><td>${pct(p.comissao)}</td><td>${esc(alcance)}</td><td>${p.requisito.fama ? `fama ${p.requisito.fama}+ ou nível ${p.requisito.ovr}+` : "Sem exigência"}</td><td>${situacao(a.id)}</td></tr>`;
+  }).join("");
+  return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Agentes</h2><button class="botao sec peq" data-ag-fechar="1">Fechar</button></div>
+    <div class="ferr-botoes" style="margin:10px 0;flex-wrap:wrap">
+      <label class="sub">País <select data-ag-pais><option value="">Todos</option>${paises.map((p) => `<option value="${p}"${agFiltro.pais === p ? " selected" : ""}>${esc(paisNomeAgente(p))}</option>`).join("")}</select></label>
+      <label class="sub">Nível mínimo <select data-ag-nivel>${[0, 1, 2, 3, 4, 5].map((n) => `<option value="${n}"${agFiltro.nivelMin === n ? " selected" : ""}>${n ? `${"★".repeat(n)} ou mais` : "Todos"}</option>`).join("")}</select></label>
+      <label class="sub"><input type="checkbox" data-ag-aceita${agFiltro.soAceitam ? " checked" : ""}> Só os que aceitam você</label>
+    </div>
+    <p class="sub" style="margin:0 0 6px">Mostrando ${lista.length} de ${BANCO.length}. Clique no cabeçalho para ordenar.</p>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr>${th("nome", "Agente")}${th("pais", "País")}${th("nivel", "Nível")}${th("negociacao", "Negociação")}${th("rede", "Rede")}${th("comissao", "Comissão")}<th>Alcance</th>${th("exige", "Exige")}<th>Situação</th></tr></thead>
+      <tbody>${familia}${linhas}</tbody></table></div>`;
+}
+function renderAgentesDialog() { if (save) $("telaAgentes").innerHTML = telaAgentesHtml(save); }
+/** Cliques na tela de agentes: abrir, fechar e ordenar. */
+function agirAgentesDialog(d: DOMStringMap) {
+  const dlg = $("dlgAgentes") as HTMLDialogElement;
+  if (d.agAbrir !== undefined) { renderAgentesDialog(); dlg.showModal(); }
+  else if (d.agFechar !== undefined) dlg.close();
+  else if (d.agOrd !== undefined) {
+    const col = d.agOrd!;
+    agOrd = agOrd.col === col ? { col, desc: !agOrd.desc } : { col, desc: col !== "nome" && col !== "pais" };
+    renderAgentesDialog();
+  }
 }
 /** Consultores: equipe, vagas e a conversa em aberto (ver claude/conceito-mercado-agentes.md). */
 function consultoresHtml(s: Save): string {
@@ -2123,9 +2177,10 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
+  if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
   if (d.assinar) {
     const dados = ler<DadosCriacao>(CHAVE_JOGADOR)!;
     dados.aparencia = aparenciaCompat(dados.aparencia);
@@ -2168,9 +2223,10 @@ document.addEventListener("click", (ev) => {
     const r = d.op === "aceitar" ? aceitar(pacote, save, d.prop) : d.op === "forcar" ? aceitar(pacote, save, d.prop, true) : d.op === "negociar" ? negociar(pacote, save, d.prop) : recusar(pacote, save, d.prop);
     msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render();
     if (r.ok && (d.op === "aceitar" || d.op === "forcar")) window.scrollTo({ top: 0, behavior: "smooth" });
-  } else if (d.agente && save) { const r = trocarAgente(save, d.agente as TipoAgente); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
-  else if (d.agenteIniciar && save) { const r = agenteIniciar(save, d.agenteIniciar); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
+  } else if (d.agente && save) { ($("dlgAgentes") as HTMLDialogElement).close(); const r = trocarAgente(save, d.agente as TipoAgente); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
+  else if (d.agenteIniciar && save) { ($("dlgAgentes") as HTMLDialogElement).close(); const r = agenteIniciar(save, d.agenteIniciar); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.agenteResp && save) {
+    ($("dlgAgentes") as HTMLDialogElement).close();
     const resp: RespostaAgente = d.agenteResp === "aceitar" ? { tipo: "aceitar" } : d.agenteResp === "recusar" ? { tipo: "recusar" } : { tipo: "contrapor", comissao: +d.com! };
     const r = agenteResponder(save, resp);
     msgMercado = { texto: r.msg, ok: r.status === "fechou" || r.status === "continua" }; salvar(); render();
@@ -2324,6 +2380,14 @@ document.addEventListener("click", (ev) => {
 });
 $("dlgJogo").addEventListener("cancel", (ev) => ev.preventDefault());
 document.addEventListener("keydown", (ev) => { if ((ev.key === "Enter" || ev.key === " ") && (ev.target as HTMLElement).classList?.contains("card-jogador")) { ev.preventDefault(); abrirPerfil(); } });
+$("dlgAgentes").addEventListener("change", (ev) => {
+  const t = ev.target as HTMLInputElement | HTMLSelectElement;
+  if (t.hasAttribute("data-ag-pais")) agFiltro.pais = t.value;
+  else if (t.hasAttribute("data-ag-nivel")) agFiltro.nivelMin = +t.value;
+  else if (t.hasAttribute("data-ag-aceita")) agFiltro.soAceitam = (t as HTMLInputElement).checked;
+  else return;
+  renderAgentesDialog();
+});
 $("arqSave").addEventListener("change", (ev) => { const i = ev.target as HTMLInputElement, f = i.files?.[0]; if (f) carregarSave(f); i.value = ""; });
 void SEMANAS_PRE;
 render();
