@@ -6,6 +6,7 @@ import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos
 import { simularPlacar, desempenhoJogador, sortearLesao, pontuacaoTitular, VAGAS_433 } from "./partida.js";
 import { ligaDoPacote, rodadasDaLiga, novaTabela, registrar, ordenar, type Clube, type Liga, type LinhaTabela, type PacoteDados } from "./liga.js";
 import { salarioMensal, valorMercado, AGENTES, type TipoAgente } from "./mercado.js";
+import { custoConsultores, tickConsultores, type DadosConsultores } from "./consultores.js";
 import { novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest } from "./negocios.js";
 import { novaSaude, semanaSaude, feriasSaude, operar, riscoLesaoSaude, fatorDeclinio, recuperacaoSaude, custoEquipe, type EstadoSaude, type Staff, type ParteCorpo } from "./saude.js";
 import { semanaAmor, agendarCasamento, agendarLuaDeMel } from "./amor.js";
@@ -133,6 +134,8 @@ export interface Carreira {
   tabelasReais?: TabelasReais; piramideDesde?: number; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
   ligaId?: string;
+  /** consultores contratados (além do agente principal) e conversa em aberto */
+  consultores?: DadosConsultores;
   /** propostas, empréstimo, histórico de transferências, agente */
   mercado?: DadosMercado;
   /** lances já vividos: os recentes aparecem menos, os inéditos mais */
@@ -1216,6 +1219,9 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const validas = acoesValidas(s, plano), travados = diasTravados(s);
   const cont = (a: Acao) => validas.filter((x) => x === a).length;
 
+  // 0. consultores: contrato que vence e consultor que larga (com o desconto forte)
+  if (c.consultores) for (const nota of tickConsultores(c.consultores, semanaAbsJogo(c), rngDe(s, "consultores"))) noticia(s, "clube", "Consultor", nota);
+
   // 1. a semana fora de campo
   const prev = previaPlano(s, plano);
   c.cansaco = prev.cansaco; c.moral = prev.moral;
@@ -1479,7 +1485,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
 
 export function salarioLiquido(c: Carreira): number {
   const s = c.salario, ir = c.formacao ? 0 : imposto(s, c.ligaId);
-  return s - ir - AGENTES[c.agente].comissao * s + c.patrocinioMensal;
+  return s - ir - AGENTES[c.agente].comissao * s - custoConsultores(c.consultores?.lista ?? [], s) + c.patrocinioMensal;
 }
 export function contextoEvento(pacote: PacoteDados, s: Save): CtxEvento {
   const c = s.carreira, info = infoClube(pacote, c.clubeId), li = infoLiga(c.ligaId);

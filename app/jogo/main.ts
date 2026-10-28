@@ -57,6 +57,8 @@ import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
+import { consultorIniciar, consultorResponder } from "../../src/transferencias";
+import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, TETO_SALARIO, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
 import { AGENTE_INFO, textoAgente, NOME_PAPEL, NOME_ITEM, negociarItem, pedirAumento, comClausulas, oferecerJogador, aceitar, janelaAberta, mercadoDe, negociar, papelNoClube, pedirParaSair, podeContratarAgente, proximaJanela, recusar, trocarAgente, JANELAS, NOME_DESTINO, ONDE_DESTINO, type Destino, type PropostaSave } from "../../src/transferencias";
 const NOME_PAIS: Record<string, string> = { BRA: "Brasil", ARG: "Argentina", URU: "Uruguai", ESP: "Espanha", POR: "Portugal", ENG: "Inglaterra", ITA: "Itália", GER: "Alemanha", FRA: "França", NED: "Holanda", SEN: "Senegal", JPN: "Japão" };
 import { AGENTES, ligasDoAgente, alcanceSoRegional, type TipoAgente } from "../../src/mercado";
@@ -553,6 +555,28 @@ function cardEvento(s: Save): string {
   if (!e) return "";
   return `<section class="painel evento"><p class="rotulo">Fora de campo</p><h2>${esc(e.titulo)}</h2><p class="sub">${esc(e.texto)}</p>
     <div class="ferr-botoes">${e.opcoes.map((o) => `<button class="botao sec" data-evento="${o.id}">${esc(o.rotulo)}${o.custo < 0 ? `<small>${dinheiro(-o.custo)}</small>` : ""}</button>`).join("")}</div></section>`;
+}
+/** Consultores: equipe, vagas e a conversa em aberto (ver claude/conceito-mercado-agentes.md). */
+function consultoresHtml(s: Save): string {
+  const c = s.carreira, d = c.consultores ?? novosConsultores(), n = d.negociacao, total = vagas(c.fama);
+  const lista = d.lista.map((x) => `<div class="agente atual"><div><b>${esc(NOME_ESP[x.esp])}</b> <span class="sub">· ${esc(NOME_DEGRAU[x.degrau])}</span><p class="sub" style="margin:2px 0">${esc(pedidoTexto(x.oferta))} · ${dinheiro(valorOferta(x.oferta, c.salario))}/mês</p><small class="sub">Eficácia ${Math.round(eficacia(x.degrau, x.desconto) * 100)}%${x.desconto > 0.4 ? " · pagando pouco: pode largar" : ""}</small></div></div>`).join("");
+  let corpo: string;
+  if (n) {
+    const presets = [0.6, 0.8, 1].flatMap((f) => {
+      const tab = n.tabela;
+      const ofertas: Oferta[] = [{ modelo: "percentual", valor: Math.round((tab * f / c.salario) * 10000) / 10000 }, { modelo: "fixo", valor: Math.round(tab * f) }];
+      return ofertas.map((o) => `<button class="botao sec peq" data-cons="contra" data-modelo="${o.modelo}" data-valor="${o.valor}">Oferecer ${esc(pedidoTexto(o))}</button>`);
+    }).join("");
+    corpo = `<div class="agente atual"><div><b>Conversa com ${esc(NOME_ESP[n.esp])} (${esc(NOME_DEGRAU[n.degrau])})</b><p class="sub" style="margin:2px 0">Ele pede ${esc(pedidoTexto(n.pedido))}. Rodada ${n.rodada} de 4.</p>
+      <div class="ferr-botoes"><button class="botao peq" data-cons="aceitar">Aceitar o pedido</button><button class="botao sec peq" data-cons="recusar">Recusar</button></div>
+      <div class="ferr-botoes" style="margin-top:6px">${presets}</div></div></div>`;
+  } else {
+    const abrir = ESPECIALIDADES.filter((e) => !d.lista.some((x) => x.esp === e)).map((e: Especialidade) => `<button class="botao sec peq" data-cons-iniciar="${e}" ${d.lista.length < total ? "" : "disabled"} title="${d.lista.length < total ? "" : "Sem vaga livre"}">Negociar ${esc(NOME_ESP[e])}</button>`).join("");
+    corpo = `<div class="ferr-botoes">${abrir || `<small class="sub">Você já tem todas as especialidades disponíveis.</small>`}</div>`;
+  }
+  return `<p class="rotulo" style="margin-top:16px">Consultores <small>(${d.lista.length}/${total} vagas)</small></p>
+    <p class="sub" style="margin-bottom:8px">Especialistas que negociam e trabalham por você. A equipe toda, com o agente, não passa de ${Math.round(TETO_SALARIO * 100)}% do salário.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">${lista}${corpo}</div>`;
 }
 /** Alcance do agente em poucas palavras: o Brasil inteiro vira "Brasil (todas as divisões)". */
 function alcanceCurto(ligas: string[]): string {
@@ -1159,7 +1183,7 @@ function abaMercadoEu(s: Save): string {
   return `${aviso}${semClube}
     <p class="rotulo" style="margin-top:0">Propostas${m.propostas.length ? ` <small>(${m.propostas.length})</small>` : ""}</p>${props}
     ${sc ? "" : `<p class="rotulo" style="margin-top:16px">Seu contrato</p>${resumoContrato}`}
-    <p class="rotulo" style="margin-top:16px">Agente</p><div style="display:flex;flex-direction:column;gap:8px">${agentes}</div>${hist}
+    <p class="rotulo" style="margin-top:16px">Agente</p><div style="display:flex;flex-direction:column;gap:8px">${agentes}</div>${consultoresHtml(s)}${hist}
     <p class="sub" style="margin-top:12px">Janelas: semanas ${JANELAS.map((x) => `${x.ini + 1}–${x.fim + 1}`).join(" e ")} de cada temporada.</p>`;
 }
 
@@ -2080,7 +2104,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.assinar) {
@@ -2126,6 +2150,12 @@ document.addEventListener("click", (ev) => {
     msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render();
     if (r.ok && (d.op === "aceitar" || d.op === "forcar")) window.scrollTo({ top: 0, behavior: "smooth" });
   } else if (d.agente && save) { const r = trocarAgente(save, d.agente as TipoAgente); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
+  else if (d.consIniciar && save) { const r = consultorIniciar(save, d.consIniciar as Especialidade); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
+  else if (d.cons && save) {
+    const resp: RespostaConsultor = d.cons === "aceitar" ? { tipo: "aceitar" } : d.cons === "recusar" ? { tipo: "recusar" } : { tipo: "contrapor", oferta: { modelo: d.modelo as Oferta["modelo"], valor: +d.valor! } };
+    const r = consultorResponder(save, resp);
+    msgMercado = { texto: r.msg, ok: r.status === "fechou" || r.status === "continua" }; salvar(); render();
+  }
   else if (d.decidir) decidir(+d.decidir, d.op!);
   else if (d.pen !== undefined) escolherSlot(+d.pen);
   else if (d.patro && save) {

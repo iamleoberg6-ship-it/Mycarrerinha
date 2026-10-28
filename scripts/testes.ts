@@ -1411,4 +1411,40 @@ teste("Casinhos x namoro sério: vários casinhos às claras, namoro é um só",
   semanaNamoro(v, { ...ctx, semanaAbs: 200 });
   assert.equal(v.par, undefined); assert.equal(v.ficantes!.length, 2); assert.equal(v.casos!.length, 0);
 });
+import { novosConsultores, iniciarNegociacao, responder, vagas, eficacia, efeitoConsultores, tickConsultores, custoConsultores, cabeNoTeto, valorOferta } from "../src/consultores.js";
+
+teste("Consultores: vagas por fama, negociação fecha, desiste no piso, teto da equipe e efeitos", () => {
+  assert.deepEqual([0, 25, 45, 70].map(vagas), [2, 3, 4, 5]);
+  const salario = 20000, d = novosConsultores(), rng = new RNG("cons-1");
+  assert.equal(iniciarNegociacao(d, "negociador", 10, salario, rng).ok, true);
+  assert.equal(d.negociacao!.reserva > 0 && d.negociacao!.reserva <= d.negociacao!.tabela * 0.9, true, "reserva oculta abaixo do pedido");
+  // aceitar o pedido (20% acima da tabela) cabe no teto sem agente top: 0,01*1,2*sal + comissão do iniciante 5%
+  const r1 = responder(d, { tipo: "aceitar" }, salario, "pai", 1);
+  assert.equal(r1.status, "fechou", r1.msg);
+  assert.equal(d.lista.length, 1);
+  assert.ok(d.lista[0].desconto === 0, "pagou o pedido: sem desconto");
+  // conversa nova: contraproposta abaixo do piso derruba a conversa e sobe a reputação
+  assert.equal(iniciarNegociacao(d, "juridico", 10, salario, rng).ok, true);
+  const r2 = responder(d, { tipo: "contrapor", oferta: { modelo: "fixo", valor: 1 } }, salario, "pai", 2);
+  assert.equal(r2.status, "desistiu");
+  assert.equal(d.reputacao, 1);
+  assert.equal(d.negociacao, undefined);
+  // teto: agente top cobra 10% do salário; pedir mais um consultor de 9,6% estoura 15%
+  const d2 = novosConsultores();
+  iniciarNegociacao(d2, "negociador", 80, salario, new RNG("cons-2"));
+  const r3 = responder(d2, { tipo: "aceitar" }, salario, "top", 3);
+  assert.equal(r3.status, "continua", "não cabe no teto com o agente top");
+  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.04 }, salario, "top"), true);
+  assert.equal(cabeNoTeto([], { modelo: "percentual", valor: 0.06 }, salario, "top"), false);
+  // eficácia cai com o desconto; efeito entra por especialidade
+  assert.ok(eficacia(4, 0.5) < eficacia(4, 0));
+  assert.ok(efeitoConsultores(d).negociador > 0 && efeitoConsultores(d).juridico === 0);
+  assert.equal(valorOferta({ modelo: "percentual", valor: 0.02 }, salario), 400);
+  assert.equal(custoConsultores(d.lista, salario), valorOferta(d.lista[0].oferta, salario));
+  // contrato vence depois de um ano e sai da equipe com aviso
+  const notas = tickConsultores(d, d.lista[0].ate, new RNG("cons-3"));
+  assert.equal(d.lista.length, 0);
+  assert.ok(notas.some((x) => /terminou/.test(x)));
+});
+
 console.log(`\n${ok} testes passaram`);

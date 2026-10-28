@@ -4,6 +4,7 @@ import { RNG, clamp } from "./rng.js";
 import { paiExJogador } from "./familia.js";
 import { efeitosNamoro } from "./namoro.js";
 import { PAISES } from "./dna.js";
+import { novosConsultores, iniciarNegociacao, responder, efeitoConsultores, type DadosConsultores, type Especialidade, type RespostaConsultor, type ResultadoConsultor } from "./consultores.js";
 import { VIZINHOS, alcanceSoRegional, AGENTES, CAMBIO, tetoSalarial, componentesInteresse, clubeAceitaVenda, gerarPropostas, salarioMensal, valorMercado, type PerfilMercado, type Proposta, type TipoAgente } from "./mercado.js";
 import { novaTabela, registrar, rodadasDaLiga, type Clube, type Liga, type PacoteDados } from "./liga.js";
 import { simularPlacar, pontuacaoTitular, VAGAS_433 } from "./partida.js";
@@ -98,7 +99,25 @@ export function textoAgente(t: TipoAgente, nacionalidade: string): string {
 }
 const HABILIDADE_AGENTE: Record<TipoAgente, number> = { pai: 0, iniciante: 0.1, experiente: 0.2, top: 0.3 };
 /** Habilidade de negociação: o agente, o pai ex-jogador (quando é ele quem cuida) e a namorada agente. */
-export const habilidadeAgente = (s: Save) => HABILIDADE_AGENTE[s.carreira.agente] + (s.carreira.agente === "pai" && paiExJogador(s.carreira.familia) ? 0.1 : 0) + efeitosNamoro(s.carreira.namoro).agente;
+export const habilidadeAgente = (s: Save) => {
+  const ef = efeitoConsultores(s.carreira.consultores);
+  return HABILIDADE_AGENTE[s.carreira.agente] + (s.carreira.agente === "pai" && paiExJogador(s.carreira.familia) ? 0.1 : 0) + efeitosNamoro(s.carreira.namoro).agente + 0.15 * ef.negociador + 0.1 * ef.networking + 0.05 * ef.juridico;
+};
+/** Consultores: abre a conversa com um especialista (contratação ou renovação). */
+export function consultorIniciar(s: Save, esp: Especialidade): { ok: boolean; msg: string } {
+  const c = s.carreira;
+  c.consultores ??= novosConsultores();
+  return iniciarNegociacao(c.consultores, esp, c.fama, c.salario, rngAcao(s, "consultor", esp, semanaAbs(c)));
+}
+/** Consultores: resposta do jogador na conversa aberta. Ao fechar, o consultor entra na equipe. */
+export function consultorResponder(s: Save, resp: RespostaConsultor): ResultadoConsultor {
+  const c = s.carreira;
+  c.consultores ??= novosConsultores();
+  const r = responder(c.consultores, resp, c.salario, c.agente, semanaAbs(c));
+  if (r.status === "fechou") noticia(s, "clube", "Consultor contratado", r.msg);
+  if (r.status === "desistiu" || r.status === "recusou") noticia(s, "clube", "Conversa encerrada", r.msg);
+  return r;
+}
 export function podeContratarAgente(s: Save, t: TipoAgente): { ok: boolean; msg: string } {
   const c = s.carreira, r = AGENTE_INFO[t].requisito, m = mercadoDe(c);
   if (c.agente === t) return { ok: false, msg: "Já é o seu agente." };
