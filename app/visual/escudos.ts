@@ -42,6 +42,11 @@ const inicial = (nome?: string) => {
 };
 /** O desenho do escudo no quadro 26 × 30 (sem o <svg>): contorno, desenho interno recortado e a borda. */
 export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: string, borda = 1.6): string {
+  // São Paulo: escudo branco com um triângulo invertido, cortado em faixas preta, branca e vermelha
+  if (chave === "SPA") {
+    const escudo = "M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z", tri = "M2 3 H24 L13 27 Z";
+    return `<defs><clipPath id="escSPA"><path d="${tri}"/></clipPath></defs><path d="${escudo}" fill="#FFFFFF"/><g clip-path="url(#escSPA)"><rect x="0" y="3" width="26" height="8" fill="#0A0A0A"/><rect x="0" y="11" width="26" height="8" fill="#FFFFFF"/><rect x="0" y="19" width="26" height="9" fill="#C8102E"/></g><path d="${tri}" fill="none" stroke="${TINTA}" stroke-width=".8"/><path d="${escudo}" fill="none" stroke="${TINTA}" stroke-width="${borda}"/>`;
+  }
   const c2 = c2r && c2r.toLowerCase() !== c1.toLowerCase() ? c2r : c1.toLowerCase() === "#ffffff" ? "#0A0A0A" : "#FFFFFF";
   const { forma, desenho } = modeloEscudo(chave), d = FORMAS[forma], id = `escR${forma}`;
   // Corinthians: um filete vermelho por dentro do contorno (o detalhe da marca, sem mudar o formato)
