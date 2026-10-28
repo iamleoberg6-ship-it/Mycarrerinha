@@ -1647,10 +1647,18 @@ function armarioCamisas(s: Save): string {
   const minhas = (s.casa.reliquias ?? []).filter((r) => r.tipo === "camisa").sort((a, b) => a.ano - b.ano);
   if (!minhas.length) return `<p class="rotulo">Armário de camisas</p><p class="sub">Nenhuma ainda. A estreia, o primeiro gol e as trocas com craques vêm parar aqui.</p>`;
   const nomeCostas = (r: Reliquia) => (r.chave === "camisa-troca" ? r.nome.replace(/^Camisa d[eoa] /, "") : s.jogador.apelido);
-  const r = minhas.find((x) => x.id === camisaAberta);
+  // cada card vira: a frente é a camisa, o verso conta de quem é, de que clube, de quando e de qual jogo
   return `<p class="rotulo">Armário de camisas <small>(${minhas.length})</small></p>
-      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " ativo" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}">${camisaCostas({ ...kitVisual(x), numero: x.numero, chave: x.clubeId ?? chaveCamisa(x.legenda) }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></button>`).join("")}</div>
-      ${r ? `<div class="trofeu-detalhe"><b>${esc(r.nome)}</b><div>${esc(r.legenda)}</div><small>É uma relíquia: dá para pendurar na parede na aba Casa.</small></div>` : `<p class="sub">Toque numa camisa para ver a história dela.</p>`}`;
+      <div class="armario camisas">${minhas.map((x) => `<button class="camisa-cel${camisaAberta === x.id ? " virada" : ""}" data-camisa="${esc(x.id)}" aria-expanded="${camisaAberta === x.id}" aria-label="${esc(x.nome)}. Toque para virar">
+        <span class="flip-in">
+          <span class="face frente">${camisaCostas({ ...kitVisual(x), numero: x.numero, chave: x.clubeId ?? chaveCamisa(x.legenda) }, nomeCostas(x))}<small>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</small></span>
+          <span class="face verso"><b>${esc(x.nome.replace(/^Camisa d[aeo] /, ""))}</b>
+            <small>De</small><span>${esc(nomeCostas(x))}</span>
+            <small>Clube</small><span>${esc(x.clubeId ? infoClube(pacote, x.clubeId).nome : "–")}</span>
+            <small>Ano</small><span>${x.ano}</span>
+            <small>Jogo</small><span>${esc(x.legenda)}</span></span>
+        </span></button>`).join("")}</div>
+      <p class="sub">Toque numa camisa para virar e ver a história dela.</p>`;
 }
 function abrirPerfil() {
   if (!save) return;
@@ -2299,7 +2307,11 @@ document.addEventListener("click", (ev) => {
     if (rv.ok && d.tat) trajeVisto = tatuagemVisivel(areaTat, visualDe(save.jogador), "jogo") ? "jogo" : "casual";
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
-  else if (d.camisa && save) { camisaAberta = camisaAberta === d.camisa ? undefined : d.camisa; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
+  else if (d.camisa && save) {
+    // vira só o card tocado (sem refazer a tela, para a animação aparecer)
+    const abrir = camisaAberta !== d.camisa; camisaAberta = abrir ? d.camisa : undefined;
+    document.querySelectorAll<HTMLElement>(".camisa-cel").forEach((el) => { const on = abrir && el.dataset.camisa === d.camisa; el.classList.toggle("virada", on); el.setAttribute("aria-expanded", String(on)); });
+  }
   else if (d.trofeu && save) { trofeuAberto = trofeuAberto === d.trofeu ? undefined : d.trofeu; const tela = $("telaPerfil"), y = tela.scrollTop; tela.innerHTML = perfilHtml(save); tela.scrollTop = y; }
   else if ((d.num || d.numManter) && save) {
     const n = d.numManter ? +save.jogador.numero : +d.num!, g = gradeDoClube(pacote, save);
