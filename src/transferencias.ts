@@ -27,6 +27,7 @@ export interface PropostaSave {
   /** R$, pagas na assinatura */ luvas: number;
   papel: Papel; interesse: number;
   /** semana absoluta em que a proposta cai */ expira: number;
+  /** empréstimo: parte do salário que o clube de destino paga (1 = integral; 0,5 = divisão) */ fracaoSalario?: number;
   negociada?: boolean;
   /** o seu clube não aceitou vender */ travada?: boolean;
   /** cláusulas: multa rescisória (€), % da venda futura para o jogador, bônus por gol e por título (R$) */
@@ -53,7 +54,7 @@ export interface Transferencia { temporada: number; semana: number; de: string; 
 export interface DadosMercado {
   propostas: PropostaSave[];
   transferencias: Transferencia[];
-  emprestimo?: { origem: string; ligaOrigem: string; ordemOrigem: string[]; ate: number };
+  emprestimo?: { origem: string; ligaOrigem: string; ordemOrigem: string[]; ate: number; fracao?: number };
   /** pediu para ser negociado */
   listaTransferencia?: boolean;
   pedidoEmprestimo?: boolean;
@@ -233,7 +234,7 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   }
   // 2. empréstimo: garoto com poucos minutos
   const minutos = c.stats.jogos + (c.semana < 6 ? c.historico.at(-1)?.jogos ?? 0 : 0);
-  if (!m.emprestimo && j.idade <= 22 && papelNoClube(clube, s) === "reserva" && minutos < (c.semana < 6 ? 12 : 6) && !m.propostas.some((p) => p.tipo === "emprestimo") && rng.chance(0.45)) {
+  if (!m.emprestimo && j.idade <= 22 && j.pot - ovr(j) >= 4 && papelNoClube(clube, s) === "reserva" && minutos < (c.semana < 6 ? 12 : 6) && !m.propostas.some((p) => p.tipo === "emprestimo") && rng.chance(0.45)) {
     const destinos = w.ligas.filter((x) => x.nivel >= l.nivel && infoLiga(x.id).regiao === infoLiga(l.id).regiao || x.id === "BRA2").flatMap((x) => x.clubes)
       .filter((x) => x.id !== c.clubeId && papelNoClube(x, s) === "titular" && x.forca <= clube.forca);
     if (destinos.length) {
@@ -250,6 +251,20 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
       const d = rng.pick(destinos.sort((a, b) => Math.abs(a.forca - nivel) - Math.abs(b.forca - nivel)).slice(0, 4));
       m.propostas.push(nova(m, { tipo: "emprestimo", clubeId: d.id, ligaId: d.ligaId, salario: c.salario, anos: 0, taxa: 0, luvas: 0, papel: "titular", interesse: 0.7, expira: fimDaJanela(c) }));
       eventos.push(`O ${d.nome} quer você emprestado por uma temporada.`);
+    }
+  }
+  // 2c. salário alto e pouco usado: o clube empresta e o destino paga metade do salário
+  const papelAtual = papelNoClube(clube, s);
+  if (!m.emprestimo && (papelAtual === "reserva" || papelAtual === "rotacao") && !m.propostas.some((p) => p.tipo === "emprestimo") && rng.chance(0.3)) {
+    const pago = salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama });
+    if (c.salario >= pago * 1.4) {
+      const nivel = ovr(j), destinos = [...l.clubes, ...(infoLiga(l.id).abaixo ? w.liga[infoLiga(l.id).abaixo!]?.clubes ?? [] : [])]
+        .filter((x) => x.id !== c.clubeId && x.forca >= nivel - 10 && papelNoClube(x, s) !== "reserva");
+      if (destinos.length) {
+        const d = rng.pick(destinos.sort((a, b) => Math.abs(a.forca - nivel) - Math.abs(b.forca - nivel)).slice(0, 4));
+        m.propostas.push(nova(m, { tipo: "emprestimo", clubeId: d.id, ligaId: d.ligaId, salario: c.salario, anos: 0, taxa: 0, luvas: 0, papel: papelNoClube(d, s), interesse: 0.6, expira: fimDaJanela(c), fracaoSalario: 0.5 }));
+        eventos.push(`O ${d.nome} quer te emprestar e paga metade do seu salário.`);
+      }
     }
   }
   // 3. propostas de outros clubes (quem acabou de chegar espera a próxima temporada)
@@ -477,8 +492,10 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
     return { ok: true, msg: `Contrato renovado por ${p.anos} anos.` };
   }
   if (p.tipo === "emprestimo") {
-    m.emprestimo = { origem: c.clubeId, ligaOrigem: infoLiga(c.ligaId).id, ordemOrigem: c.ordem, ate: c.temporada };
+    const fracao = p.fracaoSalario ?? 1;
+    m.emprestimo = { origem: c.clubeId, ligaOrigem: infoLiga(c.ligaId).id, ordemOrigem: c.ordem, ate: c.temporada, fracao };
     mudarDeClube(pacote, s, destino, "emprestimo", 0);
+    if (fracao < 1) noticia(s, "clube", "Salário dividido", `O ${destino.nome} paga ${Math.round(fracao * 100)}% do salário de ${s.jogador.apelido}; o resto segue com o clube de origem.`);
     m.propostas = m.propostas.filter((x) => x.tipo === "renovacao");
     m.pedidoEmprestimo = false;
     return { ok: true, msg: `Emprestado ao ${destino.nome} até o fim da temporada.` };

@@ -1532,8 +1532,13 @@ teste("Pedir empréstimo: o jogador só pede; propostas de clubes chegam na jane
     const prop = mercadoDe(s.carreira).propostas.find((p) => p.tipo === "emprestimo");
     if (prop) { viu = true; assert.notEqual(prop.clubeId, s.carreira.clubeId); }
   }
+  if (viu) {
+    const prop = mercadoDe(s.carreira).propostas.find((p) => p.tipo === "emprestimo")!;
+    aceitar(pacote, s, prop.id);
+    assert.equal(mercadoDe(s.carreira).emprestimo?.fracao ?? 1, prop.fracaoSalario ?? 1, "a divisão do salário vai para o empréstimo");
+  }
   assert.ok(viu || mercadoDe(s.carreira).emprestimo, "um clube interessado manda proposta na janela");
-  assert.equal(pedirEmprestimo(s, false).ok, true);
+  pedirEmprestimo(s, false); // tirar o pedido (se ainda estiver ativo, já foi limpo ao aceitar)
   assert.ok(!mercadoDe(s.carreira).pedidoEmprestimo);
 });
 
