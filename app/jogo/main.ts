@@ -22,7 +22,7 @@ import {
   carrosDe, copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, chatDe, responderChatJogo, responderCenaJogo, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { RNG } from "../../src/rng";
-import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
+import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, falaSobreVoce, jeitoDe, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
@@ -856,7 +856,57 @@ function irmaoHtml(s: Save, m: Familiar): string {
     <dl class="kv"><dt>Clube</dt><dd>${onde}</dd><dt>Posição</dt><dd>${NOME_POS[fb.posicao] ?? "–"}</dd><dt>OVR</dt><dd>${fb.ovr} <small class="sub">(potencial ${fb.pot})</small></dd></dl>
     ${pro ? (st ? `<p class="rotulo" style="margin-top:12px">Temporada ${ano}</p>
       <div class="tiles">${tile(String(st.j), "Jogos", "🏟️")}${tile(String(st.g), "Gols", "⚽")}${tile(String(st.a), "Assistências", "👟")}${tile(fmtNota(st.n), "Nota média", "⭐")}</div>` : `<p class="sub" style="margin-top:12px">Ainda sem jogos nesta temporada.</p>`) : `<p class="sub" style="margin-top:12px">Ainda não joga como profissional, então não tem estatística.</p>`}
+    ${bloco("Jeito", jeitoDe(m, s.semente, false))}
     ${tabela}`;
+}
+/** Bloco com a lista de traços (jeito da pessoa). */
+function bloco(titulo: string, itens: string[]): string {
+  return itens.length ? `<p class="rotulo" style="margin-top:12px">${titulo}</p><ul class="sub" style="margin:4px 0 0 18px">${itens.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+}
+/** Pai, mãe ou irmão sem futebol: jeito, relação e o que ele fala de você. */
+function familiarHtml(s: Save, m: Familiar): string {
+  const ano = ANO_INICIAL + s.carreira.temporada, idade = idadeDe(m, ano), cor = corRelFam(m.relacao);
+  const saude = m.saude === "doente" ? `<dt>Saúde</dt><dd>${m.tratamento ? "Em tratamento (você paga)" : "Doente, sem tratamento pago"}</dd>` : "";
+  return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
+    <h1 style="margin-top:8px">${esc(m.nome)}</h1>
+    <p class="sub">${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idade} anos</p>
+    <dl class="kv"><dt>Profissão</dt><dd>${esc(m.profissao)}</dd><dt>Relação</dt><dd><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span> <small class="sub">(${Math.round(m.relacao)})</small></dd>${saude}</dl>
+    <div class="rel-barra" style="margin:8px 0"><i style="width:${m.relacao}%;background:${cor}"></i></div>
+    <p>“${esc(falaSobreVoce(m.relacao))}”</p>
+    ${bloco("Jeito", jeitoDe(m, s.semente, false))}`;
+}
+function abrirParente(id: string) {
+  if (!save) return;
+  const m = familiaDe(pacote, save).membros.find((x) => x.id === id);
+  if (!m) return;
+  $("telaHist").innerHTML = m.futebol ? irmaoHtml(save, m) : familiarHtml(save, m);
+  const d = $("dlgHist") as HTMLDialogElement;
+  if (!d.open) d.showModal();
+}
+/** Filho: idade, relação, habilidades (de 3 anos em diante, com o futebol se for o caso) e o jeito. */
+function filhoHtml(s: Save, f: Filho, i: number): string {
+  const idade = ANO_INICIAL + s.carreira.temporada - f.ano, r = Math.round(f.relacao ?? 70);
+  const h = new RNG(`habilidades|${s.semente}|${f.nome}|${f.ano}`);
+  const habs: [string, number][] = [["Futebol", f.futebol ? f.futebol.ovr : h.int(25, 60)], ["Estudo", h.int(35, 90)], ["Sociabilidade", h.int(30, 90)], ["Criatividade", h.int(25, 90)]];
+  const barra = (nome: string, v: number) => `<div class="rel-nivel"><span>${nome}</span><span class="rel-barra"><i style="width:${v}%;background:#6FB7E0"></i></span><b>${v}</b></div>`;
+  const fase = f.futebol ? { escolinha: "Na escolinha de futebol", base: "Na base de um clube", pro: "Profissional", parou: "Largou o futebol" }[f.futebol.fase] : undefined;
+  return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
+    <h1 style="margin-top:8px">${esc(f.nome)}</h1>
+    <p class="sub">${f.menina ? "Filha" : "Filho"} · ${idade} anos · mãe: ${esc(f.mae)}</p>
+    <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação com você · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
+    <p>“${esc(falaSobreVoce(r))}”</p>
+    ${fase && f.futebol ? `<p class="sub">${fase} · OVR ${f.futebol.ovr} (potencial ${f.futebol.pot})</p>` : ""}
+    ${idade >= 3 ? `<p class="rotulo" style="margin-top:12px">Habilidades</p>${habs.map(([n, v]) => barra(n, v)).join("")}` : `<p class="sub" style="margin-top:12px">Ainda é bebê: as habilidades aparecem a partir dos 3 anos.</p>`}
+    ${bloco("Jeito", jeitoDe({ id: `filho${i}-${f.ano}`, nome: f.nome }, s.semente, true))}
+    <p class="sub" style="margin-top:8px">${esc(quemPuxou(s, f, i))}</p>`;
+}
+function abrirFilhoPerfil(i: number) {
+  if (!save) return;
+  const f = (namoroDe(save.carreira).filhos ?? [])[i];
+  if (!f) return;
+  $("telaHist").innerHTML = filhoHtml(save, f, i);
+  const d = $("dlgHist") as HTMLDialogElement;
+  if (!d.open) d.showModal();
 }
 function abrirIrmao(id: string) {
   if (!save) return;
@@ -881,7 +931,7 @@ function linhaFam(s: Save, m: Familiar): string {
   if (m.falecido) return `<div class="rel-linha em-memoria"><div class="rel-topo"><span class="avatar-fam" style="--c:#8A968E">🕊️</span><div class="rel-nome"><b>${esc(m.nome)}</b><small>${NOME_PARENTESCO[m.parentesco]} · ${m.nasc}–${m.falecido} · em memória</small></div></div></div>`;
   const ctx = ctxFamilia(pacote, s), ano = ANO_INICIAL + s.carreira.temporada, fb = m.futebol, cor = corRelFam(m.relacao);
   const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${linkClube(fb.clubeId)}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
-  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome">${fb ? `<button class="nome-hist" data-irmao="${m.id}">${esc(m.nome)}</button>` : `<b>${esc(m.nome)}</b>`}${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
+  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome">${fb ? `<button class="nome-hist" data-irmao="${m.id}">${esc(m.nome)}</button>` : `<button class="nome-hist" data-parente="${m.id}">${esc(m.nome)}</button>`}${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
@@ -1005,7 +1055,7 @@ function celMatch(s: Save): string {
   const filhos = n.filhos ?? [];
   const ano = ANO_INICIAL + c.temporada, g = n.gravidez;
   const gravidezHtml = g ? `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>` : "";
-  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-cab"><span class="filho-foto">${retratoFilho(s, f, i)}</span><div class="filho-info"><p class="filho-puxou">${esc(quemPuxou(s, f, i))}</p></div></div><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${linkClube(f.futebol.clubeId)}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
+  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-cab"><span class="filho-foto">${retratoFilho(s, f, i)}</span><div class="filho-info"><p class="filho-puxou">${esc(quemPuxou(s, f, i))}</p></div></div><div class="filho-topo"><button class="nome-hist" data-filhoperf="${i}">${esc(f.nome)}</button><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${linkClube(f.futebol.clubeId)}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
       <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
       ${f.nomear ? `<div class="nomear-filho"><p>👶 <b>${f.menina ? "Ela" : "Ele"} ainda não tem nome.</b> Por enquanto, todo mundo chama de ${esc(f.nome)}. Escolha:</p>
         <div class="chips" style="flex-wrap:wrap">${f.nomear.map((x) => `<button class="chip" data-nomefilho="${i}" data-nome="${esc(x)}">${esc(x)}</button>`).join("")}</div>
@@ -2530,7 +2580,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2629,6 +2679,8 @@ document.addEventListener("click", (ev) => {
     msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
   }
   else if (d.irmao) abrirIrmao(d.irmao);
+  else if (d.parente) abrirParente(d.parente);
+  else if (d.filhoperf !== undefined) abrirFilhoPerfil(Number(d.filhoperf));
   else if (d.hist) abrirHistorico(d.hist);
   else if (d.vsel) { vistaSelecao = d.vsel as typeof vistaSelecao; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vmerc || d.janela || d.fjanela) {

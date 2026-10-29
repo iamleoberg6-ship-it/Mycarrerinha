@@ -302,3 +302,39 @@ export function familiaAutomatica(f: EstadoFamilia, ctx: CtxFamilia, rng: RNG): 
   const novo = f.membros.find((m) => acoesDe(m, ctx).includes("indicarBase"));
   if (novo) agirFamilia(f, novo.id, "indicarBase", ctx, rng);
 }
+
+// ------------------------------------------------------------------ personalidade
+/** Dois jeitos de cada tipo: um de cada lado. Sorteado de forma fixa por pessoa (não muda ao reabrir). */
+const JEITOS_ADULTO: [string, string][] = [
+  ["Caseiro(a): prefere ficar em casa.", "Festeiro(a): não perde um churrasco."],
+  ["Pavio curto: explode fácil, mas passa logo.", "Calmo(a): difícil de tirar do sério."],
+  ["Orgulhoso(a) de você, mesmo que não diga.", "Crítico(a): acha que sempre dá para fazer mais."],
+  ["Generoso(a): divide tudo que tem.", "Econômico(a): cada centavo conta."],
+  ["Fala pelos cotovelos e conhece todo mundo.", "Reservado(a): só fala quando tem o que dizer."],
+  ["Fã de futebol: acompanha todos os jogos.", "Não liga muito para futebol."],
+  ["Protetor(a): cuida de todo mundo da família.", "Independente: resolve tudo sozinho(a)."],
+  ["Saudosista: guarda fotos e lembranças de tudo.", "Gosta de novidade e de viajar."],
+];
+const JEITOS_CRIANCA: [string, string][] = [
+  ["Curioso(a): pergunta o tempo todo.", "Quieto(a): observa antes de falar."],
+  ["Bagunceiro(a): não para quieto(a).", "Organizado(a): guarda os brinquedos sem pedir."],
+  ["Medroso(a) com coisas novas.", "Corajoso(a): sobe em tudo."],
+  ["Grudento(a) com você.", "Independente: quer fazer tudo sozinho(a)."],
+  ["Sociável: faz amigos em um dia.", "Tímido(a) no começo, depois se solta."],
+];
+/** Como a pessoa fala da relação com você (pela relação atual). */
+export function falaSobreVoce(relacao: number): string {
+  return relacao >= 80 ? "Fala de você para todo mundo."
+    : relacao >= 60 ? "Tem orgulho de você e não esconde."
+    : relacao >= 40 ? "Conversa normal, sem grandes assuntos."
+    : relacao >= 20 ? "Distante: quase não se falam."
+    : "Guarda mágoa e mal atende o telefone.";
+}
+/** Dois traços da pessoa (de um lado e do outro), mais o que vem do papel dela na família. */
+export function jeitoDe(m: Pick<Familiar, "id" | "nome" | "traco">, semente: string, crianca: boolean): string[] {
+  const r = new RNG(`jeito|${m.id}|${m.nome}|${semente}`), tabela = crianca ? JEITOS_CRIANCA : JEITOS_ADULTO;
+  const [a, b] = [r.pick(tabela), r.pick(tabela)];
+  const lados = [r.chance(0.5) ? a[0] : a[1], r.chance(0.5) ? b[0] : b[1]].filter((x, i, l) => l.indexOf(x) === i);
+  const extra = m.traco === "treinador" ? "Entende de tática e dá palpite em todo jogo." : m.traco === "exJogador" ? "Viveu o futebol de perto e sabe o que é a cobrança." : "";
+  return [...lados, ...(extra ? [extra] : [])];
+}
