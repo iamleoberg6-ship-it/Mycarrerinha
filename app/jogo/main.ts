@@ -1252,17 +1252,21 @@ function paginasDoAlbum(s: Save): PaginaAlbum[] {
     // escudos (clubes e seleção) primeiro: cada página tem pelo menos um
     const escudos = pag.filter((f) => f.tipo === "temporada" || f.tipo === "selecao").sort((x, y) => (x.tipo === "selecao" ? 1 : 0) - (y.tipo === "selecao" ? 1 : 0));
     const momentos = pag.filter((f) => f.tipo !== "temporada" && f.tipo !== "selecao").sort((x, y) => ORDEM_FIG.indexOf(x.tipo) - ORDEM_FIG.indexOf(y.tipo));
-    const total = escudos.length + momentos.length;
+    const E = escudos.length, M = momentos.length, total = E + M;
     if (!total) return [];
-    // até 6 por página, mas nunca mais páginas do que escudos (cada uma precisa de um)
-    const partes = Math.max(1, Math.min(Math.ceil(total / 6), escudos.length || 1));
+    // 6 por página (mais de 6 vai para a página seguinte da mesma temporada); cada página recebe escudos quando há
+    const partes = Math.ceil(total / 6);
+    const pos = (k: number, n: number) => Math.round((k * n) / partes);
     const paginas: PaginaAlbum[] = [];
     let e = 0, m = 0;
     for (let k = 0; k < partes; k++) {
-      const alvo = Math.round(((k + 1) * total) / partes) - Math.round((k * total) / partes);
-      const nE = Math.max(1, Math.round(((k + 1) * escudos.length) / partes) - Math.round((k * escudos.length) / partes));
-      const fim = k === partes - 1;
-      const nM = fim ? momentos.length - m : Math.max(0, alvo - nE);
+      const alvo = pos(k + 1, total) - pos(k, total);
+      const want = E >= partes ? pos(k + 1, E) - pos(k, E) : k < E ? 1 : 0;
+      let nE = Math.min(want, E - e, alvo);
+      let nM = Math.min(alvo - nE, M - m);
+      let falta = alvo - nE - nM;
+      const dE = Math.min(falta, E - e - nE); nE += dE; falta -= dE;
+      nM += Math.min(falta, M - m - nM);
       const fs = [...escudos.slice(e, e + nE), ...momentos.slice(m, m + nM)];
       e += nE; m += nM;
       paginas.push({ ano, parte: k + 1, partes, fs });
@@ -1285,6 +1289,18 @@ function capaAlbumHtml(s: Save, paginas: PaginaAlbum[]): string {
   </div>`;
 }
 /** Página do álbum: cabeçalho My Carreirinha e o ano; as figurinhas coladas, sem espaço vazio. */
+/** Figurinha ampliada: tela cheia com a figurinha grande. */
+function abrirFigAmpliada(i: number, k: number) {
+  if (!save) return;
+  const f = paginasDoAlbum(save)[i]?.fs[k];
+  if (!f) return;
+  $("telaFig").innerHTML = `<div class="fig-grande ${f.raridade}">${figurinhaSvg(f)}</div>
+    <p class="rotulo" style="text-align:center;margin:12px 0 2px">${esc(NOME_TIPO_FIG[f.tipo])} · ${f.ano}</p>
+    <p class="sub" style="text-align:center;margin:0">${esc(f.legenda)}</p>
+    <div style="text-align:center;margin-top:12px"><button class="botao sec peq" data-fechar-fig="1">Fechar</button></div>`;
+  const d = $("dlgFig") as HTMLDialogElement;
+  if (!d.open) d.showModal();
+}
 function albumPaginaHtml(s: Save): string {
   const paginas = paginasDoAlbum(s), pend = pacotesPendentes(s);
   const fecha = `<div class="album-fecha"><button class="botao sec peq" data-fechar-album="1">Fechar</button></div>`;
@@ -1294,13 +1310,13 @@ function albumPaginaHtml(s: Save): string {
   const i = albumPag === undefined || albumPag >= paginas.length ? paginas.length - 1 : albumPag;
   const p = paginas[i];
   const clubes = [...new Set(p.fs.filter((f) => f.tipo === "temporada").map((f) => f.clube))];
-  const colunas = `repeat(${p.fs.length === 4 ? 2 : Math.min(p.fs.length, 3)}, 1fr)`;
-  const grade = p.fs.map((f) => `<div class="fig ${f.raridade}" title="${esc(NOME_TIPO_FIG[f.tipo])}: ${esc(f.legenda)}">${figurinhaSvg(f)}</div>`).join("");
+  // toda página tem 6 espaços (as vazias ficam como álbum por colar), então todas têm o mesmo tamanho
+  const grade = p.fs.map((f, k) => `<button class="fig ${f.raridade} fig-ampliar" data-ampliar-pag="${i}" data-ampliar-k="${k}" title="${esc(NOME_TIPO_FIG[f.tipo])}: ${esc(f.legenda)}" aria-label="Ampliar ${esc(NOME_TIPO_FIG[f.tipo])}">${figurinhaSvg(f)}</button>`).join("") + Array.from({ length: Math.max(0, 6 - p.fs.length) }, () => `<div class="album-slot" aria-hidden="true"></div>`).join("");
   return `${fecha}
     <div class="album-folha virar-${direcaoAlbum > 0 ? "dir" : "esq"}" data-pagina="${i}">
       <div class="pag-cab"><span class="pag-marca">MY CARREIRINHA</span><span class="pag-ano">${p.ano}</span></div>
       <div class="pag-sub">${esc(clubes.join(" · ") || "Seleção e momentos")}${p.partes > 1 ? ` · ${p.parte}ª página da temporada` : ""}</div>
-      <div class="album-grid" style="grid-template-columns:${colunas}">${grade}</div>
+      <div class="album-grid">${grade}</div>
       <div class="pag-rodape">
         <button class="album-seta" data-album="${i - 1}" aria-label="Página anterior">‹</button>
         <span class="album-meta">Página ${i + 1} de ${paginas.length} · ${p.fs.length} coladas</span>
@@ -2428,7 +2444,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2573,6 +2589,8 @@ document.addEventListener("click", (ev) => {
   else if (d.sug && save) { msgPos = { texto: responderSugestao(save, d.sug === "sim"), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.perfilClube) { abrirPerfilClube(d.perfilClube); }
   else if (d.fecharClube !== undefined) { ($("dlgClube") as HTMLDialogElement).close(); }
+  else if (d.ampliarPag !== undefined) { abrirFigAmpliada(+d.ampliarPag, +(d.ampliarK ?? 0)); }
+  else if (d.fecharFig !== undefined) { ($("dlgFig") as HTMLDialogElement).close(); }
   else if (d.album !== undefined && save) { const novo = +d.album; direcaoAlbum = albumPag === undefined || albumPag === -1 || novo > albumPag ? 1 : -1; albumPag = novo; desenharAlbum(); }
   else if (d.abrirAlbum !== undefined && save) { albumPag = -1; desenharAlbum(); ($("dlgAlbum") as HTMLDialogElement).showModal(); }
   else if (d.fecharAlbum !== undefined) { ($("dlgAlbum") as HTMLDialogElement).close(); }
