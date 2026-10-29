@@ -11,9 +11,9 @@ export const MULHERES_RETRATO = ["hair-female-01", "hair-female-02", "hair-femal
 export const MULHERES_CORPO = ["corpo-mulher", "body-female-02", "body-female-03"] as const;
 export const BEBES = ["baby-01", "baby-02"] as const;
 
-/** Chave da imagem para uma base e um tom. Cabelo pronto só existe no tom claro. */
+/** Chave da imagem para uma base e um tom (cabeça com cabelo e rosto liso têm os três tons). */
 export function chaveArte(base: string, tom: Tom): string {
-  return base.startsWith("hair-") ? `${base}-claro` : `${base}-${tom}`;
+  return `${base}-${tom}`;
 }
 
 export function imagemArte(chave: string): string | undefined {
@@ -24,7 +24,7 @@ export function imagemArte(chave: string): string | undefined {
 export function sortearMulherRetrato(semente: string): { base: string; tom: Tom; src: string } {
   const r = new RNG(`arte-mulher|${semente}`);
   const base = r.pick([...MULHERES_RETRATO]);
-  const tom = base.startsWith("hair-") ? "claro" : r.pick(TONS);
+  const tom = r.pick(TONS);
   return { base, tom, src: imagemArte(chaveArte(base, tom)) ?? "" };
 }
 

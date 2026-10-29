@@ -1626,7 +1626,7 @@ teste("Gestão: franquia exige saúde, cobra por unidade e decisão mensal muda 
 });
 
 teste("Arte de personagens: todo sorteio existe no pacote de imagens e é determinístico pela semente", () => {
-  for (const b of MULHERES_RETRATO) for (const tom of TONS) { const k = chaveArte(b, tom); if (b.startsWith("hair-") && tom !== "claro") continue; assert.ok(imagemArte(k), k); }
+  for (const b of MULHERES_RETRATO) for (const tom of TONS) assert.ok(imagemArte(chaveArte(b, tom)), b + tom);
   for (const b of MULHERES_CORPO) for (const tom of TONS) assert.ok(imagemArte(chaveArte(b, tom)), b + tom);
   for (const b of BEBES) for (const tom of TONS) assert.ok(imagemArte(chaveArte(b, tom)), b + tom);
   const a = sortearMulherRetrato("sem-1"), b = sortearMulherRetrato("sem-1");
