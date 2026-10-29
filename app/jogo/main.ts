@@ -58,7 +58,7 @@ import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
-import { titulosDoClube, timeDeTodosOsTempos, plantelDoClube, tecnicoDoClube, MIN_JOGOS_TEMPORADA } from "../../src/perfil-clube";
+import { titulosDoClube, timeDeTodosOsTempos, plantelDoClube, tecnicoDoClube, type TitularHistorico } from "../../src/perfil-clube";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
 import { consultorIniciar, consultorResponder } from "../../src/transferencias";
 import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
@@ -1038,24 +1038,30 @@ function blocoNegocios(s: Save): string {
     <details class="dobra" style="margin-top:16px"${n.empresas.length ? "" : " open"}><summary class="rotulo">Abrir um negócio</summary>${abrir || `<p class="sub">Você já tem um de cada.</p>`}</details>`;
 }
 /** Jogador › Clube: técnico, vestiário, rival, torcida e contrato. */
-/** Perfil do clube: dados, títulos da liga, elenco atual, time de todos os tempos e os clubes da mesma liga. */
+/** Troféu de ouro (um por título). */
+const TROFEU = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" fill="#E3B341"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5A3.5 3.5 0 0 1 16.5 11" fill="none" stroke="#E3B341" stroke-width="1.6"/><rect x="10.5" y="13" width="3" height="4" fill="#E3B341"/><rect x="7.5" y="17" width="9" height="3" rx="1" fill="#C98F1E"/></svg>`;
+/** Perfil do clube: cabeçalho, títulos, o time de todos os tempos num campinho e o elenco atual. */
 function clubeHtml(clubeId: string): string {
   const info = infoClube(pacote, clubeId), w = mundo(pacote), cl = w.clube[clubeId];
   if (!info || !cl) return `<p class="sub">Clube não encontrado.</p>`;
   const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId), elenco = plantelDoClube(pacote, clubeId).slice(0, 25);
-  const tec = tecnicoDoClube(pacote, clubeId), liga = infoClube(pacote, clubeId).ligaId, irmaos = w.liga[liga]?.clubes ?? [];
-  return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.apelido)} · ${esc(info.cidade)}</span></div></div>
-    <div class="kv" style="margin-top:10px"><span>Estádio</span><b>${esc(info.estadio)}${info.capacidade ? ` · ${info.capacidade.toLocaleString("pt-BR")} lugares` : ""}</b><span>Técnico</span><b>${tec ? esc(tec.nome) : "—"}</b><span>Liga atual</span><b>${esc(infoLiga(liga).nome)}</b></div>
-    <p class="rotulo" style="margin-top:14px">Uniforme</p><div style="display:flex;gap:8px;align-items:center">${camisaMini(clubeId, 10)}<span class="sub">Cores: ${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</span></div>
-    <p class="rotulo" style="margin-top:14px">Títulos</p>
-    <p>${tit.anos.length ? `<b>${tit.anos.length}</b> ${tit.anos.length === 1 ? "título" : "títulos"} de ${esc(tit.liga)}: ${tit.anos.map((a) => ANO_INICIAL + a).join(", ")}` : `Nenhum título de liga registrado ainda.`}</p>
-    <p class="sub">Copas de clubes ainda não entram nesta contagem.</p>
-    <p class="rotulo" style="margin-top:14px">Time de todos os tempos</p>
-    ${xi.length ? `<p class="sub">O melhor de cada posição em cada temporada (mín. ${MIN_JOGOS_TEMPORADA} jogos), contado ao longo da história. Vale a nota média.</p>
-      <div class="linha-info">${xi.map((x) => `<span>${NOME_POS[x.posicao as keyof typeof NOME_POS] ?? x.posicao} <b>${esc(x.nome)}</b> · ${x.vezes}× melhor · nota ${x.nota.toFixed(2)}</span>`).join("")}</div>` : `<p class="sub">Ainda não há temporadas suficientes deste clube.</p>`}
-    <p class="rotulo" style="margin-top:14px">Elenco atual</p>
-    <div class="linha-info">${elenco.map((j) => `<span>${NOME_POS[j.posicao as keyof typeof NOME_POS] ?? j.posicao} <b>${esc(j.nome)}</b> · ${j.ovr} · ${j.idade} anos</span>`).join("")}</div>
-    <p class="rotulo" style="margin-top:14px">Clubes da mesma liga</p>
+  const tec = tecnicoDoClube(pacote, clubeId), liga = info.ligaId, irmaos = w.liga[liga]?.clubes ?? [];
+  const de = (p: string) => xi.filter((x) => x.posicao === p);
+  const cart = (x: TitularHistorico) => `<div class="sel-j"><button class="nome-hist" data-hist="${esc(x.nome)}">${esc(nomeCurtoSel(x.nome))}</button><small>${x.vezes}× melhor · ${x.nota.toFixed(2).replace(".", ",")}</small></div>`;
+  const linhas = [[...de("PON").slice(0, 1), ...de("ATA"), ...de("PON").slice(1)], [...de("MEI").slice(0, 1), ...de("VOL"), ...de("MEI").slice(1)], [...de("LAT").slice(0, 1), ...de("ZAG"), ...de("LAT").slice(1)], de("GOL")];
+  const trofeus = tit.ligas.length
+    ? tit.ligas.map((l) => `<div class="titulo-liga">${TROFEU.repeat(Math.min(l.anos.length, 6))}${l.anos.length > 6 ? `<b>×${l.anos.length}</b>` : ""}<div><b>${esc(l.curto)}</b> <small class="sub">${l.anos.map((a) => ANO_INICIAL + a).join(", ")}</small></div></div>`).join("")
+    : `<p class="sub">Ainda sem títulos de liga.</p>`;
+  return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(infoLiga(liga).curto)}</span></div></div>
+    <div class="kv" style="margin-top:10px"><span>Estádio</span><b>${esc(info.estadio)}${info.capacidade ? ` · ${info.capacidade.toLocaleString("pt-BR")} lugares` : ""}</b><span>Técnico</span><b>${tec ? esc(tec.nome) : "—"}</b></div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px">${camisaMini(clubeId, 10)}<span class="sub">${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</span></div>
+    <p class="rotulo" style="margin-top:16px">Títulos${tit.total ? ` · ${tit.total}` : ""}</p>
+    <div class="titulos">${trofeus}</div>
+    <p class="rotulo" style="margin-top:16px">Time de todos os tempos</p>
+    ${xi.length ? `<div class="campinho">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : `<p class="sub">Ainda sem temporadas suficientes deste clube.</p>`}
+    <p class="rotulo" style="margin-top:16px">Elenco atual</p>
+    <table><tbody>${elenco.map((j) => `<tr><td>${NOME_POS[j.posicao] ?? j.posicao}</td><td>${esc(j.nome)}</td><td class="n">${j.ovr}</td></tr>`).join("")}</tbody></table>
+    <p class="rotulo" style="margin-top:16px">Clubes da mesma liga</p>
     <div class="chips" style="flex-wrap:wrap">${irmaos.map((x) => `<button class="chip${x.id === clubeId ? " ativo" : ""}" data-perfil-clube="${x.id}">${esc(x.nome)}</button>`).join("")}</div>
     <div style="text-align:center;margin-top:14px"><button class="botao sec peq" data-fechar-clube="1">Fechar</button></div>`;
 }
@@ -2505,4 +2511,13 @@ $("dlgAgentes").addEventListener("change", (ev) => {
 });
 $("arqSave").addEventListener("change", (ev) => { const i = ev.target as HTMLInputElement, f = i.files?.[0]; if (f) carregarSave(f); i.value = ""; });
 void SEMANAS_PRE;
-render();
+// Se algo quebrar (por exemplo, ao abrir um save antigo), mostra o erro em vez de uma tela vazia ou verde.
+const mostrarErro = (e: unknown) => {
+  const msg = e instanceof Error ? `${e.message}\n${(e.stack ?? "").split("\n").slice(1, 4).join("\n")}` : String(e);
+  let box = document.getElementById("erro-jogo");
+  if (!box) { box = document.createElement("div"); box.id = "erro-jogo"; box.style.cssText = "position:fixed;inset:0;z-index:99999;background:#fff;color:#111;padding:18px;overflow:auto;font:13px/1.4 -apple-system,sans-serif"; document.body.appendChild(box); }
+  box.innerHTML = `<h3 style="margin:0 0 8px">O jogo parou por um erro</h3><p>Envie este texto para o Leonardo:</p><pre style="white-space:pre-wrap;background:#f3f3f3;padding:10px;border-radius:8px">${esc(msg)}</pre><p><button onclick="document.getElementById('erro-jogo').remove()">Fechar</button></p>`;
+};
+window.addEventListener("error", (ev) => mostrarErro(ev.error ?? ev.message));
+window.addEventListener("unhandledrejection", (ev) => mostrarErro(ev.reason));
+try { render(); } catch (e) { mostrarErro(e); }

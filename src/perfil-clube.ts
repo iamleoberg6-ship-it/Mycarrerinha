@@ -1,18 +1,21 @@
 // Perfil do clube: títulos da liga por temporada, elenco atual, time de todos os tempos (o melhor de cada posição
 // em cada temporada, pela nota média, somado ao longo da história do clube) e os dados do clube (cidade, estádio, técnico).
-import { mundo, infoClube, linhasDoClube, statsDaLinha, tecnicoDoClube } from "./mundo.js";
+import { mundo, infoClube, linhasDoClube, statsDaLinha, tecnicoDoClube, campeoesDoClube } from "./mundo.js";
 import { VAGAS_433 } from "./partida.js";
 import { infoLiga } from "./ligas.js";
 import type { PacoteDados } from "./liga.js";
 
 export const MIN_JOGOS_TEMPORADA = 10;
 
-/** Anos em que o clube foi campeão da liga (rank 1 na temporada). */
-export function titulosDoClube(pacote: PacoteDados, clubeId: string): { anos: number[]; liga: string } {
-  const anos = new Set<number>();
-  for (const { x } of linhasDoClube(pacote, clubeId)) if (x.liga && x.liga[0] === 1) anos.add(x.t);
-  const liga = infoClube(pacote, clubeId)?.ligaId ?? "";
-  return { anos: [...anos].sort((a, b) => a - b), liga: liga ? infoLiga(liga).curto : "" };
+export interface TituloLiga { liga: string; nome: string; curto: string; anos: number[] }
+
+/** Campeonatos ganhos pelo clube, por liga (só títulos conquistados, nunca os que apenas disputou). */
+export function titulosDoClube(pacote: PacoteDados, clubeId: string): { total: number; ligas: TituloLiga[] } {
+  const porLiga = new Map<string, number[]>();
+  for (const x of campeoesDoClube(pacote, clubeId)) porLiga.set(x.liga, [...(porLiga.get(x.liga) ?? []), x.t]);
+  const ligas = [...porLiga].map(([liga, anos]) => ({ liga, nome: infoLiga(liga).nome, curto: infoLiga(liga).curto, anos: anos.sort((a, b) => a - b) }))
+    .sort((a, b) => b.anos.length - a.anos.length || a.nome.localeCompare(b.nome));
+  return { total: ligas.reduce((a, l) => a + l.anos.length, 0), ligas };
 }
 
 export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number }

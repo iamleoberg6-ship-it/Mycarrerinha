@@ -141,7 +141,7 @@ export const todasSelecoes = (pacote: PacoteDados) => SELECOES.map((x) => mundo(
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let ligasOriginais = new Map<Liga, Clube[]>();
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
-let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; saiu: Map<string, { t: number; motivo: string }>;
+let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; campeoes: { t: number; liga: string; clube: string }[]; saiu: Map<string, { t: number; motivo: string }>;
   /** técnico de cada clube profissional, técnicos sem clube e as trocas de cada virada */
   tecnicos: Record<string, Tecnico>; tecLivres: Tecnico[]; trocas: Record<number, TrocaTecnico[]>; nomesTec: Set<string>;
   /** lesões graves da temporada (rodadas da liga em que o jogador fica fora) */
@@ -241,6 +241,8 @@ function virarTecnicos(m: Mundo, semente: string) {
   const vagas: { c: Clube; saiu?: string }[] = [], bons: { c: Clube; tec: Tecnico }[] = [];
   for (const l of m.ligas) {
     const ordem = ordemFinal(fonte, l.id), porForca = [...l.clubes].sort((a, b) => b.forca - a.forca).map((c) => c.id);
+    // o campeão da temporada fica registrado (títulos do perfil do clube)
+    if (ordem[0] && !e.campeoes.some((x) => x.t === t && x.liga === l.id)) e.campeoes.push({ t, liga: l.id, clube: ordem[0] });
     for (const c of l.clubes) {
       const tec = e.tecnicos[c.id], r = new RNG(`${semente}|tecnico|${t}|${c.id}`);
       if (!tec) continue;
@@ -314,7 +316,7 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     const usados = new Set([...Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)), ...nomesSelecao]);
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados, c.id);
-    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map(), acessos: {}, desde };
+    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), campeoes: [], saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map(), acessos: {}, desde };
     registrarTemporada(m);
   }
   const e = estado;
@@ -394,6 +396,8 @@ function registrarMeio(m: Mundo) {
   }
 }
 const garantir = (pacote: PacoteDados) => { mundo(pacote); if (!estado) sincronizarMundo(pacote, "", 0); return estado!; };
+/** Campeonatos que o clube ganhou: liga e temporada (a história inteira da simulação). */
+export const campeoesDoClube = (pacote: PacoteDados, clubeId: string) => garantir(pacote).campeoes.filter((x) => x.clube === clubeId);
 /** Os garotos da base do clube (15 a 19 anos), do melhor para o pior. Vazio para quem não tem base (amadores, convidados). */
 export const baseDoClube = (pacote: PacoteDados, id: string): JogadorNPC[] => [...(garantir(pacote).base[idClube(id)] ?? [])].sort((a, b) => b.ovr - a.ovr);
 /** Nível da base do clube (estrutura, cultura, escola do país). */

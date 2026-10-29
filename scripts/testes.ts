@@ -10,12 +10,13 @@ import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor, podeTerCarro, vagasGaragem } from "../src/casa.js";
-import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
+import { campeoesDoClube, mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
 import { convocado, participantesCopa, escalacaoSelecao, participantesTorneio } from "../src/jogo.js";
 import { ehTorneioContinental, ehFinalissima } from "../src/copas.js";
 import { premiosDoAno, type ContextoPremios } from "../src/premios-mundo.js";
 import type { Candidato } from "../src/mundo.js";
 import { infoLiga } from "../src/ligas.js";
+import { titulosDoClube } from "../src/perfil-clube.js";
 import { comJogador, recordesDaSelecao, recordesDoClube } from "../src/recordes.js";
 import { anunciarAposentadoria, desistirAposentadoria, recordesDoJogador, elencoDisponivel, sincronizar } from "../src/jogo.js";
 import { tecnicoDoClube, trocasDeTecnicoEm, lesoesDaTemporada } from "../src/mundo.js";
@@ -1082,6 +1083,19 @@ teste("Atlético Bilbau: só bascos, temporada após temporada (base, mercado e 
     assert.equal(fora.length, 0, `temporada ${t}: ${fora.map((j) => j.nome).join(", ")}`);
     assert.ok(baseDoClube(pacote, "ES-ATH").every((j) => j.basco));
   }
+  sincronizarMundo(pacote, "", 0);
+});
+
+teste("Títulos do clube: só os campeonatos que ganhou, um por liga e temporada", () => {
+  sincronizarMundo(pacote, "titulos", 3, 0);
+  const w = mundo(pacote);
+  const campeoes = w.ligas.flatMap((l) => l.clubes.map((c) => c.id)).flatMap((id) => campeoesDoClube(pacote, id));
+  assert.ok(campeoes.length >= w.ligas.length * 2, "campeões de cada liga nas temporadas simuladas");
+  for (const x of campeoes) assert.ok(w.liga[x.liga] && w.clube[x.clube], `campeão inválido em ${x.liga}`);
+  const chaves = new Set(campeoes.map((x) => `${x.liga}|${x.t}`));
+  assert.equal(chaves.size, campeoes.length, "um campeão por liga e temporada");
+  const alguem = campeoes[0].clube, tit = titulosDoClube(pacote, alguem);
+  assert.equal(tit.total, campeoesDoClube(pacote, alguem).length);
   sincronizarMundo(pacote, "", 0);
 });
 
