@@ -26,6 +26,8 @@ function padrao(modelo: string, c2: string, c3: string, faixas?: string[]): stri
     /** duas faixas cruzando o meio: a de cima na cor 2, a de baixo na cor 3 (ex.: vermelha e preta sobre o branco) */
     case "duasFaixasH": return `<rect x="0" y="40" width="80" height="8" fill="${c2}"/><rect x="0" y="49" width="80" height="8" fill="${c3}"/>`;
     case "metade": return `<rect x="40" y="0" width="40" height="100" fill="${c2}"/>`;
+    /** corte diagonal do ombro à barra (Mônaco): a metade direita na cor 2, como no uniforme do campo */
+    case "metadeDiagonal": return `<path d="M8 0 L90 0 L90 104 L70 104 Z" fill="${c2}"/>`;
     /** faixas diagonais largas (Athletico): três faixas grossas, inclinadas, sobre o fundo */
     case "diagonais": return [12, 46, 80].map((y) => `<path d="M-10 ${y + 32} L90 ${y - 6} L90 ${y + 6} L-10 ${y + 44} Z" fill="${c2}"/>`).join("");
     case "centro": return `<rect x="0" y="0" width="22" height="100" fill="${c2}"/><rect x="58" y="0" width="22" height="100" fill="${c2}"/>`;

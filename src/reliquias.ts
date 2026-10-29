@@ -72,6 +72,7 @@ const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terc
   CFC: { cores: ["#FFFFFF", "#00573F"], modelo: "duasFaixasH", terceira: "#00573F" },
   FOR: { cores: ["#1C3F94", "#E2231A"], modelo: "listrasHG", terceira: "#111111" },
   ACG: { cores: ["#E2231A", "#000000"], modelo: "metade", terceira: "#111111" },
+  "FR-ASM": { cores: ["#E31B23", "#FFFFFF"], modelo: "metadeDiagonal", terceira: "#111111" },
 };
 /** Cores, desenho e terceira cor com que a camisa é desenhada (o clube tem prioridade sobre o que foi guardado). */
 /** Calção de clubes cujo uniforme real não usa a cor 2 (Santos: calção branco, com o preto só na gola e nas mangas). */
