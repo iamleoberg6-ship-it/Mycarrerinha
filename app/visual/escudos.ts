@@ -62,8 +62,10 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   const LETRA_FLU = chave === "FLU" ? `<text x="13" y="21.5" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="17" fill="#FFFFFF" stroke="#0A0A0A" stroke-width=".7" paint-order="stroke">F</text>` : "";
   // Liverpool: "YNWA" em branco, fininho, no espaço vermelho acima da letra
   const YNWA = chave === "EN-LIV" ? `<text x="13" y="7.4" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-weight="400" font-size="4.6" letter-spacing=".5" fill="#FFFFFF">YNWA</text>` : "";
+  // Manchester Celeste: tudo azul, com três listras diagonais brancas
+  const LISTRAS_MCI = (azul: string) => `<rect width="26" height="30" fill="${azul}"/><g transform="rotate(-45 13 15)" fill="#FFFFFF">${[9.2, 14.8, 20.4].map((y) => `<rect x="-10" y="${y}" width="50" height="2.6"/>`).join("")}</g>`;
   const detalhe = COROA + LETRA_FLU + YNWA + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${DESENHOS[desenho](c1, c2, inicial(nome))}</g>${detalhe}<path d="${d}" fill="none" stroke="${TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : DESENHOS[desenho](c1, c2, inicial(nome))}</g>${detalhe}<path d="${d}" fill="none" stroke="${TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {
