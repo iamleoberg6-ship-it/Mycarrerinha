@@ -2,6 +2,7 @@
 import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
+import { xgDoGol, xgDoChute, type Chute } from "../../src/estatisticas-partida";
 import { camisaCostas } from "../visual/camisas";
 import { kitVisual, calcaoDoClube, meiaoDoClube, numeroCorClube, UNIFORME_CLUBE, UNIFORME_SELECAO } from "../../src/reliquias";
 import type { Reliquia } from "../../src/casa";
@@ -2172,6 +2173,16 @@ let placar = [0, 0], timer = 0, minutoAtual = 0, nDec = 0, amarelos = 0, expulso
 /** Disputa de pênaltis em andamento (só no mata-mata empatado no agregado). */
 let pen: { d: Disputa; vez: number; cob: { meu: boolean; ok: boolean }[]; bm: number; ba: number; slot: number; bateu?: boolean; converteu?: boolean; venceu?: boolean } | undefined;
 const decisoesAbertas: Record<number, Decisao> = {};
+/** Relógio da partida: anda minuto a minuto na velocidade escolhida (1x, 2x, 4x, 20x, 40x). */
+const MIN_POR_SEG = 0.5;
+let velocidade = 1, relogio = 0, relogioTick = 0, pular = false;
+let chutesJogo: Chute[] = [];
+document.addEventListener("click", (ev) => {
+  const b = (ev.target as Element).closest<HTMLElement>("[data-vel]");
+  if (!b) return;
+  velocidade = Number(b.dataset.vel) || 1;
+  document.querySelectorAll<HTMLElement>("[data-vel]").forEach((x) => x.classList.toggle("ativo", x === b));
+});
 
 function htmlGol(p: Partida, lado: "casa" | "fora", meu?: "gol" | "assist", texto?: string) {
   const nome = save!.jogador.apelido, time = lado === "casa" ? p.nomeCasa : p.nomeFora, meuTime = (lado === "casa") === p.souCasa;
@@ -2191,6 +2202,7 @@ function abrirJogo() {
   if (!partida || partida.escalacao === "lesionado" || partida.escalacao === "fora" || partida.escalacao === "suspenso" || (partida.escalacao === "banco" && partida.entrada > 90 && partida.lances.length === 0)) { fecharSemana(); return; }
   const p = partida, nome = save.jogador.apelido;
   placar = [0, 0]; minutoAtual = 0; amarelos = 0; expulso = false; comemorou = false; posFeito = false; disputaFeita = false; pen = undefined; notaMostrada = 0;
+  relogio = 0; pular = false; clearInterval(relogioTick); relogioTick = 0; chutesJogo = [...(p.estat?.chutes ?? [])];
   fila = [];
   if (p.clima) fila.push({ min: 0, html: esc(p.clima.texto), cls: "clima" });
   fila.push({ min: 0, html: `${esc(p.abertura || "Bola rolando.")}${p.entrada === 0 ? ` ${esc(nome)} começa jogando.` : ` ${esc(nome)} começa no banco.`}` });
@@ -2210,6 +2222,8 @@ function abrirJogo() {
     <div class="linha"><div class="time">${escudo(p.casa)}<span>${esc(p.nomeCasa)}</span></div><div class="gols" id="gols">0 × 0</div><div class="time dir"><span>${esc(p.nomeFora)}</span>${escudo(p.fora)}</div></div>
     <div class="min" id="minuto">0'</div><div class="placar-extra"><span id="agregado"></span><span class="nota-viva" id="notaViva"></span></div>
     ${campinhoSvg(p)}<div class="pressao" aria-label="Quem está melhor no jogo"><span>${esc(p.souCasa ? p.nomeCasa : p.nomeFora)}</span><i><b id="pressaoBar"></b></i><span>${esc(p.souCasa ? p.nomeFora : p.nomeCasa)}</span></div></div>
+    <div class="vel" aria-label="Velocidade da partida">${[1, 2, 4, 20, 40].map((v) => `<button class="chip${v === velocidade ? " ativo" : ""}" data-vel="${v}">${v}x</button>`).join("")}</div>
+    <div class="estat" id="estat"></div>
     <div class="lances" id="lances"></div><div class="rodape" id="rodapeJogo"><button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button></div>`;
   ($("dlgJogo") as HTMLDialogElement).showModal();
   atualizarPlacar();
@@ -2253,6 +2267,26 @@ function atualizarPlacar() {
   nv.innerHTML = `Sua nota <b>${r.toFixed(1).replace(".", ",")}</b>`;
   if (notaMostrada && Math.abs(r - notaMostrada) >= 0.15) { nv.classList.remove("sobe", "desce"); void nv.offsetWidth; nv.classList.add(r > notaMostrada ? "sobe" : "desce"); }
   notaMostrada = r;
+  renderEstat();
+}
+/** Estatísticas até o minuto atual: posse média, chutes, chutes no alvo e gol esperado (xG). */
+function estatAte(m: number) {
+  const base = partida?.estat, ate = chutesJogo.filter((c) => c.min <= m);
+  const conta = (lado: 0 | 1, f: (c: Chute) => boolean = () => true) => ate.filter((c) => c.lado === lado && f(c)).length;
+  const xg = (lado: 0 | 1) => +ate.filter((c) => c.lado === lado).reduce((a, c) => a + c.xg, 0).toFixed(2);
+  const fatias = base ? base.posseCasa.slice(1, m + 1) : [];
+  const posseCasa = fatias.length ? Math.round(fatias.reduce((a, b) => a + b, 0) / fatias.length) : 50;
+  return { posseCasa, chutes: [conta(0), conta(1)] as [number, number], alvo: [conta(0, (c) => c.alvo), conta(1, (c) => c.alvo)] as [number, number], xg: [xg(0), xg(1)] as [number, number] };
+}
+function renderEstat() {
+  const el = document.getElementById("estat");
+  if (!el || !partida) return;
+  const e = estatAte(minutoAtual), eu = partida.souCasa ? 0 : 1, x = (vet: [number, number]) => [vet[eu], vet[1 - eu]] as [number, number];
+  const posseMeu = eu === 0 ? e.posseCasa : 100 - e.posseCasa;
+  const linha = (rotulo: string, [a, b]: [number, number], dec = 0) => `<div class="est-linha"><b>${a.toFixed(dec).replace(".", ",")}</b><span>${rotulo}</span><b>${b.toFixed(dec).replace(".", ",")}</b></div>`;
+  const [cm, cf] = x(e.chutes), [am, af] = x(e.alvo), [gm, gf] = x(e.xg);
+  el.innerHTML = `<div class="est-posse"><span>${posseMeu}%</span><i><b style="width:${posseMeu}%"></b></i><span>${100 - posseMeu}%</span></div><p class="est-rot">Posse de bola</p>
+    ${linha("Chutes", [cm, cf])}${linha("Chutes no alvo", [am, af])}${linha("Gol esperado (xG)", [gm, gf], 2)}`;
 }
 function adicionarLance(min: number, html: string, cls = "") {
   const el = document.createElement("div"); el.className = `lance ${cls}`; el.innerHTML = `<span class="m">${min}'</span><span>${html}</span>`;
@@ -2272,17 +2306,27 @@ function campinhoSvg(p: Partida): string {
 }
 const luzCor = (hex: string) => { const n = parseInt(hex.replace("#", "").slice(0, 6), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
 /** Leva a bola para uma faixa do campo (0 = nosso gol, 300 = gol deles) e mexe na barra de pressão. */
-function moverBola(xMin: number, xMax: number, dPressao: number, voce = false) {
+function moverBola(_xMin: number, _xMax: number, dPressao: number, voce = false, pos: [number, number] = [150, 55]) {
   passoBola++;
-  const x = xMin + ((passoBola * 37) % 100) / 100 * (xMax - xMin), y = 18 + ((passoBola * 53) % 100) / 100 * 74;
+  const [x, y] = pos;
   document.getElementById("bola")?.setAttribute("transform", `translate(${x.toFixed(0)} ${y.toFixed(0)})`);
   const v = document.getElementById("voce");
   const emCampo = !!partida && !expulso && minutoAtual >= partida.entrada && minutoAtual <= Math.min(90, partida.saida);
   if (v) v.style.opacity = emCampo ? "1" : "0";
-  if (v) { v.setAttribute("transform", voce ? `translate(${(x - 10).toFixed(0)} ${(y + 6).toFixed(0)})` : `translate(${Math.min(250, Math.max(110, x - 30 + ((passoBola * 17) % 40))).toFixed(0)} ${(30 + ((passoBola * 29) % 50)).toFixed(0)})`); v.classList.toggle("ativo", voce); }
+  if (v) { v.setAttribute("transform", voce ? `translate(${(x - 10).toFixed(0)} ${(y + 6).toFixed(0)})` : `translate(${Math.min(250, Math.max(110, x - 30)).toFixed(0)} ${(y > 60 ? 86 : 30).toFixed(0)})`); v.classList.toggle("ativo", voce); }
   pressao = Math.max(-1, Math.min(1, pressao * 0.8 + dPressao));
   const b = document.getElementById("pressaoBar");
   if (b) { b.style.width = `${Math.abs(pressao) * 50}%`; b.style.left = pressao >= 0 ? "50%" : `${50 - Math.abs(pressao) * 50}%`; b.className = pressao >= 0 ? "pos" : "neg"; }
+}
+/** Onde a bola está no campinho conforme o lance: escanteio no canto, falta, pênalti, gol, área ou meio-campo. */
+function zonaDoItem(item: ItemFila): [number, number] {
+  if (item.gol) return item.gol === (partida!.souCasa ? "casa" : "fora") ? [282, 60] : [18, 60];
+  const t = (item.texto ?? item.html ?? "").toLowerCase();
+  if (/escanteio/.test(t)) return [292, 8];
+  if (/pênalti|penalti/.test(t)) return [270, 60];
+  if (/falta/.test(t)) return [240, 62];
+  if (/trave|área|cruz|cabeç|cabeca/.test(t)) return [item.cls === "contra" ? 40 : 250, 46 + ((item.min * 13) % 28)];
+  return [item.cls === "contra" ? 90 : 170, 34 + ((item.min * 17) % 46)];
 }
 function flashGol(meu: boolean, nome: string) {
   const t = $("telaJogo"), d = document.createElement("div");
@@ -2290,17 +2334,35 @@ function flashGol(meu: boolean, nome: string) {
   t.appendChild(d); setTimeout(() => d.remove(), 1500);
 }
 function avancar() {
-  clearTimeout(timer);
+  clearTimeout(timer); clearInterval(relogioTick); relogioTick = 0;
   const item = fila.shift();
   if (!partida || !save) return;
   if (!item) { $("rodapeJogo").innerHTML = botaoFimJogo(); return; }
+  andarAte(item.min, () => mostrarItem(item));
+}
+/** O relógio anda até o minuto do próximo lance, na velocidade escolhida (ou pula, se o jogador pediu). */
+function andarAte(alvo: number, depois: () => void) {
+  if (pular || relogio >= alvo) { pular = false; relogio = Math.max(relogio, alvo); minutoAtual = Math.floor(relogio); atualizarPlacar(); depois(); return; }
+  let ultimo = performance.now();
+  relogioTick = window.setInterval(() => {
+    const agora = performance.now(), dt = (agora - ultimo) / 1000;
+    ultimo = agora;
+    relogio = Math.min(alvo, relogio + dt * MIN_POR_SEG * velocidade);
+    minutoAtual = Math.floor(relogio);
+    atualizarPlacar();
+    if (relogio >= alvo) { clearInterval(relogioTick); relogioTick = 0; depois(); }
+  }, 80);
+}
+function pausaDoItem(item: ItemFila) { return Math.max(120, (item.gol ? 900 : 350) / Math.sqrt(velocidade)); }
+function mostrarItem(item: ItemFila) {
+  if (!partida || !save) return;
   minutoAtual = item.min;
   if (item.decisao) {
     // lance de campo só com o jogador em campo: nada antes de entrar, depois de sair ou de ser expulso
     const momento = SITUACAO[item.decisao.situacao]?.momento ?? (item.decisao.situacao === "comemoracao" ? "comemoracao" : "");
     const deCampo = momento !== "pos" && momento !== "comemoracao";
     if (deCampo && (expulso || item.min < partida.entrada || item.min > Math.min(90, partida.saida))) { avancar(); return; }
-    if (deCampo) moverBola(200, 255, 0.2, true);
+    if (deCampo) moverBola(0, 0, 0.2, true, CENAS[cenaDe(item.decisao)].eu);
     mostrarDecisao(item.decisao); atualizarPlacar(); return;
   }
   if (item.acrescimo) {
@@ -2308,15 +2370,15 @@ function avancar() {
     if (!t) { avancar(); return; }
     item.html = t; item.cls = "tenso";
   }
-  if (item.gol) { if (item.gol === "casa") placar[0]++; else placar[1]++; }
+  if (item.gol) { const lado = item.gol === "casa" ? 0 : 1; if (lado === 0) placar[0]++; else placar[1]++; chutesJogo.push({ min: item.min, lado, xg: xgDoGol(item.min, lado), alvo: true }); }
   atualizarPlacar();
-  { // a bola no campinho
-    const meuLado = partida.souCasa ? "casa" : "fora";
-    if (item.gol) { const meu = item.gol === meuLado; moverBola(meu ? 292 : 6, meu ? 296 : 8, meu ? 0.6 : -0.6, item.meu === "gol"); flashGol(meu, item.meu === "gol" ? save.jogador.apelido : meu ? (partida.souCasa ? partida.nomeCasa : partida.nomeFora) : (partida.souCasa ? partida.nomeFora : partida.nomeCasa)); }
-    else if (item.jogador) moverBola(170, 240, 0.12, true);
-    else if (item.cls === "meu") moverBola(200, 270, 0.18);
-    else if (item.cls === "contra") moverBola(30, 100, -0.18);
-    else if (!item.fim && !item.acrescimo && item.min > 0) moverBola(100, 200, 0);
+  { // a bola no campinho: onde o lance aconteceu
+    const meuLado = partida.souCasa ? "casa" : "fora", zona = zonaDoItem(item);
+    if (item.gol) { const meu = item.gol === meuLado; moverBola(0, 0, meu ? 0.6 : -0.6, item.meu === "gol", zona); flashGol(meu, item.meu === "gol" ? save.jogador.apelido : meu ? (partida.souCasa ? partida.nomeCasa : partida.nomeFora) : (partida.souCasa ? partida.nomeFora : partida.nomeCasa)); }
+    else if (item.jogador) moverBola(0, 0, 0.12, true, zona);
+    else if (item.cls === "meu") moverBola(0, 0, 0.18, false, zona);
+    else if (item.cls === "contra") moverBola(0, 0, -0.18, false, zona);
+    else if (!item.fim && !item.acrescimo && item.min > 0) moverBola(0, 0, 0, false, zona);
   }
   adicionarLance(item.min, item.html ?? htmlGol(partida, item.gol!, item.meu, item.texto), item.gol ? "gol" : item.cls ?? "");
   if (item.gol && !item.meu) { const re = reacaoGol(item.gol); if (re) adicionarLance(item.min, re, "reacao"); }
@@ -2324,7 +2386,7 @@ function avancar() {
   if (item.fim && !disputaFeita && precisaDisputa()) { disputaFeita = true; iniciarDisputa(); return; }
   if (item.fim && !posFeito) posApito();
   if (!fila.length) { $("rodapeJogo").innerHTML = botaoFimJogo(); return; }
-  timer = window.setTimeout(avancar, item.gol ? 1100 : 650);
+  timer = window.setTimeout(avancar, pausaDoItem(item));
 }
 
 /** Depois do apito, às vezes ainda tem entrevista, troca de camisa, conversa com o técnico... */
@@ -2444,29 +2506,68 @@ function tipoDaOpcao(teste: Record<string, number> | undefined, rotulo: string):
   if (top === "MAR" || top === "POS") return "defesa";
   return "outro";
 }
+/** Cenas do campo: onde o jogador está e onde ficam os alvos de cada tipo de opção (ataque para a direita, coords 300x120). */
+type Cena = "escanteio" | "falta" | "penalti" | "ponta" | "contra" | "area" | "meio" | "goleiro" | "geral";
+interface CenaCampo { rotulo: string; eu: [number, number]; bola?: [number, number]; passe: [number, number]; drible: [number, number]; defesa: [number, number]; adversarios?: [number, number][] }
+const CENAS: Record<Cena, CenaCampo> = {
+  escanteio: { rotulo: "Escanteio", eu: [292, 10], bola: [292, 8], passe: [238, 42], drible: [262, 26], defesa: [246, 58], adversarios: [[262, 46], [268, 56], [276, 70]] },
+  falta: { rotulo: "Falta", eu: [258, 62], bola: [258, 62], passe: [236, 98], drible: [246, 24], defesa: [232, 66], adversarios: [[238, 50], [238, 58], [238, 66], [238, 74]] },
+  penalti: { rotulo: "Pênalti", eu: [268, 60], bola: [268, 60], passe: [256, 96], drible: [262, 26], defesa: [246, 62] },
+  ponta: { rotulo: "Pela ponta", eu: [236, 14], passe: [256, 44], drible: [258, 18], defesa: [218, 24], adversarios: [[252, 20]] },
+  contra: { rotulo: "Contra-ataque", eu: [226, 60], passe: [262, 30], drible: [256, 62], defesa: [206, 66], adversarios: [[262, 50], [262, 72]] },
+  area: { rotulo: "Na área", eu: [250, 62], passe: [236, 30], drible: [264, 50], defesa: [226, 62], adversarios: [[262, 50], [262, 74]] },
+  meio: { rotulo: "Meio-campo", eu: [160, 62], passe: [212, 96], drible: [186, 24], defesa: [148, 62], adversarios: [[172, 52]] },
+  goleiro: { rotulo: "Gol vazio", eu: [210, 60], passe: [250, 36], drible: [236, 80], defesa: [198, 60] },
+  geral: { rotulo: "Lance", eu: [165, 62], passe: [222, 98], drible: [248, 30], defesa: [168, 58] },
+};
+/** A cena do lance sai do título e do texto da situação (e do id, quando ele já diz tudo). */
+function cenaDe(d: Decisao): Cena {
+  const t = `${d.titulo} ${d.texto}`.toLowerCase(), id = d.situacao;
+  if (/escanteio/.test(t)) return "escanteio";
+  if (/pênalti|penalti/.test(t)) return "penalti";
+  if (/juiz|capitão|torcida|provoca|chuv|chov|encharc|molhad|gramado|bola não para|camisa|dividida|pancada/.test(t) && !/falta frontal/.test(t)) return "meio";
+  if (/falta (frontal|na meia|batida|na barreira|a \d+)/.test(t)) return "falta";
+  if (id === "goleiroFora" || /goleiro (saiu|adiantado|fora)|gol vazio|fora da meta/.test(t)) return "goleiro";
+  if (/contra-ataque|dois contra|cara a cara|sozinho/.test(t) || id === "contraAtaqueDois") return "contra";
+  if (/ponta|cruzamento|lateral|subida|linha de fundo/.test(t) || id === "cruzamentoPonta" || id === "lateralSobe") return "ponta";
+  if (/área|zagueiro|cabeça|marcação na|subir/.test(t) || id === "zagueiroNaArea") return "area";
+  if (/meio|volante|intermediária|roubo|pressão/.test(t) || id === "rouboNoMeio" || id === "volanteSobrecarregado") return "meio";
+  return "geral";
+}
 function diagramaLance(d: Decisao): string {
   const sit = SITUACAO[d.situacao];
   if (!sit || sit.momento) return "";
   const tipos = d.opcoes.map((o) => tipoDaOpcao(sit.opcoes.find((x) => x.id === o.id)?.teste as Record<string, number> | undefined, o.rotulo));
   if (tipos.every((t) => t === "outro")) return "";
-  const defesa = tipos.filter((t) => t === "defesa").length > tipos.length / 2;
+  const cena = cenaDe(d), C = CENAS[cena];
+  // defender: o campo espelha, e o seu time ataca para a esquerda
+  const defesa = tipos.filter((t) => t === "defesa").length > tipos.length / 2 && cena !== "escanteio" && cena !== "falta" && cena !== "penalti";
+  const X = (x: number) => (defesa ? 300 - x : x);
   const [m1] = cores(partida!.souCasa ? partida!.casa : partida!.fora), [a1] = cores(partida!.souCasa ? partida!.fora : partida!.casa);
-  const eu: [number, number] = defesa ? [120, 60] : [165, 62], gol: [number, number] = defesa ? [12, 60] : [288, 60];
+  const eu: [number, number] = [X(C.eu[0]), C.eu[1]], gol: [number, number] = [X(288), 60];
   const seta = (t: TipoSeta, k: number) => {
-    const [x, y] = eu, n = k + 1, iguais = tipos.filter((u) => u === t).length, j = tipos.slice(0, k).filter((u) => u === t).length, off = (j - (iguais - 1) / 2) * 18;
-    const fim: [number, number] = t === "gol" ? [defesa ? 18 : 282, 60 + off] : t === "passe" ? [222 + off, 98] : t === "drible" ? [248, 30 + off] : t === "defesa" ? [168, 58 + off] : [x + 20 + off, 16];
-    const ctrl: [number, number] = t === "drible" ? [x + 40, y - 50] : t === "passe" ? [x + 30, y + 40] : [(x + fim[0]) / 2, (y + fim[1]) / 2];
-    const curva = `M${x} ${y} Q${ctrl[0]} ${ctrl[1]} ${fim[0]} ${fim[1]}`;
-    // o número fica a 70% do caminho (ponto da curva quadrática)
-    const tt = 0.7, lx = (1 - tt) ** 2 * x + 2 * (1 - tt) * tt * ctrl[0] + tt * tt * fim[0], ly = (1 - tt) ** 2 * y + 2 * (1 - tt) * tt * ctrl[1] + tt * tt * fim[1];
+    const [x, y] = eu, n = k + 1, iguais = tipos.filter((u) => u === t).length, j = tipos.slice(0, k).filter((u) => u === t).length, off = (j - (iguais - 1) / 2) * 16;
+    const alvo: [number, number] =
+      t === "gol" ? [gol[0], 60 + off] :
+      t === "passe" ? [X(C.passe[0]) + off * 0.3, C.passe[1]] :
+      t === "drible" ? [X(C.drible[0]), C.drible[1] + off] :
+      t === "defesa" ? [X(C.defesa[0]), C.defesa[1] + off] :
+      [x + 20 + off, 16];
+    const ctrl: [number, number] = t === "drible" ? [(x + alvo[0]) / 2, Math.min(y, alvo[1]) - 24] : t === "passe" ? [(x + alvo[0]) / 2 + 8, (y + alvo[1]) / 2 + 22] : [(x + alvo[0]) / 2, (y + alvo[1]) / 2 - 10];
+    const curva = `M${x} ${y} Q${ctrl[0]} ${ctrl[1]} ${alvo[0]} ${alvo[1]}`;
+    const tt = 0.7, lx = (1 - tt) ** 2 * x + 2 * (1 - tt) * tt * ctrl[0] + tt * tt * alvo[0], ly = (1 - tt) ** 2 * y + 2 * (1 - tt) * tt * ctrl[1] + tt * tt * alvo[1];
     const cor = ["#E3B341", "#74D394", "#6FA8DC", "#E58FB1"][k % 4];
     return `<defs><marker id="ponta${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="${cor}"/></marker></defs><path d="${curva}" stroke="${cor}" stroke-width="2.4" fill="none" stroke-dasharray="${t === "outro" ? "4 4" : "0"}" marker-end="url(#ponta${k})"/>
       <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="7.5" fill="${cor}" stroke="#0008" stroke-width="1"/><text x="${lx.toFixed(1)}" y="${(ly + 3.2).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="900" fill="#111">${n}</text>`;
   };
   const jog = (x: number, y: number, cor: string, txt = "") => `<circle cx="${x}" cy="${y}" r="7" fill="${cor}" stroke="#fff" stroke-width="1.4"/>${txt ? `<text x="${x}" y="${y + 3}" text-anchor="middle" font-size="7.5" font-weight="900" fill="${luzCor(cor) > 0.6 ? "#111" : "#fff"}">${txt}</text>` : ""}`;
-  return `<svg class="diagrama-lance" viewBox="0 0 300 120" aria-hidden="true"><rect width="300" height="120" rx="8" fill="#2A6E3F"/><g fill="none" stroke="#ffffff88" stroke-width="1.2">${defesa ? `<rect x="2" y="30" width="44" height="60"/><rect x="2" y="46" width="14" height="28"/><path d="M290 2 V118"/>` : `<rect x="254" y="30" width="44" height="60"/><rect x="284" y="46" width="14" height="28"/><path d="M10 2 V118"/>`}<circle cx="${defesa ? 290 : 10}" cy="60" r="18"/></g>
-    <rect x="${gol[0] - 3}" y="50" width="6" height="20" fill="#fff"/>
-    ${defesa ? jog(170, 56, a1) + jog(30, 60, m1, "GK") : jog(282, 60, a1, "GK") + jog(222, 46, a1) + jog(222, 98, m1)}
+  // o campo: a área, a pequena área, a marca do pênalti e o gol que está sendo atacado (ou defendido)
+  const campo = `<g fill="none" stroke="#ffffff88" stroke-width="1.2"><rect x="${Math.min(X(240), X(300))}" y="28" width="60" height="64"/><rect x="${Math.min(X(282), X(300))}" y="44" width="18" height="32"/>${cena === "escanteio" ? `<path d="M${X(286)} 8 A6 6 0 0 ${defesa ? 1 : 0} ${X(292)} 14"/>` : ""}</g>
+    <circle cx="${X(268)}" cy="60" r="1.6" fill="#ffffffaa"/><rect x="${Math.min(X(290), X(294))}" y="49" width="4" height="22" fill="#fff"/>`;
+  const adv = (C.adversarios ?? []).map(([x, y]) => jog(X(x), y, a1)).join("");
+  return `<svg class="diagrama-lance" viewBox="0 0 300 120" aria-hidden="true"><rect width="300" height="120" rx="8" fill="#2A6E3F"/>${campo}
+    <text x="8" y="14" font-size="9" font-weight="800" fill="#ffffffcc">${C.rotulo}</text>
+    ${adv}${C.bola ? `<circle cx="${X(C.bola[0])}" cy="${C.bola[1]}" r="3.6" fill="#fff" stroke="#111" stroke-width=".8"/>` : ""}
     ${tipos.map(seta).join("")}${jog(eu[0], eu[1], m1, esc(save!.jogador.numero))}</svg>`;
 }
 function mostrarDecisao(d: Decisao) {
@@ -2501,6 +2602,8 @@ function decidir(i: number, op: string) {
     return;
   }
   resultados.push(r);
+  const opDef = SITUACAO[d.situacao]?.opcoes.find((x) => x.id === op);
+  if (opDef && !r.golPro && tipoDaOpcao(opDef.teste as Record<string, number>, opDef.rotulo) === "gol") chutesJogo.push({ min: d.min, lado: meuIdx(), xg: xgDoChute(r.nivel), alvo: r.nivel <= 2 });
   el.querySelector(".ops")!.innerHTML = `<div class="resultado n${r.nivel}">${esc(r.texto)}</div>`;
   const meuLado: "casa" | "fora" = p.souCasa ? "casa" : "fora", outro: "casa" | "fora" = p.souCasa ? "fora" : "casa";
   const novos: ItemFila[] = [];
@@ -2789,7 +2892,7 @@ document.addEventListener("click", (ev) => {
       plano = planoPadrao(); aba = "mercado"; const feito = [vida.familia && `${vida.familia}× falou com a família`, vida.par && `${vida.par} programas a dois`, vida.filhos && `${vida.filhos}× com os filhos`, vida.outros && `${vida.outros} conversas com casinhos e matches`, vida.amigos && `${vida.amigos} mensagens para amigos`].filter(Boolean);
       msgMercado = erro ? { texto: `A simulação parou depois de ${n} semanas por um erro: ${erro}. Baixe o save (aba Vida) e mande para corrigir.`, ok: false } : { texto: `${n} semanas simuladas.${feito.length ? ` Nesse tempo, você ${feito.join(", ")}.` : ""}`, ok: true }; salvar(); render(); window.scrollTo(0, 0);
     } break;
-    case "acelerar": clearTimeout(timer); avancar(); break;
+    case "acelerar": clearTimeout(timer); pular = true; avancar(); break;
     case "fimjogo": fecharSemana(); break;
     case "fimcopa": fecharJogoDaCopa(); break;
     case "proxima": ($("dlgResumo") as HTMLDialogElement).close(); window.scrollTo(0, 0); break;

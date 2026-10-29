@@ -53,6 +53,7 @@ import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMe
 import { gradeDeNumeros, numeroLivre, numeroParaChegada, limparNumeros, type Camisa } from "./numeros.js";
 import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, tracosDoElenco, type LinhaNarracao } from "./narracao.js";
+import { estatisticaBase, type EstatBase } from "./estatisticas-partida.js";
 import { ligacoesDoElenco } from "./relacoes-npc.js";
 import { reliquiasDaPartida, premiosDaTemporada, UNIFORME_SELECAO, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, acoesDe, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
@@ -890,6 +891,8 @@ export interface Partida {
   nomes: Record<string, string>; ctx: Contexto; abertura: string; narracao: LinhaNarracao[];
   /** modelos de frase usados na narração (para não repetir nos próximos jogos) */
   modelos?: string[];
+  /** estatísticas ao vivo: posse por minuto e chutes de fundo (os gols e as suas finalizações entram no jogo) */
+  estat?: EstatBase;
 }
 /** Consequência que volta semanas depois de um lance (ver plantarFios e resolverFios). */
 export interface Fio { id: string; quando: number; tipo: "tecnico" | "repercussao"; titulo: string; texto: string; ef?: EfeitoVida }
@@ -932,6 +935,8 @@ function forcaDaBase(pacote: PacoteDados, clubeId: string, idade: number, forcaP
 }
 
 /** Prepara a partida da semana (domingo, liga) ou, com `copa`, a de quarta pela copa continental. */
+/** Força do clube entre 0 e 1 (40 é fraco, 100 é forte), para a posse e os chutes de fundo. */
+const forcaNorm = (f: number) => Math.max(0, Math.min(1, (f - 40) / 60));
 export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa?: { copa: EstadoCopa; jogo: JogoCopa }): Partida | undefined {
   sincronizar(pacote, s);
   const selecaoJogo = !!copa && ehDeSelecao(copa.copa.id);
@@ -1023,7 +1028,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   void adv;
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}),
     entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF,
-    nomes, ctx, abertura: narr.abertura, narracao: narr.linhas, modelos: [...modelosNarr, ...narr.linhas.flatMap((l) => (l.modelo ? [l.modelo] : []))], ...(clima ? { clima } : {}) };
+    nomes, ctx, abertura: narr.abertura, narracao: narr.linhas, estat: estatisticaBase(rngDe(s, "estat"), [forcaNorm(infoClube(pacote, jogo.casa)?.forca ?? 60), forcaNorm(infoClube(pacote, jogo.fora)?.forca ?? 60)]), modelos: [...modelosNarr, ...narr.linhas.flatMap((l) => (l.modelo ? [l.modelo] : []))], ...(clima ? { clima } : {}) };
 }
 
 /** O tamanho do jogo: final, semifinal, Copa do Mundo, mata-mata de volta, clássico, briga na reta final, estreia. */
