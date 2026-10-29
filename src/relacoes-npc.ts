@@ -5,7 +5,8 @@ import { historicoDe, infoClube } from "./mundo.js";
 import { RNG } from "./rng.js";
 import { nomeCurto } from "./narracao.js";
 
-export interface Ligacao { a: string; b: string; clube: string; tipo: "amizade" | "rivalidade" }
+/** a e b: nomes curtos (narração); x e y: nomes completos (notícias); clube: apelido do clube em comum. */
+export interface Ligacao { a: string; b: string; x: string; y: string; clube: string; tipo: "amizade" | "rivalidade" }
 
 /** Pares do elenco (nomes curtos, como a narração usa) que jogaram juntos antes, no mesmo clube e temporada. */
 export function ligacoesDoElenco(pacote: PacoteDados, elenco: { nome: string }[], limite = 6): Ligacao[] {
@@ -24,7 +25,7 @@ export function ligacoesDoElenco(pacote: PacoteDados, elenco: { nome: string }[]
       const a = nomeCurto(A.nome), b = nomeCurto(B.nome);
       if (a === b) continue;
       const tipo = new RNG(`ligacao|${[A.nome, B.nome].sort().join("|")}`).chance(0.6) ? "amizade" : "rivalidade";
-      out.push({ a, b, clube: infoClube(pacote, clubeId)?.apelido ?? "clube antigo", tipo });
+      out.push({ a, b, x: A.nome, y: B.nome, clube: infoClube(pacote, clubeId)?.apelido ?? "clube antigo", tipo });
     }
   return out;
 }

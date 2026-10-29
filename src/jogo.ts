@@ -2607,7 +2607,9 @@ function noticiasDaVidaDoMundo(pacote: PacoteDados, s: Save) {
     porClube.set(cl.id, lista);
     jogadores.push(...lista);
   }
-  for (const n of sortearNoticiasDaVida(new RNG(`vida-mundo|${s.semente}|${s.carreira.temporada}`), jogadores, porClube)) noticia(s, n.tipo, n.titulo, n.texto);
+  // ligações de cada elenco (quem dividiu clube antes): as notícias usam esses pares
+  const ligacoes = [...porClube.values()].flatMap((lista) => ligacoesDoElenco(pacote, lista, 2));
+  for (const n of sortearNoticiasDaVida(new RNG(`vida-mundo|${s.semente}|${s.carreira.temporada}`), jogadores, porClube, ligacoes)) noticia(s, n.tipo, n.titulo, n.texto);
 }
 function noticiasDaVirada(pacote: PacoteDados, s: Save, v = viradaAtual(pacote), quando: "virada" | "meio" = "virada") {
   const c = s.carreira, id = idClube(c.clubeId), nome = (x: string) => infoClube(pacote, x)?.nome ?? x;

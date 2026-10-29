@@ -2,16 +2,24 @@
 // pela temporada (a mesma em todo save com a mesma semente). Usa a vida fora do campo de cada um (src/vida-npc.ts).
 import { RNG } from "./rng.js";
 import { vidaDe } from "./vida-npc.js";
+import type { Ligacao } from "./relacoes-npc.js";
 
 export interface JogadorDoMundo { nome: string; idade: number; clubeNome: string; clubeId: string }
 export interface NoticiaVidaMundo { tipo: "vida" | "polemica"; titulo: string; texto: string }
 
 /** Quatro a cinco histórias da temporada, de jogadores escolhidos ao acaso no mundo. */
-export function noticiasDaVidaDoMundo(rng: RNG, jogadores: JogadorDoMundo[], porClube: Map<string, JogadorDoMundo[]>): NoticiaVidaMundo[] {
+export function noticiasDaVidaDoMundo(rng: RNG, jogadores: JogadorDoMundo[], porClube: Map<string, JogadorDoMundo[]>, ligacoes: Ligacao[] = []): NoticiaVidaMundo[] {
   const out: NoticiaVidaMundo[] = [];
   if (!jogadores.length) return out;
   const alvo = rng.int(4, 5);
   const usados = new Set<string>();
+  // pares que dividiram clube (histórico): amizade ou briga, uma vez por temporada, quando há algum
+  if (ligacoes.length && rng.chance(0.7)) {
+    const l = rng.pick(ligacoes), x = l.x.split(" ")[0], y = l.y.split(" ")[0];
+    usados.add(l.x); usados.add(l.y);
+    if (l.tipo === "rivalidade") out.push({ tipo: "polemica", titulo: "Clima pesado", texto: `${x} e ${y}, que já se estranhavam desde o ${l.clube}, voltaram a discutir em público.` });
+    else out.push({ tipo: "vida", titulo: "Amizade antiga", texto: `${x} e ${y}, companheiros de outros tempos no ${l.clube}, seguem amigos e dividem as férias.` });
+  }
   for (let tentativa = 0; out.length < alvo && tentativa < 40; tentativa++) {
     const j = rng.pick(jogadores);
     if (usados.has(j.nome)) continue;
@@ -32,6 +40,13 @@ export function noticiasDaVidaDoMundo(rng: RNG, jogadores: JogadorDoMundo[], por
       out.push({ tipo: "vida", titulo: "Mudança", texto: `${primeiro} se mudou com a família para uma casa maior, perto do ${j.clubeNome}.` });
     } else if (tipo === 7 || tipo === 8) {
       // dois companheiros do mesmo clube: briga ou amizade
+      const par = ligacoes.find((l) => (l.x === j.nome || l.y === j.nome) && !usados.has(l.x === j.nome ? l.y : l.x));
+      if (par && tipo === 7) {
+        const outroNome = par.x === j.nome ? par.y : par.x, o = outroNome.split(" ")[0];
+        usados.add(outroNome);
+        out.push({ tipo: "polemica", titulo: "Clima pesado", texto: `${primeiro} e ${o}, que já se estranhavam desde o ${par.clube}, discutiram no treino do ${j.clubeNome}.` });
+        continue;
+      }
       const elenco = (porClube.get(j.clubeId) ?? []).filter((x) => x.nome !== j.nome);
       if (!elenco.length) continue;
       const outro = rng.pick(elenco), o = outro.nome.split(" ")[0];
