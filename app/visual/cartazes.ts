@@ -48,6 +48,8 @@ export function anuncioTransferencia(d: DadosAnuncio): string {
 }
 
 /** Capa de videogame (paródia: IA Sports · IAFC + o ano da edição, um a mais que o da temporada), 360 × 480. */
+/** Cada edição tem uma frase de capa diferente (a arte muda pouco: uniforme e aparência do jogador). */
+const TAGLINE_CAPA = ["O JOGO DE FUTEBOL DO MUNDO TODO", "EDIÇÃO DE COLECIONADOR", "A CAPA DA TEMPORADA", "EDIÇÃO DO TORCEDOR"];
 export function capaVideogame(d: { edicao: number; jogador: string; numero: string; cores: string[]; corpoSvg: string; edicaoDe?: string }): string {
   const [c1, c2r] = d.cores, c2 = c2r ?? "#FFFFFF", id = `capa${d.edicao}${d.jogador.replace(/[^a-z0-9]/gi, "")}`;
   const destaque = luz(c1) > 0.85 ? c2 : c1, ed = String(d.edicao % 100).padStart(2, "0");
@@ -70,7 +72,7 @@ export function capaVideogame(d: { edicao: number; jogador: string; numero: stri
     <rect x="0" y="408" width="360" height="72" fill="#05060A" opacity=".85"/>
     <rect x="20" y="418" width="44" height="4" fill="#E3B341"/>
     <text x="20" y="452" font-family="${DISPLAY}" font-weight="900" font-size="32" fill="#FFFFFF">${esc(d.jogador.toUpperCase())}</text>
-    <text x="20" y="470" font-family="${TEXTO}" font-weight="600" font-size="11" fill="#FFFFFF" opacity=".6">IA SPORTS · O JOGO DE FUTEBOL DO MUNDO TODO</text>
+    <text x="20" y="470" font-family="${TEXTO}" font-weight="600" font-size="11" fill="#FFFFFF" opacity=".6">IA SPORTS · ${TAGLINE_CAPA[d.edicao % TAGLINE_CAPA.length]}</text>
     <rect x="300" y="420" width="40" height="40" rx="6" fill="none" stroke="#FFFFFF" stroke-opacity=".5"/><text x="320" y="446" text-anchor="middle" font-family="${TEXTO}" font-weight="800" font-size="11" fill="#FFFFFF" opacity=".75">L</text>
   </g></svg>`;
 }
@@ -112,4 +114,45 @@ export function miniNoticia(img: ImgNoticia): string {
     }
     case "trofeu": return moldura(`<path d="M44 16 H76 V30 Q76 50 60 54 Q44 50 44 30 Z" fill="${img.cor ?? "#E3B341"}" stroke="${TINTA}" stroke-width="2"/><path d="M44 22 Q32 22 34 34 Q36 42 46 42 M76 22 Q88 22 86 34 Q84 42 74 42" fill="none" stroke="${TINTA}" stroke-width="2"/><rect x="56" y="54" width="8" height="12" fill="${img.cor ?? "#E3B341"}" stroke="${TINTA}" stroke-width="1.6"/><rect x="46" y="66" width="28" height="8" rx="2" fill="#5A3A20" stroke="${TINTA}" stroke-width="1.6"/>`, "#2B2416");
   }
+}
+
+/** Cenários dos documentários: cada filme tem o seu fundo. */
+const CENARIO_DOC: ((c1: string, c2: string) => string)[] = [
+  (c1, c2) => `<rect width="360" height="480" fill="#0A1224"/><circle cx="60" cy="90" r="90" fill="${c2}" opacity=".35"/><circle cx="300" cy="70" r="60" fill="#FFFFFF" opacity=".12"/>
+    <path d="M0 300 Q180 250 360 300 L360 420 L0 420Z" fill="#14321F"/><rect x="0" y="300" width="360" height="130" fill="#1E5A34" opacity=".9"/>
+    ${[0, 1, 2, 3, 4, 5].map((i) => `<circle cx="${20 + i * 65}" cy="${40 + (i % 2) * 14}" r="5" fill="#FFF6D6" opacity=".9"/>`).join("")}
+    <path d="M30 330 L330 330 L330 300 L30 300Z" fill="${c1}" opacity=".5"/>`,
+  (c1, c2) => `<rect width="360" height="480" fill="#8FC9E8"/><circle cx="300" cy="120" r="40" fill="#FFD56B"/>
+    <rect x="0" y="250" width="360" height="230" fill="#7A9A5C"/>
+    ${[[20, 190], [110, 160], [200, 200], [280, 150]].map(([x, h]) => `<rect x="${x}" y="${300 - h / 2}" width="62" height="${h / 2}" fill="${x % 2 ? c1 : c2}"/><rect x="${x + 22}" y="${300 - h / 2 + 12}" width="18" height="16" fill="#FFF6D6"/>`).join("")}`,
+  (c1, c2) => `<rect width="360" height="480" fill="#2A2F3A"/>
+    ${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => `<rect x="${i * 46}" y="0" width="40" height="330" fill="#3B4252"/><rect x="${i * 46 + 16}" y="150" width="8" height="18" fill="${i % 2 ? c1 : c2}"/>`).join("")}
+    <rect x="0" y="330" width="360" height="150" fill="#1C1F26"/><rect x="60" y="310" width="240" height="22" fill="#6B4E2E"/>`,
+  (c1, c2) => `<rect width="360" height="480" fill="#F7B267"/><rect width="360" height="300" fill="#7FD3F7"/>
+    <circle cx="90" cy="110" r="46" fill="#FFE08A"/>
+    <rect x="0" y="300" width="360" height="60" fill="#1B7FB8"/><rect x="0" y="360" width="360" height="120" fill="#E8C98C"/>
+    <path d="M0 330 Q90 316 180 330 T360 330" stroke="${c2}" stroke-width="6" fill="none" opacity=".6"/>`,
+  (c1, c2) => `<rect width="360" height="480" fill="#0D1020"/>
+    ${[[10, 170], [70, 220], [130, 140], [190, 260], [250, 190], [306, 150]].map(([x, h], i) => `<rect x="${x}" y="${330 - h}" width="50" height="${h + 160}" fill="${i % 2 ? c1 : "#161B33"}"/>${[0, 1, 2].map((k) => `<rect x="${x + 8}" y="${330 - h + 14 + k * 26}" width="8" height="8" fill="#FFD56B" opacity="${k % 2 ? 0.9 : 0.4}"/>`).join("")}`).join("")}
+    <rect x="0" y="330" width="360" height="150" fill="#1A1D2B"/>`,
+  (c1, c2) => `<rect width="360" height="480" fill="#3A4656"/>
+    ${Array.from({ length: 26 }, (_, i) => `<path d="M${i * 16 - 40} 0 L${i * 16 + 20} 480" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="1.2"/>`).join("")}
+    <rect x="0" y="330" width="360" height="150" fill="#2B3440"/><rect x="0" y="330" width="360" height="8" fill="${c2}" opacity=".5"/>`,
+];
+export const CENARIOS_DOC = CENARIO_DOC.length;
+/** Capa de documentário: o mesmo craque, outro fundo e outro título a cada filme. */
+export function capaDocumentario(d: { titulo: string; jogador: string; ano: number; cenario: number; cores: string[]; corpoSvg: string }): string {
+  const [c1, c2r] = d.cores, c2 = c2r ?? "#FFFFFF", id = `doc${d.ano}${d.cenario}${d.jogador.replace(/[^a-z0-9]/gi, "")}`;
+  const corpo = d.corpoSvg.replace("<svg ", `<svg x="95" y="120" width="250" height="${Math.round(250 * 2.5)}" preserveAspectRatio="xMidYMin meet" `);
+  return `<svg class="anuncio capa-doc" viewBox="0 0 360 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Documentário ${esc(d.titulo)} com ${esc(d.jogador)}">
+  <defs><clipPath id="${id}c"><rect width="360" height="480" rx="14"/></clipPath></defs>
+  <g clip-path="url(#${id}c)">
+    ${CENARIO_DOC[d.cenario % CENARIO_DOC.length](c1, c2)}
+    ${corpo}
+    <rect width="360" height="84" fill="#05060A" opacity=".82"/>
+    <text x="20" y="30" font-family="${TEXTO}" font-weight="800" font-size="11" letter-spacing="3" fill="#FFFFFF" opacity=".75">DOCUMENTÁRIO · ${d.ano}</text>
+    <text x="20" y="66" font-family="${DISPLAY}" font-weight="900" font-size="28" fill="#FFFFFF">${esc(d.titulo.toUpperCase())}</text>
+    <rect y="424" width="360" height="56" fill="#05060A" opacity=".85"/>
+    <text x="20" y="460" font-family="${DISPLAY}" font-weight="900" font-size="28" fill="${c2}">${esc(d.jogador.toUpperCase())}</text>
+  </g></svg>`;
 }

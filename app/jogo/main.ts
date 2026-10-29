@@ -30,7 +30,7 @@ import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDA
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
-import { anuncioTransferencia, miniNoticia, capaVideogame } from "../visual/cartazes";
+import { anuncioTransferencia, miniNoticia, capaVideogame, capaDocumentario } from "../visual/cartazes";
 import { svgEscudo } from "../visual/escudos";
 import { fotoDoPerfil } from "../visual/mulheres";
 /** Arte do casal: o jogador e a parceira lado a lado, com os mesmos retratos do app. */
@@ -1775,6 +1775,8 @@ function perfilHtml(s: Save): string {
 
       ${armarioCamisas(s)}
       ${(c.capas ?? []).length ? `<p class="rotulo">Capas de videogame</p><div class="capas">${c.capas!.map((x) => `<div class="capa-cel">${capaDe(s, x.edicao, x.clube, x.regional)}</div>`).join("")}</div>` : ""}
+      ${(c.documentarios ?? []).length ? `<p class="rotulo">Documentários</p><div class="capas">${c.documentarios!.map((x) => `<div class="capa-cel">${capaDocumentario({ titulo: x.titulo, jogador: s.jogador.apelido, ano: x.ano, cenario: x.cenario, cores: infoClube(pacote, c.clubeId)?.cores ?? ["#0B7A3B", "#F5C400"], corpoSvg: corpoDe(s, "jogo", c.clubeId) })}</div>`).join("")}</div>` : ""}
+      ${(c.patrocinios ?? []).length ? `<p class="rotulo">Patrocinadores</p><div class="patros">${c.patrocinios!.map((k) => `<div class="patro-cel"><b>${esc(MARCA[k.marca]?.nome ?? k.marca)}</b><small>${esc(NOME_CATEGORIA[MARCA[k.marca]?.categoria as keyof typeof NOME_CATEGORIA] ?? "")}</small></div>`).join("")}</div>` : ""}
 
       ${evolucaoHtml(s)}
       ${linhaDaVidaHtml(s)}

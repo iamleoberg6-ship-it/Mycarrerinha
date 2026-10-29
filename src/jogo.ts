@@ -210,6 +210,8 @@ export interface Carreira {
   tabelaBase?: { cat: string; t: number; tabela: LinhaTabela[] };
   /** capas de videogame (edição, clube e se foi a edição do país) */
   capas?: { edicao: number; clube: string; regional: boolean }[];
+  /** documentários sobre o jogador: ano, título e cenário da capa */
+  documentarios?: { ano: number; titulo: string; cenario: number }[];
   /** aposentadoria anunciada (vale no fim desta temporada) */
   aposentadoria?: { temporada: number };
   /** carreira encerrada: a despedida */
@@ -1670,6 +1672,7 @@ function aplicarEfeito(s: Save, f: EfeitoEvento): string[] {
   return notas;
 }
 /** O jogador decide o evento fora de campo. */
+const TITULOS_DOC = ["BASTIDORES", "SEM FILTRO", "PÉ NO CHÃO", "NOVENTA MINUTOS", "A NOVA ERA", "DE VOLTA AO BAIRRO"];
 export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): { titulo: string; texto: string } | undefined {
   const c = s.carreira, e = c.evento ? EVENTO[c.evento] : undefined, o = e?.opcoes.find((x) => x.id === opcaoId);
   if (!e || !o) return;
@@ -1678,6 +1681,7 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   let texto = preencher(o.resultado, ctx), notas = aplicarEfeito(s, o.efeitos);
   if (o.risco && rngDe(s, "evento-risco", e.id).chance(o.risco.chance)) { texto += " " + preencher(o.risco.resultado, ctx); notas = [...notas, ...aplicarEfeito(s, o.risco.efeitos)]; }
   const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");
+  if (e.id === "documentario" && opcaoId === "aceitar") { const r = rngDe(s, "documentario", ANO_INICIAL + s.carreira.temporada); (s.carreira.documentarios ??= []).push({ ano: ANO_INICIAL + s.carreira.temporada, titulo: r.pick(TITULOS_DOC), cenario: r.int(0, 5) }); }
   if (e.id === "videogame" && opcaoId === "aceitar") { ganharCapa(s, true); return { titulo: e.titulo, texto: final }; }
   noticia(s, "vida", e.titulo, final, { k: "vida" });
   return { titulo: e.titulo, texto: final };
