@@ -76,8 +76,15 @@ const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terc
 };
 /** Cores, desenho e terceira cor com que a camisa é desenhada (o clube tem prioridade sobre o que foi guardado). */
 /** Calção de clubes cujo uniforme real não usa a cor 2 (Santos: calção branco, com o preto só na gola e nas mangas). */
-/** Cor do número de clubes que usam número de outra cor (Vasco: sempre vermelho). */
-export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId === "VAS" ? "#C8102E" : undefined);
+/** Cor do número de clubes que usam número de outra cor (Vasco: vermelho; Brighton: amarelo; Newcastle: vermelho). */
+const NUMERO_COR: Record<string, string> = {
+  VAS: "#C8102E",
+  /** Brighton: número amarelo sobre o azul */
+  "EN-BHA": "#F5C400",
+  /** Newcastle: número vermelho sobre o preto e o branco */
+  "EN-NEW": "#C8102E",
+};
+export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId ? NUMERO_COR[clubeId] : undefined);
 /** Calção e meião que fogem do padrão da camisa (São Paulo e Fortaleza jogam de branco embaixo). */
 export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" || clubeId === "FOR" ? "#FFFFFF" : undefined);
 export const meiaoDoClube = (clubeId?: string): string | undefined => (clubeId === "FOR" ? "#FFFFFF" : undefined);
