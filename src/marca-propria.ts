@@ -18,10 +18,25 @@ export const TAMANHOS = [{ nome: "Pequeno", tam: 9 }, { nome: "Médio", tam: 13 
 export const CORES_PALETA = ["#FFFFFF", "#0A0A0A", "#E3B341", "#C8102E", "#2B6CB0", "#2F8F5B"];
 
 export interface DesignMarca {
-  nome: string; fonte: number; tamanho: number; cor: string;
-  /** peças da coleção: cada uma com a cor do tecido */
+  nome: string;
+  /** índice em FONTES */
+  fonte: number;
+  /** tamanho da letra em unidades do desenho (6 a 24); valores 0 a 2 são o jeito antigo (pequeno, médio, grande) */
+  tamanho: number;
+  /** cor do logo (qualquer cor) */
+  cor: string;
+  /** inclinação da letra, em graus (-30 a 30) */
+  inclinacao: number;
+  /** deslocamento do logo a partir do lugar padrão da peça (-40 a 40 em cada eixo) */
+  posX: number; posY: number;
+  /** peças da coleção: cada uma com a cor do tecido (qualquer cor) */
   pecas: { peca: PecaMarca; cor: string }[];
+  /** atletas amigos que toparam divulgar a marca */
+  embaixadores?: string[];
+  /** semana (absoluta) do último convite, para não convidar duas vezes na mesma semana */
+  ultimoConvite?: number;
 }
+export const DESIGN_PADRAO = { tamanho: 13, inclinacao: 0, posX: 0, posY: 0 };
 
 const MOLDES = ["{A} Original", "{A} Wear", "{A} Club", "Coleção {N}", "{A} Street", "Nº{N} by {A}", "{A} Atelier", "Bloco {A}", "{A} Sport", "{A} Life"];
 /** Sugestões de nome para a marca, sorteadas com a semente do jogo (sempre as mesmas para a mesma carreira). */
@@ -41,12 +56,14 @@ const SILUETA: Record<PecaMarca, { d: string; logo: [number, number]; extra?: st
 };
 
 /** Desenho de uma peça com o logo aplicado (SVG 200 x 200). */
-export function pecaSvg(peca: PecaMarca, cor: string, marca: Pick<DesignMarca, "nome" | "fonte" | "tamanho" | "cor">): string {
-  const f = FONTES[marca.fonte] ?? FONTES[0], t = TAMANHOS[marca.tamanho] ?? TAMANHOS[1], s = SILUETA[peca];
-  const [x, y] = s.logo, escuro = cor.toLowerCase() === "#0a0a0a";
+export function pecaSvg(peca: PecaMarca, cor: string, marca: Pick<DesignMarca, "nome" | "fonte" | "cor"> & Partial<Pick<DesignMarca, "tamanho" | "inclinacao" | "posX" | "posY">>): string {
+  const f = FONTES[marca.fonte] ?? FONTES[0], s = SILUETA[peca];
+  const tam = marca.tamanho === undefined ? DESIGN_PADRAO.tamanho : marca.tamanho <= 2 ? TAMANHOS[marca.tamanho].tam : marca.tamanho;
+  const x = s.logo[0] + (marca.posX ?? 0), y = s.logo[1] + (marca.posY ?? 0), inc = marca.inclinacao ?? 0;
+  const escuro = cor.toLowerCase() === "#0a0a0a";
   return `<svg class="peca-svg" viewBox="0 0 200 200" role="img" aria-label="${esc(PECAS[peca].nome)} ${esc(marca.nome)}">
     <path d="${s.d}" fill="${cor}" stroke="${escuro ? "#444" : "#0A0A0A55"}" stroke-width="2" stroke-linejoin="round"/>${s.extra ?? ""}
-    <text x="${x}" y="${y}" text-anchor="middle" font-family="${esc(f.css)}" font-weight="${f.peso}" font-style="${f.estilo}" font-size="${t.tam}" fill="${marca.cor}" letter-spacing=".5">${esc(marca.nome.toUpperCase())}</text></svg>`;
+    <text x="${x}" y="${y}" text-anchor="middle" font-family="${esc(f.css)}" font-weight="${f.peso}" font-style="${f.estilo}" font-size="${tam}" fill="${marca.cor}" letter-spacing=".5" transform="rotate(${inc} ${x} ${y})">${esc(marca.nome.toUpperCase())}</text></svg>`;
 }
-/** Vitrine da coleção: quantas peças à venda, com um bônus na venda mensal (cada peça, até cinco). */
-export const bonusVitrine = (d?: DesignMarca) => (d ? 1 + 0.12 * Math.min(5, d.pecas.length) : 1);
+/** Vitrine da coleção: cada peça à venda (até cinco) e cada atleta que divulga (até quatro) puxam a venda mensal. */
+export const bonusVitrine = (d?: DesignMarca) => (d ? 1 + 0.12 * Math.min(5, d.pecas.length) + 0.06 * Math.min(4, d.embaixadores?.length ?? 0) : 1);

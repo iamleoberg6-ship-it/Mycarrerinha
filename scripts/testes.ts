@@ -1596,5 +1596,5 @@ teste("Marca própria: sugestões de nome são determinísticas, com o apelido, 
   const svg = pecaSvg("camiseta", "#C8102E", { nome: "LEO WEAR", fonte: 0, tamanho: 1, cor: "#FFFFFF" });
   assert.ok(svg.includes("LEO WEAR") && svg.includes("#C8102E"));
   assert.equal(bonusVitrine(undefined), 1);
-  assert.ok(bonusVitrine({ nome: "x", fonte: 0, tamanho: 0, cor: "#fff", pecas: [{ peca: "bone", cor: "#000" }, { peca: "tenis", cor: "#000" }] }) > 1);
+  assert.ok(bonusVitrine({ nome: "x", fonte: 0, tamanho: 0, cor: "#fff", inclinacao: 0, posX: 0, posY: 0, pecas: [{ peca: "bone", cor: "#000" }, { peca: "tenis", cor: "#000" }] }) > 1);
 });

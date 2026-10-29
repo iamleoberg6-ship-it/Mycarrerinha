@@ -27,8 +27,8 @@ import { vidaDe } from "../../src/vida-npc";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, falaSobreVoce, jeitoDe, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
-import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
-import { salvarMarcaNegocio } from "../../src/jogo";
+import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, DESIGN_PADRAO, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
+import { salvarMarcaNegocio, convidarEmbaixador as convidarEmbaixadorJogo } from "../../src/jogo";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
@@ -2303,10 +2303,15 @@ function adicionarLance(min: number, html: string, cls = "") {
 
 
 // ------------------------------------------------------------------ marca própria: nome, logo e peças da coleção
-/** Bloco da marca dentro do card da empresa "Marca de roupas". */
+/** Bloco da marca dentro do card da empresa "Marca de roupas": prévia, embaixadores e convites para amigos. */
 function marcaBloco(e: { uid: string; marca?: DesignMarca }): string {
   const m = e.marca;
-  return `<div class="marca-bloco">${m ? `<div class="marca-prev">${pecaSvg(m.pecas[0]?.peca ?? "camiseta", m.pecas[0]?.cor ?? "#FFFFFF", m)}</div><p class="sub">${m.pecas.length} peça(s) à venda: ${m.pecas.map((p) => PECAS[p.peca].nome).join(", ") || "nenhuma"}</p>` : `<p class="sub">Sem logo nem peças ainda. Crie a sua coleção.</p>`}<button class="botao sec peq" data-marca="${e.uid}">${m ? "Editar a marca" : "Criar a marca"}</button></div>`;
+  const embaixadores = m?.embaixadores ?? [];
+  const amigos = Object.values(relacoesDe(save!.carreira).lista).filter((x) => x.nivel >= 40 && !x.aposentado && !embaixadores.includes(x.nome));
+  return `<div class="marca-bloco">${m ? `<div class="marca-prev">${pecaSvg(m.pecas[0]?.peca ?? "camiseta", m.pecas[0]?.cor ?? "#FFFFFF", m)}</div><p class="sub">${m.pecas.length} peça(s) à venda: ${m.pecas.map((p) => PECAS[p.peca].nome).join(", ") || "nenhuma"}</p>
+    <p class="sub">Divulgam a marca: ${embaixadores.length ? embaixadores.map(esc).join(", ") : "ninguém ainda"}</p>
+    ${amigos.length ? `<p class="rotulo">Convidar um amigo <small>(um convite por semana; quanto mais amigos, mais fácil)</small></p><div class="ferr-botoes">${amigos.map((x) => `<button class="chip" data-convidar="${esc(x.nome)}" data-uid="${e.uid}">${esc(x.nome)} · ${rotuloNivel(x.nivel)}</button>`).join("")}</div>` : `<p class="sub">Faça amizade com atletas do elenco para eles divulgarem a marca.</p>`}` : `<p class="sub">Sem logo nem peças ainda. Crie a sua coleção.</p>`}
+    <button class="botao sec peq" data-marca="${e.uid}">${m ? "Editar a marca" : "Criar a marca"}</button></div>`;
 }
 let rascunhoMarca: { uid: string; d: DesignMarca; peca: PecaMarca; sugestoes: string[] } | undefined;
 function abrirMarca(uid: string) {
@@ -2314,35 +2319,71 @@ function abrirMarca(uid: string) {
   if (!e) return;
   const sugestoes = sugerirNomes(new RNG(`${sv.semente}|marca-nomes|${sv.carreira.temporada}`), sv.jogador.apelido, sv.jogador.numero, 6);
   const corClube = cores(sv.carreira.clubeId)[0] ?? "#FFFFFF";
-  const d: DesignMarca = e.marca ? JSON.parse(JSON.stringify(e.marca)) : { nome: sugestoes[0], fonte: 0, tamanho: 1, cor: "#FFFFFF", pecas: [{ peca: "camiseta", cor: corClube }] };
+  const base: DesignMarca = e.marca ? JSON.parse(JSON.stringify(e.marca)) : { nome: sugestoes[0], fonte: 0, tamanho: DESIGN_PADRAO.tamanho, cor: "#FFFFFF", inclinacao: 0, posX: 0, posY: 0, pecas: [{ peca: "camiseta", cor: corClube }] };
+  // marcas salvas no jeito antigo (tamanho 0 a 2) passam para o tamanho em unidades
+  const d: DesignMarca = { ...base, tamanho: base.tamanho <= 2 ? TAMANHOS[base.tamanho].tam : base.tamanho, inclinacao: base.inclinacao ?? 0, posX: base.posX ?? 0, posY: base.posY ?? 0 };
   rascunhoMarca = { uid, d, peca: d.pecas[0]?.peca ?? "camiseta", sugestoes };
   renderMarca();
   ($("dlgMarca") as HTMLDialogElement).showModal();
 }
+const pecaDaVez = () => rascunhoMarca!.d.pecas.find((p) => p.peca === rascunhoMarca!.peca);
+function atualizarPreview() {
+  const r = rascunhoMarca!, atual = pecaDaVez();
+  const el = document.getElementById("mvPreview");
+  if (el) el.innerHTML = atual ? pecaSvg(r.peca, atual.cor, r.d) : `<p class="sub">Escolha uma peça da coleção para ver como fica.</p>`;
+  const nome = document.getElementById("mvNome"); if (nome) nome.textContent = r.d.nome;
+}
 function renderMarca() {
-  const r = rascunhoMarca!, d = r.d, atual = d.pecas.find((p) => p.peca === r.peca);
+  const r = rascunhoMarca!, d = r.d, atual = pecaDaVez();
   const pronta = d.pecas.length > 0;
-  $("telaMarca").innerHTML = `<div class="resumo"><p class="rotulo">Marca de roupas</p><h1>${esc(d.nome)}</h1>
-    <div class="marca-vista">${atual ? pecaSvg(r.peca, atual.cor, d) : `<p class="sub">Escolha uma peça da coleção para ver como fica.</p>`}</div>
+  $("telaMarca").innerHTML = `<div class="resumo"><p class="rotulo">Marca de roupas</p><h1 id="mvNome">${esc(d.nome)}</h1>
+    <div class="marca-vista" id="mvPreview">${atual ? pecaSvg(r.peca, atual.cor, d) : `<p class="sub">Escolha uma peça da coleção para ver como fica.</p>`}</div>
     <p class="rotulo">Nome</p><div class="ferr-botoes">${r.sugestoes.map((n) => `<button class="chip${n === d.nome ? " ativo" : ""}" data-mnome="${esc(n)}">${esc(n)}</button>`).join("")}</div>
     <p class="rotulo">Logo · fonte</p><div class="ferr-botoes">${FONTES.map((f, i) => `<button class="chip${i === d.fonte ? " ativo" : ""}" data-mfonte="${i}">${f.nome}</button>`).join("")}</div>
-    <p class="rotulo">Logo · tamanho</p><div class="ferr-botoes">${TAMANHOS.map((t, i) => `<button class="chip${i === d.tamanho ? " ativo" : ""}" data-mtam="${i}">${t.nome}</button>`).join("")}</div>
-    <p class="rotulo">Logo · cor</p><div class="ferr-botoes">${CORES_PALETA.map((c) => `<button class="cor-chip${c === d.cor ? " ativo" : ""}" style="background:${c}" data-mlogo="${c}" aria-label="Logo ${c}"></button>`).join("")}</div>
+    <p class="rotulo">Logo · tamanho <b>${d.tamanho}</b></p><input type="range" min="6" max="24" step="1" value="${d.tamanho}" data-mtamanho>
+    <p class="rotulo">Logo · inclinação <b>${d.inclinacao}°</b></p><input type="range" min="-30" max="30" step="1" value="${d.inclinacao}" data-minclina>
+    <p class="rotulo">Logo · posição <b>${d.posX}, ${d.posY}</b> <button class="chip" data-mcentro>Centralizar</button></p>
+    <input type="range" min="-40" max="40" step="1" value="${d.posX}" data-mposx aria-label="Posição na horizontal">
+    <input type="range" min="-40" max="40" step="1" value="${d.posY}" data-mposy aria-label="Posição na vertical">
+    <p class="rotulo">Logo · cor</p><div class="ferr-botoes">${CORES_PALETA.map((c) => `<button class="cor-chip${c === d.cor ? " ativo" : ""}" style="background:${c}" data-mlogo="${c}" aria-label="Logo ${c}"></button>`).join("")}<input type="color" value="${d.cor}" data-mlogo-livre aria-label="Outra cor para o logo"></div>
     <p class="rotulo">Peças da coleção <small>(toque para pôr ou tirar; a última tocada aparece acima)</small></p><div class="ferr-botoes">${ORDEM_PECAS.map((p) => { const on = d.pecas.some((x) => x.peca === p); return `<button class="chip${on ? " ativo" : ""}" data-mpeca="${p}">${on ? "✓ " : ""}${PECAS[p].nome}</button>`; }).join("")}</div>
-    ${atual ? `<p class="rotulo">Cor de ${PECAS[r.peca].nome}</p><div class="ferr-botoes">${CORES_PALETA.map((c) => `<button class="cor-chip${c === atual.cor ? " ativo" : ""}" style="background:${c}" data-mpcor="${c}" aria-label="Cor ${c}"></button>`).join("")}</div>` : ""}
+    ${atual ? `<p class="rotulo">Cor de ${PECAS[r.peca].nome}</p><div class="ferr-botoes">${CORES_PALETA.map((c) => `<button class="cor-chip${c === atual.cor ? " ativo" : ""}" style="background:${c}" data-mpcor="${c}" aria-label="Cor ${c}"></button>`).join("")}<input type="color" value="${atual.cor}" data-mpcor-livre aria-label="Outra cor para a peça"></div>` : ""}
     </div><div class="rodape"><button class="botao grande" data-marca-salvar ${pronta ? "" : "disabled"}>${pronta ? "Salvar a marca" : "Escolha pelo menos uma peça"}</button></div>`;
 }
+// controles que mudam só a prévia (sem redesenhar a tela, para o arrasto não se perder)
+document.addEventListener("input", (ev) => {
+  const t = ev.target as HTMLInputElement;
+  if (!rascunhoMarca || !t.closest("#telaMarca")) return;
+  const d = rascunhoMarca.d, v = t.value;
+  if (t.dataset.mtamanho !== undefined) d.tamanho = +v;
+  else if (t.dataset.minclina !== undefined) d.inclinacao = +v;
+  else if (t.dataset.mposx !== undefined) d.posX = +v;
+  else if (t.dataset.mposy !== undefined) d.posY = +v;
+  else if (t.dataset.mlogoLivre !== undefined) d.cor = v;
+  else if (t.dataset.mpcorLivre !== undefined) { const x = pecaDaVez(); if (x) x.cor = v; }
+  else return;
+  atualizarPreview();
+});
+document.addEventListener("change", (ev) => {
+  const t = ev.target as HTMLInputElement;
+  if (rascunhoMarca && t.closest("#telaMarca") && (t.dataset.mlogoLivre !== undefined || t.dataset.mpcorLivre !== undefined)) renderMarca();
+});
 document.addEventListener("click", (ev) => {
   const t = ev.target as Element;
   const ab = t.closest<HTMLElement>("[data-marca]");
   if (ab && !t.closest("#telaMarca")) { abrirMarca(ab.dataset.marca!); return; }
+  const cv = t.closest<HTMLElement>("[data-convidar]");
+  if (cv && !t.closest("#telaMarca")) {
+    const r = convidarEmbaixadorJogo(pacote, save!, cv.dataset.uid!, cv.dataset.convidar!);
+    msgJog = { ok: r.ok, texto: r.msg }; salvar(); render(); return;
+  }
   if (!rascunhoMarca || !t.closest("#telaMarca")) return;
   const b = t.closest<HTMLElement>("button");
   if (!b) return;
   const ds = b.dataset, d = rascunhoMarca.d;
   if (ds.mnome !== undefined) d.nome = ds.mnome;
   else if (ds.mfonte !== undefined) d.fonte = +ds.mfonte;
-  else if (ds.mtam !== undefined) d.tamanho = +ds.mtam;
+  else if (ds.mcentro !== undefined) { d.posX = 0; d.posY = 0; }
   else if (ds.mlogo !== undefined) d.cor = ds.mlogo;
   else if (ds.mpeca !== undefined) {
     const p = ds.mpeca as PecaMarca, on = d.pecas.some((x) => x.peca === p);
@@ -2350,7 +2391,7 @@ document.addEventListener("click", (ev) => {
     else if (rascunhoMarca.peca !== p) rascunhoMarca.peca = p;
     else d.pecas = d.pecas.filter((x) => x.peca !== p);
     if (!d.pecas.some((x) => x.peca === rascunhoMarca!.peca) && d.pecas[0]) rascunhoMarca.peca = d.pecas[0].peca;
-  } else if (ds.mpcor !== undefined) { const x = d.pecas.find((y) => y.peca === rascunhoMarca!.peca); if (x) x.cor = ds.mpcor; }
+  } else if (ds.mpcor !== undefined) { const x = pecaDaVez(); if (x) x.cor = ds.mpcor; }
   else if (ds.marcaSalvar !== undefined) {
     if (!d.pecas.length) return;
     const r = salvarMarcaNegocio(pacote, save!, rascunhoMarca.uid, d);

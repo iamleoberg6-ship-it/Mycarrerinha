@@ -2045,6 +2045,23 @@ export function abrirEmpresaJogo(pacote: PacoteDados, s: Save, tipo: TipoEmpresa
   if (r.ok) { noticia(s, "dinheiro", `${s.jogador.apelido} vira empresário`, r.msg); registrarMarco(s, { tipo: "marco", texto: r.msg.replace(" abriu as portas!", ": primeiro dia do negócio") }); }
   return r;
 }
+/** Convida um amigo (nível Amigo ou acima) para divulgar a marca: quanto mais amigos no elenco, mais fácil ele aceitar. */
+export function convidarEmbaixador(pacote: PacoteDados, s: Save, uid: string, nome: string): { ok: boolean; msg: string } {
+  const c = s.carreira, e = negociosDe(c).empresas.find((x) => x.uid === uid && x.tipo === "marca");
+  if (!e?.marca) return { ok: false, msg: "Essa marca não existe mais." };
+  const ab = semanaAbsJogo(c), lista = relacoesDe(c).lista, rel = lista[nome];
+  if (!rel || rel.nivel < 40 || rel.aposentado) return { ok: false, msg: `${nome} ainda não é amigo o bastante para isso.` };
+  if (e.marca.embaixadores?.includes(nome)) return { ok: false, msg: `${nome} já divulga a marca.` };
+  if (e.marca.ultimoConvite === ab) return { ok: false, msg: "Você já fez um convite nesta semana. Espere a próxima." };
+  e.marca.ultimoConvite = ab;
+  const amigos = Object.values(lista).filter((x) => x.nivel >= 40 && !x.aposentado).length;
+  const chance = Math.min(0.85, 0.2 + 0.12 * Math.min(amigos, 5) + (rel.nivel - 40) / 200);
+  if (rngDe(s, "embaixador", nome).chance(chance)) {
+    e.marca.embaixadores = [...(e.marca.embaixadores ?? []), nome];
+    return { ok: true, msg: `${nome} topou divulgar ${e.marca.nome}.` };
+  }
+  return { ok: false, msg: `${nome} agradeceu, mas não quer fechar isso agora.` };
+}
 export function salvarMarcaNegocio(pacote: PacoteDados, s: Save, uid: string, marca: DesignMarca): { ok: boolean; msg: string } {
   return salvarMarca(negociosDe(s.carreira), uid, marca);
 }
