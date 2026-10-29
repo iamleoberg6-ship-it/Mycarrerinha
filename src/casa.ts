@@ -225,6 +225,20 @@ const PRODUTOS: Partial<Record<TipoMovel, Linha[]>> = {
     ["gamer", 3, 3, "Central de análise de vídeo", { efeitos: { evolucao: 3 } }]],
 };
 
+// Linhas a mais: móveis com um efeito forte e um custo em outro atributo (escolher o que sacrificar)
+const ACRESCIMO: Partial<Record<TipoMovel, Linha[]>> = {
+  cama: [["moderno", 1, 2, "Cama ortopédica de hospital", { efeitos: { recuperacao: 4, lesao: 2, moral: -1 } }], ["moderno", 2, 2, "Cama de espuma de memória", { efeitos: { recuperacao: 3, moral: 1 } }]],
+  pesos: [["gamer", 2, 2, "Simulador de alta intensidade", { efeitos: { evolucao: 4, lesao: -2 } }]],
+  esteira: [["moderno", 1, 2, "Esteira de recuperação ativa", { efeitos: { recuperacao: 2, evolucao: 1 } }]],
+  geladeira: [["moderno", 1, 2, "Geladeira de suplementos e marmitas", { efeitos: { lesao: 3, evolucao: 1 } }]],
+  tv: [["gamer", 2, 2, "Tela de análise tática", { efeitos: { evolucao: 2, moral: -1 } }], ["moderno", 1, 3, "Televisão com canal de notícias", { efeitos: { fama: 1, moral: 1 } }]],
+  trofeus: [["brasileiro", 1, 2, "Estante de estatísticas do clube", { efeitos: { fama: 2, evolucao: 1 } }]],
+  maca: [["gamer", 1, 2, "Mesa de fisioterapia com eletroestimulação", { efeitos: { recuperacao: 3, lesao: 2 } }]],
+  piano: [["gamer", 2, 2, "Piano digital com fones", { efeitos: { moral: 2, recuperacao: -1 } }]],
+  quadro: [["moderno", 2, 2, "Painel de metas e tática", { efeitos: { evolucao: 1, fama: 1 } }]],
+};
+for (const [tipo, linhas] of Object.entries(ACRESCIMO) as [TipoMovel, Linha[]][]) PRODUTOS[tipo] = [...(PRODUTOS[tipo] ?? []), ...linhas];
+
 export const CATALOGO: Item[] = [];
 for (const [tipo, linhas] of Object.entries(PRODUTOS) as [TipoMovel, Linha[]][]) {
   const info = TIPOS[tipo];
@@ -451,6 +465,14 @@ export const IMOVEIS: Imovel[] = [
       cm("trofeus", "Sala de troféus", "trofeus", 11, 8, { parede: ac("pintura", 10), piso: ac("carpete", 2) }),
       cm("piscina", "Área da piscina", "externo", 17, 12, { piso: ac("deck"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 21, 9, { piso: ac("epoxi") })] },
 ];
+// Mais imóveis para comprar ou alugar: variações de planta e bairro das categorias que já existem
+const DE = (id: string, o: Partial<Imovel>): Imovel => ({ ...IMOVEIS.find((m) => m.id === id)!, ...o });
+IMOVEIS.push(
+  DE("kit-centro", { id: "kit-praia", nome: "Studio de frente para o mar", local: "Orla", vista: "mar", aluguel: 3200, descricao: "Pequeno, com varanda para a praia e o barulho das ondas no fim do treino." }),
+  DE("ap-2q", { id: "ap-centro", nome: "Apartamento no centro", local: "Centro", vista: "cidade", aluguel: 9000, compra: 1100000, descricao: "Perto de tudo, com janelas altas e uma vaga na garagem." }),
+  DE("casa-sobrado", { id: "casa-condominio", nome: "Casa em condomínio fechado", local: "Condomínio na serra", vista: "condominio", aluguel: 24000, compra: 3200000, descricao: "Segurança 24 horas, quadra de tênis e um quintal grande para o cachorro." }),
+  DE("man-classica", { id: "man-jardim", nome: "Mansão com jardim", local: "Bairro nobre", vista: "campo", aluguel: 95000, compra: 16000000, descricao: "Jardim com piscina aquecida e uma casa de hóspedes." }),
+);
 export const IMOVEL: Record<string, Imovel> = Object.fromEntries(IMOVEIS.map((m) => [m.id, m]));
 export const areaM2 = (m: Imovel) => Math.round(m.comodos.reduce((s, c) => s + c.w * c.d * 0.25, 0));
 
