@@ -2,7 +2,7 @@
 import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
-import { xgDoGol, xgDoChute, type Chute } from "../../src/estatisticas-partida";
+import { xgDoGol, xgDoChute, type Chute, type EventoEst, type TipoEvento } from "../../src/estatisticas-partida";
 import { camisaCostas } from "../visual/camisas";
 import { kitVisual, calcaoDoClube, meiaoDoClube, numeroCorClube, UNIFORME_CLUBE, UNIFORME_SELECAO } from "../../src/reliquias";
 import type { Reliquia } from "../../src/casa";
@@ -2177,6 +2177,7 @@ const decisoesAbertas: Record<number, Decisao> = {};
 const MIN_POR_SEG = 0.5;
 let velocidade = 1, relogio = 0, relogioTick = 0, pular = false;
 let chutesJogo: Chute[] = [];
+let eventosJogo: EventoEst[] = [];
 document.addEventListener("click", (ev) => {
   const b = (ev.target as Element).closest<HTMLElement>("[data-vel]");
   if (!b) return;
@@ -2202,7 +2203,7 @@ function abrirJogo() {
   if (!partida || partida.escalacao === "lesionado" || partida.escalacao === "fora" || partida.escalacao === "suspenso" || (partida.escalacao === "banco" && partida.entrada > 90 && partida.lances.length === 0)) { fecharSemana(); return; }
   const p = partida, nome = save.jogador.apelido;
   placar = [0, 0]; minutoAtual = 0; amarelos = 0; expulso = false; comemorou = false; posFeito = false; disputaFeita = false; pen = undefined; notaMostrada = 0;
-  relogio = 0; pular = false; clearInterval(relogioTick); relogioTick = 0; chutesJogo = [...(p.estat?.chutes ?? [])];
+  relogio = 0; pular = false; clearInterval(relogioTick); relogioTick = 0; chutesJogo = [...(p.estat?.chutes ?? [])]; eventosJogo = [...(p.estat?.eventos ?? [])];
   fila = [];
   if (p.clima) fila.push({ min: 0, html: esc(p.clima.texto), cls: "clima" });
   fila.push({ min: 0, html: `${esc(p.abertura || "Bola rolando.")}${p.entrada === 0 ? ` ${esc(nome)} começa jogando.` : ` ${esc(nome)} começa no banco.`}` });
@@ -2276,7 +2277,9 @@ function estatAte(m: number) {
   const xg = (lado: 0 | 1) => +ate.filter((c) => c.lado === lado).reduce((a, c) => a + c.xg, 0).toFixed(2);
   const fatias = base ? base.posseCasa.slice(1, m + 1) : [];
   const posseCasa = fatias.length ? Math.round(fatias.reduce((a, b) => a + b, 0) / fatias.length) : 50;
-  return { posseCasa, chutes: [conta(0), conta(1)] as [number, number], alvo: [conta(0, (c) => c.alvo), conta(1, (c) => c.alvo)] as [number, number], xg: [xg(0), xg(1)] as [number, number] };
+  const ev = (tipo: TipoEvento) => [0, 1].map((l) => eventosJogo.filter((x) => x.min <= m && x.lado === l && x.tipo === tipo).length) as [number, number];
+  const cart = [0, 1].map((l) => eventosJogo.filter((x) => x.min <= m && x.lado === l && (x.tipo === "amarelo" || x.tipo === "vermelho")).length) as [number, number];
+  return { escanteios: ev("escanteio"), faltas: ev("falta"), cartoes: cart, pre: ev("pre"), posseCasa, chutes: [conta(0), conta(1)] as [number, number], alvo: [conta(0, (c) => c.alvo), conta(1, (c) => c.alvo)] as [number, number], xg: [xg(0), xg(1)] as [number, number] };
 }
 function renderEstat() {
   const el = document.getElementById("estat");
@@ -2286,7 +2289,7 @@ function renderEstat() {
   const linha = (rotulo: string, [a, b]: [number, number], dec = 0) => `<div class="est-linha"><b>${a.toFixed(dec).replace(".", ",")}</b><span>${rotulo}</span><b>${b.toFixed(dec).replace(".", ",")}</b></div>`;
   const [cm, cf] = x(e.chutes), [am, af] = x(e.alvo), [gm, gf] = x(e.xg);
   el.innerHTML = `<div class="est-posse"><span>${posseMeu}%</span><i><b style="width:${posseMeu}%"></b></i><span>${100 - posseMeu}%</span></div><p class="est-rot">Posse de bola</p>
-    ${linha("Chutes", [cm, cf])}${linha("Chutes no alvo", [am, af])}${linha("Gol esperado (xG)", [gm, gf], 2)}`;
+    ${linha("Chutes", [cm, cf])}${linha("Chutes no alvo", [am, af])}${linha("Gol esperado (xG)", [gm, gf], 2)}${linha("Escanteios", x(e.escanteios))}${linha("Faltas", x(e.faltas))}${linha("Cartões", x(e.cartoes))}${linha("Pré-assistências", x(e.pre))}`;
 }
 function adicionarLance(min: number, html: string, cls = "") {
   const el = document.createElement("div"); el.className = `lance ${cls}`; el.innerHTML = `<span class="m">${min}'</span><span>${html}</span>`;
@@ -2370,7 +2373,7 @@ function mostrarItem(item: ItemFila) {
     if (!t) { avancar(); return; }
     item.html = t; item.cls = "tenso";
   }
-  if (item.gol) { const lado = item.gol === "casa" ? 0 : 1; if (lado === 0) placar[0]++; else placar[1]++; chutesJogo.push({ min: item.min, lado, xg: xgDoGol(item.min, lado), alvo: true }); }
+  if (item.gol) { const lado = item.gol === "casa" ? 0 : 1; if (lado === 0) placar[0]++; else placar[1]++; chutesJogo.push({ min: item.min, lado, xg: xgDoGol(item.min, lado), alvo: true }); if ((item.min * 7 + lado * 3) % 10 < 5) eventosJogo.push({ min: item.min, lado, tipo: "pre" }); }
   atualizarPlacar();
   { // a bola no campinho: onde o lance aconteceu
     const meuLado = partida.souCasa ? "casa" : "fora", zona = zonaDoItem(item);
@@ -2604,6 +2607,12 @@ function decidir(i: number, op: string) {
   resultados.push(r);
   const opDef = SITUACAO[d.situacao]?.opcoes.find((x) => x.id === op);
   if (opDef && !r.golPro && tipoDaOpcao(opDef.teste as Record<string, number>, opDef.rotulo) === "gol") chutesJogo.push({ min: d.min, lado: meuIdx(), xg: xgDoChute(r.nivel), alvo: r.nivel <= 2 });
+  // as suas decisões também contam: cartão, escanteio que você bate e falta que o adversário comete
+  const cena = cenaDe(d);
+  if (r.vermelho) eventosJogo.push({ min: d.min, lado: meuIdx(), tipo: "vermelho" });
+  else if (r.amarelo) eventosJogo.push({ min: d.min, lado: meuIdx(), tipo: "amarelo" });
+  if (cena === "escanteio") eventosJogo.push({ min: d.min, lado: meuIdx(), tipo: "escanteio" });
+  if (cena === "falta") eventosJogo.push({ min: d.min, lado: meuIdx() === 0 ? 1 : 0, tipo: "falta" });
   el.querySelector(".ops")!.innerHTML = `<div class="resultado n${r.nivel}">${esc(r.texto)}</div>`;
   const meuLado: "casa" | "fora" = p.souCasa ? "casa" : "fora", outro: "casa" | "fora" = p.souCasa ? "fora" : "casa";
   const novos: ItemFila[] = [];
