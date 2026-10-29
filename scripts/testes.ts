@@ -10,6 +10,7 @@ import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
+import { sortearMulherRetrato, sortearMulherCorpo, sortearBebe, chaveArte, imagemArte, MULHERES_RETRATO, MULHERES_CORPO, BEBES, TONS } from "../app/visual/arte-personagens.js";
 import { novoNegocios, abrirEmpresa, decidirMes, abrirUnidade, mesNegocios, EMPRESAS as EMPRESAS_NEG } from "../src/negocios.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor, podeTerCarro, vagasGaragem } from "../src/casa.js";
 import { campeoesDoClube, mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
@@ -1622,4 +1623,17 @@ teste("Gestão: franquia exige saúde, cobra por unidade e decisão mensal muda 
   const comLucro = mesNegocios(comDec, new RNG("m"), ctx).lucro;
   assert.notEqual(comLucro, semDec, "a decisão mensal muda o lucro");
   assert.equal(comDec.empresas.find((x: { tipo: string }) => x.tipo === "barbearia").decisao, undefined, "a decisão some depois do mês");
+});
+
+teste("Arte de personagens: todo sorteio existe no pacote de imagens e é determinístico pela semente", () => {
+  for (const b of MULHERES_RETRATO) for (const tom of TONS) { const k = chaveArte(b, tom); if (b.startsWith("hair-") && tom !== "claro") continue; assert.ok(imagemArte(k), k); }
+  for (const b of MULHERES_CORPO) for (const tom of TONS) assert.ok(imagemArte(chaveArte(b, tom)), b + tom);
+  for (const b of BEBES) for (const tom of TONS) assert.ok(imagemArte(chaveArte(b, tom)), b + tom);
+  const a = sortearMulherRetrato("sem-1"), b = sortearMulherRetrato("sem-1");
+  assert.deepEqual(a, b);
+  for (let i = 0; i < 30; i++) {
+    assert.ok(sortearMulherRetrato("m" + i).src.startsWith("data:image/webp"));
+    assert.ok(sortearMulherCorpo("c" + i).src.startsWith("data:image/webp"));
+    assert.ok(sortearBebe("b" + i).src.startsWith("data:image/webp"));
+  }
 });
