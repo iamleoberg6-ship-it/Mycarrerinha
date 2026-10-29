@@ -58,7 +58,7 @@ import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
-import { titulosDoClube, timeDeTodosOsTempos, plantelDoClube, tecnicoDoClube, type TitularHistorico } from "../../src/perfil-clube";
+import { titulosDoClube, timeDeTodosOsTempos, plantelDoClube, tecnicoDoClube, recordesHistoricosDoClube, type TitularHistorico, type RecordeNome } from "../../src/perfil-clube";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
 import { consultorIniciar, consultorResponder } from "../../src/transferencias";
 import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
@@ -1051,6 +1051,9 @@ function clubeHtml(clubeId: string): string {
   const info = infoClube(pacote, clubeId), w = mundo(pacote), cl = w.clube[clubeId];
   if (!info || !cl) return `<p class="sub">Clube não encontrado.</p>`;
   const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId), elenco = plantelDoClube(pacote, clubeId).slice(0, 25);
+  const rec = recordesHistoricosDoClube(pacote, clubeId);
+  const bloco = (titulo: string, lista: RecordeNome[], comAno: boolean) => lista.length ? `<p class="rotulo" style="margin-top:14px">${titulo}</p><table style="table-layout:fixed"><colgroup><col style="width:28px"><col><col style="width:64px"><col style="width:44px"></colgroup><tbody>${lista.map((x, i) => `<tr><td>${i + 1}</td><td>${linkJogador(x.nome)}</td><td class="n">${comAno ? ANO_INICIAL + (x.ano ?? 0) : ""}</td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : "";
+  const recordes = [bloco("Mais gols em uma temporada", rec.golsTemp, true), bloco("Mais assistências em uma temporada", rec.assistTemp, true), bloco("Maiores artilheiros da história", rec.artilheiros, false), bloco("Maiores assistentes da história", rec.assistentes, false), bloco("Goleiros com mais jogos sem tomar gol", rec.semGol, false)].join("");
   const tec = tecnicoDoClube(pacote, clubeId), liga = info.ligaId, irmaos = w.liga[liga]?.clubes ?? [];
   const de = (p: string) => xi.filter((x) => x.posicao === p);
   const cart = (x: TitularHistorico) => `<div class="sel-j xi-j">${camisaMini(clubeId, numeroDe(x.nome))}<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(nomeCurtoSel(x.nome))}</button><small><b>${ANO_INICIAL + x.melhorAno}</b> · ${x.melhorNota.toFixed(2).replace(".", ",")}</small><small>${x.vezes}× melhor</small></div>`;
@@ -1065,6 +1068,8 @@ function clubeHtml(clubeId: string): string {
     <div class="titulos">${trofeus}</div>
     <p class="rotulo" style="margin-top:16px">Time de todos os tempos</p>
     ${xi.length ? `<div class="campinho campinho-xi">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : `<p class="sub">Ainda sem temporadas suficientes deste clube.</p>`}
+    <p class="rotulo" style="margin-top:16px">Recordes do clube</p>
+    ${recordes || `<p class="sub">Ainda sem temporadas suficientes deste clube.</p>`}
     <p class="rotulo" style="margin-top:16px">Elenco atual</p>
     <table><tbody>${elenco.map((j) => `<tr><td>${NOME_POS[j.posicao] ?? j.posicao}</td><td>${linkJogador(j.nome)}</td><td class="n">${j.ovr}</td></tr>`).join("")}</tbody></table>
     <p class="rotulo" style="margin-top:16px">Clubes da mesma liga</p>

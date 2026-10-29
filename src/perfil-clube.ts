@@ -4,6 +4,7 @@ import { mundo, infoClube, linhasDoClube, statsDaLinha, tecnicoDoClube, campeoes
 import { VAGAS_433 } from "./partida.js";
 import { infoLiga } from "./ligas.js";
 import type { PacoteDados } from "./liga.js";
+import { RNG } from "./rng.js";
 
 export const MIN_JOGOS_TEMPORADA = 10;
 
@@ -55,6 +56,37 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): Titul
     xi.push(...todos.filter((t) => t.posicao === pos).sort((a, b) => b.vezes - a.vezes || b.nota - a.nota).slice(0, n));
   }
   return xi;
+}
+
+/** Recordes do clube na história: maiores artilheiros e assistentes, o melhor de uma temporada e goleiros que mais seguraram o zero. */
+export interface RecordeNome { nome: string; valor: number; ano?: number }
+export interface RecordesDoClube { golsTemp: RecordeNome[]; assistTemp: RecordeNome[]; artilheiros: RecordeNome[]; assistentes: RecordeNome[]; semGol: RecordeNome[] }
+const cacheRecordes = new Map<string, RecordesDoClube>();
+const topo = (m: Map<string, number>, ano?: Map<string, number>) => [...m].map(([nome, valor]) => ({ nome, valor, ...(ano ? { ano: ano.get(nome) } : {}) })).sort((a, b) => b.valor - a.valor).slice(0, 5);
+export function recordesHistoricosDoClube(pacote: PacoteDados, clubeId: string): RecordesDoClube {
+  const ja = cacheRecordes.get(clubeId);
+  if (ja) return ja;
+  const temp: RecordeNome[] = [], assistTemp: RecordeNome[] = [];
+  const gols = new Map<string, number>(), assist = new Map<string, number>(), sg = new Map<string, number>();
+  for (const { nome, x } of linhasDoClube(pacote, clubeId)) {
+    const st = statsDaLinha(pacote, nome, x);
+    if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
+    temp.push({ nome, valor: st.g, ano: x.t }); assistTemp.push({ nome, valor: st.a, ano: x.t });
+    gols.set(nome, (gols.get(nome) ?? 0) + st.g); assist.set(nome, (assist.get(nome) ?? 0) + st.a);
+    if (x.posicao === "GOL") {
+      // jogos sem sofrer gol: a simulação não guarda o zero a zero, então é uma estimativa pelo jogo e pela qualidade do goleiro
+      const rng = new RNG(`semgol|${x.t}|${clubeId}|${nome}`);
+      const f = rng.range(0.22, 0.42) + Math.min(0.18, Math.max(0, (x.ovr - 60) / 120));
+      sg.set(nome, (sg.get(nome) ?? 0) + Math.round(st.j * f));
+    }
+  }
+  const r: RecordesDoClube = {
+    golsTemp: temp.sort((a, b) => b.valor - a.valor).slice(0, 5),
+    assistTemp: assistTemp.sort((a, b) => b.valor - a.valor).slice(0, 5),
+    artilheiros: topo(gols), assistentes: topo(assist), semGol: topo(sg),
+  };
+  cacheRecordes.set(clubeId, r);
+  return r;
 }
 
 /** Elenco atual do clube (o do momento da simulação). */
