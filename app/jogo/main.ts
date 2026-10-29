@@ -57,6 +57,7 @@ import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
+import { titulosDoClube, timeDeTodosOsTempos, plantelDoClube, tecnicoDoClube, MIN_JOGOS_TEMPORADA } from "../../src/perfil-clube";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
 import { consultorIniciar, consultorResponder } from "../../src/transferencias";
 import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
@@ -1036,7 +1037,38 @@ function blocoNegocios(s: Save): string {
     <details class="dobra" style="margin-top:16px"${n.empresas.length ? "" : " open"}><summary class="rotulo">Abrir um negócio</summary>${abrir || `<p class="sub">Você já tem um de cada.</p>`}</details>`;
 }
 /** Jogador › Clube: técnico, vestiário, rival, torcida e contrato. */
+/** Perfil do clube: dados, títulos da liga, elenco atual, time de todos os tempos e os clubes da mesma liga. */
+function clubeHtml(clubeId: string): string {
+  const info = infoClube(pacote, clubeId), w = mundo(pacote), cl = w.clube[clubeId];
+  if (!info || !cl) return `<p class="sub">Clube não encontrado.</p>`;
+  const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId), elenco = plantelDoClube(pacote, clubeId).slice(0, 25);
+  const tec = tecnicoDoClube(pacote, clubeId), liga = infoClube(pacote, clubeId).ligaId, irmaos = w.liga[liga]?.clubes ?? [];
+  return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.apelido)} · ${esc(info.cidade)}</span></div></div>
+    <div class="kv" style="margin-top:10px"><span>Estádio</span><b>${esc(info.estadio)}${info.capacidade ? ` · ${info.capacidade.toLocaleString("pt-BR")} lugares` : ""}</b><span>Técnico</span><b>${tec ? esc(tec.nome) : "—"}</b><span>Liga atual</span><b>${esc(infoLiga(liga).nome)}</b></div>
+    <p class="rotulo" style="margin-top:14px">Uniforme</p><div style="display:flex;gap:8px;align-items:center">${camisaMini(clubeId, 10)}<span class="sub">Cores: ${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</span></div>
+    <p class="rotulo" style="margin-top:14px">Títulos</p>
+    <p>${tit.anos.length ? `<b>${tit.anos.length}</b> ${tit.anos.length === 1 ? "título" : "títulos"} de ${esc(tit.liga)}: ${tit.anos.map((a) => ANO_INICIAL + a).join(", ")}` : `Nenhum título de liga registrado ainda.`}</p>
+    <p class="sub">Copas de clubes ainda não entram nesta contagem.</p>
+    <p class="rotulo" style="margin-top:14px">Time de todos os tempos</p>
+    ${xi.length ? `<p class="sub">O melhor de cada posição em cada temporada (mín. ${MIN_JOGOS_TEMPORADA} jogos), contado ao longo da história. Vale a nota média.</p>
+      <div class="linha-info">${xi.map((x) => `<span>${NOME_POS[x.posicao as keyof typeof NOME_POS] ?? x.posicao} <b>${esc(x.nome)}</b> · ${x.vezes}× melhor · nota ${x.nota.toFixed(2)}</span>`).join("")}</div>` : `<p class="sub">Ainda não há temporadas suficientes deste clube.</p>`}
+    <p class="rotulo" style="margin-top:14px">Elenco atual</p>
+    <div class="linha-info">${elenco.map((j) => `<span>${NOME_POS[j.posicao as keyof typeof NOME_POS] ?? j.posicao} <b>${esc(j.nome)}</b> · ${j.ovr} · ${j.idade} anos</span>`).join("")}</div>
+    <p class="rotulo" style="margin-top:14px">Clubes da mesma liga</p>
+    <div class="chips" style="flex-wrap:wrap">${irmaos.map((x) => `<button class="chip${x.id === clubeId ? " ativo" : ""}" data-perfil-clube="${x.id}">${esc(x.nome)}</button>`).join("")}</div>
+    <div style="text-align:center;margin-top:14px"><button class="botao sec peq" data-fechar-clube="1">Fechar</button></div>`;
+}
+function abrirPerfilClube(clubeId: string) {
+  $("telaClube").innerHTML = clubeHtml(clubeId);
+  const d = $("dlgClube") as HTMLDialogElement;
+  if (!d.open) d.showModal();
+}
+/** Botão de perfil do clube no quadro do clube do jogador. */
 function blocoClube(s: Save): string {
+  const c = s.carreira, semPerfil = c.fase || c.formacao || c.mercado?.semClube;
+  return `${semPerfil ? "" : `<p style="margin:0 0 10px"><button class="botao sec peq" data-perfil-clube="${c.clubeId}">Perfil do clube</button></p>`}${blocoClubeCorpo(s)}`;
+}
+function blocoClubeCorpo(s: Save): string {
   const c = s.carreira, j = s.jogador, info = infoClube(pacote, c.clubeId), sub = (t: string) => `<p class="rotulo" style="margin-top:18px">${t}</p>`;
   if (c.fase || c.formacao || c.mercado?.semClube) return `<p class="sub">${c.mercado?.semClube ? "Sem clube, sem vestiário. Assine um contrato e esta tela ganha vida." : "Na base, o vestiário é outro: técnico, capitania, rival e torcida chegam com o contrato profissional."}</p>${blocoCidade(s, true)}`;
   const v = vestiarioDe(pacote, s), t = c.tecnico;
@@ -2247,7 +2279,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2390,6 +2422,8 @@ document.addEventListener("click", (ev) => {
   else if (d.tpos !== undefined && save) { msgPos = { texto: treinarPosicao(save, (d.tpos || undefined) as never), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.mudapos && save) { const r = mudarPosicao(save, d.mudapos as never); msgPos = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.sug && save) { msgPos = { texto: responderSugestao(save, d.sug === "sim"), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.perfilClube) { abrirPerfilClube(d.perfilClube); }
+  else if (d.fecharClube !== undefined) { ($("dlgClube") as HTMLDialogElement).close(); }
   else if (d.album !== undefined && save) { albumPag = +d.album; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.empPedido && save) { const r = pedirEmprestimo(save, d.empPedido === "sim"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.sair && save) { const r = pedirParaSair(save, true, d.sair as Destino); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }

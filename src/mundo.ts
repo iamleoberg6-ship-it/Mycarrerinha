@@ -573,3 +573,20 @@ export const CLUBE_ANTIGO: Record<string, string> = {
 export const idClube = (id: string) => CLUBE_ANTIGO[id] ?? id;
 export const infoClube = (pacote: PacoteDados, id: string): InfoClube => mundo(pacote).info[idClube(id)];
 export const ligaDoClube = (pacote: PacoteDados, id: string): Liga => mundo(pacote).liga[infoClube(pacote, id).ligaId];
+
+// ------------------------------------------------------------------ perfil do clube: linhas do histórico por clube
+let indiceClubes: { estado: unknown; mapa: Map<string, { nome: string; x: LinhaHistorico }[]> } | undefined;
+/** Todas as temporadas (de todos os jogadores do mundo) passadas por um clube, para títulos e o time de todos os tempos. */
+export function linhasDoClube(pacote: PacoteDados, clubeId: string): { nome: string; x: LinhaHistorico }[] {
+  const e = garantir(pacote);
+  if (!indiceClubes || indiceClubes.estado !== e) {
+    const mapa = new Map<string, { nome: string; x: LinhaHistorico }[]>();
+    for (const [nome, ls] of e.hist) for (const x of ls) {
+      const lista = mapa.get(x.clubeId) ?? [];
+      lista.push({ nome, x });
+      mapa.set(x.clubeId, lista);
+    }
+    indiceClubes = { estado: e, mapa };
+  }
+  return indiceClubes.mapa.get(clubeId) ?? [];
+}
