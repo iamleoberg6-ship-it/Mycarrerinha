@@ -1310,13 +1310,13 @@ function albumPaginaHtml(s: Save): string {
   const i = albumPag === undefined || albumPag >= paginas.length ? paginas.length - 1 : albumPag;
   const p = paginas[i];
   const clubes = [...new Set(p.fs.filter((f) => f.tipo === "temporada").map((f) => f.clube))];
-  // toda página tem 6 espaços (as vazias ficam como álbum por colar), então todas têm o mesmo tamanho
-  const grade = p.fs.map((f, k) => `<button class="fig ${f.raridade} fig-ampliar" data-ampliar-pag="${i}" data-ampliar-k="${k}" title="${esc(NOME_TIPO_FIG[f.tipo])}: ${esc(f.legenda)}" aria-label="Ampliar ${esc(NOME_TIPO_FIG[f.tipo])}">${figurinhaSvg(f)}</button>`).join("") + Array.from({ length: Math.max(0, 6 - p.fs.length) }, () => `<div class="album-slot" aria-hidden="true"></div>`).join("");
+  // a página tem sempre o mesmo tamanho; o desenho da grade muda conforme o número de figurinhas (sem espaço vazio)
+  const grade = p.fs.map((f, k) => `<button class="fig ${f.raridade} fig-ampliar" data-ampliar-pag="${i}" data-ampliar-k="${k}" title="${esc(NOME_TIPO_FIG[f.tipo])}: ${esc(f.legenda)}" aria-label="Ampliar ${esc(NOME_TIPO_FIG[f.tipo])}">${figurinhaSvg(f)}</button>`).join("");
   return `${fecha}
     <div class="album-folha virar-${direcaoAlbum > 0 ? "dir" : "esq"}" data-pagina="${i}">
       <div class="pag-cab"><span class="pag-marca">MY CARREIRINHA</span><span class="pag-ano">${p.ano}</span></div>
       <div class="pag-sub">${esc(clubes.join(" · ") || "Seleção e momentos")}${p.partes > 1 ? ` · ${p.parte}ª página da temporada` : ""}</div>
-      <div class="album-grid">${grade}</div>
+      <div class="album-grid l${p.fs.length}">${grade}</div>
       <div class="pag-rodape">
         <button class="album-seta" data-album="${i - 1}" aria-label="Página anterior">‹</button>
         <span class="album-meta">Página ${i + 1} de ${paginas.length} · ${p.fs.length} coladas</span>

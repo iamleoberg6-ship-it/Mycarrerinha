@@ -302,7 +302,18 @@ tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--
 .album-secao::after { content: ""; flex: 1; height: 1px; background: #cdbf9a; }
 .album-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, auto); gap: 8px; }
 .album-grid .fig-ampliar { display: block; width: 100%; border: 0; cursor: zoom-in; font: inherit; }
-.album-grid .album-slot { min-width: 0; }
+.album-grid { height: 372px; grid-template-rows: none; overflow: hidden; }
+.album-grid > * { min-height: 0; min-width: 0; box-sizing: border-box; }
+.album-grid .fig-ampliar { height: 100%; width: auto; aspect-ratio: 160 / 230; max-width: 100%; justify-self: center; align-self: center; padding: 2px; overflow: hidden; }
+.album-grid .fig-svg { width: 100%; height: 100%; }
+.album-grid.l1 { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.album-grid.l2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.album-grid.l3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+.album-grid.l3 > :first-child { grid-column: 1 / -1; }
+.album-grid.l4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+.album-grid.l5 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); }
+.album-grid.l5 > :last-child { grid-column: 1 / -1; }
+.album-grid.l6 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
 .fig-grande { max-width: min(300px, 80vw); margin: 0 auto; }
 .fig-grande .fig-svg { width: 100%; height: auto; }
 .album-folha .pag-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1101,11 +1112,11 @@ dialog.jogo-grande .placar.ident { background-image: radial-gradient(120% 140% a
     <p class="rotulo" style="text-align:center;margin:12px 0 2px">${h(Zs[e.tipo])} \xB7 ${e.ano}</p>
     <p class="sub" style="text-align:center;margin:0">${h(e.legenda)}</p>
     <div style="text-align:center;margin-top:12px"><button class="botao sec peq" data-fechar-fig="1">Fechar</button></div>`;let r=ia("dlgFig");r.open||r.showModal()}function tL(a){let o=Rl(a),e=Fb(a),r='<div class="album-fecha"><button class="botao sec peq" data-fechar-album="1">Fechar</button></div>';if(Ii===-1)return r+rL(a,o);if(!o.length)return`${r}<div class="album-folha"><p class="sub">${e.length?`Voc\xEA ainda n\xE3o colou nenhuma p\xE1gina. Abra o pacote de ${e[0]} no fim da temporada.`:"Ainda sem figurinhas."}</p>
-    ${e.length?`<button class="botao peq" data-abrir-pacote="${e[0]}">Abrir o pacote de ${e[0]}</button>`:""}</div>`;let i=Ii===void 0||Ii>=o.length?o.length-1:Ii,s=o[i],t=[...new Set(s.fs.filter(d=>d.tipo==="temporada").map(d=>d.clube))],n=s.fs.map((d,c)=>`<button class="fig ${d.raridade} fig-ampliar" data-ampliar-pag="${i}" data-ampliar-k="${c}" title="${h(Zs[d.tipo])}: ${h(d.legenda)}" aria-label="Ampliar ${h(Zs[d.tipo])}">${Ol(d)}</button>`).join("")+Array.from({length:Math.max(0,6-s.fs.length)},()=>'<div class="album-slot" aria-hidden="true"></div>').join("");return`${r}
+    ${e.length?`<button class="botao peq" data-abrir-pacote="${e[0]}">Abrir o pacote de ${e[0]}</button>`:""}</div>`;let i=Ii===void 0||Ii>=o.length?o.length-1:Ii,s=o[i],t=[...new Set(s.fs.filter(d=>d.tipo==="temporada").map(d=>d.clube))],n=s.fs.map((d,c)=>`<button class="fig ${d.raridade} fig-ampliar" data-ampliar-pag="${i}" data-ampliar-k="${c}" title="${h(Zs[d.tipo])}: ${h(d.legenda)}" aria-label="Ampliar ${h(Zs[d.tipo])}">${Ol(d)}</button>`).join("");return`${r}
     <div class="album-folha virar-${Bb>0?"dir":"esq"}" data-pagina="${i}">
       <div class="pag-cab"><span class="pag-marca">MY CARREIRINHA</span><span class="pag-ano">${s.ano}</span></div>
       <div class="pag-sub">${h(t.join(" \xB7 ")||"Sele\xE7\xE3o e momentos")}${s.partes>1?` \xB7 ${s.parte}\xAA p\xE1gina da temporada`:""}</div>
-      <div class="album-grid">${n}</div>
+      <div class="album-grid l${s.fs.length}">${n}</div>
       <div class="pag-rodape">
         <button class="album-seta" data-album="${i-1}" aria-label="P\xE1gina anterior">\u2039</button>
         <span class="album-meta">P\xE1gina ${i+1} de ${o.length} \xB7 ${s.fs.length} coladas</span>
