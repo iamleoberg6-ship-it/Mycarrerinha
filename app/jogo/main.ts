@@ -1529,6 +1529,9 @@ function imgNoticia(s: Save, n: Noticia, i: number): string {
   if (img?.k === "trofeu") return miniNoticia({ k: "trofeu" });
   if (img?.k === "capa") return `<div class="noticia-img grande">${capaDe(s, img.edicao, img.clube, !!img.regional)}</div>`;
   if (img?.k === "vida" || img?.k === "tatuagem") return miniNoticia({ k: "vida", corpoSvg: casualMini ??= corpoDe(s, "casual") });
+  if (img?.k === "post") return `<div class="noticia-img grande midia-post"><div class="mp-topo"><span class="mp-av">${esc(img.perfil.slice(1, 3).toUpperCase())}</span><b>${esc(img.perfil)}</b></div><div class="mp-foto"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg></div><div class="mp-curtidas">❤ ${img.curtidas.toLocaleString("pt-BR")} curtidas</div>${img.comentarios.map((c) => `<div class="mp-com">${esc(c)}</div>`).join("")}</div>`;
+  if (img?.k === "fofoca") return `<div class="noticia-img grande midia-fofoca"><span class="mf-tag">EXCLUSIVO</span><div class="mf-veiculo">${esc(img.veiculo)}</div><div class="mf-fonte">Fonte próxima ao casal</div></div>`;
+  if (img?.k === "jornal") return `<div class="noticia-img grande midia-jornal"><div class="mj-cab">${esc(img.veiculo)}</div><div class="mj-secao">${esc(img.secao)}</div></div>`;
   const t = n.titulo + " " + n.texto;
   if (/[Rr]ival|[Dd]uelo/.test(t) && s.carreira.rival) return miniNoticia({ k: "rival", cores: ci(s.carreira.clubeId), outro: ci(s.carreira.rival.clubeId) });
   if (/[Tt]orcida|[Ff]aixa|[Mm]úsica|[Aa]pelido|[Pp]rotesto|aeroporto/.test(t)) return miniNoticia({ k: "torcida", cores: ci(s.carreira.clubeId), nivel: s.carreira.torcida ?? 50 });
