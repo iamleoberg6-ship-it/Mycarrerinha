@@ -55,7 +55,12 @@ const PADRAO_CAMISA: Record<string, string> = {
 };
 export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa";
 /** Uniforme real de alguns clubes que o padrão simples não representa. Corpo branco com duas faixas cruzando o meio (vermelha e preta). */
-const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terceira: string }> = {
+/** Quadricolor do Vale (Brusque): camisa branca com três faixas (verde, amarela e vermelha); o escudo segue as cores do clube. */
+export const UNIFORME_CLUBE: Record<string, { cores: [string, string]; padrao: string; faixas: string[]; escudo: [string, string] }> = {
+  "C-BRU": { cores: ["#FFFFFF", "#E2231A"], padrao: "tresFaixasH", faixas: ["#0B7A3B", "#F5C400", "#E2231A"], escudo: ["#E2231A", "#FFFFFF"] },
+};
+const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terceira: string; faixas?: string[] }> = {
+  "C-BRU": { cores: ["#FFFFFF", "#E2231A"], modelo: "tresFaixasH", terceira: "#0B7A3B", faixas: ["#0B7A3B", "#F5C400", "#E2231A"] },
   SPA: { cores: ["#FFFFFF", "#C8102E"], modelo: "duasFaixasH", terceira: "#111111" },
   CFC: { cores: ["#FFFFFF", "#00573F"], modelo: "duasFaixasH", terceira: "#00573F" },
   FOR: { cores: ["#1C3F94", "#E2231A"], modelo: "listrasHG", terceira: "#111111" },
@@ -68,9 +73,9 @@ export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId
 /** Calção e meião que fogem do padrão da camisa (São Paulo e Fortaleza jogam de branco embaixo). */
 export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" || clubeId === "FOR" ? "#FFFFFF" : undefined);
 export const meiaoDoClube = (clubeId?: string): string | undefined => (clubeId === "FOR" ? "#FFFFFF" : undefined);
-export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; terceira?: string; numeroCor?: string } {
+export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; terceira?: string; faixas?: string[]; numeroCor?: string } {
   const k = r.clubeId ? KIT_VISUAL[r.clubeId] : undefined, numeroCor = numeroCorClube(r.clubeId);
-  return k ? { cores: k.cores, modelo: k.modelo, terceira: k.terceira, numeroCor } : { cores: r.cores, modelo: r.modelo, numeroCor };
+  return k ? { cores: k.cores, modelo: k.modelo, terceira: k.terceira, faixas: k.faixas, numeroCor } : { cores: r.cores, modelo: r.modelo, numeroCor };
 }
 /** As bolas mudam de competição para competição e de ano para ano. */
 const BOLA_BASE: [string, string][] = [["#262626", "#262626"], ["#1B98E0", "#262626"], ["#C0392B", "#262626"]];

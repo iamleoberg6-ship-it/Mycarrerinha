@@ -13,8 +13,10 @@ const luz = (c: string) => { const [r, g, b] = hex(c); return (0.2126 * r + 0.71
 
 const CORPO = "M30 8 C36 12 44 12 50 8 L66 13 L79 33 L68 41 L63 33 L63 92 C49 95 31 95 17 92 L17 33 L12 41 L1 33 L14 13 Z";
 
-function padrao(modelo: string, c2: string, c3: string): string {
+function padrao(modelo: string, c2: string, c3: string, faixas?: string[]): string {
   switch (modelo) {
+    /** três faixas horizontais, cada uma numa cor (Quadricolor do Vale) */
+    case "tresFaixasH": return (faixas ?? [c2, c3, c2]).map((cor, i) => `<rect x="0" y="${26 + i * 13}" width="80" height="9" fill="${cor}"/>`).join("");
     case "listrasV": return Array.from({ length: 6 }, (_, i) => `<rect x="${8 + i * 12}" y="0" width="6" height="100" fill="${c2}"/>`).join("");
     case "listrasH": return Array.from({ length: 7 }, (_, i) => `<rect x="0" y="${22 + i * 11}" width="80" height="5.5" fill="${c2}"/>`).join("");
     /** listras grossas horizontais (Fortaleza) */
@@ -31,7 +33,7 @@ function padrao(modelo: string, c2: string, c3: string): string {
   }
 }
 
-export interface DadosCamisa { cores: [string, string]; modelo: string; /** cor do número, quando o clube usa outra (Vasco) */ numeroCor?: string; /** terceira cor (faixa de baixo do padrão duasFaixasH) */ terceira?: string; numero?: string; /** clube (id ou nome): escolhe a fonte de nome e número */ chave?: string }
+export interface DadosCamisa { cores: [string, string]; modelo: string; /** cor do número, quando o clube usa outra (Vasco) */ numeroCor?: string; /** terceira cor (faixa de baixo do padrão duasFaixasH) */ terceira?: string; /** três cores das faixas (tresFaixasH) */ faixas?: string[]; numero?: string; /** clube (id ou nome): escolhe a fonte de nome e número */ chave?: string }
 
 /** SVG (viewBox 0 0 80 104) da camisa pendurada, de costas, com nome e número. */
 export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): string {
@@ -55,7 +57,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
     <clipPath id="${id}c"><path d="${CORPO}"/></clipPath></defs>
     <path d="M40 1 C44 1 45 5 41 7 L40 8 M33 9 L40 5 L47 9" stroke="#9aa5a0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
     <path d="${CORPO}" fill="${a}"/>
-    <g clip-path="url(#${id}c)">${padrao(c.modelo, b, c.terceira ?? (c.modelo === "duasFaixasH" ? b : "#111111"))}
+    <g clip-path="url(#${id}c)">${padrao(c.modelo, b, c.terceira ?? (c.modelo === "duasFaixasH" ? b : "#111111"), c.faixas)}
       <rect width="80" height="104" fill="url(#${id}g)"/><rect width="80" height="104" fill="url(#${id}l)"/>
       <path d="M1.5 34 L12 41.5 M68 41.5 L78.5 34" stroke="${b}" stroke-width="3" fill="none" opacity=".9"/>
       <path d="M30 8 C36 12 44 12 50 8" stroke="${b}" stroke-width="3.2" fill="none"/>
