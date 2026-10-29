@@ -79,7 +79,7 @@ export interface ResumoTemporada { /** passagem de meia temporada (trocou de clu
   valor?: number; salario?: number; fama?: number; seguidores?: number; saldo?: number }
 /** Dados da imagem da notícia (o desenho é feito na tela, a partir destes ids). */
 export type ImgNoticia = { k: "placar"; casa: string; fora: string; gc: number; gf: number } | { k: "transferencia"; clube: string; tipo: string; ate: number; taxa: number } | { k: "patrocinio"; marca: string } | { k: "trofeu" } | { k: "vida" } | { k: "tatuagem" } | { k: "capa"; edicao: number; clube: string; regional?: boolean }
-  | { k: "post"; perfil: string; curtidas: number; comentarios: string[] } | { k: "fofoca"; veiculo: string } | { k: "jornal"; veiculo: string; secao: string };
+  | { k: "post"; perfil: string; curtidas: number; comentarios: string[]; casal?: Casal } | { k: "fofoca"; veiculo: string; casal?: Casal } | { k: "jornal"; veiculo: string; secao: string };
 export type TipoMarco = "clube" | "amor" | "filho" | "casa" | "recorde" | "lesao" | "escandalo" | "selecao" | "marco";
 export interface Marco { ano: number; tipo: TipoMarco; texto: string }
 /** Guarda na linha do tempo o que a notícia tem de marcante (namoro, casamento, filho, transferência, recorde, lesão grave, escândalo). */
@@ -102,13 +102,15 @@ const VEICULOS_FOFOCA = ["Fofocas do Dia", "Portal Bastidores", "Fuxico Online"]
 const VEICULOS_JORNAL = ["Gazeta da Tarde", "Diário Esportivo do Bairro", "Notícias da Manhã"];
 const COMENTARIOS_POST = ["Casal lindo 😍", "Ela é perfeita pra ele", "Isso não vai durar, vai", "Foco no futebol, craque!", "Essa foto é antiga, gente", "Torço pelos dois ❤️", "Cadê o treino, hein? 😂"];
 /** Notícia da vida pessoal sai como mídia: post de rede social, manchete de fofoca ou recorte de jornal. */
-export function noticiaDeRomance(s: Save, tipo: Noticia["tipo"], titulo: string, texto: string) {
+/** A parceira que aparece na arte: o id e a profissão dão o mesmo retrato que o app mostra. */
+export interface Casal { id: string; profissao: string }
+export function noticiaDeRomance(s: Save, tipo: Noticia["tipo"], titulo: string, texto: string, par?: Casal) {
   const rng = rngDe(s, "midia", titulo);
   let img: ImgNoticia;
-  if (tipo === "polemica") img = { k: "fofoca", veiculo: rng.pick(VEICULOS_FOFOCA) };
+  if (tipo === "polemica") img = { k: "fofoca", veiculo: rng.pick(VEICULOS_FOFOCA), casal: par };
   else if (rng.chance(0.6)) {
     const handle = "@" + s.jogador.apelido.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
-    img = { k: "post", perfil: handle, curtidas: rng.int(2000, 300000), comentarios: [rng.pick(COMENTARIOS_POST), rng.pick(COMENTARIOS_POST)] };
+    img = { k: "post", perfil: handle, curtidas: rng.int(2000, 300000), comentarios: [rng.pick(COMENTARIOS_POST), rng.pick(COMENTARIOS_POST)], casal: par };
   } else img = { k: "jornal", veiculo: rng.pick(VEICULOS_JORNAL), secao: "Vida pessoal" };
   noticia(s, tipo, titulo, texto, img);
 }
@@ -1382,7 +1384,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   eventos.push(...sn.avisos);
   if (sn.custo) s.casa.saldo -= sn.custo;
   if (sn.escandalo) { c.fama = clamp(c.fama + 1.5, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); c.exposicao = clamp(c.exposicao + 10, 0, 100); }
-  if (sn.noticia) noticiaDeRomance(s, sn.escandalo ? "polemica" : "vida", sn.noticia, sn.escandalo ? `As fotos rodaram as redes. Patrocinadores e torcida comentam a vida pessoal de ${s.jogador.apelido}.` : `${s.jogador.apelido} confirmou. A vida segue.`);
+  if (sn.noticia) noticiaDeRomance(s, sn.escandalo ? "polemica" : "vida", sn.noticia, sn.escandalo ? `As fotos rodaram as redes. Patrocinadores e torcida comentam a vida pessoal de ${s.jogador.apelido}.` : `${s.jogador.apelido} confirmou. A vida segue.`, nam.par);
   const en = efeitosNamoro(nam);
   const mult = 1 + cont("treino") * 0.1 + (casa.evolucao + vida.evolucao + en.evolucao) / 100 + c.bonusEvolucao - (c.treinoPosicao ? 0.1 : 0) + (paiTreinador(fam) ? 0.05 : 0);
   for (const k of ATRIBUTOS) j.at[k] = clamp(j.at[k] + (evoluido[k] - j.at[k]) * (evoluido[k] > j.at[k] ? mult : 1), 1, 99);
@@ -2317,7 +2319,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     if (tn.casou) agendarCasamento(agendaDe(c), semanaAbsJogo(c), tn.casou, c.salario);
     if (tn.custo) s.casa.saldo -= tn.custo;
     if (tn.escandalo) { c.fama = clamp(c.fama + 1, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); }
-    if (tn.noticia) noticiaDeRomance(s, tn.escandalo ? "polemica" : "vida", tn.noticia, tn.escandalo ? `A vida pessoal de ${s.jogador.apelido} virou assunto nos programas de fofoca.` : `Festa para a família e os amigos do futebol.`); }
+    if (tn.noticia) noticiaDeRomance(s, tn.escandalo ? "polemica" : "vida", tn.noticia, tn.escandalo ? `A vida pessoal de ${s.jogador.apelido} virou assunto nos programas de fofoca.` : `Festa para a família e os amigos do futebol.`, namoroDe(c).par); }
   feriasSaude(saudeDe(c));
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   sincronizar(pacote, s);
