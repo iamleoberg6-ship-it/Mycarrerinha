@@ -7,7 +7,7 @@ import { ARTE_IMG } from "./arte-dados.js";
 export type Tom = "claro" | "escuro" | "medio";
 export const TONS: Tom[] = ["claro", "escuro", "medio"];
 
-export const MULHERES_RETRATO = ["hair-female-01", "hair-female-02", "hair-female-03", "face-female-01", "face-female-02", "face-female-03"] as const;
+export const MULHERES_RETRATO = ["hair-female-01", "hair-female-02", "hair-female-03", "hair-female-04", "hair-female-05", "hair-female-06", "face-female-01", "face-female-02", "face-female-03"] as const;
 export const MULHERES_CORPO = ["corpo-mulher", "body-female-02", "body-female-03"] as const;
 export const BEBES = ["baby-01", "baby-02"] as const;
 
