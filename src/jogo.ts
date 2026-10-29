@@ -148,6 +148,8 @@ export interface Carreira {
   chegadaClube?: number;
   /** jogos como profissional por clube (camisa de cada clube) */
   jogosPorClube?: Record<string, number>;
+  /** números da temporada em cada clube em que jogou (liga): uma figurinha por clube no fim do ano */
+  clubesTemp?: Record<string, { jogos: number; gols: number; assist: number; notas: number[] }>;
   /** redes sociais: quanto posta (0–100) e repercussão recente de lances (decai) */
   engajamento?: number; hype?: number;
   /** padrão de vida escolhido (alimentação, carro, lazer, família) */
@@ -1153,7 +1155,11 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   } else if (copa && ehDeSelecao(copa.id)) {
     // amistoso da seleção: não entra em nenhuma estatística
   } else if (copa) { const vazio = () => ({ jogos: 0, gols: 0, assist: 0, notas: [] as number[] }); const sc = ehEstadual(copa.id) ? (c.statsEstadual ??= vazio()) : copa.id === "INT" || copa.id === "MUN" ? ((c.statsExtra ??= {})[copa.id] ??= vazio()) : (c.statsCopa ??= vazio()); sc.jogos++; sc.gols += gols; sc.assist += assist; sc.notas.push(nota); }
-  else if (pro) { c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota); }
+  else if (pro) {
+    c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota);
+    const t = (c.clubesTemp ??= {})[c.clubeId] ??= { jogos: 0, gols: 0, assist: 0, notas: [] };
+    t.jogos++; t.gols += gols; t.assist += assist; t.notas.push(nota);
+  }
   else { c.stats.base++; c.stats.baseGols += gols; (c.stats.baseNotas ??= []).push(nota); }
   if (pro) { const ms = (c.mesStats ??= { gols: 0, assist: 0, notas8: 0 }); ms.gols += gols; ms.assist += assist; if (nota >= 8) ms.notas8++; }
   if (pro && !copa) { c.jogosPorClube ??= {}; c.jogosPorClube[c.clubeId] = (c.jogosPorClube[c.clubeId] ?? 0) + 1; }
@@ -2295,7 +2301,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   noticiasDaVirada(pacote, s);
   // a liga pode ter mudado (acesso ou rebaixamento): a tabela nova é a da divisão em que o clube vai jogar
   const lN = ligaAtual(pacote, s);
-  c.tabela = novaTabela(lN); c.stats = statsVazias(); c.resultadosClube = []; c.placaresRodada = {};
+  c.tabela = novaTabela(lN); c.stats = statsVazias(); c.clubesTemp = undefined; c.resultadosClube = []; c.placaresRodada = {};
   const clube = clubeDe(lN, c.clubeId);
   if (c.fase) { c.anosContrato = Math.max(1, c.anosContrato); fimDeTemporadaDoCaminho(pacote, s, eventos); }
   if (c.fase) { /* várzea, academia, colégio e universidade: a passagem é pelos convites */ }

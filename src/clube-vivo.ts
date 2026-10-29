@@ -195,6 +195,11 @@ function baseFigurinha(pacote: PacoteDados, s: Save): Omit<Figurinha, "id" | "ti
   return { ano: ANO_INICIAL + c.temporada, clubeId: c.clubeId, clube: info?.nome ?? "", cores: [info?.cores[0] ?? "#FFFFFF", info?.cores[1] ?? "#111111"], numero: String(j.numero ?? 10), posicao: j.posicao,
     ovr: Math.round(ovr(j)), idade: j.idade, jogos: st.jogos, gols: st.gols, assist: st.assist, ap: { ...((j.aparencia as Record<string, unknown>) ?? {}) } };
 }
+/** Base da figurinha para um clube específico (o da temporada, quando o jogador passou por mais de um). */
+function baseDoClube(pacote: PacoteDados, s: Save, clubeId: string): Omit<Figurinha, "id" | "tipo" | "raridade" | "legenda"> {
+  const b = baseFigurinha(pacote, s), ic = infoClube(pacote, clubeId);
+  return { ...b, clubeId, clube: ic?.nome ?? b.clube, cores: ic ? [ic.cores[0], ic.cores[1]] : b.cores };
+}
 /** Patrocínio fechado: figurinha do contrato com a marca. */
 export function figurinhaDePatrocinio(pacote: PacoteDados, s: Save, marca: string, chave: string) {
   figurinhaDeMomento(albumDe(s.carreira), "patrocinio", baseFigurinha(pacote, s), chave, `Contrato com a ${marca}`, "prata");
@@ -233,11 +238,17 @@ export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTempo
     }
     figurinhaEspecial(albumDe(c), "titulo", baseFigurinha(pacote, s), `Campeão: ${titulos.join(" e ")}`);
   }
-  // figurinha do ano
+  // figurinhas do ano: uma por clube em que jogou na temporada, com os números daquele clube
   if (!c.fase && !c.formacao && info) {
     const conv = Object.entries(c.selecao?.conv ?? {}).some(([k, v]) => v && k.startsWith(`${c.temporada}-`));
-    const f = figurinhaDaTemporada(albumDe(c), { ...baseFigurinha(pacote, s), ano, ovr: r.ovr, idade: r.idade, jogos: r.jogos, gols: r.gols, assist: r.assist, titulo: r.titulo, premios: r.premios ?? [], selecao: conv, capitao: c.vestiario?.papel === "capitao" });
-    if (f) ev.push(`Figurinha ${ano} no álbum (${f.raridade}).`);
+    const porClube = Object.entries(c.clubesTemp ?? {}).filter(([, t]) => t.jogos > 0);
+    const lista: [string, { jogos: number; gols: number; assist: number }][] = porClube.length ? porClube : [[c.clubeId, { jogos: r.jogos, gols: r.gols, assist: r.assist }]];
+    for (const [id, t] of lista) {
+      const atual = id === c.clubeId, ic = infoClube(pacote, id);
+      if (!ic) continue;
+      const f = figurinhaDaTemporada(albumDe(c), { ...baseDoClube(pacote, s, id), ano, ovr: r.ovr, idade: r.idade, jogos: t.jogos, gols: t.gols, assist: t.assist, titulo: atual && r.titulo, premios: atual ? r.premios ?? [] : [], selecao: atual && conv, capitao: atual && c.vestiario?.papel === "capitao" });
+      if (f) ev.push(`Figurinha ${ano} no álbum: ${ic.nome} (${f.raridade}).`);
+    }
   }
   // rival: quem fez mais gols no ano
   const rv = c.rival;
