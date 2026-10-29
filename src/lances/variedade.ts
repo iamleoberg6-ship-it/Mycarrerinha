@@ -55,7 +55,7 @@ export const VARIEDADE: Situacao[] = [
     texto: ["Falta em zona de perigo. A barreira está montada, e o {batedor} parece pronto.", "Falta frontal, a 25 metros. Você pode chutar direto ou tentar um toque por cima da barreira."],
     peso: P({ MEI: 2.5, ATA: 2, PON: 1.5 }), opcoes: [
       { id: "chutar", rotulo: "Bater no canto", teste: { FIN: 0.5, FOR: 0.25, CALMA: 0.25 }, dif: 11, tracos: { chute_longe: 3 }, niveis: [
-        e(["Bateu no canto da barreira. O {gol} não viu. GOL!", "Chute colocado, no ângulo. A torcida explodiu. GOL!"], 0.9, { golPro: true, fama: 0.5, seguidores: 0.05 }),
+        e(["Bateu no canto da barreira. O {gol} não viu. GOL!", "Chute colocado, no ângulo. A torcida explodiu. GOL!"], 0.9, { golPro: true, meu: "gol", fama: 0.5, seguidores: 0.05 }),
         e("Chute forte, mas o {gol} deu um jeito de desviar.", 0.3),
         e("Chutou na barreira. O time perdeu o escanteio.", -0.2),
         e("Chute alto demais e a bola saiu pelo alto.", -0.35),
@@ -93,7 +93,7 @@ export const VARIEDADE: Situacao[] = [
         e("Passe para o lado errado. Perdeu o contra-ataque.", -0.45),
         e("Passe fraco e o adversário pegou a bola de volta.", -0.7, { moral: -2 })] },
       { id: "chutar", rotulo: "Chutar de longe", teste: { FIN: 0.5, CALMA: 0.5 }, dif: 9, tracos: { chute_longe: 3 }, niveis: [
-        e(["Chute de fora da área, sem goleiro. Entrou no meio do gol. GOL!", "Chutou de longe no contra-ataque e o goleiro nem chegou perto. GOL!"], 0.85, { golPro: true, fama: 0.4 }),
+        e(["Chute de fora da área, sem goleiro. Entrou no meio do gol. GOL!", "Chutou de longe no contra-ataque e o goleiro nem chegou perto. GOL!"], 0.85, { golPro: true, meu: "gol", fama: 0.4 }),
         e("Chutou forte, o goleiro defendeu no canto.", 0.25),
         e("Chutou por cima do gol.", -0.3),
         e("Chutou fraco e o goleiro pegou fácil.", -0.4),
@@ -101,15 +101,16 @@ export const VARIEDADE: Situacao[] = [
     ] },
   { id: "v_foraDeCampo", titulo: ["Perder tempo no fim", "Segurar o resultado", "Esfriar o jogo"],
     texto: ["O placar está a seu favor e faltam poucos minutos. Você pode acelerar o ritmo ou deixar a bola rolar devagar.", "A torcida está pedindo mais ataque, mas o time precisa segurar a vantagem. A decisão é sua."],
-    peso: P({ MEI: 2, VOL: 2.5, ZAG: 2, LAT: 1.5 }), opcoes: [
+    // só quando o time está na frente no fim: sem vantagem não há o que segurar nem o que matar
+    peso: (c) => (c.min >= 75 && c.saldo >= 1 ? P({ MEI: 2, VOL: 2.5, ZAG: 2, LAT: 1.5 })(c) : 0), opcoes: [
       { id: "esfriar", rotulo: "Esfriar o jogo", teste: { CALMA: 0.7, VIS: 0.3 }, dif: 3, niveis: [
         e("Esfriou o jogo e segurou a pressão até o apito final. Vitória garantida.", 0.3, { moral: 2, relTecnico: 1 }),
         e("Segurou o ritmo e o time respirou. Sem sustos.", 0.15),
         e("Esfriou demais e o adversário pressionou.", -0.1),
         e("Perdeu a bola na tentativa de esfriar e o adversário chegou.", -0.4),
         e("Esfriou tanto que o adversário empatou nos acréscimos.", -0.75, { golContra: true, moral: -3 })] },
-      { id: "acelerar", rotulo: "Acelerar e buscar o terceiro gol", teste: { VEL: 0.5, PAS: 0.5 }, dif: 7, niveis: [
-        e("Acelerou e fez o terceiro gol. Jogo decidido!", 0.9, { golPro: true, relTecnico: 2, fama: 0.3 }),
+      { id: "acelerar", rotulo: "Acelerar e buscar mais um gol", teste: { VEL: 0.5, PAS: 0.5 }, dif: 7, niveis: [
+        e("Acelerou, recebeu no meio e fez mais um gol. Jogo decidido!", 0.9, { golPro: true, meu: "gol", relTecnico: 2, fama: 0.3 }),
         e("Acelerou, criou uma boa chance e o gol não saiu.", 0.25),
         e("Acelerou demais e perdeu a bola na frente.", -0.3),
         e("A pressa deixou o time exposto. O adversário chegou.", -0.5),
@@ -119,7 +120,7 @@ export const VARIEDADE: Situacao[] = [
     texto: ["A bola vem alta na sua direção. O {zag} adversário também quer subir.", "Escanteio ou lançamento alto: a bola cai no meio da área com dois jogadores disputando."],
     peso: P({ ZAG: 2.5, ATA: 2, VOL: 1.5, LAT: 1 }), opcoes: [
       { id: "cabecear", rotulo: "Subir e cabecear", teste: { FOR: 0.4, CAB: 0.3, CALMA: 0.3 }, dif: 9, tracos: { cabeceador: 3 }, niveis: [
-        e(["Subiu mais alto e cabeceou para o fundo da rede. GOL!", "Subiu no momento certo e encostou de cabeça. O goleiro nem viu. GOL!"], 0.85, { golPro: true, fama: 0.3 }),
+        e(["Subiu mais alto e cabeceou para o fundo da rede. GOL!", "Subiu no momento certo e encostou de cabeça. O goleiro nem viu. GOL!"], 0.85, { golPro: true, meu: "gol", fama: 0.3 }),
         e("Cabeceou forte, mas o goleiro espalmou.", 0.25),
         e("Cabeceou fraco e a bola foi para o lado.", -0.25),
         e("Cabeceou para o próprio goleiro.", -0.4),
