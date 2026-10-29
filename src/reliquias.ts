@@ -50,7 +50,7 @@ export const CONQUISTA: Record<string, Conquista> = Object.fromEntries(CONQUISTA
 /** Desenho da camisa de cada clube (paródia: só cores e padrão). */
 const PADRAO_CAMISA: Record<string, string> = {
   FLA: "listrasH", FLU: "listrasV", BOT: "listrasV", VAS: "faixa", GRE: "listrasV", CAM: "listrasV", BAH: "listrasV", VIT: "listrasV", CAP: "diagonais",
-  SPA: "faixaH", SAN: "lisa", PAL: "lisa", COR: "lisa", INT: "lisa", CRU: "lisa", CFC: "duasFaixasH", RBB: "lisa", MIR: "lisa", REM: "lisa", CHA: "lisa",
+  SPA: "duasFaixasH", SAN: "lisa", PAL: "lisa", COR: "lisa", INT: "lisa", CRU: "lisa", CFC: "duasFaixasH", RBB: "lisa", MIR: "lisa", REM: "lisa", CHA: "lisa",
   FOR: "listrasHG", ACG: "metade",
 };
 export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa";
@@ -60,11 +60,13 @@ export const UNIFORME_CLUBE: Record<string, { cores: [string, string]; padrao: s
   "C-BRU": { cores: ["#FFFFFF", "#E2231A"], padrao: "tresFaixasH", faixas: ["#0B7A3B", "#F5C400", "#E2231A"], escudo: ["#E2231A", "#FFFFFF"] },
   /** Pantera de Ribeirão (Botafogo-SP): como o São Paulo, com as cores da faixa invertidas (preta em cima, vermelha embaixo). */
   BFC: { cores: ["#FFFFFF", "#000000"], padrao: "duasFaixasH", faixas: ["#000000", "#C8102E"], escudo: ["#C8102E", "#FFFFFF"] },
+  /** Tricolor paulista: camisa branca com duas faixas horizontais no meio, vermelha e preta, com um espaço entre elas. */
+  SPA: { cores: ["#FFFFFF", "#C8102E"], padrao: "duasFaixasH", faixas: ["#C8102E", "#111111"], escudo: ["#C8102E", "#FFFFFF"] },
 };
 const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terceira: string; faixas?: string[] }> = {
   BFC: { cores: ["#FFFFFF", "#000000"], modelo: "duasFaixasH", terceira: "#C8102E" },
   "C-BRU": { cores: ["#FFFFFF", "#E2231A"], modelo: "tresFaixasH", terceira: "#0B7A3B", faixas: ["#0B7A3B", "#F5C400", "#E2231A"] },
-  SPA: { cores: ["#FFFFFF", "#C8102E"], modelo: "duasFaixasH", terceira: "#111111" },
+  SPA: { cores: ["#FFFFFF", "#C8102E"], modelo: "duasFaixasH", terceira: "#111111", faixas: ["#C8102E", "#111111"] },
   CFC: { cores: ["#FFFFFF", "#00573F"], modelo: "duasFaixasH", terceira: "#00573F" },
   FOR: { cores: ["#1C3F94", "#E2231A"], modelo: "listrasHG", terceira: "#111111" },
   ACG: { cores: ["#E2231A", "#000000"], modelo: "metade", terceira: "#111111" },
