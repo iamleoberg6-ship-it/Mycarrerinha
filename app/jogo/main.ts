@@ -50,6 +50,7 @@ import { estrelas as estrelasDoMundo, numeroDe, relacoesDe, rotuloNivel, NOME_AC
 import { POSICOES, PODE_JOGAR, semanasParaAprender, afinidade } from "../../src/posicoes";
 import { SITUACAO } from "../../src/lances";
 import type { LinhaPremio, PremioMundo } from "../../src/premios-mundo";
+import { artilheirosDaSelecao } from "../../src/artilheiros";
 import { trocasDeTecnicoEm, lesoesDaTemporada } from "../../src/mundo";
 import { NOME_ESTILO } from "../../src/tecnicos";
 import { infoClube, idClube, idSelecao, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
@@ -1384,7 +1385,14 @@ function selecaoPerfilHtml(s: Save): string {
   return `<p class="rotulo">Seleção${nome ? ` · ${esc(nome)}` : ""}</p>
     <div class="tiles">${tile(String(sl?.convocacoes ?? 0), "Convocações", "📨")}${tile(String(sl?.jogos ?? 0), "Jogos", "🏟️")}${tile(String(sl?.gols ?? 0), "Gols", "⚽")}${tile(String(sl?.assist ?? 0), "Assistências", "👟")}</div>
     <p class="sub">${sl?.estreia ? `Estreia em ${sl.estreia}.` : "Ainda sem jogo pela seleção. Convocações e estreia aparecem aqui."}</p>
-    ${linhas.length ? `<table><thead><tr><th>Ano</th><th>Competição</th><th class="n">J</th><th class="n">G</th><th class="n">A</th></tr></thead><tbody>${linhas.map((x) => `<tr><td>${x.ano}</td><td>${esc(x.id ? COPAS[x.id].nome : "Seleção")} · ${esc(x.fase)}${x.campeao ? " 🏆" : ""}</td><td class="n">${x.jogos}</td><td class="n">${x.gols}</td><td class="n">${x.assist ?? 0}</td></tr>`).join("")}</tbody></table>` : ""}`;
+    ${linhas.length ? `<table><thead><tr><th>Ano</th><th>Competição</th><th class="n">J</th><th class="n">G</th><th class="n">A</th></tr></thead><tbody>${linhas.map((x) => `<tr><td>${x.ano}</td><td>${esc(x.id ? COPAS[x.id].nome : "Seleção")} · ${esc(x.fase)}${x.campeao ? " 🏆" : ""}</td><td class="n">${x.jogos}</td><td class="n">${x.gols}</td><td class="n">${x.assist ?? 0}</td></tr>`).join("")}</tbody></table>` : ""}
+    ${artilheirosHtml(s.jogador.nacionalidade)}`;
+}
+/** Os artilheiros históricos da seleção (nome que aparece no jogo; lendas aposentadas com o nome real). */
+function artilheirosHtml(pais: string): string {
+  const lista = artilheirosDaSelecao(pais);
+  if (!lista.length) return "";
+  return `<p class="rotulo" style="margin:14px 0 6px">Artilheiros históricos</p><table><tbody>${lista.map((x, i) => `<tr><td>${i + 1}</td><td><b>${esc(x.jogo)}</b></td><td class="n">${x.gols}</td></tr>`).join("")}</tbody></table>`;
 }
 function barrasCarreira(hist: { ano: number; jogos: number; gols: number; assist: number; titulo?: boolean }[]): string {
   const h = hist.filter((x) => x.jogos > 0).slice(-14);
