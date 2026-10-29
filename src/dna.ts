@@ -3,7 +3,7 @@
 import { RNG, clamp } from "./rng.js";
 import { type Atributo, type Atributos, type Posicao, type Personalidade, ATRIBUTOS, atributosIniciais, ovr } from "./atributos.js";
 
-export type EscolaId = "BRA" | "ARG_URU" | "ESP_NED" | "GER" | "ITA" | "ENG" | "FRA" | "AFO" | "JPN_KOR" | "POR" | "EUA" | "MEX" | "COL" | "MAR" | "CRO";
+export type EscolaId = "BRA" | "TUR" | "ARG_URU" | "ESP_NED" | "GER" | "ITA" | "ENG" | "FRA" | "AFO" | "JPN_KOR" | "POR" | "EUA" | "MEX" | "COL" | "MAR" | "CRO";
 export type FormacaoId = "rua" | "futsal" | "praia" | "escolinha" | "academia" | "base_grande";
 export type FamiliaId = "humilde" | "media" | "rica";
 export type Pe = "direito" | "esquerdo" | "ambidestro";
@@ -37,10 +37,11 @@ export const ESCOLAS: Escola[] = [
   { id: "MEX", nome: "México", pais: "México", nacionalidade: "MEX", lingua: "es", descricao: "Garra de bairro, cabeçada e bola parada.", mods: { CAB: 3, FIN: 2, COM: 2, RES: -1, POS: -1 }, pers: { temperamento: 3 } },
   { id: "COL", nome: "Colômbia", pais: "Colômbia", nacionalidade: "COL", lingua: "es", descricao: "Ritmo de cadência: passe criativo e drible de quem joga dançando.", mods: { PAS: 3, DRI: 3, VIS: 2, FOR: -1, MAR: -1 }, pers: { carisma: 3 } },
   { id: "MAR", nome: "Marrocos", pais: "Marrocos", nacionalidade: "MAR", lingua: "ar", descricao: "Técnica de rua, velocidade e leitura de jogo.", mods: { VEL: 3, DRI: 2, POS: 3, RES: 2, FIN: -1 }, pers: { ambicao: 2 } },
+  { id: "TUR", nome: "Turquia", pais: "Turquia", nacionalidade: "TUR", lingua: "tr", descricao: "Meio-campo criativo, chute de longe e a torcida que empurra o time.", mods: { PAS: 2, FIN: 2, FOR: 2, COM: 1, CAB: -1 }, pers: { temperamento: 2 } },
   { id: "CRO", nome: "Croácia", pais: "Croácia", nacionalidade: "CRO", lingua: "slav", descricao: "Cabeça fria no meio-campo: passe e fôlego de país pequeno e duro.", mods: { PAS: 3, VIS: 3, RES: 2, FOR: -2, VEL: -1 }, pers: { profissionalismo: 2 } },
 ];
 
-export type PaisId = "BRA" | "ARG" | "URU" | "ESP" | "NED" | "GER" | "ITA" | "ENG" | "FRA" | "NGA" | "SEN" | "GHA" | "JPN" | "KOR" | "POR" | "USA" | "MEX" | "COL" | "MAR" | "CRO";
+export type PaisId = "BRA" | "TUR" | "ARG" | "URU" | "ESP" | "NED" | "GER" | "ITA" | "ENG" | "FRA" | "NGA" | "SEN" | "GHA" | "JPN" | "KOR" | "POR" | "USA" | "MEX" | "COL" | "MAR" | "CRO";
 /** Cada país tem a sua carta; países da mesma escola de futebol compartilham as tendências de atributos. */
 export interface Pais { id: PaisId; nome: string; local: string; escola: EscolaId; nacionalidade: string; lingua: string; nota: string }
 export const PAISES: Pais[] = [
@@ -63,6 +64,7 @@ export const PAISES: Pais[] = [
   { id: "MEX", nome: "México", local: "no México", escola: "MEX", nacionalidade: "MEX", lingua: "es", nota: "Bairro, torcida de oitenta mil e nenhum medo de jogo." },
   { id: "COL", nome: "Colômbia", local: "na Colômbia", escola: "COL", nacionalidade: "COL", lingua: "es", nota: "Futebol com ritmo: a bola segue o compasso da rua." },
   { id: "MAR", nome: "Marrocos", local: "em Marrocos", escola: "MAR", nacionalidade: "MAR", lingua: "ar", nota: "Das ruas de Casablanca às periferias de Paris: técnica e velocidade." },
+  { id: "TUR", nome: "Turquia", local: "na Turquia", escola: "TUR", nacionalidade: "TUR", lingua: "tr", nota: "Ponte entre dois continentes e torcida que não para de cantar." },
   { id: "CRO", nome: "Croácia", local: "na Croácia", escola: "CRO", nacionalidade: "CRO", lingua: "slav", nota: "País pequeno que produz meio-campistas de classe mundial." },
 ];
 
@@ -71,7 +73,7 @@ export const PAISES: Pais[] = [
 export const LIGA_DA_BASE: Record<PaisId, string> = {
   BRA: "BRA1", ARG: "ARG1", URU: "URU1", ESP: "ESP1", NED: "NED1", GER: "GER1", ITA: "ITA1", ENG: "ENG1", FRA: "FRA1",
   NGA: "ENG1", SEN: "FRA1", GHA: "ENG1", JPN: "JPN1", KOR: "KOR1",
-  POR: "POR1", USA: "USA1", MEX: "MEX1", COL: "COL1", MAR: "MAR1", CRO: "CRO1",
+  POR: "POR1", USA: "USA1", MEX: "MEX1", COL: "COL1", MAR: "MAR1", CRO: "CRO1", TUR: "TUR1",
 };
 /** Para onde a família se mudou (só para quem nasceu num país sem liga no jogo). */
 export const MUDOU_PARA: Partial<Record<PaisId, string>> = { NGA: "a Inglaterra", SEN: "a França", GHA: "a Inglaterra" };

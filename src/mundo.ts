@@ -47,7 +47,7 @@ export function mundo(pacote: PacoteDados): Mundo {
         info[c.id] = { id: c.id, nome: c.nome, apelido: c.apelido, cores: c.cores, forca: c.forca, cidade: c.cidade, estadio: c.estadio, capacidade: c.capacidade, padrao: c.padrao, ligaId: li.id, pais: c.pais };
         return clubeExtra(c, li.id, usadosExtra);
       });
-      ligas.push(ligaDe(li, clubes));
+      (li.amador ? amadoras : ligas).push(ligaDe(li, clubes));
       continue;
     }
     const clubes: Clube[] = (json[li.id]?.clubes ?? []).map((c) => {

@@ -17,7 +17,7 @@ import { mudarDeClube, mercadoDe } from "./transferencias.js";
 import { ANO_INICIAL, SEMANAS_TEMPORADA, noticia, ovr, type Carreira, type Save } from "./jogo.js";
 import type { FamiliaId, PaisId } from "./dna.js";
 
-export type Caminho = "base" | "varzea" | "eua_academia" | "eua_escola";
+export type Caminho = "base" | "varzea" | "eua_academia" | "eua_escola" | "academia_elite" | "peneira_exterior" | "japao_universidade";
 export type Fase = "varzea" | "academia" | "colegial" | "universidade";
 export type TipoConvite = "peneira" | "profissional" | "universidade" | "draft" | "homegrown";
 export interface Convite {
@@ -26,12 +26,12 @@ export interface Convite {
   /** semana absoluta em que o convite cai */ expira: number;
   /** escolha do draft */ pick?: number; generation?: boolean;
 }
-export interface EstadoCaminho { convites: Convite[]; seq: number; temporadasFase: number; cidade?: string }
+export interface EstadoCaminho { convites: Convite[]; seq: number; temporadasFase: number; cidade?: string; tipo?: Caminho }
 export const caminhoDe = (c: Carreira): EstadoCaminho => (c.caminho ??= { convites: [], seq: 0, temporadasFase: 0 });
 
-export const NOME_FASE: Record<Fase, string> = { varzea: "Várzea", academia: "Academia nos EUA", colegial: "High school", universidade: "Universidade" };
-export const IDADE_INICIAL: Record<Caminho, number> = { base: 16, varzea: 14, eua_academia: 14, eua_escola: 15 };
-export const FASE_INICIAL: Record<Caminho, Fase | undefined> = { base: undefined, varzea: "varzea", eua_academia: "academia", eua_escola: "colegial" };
+export const NOME_FASE: Record<Fase, string> = { varzea: "Várzea", academia: "Academia de clube", colegial: "High school", universidade: "Universidade" };
+export const IDADE_INICIAL: Record<Caminho, number> = { base: 16, varzea: 14, eua_academia: 14, eua_escola: 15, academia_elite: 14, peneira_exterior: 16, japao_universidade: 15 };
+export const FASE_INICIAL: Record<Caminho, Fase | undefined> = { base: undefined, varzea: "varzea", eua_academia: "academia", eua_escola: "colegial", academia_elite: "academia", peneira_exterior: undefined, japao_universidade: "colegial" };
 
 export interface InfoCaminho { id: Caminho; nome: string; idade: number; texto: string }
 export const CAMINHOS: Record<Caminho, InfoCaminho> = {
@@ -39,13 +39,23 @@ export const CAMINHOS: Record<Caminho, InfoCaminho> = {
   varzea: { id: "varzea", nome: "Várzea", idade: 14, texto: "Começa aos 14 no time do bairro, contra marmanjo. Jogando bem, aparece olheiro e chegam convites de peneira, da Série A à Série D." },
   eua_academia: { id: "eua_academia", nome: "EUA: academia da liga americana", idade: 14, texto: "A família se muda para os EUA. Você entra na academia de um clube da liga; se se destacar, assina profissional já aos 15." },
   eua_escola: { id: "eua_escola", nome: "EUA: high school e universidade", idade: 15, texto: "Estuda num colégio americano e joga pelo time da escola. Depois, bolsa numa universidade e, a partir do segundo ano, o draft da liga." },
+  academia_elite: { id: "academia_elite", nome: "Academia de elite europeia", idade: 14, texto: "Só para quem tem potencial raro. Você entra na categoria de base de um grande clube da França ou da Alemanha; quem se destaca assina contrato de formação aos 15." },
+  peneira_exterior: { id: "peneira_exterior", nome: "Peneira no exterior", idade: 16, texto: "Um clube estrangeiro quer ver você de perto: peneira num time da Alemanha, da Espanha ou da França, conforme o seu país. Aprovado, você se muda sozinho." },
+  japao_universidade: { id: "japao_universidade", nome: "Japão: colégio e universidade", idade: 15, texto: "Estuda num colégio japonês com time de futebol. Depois, a universidade. Ao fim, o profissional chama pela liga japonesa." },
 };
-export function caminhosDisponiveis(pais: PaisId | string, familia: FamiliaId): Caminho[] {
+/** Caminhos por país, família e potencial. Academia de elite só com potencial raro (≈ top 15%); peneira no exterior a partir de 75. */
+export function caminhosDisponiveis(pais: PaisId | string, familia: FamiliaId, potencial = 0): Caminho[] {
   const r: Caminho[] = ["base"];
   if (pais === "BRA") r.push("varzea");
   if (familia === "rica") r.push("eua_academia", "eua_escola");
+  if (potencial >= 81) r.push("academia_elite");
+  if ((pais === "TUR" || pais === "MAR") && potencial >= 75) r.push("peneira_exterior");
+  if (pais === "JPN") r.push("japao_universidade");
   return r;
 }
+/** Liga do profissional quando a formação acaba: no Japão, a liga japonesa; no Brasil, a Série B/C conforme o nível. */
+export const chegadaProfissional = (e: EstadoCaminho, nivel: number): string[] =>
+  e.tipo === "japao_universidade" ? ["JPN1"] : nivel >= 60 ? ["BRA2", "BRA3"] : ["BRA3", "BRA4"];
 /** Cidade da várzea: a do clube do coração, se tiver liga de várzea; senão São Paulo. */
 export function cidadeDaVarzea(pacote: PacoteDados, clubeCoracao: string | null | undefined): string {
   const cid = clubeCoracao ? infoClube(pacote, clubeCoracao)?.cidade : undefined;
@@ -99,7 +109,7 @@ function conviteProfissional(pacote: PacoteDados, s: Save, rng: RNG, ids: string
     texto: `${motivo} O ${clube.nome} (${infoLiga(liga.id).curto}) oferece contrato profissional de 2 anos: R$ ${sal.toLocaleString("pt-BR")} por mês.` });
 }
 function convitesUniversidade(pacote: PacoteDados, s: Save, rng: RNG) {
-  const w = mundo(pacote), unis = [...w.liga["USA-NCAA"].clubes].sort((a, b) => b.forca - a.forca);
+  const w = mundo(pacote), unis = [...w.liga[caminhoDe(s.carreira).tipo === "japao_universidade" ? "JPN-UNI" : "USA-NCAA"].clubes].sort((a, b) => b.forca - a.forca);
   // os melhores programas chamam quem tem mais nível
   const n = nivelVisto(s), ini = clamp(Math.round((62 - n) * 0.8), 0, unis.length - 3);
   const escolhidas = unis.slice(ini, ini + 5).sort(() => rng.next() - 0.5).slice(0, 3);
@@ -132,7 +142,7 @@ export function semanaDoCaminho(pacote: PacoteDados, s: Save, nota: number, jogo
     const rng = rngDe(s, "de-novo"), j = s.jogador;
     if ((c.fase === "colegial" || c.fase === "academia") && j.idade >= 18) { convitesUniversidade(pacote, s, rng); eventos.push("Universidades voltaram a oferecer bolsa."); }
     if ((c.fase === "universidade" && e.temporadasFase >= 4) || ((c.fase === "colegial" || c.fase === "academia") && j.idade >= 19)) {
-      const cv = conviteProfissional(pacote, s, rng, ovr(j) >= 60 ? ["BRA2", "BRA3"] : ["BRA3", "BRA4"], "Um clube brasileiro quer você.");
+      const cv = conviteProfissional(pacote, s, rng, chegadaProfissional(e, ovr(j)), "Um clube quer você.");
       if (cv) { eventos.push(cv.titulo); noticia(s, "clube", cv.titulo, cv.texto); }
     }
   }
@@ -159,30 +169,39 @@ export function fimDeTemporadaDoCaminho(pacote: PacoteDados, s: Save, eventos: s
   } else if (c.fase === "colegial" && j.idade >= 18) {
     convitesUniversidade(pacote, s, rng);
     eventos.push("Formatura no colégio: três universidades oferecem bolsa.");
-    noticia(s, "clube", "Fim do high school", `${j.apelido} se forma no colégio. Universidades oferecem bolsa; dá também para voltar ao Brasil como profissional.`);
-    avisar(conviteProfissional(pacote, s, rng, ovr(j) >= 60 ? ["BRA2", "BRA3"] : ["BRA3", "BRA4"], "Um clube brasileiro acompanhou seus jogos nos EUA."));
-    if (ovr(j) >= 66) avisar(conviteProfissional(pacote, s, rng, ["USA1"], "Talento raro, sem passar pelo draft:"));
+    noticia(s, "clube", "Fim do high school", `${j.apelido} se forma no colégio. Universidades oferecem bolsa.`);
+    if (e.tipo !== "japao_universidade") avisar(conviteProfissional(pacote, s, rng, chegadaProfissional(e, ovr(j)), "Um clube brasileiro acompanhou seus jogos nos EUA."));
+    if (ovr(j) >= 66 && e.tipo !== "japao_universidade") avisar(conviteProfissional(pacote, s, rng, ["USA1"], "Talento raro, sem passar pelo draft:"));
   } else if (c.fase === "universidade") {
-    if (e.temporadasFase >= 2) {
+    if (e.temporadasFase >= 2 && e.tipo === "japao_universidade") {
+      avisar(conviteProfissional(pacote, s, rng, chegadaProfissional(e, 60), "Fim da faculdade no Japão: um clube da liga japonesa chama."));
+    } else if (e.temporadasFase >= 2) {
       const cv = draft(pacote, s, rng);
       if (cv) avisar(cv);
       else {
         eventos.push("Ninguém te escolheu no draft.");
         noticia(s, "clube", "Fora do draft", `${j.apelido} não foi escolhido no draft da liga americana.`);
-        if (e.temporadasFase >= 4) avisar(conviteProfissional(pacote, s, rng, ovr(j) >= 60 ? ["BRA2", "BRA3"] : ["BRA3", "BRA4"], "Formado e fora do draft, você recebe uma proposta do Brasil."));
+        if (e.temporadasFase >= 4) avisar(conviteProfissional(pacote, s, rng, chegadaProfissional(e, ovr(j)), "Formado e fora do draft, você recebe uma proposta."));
       }
     }
   } else if (c.fase === "academia") {
     const clube = mundo(pacote).clube[c.clubeId];
     if (j.idade >= 15 && ovr(j) >= clube.forca - (j.idade >= 18 ? 14 : 9) && !e.convites.some((x) => x.tipo === "homegrown")) {
-      const sal = Math.max(40000, Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga: mundo(pacote).liga.USA1, clube, agente: c.agente, fama: c.fama })));
+      const liga = mundo(pacote).liga[clube.ligaId] ?? mundo(pacote).liga.USA1;
+      const sal = Math.max(40000, Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga, clube, agente: c.agente, fama: c.fama })));
       avisar(novoConvite(s, { tipo: "homegrown", clubeId: c.clubeId, titulo: `Contrato homegrown com o ${clube.nome}`, salario: sal, anos: 4,
         texto: `Cria da academia, você pode assinar com o time principal do ${clube.nome} sem passar pelo draft: 4 anos, R$ ${sal.toLocaleString("pt-BR")} por mês.` }, 10));
     } else if (j.idade >= 18) {
       eventos.push("A academia não vai te profissionalizar.");
       noticia(s, "clube", "Fim da academia", `O ${clube.nome} não vai oferecer contrato profissional. Hora de procurar outro caminho.`);
-      convitesUniversidade(pacote, s, rng);
-      avisar(conviteProfissional(pacote, s, rng, ["BRA3", "BRA4"], "De volta ao Brasil?"));
+      if (e.tipo === "academia_elite") {
+        // sem espaço no grande clube: a segunda divisão do mesmo país costuma aceitar
+        const abaixo = infoLiga(clube.ligaId).abaixo ?? clube.ligaId;
+        avisar(conviteProfissional(pacote, s, rng, [abaixo], "Um clube da segunda divisão do mesmo país quer você."));
+      } else {
+        convitesUniversidade(pacote, s, rng);
+        avisar(conviteProfissional(pacote, s, rng, ["BRA3", "BRA4"], "De volta ao Brasil?"));
+      }
     }
   }
 }

@@ -116,6 +116,8 @@ export function camadaPais(p: PaisId): string {
         `<rect x="0" y="176" width="200" height="44" fill="#3B7FB8"/>` +
         [[20, 106, "#D9513C"], [44, 98, "#F2EFE8"], [112, 100, "#D9513C"], [140, 92, "#F2EFE8"]]
           .map(([x, y, c]) => casinha(x as number, y as number, 18, 20, c as string, "#7A2E22")).join("") + pinheiro(180, 116, 30);
+    default:
+      return "";
   }
 }
 function palmeiras2() { return palmeira(36, 128, 0.8); }

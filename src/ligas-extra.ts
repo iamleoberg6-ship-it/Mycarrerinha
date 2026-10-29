@@ -11,7 +11,7 @@ import dados from "../data/ligas-extra.json";
 type Real = [string, JogadorNPC["posicao"], number, number, string, number];
 export interface ClubeExtra { id: string; nome: string; apelido: string; cidade: string; estadio: string; capacidade: number; cores: string[]; padrao: string; forca: number; pais: string; elenco?: Real[] }
 type Linha = { convidado: string; elenco?: Real[]; forca?: number } | Omit<ClubeExtra, "pais">;
-const PAIS_DA_LIGA: Record<string, string> = { URU1: "URU", COL1: "COL", CHI1: "CHI", PAR1: "PAR", ECU1: "ECU", TUR1: "TUR", MEX1: "MEX", JPN1: "JPN", KOR1: "KOR", MAR1: "MAR", CRO1: "CRO", EGY1: "EGY" };
+const PAIS_DA_LIGA: Record<string, string> = { URU1: "URU", COL1: "COL", CHI1: "CHI", PAR1: "PAR", ECU1: "ECU", TUR1: "TUR", MEX1: "MEX", JPN1: "JPN", KOR1: "KOR", MAR1: "MAR", CRO1: "CRO", EGY1: "EGY", "JPN-HS": "JPN", "JPN-UNI": "JPN", ENG3: "ENG", ENG4: "ENG" };
 /** de onde vêm os estrangeiros de cada país (e quanto do elenco eles são) */
 const DE_FORA: Record<string, [number, string[]]> = {
   URU: [0.08, ["ARG", "PAR", "COL"]], COL: [0.08, ["VEN", "ARG", "ECU"]], CHI: [0.15, ["ARG", "URU", "COL", "VEN"]], PAR: [0.1, ["ARG", "URU", "COL"]],

@@ -1,5 +1,5 @@
 {
- "aviso": "Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com.",
+ "aviso": "Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com. Out/2026: campeonatos de high school e universidade do Japão, e terceira e quarta divisões inglesas (paródia).",
  "ligas": {
   "URU1": [
    {
@@ -4294,6 +4294,910 @@
     ],
     "padrao": "listrasV",
     "forca": 58
+   }
+  ],
+  "JPN-HS": [
+   {
+    "id": "JP-HS-01",
+    "nome": "Kaminari Koukou",
+    "apelido": "Raios",
+    "cidade": "Tóquio",
+    "estadio": "Estádio Tóquio",
+    "capacidade": 12000,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "faixa",
+    "forca": 48
+   },
+   {
+    "id": "JP-HS-02",
+    "nome": "Hoshizora Gakuen",
+    "apelido": "Estrelas",
+    "cidade": "Sapporo",
+    "estadio": "Estádio Sapporo",
+    "capacidade": 10000,
+    "cores": [
+     "#1F6FB2",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 44
+   },
+   {
+    "id": "JP-HS-03",
+    "nome": "Ryokuchi Gakuin",
+    "apelido": "Verdes",
+    "cidade": "Yokohama",
+    "estadio": "Estádio Yokohama",
+    "capacidade": 11000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 46
+   },
+   {
+    "id": "JP-HS-04",
+    "nome": "Akatsuki Koukou",
+    "apelido": "Aurora",
+    "cidade": "Kobe",
+    "estadio": "Estádio Kobe",
+    "capacidade": 9000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 42
+   },
+   {
+    "id": "JP-HS-05",
+    "nome": "Shiroyama Gakuen",
+    "apelido": "Montanha",
+    "cidade": "Hiroshima",
+    "estadio": "Estádio Hiroshima",
+    "capacidade": 10000,
+    "cores": [
+     "#ECECEC",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 45
+   },
+   {
+    "id": "JP-HS-06",
+    "nome": "Taiyou High",
+    "apelido": "Sol",
+    "cidade": "Fukuoka",
+    "estadio": "Estádio Fukuoka",
+    "capacidade": 9500,
+    "cores": [
+     "#F2B705",
+     "#C0392B"
+    ],
+    "padrao": "faixa",
+    "forca": 43
+   },
+   {
+    "id": "JP-HS-07",
+    "nome": "Kawanami Gakuin",
+    "apelido": "Ondas",
+    "cidade": "Sendai",
+    "estadio": "Estádio Sendai",
+    "capacidade": 9000,
+    "cores": [
+     "#1B98E0",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 41
+   },
+   {
+    "id": "JP-HS-08",
+    "nome": "Mizuumi Koukou",
+    "apelido": "Lagos",
+    "cidade": "Nagoya",
+    "estadio": "Estádio Nagoya",
+    "capacidade": 8500,
+    "cores": [
+     "#2C3E50",
+     "#7F8C8D"
+    ],
+    "padrao": "lisa",
+    "forca": 40
+   }
+  ],
+  "JPN-UNI": [
+   {
+    "id": "JP-UNI-01",
+    "nome": "Universidade Sakuragi",
+    "apelido": "Cerejeiras",
+    "cidade": "Tóquio",
+    "estadio": "Estádio Tóquio",
+    "capacidade": 30000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 62
+   },
+   {
+    "id": "JP-UNI-02",
+    "nome": "Universidade Mikado",
+    "apelido": "Dragões",
+    "cidade": "Kyoto",
+    "estadio": "Estádio Kyoto",
+    "capacidade": 28000,
+    "cores": [
+     "#1F3A5F",
+     "#F2B705"
+    ],
+    "padrao": "faixaH",
+    "forca": 60
+   },
+   {
+    "id": "JP-UNI-03",
+    "nome": "Universidade Hanakai",
+    "apelido": "Águias",
+    "cidade": "Sendai",
+    "estadio": "Estádio Sendai",
+    "capacidade": 26000,
+    "cores": [
+     "#ECECEC",
+     "#2E7D4F"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "JP-UNI-04",
+    "nome": "Universidade Ōkami",
+    "apelido": "Lobos",
+    "cidade": "Sapporo",
+    "estadio": "Estádio Sapporo",
+    "capacidade": 25000,
+    "cores": [
+     "#2C3E50",
+     "#ECECEC"
+    ],
+    "padrao": "lisa",
+    "forca": 57
+   },
+   {
+    "id": "JP-UNI-05",
+    "nome": "Universidade Tsuru",
+    "apelido": "Grous",
+    "cidade": "Niigata",
+    "estadio": "Estádio Niigata",
+    "capacidade": 24000,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "faixaH",
+    "forca": 56
+   },
+   {
+    "id": "JP-UNI-06",
+    "nome": "Universidade Kurogane",
+    "apelido": "Ferreiros",
+    "cidade": "Osaka",
+    "estadio": "Estádio Osaka",
+    "capacidade": 24000,
+    "cores": [
+     "#111111",
+     "#F2B705"
+    ],
+    "padrao": "lisa",
+    "forca": 55
+   },
+   {
+    "id": "JP-UNI-07",
+    "nome": "Universidade Asahi",
+    "apelido": "Alvorada",
+    "cidade": "Fukuoka",
+    "estadio": "Estádio Fukuoka",
+    "capacidade": 22000,
+    "cores": [
+     "#1B98E0",
+     "#ECECEC"
+    ],
+    "padrao": "listrasV",
+    "forca": 54
+   },
+   {
+    "id": "JP-UNI-08",
+    "nome": "Universidade Hoshino",
+    "apelido": "Pardais",
+    "cidade": "Yokohama",
+    "estadio": "Estádio Yokohama",
+    "capacidade": 20000,
+    "cores": [
+     "#7F8C8D",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 52
+   }
+  ],
+  "ENG3": [
+   {
+    "id": "EN3-01",
+    "nome": "Brimhaven Town",
+    "apelido": "Brim",
+    "cidade": "Brimhaven",
+    "estadio": "Estádio Brimhaven",
+    "capacidade": 16000,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "EN3-02",
+    "nome": "Stockmere Athletic",
+    "apelido": "Stock",
+    "cidade": "Stockmere",
+    "estadio": "Estádio Stockmere",
+    "capacidade": 17500,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 60
+   },
+   {
+    "id": "EN3-03",
+    "nome": "Wexcombe United",
+    "apelido": "Wex",
+    "cidade": "Wexcombe",
+    "estadio": "Estádio Wexcombe",
+    "capacidade": 19000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 59
+   },
+   {
+    "id": "EN3-04",
+    "nome": "Lowerton Argilas",
+    "apelido": "Argilas",
+    "cidade": "Lowerton",
+    "estadio": "Estádio Lowerton",
+    "capacidade": 20500,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "listrasV",
+    "forca": 59
+   },
+   {
+    "id": "EN3-05",
+    "nome": "Dunmarsh City",
+    "apelido": "Dun",
+    "cidade": "Dunmarsh",
+    "estadio": "Estádio Dunmarsh",
+    "capacidade": 22000,
+    "cores": [
+     "#1B98E0",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 59
+   },
+   {
+    "id": "EN3-06",
+    "nome": "Ashbourne Andarilhos",
+    "apelido": "Andarilhos",
+    "cidade": "Ashbourne",
+    "estadio": "Estádio Ashbourne",
+    "capacidade": 16000,
+    "cores": [
+     "#2C3E50",
+     "#ECECEC"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "EN3-07",
+    "nome": "Clayford Cavaleiros",
+    "apelido": "Cavaleiros",
+    "cidade": "Clayford",
+    "estadio": "Estádio Clayford",
+    "capacidade": 17500,
+    "cores": [
+     "#7F8C8D",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "EN3-08",
+    "nome": "Pennock Vespas",
+    "apelido": "Vespas",
+    "cidade": "Pennock",
+    "estadio": "Estádio Pennock",
+    "capacidade": 19000,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "lisa",
+    "forca": 58
+   },
+   {
+    "id": "EN3-09",
+    "nome": "Hadleigh Cruzados",
+    "apelido": "Cruzados",
+    "cidade": "Hadleigh",
+    "estadio": "Estádio Hadleigh",
+    "capacidade": 20500,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 57
+   },
+   {
+    "id": "EN3-10",
+    "nome": "Radcombe Corintianos",
+    "apelido": "Corintianos",
+    "cidade": "Radcombe",
+    "estadio": "Estádio Radcombe",
+    "capacidade": 22000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 57
+   },
+   {
+    "id": "EN3-11",
+    "nome": "Morstone Viajantes",
+    "apelido": "Viajantes",
+    "cidade": "Morstone",
+    "estadio": "Estádio Morstone",
+    "capacidade": 16000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 57
+   },
+   {
+    "id": "EN3-12",
+    "nome": "Greyfield Vilarejo",
+    "apelido": "Cinzas",
+    "cidade": "Greyfield",
+    "estadio": "Estádio Greyfield",
+    "capacidade": 17500,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 56
+   },
+   {
+    "id": "EN3-13",
+    "nome": "Thornbury Vilas",
+    "apelido": "Espinhos",
+    "cidade": "Thornbury",
+    "estadio": "Estádio Thornbury",
+    "capacidade": 19000,
+    "cores": [
+     "#1B98E0",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 56
+   },
+   {
+    "id": "EN3-14",
+    "nome": "Kelsworth Atletas",
+    "apelido": "Kelsos",
+    "cidade": "Kelsworth",
+    "estadio": "Estádio Kelsworth",
+    "capacidade": 20500,
+    "cores": [
+     "#2C3E50",
+     "#ECECEC"
+    ],
+    "padrao": "lisa",
+    "forca": 55
+   },
+   {
+    "id": "EN3-15",
+    "nome": "Ilkbrook Burgo",
+    "apelido": "Burgos",
+    "cidade": "Ilkbrook",
+    "estadio": "Estádio Ilkbrook",
+    "capacidade": 22000,
+    "cores": [
+     "#7F8C8D",
+     "#1F3A5F"
+    ],
+    "padrao": "faixaH",
+    "forca": 55
+   },
+   {
+    "id": "EN3-16",
+    "nome": "Penhallow Gaivotas",
+    "apelido": "Corvos",
+    "cidade": "Penhallow",
+    "estadio": "Estádio Penhallow",
+    "capacidade": 16000,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "listrasV",
+    "forca": 55
+   },
+   {
+    "id": "EN3-17",
+    "nome": "Oldford Lebres",
+    "apelido": "Lebres",
+    "cidade": "Oldford",
+    "estadio": "Estádio Oldford",
+    "capacidade": 17500,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 54
+   },
+   {
+    "id": "EN3-18",
+    "nome": "Sedgecombe Chique",
+    "apelido": "Chiques",
+    "cidade": "Sedgecombe",
+    "estadio": "Estádio Sedgecombe",
+    "capacidade": 19000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 54
+   },
+   {
+    "id": "EN3-19",
+    "nome": "Lanchester Peregrinos",
+    "apelido": "Peregrinos",
+    "cidade": "Lanchester",
+    "estadio": "Estádio Lanchester",
+    "capacidade": 20500,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 54
+   },
+   {
+    "id": "EN3-20",
+    "nome": "Carnmoor Cervos",
+    "apelido": "Cervos",
+    "cidade": "Carnmoor",
+    "estadio": "Estádio Carnmoor",
+    "capacidade": 22000,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 53
+   },
+   {
+    "id": "EN3-21",
+    "nome": "Wrexcombe Mosqueteiros",
+    "apelido": "Mosqueteiros",
+    "cidade": "Wrexcombe",
+    "estadio": "Estádio Wrexcombe",
+    "capacidade": 16000,
+    "cores": [
+     "#1B98E0",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 53
+   },
+   {
+    "id": "EN3-22",
+    "nome": "Felpham Dragões",
+    "apelido": "Dragões",
+    "cidade": "Felpham",
+    "estadio": "Estádio Felpham",
+    "capacidade": 17500,
+    "cores": [
+     "#2C3E50",
+     "#ECECEC"
+    ],
+    "padrao": "listrasV",
+    "forca": 53
+   },
+   {
+    "id": "EN3-23",
+    "nome": "Haxbury Pescadores",
+    "apelido": "Pescadores",
+    "cidade": "Haxbury",
+    "estadio": "Estádio Haxbury",
+    "capacidade": 19000,
+    "cores": [
+     "#7F8C8D",
+     "#1F3A5F"
+    ],
+    "padrao": "faixa",
+    "forca": 52
+   },
+   {
+    "id": "EN3-24",
+    "nome": "Brackwater Florestal",
+    "apelido": "Florestais",
+    "cidade": "Brackwater",
+    "estadio": "Estádio Brackwater",
+    "capacidade": 20500,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "lisa",
+    "forca": 52
+   }
+  ],
+  "ENG4": [
+   {
+    "id": "EN4-01",
+    "nome": "Mudbridge Town",
+    "apelido": "Lama",
+    "cidade": "Mudbridge",
+    "estadio": "Estádio Mudbridge",
+    "capacidade": 12000,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 52
+   },
+   {
+    "id": "EN4-02",
+    "nome": "Coldwater Athletic",
+    "apelido": "Frios",
+    "cidade": "Coldwater",
+    "estadio": "Estádio Coldwater",
+    "capacidade": 13500,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 52
+   },
+   {
+    "id": "EN4-03",
+    "nome": "Fenwick Errantes",
+    "apelido": "Errantes",
+    "cidade": "Fenwick",
+    "estadio": "Estádio Fenwick",
+    "capacidade": 15000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 51
+   },
+   {
+    "id": "EN4-04",
+    "nome": "Saltmarsh United",
+    "apelido": "Sal",
+    "cidade": "Saltmarsh",
+    "estadio": "Estádio Saltmarsh",
+    "capacidade": 16500,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "listrasV",
+    "forca": 51
+   },
+   {
+    "id": "EN4-05",
+    "nome": "Hobbsford Argilas",
+    "apelido": "Ceramistas",
+    "cidade": "Hobbsford",
+    "estadio": "Estádio Hobbsford",
+    "capacidade": 18000,
+    "cores": [
+     "#1B98E0",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 51
+   },
+   {
+    "id": "EN4-06",
+    "nome": "Kinnaird Viajantes",
+    "apelido": "Caminhantes",
+    "cidade": "Kinnaird",
+    "estadio": "Estádio Kinnaird",
+    "capacidade": 12000,
+    "cores": [
+     "#2C3E50",
+     "#ECECEC"
+    ],
+    "padrao": "lisa",
+    "forca": 50
+   },
+   {
+    "id": "EN4-07",
+    "nome": "Rushcombe Vespas",
+    "apelido": "Abelhas",
+    "cidade": "Rushcombe",
+    "estadio": "Estádio Rushcombe",
+    "capacidade": 13500,
+    "cores": [
+     "#7F8C8D",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 50
+   },
+   {
+    "id": "EN4-08",
+    "nome": "Brookhaven City",
+    "apelido": "Ribeirinhos",
+    "cidade": "Brookhaven",
+    "estadio": "Estádio Brookhaven",
+    "capacidade": 15000,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "lisa",
+    "forca": 50
+   },
+   {
+    "id": "EN4-09",
+    "nome": "Lydgate Cruzados",
+    "apelido": "Cruzeiros",
+    "cidade": "Lydgate",
+    "estadio": "Estádio Lydgate",
+    "capacidade": 16500,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 49
+   },
+   {
+    "id": "EN4-10",
+    "nome": "Marlow Corredores",
+    "apelido": "Corredores",
+    "cidade": "Marlow",
+    "estadio": "Estádio Marlow",
+    "capacidade": 18000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "listrasV",
+    "forca": 49
+   },
+   {
+    "id": "EN4-11",
+    "nome": "Stonegate Albião",
+    "apelido": "Albião",
+    "cidade": "Stonegate",
+    "estadio": "Estádio Stonegate",
+    "capacidade": 12000,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 49
+   },
+   {
+    "id": "EN4-12",
+    "nome": "Pelham Vila",
+    "apelido": "Vilões",
+    "cidade": "Pelham",
+    "estadio": "Estádio Pelham",
+    "capacidade": 13500,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 48
+   },
+   {
+    "id": "EN4-13",
+    "nome": "Thorpe Burgo",
+    "apelido": "Burgo Azul",
+    "cidade": "Thorpe",
+    "estadio": "Estádio Thorpe",
+    "capacidade": 15000,
+    "cores": [
+     "#1B98E0",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 48
+   },
+   {
+    "id": "EN4-14",
+    "nome": "Crowley Town",
+    "apelido": "Coruja",
+    "cidade": "Crowley",
+    "estadio": "Estádio Crowley",
+    "capacidade": 16500,
+    "cores": [
+     "#2C3E50",
+     "#ECECEC"
+    ],
+    "padrao": "lisa",
+    "forca": 47
+   },
+   {
+    "id": "EN4-15",
+    "nome": "Eastwick Lanceiros",
+    "apelido": "Lanceiros",
+    "cidade": "Eastwick",
+    "estadio": "Estádio Eastwick",
+    "capacidade": 18000,
+    "cores": [
+     "#7F8C8D",
+     "#1F3A5F"
+    ],
+    "padrao": "faixaH",
+    "forca": 47
+   },
+   {
+    "id": "EN4-16",
+    "nome": "Ramsdell Unidos",
+    "apelido": "Unidos",
+    "cidade": "Ramsdell",
+    "estadio": "Estádio Ramsdell",
+    "capacidade": 12000,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "listrasV",
+    "forca": 47
+   },
+   {
+    "id": "EN4-17",
+    "nome": "Wickham Pioneiros",
+    "apelido": "Pioneiros",
+    "cidade": "Wickham",
+    "estadio": "Estádio Wickham",
+    "capacidade": 13500,
+    "cores": [
+     "#1F3A5F",
+     "#FFFFFF"
+    ],
+    "padrao": "faixa",
+    "forca": 46
+   },
+   {
+    "id": "EN4-18",
+    "nome": "Dorncombe Mosquitos",
+    "apelido": "Mosquitos",
+    "cidade": "Dorncombe",
+    "estadio": "Estádio Dorncombe",
+    "capacidade": 15000,
+    "cores": [
+     "#C0392B",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 46
+   },
+   {
+    "id": "EN4-19",
+    "nome": "Yardley Cruzeiros",
+    "apelido": "Cruzeiros do Norte",
+    "cidade": "Yardley",
+    "estadio": "Estádio Yardley",
+    "capacidade": 16500,
+    "cores": [
+     "#2E7D4F",
+     "#FFFFFF"
+    ],
+    "padrao": "lisa",
+    "forca": 46
+   },
+   {
+    "id": "EN4-20",
+    "nome": "Glenmoor Atletas",
+    "apelido": "Atletas",
+    "cidade": "Glenmoor",
+    "estadio": "Estádio Glenmoor",
+    "capacidade": 18000,
+    "cores": [
+     "#F2B705",
+     "#1F3A5F"
+    ],
+    "padrao": "lisa",
+    "forca": 45
+   },
+   {
+    "id": "EN4-21",
+    "nome": "Tanfield Vila",
+    "apelido": "Tanfieldos",
+    "cidade": "Tanfield",
+    "estadio": "Estádio Tanfield",
+    "capacidade": 12000,
+    "cores": [
+     "#1B98E0",
+     "#FFFFFF"
+    ],
+    "padrao": "faixaH",
+    "forca": 45
+   },
+   {
+    "id": "EN4-22",
+    "nome": "Chilcote Rovers",
+    "apelido": "Rovers",
+    "cidade": "Chilcote",
+    "estadio": "Estádio Chilcote",
+    "capacidade": 13500,
+    "cores": [
+     "#2C3E50",
+     "#ECECEC"
+    ],
+    "padrao": "listrasV",
+    "forca": 45
+   },
+   {
+    "id": "EN4-23",
+    "nome": "Bramwell Albion",
+    "apelido": "Bramwells",
+    "cidade": "Bramwell",
+    "estadio": "Estádio Bramwell",
+    "capacidade": 15000,
+    "cores": [
+     "#7F8C8D",
+     "#1F3A5F"
+    ],
+    "padrao": "faixa",
+    "forca": 44
+   },
+   {
+    "id": "EN4-24",
+    "nome": "Ormskirk Corintianos",
+    "apelido": "Ormskirk",
+    "cidade": "Ormskirk",
+    "estadio": "Estádio Ormskirk",
+    "capacidade": 16500,
+    "cores": [
+     "#FFFFFF",
+     "#C0392B"
+    ],
+    "padrao": "lisa",
+    "forca": 44
    }
   ]
  }

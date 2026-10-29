@@ -27,7 +27,9 @@ export const LIGAS: InfoLiga[] = [
   { id: "BRA1", nome: "Campeonato Nacional Série A", curto: "Série A", pais: "BRA", regiao: "BRA", divisao: 1, nivel: 2, fLiga: 0.7, fSalario: 1, rebaixados: 4, abaixo: "BRA2", bolas: [["#2E7D4F", "#F2B705"], ["#1F3A5F", "#E3B341"], ["#C0392B", "#1F3A5F"], ["#18A0A8", "#F08A24"], ["#6A3FA0", "#F2B705"]] },
   { id: "BRA2", nome: "Campeonato Nacional Série B", curto: "Série B", pais: "BRA", regiao: "BRA", divisao: 2, nivel: 4, fLiga: 0.5, fSalario: 0.6, rebaixados: 4, acima: "BRA1", abaixo: "BRA3", bolas: [["#F2B705", "#1F3A5F"], ["#2B2B2B", "#2E7D4F"]] },
   { id: "ENG1", nome: "Premiê Liga Inglesa", curto: "Premiê Liga", pais: "ENG", regiao: "EUR", divisao: 1, nivel: 1, fLiga: 1.1, fSalario: 1.5, rebaixados: 3, abaixo: "ENG2", bolas: [["#3D195B", "#00FF85"], ["#1F3A5F", "#E90052"], ["#04F5FF", "#3D195B"], ["#F2B705", "#3D195B"]] },
-  { id: "ENG2", nome: "Championchip Inglês", curto: "Championchip", pais: "ENG", regiao: "EUR", divisao: 2, nivel: 3, fLiga: 0.8, fSalario: 0.9, rebaixados: 3, acima: "ENG1", bolas: [["#1F3A5F", "#E3B341"], ["#C0392B", "#2B2B2B"]] },
+  { id: "ENG2", nome: "Championchip Inglês", curto: "Championchip", pais: "ENG", regiao: "EUR", divisao: 2, nivel: 3, fLiga: 0.8, fSalario: 0.9, rebaixados: 3, acima: "ENG1", abaixo: "ENG3", bolas: [["#1F3A5F", "#E3B341"], ["#C0392B", "#2B2B2B"]] },
+  { id: "ENG3", nome: "Terceira Divisão Inglesa", curto: "Terceira Inglesa", pais: "ENG", regiao: "EUR", divisao: 3, nivel: 4, fLiga: 0.6, fSalario: 0.6, rebaixados: 3, acima: "ENG2", abaixo: "ENG4", bolas: [["#1F3A5F", "#FFFFFF"], ["#C0392B", "#FFFFFF"]] },
+  { id: "ENG4", nome: "Quarta Divisão Inglesa", curto: "Quarta Inglesa", pais: "ENG", regiao: "EUR", divisao: 4, nivel: 5, fLiga: 0.45, fSalario: 0.45, rebaixados: 0, acima: "ENG3", bolas: [["#2E7D4F", "#FFFFFF"], ["#F2B705", "#1F3A5F"]] },
   { id: "ESP1", nome: "La Lyga Hispânica", curto: "La Lyga", pais: "ESP", regiao: "EUR", divisao: 1, nivel: 1, fLiga: 1.0, fSalario: 1.3, rebaixados: 3, abaixo: "ESP2", bolas: [["#FF4B44", "#1F1F1F"], ["#F2B705", "#C0392B"], ["#18A0A8", "#2B2B2B"], ["#FFFFFF", "#FF4B44"]] },
   { id: "ESP2", nome: "La Lyga 2 Hispânica", curto: "La Lyga 2", pais: "ESP", regiao: "EUR", divisao: 2, nivel: 4, fLiga: 0.6, fSalario: 0.5, rebaixados: 4, acima: "ESP1", bolas: [["#00A3E0", "#1F1F1F"], ["#F08A24", "#1F3A5F"]] },
   { id: "ITA1", nome: "Serie Á Italiana", curto: "Serie Á", pais: "ITA", regiao: "EUR", divisao: 1, nivel: 1, fLiga: 0.95, fSalario: 1.1, rebaixados: 3, bolas: [["#00205B", "#E3B341"], ["#2E7D4F", "#C0392B"], ["#6A3FA0", "#18A0A8"]] },
@@ -60,6 +62,8 @@ export const LIGAS: InfoLiga[] = [
     bolas: [["#C9A14A", "#5A3E1B"], ["#FFFFFF", "#2B2B2B"]],
   })),
   { id: "USA-HS", nome: "Liga Colegial da Flórida (high school)", curto: "High school", pais: "USA", regiao: "NAM", divisao: 9, nivel: 5, fLiga: 0.1, fSalario: 0, rebaixados: 0, amador: true, bolas: [["#FFFFFF", "#1F3A5F"]] },
+  { id: "JPN-HS", nome: "Liga Colegial Japonesa (high school)", curto: "High school japonês", pais: "JPN", regiao: "ASI", divisao: 9, nivel: 5, fLiga: 0.1, fSalario: 0, rebaixados: 0, amador: true, bolas: [["#FFFFFF", "#1F3A5F"]] },
+  { id: "JPN-UNI", nome: "Liga Universitária Japonesa", curto: "Universitário japonês", pais: "JPN", regiao: "ASI", divisao: 9, nivel: 5, fLiga: 0.15, fSalario: 0, rebaixados: 0, amador: true, bolas: [["#FFFFFF", "#C0392B"]] },
   { id: "USA-NCAA", nome: "Liga Universitária Americana", curto: "Universitário", pais: "USA", regiao: "NAM", divisao: 9, nivel: 5, fLiga: 0.15, fSalario: 0, rebaixados: 0, amador: true, bolas: [["#FFFFFF", "#C0392B"], ["#F2B705", "#1F3A5F"]] },
 ];
 export const LIGA_INFO: Record<string, InfoLiga> = Object.fromEntries(LIGAS.map((l) => [l.id, l]));

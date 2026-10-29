@@ -213,11 +213,11 @@ function telaInicio(): string {
 }
 
 function telaOfertas(d: DadosCriacao): string {
-  const r = d.resultado, disp = caminhosDisponiveis(r.escolhas.pais, r.escolhas.familia);
+  const r = d.resultado, disp = caminhosDisponiveis(r.escolhas.pais, r.escolhas.familia, r.potencial);
   if (!disp.includes(caminhoSel)) caminhoSel = "base";
   const cidade = cidadeSel ?? cidadeDaVarzea(pacote, d.clube);
   const of = ofertasDoCaminho(pacote, d, caminhoSel, cidade);
-  const titulo = caminhoSel === "base" ? "Três clubes querem você na base." : caminhoSel === "varzea" ? `Três times da várzea ${DA_CIDADE[cidade]} querem você.` : caminhoSel === "eua_academia" ? "Três academias da liga americana abrem as portas." : "Três colégios nos EUA aceitam você.";
+  const titulo = caminhoSel === "base" ? "Três clubes querem você na base." : caminhoSel === "varzea" ? `Três times da várzea ${DA_CIDADE[cidade]} querem você.` : caminhoSel === "eua_academia" ? "Três academias da liga americana abrem as portas." : caminhoSel === "academia_elite" ? "Três categorias de base de elite querem você." : caminhoSel === "peneira_exterior" ? "Três clubes estrangeiros chamam para peneira." : caminhoSel === "japao_universidade" ? "Três colégios japoneses aceitam você." : "Três colégios nos EUA aceitam você.";
   return `<header class="marca"><strong>Mycarrerinha</strong><span>Primeira decisão</span></header>
     <p class="rotulo">${esc(r.escolhas.nome)} · ${NOME_POS[r.escolhas.posicao]} · OVR ${r.ovr}</p>
     ${disp.length > 1 ? `<p class="rotulo" style="margin-top:6px">Por onde começar</p><div class="caminhos">${disp.map((k) => `<button class="caminho${caminhoSel === k ? " ativo" : ""}" data-caminho="${k}"><b>${esc(CAMINHOS[k].nome)}</b><small>Começa aos ${CAMINHOS[k].idade}</small></button>`).join("")}</div>
@@ -230,7 +230,7 @@ function telaOfertas(d: DadosCriacao): string {
       <p class="sub">${esc(o.texto)}</p>
       <div class="linha-info"><span>Estrutura ${estrelas(o.estrutura)} ${o.nomeEstrutura.toLowerCase()}</span><span>Força do elenco <b>${o.forca}</b></span><span>Na sua posição: <b>${o.fila}</b> no elenco${caminhoSel === "base" ? " profissional" : ""}</span>${caminhoSel === "base" ? `<span>Base: <b>${esc(o.nomeCultura.toLowerCase())}</b></span>` : ""}</div>
       <p class="sub">Moradia: ${esc(o.moradia)}</p>
-      <button class="botao" data-assinar="${o.clubeId}">${caminhoSel === "base" ? `Assinar com o ${esc(o.apelido)}` : caminhoSel === "varzea" ? `Jogar no ${esc(o.nome)}` : caminhoSel === "eua_academia" ? `Ir para a academia` : `Estudar no ${esc(o.nome)}`}</button></div></div>`).join("")}</div>
+      <button class="botao" data-assinar="${o.clubeId}">${caminhoSel === "base" ? `Assinar com o ${esc(o.apelido)}` : caminhoSel === "varzea" ? `Jogar no ${esc(o.nome)}` : caminhoSel === "eua_academia" || caminhoSel === "academia_elite" ? `Ir para a academia` : caminhoSel === "peneira_exterior" ? `Fazer a peneira no ${esc(o.apelido)}` : `Estudar no ${esc(o.nome)}`}</button></div></div>`).join("")}</div>
     <a class="sub" href="criacao.html" style="text-align:center">Criar outro jogador</a>`;
 }
 

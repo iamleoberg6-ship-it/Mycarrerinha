@@ -404,20 +404,30 @@ export function ofertasDeBase(pacote: PacoteDados, d: DadosCriacao): OfertaBase[
 export function ofertasDoCaminho(pacote: PacoteDados, d: DadosCriacao, caminho: Caminho, cidade = "SP"): OfertaBase[] {
   if (caminho === "base") return ofertasDeBase(pacote, d);
   const w = mundo(pacote), r = d.resultado, rng = new RNG(`ofertas|${caminho}|${cidade}|${r.escolhas.nome}|${r.potencial}`);
-  const ligaId = caminho === "varzea" ? `VAR-${cidade}` : caminho === "eua_academia" ? "USA1" : "USA-HS";
-  const pool = w.liga[ligaId].clubes.filter((c) => !["US-TOR", "US-VAN", "US-MTL"].includes(c.id)); // academia nos EUA (sem os clubes do Canadá)
+  // ligas de onde saem as ofertas: várzea da cidade, academia americana, colégio americano, academia europeia, peneira no exterior ou colégio japonês
+  const ligasIds: string[] = caminho === "varzea" ? [`VAR-${cidade}`] : caminho === "eua_academia" ? ["USA1"] : caminho === "eua_escola" ? ["USA-HS"]
+    : caminho === "academia_elite" ? ["FRA1", "GER1"] : caminho === "peneira_exterior" ? (r.escolhas.pais === "TUR" ? ["GER1"] : ["ESP1", "FRA1"]) : ["JPN-HS"];
+  const pool = ligasIds.flatMap((id) => w.liga[id]?.clubes ?? []).filter((c) => !["US-TOR", "US-VAN", "US-MTL"].includes(c.id)); // academia nos EUA (sem os clubes do Canadá)
   const escolhidos: Clube[] = [];
   while (escolhidos.length < 3 && pool.length) escolhidos.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
   return escolhidos.map((c) => {
     const cc = clubeCasa(pacote, c.id), info = w.info[c.id];
     const fila = c.elenco.filter((j) => j.posicao === r.escolhas.posicao).length;
+    const liga = infoLiga(c.ligaId).curto;
     const texto = caminho === "varzea" ? `Time de bairro ${NA_CIDADE[cidade]}. Terrão, marmanjo e olheiro na beira do campo de vez em quando. Você mora com a família.`
       : caminho === "eua_academia" ? `A família se muda para ${info.cidade}. Academia de clube da liga americana: quem se destaca assina contrato homegrown já aos 15.`
-      : `Colégio em Miami, com time de futebol e aulas em inglês. Depois, bolsa numa universidade e o draft.`;
-    return { clubeId: c.id, nome: c.nome, apelido: cc.apelido, cores: cc.cores, forca: Math.round(c.forca), estrutura: caminho === "eua_academia" ? 4 : caminho === "eua_escola" ? 3 : 1,
-      nomeEstrutura: caminho === "varzea" ? "Campo de terra" : caminho === "eua_academia" ? "Academia profissional" : "Estrutura de colégio americano",
-      moradia: caminho === "varzea" ? "Casa dos pais" : caminho === "eua_academia" ? `Casa da família em ${info.cidade}` : "Casa de família anfitriã",
-      fila, texto, cultura: 3 as Cultura, nomeCultura: caminho === "varzea" ? "Time de bairro" : caminho === "eua_academia" ? "Academia" : "Colégio" };
+      : caminho === "eua_escola" ? `Colégio em Miami, com time de futebol e aulas em inglês. Depois, bolsa numa universidade e o draft.`
+      : caminho === "academia_elite" ? `Categoria de base do ${c.nome} (${liga}). Você se muda para ${info.cidade}; quem se destaca assina contrato de formação aos 15.`
+      : caminho === "peneira_exterior" ? `Peneira no ${c.nome} (${liga}), em ${info.cidade}. Aprovado, você entra na base do clube.`
+      : `Colégio em ${info.cidade}, com time de futebol. Depois, a universidade e a liga japonesa.`;
+    const local = caminho === "varzea" ? { estr: 1, nomeEstr: "Campo de terra", moradia: "Casa dos pais", nomeCult: "Time de bairro" }
+      : caminho === "eua_academia" ? { estr: 4, nomeEstr: "Academia profissional", moradia: `Casa da família em ${info.cidade}`, nomeCult: "Academia" }
+      : caminho === "eua_escola" ? { estr: 3, nomeEstr: "Estrutura de colégio americano", moradia: "Casa de família anfitriã", nomeCult: "Colégio" }
+      : caminho === "academia_elite" ? { estr: 5, nomeEstr: "Categoria de base de elite", moradia: `Alojamento do clube em ${info.cidade}`, nomeCult: "Academia" }
+      : caminho === "peneira_exterior" ? { estr: 4, nomeEstr: "Centro de treinamento", moradia: `Alojamento do clube em ${info.cidade}`, nomeCult: "Base" }
+      : { estr: 3, nomeEstr: "Estrutura de colégio japonês", moradia: `Alojamento do colégio em ${info.cidade}`, nomeCult: "Colégio" };
+    return { clubeId: c.id, nome: c.nome, apelido: cc.apelido, cores: cc.cores, forca: Math.round(c.forca), estrutura: local.estr,
+      nomeEstrutura: local.nomeEstr, moradia: local.moradia, fila, texto, cultura: 3 as Cultura, nomeCultura: local.nomeCult };
   });
 }
 
@@ -447,7 +457,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
   const fama = ef.fama ?? 0;
   const carreira: Carreira = {
     clubeId, salario: fase ? 0 : 3000, anosContrato: fase ? 4 : 2, formacao: true, agente: ef.agente ?? "pai",
-    ...(caminho === "base" ? (l.id === liga(pacote).id ? {} : { ligaId: l.id }) : { ligaId: l.id, fase, ...(fase !== "academia" ? { escolhaNumero: "chegada" as const } : {}), caminho: { convites: [], seq: 0, temporadasFase: 0, cidade: d.cidade } }),
+    ...(caminho === "base" ? (l.id === liga(pacote).id ? {} : { ligaId: l.id }) : { ligaId: l.id, fase, ...(fase !== "academia" ? { escolhaNumero: "chegada" as const } : {}), caminho: { convites: [], seq: 0, temporadasFase: 0, cidade: d.cidade, tipo: caminho } }),
     moral: 62, fama, seguidores: Math.round((ef.seguidores ?? 0) + 300), cansaco: 0, lesao: 0, relTecnico: clamp(50 + (ef.relTecnico ?? 0), 0, 100), formaUlt: [],
     bonusEvolucao: ef.bonusEvolucao ?? 0, patrocinioMensal: ef.patrocinioMensal ?? 0, mesesPatrocinio: ef.mesesPatrocinio ?? 0, pressao: ef.pressao ?? 0,
     vidaNoturna: r.vidaNoturnaInicial + (ef.vidaNoturna ?? 0), exposicao: ef.exposicao ?? 0,
