@@ -24,6 +24,7 @@ import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, DISPUTA, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { bonusDoTecnico, chanceDeDemissao, NOME_ESTILO, type Tecnico } from "./tecnicos.js";
 import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, lesoesQueComecam, encaixarNoMundo } from "./mundo.js";
+import { noticiasDaVidaDoMundo as sortearNoticiasDaVida, type JogadorDoMundo } from "./vida-mundo.js";
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
 import { premiosDoAno, type PremiosDoAno, type IdPremio } from "./premios-mundo.js";
 import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
@@ -123,6 +124,8 @@ export interface Carreira {
   pacotesAbertos?: number[];
   /** temporada cuja janela do meio do ano (dos outros clubes) já virou notícia */
   meioNoticiado?: number;
+  /** temporada em que saíram as notícias da vida dos outros jogadores do mundo */
+  vidaNoticiada?: number;
   /** copas continentais da temporada, suspensão na copa, estatísticas na copa, tabela final da temporada passada (vagas)
    *  e o jogo de quarta já jogado nesta semana (entra no resumo da semana) */
   copas?: Partial<Record<CopaId, EstadoCopa>>; suspensaoCopa?: number; statsCopa?: { jogos: number; gols: number; assist: number; notas: number[] };
@@ -298,6 +301,8 @@ export function sincronizar(pacote: PacoteDados, s: Save) {
   // fechou a janela do meio do ano: as notícias saem uma vez
   const meio = janelaDoMeioAtual(pacote);
   if (meio && c.meioNoticiado !== c.temporada) { c.meioNoticiado = c.temporada; noticiasDaVirada(pacote, s, meio, "meio"); }
+  // a vida dos outros jogadores do mundo: notícias da temporada, uma vez, sem o jogador da carreira
+  if (c.vidaNoticiada !== c.temporada) { c.vidaNoticiada = c.temporada; noticiasDaVidaDoMundo(pacote, s); }
   for (const x of Object.values(c.relacoes?.lista ?? {})) {
     const o = ondeJoga(pacote, x.nome);
     if (o) { x.clubeId = o.clubeId; x.aposentado = undefined; } else if (!x.aposentado && mundo(pacote).info[x.clubeId] && !x.nome.startsWith("Camisa")) x.aposentado = true;
@@ -2587,6 +2592,18 @@ export function fatorDoClube(pacote: PacoteDados, s: Save): number {
   return c.formacao ? 0.88 + 0.04 * n.estrutura + 0.02 * n.cultura : 0.92 + 0.03 * n.estrutura;
 }
 /** Notícias da virada: quem subiu da base e quem chegou ao clube, e as aposentadorias e vendas de craques no mundo. */
+/** Notícias da vida dos outros jogadores do mundo (src/vida-mundo.ts): sorteadas pela semente e pela temporada. */
+function noticiasDaVidaDoMundo(pacote: PacoteDados, s: Save) {
+  const w = mundo(pacote), jogadores: JogadorDoMundo[] = [], porClube = new Map<string, JogadorDoMundo[]>();
+  for (const cl of Object.values(w.clube)) {
+    if (cl.ligaId === "SELECOES" || cl.id.startsWith("NAT-")) continue;
+    const nomeClube = infoClube(pacote, cl.id)?.nome ?? cl.id;
+    const lista = cl.elenco.map((j) => ({ nome: j.nome, idade: j.idade, clubeNome: nomeClube, clubeId: cl.id }));
+    porClube.set(cl.id, lista);
+    jogadores.push(...lista);
+  }
+  for (const n of sortearNoticiasDaVida(new RNG(`vida-mundo|${s.semente}|${s.carreira.temporada}`), jogadores, porClube)) noticia(s, n.tipo, n.titulo, n.texto);
+}
 function noticiasDaVirada(pacote: PacoteDados, s: Save, v = viradaAtual(pacote), quando: "virada" | "meio" = "virada") {
   const c = s.carreira, id = idClube(c.clubeId), nome = (x: string) => infoClube(pacote, x)?.nome ?? x;
   const ch = v.chegadas[id] ?? [], sub = ch.filter((x) => x.motivo === "subiu"), contr = ch.filter((x) => x.motivo === "contratado");
