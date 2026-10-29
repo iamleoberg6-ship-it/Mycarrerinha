@@ -543,7 +543,7 @@ function embaralhar(rng: RNG, ids: string[]): string[] {
 function tabelaAteAgora(rng: RNG, l: Liga, c: Carreira) {
   const t = novaTabela(l), feitas = Math.max(0, Math.min(rodadasDaLiga(c.ordem.length).length, c.semana - SEMANAS_PRE));
   const rodadas = rodadasDaLiga(c.ordem.length);
-  const forca = (id: string) => l.clubes.find((x) => x.id === id)!.forca;
+  const forca = (id: string) => l.clubes.find((x) => x.id === id)?.forca ?? 50;
   for (let r = 0; r < feitas; r++) for (const [a, b] of rodadas[r]) {
     const casa = c.ordem[a], fora = c.ordem[b], [gc, gf] = simularPlacar(rng, forca(casa), forca(fora));
     registrar(t.find((x) => x.clube === casa)!, gc, gf); registrar(t.find((x) => x.clube === fora)!, gf, gc);

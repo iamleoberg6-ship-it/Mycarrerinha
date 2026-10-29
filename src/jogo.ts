@@ -221,7 +221,7 @@ export function migrarSave(pacote: PacoteDados, s: Save): boolean {
   if (AGENTE_LEGADO[c.agente]) c.agente = AGENTE_LEGADO[c.agente];
   if (w.clube[c.clubeId]) sincronizar(pacote, s);
   const existe = (id: string) => !!w.clube[id];
-  if (existe(c.clubeId) && (c.ligaId ?? "BRA1") === w.info[c.clubeId].ligaId && c.ordem.every(existe)) return false;
+  if (existe(c.clubeId) && (c.ligaId ?? "BRA1") === w.info[c.clubeId].ligaId && c.ordem.length === w.liga[c.ligaId ?? "BRA1"]?.clubes.length && c.ordem.every((id) => existe(idClube(id)) && w.info[idClube(id)].ligaId === (c.ligaId ?? "BRA1"))) return false;
   c.clubeId = idClube(c.clubeId);
   if (!existe(c.clubeId)) c.clubeId = "FLA";
   c.ligaId = w.info[c.clubeId].ligaId;
@@ -289,13 +289,17 @@ export function sincronizar(pacote: PacoteDados, s: Save) {
 /** Acesso ou rebaixamento: o clube do jogador mudou de divisão no mundo, e a carreira vai junto (tabela e calendário novos). */
 function mudancaDeDivisao(pacote: PacoteDados, s: Save) {
   const c = s.carreira, w = mundo(pacote), id = idClube(c.clubeId), nova = w.info[id]?.ligaId;
-  if (c.fase || c.mercado?.semClube || !nova || !w.clube[id] || !w.liga[nova] || infoLiga(nova).amador) return;
-  if (nova === infoLiga(c.ligaId).id) {
-    // mesma divisão, mas quem subiu e quem caiu mudou os adversários: calendário e tabela novos
-    const l = w.liga[nova], ids = new Set(l.clubes.map((x) => x.id));
-    if (c.ordem.length !== ids.size || !c.ordem.every((x) => ids.has(idClube(x)))) { c.ordem = l.clubes.map((x) => x.id); c.tabela = novaTabela(l); }
-    return;
+  if (c.fase) return;
+  // a tabela e o calendário sempre acompanham os clubes que estão na liga do jogador (mesmo sem clube)
+  const atual = infoLiga(c.ligaId);
+  const la = w.liga[atual.id];
+  if (la && !atual.amador) {
+    const ids = new Set(la.clubes.map((x) => x.id));
+    const tabelaOk = (c.tabela ?? []).length === ids.size && [...ids].every((i) => (c.tabela ?? []).some((t) => t.clube === i));
+    if (c.ordem.length !== ids.size || !c.ordem.every((x) => ids.has(idClube(x))) || !tabelaOk) { c.ordem = la.clubes.map((x) => x.id); c.tabela = novaTabela(la); }
   }
+  if (!nova || !w.clube[id] || !w.liga[nova] || infoLiga(nova).amador || nova === atual.id) return;
+  if (c.mercado?.semClube) return;
   const de = infoLiga(c.ligaId), para = infoLiga(nova), sobe = para.divisao < de.divisao || (para.divisao === de.divisao && para.nivel < de.nivel);
   const l = w.liga[nova];
   c.ligaId = nova; c.ordem = l.clubes.map((x) => x.id); c.tabela = novaTabela(l);
@@ -372,7 +376,7 @@ export function ofertasDeBase(pacote: PacoteDados, d: DadosCriacao): OfertaBase[
   let pool: Clube[];
   if (l.id === liga(pacote).id) {
     const casas = (pacote.clubes as unknown as { id: string; forca: number }[]);
-    const forcaPacote = (id: string) => casas.find((c) => c.id === id)!.forca;
+    const forcaPacote = (id: string) => casas.find((c) => c.id === id)?.forca ?? l.clubes.find((c) => c.id === id)?.forca ?? 0;
     pool = l.clubes.filter((c) => (min ? forcaPacote(c.id) >= min : forcaPacote(c.id) <= 72));
   } else {
     // fora do Brasil: promessa de clube grande vai para o terço de cima da liga; os outros, para os três quartos de baixo
@@ -517,7 +521,8 @@ export function jogosDaRodada(c: Carreira, rodada: number): Jogo[] {
 export function jogoDaSemana(s: Save): (Jogo & { rodada: number; souCasa: boolean; adversario: string }) | undefined {
   const c = s.carreira;
   if (c.semana < SEMANAS_PRE || c.semana - SEMANAS_PRE >= nRodadas(c)) return;
-  const r = c.semana - SEMANAS_PRE, j = jogosDaRodada(c, r).find((x) => x.casa === c.clubeId || x.fora === c.clubeId)!;
+  const r = c.semana - SEMANAS_PRE, j = jogosDaRodada(c, r).find((x) => x.casa === c.clubeId || x.fora === c.clubeId);
+  if (!j) return;
   return { ...j, rodada: r, souCasa: j.casa === c.clubeId, adversario: j.casa === c.clubeId ? j.fora : j.casa };
 }
 
@@ -1299,7 +1304,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (jogo) {
     for (const g of jogosDaRodada(c, jogo.rodada)) {
       const meu = g.casa === c.clubeId || g.fora === c.clubeId;
-      const [a, b] = meu && placarMeuJogo ? placarMeuJogo : simularPlacar(rng, clubeDe(l, g.casa).forca, clubeDe(l, g.fora).forca);
+      const [a, b] = meu && placarMeuJogo ? placarMeuJogo : simularPlacar(rng, l.clubes.find((x) => x.id === g.casa)?.forca ?? 50, l.clubes.find((x) => x.id === g.fora)?.forca ?? 50);
       registrar(c.tabela.find((t) => t.clube === g.casa)!, a, b);
       registrar(c.tabela.find((t) => t.clube === g.fora)!, b, a);
       if (meu) { const [gp, gc] = g.casa === c.clubeId ? [a, b] : [b, a]; c.resultadosClube = [...(c.resultadosClube ?? []).slice(-9), gp > gc ? 3 : gp === gc ? 1 : 0]; (c.placaresRodada ??= {})[jogo.rodada] = [gp, gc]; }
@@ -1308,7 +1313,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     if (c.formacao && !c.fase) {
       const cat = categoriaBase(j.idade);
       if (!c.tabelaBase || c.tabelaBase.cat !== cat || c.tabelaBase.t !== c.temporada) c.tabelaBase = { cat, t: c.temporada, tabela: novaTabela(l) };
-      const fb = (id: string) => forcaDaBase(pacote, id, j.idade, clubeDe(l, id).forca), rb = rngDe(s, "tabela-base");
+      const fb = (id: string) => forcaDaBase(pacote, id, j.idade, (mundo(pacote).clube[idClube(id)] ?? clubeDe(l, id))?.forca ?? 50), rb = rngDe(s, "tabela-base");
       for (const g of jogosDaRodada(c, jogo.rodada)) {
         const meu = g.casa === c.clubeId || g.fora === c.clubeId;
         const [a, b] = meu && placarBase ? placarBase : simularPlacar(rb, fb(g.casa), fb(g.fora));
@@ -1360,7 +1365,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (en.engajamento) c.engajamento = clamp((c.engajamento ?? 40) + en.engajamento, 0, 100);
   if (participacao !== "titular" && participacao !== "entrou") c.fama = clamp(c.fama * 0.995, 0, 100);
   { // a fama volta aos poucos para o tamanho real do jogador e do clube
-    const cl = clubeDe(l, c.clubeId), ref = famaDeReferencia(ovr(j), visibilidade(c.clubeId, c.ligaId, cl.fClube));
+    const cl = mundo(pacote).clube[idClube(c.clubeId)] ?? clubeDe(l, c.clubeId), ref = famaDeReferencia(ovr(j), visibilidade(c.clubeId, c.ligaId, cl?.fClube ?? 1));
     c.fama = clamp(c.fama + (ref - c.fama) * (c.fama > ref ? 0.012 : 0.004), 0, 100);
   }
   // redes: quem não posta perde engajamento; repercussão de lance passa
@@ -2177,7 +2182,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   const posicao = ordenar(c.tabela).findIndex((t) => t.clube === c.clubeId) + 1;
   const titulo = posicao === 1 && c.stats.jogos >= 10;
   const notas = c.stats.notas, media = (x: number[]) => (x.length ? +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(2) : 0);
-  const r: ResumoTemporada = { ...(c.fase ? { fase: c.fase } : {}), ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: clubeDe(l, c.clubeId).nome, clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`), ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols,
+  const r: ResumoTemporada = { ...(c.fase ? { fase: c.fase } : {}), ano: ANO_INICIAL + c.temporada, idade: j.idade, clube: (mundo(pacote).clube[idClube(c.clubeId)] ?? clubeDe(l, c.clubeId))?.nome ?? "clube", clubeId: c.clubeId, liga: infoLiga(c.ligaId).curto, est: estatisticasEstimadas(j.at, j.posicao, `${s.semente}|${c.temporada}`), ovr: Math.round(ovr(j)), jogos: c.stats.jogos, gols: c.stats.gols, assist: c.stats.assist, nota: media(notas), posicao, titulo, base: c.stats.base, baseGols: c.stats.baseGols,
     ...(c.stats.mvp ? { mvp: c.stats.mvp } : {}), ...(c.stats.selRodada ? { selRodada: c.stats.selRodada } : {}), ...(c.stats.selMes ? { selMes: c.stats.selMes } : {}) };
   // premiação: troféus que vão para a casa
   const cc = clubeCasa(pacote, c.clubeId), ev: string[] = [];
