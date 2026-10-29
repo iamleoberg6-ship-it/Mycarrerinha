@@ -217,10 +217,10 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   if (m.semClube) { semanaSemClube(pacote, s, rng, eventos); return; }
   blindagem(pacote, s, rng, eventos);
   const jan = janelaAberta(c);
-  if (!jan || c.formacao || j.idade < 18) return;
+  if (!jan || j.idade < 18) return;  // na base, só o empréstimo (pedido ou sugerido) entra; o resto espera o contrato profissional
   const clube = w.clube[c.clubeId], l = ligaAtual(pacote, s);
   // 1. renovação: contrato acabando
-  if (c.anosContrato <= 1 && !m.emprestimo && m.semRenovacao !== c.temporada && !m.propostas.some((p) => p.tipo === "renovacao")) {
+  if (!c.formacao && c.anosContrato <= 1 && !m.emprestimo && m.semRenovacao !== c.temporada && !m.propostas.some((p) => p.tipo === "renovacao")) {
     const quer = ovr(j) >= clube.forca - 9 || j.idade <= 22;
     if (quer) {
       const mercado = salarioMensal({ ovr: ovr(j), idade: j.idade, liga: l, clube, agente: c.agente, fama: c.fama });
@@ -235,7 +235,7 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   }
   // 2. empréstimo: garoto com poucos minutos
   const minutos = c.stats.jogos + (c.semana < 6 ? c.historico.at(-1)?.jogos ?? 0 : 0);
-  if (!m.emprestimo && j.idade <= 22 && j.pot - ovr(j) >= 4 && papelNoClube(clube, s) === "reserva" && minutos < (c.semana < 6 ? 12 : 6) && !m.propostas.some((p) => p.tipo === "emprestimo") && rng.chance(0.45)) {
+  if (!c.formacao && !m.emprestimo && j.idade <= 22 && j.pot - ovr(j) >= 4 && papelNoClube(clube, s) === "reserva" && minutos < (c.semana < 6 ? 12 : 6) && !m.propostas.some((p) => p.tipo === "emprestimo") && rng.chance(0.45)) {
     const destinos = w.ligas.filter((x) => x.nivel >= l.nivel && infoLiga(x.id).regiao === infoLiga(l.id).regiao || x.id === "BRA2").flatMap((x) => x.clubes)
       .filter((x) => x.id !== c.clubeId && papelNoClube(x, s) === "titular" && x.forca <= clube.forca);
     if (destinos.length) {
@@ -280,6 +280,7 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
     }
   }
   // 3. propostas de outros clubes (quem acabou de chegar espera a próxima temporada)
+  if (c.formacao) return;
   if (m.emprestimo || m.propostas.filter((p) => p.tipo !== "renovacao").length >= 4) return;
   if (m.transferencias.some((t) => t.temporada === c.temporada && t.tipo !== "emprestimo")) return;
   const perfil = perfilDe(pacote, s);
@@ -485,7 +486,7 @@ export function pedirParaSair(s: Save, sim: boolean, destino: Destino = "qualque
 export function pedirEmprestimo(s: Save, sim: boolean): R {
   const c = s.carreira, m = mercadoDe(c);
   if (!sim) { if (!m.pedidoEmprestimo) return { ok: false, msg: "" }; m.pedidoEmprestimo = false; return { ok: true, msg: "Você tirou o pedido de empréstimo." }; }
-  if (c.formacao || s.jogador.idade < 18) return { ok: false, msg: "Na base ainda não dá para pedir empréstimo." };
+  if (s.jogador.idade < 18) return { ok: false, msg: "Antes dos 18 anos ainda não dá para pedir empréstimo." };
   if (m.emprestimo) return { ok: false, msg: "Você já está emprestado." };
   m.pedidoEmprestimo = true;
   return { ok: true, msg: "Você pediu para ser emprestado. Os clubes que se interessarem mandam propostas na próxima janela." };

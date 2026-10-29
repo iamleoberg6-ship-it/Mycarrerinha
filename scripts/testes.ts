@@ -1557,6 +1557,24 @@ teste("Pedir empréstimo: o jogador só pede; propostas de clubes chegam na jane
   assert.ok(!mercadoDe(s.carreira).pedidoEmprestimo);
 });
 
+teste("Base: o jogador sem contrato profissional pode pedir empréstimo; só o empréstimo entra, nada de transferência", () => {
+  const r = criarJogador({ nome: "Teste", pais: "BRA", familia: "humilde", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "ATA", semente: "emp-base" });
+  const dados = { resultado: r, aparencia: {}, clube: null };
+  const s = novoJogo(pacote, dados, ofertasDeBase(pacote, dados)[0].clubeId, "emp-base");
+  s.jogador.idade = 18;
+  assert.ok(s.carreira.formacao, "começa na base");
+  assert.equal(pedirEmprestimo(s, true).ok, true, "na base, o pedido de empréstimo é aceito");
+  let viu = false;
+  for (let k = 0; k < SEMANAS_TEMPORADA && !viu; k++) {
+    semanaAutomatica(pacote, s);
+    const m = mercadoDe(s.carreira);
+    assert.ok(!m.propostas.some((p) => p.tipo === "transferencia" || p.tipo === "livre" || p.tipo === "renovacao"), "na base não chegam propostas de transferência nem renovação");
+    const prop = m.propostas.find((p) => p.tipo === "emprestimo");
+    if (prop) { viu = true; assert.notEqual(prop.clubeId, s.carreira.clubeId); aceitar(pacote, s, prop.id); assert.ok(mercadoDe(s.carreira).emprestimo, "o empréstimo vale na base"); }
+  }
+  assert.ok(viu || mercadoDe(s.carreira).emprestimo, "um clube interessado manda proposta de empréstimo na janela");
+});
+
 teste("Álbum: momentos (patrocínio, família, golaço) entram uma vez por chave e na página da temporada", () => {
   const album: Figurinha[] = [];
   const base = { ano: 2030, clubeId: "BR-X", clube: "Clube X", cores: ["#000000", "#FFFFFF"] as [string, string], numero: "10", posicao: "ATA", ovr: 70, idade: 22, jogos: 30, gols: 10, assist: 3, ap: {} };

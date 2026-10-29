@@ -14,6 +14,7 @@ import { torcidaDe, semanaTorcida, recepcaoAeroporto } from "./torcida.js";
 import { perfilCidade, semanaCidade } from "./cidades.js";
 import { figurinhaDaTemporada, figurinhaEspecial, figurinhaDeMomento, type Figurinha } from "./figurinhas.js";
 import { propostaPorIndicacao, janelaAberta } from "./transferencias.js";
+import { MARCA } from "./marcas.js";
 import { temFuncao } from "./vida-social.js";
 import { noticia, registrarMarco, agendaDe, elencoAtual, ovr, semanaAbsJogo, ANO_INICIAL, parcasDe, jogoDaSemana, jogoCopaDaSemana, ehClassico, type Save, type ResumoTemporada } from "./jogo.js";
 
@@ -200,9 +201,11 @@ function baseDoClube(pacote: PacoteDados, s: Save, clubeId: string): Omit<Figuri
   const b = baseFigurinha(pacote, s), ic = infoClube(pacote, clubeId);
   return { ...b, clubeId, clube: ic?.nome ?? b.clube, cores: ic ? [ic.cores[0], ic.cores[1]] : b.cores };
 }
-/** Patrocínio fechado: figurinha do contrato com a marca. */
-export function figurinhaDePatrocinio(pacote: PacoteDados, s: Save, marca: string, chave: string) {
-  figurinhaDeMomento(albumDe(s.carreira), "patrocinio", baseFigurinha(pacote, s), chave, `Contrato com a ${marca}`, "prata");
+/** Patrocínio fechado: a figurinha é da marca (logo e cores dela), com o jogador no contrato. */
+export function figurinhaDePatrocinio(pacote: PacoteDados, s: Save, marcaId: string, chave: string) {
+  const m = MARCA[marcaId], b = baseFigurinha(pacote, s);
+  const base = { ...b, clubeId: `marca-${marcaId}`, clube: m?.nome ?? marcaId, cores: m ? [m.cores[0], m.cores[1]] as [string, string] : b.cores };
+  figurinhaDeMomento(albumDe(s.carreira), "patrocinio", base, chave, `Contrato com a ${m?.nome ?? marcaId}`, "prata");
 }
 /** Golaço (relíquia de gol de placa): figurinha do lance. */
 export function figurinhaDeGolaco(pacote: PacoteDados, s: Save, chave: string, legenda: string) {

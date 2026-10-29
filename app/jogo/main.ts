@@ -1160,7 +1160,10 @@ function figurinhaSvg(f: Figurinha): string {
   const id = f.id.replace(/[^a-zA-Z0-9]/g, "");
   // o brasão é o destaque: escudo do clube, ou a bandeira quando a figurinha é da seleção
   const selecao = f.clubeId.startsWith("sel-");
-  const brasao = (selecao ? bandeiraSvg(f.clubeId.slice(4)) : escudo(f.clubeId)).replace("<svg ", selecao ? '<svg x="36" y="32" width="88" height="104" style="width:88px;height:104px" ' : '<svg x="28" y="30" width="104" height="104" style="width:104px;height:104px" ');
+  const marca = f.clubeId.startsWith("marca-") ? MARCA[f.clubeId.slice(6)] : undefined;
+  // patrocínio: a logo da marca no lugar do brasão
+  const brasao = marca ? logoSvg(marca, 60).replace("<svg ", '<svg x="12" y="52" width="136" height="80" style="width:136px;height:80px" ')
+    : (selecao ? bandeiraSvg(f.clubeId.slice(4)) : escudo(f.clubeId)).replace("<svg ", selecao ? '<svg x="36" y="32" width="88" height="104" style="width:88px;height:104px" ' : '<svg x="28" y="30" width="104" height="104" style="width:104px;height:104px" ');
   // o jogador entra num medalhão pequeno no canto do brasão
   const rosto = svgFoto({ aparencia: ap, camisa: { cor1: claro ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ');
   const especial = f.tipo !== "temporada", faixa = especial ? NOME_TIPO_FIG[f.tipo].toUpperCase() : String(f.ano);
@@ -1333,7 +1336,8 @@ function abaMercadoEu(s: Save): string {
   const contrato = `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${esc(meu.nome)}</h2><span class="sub">${esc(ligaNome)} · força ${Math.round(meu.forca)} · você é ${NOME_PAPEL[papel].toLowerCase()}</span></div></div><p class="sub" style="margin-top:8px"><b>${esc(NOME_CULTURA[culturaBase(c.clubeId)])}.</b> ${esc(TEXTO_CULTURA[culturaBase(c.clubeId)])}</p>
     <div class="kv" style="margin-top:8px"><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b>${m.emprestimo ? `<span>Empréstimo</span><b>Volta ao ${esc(nomeDe(m.emprestimo.origem))} no fim da temporada</b>` : ""}<span>Mercado</span><b>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : `Fechado · próxima: ${esc(proximaJanela(c))}`}</b></div>
     ${c.fase ? `<p class="sub" style="margin-top:8px">${c.fase === "varzea" ? "Na várzea, o caminho é o olheiro: jogue bem e os convites de peneira aparecem na tela da semana." : c.fase === "academia" ? "Na academia, o clube pode te oferecer contrato homegrown no fim da temporada, a partir dos 15 anos." : c.fase === "colegial" ? "No colégio, as universidades oferecem bolsa no fim do último ano." : "Na universidade, a partir do segundo ano você entra no draft da liga americana no fim da temporada."}</p>`
-      : c.formacao || j.idade < 18 ? `<p class="sub" style="margin-top:8px">Na base você ainda não pode ser negociado. O primeiro contrato profissional chega aos 18.</p>` : m.emprestimo ? "" :
+      : j.idade < 18 ? `<p class="sub" style="margin-top:8px">Na base você ainda não pode ser negociado. O primeiro contrato profissional chega aos 18.</p>`
+      : c.formacao ? `<p class="sub" style="margin-top:8px">Na base você não pode ser negociado, mas pode pedir para ser emprestado. Os clubes que se interessarem mandam propostas na janela.</p><div class="ferr-botoes">${m.pedidoEmprestimo ? `<button class="botao sec peq" data-emp-pedido="nao">Tirar o pedido de empréstimo</button>` : `<button class="botao sec peq" data-emp-pedido="sim">Pedir para ser emprestado</button>`}</div>` : m.emprestimo ? "" :
       `<div style="margin-top:10px">${m.listaTransferencia
         ? `<p class="sub">Você pediu para ser negociado${m.destinoSaida && m.destinoSaida !== "qualquer" ? ` (clubes ${esc(ONDE_DESTINO[m.destinoSaida])})` : ""}. O agente procura clubes nas janelas.</p><div class="ferr-botoes"><button class="botao sec peq" data-acao="ficar">Tirar o pedido de saída</button></div>`
         : `<p class="sub" style="margin-bottom:6px"><b>Pedir para ser negociado</b>: pedir um mercado específico faz o agente ir atrás de clubes de lá, mas vaza na imprensa e piora a relação com técnico e torcida.</p>
@@ -2396,7 +2400,7 @@ document.addEventListener("click", (ev) => {
   else if (d.decidir) decidir(+d.decidir, d.op!);
   else if (d.pen !== undefined) escolherSlot(+d.pen);
   else if (d.patro && save) {
-    if (d.patro === "recusar") recusarPatrocinio(save); else { cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato); if (cartazNovo) figurinhaDePatrocinio(pacote, save, MARCA[cartazNovo.marca]?.nome ?? cartazNovo.marca, `pat-${cartazNovo.marca}-${cartazNovo.desde}`); }
+    if (d.patro === "recusar") recusarPatrocinio(save); else { cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato); if (cartazNovo) figurinhaDePatrocinio(pacote, save, cartazNovo.marca, `pat-${cartazNovo.marca}-${cartazNovo.desde}`); }
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.vis && save) {
