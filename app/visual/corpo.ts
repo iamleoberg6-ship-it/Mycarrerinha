@@ -276,10 +276,13 @@ export function svgCorpo(o: OpcoesCorpo): string {
   const camisaCor2 = jogo ? kit.cor2 : escurecer(camisaCor, 0.78);
   const claroDemais = (c: string) => luz(c) > 0.86;
   const tat = v.tatuagens;
+  // segunda pele (só em campo): a cor fica no lugar da pele nos braços (e nas coxas, no corpo todo)
+  const sp = jogo && v.segundaPele && v.segundaPele !== "nenhuma" ? CORES_ROUPA[v.corSegundaPele ?? 1] ?? CORES_ROUPA[1] : null;
   const vis = (a: AreaTatuagem) => !!tat[a] && tatuagemVisivel(a, v, o.traje);
   const partes: string[] = [`<ellipse cx="150" cy="${g.pernas[0].A[1] + 26}" rx="${g.ombro + 10}" ry="9" fill="#000" opacity=".22"/>`];
   const camisa = troncoCamisa(g, largo);
-  const pernaComprida = !jogo && v.perna === "calca";
+  const comprida = ["calca", "jeans", "jogger"].includes(v.perna);
+  const pernaComprida = !jogo && comprida;
 
   // 1. pernas, meiões e calçados
   for (const p of g.pernas) {
@@ -296,6 +299,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
     }
     if (jogo) {
       const t0 = v.meiao === "baixo" ? 0.76 : 0.58;
+      if (sp && v.segundaPele === "corpo") partes.push(contorno(tuboPerna(g, p, 0, t0, 5), sp));
       const md = tuboPerna(g, p, t0, 1, 5);
       const corMeiao = kit.meiao ?? (claroDemais(kit.cor1) ? "#F2F0EA" : kit.cor1);
       partes.push(contorno(md, corMeiao), sombraLado(md, p.A[0] - 6, p.A[0] + g.panturrilha * 0.6, p.lado === 1 ? 0.3 : 0.15));
@@ -320,12 +324,12 @@ export function svgCorpo(o: OpcoesCorpo): string {
     partes.push(`<path d="M150 ${sh.barra - 30} L150 ${camisa.bainha}" stroke="${TINTA}" stroke-width="1.2" opacity=".35"/>`);
     partes.push(`<text x="${150 - g.quadril * 0.55}" y="${sh.barra - 10}" text-anchor="middle" ${attrFonte(fonteCamisa(kit.fonte ?? `${kit.cor1}${kit.cor2}`), 15)} fill="${kit.numeroCor ?? (luz(corShort) > 0.5 ? "#1A1A1A" : "#F2F0EA")}">${kit.numero}</text>`);
   } else {
-    const t1 = v.perna === "calca" ? 0.97 : 0.4, corCalca = v.perna === "calca" ? (v.casual === "social" ? "#2B2F36" : v.casual === "moletom" ? "#7F8389" : "#2E3F5C") : (v.casual === "regata" ? "#4F6E9C" : "#B9A58A");
-    const pernas = g.pernas.map((p) => tuboPerna(g, p, 0, t1, v.perna === "calca" ? 8 : 12)).join(" ");
+    const t1 = comprida ? 0.97 : 0.4, corCalca = v.perna === "jeans" ? "#3E5C8A" : v.perna === "jogger" ? "#5E646C" : v.perna === "calca" ? (v.casual === "social" ? "#2B2F36" : v.casual === "moletom" ? "#7F8389" : "#2E3F5C") : (v.casual === "regata" ? "#4F6E9C" : "#B9A58A");
+    const pernas = g.pernas.map((p) => tuboPerna(g, p, 0, t1, comprida ? 8 : 12)).join(" ");
     const pelve = `M${150 - g.quadril + 2} ${camisa.bainha - 30} L${150 + g.quadril - 2} ${camisa.bainha - 30} L${150 + g.quadril + 2} ${camisa.bainha + 22} L150 ${camisa.bainha + 40} L${150 - g.quadril - 2} ${camisa.bainha + 22} Z`;
     const d = `${pernas} ${pelve}`;
     partes.push(`<path d="${d}" fill="${corCalca}"/>`, sombraLado(d, 150, 150 + g.quadril + 20, 0.3));
-    for (const p of g.pernas) partes.push(`<path d="${tuboPerna(g, p, 0, t1, v.perna === "calca" ? 8 : 12)}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`);
+    for (const p of g.pernas) partes.push(`<path d="${tuboPerna(g, p, 0, t1, comprida ? 8 : 12)}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`);
     partes.push(`<path d="${pelve}" fill="${corCalca}"/><path d="M150 ${camisa.bainha} L150 ${camisa.bainha + 38}" stroke="${TINTA}" stroke-width="1.4" opacity=".5"/>`);
   }
 
@@ -338,7 +342,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   const regata = !jogo && v.casual === "regata";
   for (const b of g.bracos) {
     const d = bracoPath(g, b);
-    partes.push(contorno(d, pele), sombraLado(d, b.E[0] - g.braco * 0.1, b.E[0] + g.braco * 0.55, b.lado === 1 ? 0.34 : 0.18));
+    partes.push(contorno(d, sp ?? pele), sombraLado(d, b.E[0] - g.braco * 0.1, b.E[0] + g.braco * 0.55, b.lado === 1 ? 0.34 : 0.18));
     const area: AreaTatuagem = b.lado === -1 ? "antebracoE" : "antebracoD";
     if (vis(area)) {
       const c = lerp(b.E, b.W, 0.45);
@@ -356,7 +360,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   }
   // 5. camisa: mangas e tronco
   const idK = `kt${gradSeq++}`;
-  const longa = jogo ? v.manga === "longa" : ["moletom", "social", "jaqueta", "agasalho"].includes(v.casual);
+  const longa = jogo ? v.manga === "longa" : ["moletom", "social", "jaqueta", "agasalho", "sueter", "cardigan"].includes(v.casual);
   const folga = largo ? 5 : 0;
   const corManga = jogo && kit.padrao === "centro" ? kit.cor2 : camisaCor;
   if (!regata) g.bracos.forEach((b, i) => {
@@ -407,7 +411,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
     const ex = 150 + g.peito * 0.48, ey = 300;
     if (kit.escudo) partes.push(`<g transform="translate(${f1(ex - 18.2)} ${f1(ey - 21)}) scale(1.4)">${corpoEscudo(kit.escudo.chave, kit.escudo.cores?.[0] ?? kit.cor1, kit.escudo.cores?.[1] ?? kit.cor2, kit.escudo.nome)}</g>`);
     else partes.push(`<path d="M${ex - 9} ${ey - 10} H${ex + 9} V${ey} Q${ex + 9} ${ey + 8} ${ex} ${ey + 12} Q${ex - 9} ${ey + 8} ${ex - 9} ${ey} Z" fill="${kit.cor2}" stroke="${TINTA}" stroke-width="1.4"/><path d="M${ex - 9} ${ey - 3} H${ex + 9} V${ey + 2} H${ex - 9} Z" fill="${kit.cor1}" opacity=".9"/>`);
-  } else if (v.casual === "social") {
+  } else if (v.casual === "social" || v.casual === "camisaCurta") {
     partes.push(`<path d="M124 228 L150 248 L138 262 L116 236 Z M176 228 L150 248 L162 262 L184 236 Z" fill="${mistura(camisaCor, "#000000", 0.08)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M150 248 V${camisa.bainha}" stroke="${TINTA}" stroke-width="1.3"/>${[272, 302, 332, 362, 392, 422].map((y) => `<circle cx="154" cy="${y}" r="2" fill="${escurecer(camisaCor, 0.6)}"/>`).join("")}`);
   } else if (v.casual === "jaqueta") {
     partes.push(`<path d="M130 236 L150 258 L170 236 L176 ${camisa.bainha} L124 ${camisa.bainha} Z" fill="${corCasual}" stroke="${TINTA}" stroke-width="1.8"/><path d="M120 232 L142 270 L128 284 L104 246 Z M180 232 L158 270 L172 284 L196 246 Z" fill="#3B5680" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M${150 - g.peito + 14} 336 H${150 - g.peito + 42} M${150 + g.peito - 42} 336 H${150 + g.peito - 14}" stroke="#E2B36A" stroke-width="1.6" stroke-dasharray="4 3"/>`);
@@ -419,6 +423,10 @@ export function svgCorpo(o: OpcoesCorpo): string {
     partes.push(`<path d="M122 222 Q150 234 178 222 L180 236 Q150 250 120 236 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M150 244 V${camisa.bainha}" stroke="${TINTA}" stroke-width="2.2"/><path d="M150 244 V${camisa.bainha}" stroke="#C0C3C8" stroke-width="0.9" stroke-dasharray="2 2"/><rect x="147" y="252" width="6" height="10" rx="1.5" fill="#C0C3C8" stroke="${TINTA}" stroke-width="1.2"/><path d="M${150 - g.peito + 12} 300 H${150 - g.peito + 30}" stroke="#F2F0EA" stroke-width="3"/>`);
   } else if (v.casual === "moletom") {
     partes.push(`<path d="M123 230 Q150 250 177 230" stroke="${camisaCor2}" stroke-width="6" fill="none"/><path d="M123 230 Q150 250 177 230" stroke="${TINTA}" stroke-width="1.4" fill="none"/><path d="M${150 - g.cintura + 10} 380 H${150 + g.cintura - 10} L${150 + g.cintura - 18} 420 H${150 - g.cintura + 18} Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="1.6"/><path d="M140 240 L139 274 M160 240 L161 274" stroke="${mistura(camisaCor, "#FFFFFF", 0.5)}" stroke-width="2.4" stroke-linecap="round"/>`);
+  } else if (v.casual === "cardigan") {
+    partes.push(`<path d="M150 246 V${camisa.bainha}" stroke="${TINTA}" stroke-width="1.6"/><path d="M123 230 Q150 246 177 230" stroke="${camisaCor2}" stroke-width="5" fill="none"/>` + [262, 294, 326].map((y) => `<circle cx="146" cy="${y}" r="2.2" fill="${TINTA}"/>`).join(""));
+  } else if (v.casual === "sueter") {
+    partes.push(`<path d="M123 230 Q150 250 177 230" stroke="${camisaCor2}" stroke-width="6" fill="none"/><path d="M123 230 Q150 250 177 230" stroke="${TINTA}" stroke-width="1.4" fill="none"/><path d="M${150 - g.cintura + 4} ${camisa.bainha - 12} H${150 + g.cintura - 4}" stroke="${camisaCor2}" stroke-width="7"/>`);
   } else {
     partes.push(`<path d="M123 230 Q150 250 177 230" stroke="${camisaCor2}" stroke-width="5" fill="none"/><path d="M123 230 Q150 250 177 230" stroke="${TINTA}" stroke-width="1.4" fill="none"/>`);
   }

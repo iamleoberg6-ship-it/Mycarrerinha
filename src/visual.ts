@@ -5,14 +5,18 @@ export type Fisico = "magro" | "atletico" | "forte";
 export type Manga = "curta" | "longa";
 export type Caimento = "justo" | "largo";
 export type Meiao = "alto" | "baixo";
-export type RoupaCasual = "camiseta" | "regata" | "moletom" | "social" | "jaqueta" | "polo" | "florida" | "agasalho";
+export type RoupaCasual = "camiseta" | "regata" | "moletom" | "social" | "jaqueta" | "polo" | "florida" | "agasalho" | "sueter" | "cardigan" | "camisaCurta";
 export type Munhequeira = "nenhuma" | "uma" | "duas";
-export type Perna = "bermuda" | "calca";
+export type Perna = "bermuda" | "calca" | "jeans" | "jogger";
+/** Segunda pele por baixo do uniforme: só o braço (manga de compressão) ou o corpo todo (braços e coxas). */
+export type SegundaPele = "nenhuma" | "braco" | "corpo";
 export type AreaTatuagem = "pescoco" | "antebracoE" | "antebracoD" | "pernaE" | "pernaD";
 
 export interface Visual {
   fisico: Fisico; manga: Manga; caimento: Caimento; meiao: Meiao;
   casual: RoupaCasual; corCasual: number; perna: Perna;
+  /** segunda pele em campo e a cor (índice de CORES_ROUPA) */
+  segundaPele?: SegundaPele; corSegundaPele?: number;
   tatuagens: Partial<Record<AreaTatuagem, string>>;
   /** munhequeira em campo e a cor (índice de CORES_ROUPA; -1 = cor do clube) */
   munhequeira?: Munhequeira; corMunhequeira?: number;
@@ -25,7 +29,7 @@ export interface Visual {
 export const VISUAL_PADRAO: Visual = { fisico: "atletico", manga: "curta", caimento: "justo", meiao: "alto", casual: "camiseta", corCasual: 1, perna: "bermuda", tatuagens: {} };
 
 export const NOME_FISICO: Record<Fisico, string> = { magro: "Magro", atletico: "Atlético", forte: "Forte" };
-export const NOME_CASUAL: Record<RoupaCasual, string> = { camiseta: "Camiseta", regata: "Regata", moletom: "Moletom", social: "Camisa social", jaqueta: "Jaqueta jeans", polo: "Polo", florida: "Camisa florida", agasalho: "Agasalho" };
+export const NOME_CASUAL: Record<RoupaCasual, string> = { camiseta: "Camiseta", regata: "Regata", moletom: "Moletom", social: "Camisa social", jaqueta: "Jaqueta jeans", polo: "Polo", florida: "Camisa florida", agasalho: "Agasalho", sueter: "Suéter", cardigan: "Cardigã", camisaCurta: "Camisa de botão (manga curta)" };
 export const NOME_AREA: Record<AreaTatuagem, string> = { pescoco: "Pescoço", antebracoE: "Antebraço esquerdo", antebracoD: "Antebraço direito", pernaE: "Coxa esquerda", pernaD: "Coxa direita" };
 
 /** "no pescoço", "na coxa direita"... */
@@ -62,6 +66,6 @@ export const visualDe = (j: { visual?: Visual }): Visual => {
 /** Onde a tatuagem aparece com a roupa escolhida. */
 export function tatuagemVisivel(area: AreaTatuagem, v: Visual, traje: "jogo" | "casual"): boolean {
   if (area === "pescoco") return true;
-  if (area.startsWith("antebraco")) return traje === "jogo" ? v.manga === "curta" : !["moletom", "social", "jaqueta", "agasalho"].includes(v.casual);
+  if (area.startsWith("antebraco")) return traje === "jogo" ? v.manga === "curta" : !["moletom", "social", "jaqueta", "agasalho", "sueter", "cardigan"].includes(v.casual);
   return traje === "jogo" ? true : v.perna === "bermuda";
 }
