@@ -14,7 +14,7 @@ export const ARTILHEIROS: Record<string, Artilheiro[]> = {
   COL: [{ nome: "Radamel Falcao", gols: 36, jogo: "Radamel Falcao" }],
   CHI: [{ nome: "Alexis Sánchez", gols: 51, jogo: "Alexis Sánches" }, { nome: "Iván Zamorano", gols: 34, jogo: "Iván Zamorano" }],
   PAR: [{ nome: "Roque Santa Cruz", gols: 32, jogo: "Roque Santa Cruz" }],
-  ECU: [{ nome: "Enner Valencia", gols: 49, jogo: "Enner Valencia" }],
+  ECU: [{ nome: "Enner Valencia", gols: 49, jogo: "Ener Valência" }],
   PER: [{ nome: "Paolo Guerrero", gols: 40, jogo: "Paolo Guerrero" }],
   MEX: [{ nome: "Javier Hernández", gols: 52, jogo: "Javier Hernández" }, { nome: "Jared Borgetti", gols: 46, jogo: "Jared Borgetti" }],
   USA: [{ nome: "Clint Dempsey", gols: 57, jogo: "Clint Dempsey" }, { nome: "Landon Donovan", gols: 57, jogo: "Landon Donovan" }],
