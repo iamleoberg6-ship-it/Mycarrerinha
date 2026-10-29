@@ -13,7 +13,7 @@ import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from ".
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono, vagasGaragem, veiculosDaCasa, podeTerCarro } from "../../src/casa";
 import {
-  ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, liga, novoJogo,
+  ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, adversarioDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, jogosDaRodada, ehClassico, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, campanhasAtuais, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
@@ -776,10 +776,10 @@ function cardSugestao(s: Save): string {
 // ------------------------------------------------------------------ relações
 /** Estrela do adversário desta semana: chance de conversar no túnel e pedir a camisa. */
 function cardCraque(s: Save): string {
-  const jg = jogoDaSemana(s);
-  if (!jg) return "";
+  const adv = adversarioDaSemana(pacote, s);
+  if (!adv) return "";
   if (s.carreira.formacao && !s.carreira.fase && escalacao(pacote, s) === "base") return ""; // jogo da base: os craques do profissional não estão lá
-  const rr = relacoesDe(s.carreira), cs = estrelasDoMundo(pacote).filter((e) => e.clubeId === jg.adversario).slice(0, 2);
+  const rr = relacoesDe(s.carreira), cs = estrelasDoMundo(pacote).filter((e) => e.clubeId === adv).slice(0, 2);
   if (!cs.length) return "";
   return `<section class="painel craque"><p class="rotulo">Craque do outro lado</p>${cs.map((e) => {
     const x = rr.lista[e.nome], nivel = x?.nivel ?? 0, pedida = rr.camisaPedida === e.nome;

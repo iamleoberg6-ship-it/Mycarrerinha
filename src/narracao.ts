@@ -31,13 +31,16 @@ export function elencoDe(clube: Clube, base: boolean): Elenco {
 }
 
 /** Os nomes que os textos usam ({gol}, {comp}...). Varia um pouco de jogo para jogo, como uma escalação. */
-export function nomesDaPartida(rng: RNG, meu: Elenco, adv: Elenco, x: { nome: string; meu: string; adv: string; estadio: string; posJogador: Posicao }): Record<string, string> {
+export function nomesDaPartida(rng: RNG, meu: Elenco, adv: Elenco, x: { nome: string; meu: string; adv: string; estadio: string; posJogador: Posicao; /** craques de quem você já tem a camisa: o {craque} sai dos outros */ jaTenho?: Set<string> }): Record<string, string> {
   const umDos = (l: string[], n = 2) => l[Math.floor(rng.next() * Math.min(n, l.length))];
   const meusAta = x.posJogador === "ATA" ? meu.ATA.slice(0, 3) : meu.ATA;
   const advLinha = [...adv.ATA, ...adv.MEI, ...adv.PON].slice(0, 5);
+  // o craque da troca de camisa é alguém de quem você ainda não tem a camisa (senão sobra a mesma cara de sempre)
+  const livres = [...adv.ATA, ...adv.MEI, ...adv.PON, ...adv.VOL, ...adv.ZAG, ...adv.LAT].filter((n) => !x.jaTenho?.has(n));
+  const craqueLivre = livres.slice(0, 5).length ? livres.slice(0, 5) : advLinha;
   return {
     nome: x.nome, meu: x.meu, adv: x.adv, estadio: x.estadio,
-    gol: adv.GOL[0], zag: umDos(adv.ZAG), lat: umDos(adv.LAT), vol: umDos(adv.VOL), ata: adv.ATA[0], craque: umDos(advLinha, 2),
+    gol: adv.GOL[0], zag: umDos(adv.ZAG), lat: umDos(adv.LAT), vol: umDos(adv.VOL), ata: adv.ATA[0], craque: umDos(craqueLivre, 2),
     comp: umDos(meusAta), meia: umDos(meu.MEI), ponta: umDos(meu.PON), capitao: [...meu.ZAG.slice(0, 1), ...meu.VOL.slice(0, 1), ...meu.MEI.slice(0, 1)][Math.floor(rng.next() * 3)] ?? meu.ZAG[0],
     goleiro: meu.GOL[0], zagMeu: umDos(meu.ZAG), batedor: meu.MEI[0],
   };

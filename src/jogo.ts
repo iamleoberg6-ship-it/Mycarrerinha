@@ -550,6 +550,15 @@ export interface Jogo { casa: string; fora: string }
 export function jogosDaRodada(c: Carreira, rodada: number): Jogo[] {
   return rodadasDaLiga(c.ordem.length)[rodada].map(([a, b]) => ({ casa: c.ordem[a], fora: c.ordem[b] }));
 }
+/** Adversário da semana, seja jogo de liga, de copa ou de seleção (o de meio de semana também conta). */
+export function adversarioDaSemana(pacote: PacoteDados, s: Save): string | undefined {
+  const cp = jogoCopaDaSemana(pacote, s);
+  if (cp) {
+    const meu = [cp.jogo.casa, cp.jogo.fora].includes(s.carreira.clubeId) ? s.carreira.clubeId : idSelecao(s.jogador.nacionalidade);
+    return cp.jogo.casa === meu ? cp.jogo.fora : cp.jogo.casa;
+  }
+  return jogoDaSemana(s)?.adversario;
+}
 export function jogoDaSemana(s: Save): (Jogo & { rodada: number; souCasa: boolean; adversario: string }) | undefined {
   const c = s.carreira;
   if (c.semana < SEMANAS_PRE || c.semana - SEMANAS_PRE >= nRodadas(c)) return;
@@ -966,7 +975,9 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const naBase = base && !amador;
   const elMeu = elencoDe({ ...meuClube, elenco: naBase ? timeDaBase(pacote, c.clubeId, j.idade) : selecaoJogo ? meuClube.elenco : elencoDisponivel(pacote, s) }, false), elAdv = elencoDe(naBase ? { ...adv, elenco: timeDaBase(pacote, adv.id, j.idade) } : selecaoJogo ? adv : { ...adv, elenco: elencoDisponivel(pacote, s, adv.id) }, false);
   const estadio = cj?.neutro ? `estádio da ${NOME_FASE[cj.fase].toLowerCase()}` : base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
-  const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(meuId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao });
+  // as camisas que você já tem (das trocas guardadas e das marcadas na relação): o craque da troca sai dos outros
+  const jaTenho = new Set<string>([...(s.casa.reliquias ?? []).filter((r) => r.chave === "camisa-troca").map((r) => r.nome.replace(/^Camisa d[eoa] /, "")), ...Object.entries(relacoesDe(c).lista).filter(([, x]) => x.camisa).map(([n]) => n)]);
+  const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(meuId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao, jaTenho });
   const posTab = posicaoNaTabela(undefined, s), reta = c.semana >= SEMANAS_PRE + 28;
   const jogosPro = c.stats.jogos + c.historico.reduce((acc, h) => acc + h.jogos, 0);
   const ctx: Contexto = { pos: j.posicao, min: 0, saldo: 0, base, jaFezGol: false, classico, mandante: jogo.souCasa, reta,
@@ -2183,8 +2194,8 @@ export function agirRelacao(pacote: PacoteDados, s: Save, nome: string, acao: Ac
       return fazer(3 * atencao(c.fama, est.fama), `Você comentou na foto de ${nome}.`);
     }
     case "camisa": {
-      const jg = jogoDaSemana(s);
-      if (!est || !jg || jg.adversario !== est.clubeId) return { ok: false, msg: "Só dá para pedir a camisa na semana do jogo contra ele." };
+      const adv = adversarioDaSemana(pacote, s);
+      if (!est || !adv || adv !== est.clubeId) return { ok: false, msg: "Só dá para pedir a camisa na semana do jogo contra ele." };
       if (alvo.camisa) return { ok: false, msg: "Você já tem a camisa dele." };
       rr.camisaPedida = nome;
       return { ok: true, msg: `Combinado: depois do jogo você pede a camisa de ${nome}. Chance de ${Math.round(100 * chanceCamisa(alvo.nivel, c.fama, est.fama))}%.` };
