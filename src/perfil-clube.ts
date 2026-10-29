@@ -55,6 +55,27 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): Titul
   for (const [pos, n] of [["GOL", 1], ...Object.entries(VAGAS_433)] as [string, number][]) {
     xi.push(...todos.filter((t) => t.posicao === pos).sort((a, b) => b.vezes - a.vezes || b.nota - a.nota).slice(0, n));
   }
+  // vaga sem jogador da posição (clube com pouca história nela): quem sobrou no clube, pelo mesmo critério, ocupa a vaga
+  const sobra = todos.filter((t) => !xi.includes(t)).sort((a, b) => b.vezes - a.vezes || b.nota - a.nota);
+  for (const [pos, n] of [["GOL", 1], ...Object.entries(VAGAS_433)] as [string, number][]) {
+    const falta = n - xi.filter((t) => t.posicao === pos).length;
+    for (let i = 0; i < falta && sobra.length; i++) xi.push(sobra.shift()!);
+  }
+  // clube com pouca história (nem os sobras bastam): o elenco atual completa as vagas, pelo overall, com nota e títulos zerados
+  if (xi.length < 11) {
+    const ja = new Set(xi.map((t) => t.nome));
+    const ano = Math.max(0, ...linhasDoClube(pacote, clubeId).map(({ x }) => x.t));
+    const elenco = plantelDoClube(pacote, clubeId).filter((j) => !ja.has(j.nome)).sort((a, b) => b.ovr - a.ovr);
+    for (const [pos, n] of [["GOL", 1], ...Object.entries(VAGAS_433)] as [string, number][]) {
+      const falta = n - xi.filter((t) => t.posicao === pos).length;
+      for (let i = 0; i < falta; i++) {
+        const j = elenco.find((x) => x.posicao === pos) ?? elenco[0];
+        if (!j) break;
+        elenco.splice(elenco.indexOf(j), 1);
+        xi.push({ nome: j.nome, posicao: j.posicao, vezes: 0, nota: 0, temporadas: 0, melhorAno: ano, melhorNota: 0 });
+      }
+    }
+  }
   return xi;
 }
 
