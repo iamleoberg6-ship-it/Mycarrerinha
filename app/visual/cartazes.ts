@@ -48,6 +48,20 @@ export function anuncioTransferencia(d: DadosAnuncio): string {
 }
 
 /** Capa de videogame (paródia: IA Sports · IAFC + o ano da edição, um a mais que o da temporada), 360 × 480. */
+/** Fundos da capa de videogame: cada edição tem um cenário (o jogador é o mesmo; a arte muda ao redor). */
+const FUNDO_CAPA: ((id: string, destaque: string, c2: string) => string)[] = [
+  (id, destaque, c2) => `<rect width="360" height="480" fill="url(#${id}f)"/><rect width="360" height="480" fill="url(#${id}l)"/>
+    ${[0, 1, 2, 3, 4].map((i) => `<path d="M${120 + i * 55} 480 L${300 + i * 55} 0" stroke="${i % 2 ? c2 : destaque}" stroke-opacity=".16" stroke-width="${10 + i * 4}"/>`).join("")}`,
+  () => `<rect width="360" height="480" fill="#1E6B36"/>${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="0" y="${i * 80}" width="360" height="40" fill="#246F3D"/>`).join("")}
+    <circle cx="180" cy="240" r="90" fill="none" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="3"/><rect x="60" y="0" width="240" height="120" fill="none" stroke="#FFFFFF" stroke-opacity=".3" stroke-width="3"/>`,
+  () => `<rect width="360" height="160" fill="#F7A23B"/><rect y="160" width="360" height="120" fill="#E4572E"/><rect y="280" width="360" height="200" fill="#3B1F4A"/>
+    <circle cx="180" cy="230" r="95" fill="#FFD56B" opacity=".9"/>`,
+  () => `<rect width="360" height="480" fill="#0B1430"/>
+    <polygon points="30,0 90,0 230,400 110,400" fill="#FFF6D6" opacity=".14"/><polygon points="270,0 330,0 250,400 130,400" fill="#FFF6D6" opacity=".14"/>
+    ${Array.from({ length: 40 }, (_, i) => `<circle cx="${(i * 37) % 360}" cy="${404 + ((i * 53) % 60)}" r="3" fill="#FFFFFF" opacity=".35"/>`).join("")}`,
+];
+/** Fonte do nome na capa: quase sempre a mesma, com uma ou outra variação. */
+const FONTE_CAPA = [DISPLAY, "Impact, Haettenschweiler, sans-serif", DISPLAY, DISPLAY];
 /** Cada edição tem uma frase de capa diferente (a arte muda pouco: uniforme e aparência do jogador). */
 const TAGLINE_CAPA = ["O JOGO DE FUTEBOL DO MUNDO TODO", "EDIÇÃO DE COLECIONADOR", "A CAPA DA TEMPORADA", "EDIÇÃO DO TORCEDOR"];
 export function capaVideogame(d: { edicao: number; jogador: string; numero: string; cores: string[]; corpoSvg: string; edicaoDe?: string }): string {
@@ -59,9 +73,7 @@ export function capaVideogame(d: { edicao: number; jogador: string; numero: stri
     <linearGradient id="${id}f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14171F"/><stop offset="1" stop-color="#05060A"/></linearGradient>
     <radialGradient id="${id}l" cx=".62" cy=".42" r=".6"><stop offset="0" stop-color="${destaque}" stop-opacity=".75"/><stop offset="1" stop-color="${destaque}" stop-opacity="0"/></radialGradient></defs>
   <g clip-path="url(#${id}c)">
-    <rect width="360" height="480" fill="url(#${id}f)"/>
-    <rect width="360" height="480" fill="url(#${id}l)"/>
-    ${[0, 1, 2, 3, 4].map((i) => `<path d="M${120 + i * 55} 480 L${300 + i * 55} 0" stroke="${i % 2 ? c2 : destaque}" stroke-opacity=".16" stroke-width="${10 + i * 4}"/>`).join("")}
+    ${FUNDO_CAPA[d.edicao % FUNDO_CAPA.length](id, destaque, c2)}
     <text x="250" y="380" text-anchor="middle" font-family="${DISPLAY}" font-weight="900" font-size="210" fill="#FFFFFF" opacity=".07">${esc(d.numero)}</text>
     ${corpo}
     <rect width="360" height="92" fill="#05060A" opacity=".82"/>
@@ -71,7 +83,7 @@ export function capaVideogame(d: { edicao: number; jogador: string; numero: stri
     ${d.edicaoDe ? `<text x="340" y="30" text-anchor="end" font-family="${TEXTO}" font-weight="700" font-size="11" fill="#FFFFFF" opacity=".7">EDIÇÃO ${esc(d.edicaoDe.toUpperCase())}</text>` : ""}
     <rect x="0" y="408" width="360" height="72" fill="#05060A" opacity=".85"/>
     <rect x="20" y="418" width="44" height="4" fill="#E3B341"/>
-    <text x="20" y="452" font-family="${DISPLAY}" font-weight="900" font-size="32" fill="#FFFFFF">${esc(d.jogador.toUpperCase())}</text>
+    <text x="20" y="452" font-family="${FONTE_CAPA[d.edicao % FONTE_CAPA.length]}" font-weight="900" font-size="32" font-style="${d.edicao % 4 === 2 ? "italic" : "normal"}" fill="#FFFFFF">${esc(d.jogador.toUpperCase())}</text>
     <text x="20" y="470" font-family="${TEXTO}" font-weight="600" font-size="11" fill="#FFFFFF" opacity=".6">IA SPORTS · ${TAGLINE_CAPA[d.edicao % TAGLINE_CAPA.length]}</text>
     <rect x="300" y="420" width="40" height="40" rx="6" fill="none" stroke="#FFFFFF" stroke-opacity=".5"/><text x="320" y="446" text-anchor="middle" font-family="${TEXTO}" font-weight="800" font-size="11" fill="#FFFFFF" opacity=".75">L</text>
   </g></svg>`;
