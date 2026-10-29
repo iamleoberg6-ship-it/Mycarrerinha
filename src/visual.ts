@@ -52,6 +52,15 @@ export const TATUAGENS: Tatuagem[] = [
   { id: "mandala", nome: "Mandala", preco: 3800, areas: MEMBROS, descricao: "Pontilhismo em círculos." },
   { id: "relogio", nome: "Relógio e rosa", preco: 4500, areas: MEMBROS, descricao: "O tempo que não volta." },
   { id: "trofeu", nome: "Taça", preco: 2600, areas: ["pescoco", ...MEMBROS], descricao: "Para lembrar do primeiro título." },
+  { id: "lua", nome: "Lua crescente", preco: 1500, areas: ["pescoco", ...MEMBROS], descricao: "Lua com estrelinhas em volta." },
+  { id: "coracao", nome: "Coração", preco: 1200, areas: ["pescoco", ...MEMBROS], descricao: "Simples, do tamanho de uma moeda." },
+  { id: "ancora", nome: "Âncora", preco: 1700, areas: ["pescoco", ...MEMBROS], descricao: "Firme, para quem não sai do lugar." },
+  { id: "chama", nome: "Chama", preco: 1600, areas: ["pescoco", ...MEMBROS], descricao: "Fogo que não apaga, nem no segundo tempo." },
+  { id: "caveira", nome: "Caveira", preco: 2400, areas: ["pescoco", ...MEMBROS], descricao: "Olhos vazios, muita atitude." },
+  { id: "espada", nome: "Espada", preco: 2300, areas: MEMBROS, descricao: "Lâmina em linha reta, com o cabo trabalhado." },
+  { id: "cobra", nome: "Cobra enrolada", preco: 2600, areas: MEMBROS, descricao: "Enrolada no braço, com a cabeça de frente." },
+  { id: "dragao", nome: "Dragão", preco: 5200, areas: MEMBROS, descricao: "Asa aberta e o corpo descendo pela coxa ou pelo antebraço." },
+  { id: "numero", nome: "Número da camisa", preco: 1300, areas: MEMBROS, descricao: "O número do seu primeiro uniforme, num círculo." },
   { id: "fechada", nome: "Fechamento completo", preco: 18000, areas: MEMBROS, descricao: "O antebraço ou a coxa inteira desenhada. Várias sessões." },
 ];
 export const TATUAGEM: Record<string, Tatuagem> = Object.fromEntries(TATUAGENS.map((t) => [t.id, t]));
