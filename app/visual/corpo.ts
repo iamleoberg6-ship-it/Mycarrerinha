@@ -150,6 +150,8 @@ function padraoKit(k: Kit, g: Geo): string {
   switch (k.padrao) {
     case "listrasV": return Array.from({ length: 14 }, (_, i) => `<rect x="${x0 + i * 22}" y="220" width="11" height="280" fill="${c2}"/>`).join("");
     case "listrasH": return Array.from({ length: 11 }, (_, i) => `<rect x="${x0}" y="${250 + i * 22}" width="${x1 - x0}" height="11" fill="${c2}"/>`).join("");
+    // listras grossas: faixas largas na cor 2 sobre a cor 1 (Fortaleza: azul com vermelho)
+    case "listrasHG": return Array.from({ length: 5 }, (_, i) => `<rect x="${x0}" y="${236 + i * 56}" width="${x1 - x0}" height="28" fill="${c2}"/>`).join("");
     case "diagonais": return [0, 1, 2].map((i) => `<path d="M${x0} ${262 + i * 70 + 60} L${x1} ${262 + i * 70 - 40} L${x1} ${262 + i * 70 - 16} L${x0} ${262 + i * 70 + 84} Z" fill="${c2}"/>`).join("");
     case "faixa": return `<path d="M${150 - g.ombro + 4} 252 L${150 - g.ombro + 34} 246 L${150 + g.quadril + 34} 480 L${150 + g.quadril + 4} 480 Z" fill="${c2}"/>`;
     case "faixaH": return `<rect x="${x0}" y="318" width="${x1 - x0}" height="28" fill="${c2}"/>`;
@@ -354,7 +356,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   if (!regata) g.bracos.forEach((b, i) => {
     const m = mangaPath(g, b, longa, folga);
     partes.push(`<clipPath id="${idK}m${i}"><path d="${m.d}"/></clipPath>`, contorno(m.d, corManga));
-    if (jogo && ["listrasV", "listrasH"].includes(kit.padrao)) partes.push(`<g clip-path="url(#${idK}m${i})">${padraoKit(kit, g)}</g>`);
+    if (jogo && ["listrasV", "listrasH", "listrasHG"].includes(kit.padrao)) partes.push(`<g clip-path="url(#${idK}m${i})">${padraoKit(kit, g)}</g>`);
     partes.push(sombraLado(m.d, b.J[0] - b.lado * 8, b.J[0] + g.braco * 0.7, b.lado === 1 ? 0.32 : 0.14));
     // punho/barra da manga
     if (!jogo && v.casual === "agasalho") partes.push(`<g clip-path="url(#${idK}m${i})"><path d="M${f1(b.J[0] + b.lado * 4)} 250 L${f1(b.E[0] + b.lado * (g.antebraco / 2 + 2))} ${f1(b.E[1])} L${f1(b.W[0] + b.lado * (g.antebraco * 0.36 + 2))} ${f1(b.W[1])}" stroke="#F2F0EA" stroke-width="3.2" fill="none"/><path d="M${f1(b.J[0] + b.lado * 10)} 252 L${f1(b.E[0] + b.lado * (g.antebraco / 2 + 7))} ${f1(b.E[1])} L${f1(b.W[0] + b.lado * (g.antebraco * 0.36 + 7))} ${f1(b.W[1])}" stroke="#F2F0EA" stroke-width="3.2" fill="none"/></g>`);

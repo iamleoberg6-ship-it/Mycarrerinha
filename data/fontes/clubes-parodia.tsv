@@ -234,7 +234,7 @@ BRA2	Ceará	CEA	Vovô Alvinegro	Vovô	#000000	#FFFFFF	listrasV	65	0.75	Castelão
 BRA2	CRB	CRB	Galo da Pajuçara	Galo	#C8102E	#FFFFFF	listrasH	61	0.5	Rei Pelezinho
 BRA2	Criciúma	CRI	Tigre do Carvão	Tigre	#FDD100	#000000	listrasV	62	0.55	Heriberto Hulso
 BRA2	Cuiabá	CUI	Dourado Pantaneiro	Dourado	#FDD100	#006437	lisa	63	0.6	Arena Pantanosa
-BRA2	Fortaleza	FOR	Leão do Pici	Tricolor do Pici	#1C3F94	#E2231A	faixaH	66	0.8	Arena do Pici
+BRA2	Fortaleza	FOR	Leão do Pici	Tricolor do Pici	#1C3F94	#E2231A	listrasHG	66	0.8	Arena do Pici
 BRA2	Goiás	GOI	Verdão Goiano	Esmeraldino	#006437	#FFFFFF	lisa	63	0.6	Serrinha Verde
 BRA2	Juventude	JUV	Papo Serrano	Papo	#006437	#FFFFFF	lisa	63	0.6	Alfredo Jaconinho
 BRA2	Londrina	LON	Tubarão do Café	Tubarão	#5DADE2	#FFFFFF	lisa	60	0.45	Estádio do Cafezinho

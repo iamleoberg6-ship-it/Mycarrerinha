@@ -17,6 +17,8 @@ function padrao(modelo: string, c2: string, c3: string): string {
   switch (modelo) {
     case "listrasV": return Array.from({ length: 6 }, (_, i) => `<rect x="${8 + i * 12}" y="0" width="6" height="100" fill="${c2}"/>`).join("");
     case "listrasH": return Array.from({ length: 7 }, (_, i) => `<rect x="0" y="${22 + i * 11}" width="80" height="5.5" fill="${c2}"/>`).join("");
+    /** listras grossas horizontais (Fortaleza) */
+    case "listrasHG": return Array.from({ length: 3 }, (_, i) => `<rect x="0" y="${14 + i * 30}" width="80" height="14" fill="${c2}"/>`).join("");
     case "faixa": return `<path d="M10 12 L24 8 L70 92 L56 96 Z" fill="${c2}"/>`;
     case "faixaH": return `<rect x="0" y="44" width="80" height="14" fill="${c2}"/>`;
     /** duas faixas cruzando o meio: a de cima na cor 2, a de baixo na cor 3 (ex.: vermelha e preta sobre o branco) */
@@ -40,7 +42,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
   }
   const [a, b0] = c.cores, b = b0 && b0.toLowerCase() !== a.toLowerCase() ? b0 : luz(a) > 0.6 ? "#1A1A1A" : "#FFFFFF";
   // nome e número com a cor que mais contrasta com a cor principal
-  const tinta = c.modelo === "listrasV" || c.modelo === "listrasH" || c.modelo === "centro"
+  const tinta = c.modelo === "listrasV" || c.modelo === "listrasH" || c.modelo === "listrasHG" || c.modelo === "centro"
     ? (luz(a) > 0.55 && luz(b) > 0.55 ? "#1A1A1A" : "#FFFFFF")
     : luz(a) > 0.55 ? (luz(b) < 0.45 ? b : "#1A1A1A") : (luz(b) > 0.55 ? b : "#FFFFFF");
   const borda = luz(tinta) > 0.5 ? mistura(a, "#000000", 0.55) : mistura(a, "#FFFFFF", 0.6);
