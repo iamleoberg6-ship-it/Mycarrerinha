@@ -13,6 +13,8 @@ export interface Figurinha {
   legenda: string;
   /** aparência do jogador naquele ano (cabelo, barba, acessórios mudam com o tempo) */
   ap: Record<string, unknown>;
+  /** figurinha de patrocínio: o contrato assinado (valor e duração) */
+  contrato?: { marca: string; tipo: string; mensal: number; meses: number; luvas: number };
 }
 export interface DadosTemporadaFig { ano: number; ovr: number; idade: number; jogos: number; gols: number; assist: number; titulo: boolean; premios: string[]; selecao: boolean; capitao: boolean; clubeId: string; clube: string; cores: [string, string]; numero: string; posicao: string; ap: Record<string, unknown> }
 

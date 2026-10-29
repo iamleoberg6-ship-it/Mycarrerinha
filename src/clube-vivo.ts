@@ -14,7 +14,7 @@ import { torcidaDe, semanaTorcida, recepcaoAeroporto } from "./torcida.js";
 import { perfilCidade, semanaCidade } from "./cidades.js";
 import { figurinhaDaTemporada, figurinhaEspecial, figurinhaDeMomento, type Figurinha } from "./figurinhas.js";
 import { propostaPorIndicacao, janelaAberta } from "./transferencias.js";
-import { MARCA } from "./marcas.js";
+import { MARCA, type ContratoPatrocinio } from "./marcas.js";
 import { temFuncao } from "./vida-social.js";
 import { noticia, registrarMarco, agendaDe, elencoAtual, ovr, semanaAbsJogo, ANO_INICIAL, parcasDe, jogoDaSemana, jogoCopaDaSemana, ehClassico, type Save, type ResumoTemporada } from "./jogo.js";
 
@@ -202,10 +202,11 @@ function baseDoClube(pacote: PacoteDados, s: Save, clubeId: string): Omit<Figuri
   return { ...b, clubeId, clube: ic?.nome ?? b.clube, cores: ic ? [ic.cores[0], ic.cores[1]] : b.cores };
 }
 /** Patrocínio fechado: a figurinha é da marca (logo e cores dela), com o jogador no contrato. */
-export function figurinhaDePatrocinio(pacote: PacoteDados, s: Save, marcaId: string, chave: string) {
-  const m = MARCA[marcaId], b = baseFigurinha(pacote, s);
-  const base = { ...b, clubeId: `marca-${marcaId}`, clube: m?.nome ?? marcaId, cores: m ? [m.cores[0], m.cores[1]] as [string, string] : b.cores };
-  figurinhaDeMomento(albumDe(s.carreira), "patrocinio", base, chave, `Contrato com a ${m?.nome ?? marcaId}`, "prata");
+export function figurinhaDePatrocinio(pacote: PacoteDados, s: Save, k: ContratoPatrocinio, chave: string) {
+  const m = MARCA[k.marca], b = baseFigurinha(pacote, s);
+  const base = { ...b, clubeId: `marca-${k.marca}`, clube: m?.nome ?? k.marca, cores: m ? [m.cores[0], m.cores[1]] as [string, string] : b.cores };
+  const f = figurinhaDeMomento(albumDe(s.carreira), "patrocinio", base, chave, `Contrato com a ${m?.nome ?? k.marca}`, "prata");
+  if (f) f.contrato = { marca: k.marca, tipo: k.tipo, mensal: k.mensal, meses: k.meses, luvas: k.luvas };
 }
 /** Golaço (relíquia de gol de placa): figurinha do lance. */
 export function figurinhaDeGolaco(pacote: PacoteDados, s: Save, chave: string, legenda: string) {

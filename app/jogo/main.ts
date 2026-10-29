@@ -1154,7 +1154,33 @@ function quemPuxou(s: Save, f: Filho, i: number): string {
   return `Cabelo ${tex} ${g.puxou.cabelo === "pai" ? "com a cor do seu" : `com a cor do da ${m}`}, olhos ${olhos} ${g.puxou.olhos === "pai" ? "como os seus" : `como os da ${m}`}, a pele ${g.puxou.pele === "os dois" ? "é uma mistura dos dois" : `puxou mais ${de(g.puxou.pele) === "seu" ? "a sua" : `a ${de(g.puxou.pele)}`}`}${g.sardas ? ". E tem sardinhas" : ""}.`;
 }
 /** Figurinha: moldura pela raridade (CSS), fundo com a cor do clube, o jogador de uniforme, a faixa do ano ou do tipo e as estatísticas. */
+/** Figurinha de patrocínio: cartão de contrato (faixa da marca, logo, valor e duração), sem estatística. */
+function figurinhaPatrocinioSvg(f: Figurinha): string {
+  const k = f.contrato!, m = MARCA[k.marca], c1 = m?.cores[0] ?? f.cores[0], c2 = m?.cores[1] ?? "#FFFFFF", ink = "#1B1B1B", papel = "#F6F1E4";
+  const id = f.id.replace(/[^a-zA-Z0-9]/g, "");
+  const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
+  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: "#F4F4F2", cor2: c1, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="54" y="106" width="52" height="56" ');
+  const logo = m ? logoSvg(m, 44).replace("<svg ", '<svg x="14" y="24" width="132" height="64" style="width:132px;height:64px" ') : "";
+  const reais = (v: number) => `R$ ${v >= 1e6 ? `${(v / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi` : v >= 1e3 ? `${Math.round(v / 1e3).toLocaleString("pt-BR")} mil` : v.toLocaleString("pt-BR")}`;
+  const tipo = k.tipo === "fixo" ? "valor fixo" : k.tipo === "desempenho" ? "por desempenho" : "longo prazo";
+  const pill = k.luvas ? `LUVAS ${reais(k.luvas)}` : tipo.toUpperCase();
+  return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="Patrocínio ${f.ano}"><defs>
+    <pattern id="st${id}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="10" fill="${c2}" opacity=".14"/></pattern>
+    <clipPath id="cp${id}"><circle cx="80" cy="132" r="25"/></clipPath></defs>
+    <rect x="1" y="1" width="158" height="228" rx="10" fill="${papel}"/>
+    <rect x="1" y="1" width="158" height="104" rx="10" fill="${c1}"/><rect x="1" y="60" width="158" height="44" fill="url(#st${id})"/>
+    <rect x="0" y="104" width="160" height="3" fill="${c2}"/>
+    <text x="14" y="16" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="9.5" letter-spacing="2" fill="${c2}">PATROCÍNIO · ${f.ano}</text>
+    ${logo}
+    <circle cx="80" cy="132" r="28" fill="${c2}"/><g clip-path="url(#cp${id})">${rosto}</g><circle cx="80" cy="132" r="28" fill="none" stroke="${c1}" stroke-width="2"/>
+    <text x="80" y="184" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="24" fill="${ink}">${esc(reais(k.mensal))}</text>
+    <text x="80" y="197" text-anchor="middle" font-family="sans-serif" font-size="7.5" letter-spacing="1.5" fill="${ink}" opacity=".7">POR MÊS</text>
+    <rect x="14" y="204" width="62" height="18" rx="9" fill="${c1}"/><text x="45" y="216" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="10.5" fill="${c2}">${k.meses} MESES</text>
+    <rect x="82" y="204" width="64" height="18" rx="9" fill="none" stroke="${c1}" stroke-width="1.5"/><text x="114" y="216" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="8" fill="${ink}">${esc(pill.slice(0, 22))}</text>
+    </svg>`;
+}
 function figurinhaSvg(f: Figurinha): string {
+  if (f.tipo === "patrocinio" && f.contrato) return figurinhaPatrocinioSvg(f);
   const c1 = f.cores[0], c2 = f.cores[1] ?? "#111111", claro = c1.toUpperCase() === "#FFFFFF", fundo = claro ? c2 : c1;
   const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
   const id = f.id.replace(/[^a-zA-Z0-9]/g, "");
@@ -2400,7 +2426,7 @@ document.addEventListener("click", (ev) => {
   else if (d.decidir) decidir(+d.decidir, d.op!);
   else if (d.pen !== undefined) escolherSlot(+d.pen);
   else if (d.patro && save) {
-    if (d.patro === "recusar") recusarPatrocinio(save); else { cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato); if (cartazNovo) figurinhaDePatrocinio(pacote, save, cartazNovo.marca, `pat-${cartazNovo.marca}-${cartazNovo.desde}`); }
+    if (d.patro === "recusar") recusarPatrocinio(save); else { cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato); if (cartazNovo) figurinhaDePatrocinio(pacote, save, cartazNovo, `pat-${cartazNovo.marca}-${cartazNovo.desde}`); }
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.vis && save) {
