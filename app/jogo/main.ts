@@ -2640,6 +2640,7 @@ function decidir(i: number, op: string) {
 }
 
 // ------------------------------------------------------------------ fim da semana
+let resumoPendente: ResumoSemana | undefined;
 function fecharSemana() {
   if (!save) return;
   const r = concluirSemana(pacote, save, plano, partida, resultados);
@@ -2647,8 +2648,45 @@ function fecharSemana() {
   if (save.carreira.semana === 0) plano = planoPadrao();
   salvar();
   ($("dlgJogo") as HTMLDialogElement).close();
-  mostrarResumo(r);
+  // depois do jogo: a tela da rodada (tabela, placares, chave, artilharia); depois o resumo da semana
+  if (r.rodada || r.copa) mostrarRodada(r); else mostrarResumo(r);
   render();
+}
+
+/** Tela da rodada, logo depois do jogo: placares da rodada, classificação ou chave da copa, artilheiros e assistências. */
+function mostrarRodada(r: ResumoSemana) {
+  resumoPendente = r;
+  const c = save!.carreira, meu = c.clubeId, ligaId = infoLiga(c.ligaId).id;
+  const nomeC = (id: string) => infoClube(pacote, id)?.apelido ?? id;
+  const linhaJogo = (casa: string, fora: string, a: number, b: number) => `<div class="rr-jogo${casa === meu || fora === meu ? " meu" : ""}"><span>${esc(nomeC(casa))}</span><b>${a} × ${b}</b><span>${esc(nomeC(fora))}</span></div>`;
+  const blocos: string[] = [];
+  if (r.rodada) {
+    blocos.push(`<section class="painel"><p class="rotulo">${esc(infoLiga(c.ligaId).curto)} · Rodada ${r.rodada.rodada + 1}</p>${r.rodada.jogos.map((g) => linhaJogo(g.casa, g.fora, g.a, g.b)).join("")}</section>`);
+    blocos.push(`<section class="painel"><p class="rotulo">Classificação · ${esc(infoLiga(c.ligaId).curto)}</p>${tabelaCopaHtml(c.tabela, meu)}</section>`);
+  }
+  if (r.copa) {
+    const cid = compPorNome(r.copa.competicao) as CopaId, cp = copasDe(pacote, save!)[cid];
+    if (cp) {
+      const jogados = cp.jogos.filter((j) => j.gc !== undefined);
+      const fase = jogados[jogados.length - 1]?.fase;
+      const daFase = jogados.filter((j) => j.fase === fase);
+      blocos.push(`<section class="painel"><p class="rotulo">${esc(COPAS[cid].curto)} · ${esc(fase ?? "")}</p>${daFase.map((g) => linhaJogo(g.casa, g.fora, g.gc!, g.gf!)).join("")}</section>`);
+      if (Object.values(cp.tabelas).some((t) => t.length)) {
+        const grupo = Object.values(cp.tabelas).find((t) => t.some((x) => x.clube === meu)) ?? [];
+        blocos.push(`<section class="painel"><p class="rotulo">Classificação · ${esc(COPAS[cid].curto)}</p>${tabelaCopaHtml(grupo, meu)}</section>`);
+      } else {
+        // mata-mata: a chave, fase por fase, com os jogos já disputados
+        const fases = [...new Set(jogados.map((j) => j.fase))];
+        blocos.push(`<section class="painel"><p class="rotulo">Chave · ${esc(COPAS[cid].curto)}</p>${fases.map((f) => `<p class="sub" style="margin:8px 0 2px">${esc(f)}</p>${jogados.filter((j) => j.fase === f).map((g) => linhaJogo(g.casa, g.fora, g.gc!, g.gf!)).join("")}`).join("")}</section>`);
+      }
+    }
+  }
+  const artilharia = (tipo: "g" | "a") => rankingDaLiga(pacote, ligaId, 999, tipo, 5).map((x, i) => `<div><span>${i + 1}. ${esc(x.nome)} · ${esc(nomeC(x.clubeId))}</span><b>${x.valor}</b></div>`).join("");
+  blocos.push(`<section class="painel"><p class="rotulo">Artilheiros</p><div class="rr-lista">${artilharia("g")}</div></section>`);
+  blocos.push(`<section class="painel"><p class="rotulo">Assistências</p><div class="rr-lista">${artilharia("a")}</div></section>`);
+  if (r.partida) blocos.push(`<section class="painel"><p class="rotulo">Sua atuação</p><div class="rr-lista"><div><span>Nota</span><b>${r.partida.nota.toFixed(1)}</b></div>${r.partida.melhorEmCampo ? `<div><span>Destaque</span><b>★ Melhor em campo</b></div>` : ""}</div></section>`);
+  $("telaRodada").innerHTML = `<div class="resumo"><p class="rotulo">${esc(r.rotulo)}</p><h1>Rodada</h1>${blocos.join("")}</div><div class="rodape"><button class="botao grande" data-acao="rodada-ok">Ver o resumo da semana</button></div>`;
+  ($("dlgRodada") as HTMLDialogElement).showModal();
 }
 
 function mostrarResumo(r: ResumoSemana) {
@@ -2907,6 +2945,7 @@ document.addEventListener("click", (ev) => {
     case "fimjogo": fecharSemana(); break;
     case "fimcopa": fecharJogoDaCopa(); break;
     case "proxima": ($("dlgResumo") as HTMLDialogElement).close(); window.scrollTo(0, 0); break;
+    case "rodada-ok": { ($("dlgRodada") as HTMLDialogElement).close(); const x = resumoPendente; resumoPendente = undefined; if (x) mostrarResumo(x); break; }
     case "recomecar":
       if (b.dataset.certeza) { try { localStorage.removeItem(CHAVE_SAVE); localStorage.removeItem(CHAVE_PLANO); } catch { /* ok */ } save = null; render(); }
       else { b.dataset.certeza = "1"; b.textContent = "Toque de novo para apagar tudo"; }

@@ -1113,6 +1113,8 @@ export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
 /** Resumo de uma partida do jogador (o da copa traz a competição e a fase). */
 export interface ResumoPartida { nomeCasa: string; nomeFora: string; idCasa?: string; idFora?: string; golsCasa: number; golsFora: number; nota: number; gols: number; assist: number; minutos: number; tipo: Partida["tipo"]; competicao?: string; rotulo?: string; penaltis?: string; escalacao?: Escalacao; melhorEmCampo?: boolean }
 export interface ResumoSemana {
+  /** a rodada da liga que acabou de ser jogada, com todos os placares (para a tela da rodada) */
+  rodada?: { rodada: number; jogos: { casa: string; fora: string; a: number; b: number }[] };
   /** o que o jogador fez sozinho pela vida no automático */
   vidaAuto?: VidaAuto;
   rotulo: string; escalacao: Escalacao; partida?: ResumoPartida; copa?: ResumoPartida;
@@ -1408,10 +1410,12 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   }
 
   // 3. a rodada da liga
+  const rodadaJogos: { casa: string; fora: string; a: number; b: number }[] = [];
   if (jogo) {
     for (const g of jogosDaRodada(c, jogo.rodada)) {
       const meu = g.casa === c.clubeId || g.fora === c.clubeId;
       const [a, b] = meu && placarMeuJogo ? placarMeuJogo : simularPlacar(rng, l.clubes.find((x) => x.id === g.casa)?.forca ?? 50, l.clubes.find((x) => x.id === g.fora)?.forca ?? 50);
+      rodadaJogos.push({ casa: g.casa, fora: g.fora, a, b });
       registrar(c.tabela.find((t) => t.clube === g.casa)!, a, b);
       registrar(c.tabela.find((t) => t.clube === g.fora)!, b, a);
       if (meu) { const [gp, gc] = g.casa === c.clubeId ? [a, b] : [b, a]; c.resultadosClube = [...(c.resultadosClube ?? []).slice(-9), gp > gc ? 3 : gp === gc ? 1 : 0]; (c.placaresRodada ??= {})[jogo.rodada] = [gp, gc]; }
@@ -1617,6 +1621,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   checarRecordes(pacote, s, eventos);
   if (!fim) { noticiasDeLesao(pacote, s, eventos); demissaoNoMeio(pacote, s, eventos); }
   return {
+    ...(jogo && rodadaJogos.length ? { rodada: { rodada: jogo.rodada, jogos: rodadaJogos } } : {}),
     rotulo, escalacao: partida?.escalacao ?? (c.semana - 1 < SEMANAS_PRE ? "semJogo" : "fora"), partida: resumoPartida, ...(quarta ? { copa: quarta.resumo } : {}),
     ovrAntes, ovrDepois: ovr(j), ganhos, moral: [moral0, c.moral], cansaco: [cansaco0, c.cansaco], fama: [fama0, c.fama], dinheiro, eventos,
     seguidores: [segIni, c.seguidores], saldo: [saldoIni, s.casa.saldo], relTecnico: [relIni, c.relTecnico], torcida: [torcIni, c.torcida ?? 50],
