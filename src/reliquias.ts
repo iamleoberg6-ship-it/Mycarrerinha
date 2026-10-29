@@ -50,12 +50,16 @@ export const CONQUISTA: Record<string, Conquista> = Object.fromEntries(CONQUISTA
 /** Desenho da camisa de cada clube (paródia: só cores e padrão). */
 const PADRAO_CAMISA: Record<string, string> = {
   FLA: "listrasH", FLU: "listrasV", BOT: "listrasV", VAS: "faixa", GRE: "listrasV", CAM: "listrasV", BAH: "listrasV", VIT: "listrasV", CAP: "diagonais",
-  SPA: "faixaH", SAN: "lisa", PAL: "lisa", COR: "lisa", INT: "lisa", CRU: "lisa", CFC: "lisa", RBB: "lisa", MIR: "lisa", REM: "lisa", CHA: "lisa",
+  SPA: "faixaH", SAN: "lisa", PAL: "lisa", COR: "lisa", INT: "lisa", CRU: "lisa", CFC: "duasFaixasH", RBB: "lisa", MIR: "lisa", REM: "lisa", CHA: "lisa",
+  FOR: "listrasHG", ACG: "metade",
 };
 export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa";
 /** Uniforme real de alguns clubes que o padrão simples não representa. Corpo branco com duas faixas cruzando o meio (vermelha e preta). */
 const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terceira: string }> = {
   SPA: { cores: ["#FFFFFF", "#C8102E"], modelo: "duasFaixasH", terceira: "#111111" },
+  CFC: { cores: ["#FFFFFF", "#00573F"], modelo: "duasFaixasH", terceira: "#00573F" },
+  FOR: { cores: ["#1C3F94", "#E2231A"], modelo: "listrasHG", terceira: "#111111" },
+  ACG: { cores: ["#E2231A", "#000000"], modelo: "metade", terceira: "#111111" },
 };
 /** Cores, desenho e terceira cor com que a camisa é desenhada (o clube tem prioridade sobre o que foi guardado). */
 /** Calção de clubes cujo uniforme real não usa a cor 2 (Santos: calção branco, com o preto só na gola e nas mangas). */
