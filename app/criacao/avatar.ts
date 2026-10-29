@@ -5,14 +5,14 @@ export type Rosto = "oval" | "redondo" | "quadrado" | "longo" | "coracao" | "lar
 export type Cabelo =
   | "careca" | "raspado" | "curto" | "degrade" | "topete" | "franja" | "ondulado" | "cacheado"
   | "crespo" | "blackpower" | "trancas" | "dreads" | "moicano" | "coque" | "longo"
-  | "mullet" | "undercut" | "flattop" | "risco";
+  | "mullet" | "undercut" | "flattop" | "risco" | "pompadour" | "espetado" | "baguncado" | "emo";
 export type Olho = "amendoado" | "redondo" | "estreito" | "caido" | "erguido" | "semdobra" | "encapuzado" | "grande" | "felino" | "sonolento";
 export type Sobrancelha = "reta" | "arqueada" | "angulada" | "suave" | "corte";
 export type Nariz = "reto" | "pequeno" | "fino" | "largo" | "achatado" | "arrebitado" | "aquilino" | "grande" | "batata" | "torto" | "botao" | "comprido";
 export type RoupaSocial = "camiseta" | "moletom" | "polo" | "jaqueta" | "camisa" | "regata";
 export type Barba =
   | "nenhuma" | "sombra" | "rala" | "bigode" | "bigodao" | "cavanhaque" | "cavanhaque_bigode"
-  | "queixo" | "costeletas" | "curta" | "cheia" | "longa";
+  | "queixo" | "costeletas" | "curta" | "cheia" | "longa" | "vandyke" | "lenhador" | "mosca";
 export type Boca = "sorriso" | "neutra" | "aberta" | "lado" | "cheia" | "fina" | "dentes";
 export type Traje = "jogo" | "social";
 export type AcessorioCabeca = "nenhum" | "faixa" | "bandana" | "oculos" | "gorro" | "bone";
@@ -53,6 +53,7 @@ export const CABELOS: { id: Cabelo; nome: string }[] = [
   { id: "crespo", nome: "Crespo baixo" }, { id: "blackpower", nome: "Black power" }, { id: "trancas", nome: "Tranças" }, { id: "dreads", nome: "Dreads" },
   { id: "moicano", nome: "Moicano" }, { id: "coque", nome: "Coque" }, { id: "longo", nome: "Longo" },
   { id: "mullet", nome: "Mullet" }, { id: "undercut", nome: "Undercut" }, { id: "flattop", nome: "Flat top" }, { id: "risco", nome: "Social com risca" },
+  { id: "pompadour", nome: "Pompadour" }, { id: "espetado", nome: "Espetado" }, { id: "baguncado", nome: "Bagunçado" }, { id: "emo", nome: "Franja lateral" },
 ];
 export const OLHOS: { id: Olho; nome: string }[] = [
   { id: "amendoado", nome: "Amendoado" }, { id: "redondo", nome: "Redondo" }, { id: "estreito", nome: "Estreito" },
@@ -92,6 +93,7 @@ export const BARBAS: { id: Barba; nome: string }[] = [
   { id: "bigode", nome: "Bigode" }, { id: "bigodao", nome: "Bigodão" }, { id: "cavanhaque", nome: "Cavanhaque" },
   { id: "cavanhaque_bigode", nome: "Cavanhaque com bigode" }, { id: "queixo", nome: "Contorno do queixo" },
   { id: "costeletas", nome: "Costeletas" }, { id: "curta", nome: "Curta" }, { id: "cheia", nome: "Cheia" }, { id: "longa", nome: "Longa" },
+  { id: "vandyke", nome: "Vandyke" }, { id: "lenhador", nome: "Lenhador" }, { id: "mosca", nome: "Mosca no queixo" },
 ];
 
 export const APARENCIA_PADRAO: Aparencia = {
@@ -270,6 +272,26 @@ function cabeloFrente(c: Cabelo, f: Forma, cor: string, pele: string): string {
       return contorno(d, cr) + recorte(d, pts);
     }
     case "curto": return contorno(cheia, cor) + recorte(cheia, fios(f, s) + reflexo);
+    case "pompadour": {
+      const d = calota(f, { volume: 24, testa: T + 26 });
+      return contorno(d, cor) + recorte(d, `<path d="M${f1(150 - 0.5 * w)} ${T - 4} Q150 ${T - 18} ${f1(150 + 0.6 * w)} ${T + 2}" stroke="${brilho}" stroke-width="4" fill="none" stroke-linecap="round"/>` + fios(f, s));
+    }
+    case "espetado": {
+      let picos = "";
+      for (let k = 0; k < 7; k++) { const x = 150 - w * 0.9 + (k * w * 1.8) / 6, alto = k % 2 ? 26 : 18; picos += `<path d="M${f1(x - 9)} ${T + 14} L${f1(x + (k % 2 ? 2 : -2))} ${T - alto} L${f1(x + 9)} ${T + 14} Z" fill="${cor}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`; }
+      return picos + contorno(calota(f, { volume: 2, testa: T + 22 }), cor);
+    }
+    case "baguncado": {
+      const d = calota(f, { volume: 9, testa: T + 22 });
+      let tufos = "";
+      for (let k = 0; k < 9; k++) { const x = 150 - w * 0.8 + (k * w * 1.6) / 8; tufos += `<path d="M${f1(x)} ${T - 6} q${k % 2 ? 5 : -5} -10 ${k % 3 ? 4 : -3} -16" stroke="${s}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`; }
+      return contorno(d, cor) + recorte(d, tufos + reflexo);
+    }
+    case "emo": {
+      const d = calota(f, { volume: 6, testa: T + 22 });
+      const franja = `M${f1(150 - w - 2)} ${T + 40} Q${f1(150 - 0.2 * w)} ${T - 6} ${f1(150 + 0.6 * w)} ${T + 4} Q${f1(150 + 0.3 * w)} ${T + 24} ${f1(150 - 0.1 * w)} ${T + 44} Q${f1(150 - 0.6 * w)} ${T + 30} ${f1(150 - w - 2)} ${T + 40} Z`;
+      return contorno(d, cor) + contorno(franja, cor);
+    }
     case "degrade": {
       const lados = calota(f, { volume: 1, folga: 1.5, testa: T + 28 });
       const topo = calota({ ...f, w100: f.w100 - 12 }, { volume: 7, tempora: 104, testa: T + 24, folga: 2 });
@@ -495,6 +517,15 @@ function barba(b: Barba, f: Forma, rostoD: string, bocaId: Boca, nariz: Nariz, c
     case "costeletas": corpo = dentro(`<rect x="${150 - wB - 4}" y="118" width="17" height="56" rx="4" fill="${cor}"/><rect x="${150 + wB - 13}" y="118" width="17" height="56" rx="4" fill="${cor}"/>`); break;
     case "curta": corpo = dentro(p(regiao, mistura(cor, pele, 0.22)) + textura(regiao, 0.55)); break;
     case "cheia": corpo = dentro(p(regiao, cor) + textura(regiao, 0.35)); break;
+    case "vandyke": {
+      const ponta = `M${ex + 1} ${ey + 4} Q150 ${g.base + 4} ${dx - 1} ${dy + 4} Q${dx} ${f.Q - 2} 150 ${f.Q + 16} Q${ex} ${f.Q - 2} ${ex + 1} ${ey + 4} Z`;
+      corpo = dentro(p(bigodeD(false), cor) + p(ponta, cor) + `<path d="${ponta}" fill="none" stroke="${TINTA}" stroke-width="1.4"/>`); break;
+    }
+    case "lenhador": {
+      const ext = `M${150 - f.w176 + 4} 176 Q${150 - f.w176 - 2} ${f.Q + 14} 150 ${f.Q + 24} Q${150 + f.w176 + 2} ${f.Q + 14} ${150 + f.w176 - 4} 176 Z`;
+      corpo = dentro(p(regiao, cor) + textura(regiao, 0.3)) + fora(p(ext, cor) + textura(ext, 0.25)); break;
+    }
+    case "mosca": corpo = dentro(p(`M141 ${g.base + 4} Q150 ${g.base + 20} 159 ${g.base + 4} Q150 ${g.base + 8} 141 ${g.base + 4} Z`, cor)); break;
     case "longa": {
       const ext = `M${150 - f.w176 + 6} 176 Q${150 - f.w176} ${f.Q + 22} 150 ${f.Q + 36} Q${150 + f.w176} ${f.Q + 22} ${150 + f.w176 - 6} 176 Z`;
       corpo = dentro(p(regiao, cor) + textura(regiao, 0.3)) + fora(p(ext, cor) + `<path d="M${150 - f.w176 + 8} ${f.Q - 4} Q${150 - f.w176 + 4} ${f.Q + 20} 150 ${f.Q + 34} Q${150 + f.w176 - 4} ${f.Q + 20} ${150 + f.w176 - 8} ${f.Q - 4}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}"/><path d="M142 ${f.Q + 8} Q150 ${f.Q + 26} 158 ${f.Q + 8}" stroke="${escurecer(cor, 0.7)}" stroke-width="2" fill="none"/>`);
@@ -723,9 +754,10 @@ export function svgFoto(o: OpcoesFoto): string {
   ].join("");
   const fora = !silhueta && (o.fora || o.traje === "social");
   const comBone = fora && !!a.bonePatro, cabeloV: Cabelo = comBone ? SOB_BONE[a.cabelo] ?? a.cabelo : a.cabelo;
-  const naCabeca = silhueta ? "" : comBone ? bonePatro(f, a.bonePatro!) : acessorioCabeca(a.acessorio ?? "nenhum", f, CORES_ROUPA[a.corAcessorio ?? 0] ?? CORES_ROUPA[0]);
+  // em campo: sem boné e sem óculos
+  const naCabeca = silhueta ? "" : comBone ? bonePatro(f, a.bonePatro!) : emCampo && a.acessorio === "bone" ? "" : acessorioCabeca(a.acessorio ?? "nenhum", f, CORES_ROUPA[a.corAcessorio ?? 0] ?? CORES_ROUPA[0]);
   // escuros só fora de campo; de grau em tudo, menos no corpo inteiro de uniforme
-  const oculosHtml = silhueta ? "" : fora && a.oculosSol ? oculos(wO, a.oculosSol) : a.acessorio === "oculos" && !(o.soCabeca && !o.fora) ? oculos(wO, null) : "";
+  const oculosHtml = silhueta || emCampo ? "" : fora && a.oculosSol ? oculos(wO, a.oculosSol) : a.acessorio === "oculos" && !(o.soCabeca && !o.fora) ? oculos(wO, null) : "";
   const fone = fora && !o.soCabeca && a.fone ? foneNoPescoco(a.fone.cor, a.fone.detalhe) : "";
   const rosto = silhueta ? "" : `
     ${sobrancelhas(a.formatoSobrancelha, a.sobrancelha, corSobr, pele)}
