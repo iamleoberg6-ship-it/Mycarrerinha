@@ -1053,7 +1053,7 @@ function clubeHtml(clubeId: string): string {
   const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId), elenco = plantelDoClube(pacote, clubeId).slice(0, 25);
   const tec = tecnicoDoClube(pacote, clubeId), liga = info.ligaId, irmaos = w.liga[liga]?.clubes ?? [];
   const de = (p: string) => xi.filter((x) => x.posicao === p);
-  const cart = (x: TitularHistorico) => `<div class="sel-j"><button class="nome-hist" data-hist="${esc(x.nome)}">${esc(nomeCurtoSel(x.nome))}</button><small>${x.vezes}× melhor · ${x.nota.toFixed(2).replace(".", ",")}</small></div>`;
+  const cart = (x: TitularHistorico) => `<div class="sel-j xi-j">${camisaMini(clubeId, numeroDe(x.nome))}<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(nomeCurtoSel(x.nome))}</button><small><b>${ANO_INICIAL + x.melhorAno}</b> · ${x.melhorNota.toFixed(2).replace(".", ",")}</small><small>${x.vezes}× melhor</small></div>`;
   const linhas = [[...de("PON").slice(0, 1), ...de("ATA"), ...de("PON").slice(1)], [...de("MEI").slice(0, 1), ...de("VOL"), ...de("MEI").slice(1)], [...de("LAT").slice(0, 1), ...de("ZAG"), ...de("LAT").slice(1)], de("GOL")];
   const trofeus = tit.ligas.length
     ? tit.ligas.map((l) => `<div class="titulo-liga">${TROFEU.repeat(Math.min(l.anos.length, 6))}${l.anos.length > 6 ? `<b>×${l.anos.length}</b>` : ""}<div><b>${esc(l.curto)}</b> <small class="sub">${l.anos.map((a) => ANO_INICIAL + a).join(", ")}</small></div></div>`).join("")
@@ -1064,7 +1064,7 @@ function clubeHtml(clubeId: string): string {
     <p class="rotulo" style="margin-top:16px">Títulos${tit.total ? ` · ${tit.total}` : ""}</p>
     <div class="titulos">${trofeus}</div>
     <p class="rotulo" style="margin-top:16px">Time de todos os tempos</p>
-    ${xi.length ? `<div class="campinho">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : `<p class="sub">Ainda sem temporadas suficientes deste clube.</p>`}
+    ${xi.length ? `<div class="campinho campinho-xi">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : `<p class="sub">Ainda sem temporadas suficientes deste clube.</p>`}
     <p class="rotulo" style="margin-top:16px">Elenco atual</p>
     <table><tbody>${elenco.map((j) => `<tr><td>${NOME_POS[j.posicao] ?? j.posicao}</td><td>${linkJogador(j.nome)}</td><td class="n">${j.ovr}</td></tr>`).join("")}</tbody></table>
     <p class="rotulo" style="margin-top:16px">Clubes da mesma liga</p>

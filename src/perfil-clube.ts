@@ -18,12 +18,13 @@ export function titulosDoClube(pacote: PacoteDados, clubeId: string): { total: n
   return { total: ligas.reduce((a, l) => a + l.anos.length, 0), ligas };
 }
 
-export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number }
+export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number; melhorAno: number; melhorNota: number }
 
 /** O melhor de cada posição em cada temporada (mín. de jogos), contado ao longo da história; o time sai dos que mais vezes foram o melhor. */
 export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): TitularHistorico[] {
   const porTempo = new Map<string, { nome: string; posicao: string; nota: number }[]>();
   const notas = new Map<string, { soma: number; n: number; temporadas: number }>();
+  const melhorTemp = new Map<string, { t: number; nota: number }>();
   for (const { nome, x } of linhasDoClube(pacote, clubeId)) {
     const st = statsDaLinha(pacote, nome, x);
     if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
@@ -33,6 +34,8 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): Titul
     const acu = notas.get(nome) ?? { soma: 0, n: 0, temporadas: 0 };
     acu.soma += st.n; acu.n++; acu.temporadas++;
     notas.set(nome, acu);
+    const mt = melhorTemp.get(nome);
+    if (!mt || st.n > mt.nota) melhorTemp.set(nome, { t: x.t, nota: st.n });
   }
   const vezes = new Map<string, { posicao: string; vezes: number }>();
   for (const lista of porTempo.values()) {
@@ -43,7 +46,8 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): Titul
   }
   const todos: TitularHistorico[] = [...vezes].map(([nome, v]) => {
     const a = notas.get(nome)!;
-    return { nome, posicao: v.posicao, vezes: v.vezes, nota: +(a.soma / a.n).toFixed(2), temporadas: a.temporadas };
+    const mt = melhorTemp.get(nome)!;
+    return { nome, posicao: v.posicao, vezes: v.vezes, nota: +(a.soma / a.n).toFixed(2), temporadas: a.temporadas, melhorAno: mt.t, melhorNota: +mt.nota.toFixed(2) };
   });
   // o XI: por posição, quem mais foi o melhor da posição (desempate pela nota média); goleiro é um só
   const xi: TitularHistorico[] = [];
