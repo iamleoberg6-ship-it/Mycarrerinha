@@ -435,9 +435,13 @@ function rankingsHtml(s: Save): string {
     const meu = tipo === "g" ? c.stats.gols : c.stats.assist; // conta os gols no profissional mesmo para quem ainda é da base
     const l = rankingDaLiga(pacote, lid, feitas, tipo, 10).map((x) => ({ ...x, eu: false }));
     if (meu > 0) l.push({ nome: s.jogador.apelido, clubeId: c.clubeId, valor: meu, jogos: c.stats.jogos, eu: true });
-    const top = l.sort((a, b) => b.valor - a.valor || Number(b.eu) - Number(a.eu)).slice(0, 10);
+    // o top 10, e você sempre na lista: se ficou fora dele, entra na sua posição real, depois de um corte
+    const ord = l.sort((a, b) => b.valor - a.valor || Number(b.eu) - Number(a.eu));
+    const top = ord.slice(0, 10).map((x) => ({ x, pos: ord.indexOf(x) + 1 }));
+    const eu = ord.find((x) => x.eu);
+    if (eu && ord.indexOf(eu) >= 10) top.push({ x: eu, pos: ord.indexOf(eu) + 1 });
     if (!top.length) return "";
-    return `<p class="rotulo" style="margin:14px 0 6px">${rot}</p><table><tbody>${top.map((x, i) => `<tr class="${x.eu ? "meu" : ""}"><td>${i + 1}</td><td>${x.eu ? `<b>${esc(x.nome)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`}<br><small class="sub">${linkClube(x.clubeId)} · ${x.jogos} j</small></td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>`;
+    return `<p class="rotulo" style="margin:14px 0 6px">${rot}</p><table><tbody>${top.map(({ x, pos }, i) => `${i > 0 && pos > top[i - 1].pos + 1 ? `<tr class="corte"><td colspan="3" class="sub">…</td></tr>` : ""}<tr class="${x.eu ? "meu" : ""}"><td>${pos}</td><td>${x.eu ? `<b>${esc(x.nome)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`}<br><small class="sub">${linkClube(x.clubeId)} · ${x.jogos} j</small></td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>`;
   };
   return lista("g", "Artilharia") + lista("a", "Assistências");
 }

@@ -65,7 +65,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
       <path d="M30 8 C36 12 44 12 50 8" stroke="${b}" stroke-width="3.2" fill="none"/>
       <path d="M17 33 C20 50 19 70 17 92 M63 33 C60 50 61 70 63 92" stroke="#000" stroke-opacity=".12" stroke-width="1.2" fill="none"/>
     </g>
-    ${sobrenome ? `<text ${attrFonte(fonte, fs, true)} x="40" y="35" text-anchor="middle" fill="${tinta}" stroke="${borda}" stroke-width=".5" paint-order="stroke">${sobrenome}</text>` : ""}
+    ${sobrenome ? `<text ${attrFonte(fonte, fs, true)} x="40" y="35" text-anchor="middle" fill="${c.numeroCor ?? tinta}" stroke="${borda}" stroke-width=".5" paint-order="stroke">${sobrenome}</text>` : ""}
     ${c.numero ? `<text x="40" y="${f1(sobrenome ? 74 : 70)}" text-anchor="middle" ${attrFonte(fonte, c.numero.length > 2 ? 24 : 32)} fill="${c.numeroCor ?? tinta}" stroke="${borda}" stroke-width="1" paint-order="stroke">${c.numero}</text>` : ""}
   </svg>`;
 }

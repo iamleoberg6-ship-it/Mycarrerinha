@@ -83,6 +83,8 @@ const NUMERO_COR: Record<string, string> = {
   "EN-BHA": "#F5C400",
   /** Newcastle: número vermelho sobre o preto e o branco */
   "EN-NEW": "#C8102E",
+  /** Athletic Bilbao: número e nome pretos sobre o vermelho e o branco */
+  "ES-ATH": "#111111",
 };
 export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId ? NUMERO_COR[clubeId] : undefined);
 /** Calção e meião que fogem do padrão da camisa (São Paulo e Fortaleza jogam de branco embaixo). */
