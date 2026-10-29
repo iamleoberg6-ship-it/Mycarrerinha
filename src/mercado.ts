@@ -14,7 +14,7 @@ export const CAMBIO = 6.0; // R$ por euro, fixo no MVP
 export const LIGAS_DO_PAIS: Record<string, string[]> = {
   BRA: ["BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`)],
   ARG: ["ARG1"], URU: ["URU1"], COL: ["COL1"], CHI: ["CHI1"], PAR: ["PAR1"], ECU: ["ECU1"],
-  ENG: ["ENG1", "ENG2"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1"], GER: ["GER1"], FRA: ["FRA1"], NED: ["NED1"],
+  ENG: ["ENG1", "ENG2", "ENG3", "ENG4"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1"], GER: ["GER1"], FRA: ["FRA1"], NED: ["NED1"],
   POR: ["POR1"], KSA: ["KSA1"], USA: ["USA1"], MEX: ["MEX1"], JPN: ["JPN1"], KOR: ["KOR1"], MAR: ["MAR1"], CRO: ["CRO1"], EGY: ["EGY1"], TUR: ["TUR1"],
   // quem nasceu em país sem liga própria joga nas ligas do país onde a família mora
   NGA: ["ENG1"], SEN: ["FRA1"], GHA: ["ENG1"],
@@ -80,7 +80,7 @@ export function valorMercado(ovr: number, idade: number, anosContrato: number, f
 /** Maior salário mensal (R$) que um clube de fClube 1,0 paga em cada liga. O Golfo paga muito acima de todo mundo. */
 const TETO_LIGA: Record<string, number> = {
   ENG1: 5.5e6, ESP1: 4.2e6, ITA1: 3.2e6, GER1: 3.4e6, FRA1: 2.8e6, POR1: 0.9e6, NED1: 0.8e6, BRA1: 1.0e6, ARG1: 0.35e6,
-  KSA1: 14e6, TUR1: 1.2e6, MEX1: 1.0e6, URU1: 0.15e6, COL1: 0.15e6, CHI1: 0.15e6, PAR1: 0.1e6, ECU1: 0.12e6, ENG2: 0.7e6, ESP2: 0.25e6, BRA2: 0.2e6, USA1: 1.6e6, BRA3: 0.06e6, BRA4: 0.025e6,
+  KSA1: 14e6, TUR1: 1.2e6, MEX1: 1.0e6, URU1: 0.15e6, COL1: 0.15e6, CHI1: 0.15e6, PAR1: 0.1e6, ECU1: 0.12e6, ENG2: 0.7e6, ENG3: 0.2e6, ENG4: 0.08e6, ESP2: 0.25e6, BRA2: 0.2e6, USA1: 1.6e6, BRA3: 0.06e6, BRA4: 0.025e6,
 };
 /** Teto salarial do clube: o que a folha aguenta pagar para um único jogador. */
 export function tetoSalarial(clube: Clube, liga: Liga): number {

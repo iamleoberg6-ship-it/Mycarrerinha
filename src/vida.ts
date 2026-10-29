@@ -5,7 +5,7 @@ import { infoLiga } from "./ligas.js";
 // ------------------------------------------------------------------ visibilidade dos clubes
 /** Quanto o clube projeta um jogador nas redes (0,2 = clube pequeno de segunda divisão; 2 = gigante mundial). */
 const VIS_LIGA: Record<string, number> = {
-  ENG1: 1.25, ESP1: 1.15, ITA1: 0.95, GER1: 0.9, FRA1: 0.85, BRA1: 0.9, POR1: 0.65, NED1: 0.55, KSA1: 0.6, ARG1: 0.7, ENG2: 0.45, ESP2: 0.3, BRA2: 0.4,
+  ENG1: 1.25, ESP1: 1.15, ITA1: 0.95, GER1: 0.9, FRA1: 0.85, BRA1: 0.9, POR1: 0.65, NED1: 0.55, KSA1: 0.6, ARG1: 0.7, ENG2: 0.45, ENG3: 0.3, ENG4: 0.18, ESP2: 0.3, BRA2: 0.4,
   USA1: 0.8, BRA3: 0.25, BRA4: 0.15,
 };
 const VIS_CLUBE: Record<string, number> = {
@@ -31,7 +31,7 @@ export interface EstadoRedes { engajamento: number; hype: number }
  *  por mais gol que faça. A seleção quebra esse teto (e uma Copa do Mundo quebra mais ainda). */
 const TETO_LIGA: Record<string, number> = {
   BRA4: 0.5e6, BRA3: 2e6, BRA2: 6e6, BRA1: 30e6, ARG1: 25e6, POR1: 30e6, NED1: 25e6, USA1: 60e6, KSA1: 150e6,
-  ENG2: 10e6, ESP2: 8e6, ITA1: 120e6, GER1: 120e6, FRA1: 120e6, ESP1: 300e6, ENG1: 300e6,
+  ENG2: 10e6, ENG3: 2.5e6, ENG4: 0.8e6, ESP2: 8e6, ITA1: 120e6, GER1: 120e6, FRA1: 120e6, ESP1: 300e6, ENG1: 300e6,
 };
 export interface SelecaoRedes { convocacoes: number; copas: number }
 export function tetoSeguidores(clubeId: string, ligaId: string | undefined, fClube: number, sel?: SelecaoRedes): number {
