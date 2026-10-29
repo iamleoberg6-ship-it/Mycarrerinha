@@ -4,6 +4,16 @@ import type { RNG } from "./rng.js";
 import type { Clube, JogadorNPC } from "./liga.js";
 import type { Posicao } from "./atributos.js";
 import { preencher } from "./lances/base.js";
+import { vidaDe } from "./vida-npc.js";
+import type { Ligacao } from "./relacoes-npc.js";
+
+/** Jeitos de cada jogador do elenco, pelo nome curto (o que a narração usa). */
+export type Tracos = Map<string, string[]>;
+export function tracosDoElenco(elenco: { nome: string; idade: number }[]): Tracos {
+  const m: Tracos = new Map();
+  for (const j of elenco) m.set(nomeCurto(j.nome), vidaDe(j.nome, j.idade).jeito);
+  return m;
+}
 
 type Elenco = Record<Posicao | "GOL", string[]>;
 
@@ -31,17 +41,24 @@ export function elencoDe(clube: Clube, base: boolean): Elenco {
 }
 
 /** Os nomes que os textos usam ({gol}, {comp}...). Varia um pouco de jogo para jogo, como uma escalação. */
-export function nomesDaPartida(rng: RNG, meu: Elenco, adv: Elenco, x: { nome: string; meu: string; adv: string; estadio: string; posJogador: Posicao; /** craques de quem você já tem a camisa: o {craque} sai dos outros */ jaTenho?: Set<string> }): Record<string, string> {
+export function nomesDaPartida(rng: RNG, meu: Elenco, adv: Elenco, x: { nome: string; meu: string; adv: string; estadio: string; posJogador: Posicao; /** craques de quem você já tem a camisa: o {craque} sai dos outros */ jaTenho?: Set<string>; /** jeitos do elenco (quem lidera, quem tem pavio, quem gosta de aparecer) */ tracos?: Tracos }): Record<string, string> {
   const umDos = (l: string[], n = 2) => l[Math.floor(rng.next() * Math.min(n, l.length))];
   const meusAta = x.posJogador === "ATA" ? meu.ATA.slice(0, 3) : meu.ATA;
   const advLinha = [...adv.ATA, ...adv.MEI, ...adv.PON].slice(0, 5);
   // o craque da troca de camisa é alguém de quem você ainda não tem a camisa (senão sobra a mesma cara de sempre)
   const livres = [...adv.ATA, ...adv.MEI, ...adv.PON, ...adv.VOL, ...adv.ZAG, ...adv.LAT].filter((n) => !x.jaTenho?.has(n));
   const craqueLivre = livres.slice(0, 5).length ? livres.slice(0, 5) : advLinha;
+  // personalidade: o líder assume a braçadeira com mais frequência, quem tem pavio toma cartão, quem gosta de aparecer comemora
+  const tem = (n: string, t: string) => (x.tracos?.get(n) ?? []).some((j) => j.startsWith(t));
+  const achar = (l: string[], t: string) => l.find((n) => tem(n, t));
+  const lider = achar([...meu.ZAG, ...meu.VOL, ...meu.MEI].slice(0, 8), "Líder");
+  const pavio = achar([...meu.ZAG, ...meu.VOL, ...meu.MEI, ...meu.ATA, ...meu.PON, ...adv.ZAG, ...adv.VOL, ...adv.MEI, ...adv.ATA, ...adv.PON].slice(0, 40), "Pavio curto");
+  const brinca = achar([...meu.ATA, ...meu.PON, ...meu.MEI].slice(0, 10), "Brincalhão") ?? achar([...meu.ATA, ...meu.PON, ...meu.MEI].slice(0, 10), "Gosta de aparecer");
+  const capitaoBase = [...meu.ZAG.slice(0, 1), ...meu.VOL.slice(0, 1), ...meu.MEI.slice(0, 1)][Math.floor(rng.next() * 3)] ?? meu.ZAG[0];
   return {
-    nome: x.nome, meu: x.meu, adv: x.adv, estadio: x.estadio,
+    nome: x.nome, meu: x.meu, adv: x.adv, estadio: x.estadio, pavio: pavio ?? "", brinca: brinca ?? "",
     gol: adv.GOL[0], zag: umDos(adv.ZAG), lat: umDos(adv.LAT), vol: umDos(adv.VOL), ata: adv.ATA[0], craque: umDos(craqueLivre, 2),
-    comp: umDos(meusAta), meia: umDos(meu.MEI), ponta: umDos(meu.PON), capitao: [...meu.ZAG.slice(0, 1), ...meu.VOL.slice(0, 1), ...meu.MEI.slice(0, 1)][Math.floor(rng.next() * 3)] ?? meu.ZAG[0],
+    comp: umDos(meusAta), meia: umDos(meu.MEI), ponta: umDos(meu.PON), capitao: lider && rng.chance(0.7) ? lider : capitaoBase,
     goleiro: meu.GOL[0], zagMeu: umDos(meu.ZAG), batedor: meu.MEI[0],
   };
 }
@@ -82,7 +99,9 @@ export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | un
   if (meuTime) {
     const X = sorteia(rng, ARTILHEIROS, elMeu), Y = umDe(rng, [...elMeu.PON, ...elMeu.LAT], 4);
     const lista = meu === "gol" ? GOL_MEU : meu === "assist" ? GOL_ASSIST : GOL_TIME;
-    return preencher(rng.pick(lista), { ...nomes, zag, X, Y });
+    let texto = preencher(rng.pick(lista), { ...nomes, zag, X, Y });
+    if (meu === "gol" && nomes.brinca && rng.chance(0.4)) texto += " " + preencher("{brinca} corre até a torcida e comemora com todo mundo.", nomes);
+    return texto;
   }
   return preencher(rng.pick(GOL_ADV), { ...nomes, zagMeu, X: sorteia(rng, ARTILHEIROS, elAdv) });
 }
@@ -138,7 +157,7 @@ function escolher(rng: RNG, lista: Modelo[], c: CtxNarracao): Modelo {
 }
 
 /** Abertura do jogo e lances de ambiente espalhados pelos 90 minutos. */
-export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco): { abertura: string; linhas: LinhaNarracao[] } {
+export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco, ligacoes: Ligacao[] = []): { abertura: string; linhas: LinhaNarracao[] } {
   const extras = () => ({ ...nomes, m1: umDe(rng, [...elMeu.MEI, ...elMeu.PON, ...elMeu.ATA, ...elMeu.VOL], 8), a1: umDe(rng, [...elAdv.ATA, ...elAdv.MEI, ...elAdv.PON, ...elAdv.VOL], 8), a2: umDe(rng, [...elAdv.PON, ...elAdv.MEI, ...elAdv.ATA].reverse(), 5) });
   const abertura = preencher(rng.pick(c.base ? ["Bola rolando no CT.", "Começa o jogo da base.", "Bola rolando na base."] :
     c.classico ? ["É clássico! Bola rolando no {estadio}.", "Começa o clássico. O {estadio} está lotado e barulhento."] :
@@ -150,6 +169,20 @@ export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, st
     const m = escolher(rng, AMBIENTE, c);
     if (usados.has(m.t)) continue; usados.add(m.t);
     linhas.push({ min: rng.int(3, 88), texto: preencher(m.t, extras()), cls: m.cls });
+  }
+  // personalidade: quem tem pavio curto leva amarelo; um par de companheiros que se conhece do clube aparece junto
+  if (nomes.pavio && rng.chance(0.5)) {
+    const t = rng.pick(["Amarelo para {pavio}, depois de reclamar com o árbitro.", "{pavio} discute com o juiz e recebe o cartão."]);
+    const min = rng.int(20, 80);
+    if (!usados.has(t)) { usados.add(t); linhas.push({ min, texto: preencher(t, extras()), cls: "contra" }); }
+  }
+  const ladoDo = (n: string) => elMeu.MEI.includes(n) || elMeu.ATA.includes(n) || elMeu.PON.includes(n) || elMeu.VOL.includes(n) || elMeu.ZAG.includes(n) || elMeu.LAT.includes(n) ? "meu" : elAdv.ATA.includes(n) || elAdv.MEI.includes(n) || elAdv.PON.includes(n) || elAdv.VOL.includes(n) || elAdv.ZAG.includes(n) || elAdv.LAT.includes(n) ? "adv" : "";
+  const pares = ligacoes.filter((l) => ladoDo(l.a) && ladoDo(l.a) === ladoDo(l.b));
+  if (pares.length && rng.chance(0.5)) {
+    const p = rng.pick(pares);
+    const t = p.tipo === "amizade" ? "{a} e {b}, amigos desde o {clube}, trocam passes e sorrisos em campo." : "{a} e {b} trocam empurrões depois de uma dividida; já se estranhavam desde o {clube}.";
+    const min = rng.int(15, 85);
+    linhas.push({ min, texto: preencher(t, { ...extras(), a: p.a, b: p.b, clube: p.clube }), cls: p.tipo === "rivalidade" ? "aviso" : undefined });
   }
   // lances do jogador, conforme a atuação (a nota do simulador antes das decisões)
   const emCampo = Math.min(90, c.saida) - c.entrada;

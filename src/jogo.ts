@@ -52,7 +52,8 @@ import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from
 import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
 import { gradeDeNumeros, numeroLivre, numeroParaChegada, limparNumeros, type Camisa } from "./numeros.js";
 import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
-import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
+import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, tracosDoElenco, type LinhaNarracao } from "./narracao.js";
+import { ligacoesDoElenco } from "./relacoes-npc.js";
 import { reliquiasDaPartida, premiosDaTemporada, UNIFORME_SELECAO, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, acoesDe, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
 import { agirFilho, programaPreferido, type AcaoFilho } from "./namoro.js";
@@ -979,11 +980,15 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const classico = !cj && (cp(jogo.casa).cidade === cp(jogo.fora).cidade || [jogo.casa, jogo.fora].sort().join("-") in CLASSICOS_EXTRA);
   const chuva = rngN.chance(0.14);
   const naBase = base && !amador;
-  const elMeu = elencoDe({ ...meuClube, elenco: naBase ? timeDaBase(pacote, c.clubeId, j.idade) : selecaoJogo ? meuClube.elenco : elencoDisponivel(pacote, s) }, false), elAdv = elencoDe(naBase ? { ...adv, elenco: timeDaBase(pacote, adv.id, j.idade) } : selecaoJogo ? adv : { ...adv, elenco: elencoDisponivel(pacote, s, adv.id) }, false);
+  const poolMeu = naBase ? timeDaBase(pacote, c.clubeId, j.idade) : selecaoJogo ? meuClube.elenco : elencoDisponivel(pacote, s);
+  const poolAdv = naBase ? timeDaBase(pacote, adv.id, j.idade) : selecaoJogo ? adv.elenco : elencoDisponivel(pacote, s, adv.id);
+  const elMeu = elencoDe({ ...meuClube, elenco: poolMeu }, false), elAdv = elencoDe({ ...adv, elenco: poolAdv }, false);
+  const tracos = tracosDoElenco([...poolMeu, ...poolAdv]);
+  const ligacoes = [...ligacoesDoElenco(pacote, poolMeu), ...ligacoesDoElenco(pacote, poolAdv)];
   const estadio = cj?.neutro ? `estádio da ${NOME_FASE[cj.fase].toLowerCase()}` : base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
   // as camisas que você já tem (das trocas guardadas e das marcadas na relação): o craque da troca sai dos outros
   const jaTenho = new Set<string>([...(s.casa.reliquias ?? []).filter((r) => r.chave === "camisa-troca").map((r) => r.nome.replace(/^Camisa d[eoa] /, "")), ...Object.entries(relacoesDe(c).lista).filter(([, x]) => x.camisa).map(([n]) => n)]);
-  const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(meuId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao, jaTenho });
+  const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(meuId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao, jaTenho, tracos });
   const posTab = posicaoNaTabela(undefined, s), reta = c.semana >= SEMANAS_PRE + 28;
   const jogosPro = c.stats.jogos + c.historico.reduce((acc, h) => acc + h.jogos, 0);
   const ctx: Contexto = { pos: j.posicao, min: 0, saldo: 0, base, jaFezGol: false, classico, mandante: jogo.souCasa, reta,
@@ -1004,7 +1009,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   }
   lances.sort((x, y) => x.min - y.min);
   for (const x of lances) x.texto = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv);
-  const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida }, nomes, elMeu, elAdv);
+  const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida }, nomes, elMeu, elAdv, ligacoes);
   const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeM(jogo.casa).nome}${suf}`, nomeF = `${clubeM(jogo.fora).nome}${suf}`;
   void adv;
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}),
