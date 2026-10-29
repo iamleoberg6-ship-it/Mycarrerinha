@@ -184,10 +184,7 @@
       "inspirado_em": "Coritiba",
       "cidade": "Curitiba",
       "uf": "PR",
-      "cores": [
-        "#00573F",
-        "#FFFFFF"
-      ],
+      "cores": ["#FFFFFF", "#00573F"],
       "estadio": {
         "nome": "Estádio Couto Ferreira",
         "inspirado_em": "Couto Pereira",

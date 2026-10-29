@@ -55,7 +55,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
     <clipPath id="${id}c"><path d="${CORPO}"/></clipPath></defs>
     <path d="M40 1 C44 1 45 5 41 7 L40 8 M33 9 L40 5 L47 9" stroke="#9aa5a0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
     <path d="${CORPO}" fill="${a}"/>
-    <g clip-path="url(#${id}c)">${padrao(c.modelo, b, c.terceira ?? "#111111")}
+    <g clip-path="url(#${id}c)">${padrao(c.modelo, b, c.terceira ?? (c.modelo === "duasFaixasH" ? b : "#111111"))}
       <rect width="80" height="104" fill="url(#${id}g)"/><rect width="80" height="104" fill="url(#${id}l)"/>
       <path d="M1.5 34 L12 41.5 M68 41.5 L78.5 34" stroke="${b}" stroke-width="3" fill="none" opacity=".9"/>
       <path d="M30 8 C36 12 44 12 50 8" stroke="${b}" stroke-width="3.2" fill="none"/>
