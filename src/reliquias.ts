@@ -78,6 +78,8 @@ const NUMERO_COR: Record<string, string> = {
   "ES-ATH": "#111111",
   /** Sporting: número e nome pretos sobre o verde e o branco */
   "PT-SCP": "#111111",
+  /** Seleção Brasileira: número e nome verdes sobre o amarelo */
+  "NAT-BRA": "#009C3B",
 };
 export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId ? NUMERO_COR[clubeId] : undefined);
 /** Uniforme da seleção: camisa, calção e meião (o escudo é a bandeira do país). */

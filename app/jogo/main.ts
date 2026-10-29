@@ -133,7 +133,7 @@ function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   if (us) {
     // seleção: a camisa, o calção e o meião do país; o escudo é a bandeira
     const info = infoClube(pacote, clubeId);
-    return { cor1: us.cores[0], cor2: us.cores[1], escudo: { chave: clubeId, nome: info?.nome ?? "", cores: us.cores }, calcao: us.calcao, meiao: us.meiao, padrao: us.padrao, numero: s.jogador.numero } as Kit;
+    return { cor1: us.cores[0], cor2: us.cores[1], escudo: { chave: clubeId, nome: info?.nome ?? "", cores: us.cores }, calcao: us.calcao, meiao: us.meiao, padrao: us.padrao, numero: s.jogador.numero, numeroCor: numeroCorClube(clubeId) } as Kit;
   }
   const info = infoClube(pacote, clubeId), [a0, b0] = info.cores, u = UNIFORME_CLUBE[clubeId];
   const [a, b] = u ? u.cores : [a0, b0];

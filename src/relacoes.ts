@@ -3,7 +3,7 @@
 // para o clube do amigo.
 import { RNG, clamp } from "./rng.js";
 import type { Clube, JogadorNPC, PacoteDados } from "./liga.js";
-import { mundo, versaoMundo } from "./mundo.js";
+import { mundo, versaoMundo, todasSelecoes } from "./mundo.js";
 
 export interface Relacao { nome: string; clubeId: string; nivel: number; desde: number; companheiro?: boolean; camisa?: boolean; indicacao?: number; aposentado?: boolean }
 export interface Estrela { nome: string; clubeId: string; ovr: number; posicao: string; idade: number; numero: number; fama: number }
@@ -36,6 +36,16 @@ const hash = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.i
 export const quimica = (nome: string) => 0.4 + 1.4 * Math.pow((hash(nome) % 1000) / 999, 1.6);
 export const numeroDe = (nome: string) => { let h = 0; for (const ch of nome) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return [7, 9, 10, 11, 8, 17, 19, 21, 22][h % 9]; };
 export const ehEstrela = (pacote: PacoteDados, nome: string) => estrelas(pacote).some((e) => e.nome === nome);
+/** Os três melhores de cada seleção: a camisa e a conversa também valem quando o adversário é a seleção. */
+export function estrelasDeSelecoes(pacote: PacoteDados): Estrela[] {
+  return todasSelecoes(pacote).flatMap((c) => [...c.elenco].sort((a, b) => b.ovr - a.ovr).slice(0, 3)
+    .map((j) => ({ nome: j.nome, clubeId: c.id, ovr: j.ovr, posicao: j.posicao, idade: j.idade, numero: j.numero ?? numeroDe(j.nome), fama: clamp((j.ovr - 58) * 3.2, 20, 100) })));
+}
+/** Estrelas dos clubes e das seleções (quem entra na conversa, nas redes e na troca de camisa). */
+export function todasEstrelas(pacote: PacoteDados): Estrela[] {
+  const dosClubes = estrelas(pacote), nomes = new Set(dosClubes.map((e) => e.nome));
+  return [...dosClubes, ...estrelasDeSelecoes(pacote).filter((e) => !nomes.has(e.nome))];
+}
 
 // ------------------------------------------------------------------ estado
 export interface EstadoRelacoes { lista: Record<string, Relacao>; semana: number; feitas: string[]; camisaPedida?: string; favoritos?: string[] }

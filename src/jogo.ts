@@ -34,7 +34,7 @@ import { ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type
 import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
-import { estrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
+import { todasEstrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
 import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./perfil-jogador.js";
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
@@ -1488,7 +1488,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     const rr = relacoesDe(c), r4 = rngDe(s, "relacoes"), ano = ANO_INICIAL + c.temporada, clube = mundo(pacote).clube[idClube(c.clubeId)];
     const naBase = c.formacao && !c.fase;
     semanaRelacoes(rr, r4, naBase ? timeDaBase(pacote, c.clubeId, j.idade) : clube ? elencoAtual(pacote, s) : [], c.clubeId, ano, cont("amigos"));
-    const est = estrelas(pacote);
+    const est = todasEstrelas(pacote);
     for (let k = 0; k < cont("redes"); k++) {
       const seguidas = est.filter((e) => (rr.lista[e.nome]?.nivel ?? 0) > 0);
       const e = seguidas.length && r4.chance(0.7) ? r4.pick(seguidas) : r4.pick(est.slice(0, 60));
@@ -2174,7 +2174,7 @@ export function mudarPosicao(s: Save, p: Posicao): { ok: boolean; msg: string } 
 /** Uma conversa com outro jogador (até 3 por semana, uma por pessoa). */
 export function agirRelacao(pacote: PacoteDados, s: Save, nome: string, acao: AcaoRel, clubeId?: string): { ok: boolean; msg: string } {
   const c = s.carreira, rr = relacoesDe(c), x = rr.lista[nome], ano = ANO_INICIAL + c.temporada;
-  const est = estrelas(pacote).find((e) => e.nome === nome);
+  const est = todasEstrelas(pacote).find((e) => e.nome === nome);
   // achado na busca do celular (liga → clube → jogador): vira contato
   const achado = !x && !est && clubeId && ondeJoga(pacote, nome)?.clubeId === idClube(clubeId) ? relacao(rr, nome, clubeId, ano) : undefined;
   const alvo = x ?? achado ?? (est ? relacao(rr, est.nome, est.clubeId, ano) : undefined);
