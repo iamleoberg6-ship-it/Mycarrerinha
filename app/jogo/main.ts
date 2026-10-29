@@ -321,7 +321,7 @@ let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, ver
 let subTabela: "classificacao" | "estatisticas" | "premios" = "classificacao";
 const FASES_MM = ["derby", "desafio", "playoff", "oitavas", "quartas", "semi", "final"];
 function tabelaCopaHtml(t: LinhaTabela[], meu: string, zona?: (i: number) => string) {
-  return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${ordenar(t).map((x, i) => `<tr class="${x.clube === meu ? "meu" : ""} ${zona ? zona(i) : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+  return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${ordenar(t).map((x, i) => `<tr class="${x.clube === meu ? "meu" : ""} ${zona ? zona(i) : ""}"><td>${i + 1}</td><td><button class="nome-hist" data-perfil-clube="${x.clube}">${esc(nomeDe(x.clube))}</button></td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
 function abaCopa(s: Save, id: CopaId): string {
   const e = copasDe(pacote, s)[id], c = s.carreira;
@@ -453,7 +453,7 @@ function abaTabela(s: Save): string {
   }
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
   const lid = infoLiga(s.carreira.ligaId).id, feitas = Math.max(0, Math.min(nRodadas(c), c.semana - SEMANAS_PRE));
-  return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade(lid))}">${bannerComp(lid, esc(infoLiga(s.carreira.ligaId).nome), `${ANO_INICIAL + c.temporada} · ${feitas ? `${feitas} de ${nRodadas(c)} rodadas` : "antes da 1ª rodada"}`)}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th><th class="forma-th">Forma</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td><td>${bolinhasForma(x.f)}</td></tr>`).join("")}</tbody></table></div>${calendarioHtml(s)}`;
+  return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade(lid))}">${bannerComp(lid, esc(infoLiga(s.carreira.ligaId).nome), `${ANO_INICIAL + c.temporada} · ${feitas ? `${feitas} de ${nRodadas(c)} rodadas` : "antes da 1ª rodada"}`)}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th><th class="forma-th">Forma</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td><button class="nome-hist" data-perfil-clube="${x.clube}">${esc(nomeDe(x.clube))}</button></td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td><td>${bolinhasForma(x.f)}</td></tr>`).join("")}</tbody></table></div>${calendarioHtml(s)}`;
 }
 
 /** Os últimos 5 resultados em bolinhas (verde, cinza, vermelho). */
