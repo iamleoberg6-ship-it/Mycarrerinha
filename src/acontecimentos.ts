@@ -36,6 +36,16 @@ const M: Modelo[] = [
   // ------------------------------------------------------------ ruins
   { id: "gripe", peso: 3, bom: false, quando: () => true, faz: (c) => ({ bom: false, titulo: `${c.apelido} pega gripe forte`, texto: "Febre de 39 graus na concentração. O departamento médico vetou você do treino da semana.", ef: { cansaco: 18, moral: -3, lesao: 1 } }) },
   { id: "intoxicacao", peso: 2, bom: false, quando: (c) => c.profissional, faz: (c) => ({ bom: false, titulo: "Intoxicação na concentração", texto: `Metade do elenco do ${c.clube} passou mal depois do jantar do hotel. Você foi um deles.`, ef: { cansaco: 14, moral: -2 } }) },
+  { id: "dilema-proposta", peso: 1.2, bom: true, quando: (c) => c.profissional && c.jogou && c.fama >= 35 && c.fClube >= 0.7, faz: (c, _r, a) => agendar(a, c.ab, { origem: "acontece", chave: "dilema-proposta", titulo: "Proposta de um gigante", texto: `Um clube grande da Europa ofereceu o triplo do seu salário. O ${c.clube} quer você, mas não cobre a oferta e lembra da torcida que te criou.`, opcoes: [
+    op("ficar", "Ficar no clube", "Você ficou. A torcida fez festa no portão e o técnico disse que contava com você.", { torcida: 5, moral: 3, relTecnico: 3 }),
+    op("sair", "Aceitar a proposta", "Foi embora com o triplo do salário. Parte da torcida não perdoou a saída.", { dinheiro: c.salario * 3, torcida: -6, fama: 2, noticia: { titulo: `${c.apelido} deixa o ${c.clube}`, texto: "A saída trocou a torcida pelo salário. As redes se dividiram.", tipo: "polemica" } }),
+    op("esperar", "Pedir tempo e negociar", "A negociação se arrastou. Ninguém ficou satisfeito com a demora.", { moral: -2, pressao: 4 }, { chance: 0.4, texto: "O clube estrangeiro desistiu, e o seu clube também ficou irritado com a demora.", ef: { moral: -5, torcida: -3, relTecnico: -3 } }),
+  ] }, 30) ? "agenda" : undefined },
+  { id: "dilema-patrocinio", peso: 1, bom: false, quando: (c) => c.profissional && c.fama >= 30, faz: (c, _r, a) => agendar(a, c.ab, { origem: "acontece", chave: "dilema-patrocinio", titulo: "Patrocínio polêmico", texto: "Uma casa de apostas quer seu rosto numa campanha de TV. O pagamento é alto e a torcida já anda de olho.", opcoes: [
+    op("aceitar", "Aceitar o contrato", "A campanha pagou a conta do mês. Nas arquibancadas, apareceu faixa contra.", { dinheiro: c.salario * 1.5, torcida: -5, moral: -2 }),
+    op("recusar", "Recusar", "Você recusou. Os fãs postaram o print da recusa com orgulho.", { torcida: 4, moral: 3 }),
+    op("negociar", "Negociar sem a marca na camisa", "Um acordo menor, sem a logo no uniforme. Pagou menos e irritou só uma parte.", { dinheiro: c.salario * 0.6, torcida: -1 }),
+  ] }, 40) ? "agenda" : undefined },
   { id: "salario-atrasado", peso: 3, bom: false, quando: (c) => c.profissional && c.fClube < 0.8, faz: (c, _r, a) => agendar(a, c.ab, { origem: "acontece", chave: "salario-atrasado", titulo: "Salário atrasado", texto: `O ${c.clube} atrasou dois meses de salário. O elenco ameaça não treinar.`, opcoes: [
     op("greve", "Apoiar a greve", "O clube pagou em uma semana. A diretoria anotou quem liderou.", { dinheiro: c.salario * 0.2, relTecnico: -4, moral: 2 }),
     op("paciencia", "Ter paciência", "Pagaram atrasado e sem correção. O mês ficou apertado.", { moral: -4, pressao: 4 }),

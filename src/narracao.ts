@@ -172,7 +172,7 @@ export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | un
 
 export interface LinhaNarracao { min: number; texto: string; /** o modelo de frase usado (para não repetir nos próximos jogos) */ modelo?: string; cls?: "meu" | "contra" | "aviso"; /** lance do próprio jogador (some se ele sair de campo antes) */ jogador?: boolean }
 interface Modelo { t: string; cls?: LinhaNarracao["cls"]; peso?: number; quando?: (c: CtxNarracao) => boolean }
-export interface CtxNarracao { mandante: boolean; classico: boolean; chuva: boolean; base: boolean; pos: Posicao; nota: number; entrada: number; saida: number }
+export interface CtxNarracao { mandante: boolean; classico: boolean; chuva: boolean; base: boolean; pos: Posicao; nota: number; entrada: number; saida: number; /** como foi a última partida, para a torcida lembrar */ eco?: { resultado: "vitoria" | "derrota" | "empate"; nota: number } }
 
 const AMBIENTE: Modelo[] = [
   { t: "{comp} chuta e o {gol} defende firme." }, { t: "Bola na trave! O {comp} quase marca para o {meu}.", cls: "meu" }, { t: "{meia} arrisca de longe, por cima do gol." },
@@ -303,6 +303,16 @@ export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, st
     const m = escolher(rng, AMBIENTE, c, recentes);
     if (usados.has(m.t)) continue; usados.add(m.t);
     linhas.push({ min: rng.int(3, 88), texto: preencher(m.t, extras()), cls: m.cls, modelo: m.t });
+  }
+  // memória da torcida: o que aconteceu na rodada anterior ainda aparece nas arquibancadas
+  if (c.eco && rng.chance(0.7)) {
+    const e = c.eco;
+    const pool = e.resultado === "derrota" ? ["A torcida ainda cobra a derrota da última rodada, e a cobrança vem em coro.", "Na arquibancada, a faixa da última derrota ainda está pendurada.", "Um grupo de torcedores grita o placar da última rodada, sem parar."]
+      : e.resultado === "vitoria" && e.nota >= 8 ? ["A torcida canta alto o nome de quem brilhou na última vitória.", "Desde o aquecimento, a arquibancada lembra a atuação da rodada passada.", "Cartaz de 'Craque da última rodada' tremula na curva."]
+      : e.resultado === "vitoria" ? ["A torcida comemora a vitória da última rodada e pede a mesma atitude.", "Ainda se ouve o coro da última vitória nas arquibancadas."]
+      : ["A torcida quer ver mais do que o empate da última rodada.", "Arquibancada cobra mais brilho depois do empate da rodada passada."];
+    const t = rng.pick(pool);
+    if (!usados.has(t)) { usados.add(t); linhas.push({ min: rng.int(1, 12), texto: t, cls: e.resultado === "derrota" ? "aviso" : undefined, modelo: t }); }
   }
   // personalidade: quem tem pavio curto leva amarelo; um par de companheiros que se conhece do clube aparece junto
   if (nomes.pavio && rng.chance(0.5)) {

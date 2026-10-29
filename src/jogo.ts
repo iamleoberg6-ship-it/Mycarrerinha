@@ -1023,7 +1023,8 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   lances.sort((x, y) => x.min - y.min);
   const recentes = c.frasesVistas ?? [], modelosNarr: string[] = [];
   for (const x of lances) { const f = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv, recentes); x.texto = f.texto; modelosNarr.push(f.modelo); }
-  const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida }, nomes, elMeu, elAdv, ligacoes, recentes);
+  const ecoRodada = !base && c.ultimoJogo && semanaAbsJogo(c) - c.ultimoJogo.s <= 1 ? { resultado: c.ultimoJogo.resultado, nota: c.ultimoJogo.nota } : undefined;
+  const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida, eco: ecoRodada }, nomes, elMeu, elAdv, ligacoes, recentes);
   const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeM(jogo.casa).nome}${suf}`, nomeF = `${clubeM(jogo.fora).nome}${suf}`;
   void adv;
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}),
@@ -1274,6 +1275,8 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   if (l2) { c.lesao = Math.max(c.lesao, l2.semanas); eventos.push(`Lesão ${l2.tipo === "leve" ? "leve" : l2.tipo === "media" ? "muscular" : "grave"}${copa ? " no jogo da copa" : ""}: ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); noticia(s, "lesao", "Lesão", `${j.apelido} se machucou e fica ${l2.semanas} ${l2.semanas > 1 ? "semanas" : "semana"} fora.`); }
   const res = (partida.souCasa ? gc - gf : gf - gc) > 0 ? "vitória" : gc === gf ? "empate" : "derrota";
   if (pro) c.ultimoJogo = { s: semanaAbsJogo(c), resultado: res === "vitória" ? "vitoria" : res, gols, nota, adv: infoClube(pacote, adversario)?.nome ?? "" };
+  // imprensa: uma atuação muito boa ou muito ruim vira coluna na semana seguinte
+  if (pro && (nota >= 8 || nota <= 4.5)) (c.fios ??= []).push({ id: `p${semanaAbsJogo(c)}`, quando: semanaAbsJogo(c) + 1, tipo: "repercussao", titulo: nota >= 8 ? "A imprensa exaltou a atuação" : "A imprensa cobrou a atuação", texto: nota >= 8 ? `Colunistas dedicaram o espaço da semana a ${j.apelido}, depois de uma atuação de destaque.` : `Os comentaristas apontaram ${j.apelido} entre os pontos fracos da rodada.` });
   noticia(s, "jogo", `${copa ? `${COPAS[copa.id].curto}: ` : ""}${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora}`,
     `${res[0].toUpperCase() + res.slice(1)}${copa ? ` pela ${copa.nome} (${copa.rotulo.toLowerCase()})` : pro ? "" : faseAmadora(c) ? ` ${ROTULO_FASE[c.fase!]}` : " na base"}. ${j.apelido} jogou ${minutos} minutos${gols ? `, fez ${gols} ${gols > 1 ? "gols" : "gol"}` : ""}${assist ? `, deu ${assist} ${assist > 1 ? "assistências" : "assistência"}` : ""} e tirou nota ${nota.toFixed(1)}.`, { k: "placar", casa: partida.casa, fora: partida.fora, gc, gf });
   return { resumo, participacao, nota, placar, placarBase };
