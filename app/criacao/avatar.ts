@@ -15,8 +15,8 @@ export type Barba =
   | "queixo" | "costeletas" | "curta" | "cheia" | "longa";
 export type Boca = "sorriso" | "neutra" | "aberta" | "lado" | "cheia" | "fina" | "dentes";
 export type Traje = "jogo" | "social";
-export type AcessorioCabeca = "nenhum" | "faixa" | "bandana" | "oculos";
-export type Piercing = "nenhum" | "nariz" | "sobrancelha" | "dois";
+export type AcessorioCabeca = "nenhum" | "faixa" | "bandana" | "oculos" | "gorro" | "bone";
+export type Piercing = "nenhum" | "nariz" | "sobrancelha" | "dois" | "labio" | "orelha";
 /** Óculos escuros de patrocinador: modelo e cores (a marca é que dá). */
 export interface OculosSol { modelo: "aviador" | "esportivo" | "quadrado"; armacao: string; lente: string }
 export type EstiloCamisa = "lisa" | "listrasV" | "listrasH" | "faixa" | "faixaH" | "diagonais";
@@ -81,9 +81,11 @@ export const BOCAS: { id: Boca; nome: string }[] = [
 ];
 export const ACESSORIOS: { id: AcessorioCabeca; nome: string }[] = [
   { id: "nenhum", nome: "Nada" }, { id: "faixa", nome: "Faixa de cabelo" }, { id: "bandana", nome: "Bandana" }, { id: "oculos", nome: "Óculos de grau" },
+  { id: "gorro", nome: "Gorro de lã" }, { id: "bone", nome: "Boné liso" },
 ];
 export const PIERCINGS: { id: Piercing; nome: string }[] = [
   { id: "nenhum", nome: "Sem piercing" }, { id: "nariz", nome: "Argola no nariz" }, { id: "sobrancelha", nome: "Na sobrancelha" }, { id: "dois", nome: "Nariz e sobrancelha" },
+  { id: "labio", nome: "Argola no lábio" }, { id: "orelha", nome: "Argola na orelha" },
 ];
 export const BARBAS: { id: Barba; nome: string }[] = [
   { id: "nenhuma", nome: "Sem barba" }, { id: "sombra", nome: "Por fazer" }, { id: "rala", nome: "Rala" },
@@ -587,6 +589,12 @@ function roupaSocial(tipo: RoupaSocial, corIdx: number, pele: string, sombraPele
 const PRATA = "#D9DCE0";
 /** Faixa de cabelo ou bandana, por cima do cabelo. */
 function acessorioCabeca(tipo: AcessorioCabeca, f: Forma, cor: string): string {
+  if (tipo === "gorro") {
+    const y = f.T + 22, w = largura(f, y) + 6, w2 = largura(f, y + 10) + 6;
+    const dobra = `M${f1(150 - w)} ${y} Q150 ${f1(y - 6)} ${f1(150 + w)} ${y} L${f1(150 + w2)} ${y + 10} Q150 ${f1(y + 4)} ${f1(150 - w2)} ${y + 10} Z`;
+    return contorno(calota(f, { volume: 6, testa: f.T + 22, folga: 6 }), cor) + contorno(dobra, escurecer(cor, 0.72));
+  }
+  if (tipo === "bone") return bonePatro(f, { cor, aba: escurecer(cor, 0.78), logo: "" });
   if (tipo === "faixa") {
     const y1 = f.T + 15, y2 = f.T + 27, w1 = largura(f, y1) + 4, w2 = largura(f, y2) + 4;
     const d = `M${f1(150 - w1)} ${y1} Q150 ${y1 - 7} ${f1(150 + w1)} ${y1} L${f1(150 + w2)} ${y2} Q150 ${y2 - 7} ${f1(150 - w2)} ${y2} Z`;
@@ -646,7 +654,11 @@ function oculos(wO: number, sol: OculosSol | null | undefined): string {
   const ponte = sol.modelo === "aviador" ? `<path d="M144 133 Q150 130 156 133 M141 131 L159 131" stroke="${sol.armacao}" stroke-width="1.8" fill="none"/>` : `<path d="M145 135 Q150 132 155 135" stroke="${TINTA}" stroke-width="3" fill="none"/>`;
   return grad + haste(sol.modelo === "aviador" ? sol.armacao : TINTA, sol.modelo === "aviador" ? 1.8 : 3) + lente(129, true) + lente(171, false) + ponte + brilho(129) + brilho(171);
 }
-function piercing(p: Piercing | undefined): string {
+function piercing(p: Piercing | undefined, wO = 50): string {
+  const labio = `<circle cx="150" cy="206" r="2.6" fill="none" stroke="${PRATA}" stroke-width="1.6"/>`;
+  const orelhaArg = `<circle cx="${f1(150 - wO - 12)}" cy="134" r="2.4" fill="none" stroke="${PRATA}" stroke-width="1.6"/><circle cx="${f1(150 + wO + 12)}" cy="134" r="2.4" fill="none" stroke="${PRATA}" stroke-width="1.6"/>`;
+  if (p === "labio") return labio;
+  if (p === "orelha") return orelhaArg;
   const nariz = `<circle cx="157.5" cy="181" r="2.8" fill="none" stroke="${PRATA}" stroke-width="1.6"/><path d="M155.6 179 a2.8 2.8 0 0 1 4.4 1" stroke="${TINTA}" stroke-width="0.6" fill="none" opacity="0.5"/>`;
   const sobr = `<circle cx="182" cy="121.5" r="2" fill="${PRATA}" stroke="${TINTA}" stroke-width="0.9"/><circle cx="184" cy="133" r="2" fill="${PRATA}" stroke="${TINTA}" stroke-width="0.9"/>`;
   return p === "nariz" ? nariz : p === "sobrancelha" ? sobr : p === "dois" ? nariz + sobr : "";
@@ -673,6 +685,8 @@ export interface OpcoesFoto {
   fora?: boolean;
 }
 
+/** Fundos do avatar (acabamento aprovado: gradiente em dois tons, como o das mulheres). */
+const FUNDO_AVATAR: [string, string][] = [["#2C3E50", "#4CA1AF"], ["#3B2667", "#BC78EC"], ["#134E5E", "#71B280"], ["#4B1D3F", "#D05353"]];
 export function svgFoto(o: OpcoesFoto): string {
   const a = { ...APARENCIA_PADRAO, ...(o.aparencia ?? {}) };
   const silhueta = !o.aparencia;
@@ -698,12 +712,14 @@ export function svgFoto(o: OpcoesFoto): string {
     ? uniforme({ cor1: "#1E2E28", cor2: "#18261F", estilo: "lisa" }, undefined, pele, sombraPele, hach)
     : o.traje === "social" ? (a.blusaoPatro ? blusaoPatroSvg(a.blusaoPatro, pele, sombraPele, hach) : roupaSocial(a.roupaSocial, a.corSocial, pele, sombraPele, hach))
     : uniforme(o.camisa ?? CAMISA_PADRAO, o.numero, pele, sombraPele, hach);
+  // em campo (uniforme, sem cenário de criação): sem brinco, piercing nem corrente
+  const emCampo = !silhueta && o.traje !== "social" && !o.fora && !o.cenario;
   const detalhes = silhueta ? "" : [
     a.sardas ? [[118, 160], [125, 164], [132, 160], [168, 160], [175, 164], [182, 160], [121, 168], [179, 168]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${mistura(pele, "#5A2A12", 0.5)}"/>`).join("") : "",
     a.pinta ? `<circle cx="172" cy="186" r="2" fill="${mistura(pele, "#000", 0.6)}"/>` : "",
-    a.brinco ? `<circle cx="${150 - wO - 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
-    a.brinco2 ? `<circle cx="${150 + wO + 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
-    piercing(a.piercing),
+    !emCampo && a.brinco ? `<circle cx="${150 - wO - 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
+    !emCampo && a.brinco2 ? `<circle cx="${150 + wO + 6}" cy="166" r="3.4" fill="#E9E4D8" stroke="${TINTA}" stroke-width="1.4"/>` : "",
+    emCampo ? "" : piercing(a.piercing, wO),
   ].join("");
   const fora = !silhueta && (o.fora || o.traje === "social");
   const comBone = fora && !!a.bonePatro, cabeloV: Cabelo = comBone ? SOB_BONE[a.cabelo] ?? a.cabelo : a.cabelo;
@@ -717,17 +733,20 @@ export function svgFoto(o: OpcoesFoto): string {
     ${nariz(a.nariz, luzPele)}
     ${boca(a.boca, pele)}
     ${detalhes}`;
-  const cenario = o.soCabeca ? "" : o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>`;
+  const fundoId = novoId("fu"), skinId = novoId("sk");
+  const [fa, fb] = FUNDO_AVATAR[a.pele % FUNDO_AVATAR.length];
+  const cenario = o.soCabeca ? "" : o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : silhueta ? `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>` : `<rect width="${LARG}" height="${ALT}" fill="url(#${fundoId})"/><circle cx="240" cy="70" r="46" fill="#fff" opacity=".18"/><circle cx="56" cy="300" r="70" fill="#fff" opacity=".08"/>`;
+  const acabamento = silhueta ? "" : `<linearGradient id="${fundoId}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${fa}"/><stop offset="1" stop-color="${fb}"/></linearGradient><radialGradient id="${skinId}" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="${luzPele}"/><stop offset=".55" stop-color="${pele}"/><stop offset="1" stop-color="${sombraPele}"/></radialGradient>`;
   return `<svg viewBox="0 0 ${LARG} ${ALT}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto de perfil do jogador">
-  ${defs}${cenario}
+  ${defs}${acabamento ? `<defs>${acabamento}</defs>` : ""}${cenario}
   <g${silhueta ? ' opacity="0.94"' : ""}>
   ${cabeloAtras(cabeloV, f, cor)}
   ${corpo}
-  ${silhueta ? "" : a.corrente && o.traje === "social" ? `<path d="M126 226 Q150 270 174 226" stroke="#D9B44A" stroke-width="2.6" fill="none"/><circle cx="150" cy="252" r="4" fill="#D9B44A" stroke="${TINTA}" stroke-width="1.2"/>` : ""}
+  ${silhueta || emCampo ? "" : a.corrente && o.traje === "social" ? `<path d="M126 226 Q150 270 174 226" stroke="#D9B44A" stroke-width="2.6" fill="none"/><circle cx="150" cy="252" r="4" fill="#D9B44A" stroke="${TINTA}" stroke-width="1.2"/>` : ""}
   ${o.pescoco ?? ""}
   ${fone}
   ${orelha(-1)}${orelha(1)}
-  <path d="${rostoD}" fill="${pele}"/>
+  <path d="${rostoD}" fill="${silhueta ? pele : `url(#${skinId})`}"/>
   <g clip-path="url(#${clipRosto})">
     <path d="${sombraRosto(f)}" fill="${sombraPele}"/>
     <path d="${sombraRosto(f)}" fill="url(#${hach})" opacity="0.35"/>
