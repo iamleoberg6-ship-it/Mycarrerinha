@@ -13,7 +13,9 @@ export type Parentesco = "pai" | "mae" | "irmao" | "irma";
 export type TracoFamilia = "treinador" | "exJogador";
 /** Futebol de um irmão: criança, joga por diversão (amador), na base de um clube, profissional, parou. */
 export type FaseIrmao = "crianca" | "amador" | "base" | "pro" | "parou";
-export interface FutebolIrmao { fase: FaseIrmao; posicao: Posicao; ovr: number; pot: number; clubeId?: string; indicado?: number }
+export interface FutebolIrmao { fase: FaseIrmao; posicao: Posicao; ovr: number; pot: number; clubeId?: string; indicado?: number;
+  /** temporadas profissionais (índice da temporada da carreira): clube, OVR e posição de cada uma; entram na história do mundo */
+  temporadas?: { t: number; clubeId: string; ovr: number; pot: number; posicao: string; idade: number }[] }
 export interface Familiar {
   id: string; parentesco: Parentesco; nome: string; nasc: number; profissao: string; relacao: number;
   /** semana (absoluta) do último contato */

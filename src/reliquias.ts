@@ -78,8 +78,8 @@ const NUMERO_COR: Record<string, string> = {
   "ES-ATH": "#111111",
   /** Sporting: número e nome pretos sobre o verde e o branco */
   "PT-SCP": "#111111",
-  /** Burnley (Burnlei no jogo): número e nome pretos sobre o bordô e o azul-claro */
-  "EN-BUR": "#111111",
+  /** Brentford (Brentiforde no jogo): número e nome pretos sobre o vermelho e o branco */
+  "EN-BRE": "#111111",
   /** Seleção Brasileira: número e nome verdes sobre o amarelo */
   "NAT-BRA": "#009C3B",
 };

@@ -843,18 +843,20 @@ function irmaoHtml(s: Save, m: Familiar): string {
   const liga = fb.clubeId ? mundo(pacote).clube[fb.clubeId]?.ligaId : undefined;
   const onde = fb.clubeId ? `${linkClube(fb.clubeId)}${liga ? ` · ${esc(infoLiga(liga).nome)}` : ""}` : "Sem clube";
   const pro = fb.fase === "pro";
-  const r = new RNG(`irmao|${m.id}|${s.semente}|${ano}`);
-  const jogos = 26 + r.int(0, 10), fator = fb.ovr / 62;
-  const gols = Math.round(jogos * (fb.posicao === "ATA" ? 0.45 : fb.posicao === "PON" || fb.posicao === "MEI" ? 0.22 : fb.posicao === "VOL" ? 0.08 : 0.03) * fator * r.range(0.6, 1.4));
-  const assist = Math.round(jogos * (fb.posicao === "PON" || fb.posicao === "MEI" ? 0.2 : 0.07) * fator * r.range(0.6, 1.4));
-  const nota = (6.1 + (fb.ovr - 60) / 45 + r.range(-0.2, 0.2)).toFixed(2).replace(".", ",");
+  // ele é jogador do mundo: os números vêm da história dele, como os de qualquer jogador
+  const linhas = historicoDe(pacote, m.nome).linhas;
+  const atual = linhas.find((x) => x.t === s.carreira.temporada && x.clubeId === fb.clubeId);
+  const st = pro && atual ? statsDaLinha(pacote, m.nome, atual) : undefined;
+  const fmtNota = (n: number) => n.toFixed(2).replace(".", ",");
+  const anteriores = linhas.filter((x) => x.t < s.carreira.temporada).map((x) => ({ x, st: statsDaLinha(pacote, m.nome, x) })).filter((v) => v.st && v.st.j > 0);
+  const tabela = anteriores.length ? `<p class="rotulo" style="margin-top:14px">Temporadas anteriores</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${anteriores.map(({ x, st: v }) => `<tr><td>${ANO_INICIAL + x.t}</td><td>${linkClube(x.clubeId)}</td><td class="n">${v!.j}</td><td class="n">${v!.g}</td><td class="n">${v!.a}</td><td class="n">${fmtNota(v!.n)}</td></tr>`).join("")}</tbody></table>` : "";
   return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
     <h1 style="margin-top:8px">${esc(m.nome)}</h1>
     <p class="sub">${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idade} anos · ${esc(NOME_FASE_IRMAO[fb.fase])}</p>
     <dl class="kv"><dt>Clube</dt><dd>${onde}</dd><dt>Posição</dt><dd>${NOME_POS[fb.posicao] ?? "–"}</dd><dt>OVR</dt><dd>${fb.ovr} <small class="sub">(potencial ${fb.pot})</small></dd></dl>
-    ${pro ? `<p class="rotulo" style="margin-top:12px">Temporada ${ano} <small>(estimativa)</small></p>
-      <div class="tiles">${tile(String(jogos), "Jogos", "🏟️")}${tile(String(gols), "Gols", "⚽")}${tile(String(assist), "Assistências", "👟")}${tile(nota, "Nota média", "⭐")}</div>
-      <p class="sub">Ele não está no mundo simulado, então os números são uma estimativa pela posição e pelo OVR.</p>` : `<p class="sub" style="margin-top:12px">Ainda não joga como profissional, então não tem estatística.</p>`}`;
+    ${pro ? (st ? `<p class="rotulo" style="margin-top:12px">Temporada ${ano}</p>
+      <div class="tiles">${tile(String(st.j), "Jogos", "🏟️")}${tile(String(st.g), "Gols", "⚽")}${tile(String(st.a), "Assistências", "👟")}${tile(fmtNota(st.n), "Nota média", "⭐")}</div>` : `<p class="sub" style="margin-top:12px">Ainda sem jogos nesta temporada.</p>`) : `<p class="sub" style="margin-top:12px">Ainda não joga como profissional, então não tem estatística.</p>`}
+    ${tabela}`;
 }
 function abrirIrmao(id: string) {
   if (!save) return;

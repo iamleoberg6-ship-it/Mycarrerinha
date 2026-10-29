@@ -599,6 +599,34 @@ export function linhasDoClube(pacote: PacoteDados, clubeId: string): { nome: str
   }
   return indiceClubes.mapa.get(clubeId) ?? [];
 }
+/** Um familiar que joga de verdade (irmão profissional) é um jogador do mundo: entra no elenco do clube dele e tem as
+ *  temporadas na história, como qualquer um. Tira-o de qualquer outro clube. Chamado a cada sincronização (o mundo é
+ *  refeito a partir da semente, então ele volta sempre). `clubeId` vazio = fora do mundo (parou, base, amador). */
+export function encaixarNoMundo(pacote: PacoteDados, j: { nome: string; posicao: string; ovr: number; pot: number; idade: number; nacionalidade: string }, clubeId: string | undefined, temporadas: { t: number; clubeId: string; ovr: number; pot: number; posicao: string; idade: number }[]) {
+  const e = garantir(pacote), m = mundo(pacote);
+  for (const c of Object.values(m.clube)) if (c.id !== clubeId && c.elenco.some((x) => x.nome === j.nome)) c.elenco = c.elenco.filter((x) => x.nome !== j.nome);
+  const clube = clubeId ? m.clube[idClube(clubeId)] : undefined;
+  if (clube) {
+    const no = clube.elenco.find((x) => x.nome === j.nome);
+    const dados = { nome: j.nome, posicao: j.posicao as JogadorNPC["posicao"], ovr: j.ovr, pot: j.pot, idade: j.idade, nacionalidade: j.nacionalidade, numero: numeroDeNome(j.nome) };
+    if (no) Object.assign(no, dados); else clube.elenco.push(dados);
+  }
+  // a história: uma linha por temporada, no clube daquela temporada (a da temporada atual leva a posição na liga)
+  const l = (e.hist.get(j.nome) ?? []).filter((x) => !temporadas.some((r) => r.t === x.t && r.clubeId !== x.clubeId));
+  for (const r of temporadas) {
+    if (l.some((x) => x.t === r.t && x.clubeId === r.clubeId)) continue;
+    const c = m.clube[idClube(r.clubeId)], lg = ligaDoClube(pacote, r.clubeId);
+    let liga: LinhaHistorico["liga"];
+    if (c && lg) {
+      const n = rodadasDaLiga(lg.clubes.length).length, media = lg.clubes.reduce((a, k) => a + k.forca, 0) / lg.clubes.length;
+      const rank = c.elenco.filter((y) => y.posicao === r.posicao && y.ovr > r.ovr).length;
+      liga = [rank, VAGAS[r.posicao] ?? 1, c.forca, media, n];
+    }
+    l.push({ t: r.t, clubeId: r.clubeId, idade: r.idade, ovr: r.ovr, pot: r.pot, posicao: r.posicao, base: false, nat: j.nacionalidade, liga });
+  }
+  e.hist.set(j.nome, l.sort((a, b) => a.t - b.t));
+}
+const numeroDeNome = (nome: string) => { let h = 0; for (const ch of nome) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return [7, 9, 10, 11, 8, 17, 19, 21, 22][h % 9]; };
 /** Todas as temporadas dos jogadores de um país, em qualquer clube: a base da seleção de todos os tempos. */
 export function linhasDoPais(pacote: PacoteDados, pais: string): { nome: string; x: LinhaHistorico }[] {
   const out: { nome: string; x: LinhaHistorico }[] = [];

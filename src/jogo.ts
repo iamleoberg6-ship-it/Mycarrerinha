@@ -23,7 +23,7 @@ import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, DISPUTA, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { bonusDoTecnico, chanceDeDemissao, NOME_ESTILO, type Tecnico } from "./tecnicos.js";
-import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, lesoesQueComecam } from "./mundo.js";
+import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, lesoesQueComecam, encaixarNoMundo } from "./mundo.js";
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
 import { premiosDoAno, type PremiosDoAno, type IdPremio } from "./premios-mundo.js";
 import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
@@ -288,6 +288,7 @@ export function sincronizar(pacote: PacoteDados, s: Save) {
   c.piramideDesde ??= Math.max(0, c.temporada - 1);
   const reais: TabelasReais = { ...(c.tabelaAnterior && c.temporada > 0 ? { [c.temporada - 1]: c.tabelaAnterior } : {}), ...(c.tabelasReais ?? {}) };
   sincronizarMundo(pacote, s.semente, s.carreira.temporada, s.carreira.semana, reais, c.piramideDesde);
+  encaixarFamiliaNoMundo(pacote, s);
   mudancaDeDivisao(pacote, s);
   if (c.tecnicoClube !== c.clubeId && !c.fase) {
     const t = tecnicoDoClube(pacote, idClube(c.clubeId));
@@ -1639,6 +1640,23 @@ export const semanaAbsJogo = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + 
 export function familiaDe(pacote: PacoteDados, s: Save): EstadoFamilia {
   const c = s.carreira, j = s.jogador;
   return (c.familia ??= gerarFamilia(pacote, { semente: s.semente, nome: j.nome, pais: j.pais, origem: j.familia, idade: j.idade - c.temporada, ano: ANO_INICIAL, escolha: c.escolhaFamilia }));
+}
+/** Irmão profissional é jogador do mundo: a cada sincronização entra no elenco do clube dele e na história (a temporada
+ *  atual é guardada no próprio irmão, com o OVR de agora). Quem não é mais profissional sai do mundo. */
+function encaixarFamiliaNoMundo(pacote: PacoteDados, s: Save) {
+  const t = s.carreira.temporada;
+  for (const m of familiaDe(pacote, s).membros) {
+    const fb = m.futebol;
+    if (!fb || m.parentesco !== "irmao") continue;
+    const pro = fb.fase === "pro" && !!fb.clubeId, idade = ANO_INICIAL + t - m.nasc;
+    const temps = (fb.temporadas ??= []);
+    if (pro) {
+      const agora = { t, clubeId: fb.clubeId!, ovr: fb.ovr, pot: fb.pot, posicao: fb.posicao, idade };
+      const i = temps.findIndex((x) => x.t === t);
+      if (i >= 0) temps[i] = agora; else temps.push(agora);
+    }
+    encaixarNoMundo(pacote, { nome: m.nome, posicao: fb.posicao, ovr: fb.ovr, pot: fb.pot, idade, nacionalidade: s.jogador.nacionalidade }, pro ? fb.clubeId : undefined, temps);
+  }
 }
 export const namoroDe = (c: Carreira): EstadoNamoro => { const n = (c.namoro ??= novoNamoro()); arrumarNamoro(n); return n; };
 export const agendaDe = (c: Carreira): EstadoAgenda => (c.agenda ??= novaAgenda());
