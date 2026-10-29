@@ -157,12 +157,12 @@ export interface Lesao { t: number; clubeId: string; ini: number; fim: number; t
 /** Uma temporada na carreira de um jogador do mundo. */
 /** `liga`: o que a temporada imaginada precisa (fila na posição, titulares, força do clube, média da liga, rodadas);
  *  as estatísticas são sorteadas só quando alguém olha (st guarda o resultado). */
-export interface LinhaHistorico { t: number; clubeId: string; idade: number; ovr: number; pot: number; posicao: string; base: boolean; meio?: boolean; les?: [number, number]; liga?: [number, number, number, number, number, number?, number?]; st?: StatsNPC }
+export interface LinhaHistorico { t: number; clubeId: string; idade: number; ovr: number; pot: number; posicao: string; base: boolean; /** país do jogador (bandeira no perfil) */ nat?: string; meio?: boolean; les?: [number, number]; liga?: [number, number, number, number, number, number?, number?]; st?: StatsNPC }
 const VAGAS: Record<string, number> = { GOL: 1, ...VAGAS_433 };
 function registrarTemporada(m: Mundo) {
   const e = estado!, add = (j: JogadorNPC, clubeId: string, base: boolean) => {
     const l = e.hist.get(j.nome) ?? [];
-    if (!l.length || l[l.length - 1].t !== e.temporada) l.push({ t: e.temporada, clubeId, idade: j.idade, ovr: j.ovr, pot: j.pot ?? j.ovr, posicao: j.posicao, base });
+    if (!l.length || l[l.length - 1].t !== e.temporada) l.push({ t: e.temporada, clubeId, idade: j.idade, ovr: j.ovr, pot: j.pot ?? j.ovr, posicao: j.posicao, base, nat: j.nacionalidade });
     e.hist.set(j.nome, l);
   };
   for (const c of Object.values(m.clube)) if (c.ligaId !== "SELECOES") for (const j of c.elenco) add(j, c.id, false);
@@ -408,6 +408,11 @@ export const viradaAtual = (pacote: PacoteDados): ViradaMundo => garantir(pacote
 export function historicoDe(pacote: PacoteDados, nome: string): { linhas: LinhaHistorico[]; aposentouEm?: number } {
   const e = garantir(pacote), linhas = e.hist.get(nome) ?? [], ap = e.saiu.get(nome);
   return { linhas, ...(ap && !ondeJoga(pacote, nome) ? { aposentouEm: ap.t } : {}) };
+}
+/** País de um jogador: pelo elenco atual, ou pelo registro guardado. */
+export function nacionalidadeDe(pacote: PacoteDados, nome: string): string | undefined {
+  for (const c of Object.values(mundo(pacote).clube)) { const j = c.elenco.find((x) => x.nome === nome); if (j) return j.nacionalidade; }
+  return garantir(pacote).hist.get(nome)?.at(-1)?.nat;
 }
 /** Temporada imaginada (jogos, gols, assistências, nota) de uma linha do histórico; sempre a mesma para a mesma carreira. */
 export function statsDaLinha(pacote: PacoteDados, nome: string, x: LinhaHistorico): StatsNPC | undefined {

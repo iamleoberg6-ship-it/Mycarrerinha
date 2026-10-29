@@ -53,7 +53,7 @@ import type { LinhaPremio, PremioMundo } from "../../src/premios-mundo";
 import { artilheirosDaSelecao } from "../../src/artilheiros";
 import { trocasDeTecnicoEm, lesoesDaTemporada } from "../../src/mundo";
 import { NOME_ESTILO } from "../../src/tecnicos";
-import { infoClube, idClube, idSelecao, mundo, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
+import { infoClube, idClube, idSelecao, mundo, nacionalidadeDe, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
 import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
@@ -805,8 +805,10 @@ function historicoHtml(s: Save, nome: string): string {
     const e = st ? (atual ? statsAte(st, feitas, x.liga![4]) : st) : undefined;
     return `<tr${mudou ? ` class="mudou"` : ""}><td>${ANO_INICIAL + x.t}</td><td><span class="hist-clube">${escudo(x.clubeId)}<span>${esc(nomeDe(x.clubeId))}${x.base ? " <small>(base)</small>" : ""}</span></span></td><td class="n">${x.idade}</td><td class="n">${e ? e.j : "–"}</td><td class="n">${e ? e.g : "–"}</td><td class="n">${e ? e.a : "–"}</td><td class="n"><b>${x.ovr}</b>${d ? ` <small class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</small>` : ""}</td></tr>`;
   }).join("");
+  const nat = ult.nat ?? nacionalidadeDe(pacote, nome);
+  const bandeira = nat ? `<span class="hist-pais">${bandeiraSvg(nat, "escudo bandeira")}<small>${esc(NOME_PAIS[nat] ?? nat)}</small></span>` : "";
   return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
-    <div class="hist-topo">${onde ? escudo(onde.clubeId) : ""}<div><small>${esc(NOME_POS[ult.posicao] ?? "Goleiro")} · ${ult.idade} anos</small><h1>${esc(nome)}</h1><span class="sub">${esc(agora)}</span></div><div class="ovr"><strong>${ult.ovr}</strong><span>OVR</span></div></div>
+    <div class="hist-topo">${onde ? escudo(onde.clubeId) : ""}<div><small>${esc(NOME_POS[ult.posicao] ?? "Goleiro")} · ${ult.idade} anos</small><h1>${esc(nome)}</h1>${bandeira}<span class="sub">${esc(agora)}</span></div><div class="ovr"><strong>${ult.ovr}</strong><span>OVR</span></div></div>
     <div class="linha-info" style="margin:10px 0">${tag}<span>Pico <b>${pico.ovr}</b> em ${ANO_INICIAL + pico.t}</span><span><b>${clubes.length}</b> ${clubes.length === 1 ? "clube" : "clubes"}</span>${tot.j ? `<span><b>${tot.j}</b> jogos · <b>${tot.g}</b> gols · <b>${tot.a}</b> assist.</span>` : ""}${rel ? `<span>Relação: <b>${esc(rotuloNivel(rel.nivel))}</b></span>` : ""}</div>
     <table class="hist"><thead><tr><th>Ano</th><th>Clube</th><th class="n">Id.</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">OVR</th></tr></thead><tbody>${linhas}</tbody></table>
     ${l[0].t === 0 && !l[0].base ? `<p class="sub" style="margin-top:8px">Antes de ${ANO_INICIAL}: carreira fora do registro do jogo.</p>` : ""}`;
