@@ -3,8 +3,8 @@
 // A raridade sai do que o jogador fez: comum, prata, brilhante e lenda.
 export type Raridade = "comum" | "prata" | "brilhante" | "lenda";
 export const NOME_RARIDADE: Record<Raridade, string> = { comum: "Comum", prata: "Prata", brilhante: "Brilhante", lenda: "Lenda" };
-export type TipoFigurinha = "temporada" | "selecao" | "capitao" | "titulo" | "premio" | "estreia" | "patrocinio" | "familia" | "golaco";
-export const NOME_TIPO_FIG: Record<TipoFigurinha, string> = { temporada: "Temporada", selecao: "Seleção", capitao: "Capitão", titulo: "Campeão", premio: "Prêmio", estreia: "Estreia", patrocinio: "Patrocínio", familia: "Família", golaco: "Golaço" };
+export type TipoFigurinha = "temporada" | "selecao" | "capitao" | "titulo" | "premio" | "estreia" | "patrocinio" | "familia" | "golaco" | "filho";
+export const NOME_TIPO_FIG: Record<TipoFigurinha, string> = { temporada: "Temporada", selecao: "Seleção", capitao: "Capitão", titulo: "Campeão", premio: "Prêmio", estreia: "Estreia", patrocinio: "Patrocínio", familia: "Família", golaco: "Golaço", filho: "Filho" };
 export interface Figurinha {
   id: string; ano: number; tipo: TipoFigurinha; raridade: Raridade;
   clubeId: string; clube: string; cores: [string, string]; numero: string; posicao: string;
@@ -15,6 +15,10 @@ export interface Figurinha {
   ap: Record<string, unknown>;
   /** figurinha de patrocínio: o contrato assinado (valor e duração) */
   contrato?: { marca: string; tipo: string; mensal: number; meses: number; luvas: number };
+  /** figurinha de família: o id da companheira (a foto dela entra ao lado, com o jogador de roupa social) */
+  parId?: string;
+  /** figurinha de filho: o índice do filho na lista de filhos do jogador (o retrato sai da genética dele) */
+  filhoIdx?: number;
 }
 export interface DadosTemporadaFig { ano: number; ovr: number; idade: number; jogos: number; gols: number; assist: number; titulo: boolean; premios: string[]; selecao: boolean; capitao: boolean; clubeId: string; clube: string; cores: [string, string]; numero: string; posicao: string; ap: Record<string, unknown> }
 

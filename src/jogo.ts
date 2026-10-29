@@ -39,7 +39,7 @@ import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./p
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
-import { semanaDoClube, gatilhoClube, fimDeTemporadaClube, figurinhaDaSelecao, figurinhaDeGolaco } from "./clube-vivo.js";
+import { semanaDoClube, gatilhoClube, fimDeTemporadaClube, figurinhaDaSelecao, figurinhaDeGolaco, figurinhaDeFilho } from "./clube-vivo.js";
 import type { Vestiario } from "./vestiario.js";
 import type { Rival } from "./rival.js";
 import type { EstadoTorcida } from "./torcida.js";
@@ -2317,6 +2317,8 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   { const tf = temporadaFamilia(pacote, familiaDe(pacote, s), rngDe(s, "familia-temporada"), ANO_INICIAL + c.temporada + 1, s.jogador.pais, eventos); c.moral = clamp(c.moral + tf.moral, 0, 100); }
   { const tn = temporadaNamoro(namoroDe(c), eventos, { semente: s.semente, ano: ANO_INICIAL + c.temporada, salario: c.salario, paises: [paisOndeMora(pacote, s), s.jogador.pais] });
     if (tn.casou) agendarCasamento(agendaDe(c), semanaAbsJogo(c), tn.casou, c.salario);
+    // filhos que nasceram nesta temporada ganham figurinha (uma por filho)
+    for (const [i, f] of (namoroDe(c).filhos ?? []).entries()) if (f.ano === ANO_INICIAL + c.temporada) figurinhaDeFilho(pacote, s, i, f.ano);
     if (tn.custo) s.casa.saldo -= tn.custo;
     if (tn.escandalo) { c.fama = clamp(c.fama + 1, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); }
     if (tn.noticia) noticiaDeRomance(s, tn.escandalo ? "polemica" : "vida", tn.noticia, tn.escandalo ? `A vida pessoal de ${s.jogador.apelido} virou assunto nos programas de fofoca.` : `Festa para a família e os amigos do futebol.`, namoroDe(c).par); }

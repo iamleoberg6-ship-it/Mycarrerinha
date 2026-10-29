@@ -704,6 +704,8 @@ export function foneNoPescoco(cor: string, detalhe: string, y = 0): string {
 // ---------------------------------- montagem ----------------------------------
 export interface OpcoesFoto {
   aparencia: Aparencia | null; // null = silhueta (ainda sem aparência escolhida)
+  /** degradê do fundo (as cores do clube); sem ele, o fundo padrão pela pele */
+  fundo?: [string, string];
   camisa?: Camisa;
   numero?: string;
   cenario?: string; // cenário no sistema antigo de 200x220, ampliado para o quadro
@@ -766,7 +768,7 @@ export function svgFoto(o: OpcoesFoto): string {
     ${boca(a.boca, pele)}
     ${detalhes}`;
   const fundoId = novoId("fu"), skinId = novoId("sk");
-  const [fa, fb] = FUNDO_AVATAR[a.pele % FUNDO_AVATAR.length];
+  const [fa, fb] = o.fundo ?? FUNDO_AVATAR[a.pele % FUNDO_AVATAR.length];
   const cenario = o.soCabeca ? "" : o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : silhueta ? `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>` : `<rect width="${LARG}" height="${ALT}" fill="url(#${fundoId})"/><circle cx="240" cy="70" r="46" fill="#fff" opacity=".18"/><circle cx="56" cy="300" r="70" fill="#fff" opacity=".08"/>`;
   const acabamento = silhueta ? "" : `<linearGradient id="${fundoId}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${fa}"/><stop offset="1" stop-color="${fb}"/></linearGradient><radialGradient id="${skinId}" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="${luzPele}"/><stop offset=".55" stop-color="${pele}"/><stop offset="1" stop-color="${sombraPele}"/></radialGradient>`;
   return `<svg viewBox="0 0 ${LARG} ${ALT}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto de perfil do jogador">

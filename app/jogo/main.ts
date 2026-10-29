@@ -39,7 +39,7 @@ import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa
 import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
 import { ICONE_ORIGEM, NOME_ORIGEM } from "../../src/agenda";
 import { NOME_TOM } from "../../src/conversas";
-import { gostosDe, conheceGostos, NOME_GOSTO, LUGARES, NOME_PEDIDO, quimica, pensamentoDela, type Lugar } from "../../src/namoro";
+import { gostosDe, conheceGostos, NOME_GOSTO, LUGARES, NOME_PEDIDO, quimica, pensamentoDela, acharPar, type Lugar } from "../../src/namoro";
 import { NOME_PERFIL, FUNCOES, type FuncaoParca } from "../../src/vida-social";
 import { LUXO, MAX_LUXO, HOBBIES, MAX_HOBBIES, CURSOS, NOME_LINGUA, NIVEL_LINGUA, cursosDisponiveis, infoCurso, linguaNativa, DOACAO, NOME_DOACAO, CUSTO_FUNDACAO, type TipoLuxo, type Hobby, type Curso, type Lingua } from "../../src/estilo";
 import { POSTS, MAX_POSTS, postsDisponiveis, respostasDaPauta, tituloDaPauta, type TipoPost } from "../../src/midia";
@@ -115,6 +115,11 @@ const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, p
 
 // ------------------------------------------------------------------ peças visuais
 function cores(id: string): string[] { return clubeCasa(pacote, id).cores; }
+/** Cor mais escura (fator 0–1 do original): para o fundo do perfil não brigar com o rosto. */
+function escurecer(hex: string, f: number): string {
+  const c = /^#[0-9a-f]{6}$/i.test(hex) ? hex : "#2C3E50";
+  return "#" + [1, 3, 5].map((i) => Math.round(parseInt(c.slice(i, i + 2), 16) * f).toString(16).padStart(2, "0")).join("");
+}
 function escudo(id: string): string {
   // seleção: a bandeira do país no lugar do escudo
   if (id.startsWith("NAT-")) return bandeiraSvg(id.slice(4));
@@ -174,7 +179,8 @@ function capaDe(s: Save, edicao: number, clube: string, regional: boolean): stri
 function foto(s: Save): string {
   const [a, b] = cores(s.carreira.clubeId);
   const ap = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) };
-  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa", fonte: s.carreira.clubeId }, numero: s.jogador.numero, traje: "jogo", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
+  // o fundo é o do clube: as cores dele, escurecidas para o rosto continuar em destaque
+  return svgFoto({ aparencia: ap, fundo: [escurecer(a, 0.55), a], camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa", fonte: s.carreira.clubeId }, numero: s.jogador.numero, traje: "jogo", pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
 }
 /** Rosto de um personagem do jogo (rival, companheiro), sorteado pelo nome: sempre o mesmo para o mesmo nome. */
 function fotoNpc(nome: string, clubeId: string, idade = 25): string {
@@ -1208,6 +1214,11 @@ function figurinhaPatrocinioSvg(f: Figurinha): string {
     <rect x="82" y="204" width="64" height="18" rx="9" fill="none" stroke="${c1}" stroke-width="1.5"/><text x="114" y="216" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="8" fill="${ink}">${esc(pill.slice(0, 22))}</text>
     </svg>`;
 }
+/** Retrato (svg ou foto) dentro de uma área da figurinha: a foto entra por foreignObject, o svg ganha o tamanho da área. */
+function retratoNoMedalhao(html: string, x: number, y: number, w: number, h: number): string {
+  if (html.startsWith("<svg")) return html.replace("<svg ", `<svg x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" `);
+  return `<foreignObject x="${x}" y="${y}" width="${w}" height="${h}"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;overflow:hidden">${html.replace("<img ", '<img style="width:100%;height:100%;object-fit:cover" ')}</div></foreignObject>`;
+}
 function figurinhaSvg(f: Figurinha): string {
   if (f.tipo === "patrocinio" && f.contrato) return figurinhaPatrocinioSvg(f);
   const c1 = f.cores[0], c2 = f.cores[1] ?? "#111111", claro = c1.toUpperCase() === "#FFFFFF", fundo = claro ? c2 : c1;
@@ -1220,7 +1231,18 @@ function figurinhaSvg(f: Figurinha): string {
   const brasao = marca ? logoSvg(marca, 60).replace("<svg ", '<svg x="12" y="52" width="136" height="80" style="width:136px;height:80px" ')
     : (selecao ? bandeiraSvg(f.clubeId.slice(4)) : escudo(f.clubeId)).replace("<svg ", selecao ? '<svg x="36" y="32" width="88" height="104" style="width:88px;height:104px" ' : '<svg x="28" y="30" width="104" height="104" style="width:104px;height:104px" ');
   // o jogador entra num medalhão pequeno no canto do brasão
-  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: claro ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ');
+  // o medalhão: o jogador de uniforme; na figurinha de família, de roupa social; na de filho, o retrato do filho
+  const sv = save, filhos = sv ? namoroDe(sv.carreira).filhos ?? [] : [];
+  const filho = f.tipo === "filho" && f.filhoIdx !== undefined ? filhos[f.filhoIdx] : undefined;
+  const parceira = f.parId && sv ? acharPar(namoroDe(sv.carreira), f.parId) : undefined;
+  const rostoMedalhao = filho && sv ? retratoFilho(sv, filho, f.filhoIdx!).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ')
+    : f.tipo === "familia" ? svgFoto({ aparencia: ap, traje: "social" }).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ')
+    : svgFoto({ aparencia: ap, camisa: { cor1: claro ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ');
+  const rosto = rostoMedalhao;
+  // a companheira, no medalhão ao lado (figurinha de família)
+  const medalhaoParceira = parceira ? `<circle cx="36" cy="136" r="27" fill="#0B1410" stroke="#E3B341" stroke-width="1.8"/><g clip-path="url(#pp${id})">${retratoNoMedalhao(fotoDoPerfil(parceira), 12, 116, 48, 44)}</g>` : "";
+  // estádio em traço claro atrás do escudo (as linhas do campo e a arquibancada do clube)
+  const estadio = `<g fill="none" stroke="#ffffff" opacity=".16"><ellipse cx="80" cy="92" rx="70" ry="44" stroke-width="9" stroke-dasharray="5 3"/><rect x="34" y="78" width="92" height="56" stroke-width="1.2"/><line x1="80" y1="78" x2="80" y2="134" stroke-width="1.2"/></g>`;
   const especial = f.tipo !== "temporada", faixa = especial ? NOME_TIPO_FIG[f.tipo].toUpperCase() : String(f.ano);
   const fw = especial ? 104 : 58;
   const stat = (x: number, rot: string, v: number) => `<rect x="${x}" y="164" width="44" height="22" rx="4" fill="#0B1410" opacity=".8"/><text x="${x + 22}" y="173" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#cfd8d3">${rot}</text><text x="${x + 22}" y="186" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${v}</text>`;
@@ -1228,11 +1250,12 @@ function figurinhaSvg(f: Figurinha): string {
     <linearGradient id="fg${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${fundo}"/><stop offset=".62" stop-color="${fundo}" stop-opacity=".55"/><stop offset="1" stop-color="#0B1410"/></linearGradient>
     <pattern id="lis${id}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><rect width="6" height="12" fill="#ffffff" opacity=".07"/></pattern>
     <linearGradient id="sh${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset=".42" stop-color="#ffffff" stop-opacity=".28"/><stop offset=".58" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
-    <clipPath id="cp${id}"><circle cx="124" cy="136" r="24"/></clipPath></defs>
+    <clipPath id="cp${id}"><circle cx="124" cy="136" r="24"/></clipPath><clipPath id="pp${id}"><circle cx="36" cy="136" r="24"/></clipPath></defs>
     <rect x="1" y="1" width="158" height="228" rx="10" fill="url(#fg${id})"/><rect x="1" y="1" width="158" height="228" rx="10" fill="url(#lis${id})"/>
     <circle cx="80" cy="82" r="54" fill="#ffffff" opacity=".12"/><circle cx="80" cy="82" r="62" fill="${c2}" opacity=".18"/>
+    ${estadio}
     ${brasao}
-    <circle cx="124" cy="136" r="27" fill="#0B1410" stroke="#E3B341" stroke-width="1.8"/><g clip-path="url(#cp${id})">${rosto}</g>
+    <circle cx="124" cy="136" r="27" fill="#0B1410" stroke="#E3B341" stroke-width="1.8"/><g clip-path="url(#cp${id})">${rosto}</g>${medalhaoParceira}
     <rect x="0" y="0" width="160" height="180" rx="10" fill="url(#sh${id})"/>
     <rect x="6" y="6" width="${fw}" height="17" rx="5" fill="#0B1410" opacity=".85"/><text x="${6 + fw / 2}" y="18.5" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="11" letter-spacing=".4" fill="#fff">${esc(faixa)}</text>
     <circle cx="142" cy="24" r="13" fill="#E3B341" stroke="#0B1410" stroke-width="1.6"/><text x="142" y="29" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="15" fill="#0B1410">${f.ovr}</text>
@@ -1243,7 +1266,7 @@ function figurinhaSvg(f: Figurinha): string {
 }
 /** Página do álbum aberta (índice na lista de temporadas); undefined = a última. */
 let albumPag: number | undefined;
-const ORDEM_FIG = ["temporada", "selecao", "titulo", "capitao", "estreia", "golaco", "patrocinio", "familia", "premio"];
+const ORDEM_FIG = ["temporada", "selecao", "titulo", "capitao", "estreia", "golaco", "patrocinio", "familia", "filho", "premio"];
 /** Capa do álbum na aba do jogador: abre o álbum inteiro numa janela. */
 function albumCapaHtml(s: Save): string {
   const album = albumDe(s.carreira);

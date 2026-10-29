@@ -217,7 +217,13 @@ export function figurinhaDeFamilia(pacote: PacoteDados, s: Save) {
   const par = s.carreira.namoro?.par;
   if (!par || (par.etapa !== "noivos" && par.etapa !== "casados")) return;
   const legenda = par.etapa === "casados" ? `Casou com ${par.nome.split(" ")[0]}` : `Noivou com ${par.nome.split(" ")[0]}`;
-  figurinhaDeMomento(albumDe(s.carreira), "familia", baseFigurinha(pacote, s), `${par.etapa}-${par.nome}`, legenda, par.etapa === "casados" ? "brilhante" : "prata");
+  const f = figurinhaDeMomento(albumDe(s.carreira), "familia", baseFigurinha(pacote, s), `${par.etapa}-${par.nome}`, legenda, par.etapa === "casados" ? "brilhante" : "prata");
+  if (f) f.parId = par.id;
+}
+/** Filho que nasceu: figurinha com o retrato dele (o índice na lista de filhos). Uma por filho. */
+export function figurinhaDeFilho(pacote: PacoteDados, s: Save, i: number, ano: number) {
+  const f = figurinhaDeMomento(albumDe(s.carreira), "filho", baseFigurinha(pacote, s), `${i}-${ano}`, `Nasceu em ${ano}`, "brilhante");
+  if (f) f.filhoIdx = i;
 }
 /** Primeira convocação: figurinha da seleção. */
 export function figurinhaDaSelecao(pacote: PacoteDados, s: Save, nomeSelecao: string, cores: [string, string]) {
