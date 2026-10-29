@@ -1053,7 +1053,13 @@ const TROFEU = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="tru
 function clubeHtml(clubeId: string): string {
   const info = infoClube(pacote, clubeId), w = mundo(pacote), cl = w.clube[clubeId];
   if (!info || !cl) return `<p class="sub">Clube não encontrado.</p>`;
-  const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId);
+  const tit = titulosDoClube(pacote, clubeId);
+  // as temporadas do usuário no clube (as já fechadas e a atual) entram nos recordes e no time de todos os tempos
+  const usuario: TemporadaUsuario[] = save ? [
+    ...save.carreira.historico.filter((h) => h.clubeId === clubeId).map((h) => ({ nome: save!.jogador.apelido, t: h.ano - ANO_INICIAL, j: h.jogos, g: h.gols, a: h.assist, pos: save!.jogador.posicao, nota: h.nota })),
+    ...(save.carreira.clubeId === clubeId ? [{ nome: save.jogador.apelido, t: save.carreira.temporada, j: save.carreira.stats.jogos, g: save.carreira.stats.gols, a: save.carreira.stats.assist, pos: save.jogador.posicao, nota: save.carreira.stats.notas.length ? save.carreira.stats.notas.reduce((a, b) => a + b, 0) / save.carreira.stats.notas.length : undefined }] : []),
+  ] : [];
+  const xi = timeDeTodosOsTempos(pacote, clubeId, usuario);
   // o elenco do mundo não guarda o jogador do usuário: ele entra no elenco do clube em que joga e na seleção quando convocado
   const elencoMundo = plantelDoClube(pacote, clubeId).slice(0, 25).map((j) => ({ nome: j.nome, apelido: j.nome, posicao: j.posicao, ovr: j.ovr, eu: false }));
   const sv = save, eu = sv ? (() => {
@@ -1063,17 +1069,12 @@ function clubeHtml(clubeId: string): string {
     return noClube || convocado ? [{ nome: j.nome, apelido: j.apelido, posicao: j.posicao, ovr: Math.round(ovr(j)), eu: true }] : [];
   })() : [];
   const elenco = [...eu, ...elencoMundo].sort((a, b) => b.ovr - a.ovr);
-  // as temporadas do usuário no clube (as já fechadas e a atual) entram nos recordes
-  const usuario: TemporadaUsuario[] = save ? [
-    ...save.carreira.historico.filter((h) => h.clubeId === clubeId).map((h) => ({ nome: save!.jogador.apelido, t: h.ano - ANO_INICIAL, j: h.jogos, g: h.gols, a: h.assist })),
-    ...(save.carreira.clubeId === clubeId ? [{ nome: save.jogador.apelido, t: save.carreira.temporada, j: save.carreira.stats.jogos, g: save.carreira.stats.gols, a: save.carreira.stats.assist }] : []),
-  ] : [];
   const rec = recordesHistoricosDoClube(pacote, clubeId, usuario);
   const bloco = (titulo: string, lista: RecordeNome[], comAno: boolean) => lista.length ? `<p class="rotulo" style="margin-top:14px">${titulo}</p><table style="table-layout:fixed"><colgroup><col style="width:28px"><col><col style="width:64px"><col style="width:44px"></colgroup><tbody>${lista.map((x, i) => `<tr${x.eu ? ` class="meu"` : ""}><td>${i + 1}</td><td>${x.eu ? `<b style="color:var(--ouro)">${esc(x.nome)}</b> <small class="sub">(você)</small>` : linkJogador(x.nome)}</td><td class="n">${comAno ? ANO_INICIAL + (x.ano ?? 0) : ""}</td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : "";
   const recordes = [bloco("Mais gols em uma temporada", rec.golsTemp, true), bloco("Mais assistências em uma temporada", rec.assistTemp, true), bloco("Maiores artilheiros da história", rec.artilheiros, false), bloco("Maiores assistentes da história", rec.assistentes, false), bloco("Goleiros com mais jogos sem tomar gol", rec.semGol, false)].join("");
   const tec = tecnicoDoClube(pacote, clubeId), liga = info.ligaId, irmaos = w.liga[liga]?.clubes ?? [];
   const de = (p: string) => xi.filter((x) => x.posicao === p);
-  const cart = (x: TitularHistorico) => `<div class="sel-j xi-j">${camisaMini(clubeId, numeroDe(x.nome))}<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(nomeCurtoSel(x.nome))}</button>${x.vezes ? `<small><b>${ANO_INICIAL + x.melhorAno}</b> · ${x.melhorNota.toFixed(2).replace(".", ",")}</small><small>${x.vezes}× melhor</small>` : `<small>elenco atual</small>`}</div>`;
+  const cart = (x: TitularHistorico) => `<div class="sel-j xi-j${x.eu ? " eu" : ""}">${camisaMini(clubeId, numeroDe(x.nome))}${x.eu ? `<b style="color:var(--ouro)">${esc(nomeCurtoSel(x.nome))}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(nomeCurtoSel(x.nome))}</button>`}${x.vezes ? `<small><b>${ANO_INICIAL + x.melhorAno}</b> · ${x.melhorNota.toFixed(2).replace(".", ",")}</small><small>${x.vezes}× melhor</small>` : `<small>elenco atual</small>`}</div>`;
   const linhas = [[...de("PON").slice(0, 1), ...de("ATA"), ...de("PON").slice(1)], [...de("MEI").slice(0, 1), ...de("VOL"), ...de("MEI").slice(1)], [...de("LAT").slice(0, 1), ...de("ZAG"), ...de("LAT").slice(1)], de("GOL")];
   const trofeus = tit.ligas.length
     ? tit.ligas.map((l) => `<div class="titulo-liga">${TROFEU.repeat(Math.min(l.anos.length, 6))}${l.anos.length > 6 ? `<b>×${l.anos.length}</b>` : ""}<div><b>${esc(l.curto)}</b> <small class="sub">${l.anos.map((a) => ANO_INICIAL + a).join(", ")}</small></div></div>`).join("")

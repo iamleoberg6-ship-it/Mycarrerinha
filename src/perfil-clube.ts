@@ -19,25 +19,30 @@ export function titulosDoClube(pacote: PacoteDados, clubeId: string): { total: n
   return { total: ligas.reduce((a, l) => a + l.anos.length, 0), ligas };
 }
 
-export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number; melhorAno: number; melhorNota: number }
+export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number; melhorAno: number; melhorNota: number; /** o próprio jogador do usuário */ eu?: boolean }
 
 /** O melhor de cada posição em cada temporada (mín. de jogos), contado ao longo da história; o time sai dos que mais vezes foram o melhor. */
-export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): TitularHistorico[] {
+export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = []): TitularHistorico[] {
   const porTempo = new Map<string, { nome: string; posicao: string; nota: number }[]>();
   const notas = new Map<string, { soma: number; n: number; temporadas: number }>();
   const melhorTemp = new Map<string, { t: number; nota: number }>();
+  const entra = (nome: string, t: number, posicao: string, nota: number) => {
+    const chave = `${t}|${posicao}`, lista = porTempo.get(chave) ?? [];
+    lista.push({ nome, posicao, nota });
+    porTempo.set(chave, lista);
+    const acu = notas.get(nome) ?? { soma: 0, n: 0, temporadas: 0 };
+    acu.soma += nota; acu.n++; acu.temporadas++;
+    notas.set(nome, acu);
+    const mt = melhorTemp.get(nome);
+    if (!mt || nota > mt.nota) melhorTemp.set(nome, { t, nota });
+  };
   for (const { nome, x } of linhasDoClube(pacote, clubeId)) {
     const st = statsDaLinha(pacote, nome, x);
     if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
-    const chave = `${x.t}|${x.posicao}`, lista = porTempo.get(chave) ?? [];
-    lista.push({ nome, posicao: x.posicao, nota: st.n });
-    porTempo.set(chave, lista);
-    const acu = notas.get(nome) ?? { soma: 0, n: 0, temporadas: 0 };
-    acu.soma += st.n; acu.n++; acu.temporadas++;
-    notas.set(nome, acu);
-    const mt = melhorTemp.get(nome);
-    if (!mt || st.n > mt.nota) melhorTemp.set(nome, { t: x.t, nota: st.n });
+    entra(nome, x.t, x.posicao, st.n);
   }
+  // as temporadas do usuário no clube entram com a nota média e a posição dele, como qualquer jogador
+  for (const u of usuario) if (u.j >= MIN_JOGOS_TEMPORADA && u.pos && u.nota !== undefined) entra(u.nome, u.t, u.pos, u.nota);
   const vezes = new Map<string, { posicao: string; vezes: number }>();
   for (const lista of porTempo.values()) {
     const melhor = lista.sort((a, b) => b.nota - a.nota)[0];
@@ -48,7 +53,7 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): Titul
   const todos: TitularHistorico[] = [...vezes].map(([nome, v]) => {
     const a = notas.get(nome)!;
     const mt = melhorTemp.get(nome)!;
-    return { nome, posicao: v.posicao, vezes: v.vezes, nota: +(a.soma / a.n).toFixed(2), temporadas: a.temporadas, melhorAno: mt.t, melhorNota: +mt.nota.toFixed(2) };
+    return { nome, posicao: v.posicao, vezes: v.vezes, nota: +(a.soma / a.n).toFixed(2), temporadas: a.temporadas, melhorAno: mt.t, melhorNota: +mt.nota.toFixed(2), ...(usuario.some((u) => u.nome === nome) ? { eu: true } : {}) };
   });
   // o XI: por posição, quem mais foi o melhor da posição (desempate pela nota média); goleiro é um só
   const xi: TitularHistorico[] = [];
@@ -85,7 +90,7 @@ export interface RecordesDoClube { golsTemp: RecordeNome[]; assistTemp: RecordeN
 const cacheRecordes = new Map<string, { temp: RecordeNome[]; assistTemp: RecordeNome[]; gols: Map<string, number>; assist: Map<string, number>; sg: Map<string, number> }>();
 const topo = (m: Map<string, number>) => [...m].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor).slice(0, 5);
 /** Temporada do jogador do usuário no clube (o mundo simulado não guarda ele): ano é o índice da temporada. */
-export interface TemporadaUsuario { nome: string; t: number; j: number; g: number; a: number }
+export interface TemporadaUsuario { nome: string; t: number; j: number; g: number; a: number; /** posição de jogo e nota média da temporada (entram no time de todos os tempos) */ pos?: string; nota?: number }
 /** Recordes do clube na história: maiores artilheiros e assistentes, o melhor de uma temporada e goleiros que mais seguraram o zero. */
 export function recordesHistoricosDoClube(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = []): RecordesDoClube {
   let base = cacheRecordes.get(clubeId);
