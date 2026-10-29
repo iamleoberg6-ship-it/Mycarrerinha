@@ -253,6 +253,25 @@ tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--
 .sel-j { flex: 1; max-width: 25%; display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 11px; line-height: 1.2; color: #fff; }
 .sel-j svg { width: 20px; height: 22px; margin-bottom: 2px; } .sel-j .nome-hist, .sel-j b { font-size: 11px; color: #fff; } .sel-j small { color: rgba(255,255,255,.75); font-size: 10px; }
 .sel-j.eu b { color: var(--ouro); }
+.album-capa { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border-radius: 14px; border: 1px solid var(--linha); background: #F5EEDC; color: #1d2a22; text-align: left; cursor: pointer; font: inherit; }
+.album-capa-mini { display: flex; gap: 6px; flex: none; } .album-capa-mini .fig { width: 52px; } .album-capa small { display: block; font-size: 12px; color: #6b5a2c; } .album-capa b { font-size: 15px; }
+.dlg-album { max-width: 520px; width: 96vw; border: none; border-radius: 16px; padding: 0; background: transparent; }
+.dlg-album::backdrop { background: #0008; }
+.album-fecha { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.album-cap { background: #F5EEDC; color: #1d2a22; border-radius: 16px; padding: 14px 12px; box-shadow: inset 0 0 0 2px #d8ccb0, 0 6px 18px #0005; }
+.album-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.album-ano { font-family: 'Big Shoulders Display', sans-serif; font-weight: 900; font-size: 34px; line-height: 1; color: #1d2a22; }
+.album-sub { font-size: 12px; color: #6b5a2c; margin-top: 2px; }
+.album-seta { width: 40px; height: 40px; border-radius: 99px; border: 2px solid #b9ab87; background: #fff8e8; color: #1d2a22; font-size: 22px; line-height: 1; cursor: pointer; }
+.album-seta:disabled { opacity: .35; cursor: default; }
+.album-meta { font-size: 11px; color: #6b5a2c; margin: 6px 0 0; text-align: center; }
+.album-secao { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #6b5a2c; margin: 14px 0 6px; display: flex; align-items: center; gap: 8px; }
+.album-secao::after { content: ""; flex: 1; height: 1px; background: #cdbf9a; }
+.album-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.album-grid .fig { padding: 2px; border-radius: 12px; }
+.album-grid .fig-svg { box-shadow: 0 2px 6px #0004; }
+.album-slot { aspect-ratio: 160 / 230; border-radius: 10px; border: 2px dashed #b9ab87; background: repeating-linear-gradient(45deg, #efe6cf 0 6px, #e6daba 6px 12px); display: flex; align-items: center; justify-content: center; text-align: center; color: #8a7b57; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 6px; }
+
 .titulos { display: flex; flex-direction: column; gap: 8px; } .titulo-liga { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; border-radius: 10px; background: rgba(227,179,65,.08); border: 1px solid rgba(227,179,65,.25); } .titulo-liga svg { flex: none; } .titulo-liga b { font-size: 14px; } .titulo-liga small { font-size: 11px; }
 .nome-hist { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted rgba(255,255,255,.35); text-underline-offset: 3px; }
 .hist-topo { display: flex; gap: 12px; align-items: center; padding-right: 40px; } .hist-topo h1 { margin: 2px 0; font-size: 26px; } .hist-topo small { color: var(--giz-2); }
@@ -611,6 +630,7 @@ dialog.jogo-grande .placar.ident { background-image: radial-gradient(120% 140% a
 <input type="file" id="arqSave" accept=".json,application/json" hidden>
 <dialog id="dlgPerfil" aria-label="Perfil do jogador"><div class="tela perfil" id="telaPerfil"></div></dialog>
 <dialog id="dlgHist" aria-label="Histórico do jogador"><div class="tela" id="telaHist" style="position:relative;padding:18px 16px"></div></dialog>
+<dialog id="dlgAlbum" aria-label="Álbum de figurinhas" class="dlg-album"><div id="telaAlbum" style="position:relative;padding:14px 12px"></div></dialog>
 <dialog id="dlgClube" aria-label="Perfil do clube"><div class="tela" id="telaClube" style="position:relative;padding:18px 16px"></div></dialog>
 <script>/*__SCRIPT__*/</script>
 </body>

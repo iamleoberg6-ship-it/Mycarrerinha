@@ -3,7 +3,7 @@
 // Os módulos de regra (vestiario, rival, torcida, cidades, figurinhas) não conhecem o Save; aqui é onde eles se encontram.
 import { RNG, clamp } from "./rng.js";
 import type { PacoteDados } from "./liga.js";
-import { mundo, infoClube, idClube, ondeJoga, historicoDe, statsDaLinha, notasDaRodada, trocasDeTecnico } from "./mundo.js";
+import { mundo, infoClube, idClube, idSelecao, ondeJoga, historicoDe, statsDaLinha, notasDaRodada, trocasDeTecnico } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
 import { estrelas } from "./relacoes.js";
 import { COPAS } from "./copas.js";
@@ -243,6 +243,11 @@ export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTempo
     const conv = Object.entries(c.selecao?.conv ?? {}).some(([k, v]) => v && k.startsWith(`${c.temporada}-`));
     const porClube = Object.entries(c.clubesTemp ?? {}).filter(([, t]) => t.jogos > 0);
     const lista: [string, { jogos: number; gols: number; assist: number }][] = porClube.length ? porClube : [[c.clubeId, { jogos: r.jogos, gols: r.gols, assist: r.assist }]];
+    // a seleção do ano: uma figurinha quando foi convocado no ano (com as cores e o nome da seleção)
+    if (conv) {
+      const sel = infoClube(pacote, idSelecao(j.nacionalidade));
+      if (sel) { const f = figurinhaEspecial(albumDe(c), "selecao", { ...baseFigurinha(pacote, s), ano, clubeId: `sel-${j.nacionalidade}`, clube: sel.nome, cores: [sel.cores[0] ?? "#FFFFFF", sel.cores[1] ?? "#111111"] }, `Temporada na seleção · ${sel.nome}`, "prata"); if (f) ev.push(`Figurinha da seleção em ${ano}.`); }
+    }
     for (const [id, t] of lista) {
       const atual = id === c.clubeId, ic = infoClube(pacote, id);
       if (!ic) continue;

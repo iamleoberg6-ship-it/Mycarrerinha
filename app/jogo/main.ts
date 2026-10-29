@@ -1153,38 +1153,69 @@ function quemPuxou(s: Save, f: Filho, i: number): string {
   const olhos = ["castanho-escuros", "castanhos", "cor de mel", "verdes", "azuis"][g.olhos] ?? "castanhos";
   return `Cabelo ${tex} ${g.puxou.cabelo === "pai" ? "com a cor do seu" : `com a cor do da ${m}`}, olhos ${olhos} ${g.puxou.olhos === "pai" ? "como os seus" : `como os da ${m}`}, a pele ${g.puxou.pele === "os dois" ? "é uma mistura dos dois" : `puxou mais ${de(g.puxou.pele) === "seu" ? "a sua" : `a ${de(g.puxou.pele)}`}`}${g.sardas ? ". E tem sardinhas" : ""}.`;
 }
-/** Álbum de figurinhas da carreira. */
+/** Figurinha: moldura pela raridade (CSS), fundo com a cor do clube, o jogador de uniforme, a faixa do ano ou do tipo e as estatísticas. */
 function figurinhaSvg(f: Figurinha): string {
-  const cor = f.cores[0].toUpperCase() === "#FFFFFF" ? f.cores[1] : f.cores[0];
+  const c1 = f.cores[0], c2 = f.cores[1] ?? "#111111", claro = c1.toUpperCase() === "#FFFFFF", fundo = claro ? c2 : c1;
   const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
-  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: f.cores[0].toUpperCase() === "#FFFFFF" ? "#F4F4F2" : f.cores[0], cor2: f.cores[1] ?? "#111111", estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="10" y="22" width="140" height="168" ');
-  return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="Figurinha ${f.ano}"><defs><linearGradient id="fg${f.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${cor}"/><stop offset="1" stop-color="#0E1A15"/></linearGradient></defs>
-    <rect x="1" y="1" width="158" height="228" rx="10" fill="url(#fg${f.id})"/>${rosto}
-    <rect x="6" y="6" width="58" height="16" rx="4" fill="#0008"/><text x="35" y="18" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="11" fill="#fff">${f.ano}</text>
-    <text x="150" y="20" text-anchor="end" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="18" fill="#fff">${f.ovr}</text>
-    <rect x="0" y="186" width="160" height="44" fill="#0E1A15" opacity=".92"/><text x="80" y="202" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${esc(f.clube.toUpperCase().slice(0, 22))}</text>
-    <text x="80" y="216" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#cfd8d3">${esc(f.posicao)} · ${f.jogos} J · ${f.gols} G · ${f.assist} A</text><text x="80" y="226" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#E3B341">${esc(f.legenda.slice(0, 34))}</text></svg>`;
+  const id = f.id.replace(/[^a-zA-Z0-9]/g, "");
+  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: claro ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="14" y="30" width="132" height="146" ');
+  const especial = f.tipo !== "temporada", faixa = especial ? NOME_TIPO_FIG[f.tipo].toUpperCase() : String(f.ano);
+  const fw = especial ? 104 : 58;
+  const stat = (x: number, rot: string, v: number) => `<rect x="${x}" y="200" width="44" height="22" rx="4" fill="#ffffff14"/><text x="${x + 22}" y="209" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#cfd8d3">${rot}</text><text x="${x + 22}" y="219" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${v}</text>`;
+  return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="${esc(NOME_TIPO_FIG[f.tipo])} ${f.ano}"><defs>
+    <linearGradient id="fg${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${fundo}"/><stop offset=".62" stop-color="${fundo}" stop-opacity=".55"/><stop offset="1" stop-color="#0B1410"/></linearGradient>
+    <pattern id="lis${id}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><rect width="6" height="12" fill="#ffffff" opacity=".07"/></pattern></defs>
+    <rect x="1" y="1" width="158" height="228" rx="10" fill="url(#fg${id})"/><rect x="1" y="1" width="158" height="228" rx="10" fill="url(#lis${id})"/>
+    <circle cx="128" cy="78" r="56" fill="${c2}" opacity=".16"/>${rosto}
+    <rect x="6" y="6" width="${fw}" height="17" rx="5" fill="#0B1410" opacity=".85"/><text x="${6 + fw / 2}" y="18.5" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="11" letter-spacing=".4" fill="#fff">${esc(faixa)}</text>
+    <circle cx="142" cy="24" r="13" fill="#E3B341" stroke="#0B1410" stroke-width="1.6"/><text x="142" y="29" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="15" fill="#0B1410">${f.ovr}</text>
+    <rect x="0" y="180" width="160" height="50" fill="#0B1410" opacity=".94"/><rect x="0" y="180" width="160" height="2" fill="#E3B341"/>
+    <text x="80" y="194" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${esc(f.clube.toUpperCase().slice(0, 24))}</text>
+    ${stat(7, "JOGOS", f.jogos)}${stat(58, "GOLS", f.gols)}${stat(109, "ASSIST.", f.assist)}
+    <text x="80" y="226" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#E3B341">${esc(f.legenda.slice(0, 36))}</text></svg>`;
 }
 /** Página do álbum aberta (índice na lista de temporadas); undefined = a última. */
 let albumPag: number | undefined;
-const ORDEM_FIG = ["temporada", "titulo", "capitao", "selecao", "estreia", "golaco", "patrocinio", "familia", "premio"];
-function albumHtml(s: Save): string {
+const ORDEM_FIG = ["temporada", "selecao", "titulo", "capitao", "estreia", "golaco", "patrocinio", "familia", "premio"];
+/** Capa do álbum na aba do jogador: abre o álbum inteiro numa janela. */
+function albumCapaHtml(s: Save): string {
   const album = albumDe(s.carreira);
   if (!album.length) return `<p class="rotulo">Álbum de figurinhas</p><p class="sub">A primeira figurinha sai no fim da primeira temporada como profissional. Momentos grandes (capitão, seleção, título) ganham figurinha especial.</p>`;
-  const anos = [...new Set(album.map((f) => f.ano))].sort((a, b) => a - b);
-  const i = albumPag === undefined || albumPag < 0 || albumPag >= anos.length ? anos.length - 1 : albumPag;
-  const ano = anos[i], pagina = album.filter((f) => f.ano === ano).sort((a, b) => ORDEM_FIG.indexOf(a.tipo) - ORDEM_FIG.indexOf(b.tipo));
-  const clubes = [...new Set(pagina.map((f) => f.clube))].join(" · ");
-  const temTemp = pagina.some((f) => f.tipo === "temporada");
-  return `<p class="rotulo">Álbum de figurinhas · ${album.length}</p>
-    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:8px 0">
-      <button class="botao sec peq" data-album="${i - 1}" ${i === 0 ? "disabled" : ""}>‹ Anterior</button>
-      <div style="text-align:center"><b>Temporada ${ano}</b><div class="sub">${esc(clubes)}</div></div>
-      <button class="botao sec peq" data-album="${i + 1}" ${i === anos.length - 1 ? "disabled" : ""}>Próxima ›</button>
-    </div>
-    <div class="album">${pagina.map((f) => `<div class="fig ${f.raridade}"><span class="fig-tag">${esc(NOME_TIPO_FIG[f.tipo])}</span>${figurinhaSvg(f)}<p class="sub" style="margin:6px 0 0">${esc(f.legenda)}</p></div>`).join("")}${temTemp ? "" : `<div class="fig"><span class="fig-tag">Vaga</span><p class="sub">Figurinha da temporada ainda não colada.</p></div>`}</div>
-    <p class="sub">Uma página por temporada · página ${i + 1} de ${anos.length}</p>`;
+  const anos = [...new Set(album.map((f) => f.ano))].sort((a, b) => a - b), ultimas = album.filter((f) => f.ano === anos[anos.length - 1]).slice(0, 3);
+  return `<p class="rotulo">Álbum de figurinhas</p>
+    <button class="album-capa" data-abrir-album="1"><span class="album-capa-mini">${ultimas.map((f) => `<span class="fig ${f.raridade}">${figurinhaSvg(f)}</span>`).join("")}</span>
+      <span><b>Abrir álbum</b><small>${album.length} figurinhas · ${anos.length} ${anos.length === 1 ? "temporada" : "temporadas"}</small></span></button>`;
 }
+/** Uma página do álbum: as figurinhas dos clubes e da seleção por onde jogou na temporada, depois os momentos. */
+function albumPaginaHtml(s: Save): string {
+  const album = albumDe(s.carreira);
+  const anos = [...new Set(album.map((f) => f.ano))].sort((a, b) => a - b);
+  if (!anos.length) return `<p class="sub">Ainda sem figurinhas.</p>`;
+  const i = albumPag === undefined || albumPag < 0 || albumPag >= anos.length ? anos.length - 1 : albumPag;
+  const ano = anos[i], pagina = album.filter((f) => f.ano === ano);
+  const onde = pagina.filter((f) => f.tipo === "temporada" || f.tipo === "selecao").sort((a, b) => (a.tipo === "selecao" ? 1 : 0) - (b.tipo === "selecao" ? 1 : 0));
+  const momentos = pagina.filter((f) => f.tipo !== "temporada" && f.tipo !== "selecao").sort((a, b) => ORDEM_FIG.indexOf(a.tipo) - ORDEM_FIG.indexOf(b.tipo));
+  const grade = (fs: Figurinha[], minimo: number, rotulo: string) => {
+    const n = Math.max(minimo, Math.ceil(fs.length / 3) * 3);
+    return Array.from({ length: n }, (_, k) => fs[k] ? `<div class="fig ${fs[k].raridade}" title="${esc(NOME_TIPO_FIG[fs[k].tipo])}: ${esc(fs[k].legenda)}">${figurinhaSvg(fs[k])}</div>` : `<div class="album-slot"><span>${rotulo}</span></div>`).join("");
+  };
+  const clubes = [...new Set(onde.filter((f) => f.tipo === "temporada").map((f) => f.clube))];
+  return `<div class="album-fecha"><button class="botao sec peq" data-fechar-album="1">Fechar</button></div>
+    <div class="album-cap">
+      <div class="album-topo">
+        <button class="album-seta" data-album="${i - 1}" ${i === 0 ? "disabled" : ""} aria-label="Página anterior">‹</button>
+        <div><div class="album-ano">${ano}</div><div class="album-sub">${esc(clubes.join(" · ") || "Sem clube nesta temporada")}</div></div>
+        <button class="album-seta" data-album="${i + 1}" ${i === anos.length - 1 ? "disabled" : ""} aria-label="Próxima página">›</button>
+      </div>
+      <p class="album-meta">Página ${i + 1} de ${anos.length} · ${pagina.length} ${pagina.length === 1 ? "colada" : "coladas"}</p>
+      <div class="album-secao">Onde você jogou</div>
+      <div class="album-grid">${grade(onde, 3, "Clube")}</div>
+      <div class="album-secao">Momentos</div>
+      <div class="album-grid">${grade(momentos, 3, "Momento")}</div>
+    </div>`;
+}
+/** Redesenha a janela do álbum (página nova ou álbum recém-aberto). */
+function desenharAlbum() { const t = $("telaAlbum"); if (t && save) t.innerHTML = albumPaginaHtml(save); }
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const visual = blocoVisual(s);
@@ -1487,7 +1518,7 @@ function perfilHtml(s: Save): string {
 
       ${evolucaoHtml(s)}
       ${linhaDaVidaHtml(s)}
-      ${albumHtml(s)}
+      ${albumCapaHtml(s)}
       <p class="rotulo">Temporada a temporada <small>(toque no ano para ver a retrospectiva)</small></p>
       <table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">Nota</th></tr></thead><tbody>${hist.map((h) => `<tr><td>${c.historico.includes(h) ? `<button class="nome-hist" data-retro="${h.ano}">${h.ano}</button>` : h.ano}</td><td>${esc(h.clube)}${h.titulo ? " 🏆" : ""}${(h as { parcial?: boolean }).parcial ? " <small class=\"sub\">(até a troca)</small>" : ""}</td><td class="n">${h.ovr}</td><td class="n">${comCampanhas(h).jogos}</td><td class="n">${comCampanhas(h).gols}</td><td class="n">${comCampanhas(h).assist}</td><td class="n">${h.nota ? h.nota.toFixed(1) : "–"}</td></tr>`).join("")}</tbody></table>
     </div>`;
@@ -2293,7 +2324,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-abrir-album],[data-fechar-album],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2438,7 +2469,9 @@ document.addEventListener("click", (ev) => {
   else if (d.sug && save) { msgPos = { texto: responderSugestao(save, d.sug === "sim"), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.perfilClube) { abrirPerfilClube(d.perfilClube); }
   else if (d.fecharClube !== undefined) { ($("dlgClube") as HTMLDialogElement).close(); }
-  else if (d.album !== undefined && save) { albumPag = +d.album; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.album !== undefined && save) { albumPag = +d.album; desenharAlbum(); }
+  else if (d.abrirAlbum !== undefined && save) { albumPag = undefined; desenharAlbum(); ($("dlgAlbum") as HTMLDialogElement).showModal(); }
+  else if (d.fecharAlbum !== undefined) { ($("dlgAlbum") as HTMLDialogElement).close(); }
   else if (d.empPedido && save) { const r = pedirEmprestimo(save, d.empPedido === "sim"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.sair && save) { const r = pedirParaSair(save, true, d.sair as Destino); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
