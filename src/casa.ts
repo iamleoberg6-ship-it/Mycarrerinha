@@ -40,6 +40,7 @@ export type TipoMovel =
   | "tapete" | "planta" | "quadro" | "escultura" | "trofeus"
   | "piscina" | "espreguicadeira" | "churrasqueira" | "mesaExterna" | "trave" | "jacuzzi" | "fogueira"
   | "carro" | "moto" | "mesa"
+  | "mesaEstudo" | "saco" | "massagem" | "pingPong" | "lareira" | "bateria"
   | "camisaRel" | "bolaRel" | "trofeuRel";
 
 interface InfoTipo { nome: string; categoria: Categoria; w: number; d: number; camada: Camada; ambientes: Ambiente[]; base: number; efeito: Partial<Efeitos>; corDe: "tecido" | "madeira" | "metal"; encosta?: boolean; comodos: TipoComodo[]; instalacao?: boolean }
@@ -87,6 +88,12 @@ export const TIPOS: Record<TipoMovel, InfoTipo> = {
   espreguicadeira: t("Espreguiçadeira", "externo", 2, 4, 600, { moral: 1 }, "tecido", { ambientes: E }),
   churrasqueira: t("Churrasqueira", "externo", 2, 2, 300, { moral: 1 }, "metal", { ambientes: E, encosta: true }),
   mesaExterna: t("Mesa externa", "externo", 3, 3, 400, { moral: 1 }, "tecido", { ambientes: E }),
+  mesaEstudo: t("Mesa de estudos", "sala", 3, 2, 800, { evolucao: 1, moral: 1 }, "madeira"),
+  saco: t("Saco de pancadas", "treino", 2, 2, 1200, { evolucao: 2, lesao: -1 }, "metal"),
+  massagem: t("Cadeira de massagem", "treino", 3, 3, 3000, { recuperacao: 3, lesao: 1 }, "tecido"),
+  pingPong: t("Mesa de ping-pong", "lazer", 4, 2, 1500, { moral: 2 }, "madeira"),
+  lareira: t("Lareira", "decoracao", 3, 2, 2200, { moral: 1, recuperacao: 1 }, "metal", { encosta: true }),
+  bateria: t("Bateria", "lazer", 3, 3, 3000, { moral: 2, fama: 1 }, "metal"),
   trave: t("Trave de treino", "externo", 6, 2, 900, { evolucao: 1 }, "metal", { ambientes: E }),
   jacuzzi: t("Jacuzzi", "externo", 3, 3, 4000, { recuperacao: 2 }, "metal", { ambientes: IE }),
   fogueira: t("Fogueira", "externo", 2, 2, 600, { moral: 1 }, "metal", { ambientes: E }),
@@ -113,6 +120,8 @@ const ONDE: Record<TipoMovel, TipoComodo[]> = {
   esteira: ["academia", "quarto", "kitnet"], pesos: ["academia", "quarto", "kitnet"], maca: ["academia", "quarto"], gelo: ["academia", "banheiro", "externo"],
   tapete: INTERNOS, planta: [...INTERNOS, "cozinha", "banheiro", "externo"], quadro: [...INTERNOS, "cozinha", "banheiro"], escultura: ["sala", "escritorio", "trofeus", "jogos", "externo"],
   trofeus: ["sala", "trofeus", "escritorio", "jogos"],
+  mesaEstudo: ["escritorio", "quarto", "kitnet", "sala"], saco: ["academia", "kitnet", "quarto"], massagem: ["academia", "sala", "quarto"],
+  pingPong: ["jogos", "sala"], lareira: ["sala", "kitnet", "quarto"], bateria: ["jogos", "quarto", "kitnet"],
   piscina: ["externo"], espreguicadeira: ["externo"], churrasqueira: ["externo"], mesaExterna: ["externo"], trave: ["externo"], jacuzzi: ["externo", "banheiro"], fogueira: ["externo"],
   carro: ["garagem"], moto: ["garagem"],
   // relíquias vão em qualquer cômodo
@@ -236,6 +245,12 @@ const ACRESCIMO: Partial<Record<TipoMovel, Linha[]>> = {
   maca: [["gamer", 1, 2, "Mesa de fisioterapia com eletroestimulação", { efeitos: { recuperacao: 3, lesao: 2 } }]],
   piano: [["gamer", 2, 2, "Piano digital com fones", { efeitos: { moral: 2, recuperacao: -1 } }]],
   quadro: [["moderno", 2, 2, "Painel de metas e tática", { efeitos: { evolucao: 1, fama: 1 } }]],
+  mesaEstudo: [["basico", 1, 1, "Mesa de estudos de MDF"], ["moderno", 2, 2, "Escrivaninha com gaveteiro"], ["classico", 3, 3, "Escrivaninha de nogueira com luminária", { efeitos: { evolucao: 3, moral: 2 } }]],
+  saco: [["basico", 1, 1, "Saco de pancadas de areia"], ["moderno", 2, 2, "Saco de pancadas com suporte de chão"], ["gamer", 2, 3, "Saco com sensor de força", { efeitos: { evolucao: 4, lesao: -2 } }]],
+  massagem: [["moderno", 2, 2, "Cadeira de massagem"], ["moderno", 3, 3, "Cadeira de massagem com aquecimento", { efeitos: { recuperacao: 4, lesao: 2 } }], ["classico", 3, 4, "Poltrona de massagem de couro", { efeitos: { recuperacao: 5, lesao: 3, moral: 1 } }]],
+  pingPong: [["basico", 1, 1, "Mesa de ping-pong dobrável"], ["moderno", 2, 2, "Mesa de ping-pong profissional"]],
+  lareira: [["rustico", 2, 2, "Lareira de pedra"], ["classico", 3, 3, "Lareira de mármore com moldura", { efeitos: { moral: 3, recuperacao: 2 } }]],
+  bateria: [["basico", 1, 1, "Bateria de cinco peças"], ["gamer", 2, 2, "Bateria eletrônica com fones"], ["classico", 3, 3, "Bateria vintage de jazz", { efeitos: { moral: 3, fama: 2 } }]],
 };
 for (const [tipo, linhas] of Object.entries(ACRESCIMO) as [TipoMovel, Linha[]][]) PRODUTOS[tipo] = [...(PRODUTOS[tipo] ?? []), ...linhas];
 
@@ -465,6 +480,29 @@ export const IMOVEIS: Imovel[] = [
       cm("trofeus", "Sala de troféus", "trofeus", 11, 8, { parede: ac("pintura", 10), piso: ac("carpete", 2) }),
       cm("piscina", "Área da piscina", "externo", 17, 12, { piso: ac("deck"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 21, 9, { piso: ac("epoxi") })] },
 ];
+// Plantas novas: loft, casa de vila com quintal e cobertura duplex
+IMOVEIS.push(
+  { id: "loft-industrial", categoria: "apartamento", nome: "Loft industrial de tijolo à vista", local: "Bairro de galpões", vista: "cidade", aluguel: 7500, compra: 950000,
+    descricao: "Pé-direito alto, janelões de ferro e uma cozinha que é parte da sala.",
+    comodos: [cm("sala", "Sala grande", "sala", 14, 10, { parede: ac("tijolinho"), piso: ac("cimento"), janelas: [jn("esq", 2, 6), jn("esq", 8, 3)] }),
+      cm("quarto", "Quarto", "quarto", 9, 8, { piso: ac("taco", 1), janelas: [jn("dir", 5)] }),
+      cm("cozinha", "Cozinha aberta", "cozinha", 8, 7, { parede: ac("azulejo"), piso: ac("porcelanato"), janelas: [jn("dir", 2, 2)], inclusos: PIA(0, 0) }),
+      banheiro(5, 6, { parede: ac("pintura") })] },
+  { id: "casa-vila-quintal", categoria: "casa", nome: "Casa de vila com quintal", local: "Vila antiga", vista: "rua", aluguel: 12500, compra: 1400000,
+    descricao: "Duas portas para a rua, um quintal com árvore e uma varanda que dá para a cozinha.",
+    comodos: [cm("sala", "Sala", "sala", 10, 9, { piso: ac("taco", 1), janelas: [jn("esq", 5, 3)] }),
+      cm("quarto", "Quarto", "quarto", 9, 8, { piso: ac("madeira"), janelas: [jn("esq", 5)] }),
+      cm("quarto2", "Quarto dos fundos", "quarto", 8, 7, { piso: ac("madeira"), janelas: [jn("dir", 4)] }),
+      cm("cozinha", "Cozinha", "cozinha", 9, 8, { janelas: [jn("dir", 5, 2)], inclusos: PIA(0, 0) }),
+      banheiro(5, 6), cm("quintal", "Quintal", "externo", 14, 8, { piso: ac("grama"), parede: ac("muro") })] },
+  { id: "cobertura-duplex", categoria: "mansao", nome: "Cobertura duplex com terraço", local: "Frente para o mar", vista: "mar", aluguel: 120000, compra: 18000000,
+    descricao: "Dois andares, sala de jogos, suíte e um terraço com vista para o mar.",
+    comodos: [cm("sala", "Sala de estar", "sala", 16, 12, { piso: ac("madeira"), janelas: [jn("esq", 4, 4), jn("esq", 10, 4)] }),
+      cm("cozinha", "Cozinha gourmet", "cozinha", 12, 9, { janelas: [jn("dir", 3, 3)], inclusos: PIA(0, 0) }),
+      cm("jogos", "Sala de jogos", "jogos", 10, 9, { janelas: [jn("dir", 4)] }),
+      cm("quarto", "Suíte", "quarto", 12, 11, { piso: ac("taco", 1), janelas: [jn("esq", 5, 3)] }),
+      banheiro(6, 7), cm("terraco", "Terraço", "externo", 16, 8, { piso: ac("deck"), parede: ac("vidro") })] },
+);
 // Mais imóveis para comprar ou alugar: variações de planta e bairro das categorias que já existem
 const DE = (id: string, o: Partial<Imovel>): Imovel => ({ ...IMOVEIS.find((m) => m.id === id)!, ...o });
 IMOVEIS.push(
