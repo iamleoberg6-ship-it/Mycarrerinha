@@ -1,5 +1,5 @@
 {
- "aviso": "Terceira e quarta divisões inglesas (League One e League Two, nomes reais de out/2026, Wikipédia) e colégios e universidades japoneses com nomes reais, com elencos gerados no jogo. Cidades, estádios, cores e capacidades são aproximados. Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com. Out/2026: campeonatos de high school e universidade do Japão, e terceira e quarta divisões inglesas (paródia).",
+ "aviso": "Terceira e quarta divisões inglesas e colégios e universidades japoneses: clubes em paródia inspirados em times reais, com nomes que lembram os originais (cidades e cores aproximadas). Elencos gerados no jogo. Cidades, estádios, cores e capacidades são aproximados. Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com. Out/2026: campeonatos de high school e universidade do Japão, e terceira e quarta divisões inglesas (paródia).",
  "ligas": {
   "URU1": [
    {
@@ -4299,10 +4299,10 @@
   "JPN-HS": [
    {
     "id": "JP-HS-01",
-    "nome": "Aomori Yamada",
-    "apelido": "Yamada",
+    "nome": "Aomori Yamaga Koukou",
+    "apelido": "Yamaga",
     "cidade": "Aomori",
-    "estadio": "Campo da Aomori Yamada",
+    "estadio": "Campo Aomori Yamaga",
     "capacidade": 5000,
     "cores": [
      "#1E3A8A",
@@ -4313,10 +4313,10 @@
    },
    {
     "id": "JP-HS-02",
-    "nome": "Shohei",
-    "apelido": "Shohei",
+    "nome": "Shouhei Koukou",
+    "apelido": "Shouhei",
     "cidade": "Saitama",
-    "estadio": "Campo da Shohei",
+    "estadio": "Campo Shouhei",
     "capacidade": 5000,
     "cores": [
      "#D71920",
@@ -4327,10 +4327,10 @@
    },
    {
     "id": "JP-HS-03",
-    "nome": "Teikyo Nagaoka",
-    "apelido": "Teikyo",
+    "nome": "Teikio Nagaoka Koukou",
+    "apelido": "Teikio",
     "cidade": "Nagaoka",
-    "estadio": "Campo da Teikyo Nagaoka",
+    "estadio": "Campo Teikio",
     "capacidade": 5000,
     "cores": [
      "#0047AB",
@@ -4341,10 +4341,10 @@
    },
    {
     "id": "JP-HS-04",
-    "nome": "Sendai Ikuei Gakuen",
-    "apelido": "Ikuei",
+    "nome": "Sendai Ikkei Gakuen",
+    "apelido": "Ikkei",
     "cidade": "Sendai",
-    "estadio": "Campo da Sendai Ikuei",
+    "estadio": "Campo Sendai Ikkei",
     "capacidade": 5000,
     "cores": [
      "#0047AB",
@@ -4355,10 +4355,10 @@
    },
    {
     "id": "JP-HS-05",
-    "nome": "Tokushima Ichiritsu",
-    "apelido": "Tokushima",
+    "nome": "Tokushima Ichiriku Koukou",
+    "apelido": "Ichiriku",
     "cidade": "Tokushima",
-    "estadio": "Campo da Tokushima Ichiritsu",
+    "estadio": "Campo Ichiriku",
     "capacidade": 5000,
     "cores": [
      "#0047AB",
@@ -4369,10 +4369,10 @@
    },
    {
     "id": "JP-HS-06",
-    "nome": "Shizuoka Gakuen",
-    "apelido": "Shizuoka",
+    "nome": "Shizuka Gakuen",
+    "apelido": "Shizuka",
     "cidade": "Shizuoka",
-    "estadio": "Campo da Shizuoka Gakuen",
+    "estadio": "Campo Shizuka",
     "capacidade": 5000,
     "cores": [
      "#D71920",
@@ -4383,10 +4383,10 @@
    },
    {
     "id": "JP-HS-07",
-    "nome": "Yaita Chuo",
-    "apelido": "Yaita",
+    "nome": "Yaida Chuo",
+    "apelido": "Yaida",
     "cidade": "Yaita",
-    "estadio": "Campo da Yaita Chuo",
+    "estadio": "Campo Yaida",
     "capacidade": 5000,
     "cores": [
      "#0047AB",
@@ -4397,10 +4397,10 @@
    },
    {
     "id": "JP-HS-08",
-    "nome": "Yokkaichi Chuo",
-    "apelido": "Yokkaichi",
+    "nome": "Yokkaiti Chuo",
+    "apelido": "Yokkaiti",
     "cidade": "Yokkaichi",
-    "estadio": "Campo da Yokkaichi Chuo",
+    "estadio": "Campo Yokkaiti",
     "capacidade": 5000,
     "cores": [
      "#D71920",
@@ -4413,10 +4413,10 @@
   "JPN-UNI": [
    {
     "id": "JP-UNI-01",
-    "nome": "Universidade Waseda",
-    "apelido": "Waseda",
+    "nome": "Universidade Wasseda",
+    "apelido": "Wasseda",
     "cidade": "Tóquio",
-    "estadio": "Campus Waseda",
+    "estadio": "Campus Wasseda",
     "capacidade": 3000,
     "cores": [
      "#8B1E3F",
@@ -4427,10 +4427,10 @@
    },
    {
     "id": "JP-UNI-02",
-    "nome": "Universidade de Tsukuba",
-    "apelido": "Tsukuba",
+    "nome": "Universidade Tsukubba",
+    "apelido": "Tsukubba",
     "cidade": "Tsukuba",
-    "estadio": "Campus Tsukuba",
+    "estadio": "Campus Tsukubba",
     "capacidade": 3000,
     "cores": [
      "#003DA5",
@@ -4441,10 +4441,10 @@
    },
    {
     "id": "JP-UNI-03",
-    "nome": "Universidade Chuo",
-    "apelido": "Chuo",
+    "nome": "Universidade Chuoo",
+    "apelido": "Chuoo",
     "cidade": "Hachioji",
-    "estadio": "Campus Chuo",
+    "estadio": "Campus Chuoo",
     "capacidade": 3000,
     "cores": [
      "#1E3A8A",
@@ -4455,10 +4455,10 @@
    },
    {
     "id": "JP-UNI-04",
-    "nome": "Universidade Komazawa",
-    "apelido": "Komazawa",
+    "nome": "Universidade Komazawo",
+    "apelido": "Komazawo",
     "cidade": "Setagaya",
-    "estadio": "Campus Komazawa",
+    "estadio": "Campus Komazawo",
     "capacidade": 3000,
     "cores": [
      "#0047AB",
@@ -4469,10 +4469,10 @@
    },
    {
     "id": "JP-UNI-05",
-    "nome": "Universidade Kokushikan",
-    "apelido": "Kokushikan",
+    "nome": "Universidade Kokushiken",
+    "apelido": "Kokushiken",
     "cidade": "Setagaya",
-    "estadio": "Campus Kokushikan",
+    "estadio": "Campus Kokushiken",
     "capacidade": 3000,
     "cores": [
      "#D71920",
@@ -4483,10 +4483,10 @@
    },
    {
     "id": "JP-UNI-06",
-    "nome": "Universidade Meiji",
-    "apelido": "Meiji",
+    "nome": "Universidade Meigi",
+    "apelido": "Meigi",
     "cidade": "Tóquio",
-    "estadio": "Campus Meiji",
+    "estadio": "Campus Meigi",
     "capacidade": 3000,
     "cores": [
      "#1E3A8A",
@@ -4497,10 +4497,10 @@
    },
    {
     "id": "JP-UNI-07",
-    "nome": "Universidade Keio",
-    "apelido": "Keio",
+    "nome": "Universidade Keyo",
+    "apelido": "Keyo",
     "cidade": "Yokohama",
-    "estadio": "Campus Keio",
+    "estadio": "Campus Keyo",
     "capacidade": 3000,
     "cores": [
      "#000000",
@@ -4511,10 +4511,10 @@
    },
    {
     "id": "JP-UNI-08",
-    "nome": "Universidade Juntendo",
-    "apelido": "Juntendo",
+    "nome": "Universidade Juntengo",
+    "apelido": "Juntengo",
     "cidade": "Inzai",
-    "estadio": "Campus Juntendo",
+    "estadio": "Campus Juntengo",
     "capacidade": 3000,
     "cores": [
      "#003DA5",
@@ -4527,10 +4527,10 @@
   "ENG3": [
    {
     "id": "EN3-01",
-    "nome": "AFC Wimbledon",
-    "apelido": "Wimbledon",
+    "nome": "Wimbledone AFC",
+    "apelido": "Wimbledone",
     "cidade": "Londres",
-    "estadio": "Plough Lane",
+    "estadio": "Plow Lene",
     "capacidade": 9000,
     "cores": [
      "#1E5BA8",
@@ -4541,10 +4541,10 @@
    },
    {
     "id": "EN3-02",
-    "nome": "Barnsley",
-    "apelido": "Barnsley",
+    "nome": "Barnslei",
+    "apelido": "Barnes",
     "cidade": "Barnsley",
-    "estadio": "Oakwell",
+    "estadio": "Oakwel",
     "capacidade": 23000,
     "cores": [
      "#D71920",
@@ -4555,10 +4555,10 @@
    },
    {
     "id": "EN3-03",
-    "nome": "Blackpool",
-    "apelido": "Blackpool",
+    "nome": "Blackpoole",
+    "apelido": "Pool",
     "cidade": "Blackpool",
-    "estadio": "Bloomfield Road",
+    "estadio": "Bloomfeld Road",
     "capacidade": 16000,
     "cores": [
      "#FF7F00",
@@ -4569,10 +4569,10 @@
    },
    {
     "id": "EN3-04",
-    "nome": "Bradford City",
-    "apelido": "Bradford",
+    "nome": "Bradforde City",
+    "apelido": "Bradforde",
     "cidade": "Bradford",
-    "estadio": "Valley Parade",
+    "estadio": "Vale Parada",
     "capacidade": 25000,
     "cores": [
      "#8B1E3F",
@@ -4583,10 +4583,10 @@
    },
    {
     "id": "EN3-05",
-    "nome": "Bromley",
-    "apelido": "Bromley",
+    "nome": "Bromlei",
+    "apelido": "Bromlei",
     "cidade": "Londres",
-    "estadio": "Hayes Lane",
+    "estadio": "Hayes Lene",
     "capacidade": 5000,
     "cores": [
      "#B22222",
@@ -4597,10 +4597,10 @@
    },
    {
     "id": "EN3-06",
-    "nome": "Burton Albion",
+    "nome": "Burtonn Albiã",
     "apelido": "Burton",
     "cidade": "Burton upon Trent",
-    "estadio": "Pirelli Stadium",
+    "estadio": "Pirelo",
     "capacidade": 6000,
     "cores": [
      "#FDE100",
@@ -4611,10 +4611,10 @@
    },
    {
     "id": "EN3-07",
-    "nome": "Cambridge United",
-    "apelido": "Cambridge",
+    "nome": "Cambrige Unido",
+    "apelido": "Cambrige",
     "cidade": "Cambridge",
-    "estadio": "Abbey Stadium",
+    "estadio": "Abbeye",
     "capacidade": 8000,
     "cores": [
      "#F5A623",
@@ -4625,10 +4625,10 @@
    },
    {
     "id": "EN3-08",
-    "nome": "Doncaster Rovers",
-    "apelido": "Doncaster",
+    "nome": "Doncastre Rovers",
+    "apelido": "Doncastre",
     "cidade": "Doncaster",
-    "estadio": "Eco-Power Stadium",
+    "estadio": "Ecco Power",
     "capacidade": 15231,
     "cores": [
      "#D71920",
@@ -4639,10 +4639,10 @@
    },
    {
     "id": "EN3-09",
-    "nome": "Huddersfield Town",
-    "apelido": "Huddersfield",
+    "nome": "Hudersfeld Town",
+    "apelido": "Hudersfeld",
     "cidade": "Huddersfield",
-    "estadio": "Kirklees Stadium",
+    "estadio": "Kirklee",
     "capacidade": 24500,
     "cores": [
      "#0E63AD",
@@ -4653,10 +4653,10 @@
    },
    {
     "id": "EN3-10",
-    "nome": "Leicester City",
-    "apelido": "Leicester",
+    "nome": "Leicestre City",
+    "apelido": "Leicestre",
     "cidade": "Leicester",
-    "estadio": "King Power Stadium",
+    "estadio": "King Pouer",
     "capacidade": 32259,
     "cores": [
      "#003090",
@@ -4667,10 +4667,10 @@
    },
    {
     "id": "EN3-11",
-    "nome": "Leyton Orient",
-    "apelido": "Leyton Orient",
+    "nome": "Leyton Orientes",
+    "apelido": "Orientes",
     "cidade": "Londres",
-    "estadio": "Brisbane Road",
+    "estadio": "Brisbaine Road",
     "capacidade": 9300,
     "cores": [
      "#D71920",
@@ -4681,10 +4681,10 @@
    },
    {
     "id": "EN3-12",
-    "nome": "Luton Town",
-    "apelido": "Luton",
+    "nome": "Lutom Town",
+    "apelido": "Lutom",
     "cidade": "Luton",
-    "estadio": "Kenilworth Road",
+    "estadio": "Kenilworth",
     "capacidade": 11500,
     "cores": [
      "#F78F1E",
@@ -4695,10 +4695,10 @@
    },
    {
     "id": "EN3-13",
-    "nome": "Mansfield Town",
-    "apelido": "Mansfield",
+    "nome": "Mansfeld Town",
+    "apelido": "Mansfeld",
     "cidade": "Mansfield",
-    "estadio": "Field Mill",
+    "estadio": "Feld Mil",
     "capacidade": 10000,
     "cores": [
      "#F5A623",
@@ -4709,10 +4709,10 @@
    },
    {
     "id": "EN3-14",
-    "nome": "Milton Keynes Dons",
-    "apelido": "MK Dons",
+    "nome": "Milton Keynes Dones",
+    "apelido": "MK Dones",
     "cidade": "Milton Keynes",
-    "estadio": "Stadium MK",
+    "estadio": "Stadio MK",
     "capacidade": 30500,
     "cores": [
      "#DC1E35",
@@ -4723,10 +4723,10 @@
    },
    {
     "id": "EN3-15",
-    "nome": "Notts County",
-    "apelido": "Notts County",
+    "nome": "Nots County",
+    "apelido": "Nots",
     "cidade": "Nottingham",
-    "estadio": "Meadow Lane",
+    "estadio": "Meadowe Lane",
     "capacidade": 20300,
     "cores": [
      "#000000",
@@ -4737,10 +4737,10 @@
    },
    {
     "id": "EN3-16",
-    "nome": "Oxford United",
-    "apelido": "Oxford",
+    "nome": "Oxforde Unido",
+    "apelido": "Oxforde",
     "cidade": "Oxford",
-    "estadio": "Kassam Stadium",
+    "estadio": "Kassem",
     "capacidade": 12500,
     "cores": [
      "#FDE100",
@@ -4751,10 +4751,10 @@
    },
    {
     "id": "EN3-17",
-    "nome": "Peterborough United",
-    "apelido": "Peterborough",
+    "nome": "Peterburgo United",
+    "apelido": "Peterburgo",
     "cidade": "Peterborough",
-    "estadio": "London Road Stadium",
+    "estadio": "London Rod",
     "capacidade": 15600,
     "cores": [
      "#0033A0",
@@ -4765,10 +4765,10 @@
    },
    {
     "id": "EN3-18",
-    "nome": "Plymouth Argyle",
-    "apelido": "Plymouth",
+    "nome": "Plimouth Argyle",
+    "apelido": "Plimouth",
     "cidade": "Plymouth",
-    "estadio": "Home Park",
+    "estadio": "Home Parque",
     "capacidade": 17900,
     "cores": [
      "#00703C",
@@ -4779,10 +4779,10 @@
    },
    {
     "id": "EN3-19",
-    "nome": "Reading",
-    "apelido": "Reading",
+    "nome": "Redding",
+    "apelido": "Redding",
     "cidade": "Reading",
-    "estadio": "Select Car Leasing Stadium",
+    "estadio": "Madejsky",
     "capacidade": 24200,
     "cores": [
      "#004494",
@@ -4793,10 +4793,10 @@
    },
    {
     "id": "EN3-20",
-    "nome": "Sheffield Wednesday",
-    "apelido": "Wednesday",
+    "nome": "Sheffielde Quarta",
+    "apelido": "Quarta",
     "cidade": "Sheffield",
-    "estadio": "Hillsborough Stadium",
+    "estadio": "Hillsborogh",
     "capacidade": 39732,
     "cores": [
      "#0066B3",
@@ -4807,10 +4807,10 @@
    },
    {
     "id": "EN3-21",
-    "nome": "Stevenage",
-    "apelido": "Stevenage",
+    "nome": "Stevenege",
+    "apelido": "Stevenege",
     "cidade": "Stevenage",
-    "estadio": "Broadhall Way",
+    "estadio": "Broadhal Way",
     "capacidade": 7300,
     "cores": [
      "#D71920",
@@ -4821,10 +4821,10 @@
    },
    {
     "id": "EN3-22",
-    "nome": "Stockport County",
-    "apelido": "Stockport",
+    "nome": "Stokeport County",
+    "apelido": "Stokeport",
     "cidade": "Stockport",
-    "estadio": "Edgeley Park",
+    "estadio": "Edgely Parque",
     "capacidade": 10700,
     "cores": [
      "#0047AB",
@@ -4835,10 +4835,10 @@
    },
    {
     "id": "EN3-23",
-    "nome": "Wigan Athletic",
-    "apelido": "Wigan",
+    "nome": "Wigam Athletic",
+    "apelido": "Wigam",
     "cidade": "Wigan",
-    "estadio": "Brick Community Stadium",
+    "estadio": "Brik Stadium",
     "capacidade": 25133,
     "cores": [
      "#0033A0",
@@ -4849,10 +4849,10 @@
    },
    {
     "id": "EN3-24",
-    "nome": "Wycombe Wanderers",
-    "apelido": "Wycombe",
+    "nome": "Wycombo Andarilhos",
+    "apelido": "Wycombo",
     "cidade": "High Wycombe",
-    "estadio": "Adams Park",
+    "estadio": "Adams Parque",
     "capacidade": 10000,
     "cores": [
      "#60A7DE",
@@ -4865,10 +4865,10 @@
   "ENG4": [
    {
     "id": "EN4-01",
-    "nome": "Accrington Stanley",
-    "apelido": "Accrington",
+    "nome": "Acrington Stanlei",
+    "apelido": "Acrington",
     "cidade": "Accrington",
-    "estadio": "Crown Ground",
+    "estadio": "Crowne Ground",
     "capacidade": 5000,
     "cores": [
      "#D71920",
@@ -4879,10 +4879,10 @@
    },
    {
     "id": "EN4-02",
-    "nome": "Barnet",
-    "apelido": "Barnet",
+    "nome": "Barnete",
+    "apelido": "Barnete",
     "cidade": "Londres",
-    "estadio": "The Hive Stadium",
+    "estadio": "The Hyve",
     "capacidade": 6500,
     "cores": [
      "#F5A623",
@@ -4893,10 +4893,10 @@
    },
    {
     "id": "EN4-03",
-    "nome": "Bristol Rovers",
-    "apelido": "Bristol Rovers",
+    "nome": "Bristol Rovres",
+    "apelido": "Bristol Rovres",
     "cidade": "Bristol",
-    "estadio": "Memorial Stadium",
+    "estadio": "Memorial",
     "capacidade": 12300,
     "cores": [
      "#003DA5",
@@ -4907,10 +4907,10 @@
    },
    {
     "id": "EN4-04",
-    "nome": "Cheltenham Town",
-    "apelido": "Cheltenham",
+    "nome": "Cheltenhã Town",
+    "apelido": "Cheltenhã",
     "cidade": "Cheltenham",
-    "estadio": "Whaddon Road",
+    "estadio": "Whadon Road",
     "capacidade": 7000,
     "cores": [
      "#D71920",
@@ -4921,10 +4921,10 @@
    },
    {
     "id": "EN4-05",
-    "nome": "Chesterfield",
-    "apelido": "Chesterfield",
+    "nome": "Chesterfeld",
+    "apelido": "Chesterfeld",
     "cidade": "Chesterfield",
-    "estadio": "SMH Group Stadium",
+    "estadio": "SMH Stadium",
     "capacidade": 10500,
     "cores": [
      "#0046AD",
@@ -4935,10 +4935,10 @@
    },
    {
     "id": "EN4-06",
-    "nome": "Colchester United",
-    "apelido": "Colchester",
+    "nome": "Colchestre Unido",
+    "apelido": "Colchestre",
     "cidade": "Colchester",
-    "estadio": "Colchester Community Stadium",
+    "estadio": "Colchestre Stadium",
     "capacidade": 10105,
     "cores": [
      "#0047AB",
@@ -4949,10 +4949,10 @@
    },
    {
     "id": "EN4-07",
-    "nome": "Crawley Town",
-    "apelido": "Crawley",
+    "nome": "Crowley Town",
+    "apelido": "Crowley",
     "cidade": "Crawley",
-    "estadio": "Broadfield Stadium",
+    "estadio": "Broadfeld",
     "capacidade": 6000,
     "cores": [
      "#D71920",
@@ -4963,10 +4963,10 @@
    },
    {
     "id": "EN4-08",
-    "nome": "Crewe Alexandra",
-    "apelido": "Crewe",
+    "nome": "Crew Alexandra",
+    "apelido": "Crew",
     "cidade": "Crewe",
-    "estadio": "Gresty Road",
+    "estadio": "Gresty Roade",
     "capacidade": 10153,
     "cores": [
      "#D71920",
@@ -4977,10 +4977,10 @@
    },
    {
     "id": "EN4-09",
-    "nome": "Exeter City",
-    "apelido": "Exeter",
+    "nome": "Exetre City",
+    "apelido": "Exetre",
     "cidade": "Exeter",
-    "estadio": "St James Park",
+    "estadio": "São Tiago Parque",
     "capacidade": 8700,
     "cores": [
      "#D71920",
@@ -4991,10 +4991,10 @@
    },
    {
     "id": "EN4-10",
-    "nome": "Fleetwood Town",
-    "apelido": "Fleetwood",
+    "nome": "Fleetwoode Town",
+    "apelido": "Fleetwoode",
     "cidade": "Fleetwood",
-    "estadio": "Highbury Stadium",
+    "estadio": "Highbery",
     "capacidade": 5000,
     "cores": [
      "#D71920",
@@ -5005,10 +5005,10 @@
    },
    {
     "id": "EN4-11",
-    "nome": "Gillingham",
-    "apelido": "Gillingham",
+    "nome": "Gilingham",
+    "apelido": "Gilingham",
     "cidade": "Gillingham",
-    "estadio": "Priestfield Stadium",
+    "estadio": "Priestfeld",
     "capacidade": 11000,
     "cores": [
      "#0047AB",
@@ -5019,10 +5019,10 @@
    },
    {
     "id": "EN4-12",
-    "nome": "Grimsby Town",
-    "apelido": "Grimsby",
+    "nome": "Grimsbi Town",
+    "apelido": "Grimsbi",
     "cidade": "Cleethorpes",
-    "estadio": "Blundell Park",
+    "estadio": "Blundel Parque",
     "capacidade": 9546,
     "cores": [
      "#000000",
@@ -5033,8 +5033,8 @@
    },
    {
     "id": "EN4-13",
-    "nome": "Newport County",
-    "apelido": "Newport",
+    "nome": "Newporte County",
+    "apelido": "Newporte",
     "cidade": "Newport",
     "estadio": "Rodney Parade",
     "capacidade": 7850,
@@ -5047,10 +5047,10 @@
    },
    {
     "id": "EN4-14",
-    "nome": "Northampton Town",
-    "apelido": "Northampton",
+    "nome": "Northamptom Town",
+    "apelido": "Northamptom",
     "cidade": "Northampton",
-    "estadio": "Sixfields Stadium",
+    "estadio": "Sixfield",
     "capacidade": 7798,
     "cores": [
      "#7A1F3D",
@@ -5061,10 +5061,10 @@
    },
    {
     "id": "EN4-15",
-    "nome": "Oldham Athletic",
-    "apelido": "Oldham",
+    "nome": "Oldam Athletic",
+    "apelido": "Oldam",
     "cidade": "Oldham",
-    "estadio": "Boundary Park",
+    "estadio": "Boundari Parque",
     "capacidade": 13512,
     "cores": [
      "#0066B3",
@@ -5075,10 +5075,10 @@
    },
    {
     "id": "EN4-16",
-    "nome": "Port Vale",
-    "apelido": "Port Vale",
+    "nome": "Port Vali",
+    "apelido": "Port Vali",
     "cidade": "Stoke-on-Trent",
-    "estadio": "Vale Park",
+    "estadio": "Vali Parque",
     "capacidade": 19052,
     "cores": [
      "#FFFFFF",
@@ -5089,10 +5089,10 @@
    },
    {
     "id": "EN4-17",
-    "nome": "Rochdale",
-    "apelido": "Rochdale",
+    "nome": "Rochdalle",
+    "apelido": "Rochdalle",
     "cidade": "Rochdale",
-    "estadio": "Spotland Stadium",
+    "estadio": "Spotlande",
     "capacidade": 10249,
     "cores": [
      "#003DA5",
@@ -5103,10 +5103,10 @@
    },
    {
     "id": "EN4-18",
-    "nome": "Rotherham United",
-    "apelido": "Rotherham",
+    "nome": "Rotherhan United",
+    "apelido": "Rotherhan",
     "cidade": "Rotherham",
-    "estadio": "New York Stadium",
+    "estadio": "New York Stadio",
     "capacidade": 12000,
     "cores": [
      "#D71920",
@@ -5117,10 +5117,10 @@
    },
    {
     "id": "EN4-19",
-    "nome": "Salford City",
-    "apelido": "Salford",
+    "nome": "Salfor City",
+    "apelido": "Salfor",
     "cidade": "Salford",
-    "estadio": "Moor Lane",
+    "estadio": "Moor Laine",
     "capacidade": 5000,
     "cores": [
      "#C8102E",
@@ -5131,10 +5131,10 @@
    },
    {
     "id": "EN4-20",
-    "nome": "Shrewsbury Town",
-    "apelido": "Shrewsbury",
+    "nome": "Shrewsberri Town",
+    "apelido": "Shrewsberri",
     "cidade": "Shrewsbury",
-    "estadio": "New Meadow",
+    "estadio": "New Medow",
     "capacidade": 9875,
     "cores": [
      "#0047AB",
@@ -5145,10 +5145,10 @@
    },
    {
     "id": "EN4-21",
-    "nome": "Swindon Town",
-    "apelido": "Swindon",
+    "nome": "Swindom Town",
+    "apelido": "Swindom",
     "cidade": "Swindon",
-    "estadio": "County Ground",
+    "estadio": "County Groundo",
     "capacidade": 15700,
     "cores": [
      "#D71920",
@@ -5159,10 +5159,10 @@
    },
    {
     "id": "EN4-22",
-    "nome": "Tranmere Rovers",
-    "apelido": "Tranmere",
+    "nome": "Tranmer Rovers",
+    "apelido": "Tranmer",
     "cidade": "Birkenhead",
-    "estadio": "Prenton Park",
+    "estadio": "Prenton Parque",
     "capacidade": 16567,
     "cores": [
      "#FFFFFF",
@@ -5173,10 +5173,10 @@
    },
    {
     "id": "EN4-23",
-    "nome": "Walsall",
-    "apelido": "Walsall",
+    "nome": "Walsale",
+    "apelido": "Walsale",
     "cidade": "Walsall",
-    "estadio": "Bescot Stadium",
+    "estadio": "Bescote",
     "capacidade": 11300,
     "cores": [
      "#D71920",
@@ -5187,10 +5187,10 @@
    },
    {
     "id": "EN4-24",
-    "nome": "York City",
-    "apelido": "York",
+    "nome": "Yorque City",
+    "apelido": "Yorque",
     "cidade": "York",
-    "estadio": "York Community Stadium",
+    "estadio": "York Community",
     "capacidade": 8500,
     "cores": [
      "#D71920",
