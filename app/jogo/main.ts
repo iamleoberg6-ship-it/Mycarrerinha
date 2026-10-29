@@ -1050,7 +1050,16 @@ const TROFEU = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="tru
 function clubeHtml(clubeId: string): string {
   const info = infoClube(pacote, clubeId), w = mundo(pacote), cl = w.clube[clubeId];
   if (!info || !cl) return `<p class="sub">Clube não encontrado.</p>`;
-  const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId), elenco = plantelDoClube(pacote, clubeId).slice(0, 25);
+  const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId);
+  // o elenco do mundo não guarda o jogador do usuário: ele entra no elenco do clube em que joga e na seleção quando convocado
+  const elencoMundo = plantelDoClube(pacote, clubeId).slice(0, 25).map((j) => ({ nome: j.nome, apelido: j.nome, posicao: j.posicao, ovr: j.ovr, eu: false }));
+  const sv = save, eu = sv ? (() => {
+    const c = sv.carreira, j = sv.jogador;
+    const noClube = clubeId === c.clubeId && !c.mercado?.semClube && !c.formacao;
+    const convocado = clubeId === idSelecao(j.nacionalidade) && Object.keys(c.selecao?.conv ?? {}).some((k) => k.startsWith(`${c.temporada}-`) && c.selecao!.conv[k]);
+    return noClube || convocado ? [{ nome: j.nome, apelido: j.apelido, posicao: j.posicao, ovr: Math.round(ovr(j)), eu: true }] : [];
+  })() : [];
+  const elenco = [...eu, ...elencoMundo].sort((a, b) => b.ovr - a.ovr);
   const rec = recordesHistoricosDoClube(pacote, clubeId);
   const bloco = (titulo: string, lista: RecordeNome[], comAno: boolean) => lista.length ? `<p class="rotulo" style="margin-top:14px">${titulo}</p><table style="table-layout:fixed"><colgroup><col style="width:28px"><col><col style="width:64px"><col style="width:44px"></colgroup><tbody>${lista.map((x, i) => `<tr><td>${i + 1}</td><td>${linkJogador(x.nome)}</td><td class="n">${comAno ? ANO_INICIAL + (x.ano ?? 0) : ""}</td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : "";
   const recordes = [bloco("Mais gols em uma temporada", rec.golsTemp, true), bloco("Mais assistências em uma temporada", rec.assistTemp, true), bloco("Maiores artilheiros da história", rec.artilheiros, false), bloco("Maiores assistentes da história", rec.assistentes, false), bloco("Goleiros com mais jogos sem tomar gol", rec.semGol, false)].join("");
@@ -1071,7 +1080,7 @@ function clubeHtml(clubeId: string): string {
     <p class="rotulo" style="margin-top:16px">Recordes do clube</p>
     ${recordes || `<p class="sub">Ainda sem temporadas suficientes deste clube.</p>`}
     <p class="rotulo" style="margin-top:16px">Elenco atual</p>
-    <table><tbody>${elenco.map((j) => `<tr><td>${NOME_POS[j.posicao] ?? j.posicao}</td><td>${linkJogador(j.nome)}</td><td class="n">${j.ovr}</td></tr>`).join("")}</tbody></table>
+    <table><tbody>${elenco.map((j) => `<tr${j.eu ? ` class="meu"` : ""}><td>${NOME_POS[j.posicao] ?? j.posicao}</td><td>${j.eu ? `<b style="color:var(--ouro)">${esc(j.apelido)}</b> <small class="sub">(você)</small>` : linkJogador(j.nome)}</td><td class="n">${j.ovr}</td></tr>`).join("")}</tbody></table>
     <p class="rotulo" style="margin-top:16px">Clubes da mesma liga</p>
     <div class="chips" style="flex-wrap:wrap">${irmaos.map((x) => `<button class="chip${x.id === clubeId ? " ativo" : ""}" data-perfil-clube="${x.id}">${esc(x.nome)}</button>`).join("")}</div>
     <div style="text-align:center;margin-top:14px"><button class="botao sec peq" data-fechar-clube="1">Fechar</button></div>`;
