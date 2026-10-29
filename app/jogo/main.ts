@@ -21,6 +21,7 @@ import {
   familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo, agirFilhoJogo,
   carrosDe, copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, chatDe, responderChatJogo, responderCenaJogo, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
+import { RNG } from "../../src/rng";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
@@ -836,6 +837,33 @@ function historicoHtml(s: Save, nome: string): string {
     <table class="hist"><thead><tr><th>Ano</th><th>Clube</th><th class="n">Id.</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">OVR</th></tr></thead><tbody>${linhas}</tbody></table>
     ${l[0].t === 0 && !l[0].base ? `<p class="sub" style="margin-top:8px">Antes de ${ANO_INICIAL}: carreira fora do registro do jogo.</p>` : ""}`;
 }
+/** Irmão jogador: clube, liga, posição, fase e a estatística da temporada (estimada: ele não está no mundo simulado). */
+function irmaoHtml(s: Save, m: Familiar): string {
+  const fb = m.futebol!, ano = ANO_INICIAL + s.carreira.temporada, idade = idadeDe(m, ano);
+  const liga = fb.clubeId ? mundo(pacote).clube[fb.clubeId]?.ligaId : undefined;
+  const onde = fb.clubeId ? `${linkClube(fb.clubeId)}${liga ? ` · ${esc(infoLiga(liga).nome)}` : ""}` : "Sem clube";
+  const pro = fb.fase === "pro";
+  const r = new RNG(`irmao|${m.id}|${s.semente}|${ano}`);
+  const jogos = 26 + r.int(0, 10), fator = fb.ovr / 62;
+  const gols = Math.round(jogos * (fb.posicao === "ATA" ? 0.45 : fb.posicao === "PON" || fb.posicao === "MEI" ? 0.22 : fb.posicao === "VOL" ? 0.08 : 0.03) * fator * r.range(0.6, 1.4));
+  const assist = Math.round(jogos * (fb.posicao === "PON" || fb.posicao === "MEI" ? 0.2 : 0.07) * fator * r.range(0.6, 1.4));
+  const nota = (6.1 + (fb.ovr - 60) / 45 + r.range(-0.2, 0.2)).toFixed(2).replace(".", ",");
+  return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
+    <h1 style="margin-top:8px">${esc(m.nome)}</h1>
+    <p class="sub">${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idade} anos · ${esc(NOME_FASE_IRMAO[fb.fase])}</p>
+    <dl class="kv"><dt>Clube</dt><dd>${onde}</dd><dt>Posição</dt><dd>${NOME_POS[fb.posicao] ?? "–"}</dd><dt>OVR</dt><dd>${fb.ovr} <small class="sub">(potencial ${fb.pot})</small></dd></dl>
+    ${pro ? `<p class="rotulo" style="margin-top:12px">Temporada ${ano} <small>(estimativa)</small></p>
+      <div class="tiles">${tile(String(jogos), "Jogos", "🏟️")}${tile(String(gols), "Gols", "⚽")}${tile(String(assist), "Assistências", "👟")}${tile(nota, "Nota média", "⭐")}</div>
+      <p class="sub">Ele não está no mundo simulado, então os números são uma estimativa pela posição e pelo OVR.</p>` : `<p class="sub" style="margin-top:12px">Ainda não joga como profissional, então não tem estatística.</p>`}`;
+}
+function abrirIrmao(id: string) {
+  if (!save) return;
+  const m = familiaDe(pacote, save).membros.find((x) => x.id === id);
+  if (!m?.futebol) return;
+  $("telaHist").innerHTML = irmaoHtml(save, m);
+  const d = $("dlgHist") as HTMLDialogElement;
+  if (!d.open) d.showModal();
+}
 function abrirHistorico(nome: string) {
   if (!save) return;
   $("telaHist").innerHTML = historicoHtml(save, nome);
@@ -851,7 +879,7 @@ function linhaFam(s: Save, m: Familiar): string {
   if (m.falecido) return `<div class="rel-linha em-memoria"><div class="rel-topo"><span class="avatar-fam" style="--c:#8A968E">🕊️</span><div class="rel-nome"><b>${esc(m.nome)}</b><small>${NOME_PARENTESCO[m.parentesco]} · ${m.nasc}–${m.falecido} · em memória</small></div></div></div>`;
   const ctx = ctxFamilia(pacote, s), ano = ANO_INICIAL + s.carreira.temporada, fb = m.futebol, cor = corRelFam(m.relacao);
   const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${linkClube(fb.clubeId)}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
-  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome"><b>${esc(m.nome)}</b>${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
+  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome">${fb ? `<button class="nome-hist" data-irmao="${m.id}">${esc(m.nome)}</button>` : `<b>${esc(m.nome)}</b>`}${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
@@ -2498,7 +2526,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2596,6 +2624,7 @@ document.addEventListener("click", (ev) => {
     const rr = d.op === "aceitar" ? aceitarConvite(pacote, save, d.convite) : recusarConvite(pacote, save, d.convite);
     msgConvite = { texto: rr.msg, ok: rr.ok }; salvar(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  else if (d.irmao) abrirIrmao(d.irmao);
   else if (d.hist) abrirHistorico(d.hist);
   else if (d.vsel) { vistaSelecao = d.vsel as typeof vistaSelecao; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vmerc || d.janela || d.fjanela) {

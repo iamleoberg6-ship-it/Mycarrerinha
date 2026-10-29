@@ -377,8 +377,8 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
   }
 }
 
-export type AcaoFilho = "brincar" | "passear" | "presente" | "levarJogo";
-export const NOME_ACAO_FILHO: Record<AcaoFilho, string> = { brincar: "Brincar em casa", passear: "Passeio no parque", presente: "Dar um presente", levarJogo: "Levar ao jogo" };
+export type AcaoFilho = "brincar" | "passear" | "presente" | "levarJogo" | "historia" | "bola" | "festa";
+export const NOME_ACAO_FILHO: Record<AcaoFilho, string> = { brincar: "Brincar em casa", passear: "Passeio no parque", presente: "Dar um presente", levarJogo: "Levar ao jogo", historia: "Contar uma história", bola: "Treinar bola no quintal", festa: "Festa de aniversário" };
 /** Um programa com um filho (conta nos programas da semana; com a mesma criança, cada vez rende menos). */
 export function agirFilho(n: EstadoNamoro, i: number, acao: AcaoFilho, ctx: CtxNamoro): ResultadoNamoro {
   if (n.semana !== ctx.semanaAbs) { n.semana = ctx.semanaAbs; n.feitas = 0; }
@@ -393,6 +393,14 @@ export function agirFilho(n: EstadoNamoro, i: number, acao: AcaoFilho, ctx: CtxN
     case "passear": sobe(7); return { ok: true, msg: `Passeio no parque com ${f.nome}${longe}. Teve sorvete.`, moral: 3, cansaco: 2 };
     case "presente": { const c = Math.round(Math.max(200, ctx.salario * 0.01)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(5); return { ok: true, msg: `Presente para ${f.nome}: R$ ${c.toLocaleString("pt-BR")}.`, custo: c, moral: 1 }; }
     case "levarJogo": sobe(9); return { ok: true, msg: `${f.nome} foi ao estádio com a sua camisa.`, moral: 3, fama: 0.1 };
+    case "historia": sobe(5); return { ok: true, msg: `Histórias antes de dormir com ${f.nome}${longe}. Pediu a mesma três vezes.`, moral: 2 };
+    case "bola": {
+      // bola só depois dos 4 anos: antes disso a criança ainda não controla o pé
+      const idade = ctx.ano !== undefined ? ctx.ano - f.ano : 99;
+      if (idade < 4) return { ok: false, msg: `${f.nome} ainda é pequeno demais para bola.` };
+      sobe(6); return { ok: true, msg: `Treino de chute no quintal com ${f.nome}${longe}. Já chuta com as duas pernas, diz o pai orgulhoso.`, moral: 2 };
+    }
+    case "festa": { const c = Math.round(Math.max(400, ctx.salario * 0.02)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a festa." }; sobe(8); return { ok: true, msg: `Festa de aniversário de ${f.nome}, com bolo e os primos. R$ ${c.toLocaleString("pt-BR")}.`, custo: c, moral: 3 }; }
   }
 }
 export interface EfeitosNamoro { moral: number; fama: number; engajamento: number; recuperacao: number; evolucao: number; torcida: number; pressao: number; noite: number; agente: number; luvas: number; conforto: number }
