@@ -41,6 +41,7 @@ export type TipoMovel =
   | "piscina" | "espreguicadeira" | "churrasqueira" | "mesaExterna" | "trave" | "jacuzzi" | "fogueira"
   | "carro" | "moto" | "mesa"
   | "mesaEstudo" | "saco" | "massagem" | "pingPong" | "lareira" | "bateria"
+  | "quadraTenis" | "quadraFutebol" | "piscinao" | "sauna" | "criocamara" | "projetor" | "estatua" | "painelEstatisticas" | "paredeEscalada" | "escadaAgilidade"
   | "camisaRel" | "bolaRel" | "trofeuRel";
 
 interface InfoTipo { nome: string; categoria: Categoria; w: number; d: number; camada: Camada; ambientes: Ambiente[]; base: number; efeito: Partial<Efeitos>; corDe: "tecido" | "madeira" | "metal"; encosta?: boolean; comodos: TipoComodo[]; instalacao?: boolean }
@@ -94,6 +95,16 @@ export const TIPOS: Record<TipoMovel, InfoTipo> = {
   pingPong: t("Mesa de ping-pong", "lazer", 4, 2, 1500, { moral: 2 }, "madeira"),
   lareira: t("Lareira", "decoracao", 3, 2, 2200, { moral: 1, recuperacao: 1 }, "metal", { encosta: true }),
   bateria: t("Bateria", "lazer", 3, 3, 3000, { moral: 2, fama: 1 }, "metal"),
+  quadraTenis: t("Quadra de tênis", "lazer", 8, 12, 60000, { moral: 3, fama: 1 }, "tecido", { ambientes: E }),
+  quadraFutebol: t("Campo de futebol society", "lazer", 12, 18, 150000, { evolucao: 4, moral: 2 }, "tecido", { ambientes: E }),
+  piscinao: t("Piscinão", "lazer", 10, 6, 90000, { recuperacao: 4, moral: 3 }, "metal", { ambientes: E }),
+  sauna: t("Sauna", "banheiro", 3, 3, 9000, { recuperacao: 4, lesao: 2 }, "madeira"),
+  criocamara: t("Criocâmara", "treino", 2, 2, 25000, { recuperacao: 5, lesao: 2, moral: -1 }, "metal"),
+  projetor: t("Projetor de cinema", "lazer", 3, 3, 6000, { moral: 3 }, "metal"),
+  estatua: t("Estátua do craque", "conquistas", 2, 2, 12000, { fama: 3, moral: 1 }, "metal", { ambientes: IE }),
+  painelEstatisticas: t("Painel de estatísticas", "treino", 3, 1, 8000, { evolucao: 2, fama: 1 }, "metal", { encosta: true }),
+  paredeEscalada: t("Parede de escalada", "treino", 3, 1, 5000, { evolucao: 2, moral: 1 }, "madeira", { encosta: true }),
+  escadaAgilidade: t("Escada de agilidade", "treino", 6, 1, 600, { evolucao: 1, lesao: 2 }, "tecido", { ambientes: IE }),
   trave: t("Trave de treino", "externo", 6, 2, 900, { evolucao: 1 }, "metal", { ambientes: E }),
   jacuzzi: t("Jacuzzi", "externo", 3, 3, 4000, { recuperacao: 2 }, "metal", { ambientes: IE }),
   fogueira: t("Fogueira", "externo", 2, 2, 600, { moral: 1 }, "metal", { ambientes: E }),
@@ -122,6 +133,9 @@ const ONDE: Record<TipoMovel, TipoComodo[]> = {
   trofeus: ["sala", "trofeus", "escritorio", "jogos"],
   mesaEstudo: ["escritorio", "quarto", "kitnet", "sala"], saco: ["academia", "kitnet", "quarto"], massagem: ["academia", "sala", "quarto"],
   pingPong: ["jogos", "sala"], lareira: ["sala", "kitnet", "quarto"], bateria: ["jogos", "quarto", "kitnet"],
+  quadraTenis: ["externo"], quadraFutebol: ["externo"], piscinao: ["externo"], sauna: ["banheiro", "academia"], criocamara: ["academia"],
+  projetor: ["sala", "jogos"], estatua: ["trofeus", "sala", "externo", "escritorio"], painelEstatisticas: ["escritorio", "academia", "jogos"],
+  paredeEscalada: ["academia", "jogos", "externo"], escadaAgilidade: ["academia", "externo"],
   piscina: ["externo"], espreguicadeira: ["externo"], churrasqueira: ["externo"], mesaExterna: ["externo"], trave: ["externo"], jacuzzi: ["externo", "banheiro"], fogueira: ["externo"],
   carro: ["garagem"], moto: ["garagem"],
   // relíquias vão em qualquer cômodo
@@ -251,6 +265,16 @@ const ACRESCIMO: Partial<Record<TipoMovel, Linha[]>> = {
   pingPong: [["basico", 1, 1, "Mesa de ping-pong dobrável"], ["moderno", 2, 2, "Mesa de ping-pong profissional"]],
   lareira: [["rustico", 2, 2, "Lareira de pedra"], ["classico", 3, 3, "Lareira de mármore com moldura", { efeitos: { moral: 3, recuperacao: 2 } }]],
   bateria: [["basico", 1, 1, "Bateria de cinco peças"], ["gamer", 2, 2, "Bateria eletrônica com fones"], ["classico", 3, 3, "Bateria vintage de jazz", { efeitos: { moral: 3, fama: 2 } }]],
+  quadraTenis: [["basico", 1, 1, "Quadra de saibro"], ["moderno", 2, 2, "Quadra de piso rápido com alambrado"], ["classico", 3, 3, "Quadra de grama de clube inglês", { efeitos: { moral: 4, fama: 2 } }]],
+  quadraFutebol: [["basico", 2, 2, "Campinho de terra batida"], ["moderno", 3, 3, "Gramado society com alambrado"], ["gamer", 3, 4, "Campo com arquibancada de LED", { efeitos: { evolucao: 5, moral: 3 } }]],
+  piscinao: [["moderno", 3, 3, "Piscinão de borda infinita"], ["classico", 3, 4, "Piscinão com cascata e raia", { efeitos: { recuperacao: 6, moral: 3, lesao: 2 } }]],
+  sauna: [["rustico", 1, 2, "Sauna finlandesa de madeira"], ["moderno", 2, 3, "Sauna a vapor com cromoterapia", { efeitos: { recuperacao: 5, lesao: 2 } }]],
+  criocamara: [["moderno", 2, 4, "Criocâmara de menos 110 graus", { efeitos: { recuperacao: 6, lesao: 3, moral: -1 } }]],
+  projetor: [["basico", 1, 1, "Projetor de parede"], ["gamer", 2, 2, "Cinema com telão 4K", { efeitos: { moral: 4 } }]],
+  estatua: [["brasileiro", 1, 1, "Estátua de gesso do craque da cidade"], ["classico", 2, 2, "Estátua de bronze do ídolo", { efeitos: { fama: 4, moral: 1 } }], ["moderno", 3, 3, "Escultura de craque em aço inox", { efeitos: { fama: 5, moral: 2 } }]],
+  painelEstatisticas: [["gamer", 2, 2, "Painel de estatísticas com LED"], ["moderno", 3, 3, "Telão de análise de jogo", { efeitos: { evolucao: 3, fama: 2 } }]],
+  paredeEscalada: [["basico", 1, 1, "Parede de escalada de aglomerado"], ["moderno", 2, 2, "Parede de escalada com presas coloridas", { efeitos: { evolucao: 3, moral: 1 } }]],
+  escadaAgilidade: [["basico", 1, 1, "Escada de agilidade de nylon"], ["gamer", 2, 2, "Escada com sensores e luz", { efeitos: { evolucao: 2, lesao: 2 } }]],
 };
 for (const [tipo, linhas] of Object.entries(ACRESCIMO) as [TipoMovel, Linha[]][]) PRODUTOS[tipo] = [...(PRODUTOS[tipo] ?? []), ...linhas];
 
@@ -480,6 +504,32 @@ export const IMOVEIS: Imovel[] = [
       cm("trofeus", "Sala de troféus", "trofeus", 11, 8, { parede: ac("pintura", 10), piso: ac("carpete", 2) }),
       cm("piscina", "Área da piscina", "externo", 17, 12, { piso: ac("deck"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 21, 9, { piso: ac("epoxi") })] },
 ];
+// Mansões com lote de sobra: quadra e piscinão já vêm no terreno (fixos, não se tiram)
+IMOVEIS.push(
+  { id: "man-quadra", categoria: "mansao", nome: "Mansão com quadra de tênis", local: "Condomínio de luxo", vista: "condominio", aluguel: 130000, compra: 22000000,
+    descricao: "Lote de quase um campo: quadra de tênis e piscinão já no terreno. Sala de troféus, academia e uma biblioteca.",
+    comodos: [cm("sala", "Salão", "sala", 16, 12, { parede: ac("boiserie", 1), piso: ac("marmore"), janelas: [jn("esq", 5, 4), jn("esq", 10, 4)] }),
+      cm("cozinha", "Cozinha", "cozinha", 11, 9, { parede: ac("azulejo"), piso: ac("hidraulico", 1), janelas: [jn("dir", 7)], inclusos: PIA(0, 0, "bancada-classico-2-4") }),
+      cm("quarto", "Suíte master", "quarto", 13, 11, { parede: ac("boiserie"), piso: ac("madeira", 2), janelas: [jn("esq", 6.5, 3)] }),
+      banheiro(8, 7, { inclusos: BANHEIRO_LUXO("classico"), parede: ac("marmoreP"), piso: ac("marmore") }),
+      cm("academia", "Academia", "academia", 11, 9, { piso: ac("ceramica"), janelas: [jn("dir", 5)] }),
+      cm("escritorio", "Biblioteca", "escritorio", 10, 8, { parede: ac("ripado", 1), piso: ac("madeira", 1) }),
+      cm("trofeus", "Sala de troféus", "trofeus", 11, 8, { parede: ac("ripado", 1), piso: ac("carpete", 3) }),
+      cm("lote", "Lote", "externo", 34, 28, { piso: ac("grama", 1), parede: ac("cerca"),
+        inclusos: [{ item: "quadraTenis-moderno-2-2", x: 2, y: 2 }, { item: "piscinao-moderno-3-3", x: 18, y: 4 }, { item: "estatua-classico-2-2", x: 18, y: 16 }] }),
+      cm("garagem", "Garagem", "garagem", 16, 9, { piso: ac("epoxi", 1) })] },
+  { id: "man-futebol", categoria: "mansao", nome: "Mansão com campo de futebol", local: "Interior, com sítio", vista: "campo", aluguel: 150000, compra: 25000000,
+    descricao: "Campo de futebol society e piscinão no terreno. Academia com criocâmara e sauna para depois do jogo.",
+    comodos: [cm("sala", "Sala de estar", "sala", 15, 12, { piso: ac("madeira", 2), janelas: [jn("esq", 5, 4), jn("esq", 10, 3)] }),
+      cm("cozinha", "Cozinha", "cozinha", 11, 9, { parede: ac("azulejo"), piso: ac("porcelanato", 3), janelas: [jn("dir", 6)], inclusos: PIA(0, 0) }),
+      cm("quarto", "Suíte master", "quarto", 13, 11, { piso: ac("taco", 1), janelas: [jn("esq", 6.5, 3)] }),
+      banheiro(8, 7, { inclusos: BANHEIRO_LUXO("moderno"), parede: ac("marmoreP", 1), piso: ac("porcelanato", 3) }),
+      cm("academia", "Academia e recuperação", "academia", 12, 10, { piso: ac("ceramica"), janelas: [jn("dir", 5)] }),
+      cm("jogos", "Sala de jogos", "jogos", 11, 9, { janelas: [jn("dir", 4)] }),
+      cm("lote", "Lote", "externo", 40, 34, { piso: ac("grama", 1), parede: ac("cerca"),
+        inclusos: [{ item: "quadraFutebol-moderno-3-3", x: 2, y: 2 }, { item: "piscinao-classico-3-4", x: 24, y: 4 }, { item: "estatua-moderno-3-3", x: 24, y: 22 }] }),
+      cm("garagem", "Garagem", "garagem", 16, 9, { piso: ac("epoxi", 1) })] },
+);
 // Plantas novas: loft, casa de vila com quintal e cobertura duplex
 IMOVEIS.push(
   { id: "loft-industrial", categoria: "apartamento", nome: "Loft industrial de tijolo à vista", local: "Bairro de galpões", vista: "cidade", aluguel: 7500, compra: 950000,
