@@ -76,37 +76,46 @@ const GOL_MEU = [
   "{nome} arranca e finaliza na saída do {gol}.", "Chute de fora da área de {nome}, sem chance para o {gol}.", "{nome} completa o cruzamento do {ponta}.",
   "{nome} cobra o pênalti com categoria.", "{nome} tabela com o {comp} e toca por cima do {gol}.", "{nome} rouba a bola do {vol} e bate de primeira.",
   "Falta cobrada por {nome} no canto do {gol}.", "{nome} dribla o {zag} e bate no ângulo.", "{nome} empurra para a rede depois de bate-rebate na área.",
+  "{nome} tira o zagueiro do lance com um toque de letra e marca.", "{nome} pega a sobra fora da área e manda no ângulo.", "{nome} domina no peito, gira e chuta sem deixar o {gol} reagir.",
 ];
 const GOL_ASSIST = [
   "{nome} cruza na medida e {X} cabeceia para o gol.", "{nome} enfia para {X}, que toca na saída do {gol}.", "Escanteio de {nome} e cabeçada de {X}.",
   "{nome} vai à linha de fundo e rola para {X} bater de primeira.", "{nome} dá um passe de calcanhar e {X} chuta no canto.", "Lançamento de {nome} e {X} mata no peito e marca.",
+  "{nome} vê {X} livre na área e inventa um passe por baixo da perna.", "Uma tabela rápida entre {nome} e {X} e a bola morre no fundo da rede.",
 ];
 const GOL_TIME = [
   "{X} de cabeça, depois de escanteio.", "{X} bate de fora da área.", "{X} completa o cruzamento de {Y}.", "Pênalti convertido por {X}.",
   "{X} aproveita falha do {zag}.", "Contra-ataque rápido e {X} finaliza.", "{X} faz de cabeça no segundo pau.", "Gol contra do {zag}, tentando cortar o cruzamento.",
   "{X} dribla o goleiro e toca para o gol vazio.", "Cobrança de falta de {X} no ângulo.", "{X} chuta, a bola desvia no {zag} e entra.",
+  "{X} recebe nas costas do {zag} e encobre o goleiro.", "Pressão no meio, a bola sobra para {X} e ele não perdoa.",
 ];
 const GOL_ADV = [
   "{X} de cabeça, depois de escanteio.", "{X} bate de fora da área e o {goleiro} não alcança.", "{X} completa o cruzamento.", "Pênalti convertido por {X}.",
   "{X} aproveita falha do {zagMeu}.", "Contra-ataque rápido e {X} finaliza.", "O {goleiro} solta e {X} empurra para a rede.", "Gol contra do {zagMeu}, tentando cortar.",
   "{X} passa pelo {zagMeu} e bate cruzado.", "Falta de {X} no canto do {goleiro}.",
+  "{X} sobe sozinho na segunda trave e cabeceia firme.", "Erro de passe do {zagMeu} e {X} entra na área sem marcação.",
 ];
 
-/** Texto de cada gol do placar: quem fez e como. */
-export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | undefined, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco): string {
+/** Escolhe um modelo de frase, deixando de fora os usados em jogos recentes quando há alternativa. */
+const escolherModelo = (rng: RNG, lista: string[], recentes?: Recentes) => rng.pick(variarPor(lista, (t) => t, recentes));
+
+/** Texto de cada gol do placar: quem fez e como (e o modelo usado, para variar nos próximos jogos). */
+export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | undefined, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco, recentes?: Recentes): { texto: string; modelo: string } {
   // quem falha muda de gol para gol
   const zag = umDe(rng, [...elAdv.ZAG.slice(0, 3), ...elAdv.LAT.slice(0, 2)], 5), zagMeu = umDe(rng, [...elMeu.ZAG.slice(0, 3), ...elMeu.LAT.slice(0, 2)], 5);
   if (meuTime) {
     const X = sorteia(rng, ARTILHEIROS, elMeu), Y = umDe(rng, [...elMeu.PON, ...elMeu.LAT], 4);
     const lista = meu === "gol" ? GOL_MEU : meu === "assist" ? GOL_ASSIST : GOL_TIME;
-    let texto = preencher(rng.pick(lista), { ...nomes, zag, X, Y });
+    const modelo = escolherModelo(rng, lista, recentes);
+    let texto = preencher(modelo, { ...nomes, zag, X, Y });
     if (meu === "gol" && nomes.brinca && rng.chance(0.4)) texto += " " + preencher("{brinca} corre até a torcida e comemora com todo mundo.", nomes);
-    return texto;
+    return { texto, modelo };
   }
-  return preencher(rng.pick(GOL_ADV), { ...nomes, zagMeu, X: sorteia(rng, ARTILHEIROS, elAdv) });
+  const modelo = escolherModelo(rng, GOL_ADV, recentes);
+  return { texto: preencher(modelo, { ...nomes, zagMeu, X: sorteia(rng, ARTILHEIROS, elAdv) }), modelo };
 }
 
-export interface LinhaNarracao { min: number; texto: string; cls?: "meu" | "contra" | "aviso"; /** lance do próprio jogador (some se ele sair de campo antes) */ jogador?: boolean }
+export interface LinhaNarracao { min: number; texto: string; /** o modelo de frase usado (para não repetir nos próximos jogos) */ modelo?: string; cls?: "meu" | "contra" | "aviso"; /** lance do próprio jogador (some se ele sair de campo antes) */ jogador?: boolean }
 interface Modelo { t: string; cls?: LinhaNarracao["cls"]; peso?: number; quando?: (c: CtxNarracao) => boolean }
 export interface CtxNarracao { mandante: boolean; classico: boolean; chuva: boolean; base: boolean; pos: Posicao; nota: number; entrada: number; saida: number }
 
@@ -149,15 +158,26 @@ const DO_JOGADOR: Record<"bom" | "ruim" | "neutro", Modelo[]> = {
   ],
 };
 
-function escolher(rng: RNG, lista: Modelo[], c: CtxNarracao): Modelo {
-  const ok = lista.filter((m) => !m.quando || m.quando(c));
+/** Frases usadas nos últimos jogos, da mais antiga para a mais nova. */
+export type Recentes = string[];
+/** Entre as candidatas: as que não apareceram nos jogos recentes; se todas apareceram, as que faz mais tempo. */
+function variarPor<T>(lista: T[], chave: (x: T) => string, recentes?: Recentes): T[] {
+  if (!recentes?.length) return lista;
+  const novos = lista.filter((x) => !recentes.includes(chave(x)));
+  if (novos.length) return novos;
+  const idx = (x: T) => recentes.lastIndexOf(chave(x));
+  const menor = Math.min(...lista.map(idx));
+  return lista.filter((x) => idx(x) === menor);
+}
+function escolher(rng: RNG, lista: Modelo[], c: CtxNarracao, recentes?: Recentes): Modelo {
+  const ok = variarPor(lista.filter((m) => !m.quando || m.quando(c)), (m) => m.t, recentes);
   const tot = ok.reduce((a, m) => a + (m.peso ?? 1), 0); let r = rng.next() * tot;
   for (const m of ok) { r -= m.peso ?? 1; if (r <= 0) return m; }
   return ok[0];
 }
 
 /** Abertura do jogo e lances de ambiente espalhados pelos 90 minutos. */
-export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco, ligacoes: Ligacao[] = []): { abertura: string; linhas: LinhaNarracao[] } {
+export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco, ligacoes: Ligacao[] = [], recentes?: Recentes): { abertura: string; linhas: LinhaNarracao[] } {
   const extras = () => ({ ...nomes, m1: umDe(rng, [...elMeu.MEI, ...elMeu.PON, ...elMeu.ATA, ...elMeu.VOL], 8), a1: umDe(rng, [...elAdv.ATA, ...elAdv.MEI, ...elAdv.PON, ...elAdv.VOL], 8), a2: umDe(rng, [...elAdv.PON, ...elAdv.MEI, ...elAdv.ATA].reverse(), 5) });
   const abertura = preencher(rng.pick(c.base ? ["Bola rolando no CT.", "Começa o jogo da base.", "Bola rolando na base."] :
     c.classico ? ["É clássico! Bola rolando no {estadio}.", "Começa o clássico. O {estadio} está lotado e barulhento."] :
@@ -166,15 +186,15 @@ export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, st
   const usados = new Set<string>();
   const n = rng.int(5, 8);
   for (let i = 0; i < n; i++) {
-    const m = escolher(rng, AMBIENTE, c);
+    const m = escolher(rng, AMBIENTE, c, recentes);
     if (usados.has(m.t)) continue; usados.add(m.t);
-    linhas.push({ min: rng.int(3, 88), texto: preencher(m.t, extras()), cls: m.cls });
+    linhas.push({ min: rng.int(3, 88), texto: preencher(m.t, extras()), cls: m.cls, modelo: m.t });
   }
   // personalidade: quem tem pavio curto leva amarelo; um par de companheiros que se conhece do clube aparece junto
   if (nomes.pavio && rng.chance(0.5)) {
     const t = rng.pick(["Amarelo para {pavio}, depois de reclamar com o árbitro.", "{pavio} discute com o juiz e recebe o cartão."]);
     const min = rng.int(20, 80);
-    if (!usados.has(t)) { usados.add(t); linhas.push({ min, texto: preencher(t, extras()), cls: "contra" }); }
+    if (!usados.has(t)) { usados.add(t); linhas.push({ min, texto: preencher(t, extras()), cls: "contra", modelo: t }); }
   }
   const ladoDo = (n: string) => elMeu.MEI.includes(n) || elMeu.ATA.includes(n) || elMeu.PON.includes(n) || elMeu.VOL.includes(n) || elMeu.ZAG.includes(n) || elMeu.LAT.includes(n) ? "meu" : elAdv.ATA.includes(n) || elAdv.MEI.includes(n) || elAdv.PON.includes(n) || elAdv.VOL.includes(n) || elAdv.ZAG.includes(n) || elAdv.LAT.includes(n) ? "adv" : "";
   const pares = ligacoes.filter((l) => ladoDo(l.a) && ladoDo(l.a) === ladoDo(l.b));
@@ -190,9 +210,9 @@ export function narrarPartida(rng: RNG, c: CtxNarracao, nomes: Record<string, st
     const k = emCampo > 45 ? rng.int(2, 3) : 1;
     for (let i = 0; i < k; i++) {
       const tipo = c.nota >= 7 ? (rng.chance(0.75) ? "bom" : "neutro") : c.nota <= 5.8 ? (rng.chance(0.7) ? "ruim" : "neutro") : rng.pick(["bom", "neutro", "ruim"] as const);
-      const m = escolher(rng, DO_JOGADOR[tipo], c);
+      const m = escolher(rng, DO_JOGADOR[tipo], c, recentes);
       if (usados.has(m.t)) continue; usados.add(m.t);
-      linhas.push({ min: rng.int(c.entrada + 2, Math.min(89, c.saida - 1)), texto: preencher(m.t, extras()), cls: tipo === "bom" ? "meu" : undefined, jogador: true });
+      linhas.push({ min: rng.int(c.entrada + 2, Math.min(89, c.saida - 1)), texto: preencher(m.t, extras()), cls: tipo === "bom" ? "meu" : undefined, jogador: true, modelo: m.t });
     }
   }
   return { abertura, linhas: linhas.filter((l) => l.min !== 45).sort((a, b) => a.min - b.min) };

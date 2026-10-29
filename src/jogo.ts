@@ -127,6 +127,10 @@ export interface Carreira {
   meioNoticiado?: number;
   /** temporada em que saíram as notícias da vida dos outros jogadores do mundo */
   vidaNoticiada?: number;
+  /** modelos de frase das últimas partidas (a narração evita repetir) */
+  frasesVistas?: string[];
+  /** consequências que voltam: um técnico que não esqueceu, uma polêmica que ressurge */
+  fios?: Fio[];
   /** copas continentais da temporada, suspensão na copa, estatísticas na copa, tabela final da temporada passada (vagas)
    *  e o jogo de quarta já jogado nesta semana (entra no resumo da semana) */
   copas?: Partial<Record<CopaId, EstadoCopa>>; suspensaoCopa?: number; statsCopa?: { jogos: number; gols: number; assist: number; notas: number[] };
@@ -884,7 +888,11 @@ export interface Partida {
   base: { gols: number; assist: number; nota: number }; fAdv: number;
   /** nomes do elenco usados nos textos, contexto do jogo e narração de ambiente */
   nomes: Record<string, string>; ctx: Contexto; abertura: string; narracao: LinhaNarracao[];
+  /** modelos de frase usados na narração (para não repetir nos próximos jogos) */
+  modelos?: string[];
 }
+/** Consequência que volta semanas depois de um lance (ver plantarFios e resolverFios). */
+export interface Fio { id: string; quando: number; tipo: "tecnico" | "repercussao"; titulo: string; texto: string; ef?: EfeitoVida }
 export interface ResultadoDecisao extends Efeito { min: number; nivel: Nivel; situacao: string; opcao?: string }
 /** Decisão extra que a tela abre quando o jogador marca pela primeira vez no jogo: como comemorar. */
 export function decisaoComemoracao(s: Save, p: Partida, min: number): Decisao {
@@ -1008,13 +1016,14 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
     decisoes.push({ min, ...montarDecisao(rngL, sit, ctxMin, nomes) });
   }
   lances.sort((x, y) => x.min - y.min);
-  for (const x of lances) x.texto = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv);
-  const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida }, nomes, elMeu, elAdv, ligacoes);
+  const recentes = c.frasesVistas ?? [], modelosNarr: string[] = [];
+  for (const x of lances) { const f = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv, recentes); x.texto = f.texto; modelosNarr.push(f.modelo); }
+  const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida }, nomes, elMeu, elAdv, ligacoes, recentes);
   const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeM(jogo.casa).nome}${suf}`, nomeF = `${clubeM(jogo.fora).nome}${suf}`;
   void adv;
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}),
     entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF,
-    nomes, ctx, abertura: narr.abertura, narracao: narr.linhas, ...(clima ? { clima } : {}) };
+    nomes, ctx, abertura: narr.abertura, narracao: narr.linhas, modelos: [...modelosNarr, ...narr.linhas.flatMap((l) => (l.modelo ? [l.modelo] : []))], ...(clima ? { clima } : {}) };
 }
 
 /** O tamanho do jogo: final, semifinal, Copa do Mundo, mata-mata de volta, clássico, briga na reta final, estreia. */
@@ -1112,8 +1121,27 @@ const POLEMICAS = [
 
 /** Aplica uma partida do jogador: decisões, nota, estatísticas, moral, torcida, fama, cansaço, lesão, relíquias e notícia.
  *  Serve para o jogo de domingo (liga) e o de quarta (copa continental). */
+/** Guarda as frases da partida (para variar) e planta as consequências dos lances que pedem retorno. */
+function registrarNarracaoEFios(s: Save, partida: Partida, decisoes: ResultadoDecisao[]) {
+  const c = s.carreira, ab = semanaAbsJogo(c);
+  c.frasesVistas = [...(c.frasesVistas ?? []), ...(partida.modelos ?? [])].slice(-400);
+  c.fios ??= [];
+  decisoes.forEach((d, i) => {
+    if (c.fios!.length >= 6) return;
+    const r = new RNG(`fio|${s.semente}|${c.temporada}|${c.semana}|${i}|${d.min}`);
+    if ((d.relTecnico ?? 0) <= -2) {
+      const cobra = r.chance(0.5);
+      c.fios!.push({ id: `t${ab}-${i}`, quando: ab + r.int(5, 8), tipo: "tecnico",
+        titulo: cobra ? "O técnico não esqueceu" : "Conversa com o técnico",
+        texto: cobra ? `${s.jogador.apelido} ouviu do treinador que o episódio da última partida ainda conta. Ele agora cobra mais treino.` : `O técnico chamou ${s.jogador.apelido} para uma conversa e disse que aquilo ficou para trás.`,
+        ef: cobra ? { relTecnico: -1, moral: -1 } : { relTecnico: 2 } });
+    }
+    if (d.noticia) c.fios!.push({ id: `r${ab}-${i}`, quando: ab + r.int(3, 5), tipo: "repercussao", titulo: "A polêmica voltou", texto: `Os programas esportivos voltaram ao assunto que envolve ${s.jogador.apelido}, agora com outras opiniões.` });
+  });
+}
 function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes: ResultadoDecisao[], notaExtra: number, intensidadeAlta: boolean, rng: RNG, eventos: string[]):
   { resumo?: ResumoPartida; participacao: Participacao; nota: number; placar?: [number, number]; placarBase?: [number, number] } {
+  registrarNarracaoEFios(s, partida, decisoes);
   const l = ligaAtual(pacote, s), c = s.carreira, j = s.jogador, casa = efeitosDaCasa(s.casa).total, copa = partida.copa;
   const adversario = partida.souCasa ? partida.fora : partida.casa;
   if (partida.escalacao === "lesionado" || partida.escalacao === "suspenso") return { participacao: "naoJogou", nota: 0 };
@@ -1485,6 +1513,16 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   // 7. mercado: propostas da janela, renovação, empréstimo; nos caminhos de formação, olheiros e convites
   semanaDoMercado(pacote, s, rngDe(s, "mercado"), eventos);
   semanaDoCaminho(pacote, s, notaSemana, notaSemana > 0, eventos);
+  // consequências que voltam: o técnico que não esqueceu, a polêmica que ressurge
+  if (c.fios?.length) {
+    const agora = semanaAbsJogo(c);
+    c.fios = c.fios.filter((f) => {
+      if (f.quando > agora) return true;
+      noticia(s, f.tipo === "tecnico" ? "clube" : "polemica", f.titulo, f.texto);
+      if (f.ef) aplicarEfeitoVida(pacote, s, f.ef);
+      return false;
+    });
+  }
   // 8. patrocinadores: proposta vence em 4 semanas; marcas novas aparecem conforme a fama
   if (c.propPatrocinio && semanaAbsJogo(c) >= c.propPatrocinio.expira) { eventos.push(`A proposta da ${MARCA[c.propPatrocinio.marca]?.nome ?? "marca"} expirou.`); c.propPatrocinio = undefined; }
   if (!c.propPatrocinio && (c.patrocinios?.length ?? 0) < 4) {
