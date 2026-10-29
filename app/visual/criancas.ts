@@ -88,7 +88,7 @@ export function svgFilho(g: GenesFilho, idade: number, menina: boolean, semente:
   const frente = bebe ? cabeloBebe(g.textura, cab, cabEsc, cx, topo, menina) : cabeloCrianca(g.textura, cab, cabEsc, cx, cy, rx, ry, menina);
   const laco = bebe && menina ? `<path d="M${cx + 18} ${topo + 10} l-14 -9 l0 18 Z M${cx + 18} ${topo + 10} l14 -9 l0 18 Z" fill="#E0567A" stroke="${TINTA}" stroke-width="1.6" stroke-linejoin="round"/><circle cx="${cx + 18}" cy="${topo + 10}" r="4" fill="#E0567A" stroke="${TINTA}" stroke-width="1.6"/>` : "";
   return `<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${bebe ? "Bebê" : menina ? "Menina" : "Menino"}"><defs><clipPath id="${id}"><rect width="200" height="240" rx="14"/></clipPath></defs>
-    <g clip-path="url(#${id})"><rect width="200" height="240" fill="${fundo}"/>${roupa}${pescoco}${atras}${orelhas}${cabeca}${boch}${sardas}${sobr}${olhoSvg(cx - dx)}${olhoSvg(cx + dx)}${nariz}${boca}${frente}${laco}</g></svg>`;
+    <g clip-path="url(#${id})"><rect width="200" height="240" fill="${fundo}"/>${atras}${roupa}${pescoco}${orelhas}${cabeca}${boch}${sardas}${sobr}${olhoSvg(cx - dx)}${olhoSvg(cx + dx)}${nariz}${boca}${frente}${laco}</g></svg>`;
 }
 /** Pontinhos de textura (cacho e crespo). */
 function textura(x: number, y: number, r: number, cor: string): string {
