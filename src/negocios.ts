@@ -1,6 +1,7 @@
 // Negócios e investimentos fora de campo: empresas próprias (restaurante, escolinha, marca...), aplicações (renda fixa,
 // ações, cripto) e as propostas que chegam pelo celular, algumas delas golpes. O mês fecha junto com o salário.
 import { RNG, clamp } from "./rng.js";
+import { bonusVitrine, type DesignMarca } from "./marca-propria.js";
 
 export type TipoEmpresa = "escolinha" | "barbearia" | "restaurante" | "academia" | "imoveis" | "marca" | "app";
 export interface InfoEmpresa {
@@ -24,7 +25,7 @@ export const EMPRESAS: Record<TipoEmpresa, InfoEmpresa> = {
   marca: { id: "marca", nome: "Marca de roupas", desc: "Vive dos seus seguidores. Pode estourar, pode encalhar.", custo: 1_500_000, famaMin: 55, retorno: 0.017, risco: 12, famaPuxa: true, bonus: { fama: 0.04 }, nomes: ["{apelido} Wear", "Coleção {numero}", "{apelido} Original"] },
   app: { id: "app", nome: "Startup de tecnologia", desc: "Quase nunca dá lucro. Às vezes vale dez vezes mais. Às vezes, nada.", custo: 1_000_000, famaMin: 40, retorno: 0, risco: 10, nomes: ["App de pelada {apelido}", "Scout.ai", "Chuteira Digital"] },
 };
-export interface Empresa { uid: string; tipo: TipoEmpresa; nome: string; valor: number; investido: number; saude: number; desde: number; lucroUlt?: number; cuidado?: number; acao?: number }
+export interface Empresa { uid: string; tipo: TipoEmpresa; nome: string; valor: number; investido: number; saude: number; desde: number; /** a marca de roupas do jogador: logo, nome e peças da coleção */ marca?: DesignMarca; lucroUlt?: number; cuidado?: number; acao?: number }
 export type TipoInvest = "rendaFixa" | "acoes" | "cripto";
 export const INVEST: Record<TipoInvest, { nome: string; desc: string }> = {
   rendaFixa: { nome: "Renda fixa", desc: "Rende pouco e sempre." },
@@ -62,6 +63,13 @@ export function abrirEmpresa(n: EstadoNegocios, tipo: TipoEmpresa, ctx: CtxNegoc
   return { ok: true, msg: `${nome} abriu as portas!`, custo };
 }
 export type AcaoEmpresa = "cuidar" | "divulgar" | "investir" | "vender";
+/** Grava a marca (nome, logo e peças) numa empresa de roupas do jogador. */
+export function salvarMarca(n: EstadoNegocios, uid: string, marca: DesignMarca): ResultadoNeg {
+  const e = n.empresas.find((x) => x.uid === uid && x.tipo === "marca");
+  if (!e) return { ok: false, msg: "Essa marca não existe mais." };
+  e.marca = marca; e.nome = marca.nome;
+  return { ok: true, msg: `Coleção de ${marca.nome} pronta: ${marca.pecas.length} peça(s) à venda.` };
+}
 export function agirEmpresa(n: EstadoNegocios, uid: string, acao: AcaoEmpresa, ctx: CtxNegocios): ResultadoNeg {
   const e = n.empresas.find((x) => x.uid === uid);
   if (!e) return { ok: false, msg: "Essa empresa não existe mais." };
@@ -140,7 +148,7 @@ export function mesNegocios(n: EstadoNegocios, rng: RNG, ctx: CtxNegocios): MesN
       e.lucroUlt = 0; continue;
     }
     const segs = info.id === "marca" ? clamp(Math.log10(Math.max(1e4, ctx.seguidores)) / 6.5, 0.5, 1.5) : 1;
-    const lucro = Math.round(e.valor * info.retorno * segs * (e.saude - 35) / 35);
+    const lucro = Math.round(e.valor * info.retorno * segs * (e.saude - 35) / 35 * bonusVitrine(e.marca));
     e.lucroUlt = lucro; r.lucro += lucro;
     e.valor = Math.max(info.custo * 0.2, e.valor * (1 + (e.saude - 50) / 2500));
     // acontecimentos do mês

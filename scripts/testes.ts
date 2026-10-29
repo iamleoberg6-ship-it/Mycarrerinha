@@ -1,6 +1,7 @@
 // Testes do motor: fórmulas do documento e propriedades da simulação.
 import assert from "node:assert/strict";
 import { RNG } from "../src/rng.js";
+import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
 import { valorMercado, salarioMensal } from "../src/mercado.js";
 import { ligaDoPacote, criarMundo, simularTemporada, tabelaTurnoReturno } from "../src/liga.js";
@@ -1586,3 +1587,14 @@ teste("Álbum: momentos (patrocínio, família, golaço) entram uma vez por chav
 });
 
 console.log(`\n${ok} testes passaram`);
+
+teste("Marca própria: sugestões de nome são determinísticas, com o apelido, e o logo entra no desenho da peça", () => {
+  const a = sugerirNomes(new RNG("marca|x"), "Leo", "10");
+  assert.deepEqual(a, sugerirNomes(new RNG("marca|x"), "Leo", "10"));
+  assert.equal(new Set(a).size, 6);
+  assert.ok(a.every((n) => n.includes("LEO") || n.includes("10")));
+  const svg = pecaSvg("camiseta", "#C8102E", { nome: "LEO WEAR", fonte: 0, tamanho: 1, cor: "#FFFFFF" });
+  assert.ok(svg.includes("LEO WEAR") && svg.includes("#C8102E"));
+  assert.equal(bonusVitrine(undefined), 1);
+  assert.ok(bonusVitrine({ nome: "x", fonte: 0, tamanho: 0, cor: "#fff", pecas: [{ peca: "bone", cor: "#000" }, { peca: "tenis", cor: "#000" }] }) > 1);
+});

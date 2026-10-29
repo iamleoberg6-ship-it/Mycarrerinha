@@ -130,7 +130,7 @@ export const EVENTOS: EventoVida[] = [
     op("ficar", "Ficar treinando", "O técnico gostou. Os patrocinadores, não.", { relTecnico: 5, fama: -2 }),
   ], { quando: (c) => c.fama >= 85 }),
   ev("marca-propria", ["estrela", "veterano"], "Sua própria marca", "Você pode lançar uma linha de roupas com seu apelido.", [
-    op("lancar", "Lançar a coleção", "Esgotou em uma hora no primeiro lote. Depois, as vendas se estabilizaram.", { sal: -4, patrocinio: { pct: 0.12, piso: 100000, meses: 24 }, fama: 3, engajamento: 10 }),
+    op("lancar", "Lançar a coleção", "Esgotou em uma hora no primeiro lote. A marca agora está em Negócios, pronta para ganhar logo e peças.", { sal: -4, fama: 3, engajamento: 10 }),
     op("nao", "Deixar quieto", "Um time de marketing a menos para gerenciar.", {}),
   ], { unico: true, quando: (c) => c.fama >= 65 }),
   ev("assedio", ["estrela"], "Fãs na porta de casa", "Tem fã acampado na frente do condomínio desde segunda.", [

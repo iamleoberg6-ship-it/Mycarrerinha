@@ -9,7 +9,8 @@ import { salarioMensal, valorMercado, type TipoAgente } from "./mercado.js";
 import { comissaoDo, AGENTE_LEGADO } from "./agentes-banco.js";
 import type { NegAgente } from "./agentes.js";
 import { custoConsultores, tickConsultores, type DadosConsultores } from "./consultores.js";
-import { novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest } from "./negocios.js";
+import type { DesignMarca } from "./marca-propria.js";
+import { salvarMarca, novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest } from "./negocios.js";
 import { novaSaude, semanaSaude, feriasSaude, operar, riscoLesaoSaude, fatorDeclinio, recuperacaoSaude, custoEquipe, type EstadoSaude, type Staff, type ParteCorpo } from "./saude.js";
 import { semanaAmor, agendarCasamento, agendarLuaDeMel } from "./amor.js";
 import { semanaAcontecimentos } from "./acontecimentos.js";
@@ -1686,6 +1687,7 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   let texto = preencher(o.resultado, ctx), notas = aplicarEfeito(s, o.efeitos);
   if (o.risco && rngDe(s, "evento-risco", e.id).chance(o.risco.chance)) { texto += " " + preencher(o.risco.resultado, ctx); notas = [...notas, ...aplicarEfeito(s, o.risco.efeitos)]; }
   const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");
+  if (e.id === "marca-propria" && opcaoId === "lancar") abrirEmpresa(negociosDe(s.carreira), "marca", ctxNegocios(pacote, s), rngDe(s, "marca-propria"), 0);
   if (e.id === "documentario" && opcaoId === "aceitar") { const r = rngDe(s, "documentario", ANO_INICIAL + s.carreira.temporada); (s.carreira.documentarios ??= []).push({ ano: ANO_INICIAL + s.carreira.temporada, titulo: r.pick(TITULOS_DOC), cenario: r.int(0, 5) }); }
   if (e.id === "videogame" && opcaoId === "aceitar") { ganharCapa(s, true); return { titulo: e.titulo, texto: final }; }
   noticia(s, "vida", e.titulo, final, { k: "vida" });
@@ -2042,6 +2044,9 @@ export function abrirEmpresaJogo(pacote: PacoteDados, s: Save, tipo: TipoEmpresa
   if (r.custo) s.casa.saldo -= r.custo;
   if (r.ok) { noticia(s, "dinheiro", `${s.jogador.apelido} vira empresário`, r.msg); registrarMarco(s, { tipo: "marco", texto: r.msg.replace(" abriu as portas!", ": primeiro dia do negócio") }); }
   return r;
+}
+export function salvarMarcaNegocio(pacote: PacoteDados, s: Save, uid: string, marca: DesignMarca): { ok: boolean; msg: string } {
+  return salvarMarca(negociosDe(s.carreira), uid, marca);
 }
 export function agirEmpresaJogo(pacote: PacoteDados, s: Save, uid: string, acao: AcaoEmpresa): { ok: boolean; msg: string } {
   const r = agirEmpresa(negociosDe(s.carreira), uid, acao, ctxNegocios(pacote, s)), c = s.carreira;

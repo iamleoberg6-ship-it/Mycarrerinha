@@ -27,6 +27,8 @@ import { vidaDe } from "../../src/vida-npc";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, falaSobreVoce, jeitoDe, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
+import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
+import { salvarMarcaNegocio } from "../../src/jogo";
 import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
@@ -1129,6 +1131,7 @@ function blocoNegocios(s: Save): string {
     const info = EMPRESAS[e.tipo], cor = e.saude >= 65 ? "#74D394" : e.saude >= 40 ? "#E3B341" : "#EC7D69", ab = semanaAbsJogo(c), feito = e.acao === ab;
     return `<div class="empresa"><div class="emp-topo"><div><b>${esc(e.nome)}</b><small>${esc(info.nome)} · desde ${e.desde}</small></div><div class="emp-valor"><b>${dinheiro(Math.round(e.valor))}</b><small>${e.lucroUlt === undefined ? "primeiro mês" : `${e.lucroUlt >= 0 ? "+" : "−"}${dinheiro(Math.abs(e.lucroUlt))} no mês`}</small></div></div>
       <div class="emp-saude"><span>Saúde do negócio</span><span class="rel-barra"><i style="width:${e.saude}%;background:${cor}"></i></span></div>
+      ${e.tipo === "marca" ? marcaBloco(e) : ""}
       <div class="rel-acoes" style="margin-left:0">${feito ? `<span class="sub">Já mexeu nela nesta semana.</span>` : (["cuidar", "divulgar", "investir"] as AcaoEmpresa[]).map((a) => `<button class="chip" data-emp="${e.uid}" data-op="${a}">${{ cuidar: "Cuidar pessoalmente", divulgar: "Divulgar nas redes", investir: `Investir ${dinheiro(Math.round(info.custo * 0.25))}` }[a as "cuidar"]}</button>`).join("")}<button class="chip" data-emp="${e.uid}" data-op="vender">Vender (${dinheiro(Math.round(e.valor * (0.6 + e.saude / 250)))})</button></div></div>`;
   }).join("");
   const abrir = (Object.keys(EMPRESAS) as TipoEmpresa[]).filter((t) => !n.empresas.some((e) => e.tipo === t)).map((t) => {
@@ -2297,6 +2300,66 @@ function adicionarLance(min: number, html: string, cls = "") {
   const el = document.createElement("div"); el.className = `lance ${cls}`; el.innerHTML = `<span class="m">${min}'</span><span>${html}</span>`;
   $("lances").appendChild(el); el.scrollIntoView({ behavior: "smooth", block: "end" });
 }
+
+
+// ------------------------------------------------------------------ marca própria: nome, logo e peças da coleção
+/** Bloco da marca dentro do card da empresa "Marca de roupas". */
+function marcaBloco(e: { uid: string; marca?: DesignMarca }): string {
+  const m = e.marca;
+  return `<div class="marca-bloco">${m ? `<div class="marca-prev">${pecaSvg(m.pecas[0]?.peca ?? "camiseta", m.pecas[0]?.cor ?? "#FFFFFF", m)}</div><p class="sub">${m.pecas.length} peça(s) à venda: ${m.pecas.map((p) => PECAS[p.peca].nome).join(", ") || "nenhuma"}</p>` : `<p class="sub">Sem logo nem peças ainda. Crie a sua coleção.</p>`}<button class="botao sec peq" data-marca="${e.uid}">${m ? "Editar a marca" : "Criar a marca"}</button></div>`;
+}
+let rascunhoMarca: { uid: string; d: DesignMarca; peca: PecaMarca; sugestoes: string[] } | undefined;
+function abrirMarca(uid: string) {
+  const sv = save!, e = negociosDe(sv.carreira).empresas.find((x) => x.uid === uid);
+  if (!e) return;
+  const sugestoes = sugerirNomes(new RNG(`${sv.semente}|marca-nomes|${sv.carreira.temporada}`), sv.jogador.apelido, sv.jogador.numero, 6);
+  const corClube = cores(sv.carreira.clubeId)[0] ?? "#FFFFFF";
+  const d: DesignMarca = e.marca ? JSON.parse(JSON.stringify(e.marca)) : { nome: sugestoes[0], fonte: 0, tamanho: 1, cor: "#FFFFFF", pecas: [{ peca: "camiseta", cor: corClube }] };
+  rascunhoMarca = { uid, d, peca: d.pecas[0]?.peca ?? "camiseta", sugestoes };
+  renderMarca();
+  ($("dlgMarca") as HTMLDialogElement).showModal();
+}
+function renderMarca() {
+  const r = rascunhoMarca!, d = r.d, atual = d.pecas.find((p) => p.peca === r.peca);
+  const pronta = d.pecas.length > 0;
+  $("telaMarca").innerHTML = `<div class="resumo"><p class="rotulo">Marca de roupas</p><h1>${esc(d.nome)}</h1>
+    <div class="marca-vista">${atual ? pecaSvg(r.peca, atual.cor, d) : `<p class="sub">Escolha uma peça da coleção para ver como fica.</p>`}</div>
+    <p class="rotulo">Nome</p><div class="ferr-botoes">${r.sugestoes.map((n) => `<button class="chip${n === d.nome ? " ativo" : ""}" data-mnome="${esc(n)}">${esc(n)}</button>`).join("")}</div>
+    <p class="rotulo">Logo · fonte</p><div class="ferr-botoes">${FONTES.map((f, i) => `<button class="chip${i === d.fonte ? " ativo" : ""}" data-mfonte="${i}">${f.nome}</button>`).join("")}</div>
+    <p class="rotulo">Logo · tamanho</p><div class="ferr-botoes">${TAMANHOS.map((t, i) => `<button class="chip${i === d.tamanho ? " ativo" : ""}" data-mtam="${i}">${t.nome}</button>`).join("")}</div>
+    <p class="rotulo">Logo · cor</p><div class="ferr-botoes">${CORES_PALETA.map((c) => `<button class="cor-chip${c === d.cor ? " ativo" : ""}" style="background:${c}" data-mlogo="${c}" aria-label="Logo ${c}"></button>`).join("")}</div>
+    <p class="rotulo">Peças da coleção <small>(toque para pôr ou tirar; a última tocada aparece acima)</small></p><div class="ferr-botoes">${ORDEM_PECAS.map((p) => { const on = d.pecas.some((x) => x.peca === p); return `<button class="chip${on ? " ativo" : ""}" data-mpeca="${p}">${on ? "✓ " : ""}${PECAS[p].nome}</button>`; }).join("")}</div>
+    ${atual ? `<p class="rotulo">Cor de ${PECAS[r.peca].nome}</p><div class="ferr-botoes">${CORES_PALETA.map((c) => `<button class="cor-chip${c === atual.cor ? " ativo" : ""}" style="background:${c}" data-mpcor="${c}" aria-label="Cor ${c}"></button>`).join("")}</div>` : ""}
+    </div><div class="rodape"><button class="botao grande" data-marca-salvar ${pronta ? "" : "disabled"}>${pronta ? "Salvar a marca" : "Escolha pelo menos uma peça"}</button></div>`;
+}
+document.addEventListener("click", (ev) => {
+  const t = ev.target as Element;
+  const ab = t.closest<HTMLElement>("[data-marca]");
+  if (ab && !t.closest("#telaMarca")) { abrirMarca(ab.dataset.marca!); return; }
+  if (!rascunhoMarca || !t.closest("#telaMarca")) return;
+  const b = t.closest<HTMLElement>("button");
+  if (!b) return;
+  const ds = b.dataset, d = rascunhoMarca.d;
+  if (ds.mnome !== undefined) d.nome = ds.mnome;
+  else if (ds.mfonte !== undefined) d.fonte = +ds.mfonte;
+  else if (ds.mtam !== undefined) d.tamanho = +ds.mtam;
+  else if (ds.mlogo !== undefined) d.cor = ds.mlogo;
+  else if (ds.mpeca !== undefined) {
+    const p = ds.mpeca as PecaMarca, on = d.pecas.some((x) => x.peca === p);
+    if (!on) { d.pecas.push({ peca: p, cor: cores(save!.carreira.clubeId)[0] ?? "#FFFFFF" }); rascunhoMarca.peca = p; }
+    else if (rascunhoMarca.peca !== p) rascunhoMarca.peca = p;
+    else d.pecas = d.pecas.filter((x) => x.peca !== p);
+    if (!d.pecas.some((x) => x.peca === rascunhoMarca!.peca) && d.pecas[0]) rascunhoMarca.peca = d.pecas[0].peca;
+  } else if (ds.mpcor !== undefined) { const x = d.pecas.find((y) => y.peca === rascunhoMarca!.peca); if (x) x.cor = ds.mpcor; }
+  else if (ds.marcaSalvar !== undefined) {
+    if (!d.pecas.length) return;
+    const r = salvarMarcaNegocio(pacote, save!, rascunhoMarca.uid, d);
+    rascunhoMarca = undefined; ($("dlgMarca") as HTMLDialogElement).close();
+    msgJog = { ok: r.ok, texto: r.msg }; salvar(); render();
+    return;
+  } else return;
+  renderMarca();
+});
 
 // ------------------------------------------------------------------ campinho: a bola anda conforme o lance
 let pressao = 0, passoBola = 0;
