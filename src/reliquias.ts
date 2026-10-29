@@ -58,8 +58,11 @@ export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa
 /** Quadricolor do Vale (Brusque): camisa branca com três faixas (verde, amarela e vermelha); o escudo segue as cores do clube. */
 export const UNIFORME_CLUBE: Record<string, { cores: [string, string]; padrao: string; faixas: string[]; escudo: [string, string] }> = {
   "C-BRU": { cores: ["#FFFFFF", "#E2231A"], padrao: "tresFaixasH", faixas: ["#0B7A3B", "#F5C400", "#E2231A"], escudo: ["#E2231A", "#FFFFFF"] },
+  /** Pantera de Ribeirão (Botafogo-SP): como o São Paulo, com as cores da faixa invertidas (preta em cima, vermelha embaixo). */
+  BFC: { cores: ["#FFFFFF", "#000000"], padrao: "duasFaixasH", faixas: ["#000000", "#C8102E"], escudo: ["#C8102E", "#FFFFFF"] },
 };
 const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terceira: string; faixas?: string[] }> = {
+  BFC: { cores: ["#FFFFFF", "#000000"], modelo: "duasFaixasH", terceira: "#C8102E" },
   "C-BRU": { cores: ["#FFFFFF", "#E2231A"], modelo: "tresFaixasH", terceira: "#0B7A3B", faixas: ["#0B7A3B", "#F5C400", "#E2231A"] },
   SPA: { cores: ["#FFFFFF", "#C8102E"], modelo: "duasFaixasH", terceira: "#111111" },
   CFC: { cores: ["#FFFFFF", "#00573F"], modelo: "duasFaixasH", terceira: "#00573F" },

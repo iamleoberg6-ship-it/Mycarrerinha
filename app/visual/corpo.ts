@@ -155,7 +155,7 @@ function padraoKit(k: Kit, g: Geo): string {
     // três faixas, cada uma numa cor (Quadricolor do Vale)
     case "tresFaixasH": return (k.faixas ?? [c2]).map((cor, i) => `<rect x="${x0}" y="${316 + i * 22}" width="${x1 - x0}" height="14" fill="${cor}"/>`).join("");
     // duas listras na cor 2 atravessando o meio do uniforme (Coritibano: branco com listras verdes)
-    case "duasFaixasH": return `<rect x="${x0}" y="326" width="${x1 - x0}" height="14" fill="${c2}"/><rect x="${x0}" y="350" width="${x1 - x0}" height="14" fill="${c2}"/>`;
+    case "duasFaixasH": { const [f1c, f2c] = k.faixas ?? [c2, c2]; return `<rect x="${x0}" y="326" width="${x1 - x0}" height="14" fill="${f1c}"/><rect x="${x0}" y="350" width="${x1 - x0}" height="14" fill="${f2c}"/>`; }
     // listras grossas: faixas largas na cor 2 sobre a cor 1 (Fortaleza: azul com vermelho)
     case "listrasHG": return Array.from({ length: 5 }, (_, i) => `<rect x="${x0}" y="${236 + i * 56}" width="${x1 - x0}" height="28" fill="${c2}"/>`).join("");
     case "diagonais": return [0, 1, 2].map((i) => `<path d="M${x0} ${262 + i * 70 + 60} L${x1} ${262 + i * 70 - 40} L${x1} ${262 + i * 70 - 16} L${x0} ${262 + i * 70 + 84} Z" fill="${c2}"/>`).join("");
