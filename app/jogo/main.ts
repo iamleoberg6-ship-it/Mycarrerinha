@@ -40,6 +40,8 @@ const casalArte = (s: Save, casal?: { id: string; profissao: string }) => `<div 
 import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, comCampanhas, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
 import { TRACOS, PAISES } from "../../src/dna";
+import { DECISOES, FRANQUIAVEIS, MAX_UNIDADES, type DecisaoMes } from "../../src/negocios";
+import { decidirMesJogo, franquiaJogo } from "../../src/jogo";
 import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa, type TipoInvest, type AcaoEmpresa } from "../../src/negocios";
 import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
 import { ICONE_ORIGEM, NOME_ORIGEM } from "../../src/agenda";
@@ -1120,6 +1122,18 @@ function blocoSaude(s: Save): string {
 }
 
 // ------------------------------------------------------------------ negócios e investimentos
+// ------------------------------------------------------------------ gestão mensal e franquia
+function blocoGestao(e: { uid: string; tipo: TipoEmpresa; unidades?: number; decisao?: string; saude: number }, saldo: number): string {
+  if (e.tipo === "app") return "";
+  const unid = (e.unidades ?? 0) + 1;
+  const dec = e.decisao ? DECISOES[e.decisao as keyof typeof DECISOES] : undefined;
+  const botoes = (Object.keys(DECISOES) as (keyof typeof DECISOES)[]).map((k) => `<button class="chip${e.decisao === k ? " atual" : ""}" data-decide="${e.uid}" data-dop="${k}" title="${esc(DECISOES[k].desc)}">${esc(DECISOES[k].nome)}</button>`).join("");
+  const franquia = FRANQUIAVEIS.includes(e.tipo)
+    ? `<div class="emp-franq"><span class="sub">${unid} ${unid === 1 ? "unidade" : "unidades"}${e.unidades ? "" : ""}</span>${unid < MAX_UNIDADES && e.saude >= 60 && saldo >= EMPRESAS[e.tipo].custo * 0.5 * (1 + (e.unidades ?? 0) * 0.5) ? `<button class="chip" data-franq="${e.uid}">Abrir unidade nova (${dinheiro(Math.round(EMPRESAS[e.tipo].custo * 0.5 * (1 + (e.unidades ?? 0) * 0.5)))})</button>` : `<span class="sub">${unid >= MAX_UNIDADES ? "Limite de unidades" : e.saude < 60 ? "Franquia exige saúde acima de 60" : "Sem dinheiro para outra unidade"}</span>`}</div>`
+    : "";
+  return `<div class="emp-gestao"><p class="sub">Decisão deste mês: <b>${dec ? esc(dec.nome) : "nenhuma (negócio segue como está)"}</b></p><div class="rel-acoes" style="margin-left:0">${botoes}</div>${franquia}</div>`;
+}
+
 function blocoNegocios(s: Save): string {
   const c = s.carreira, n = negociosDe(c), saldo = s.casa.saldo, inv = patrimonioInvestido(n);
   const p = n.proposta;
@@ -1132,6 +1146,7 @@ function blocoNegocios(s: Save): string {
     return `<div class="empresa"><div class="emp-topo"><div><b>${esc(e.nome)}</b><small>${esc(info.nome)} · desde ${e.desde}</small></div><div class="emp-valor"><b>${dinheiro(Math.round(e.valor))}</b><small>${e.lucroUlt === undefined ? "primeiro mês" : `${e.lucroUlt >= 0 ? "+" : "−"}${dinheiro(Math.abs(e.lucroUlt))} no mês`}</small></div></div>
       <div class="emp-saude"><span>Saúde do negócio</span><span class="rel-barra"><i style="width:${e.saude}%;background:${cor}"></i></span></div>
       ${e.tipo === "marca" ? marcaBloco(e) : ""}
+      ${blocoGestao(e, saldo)}
       <div class="rel-acoes" style="margin-left:0">${feito ? `<span class="sub">Já mexeu nela nesta semana.</span>` : (["cuidar", "divulgar", "investir"] as AcaoEmpresa[]).map((a) => `<button class="chip" data-emp="${e.uid}" data-op="${a}">${{ cuidar: "Cuidar pessoalmente", divulgar: "Divulgar nas redes", investir: `Investir ${dinheiro(Math.round(info.custo * 0.25))}` }[a as "cuidar"]}</button>`).join("")}<button class="chip" data-emp="${e.uid}" data-op="vender">Vender (${dinheiro(Math.round(e.valor * (0.6 + e.saude / 250)))})</button></div></div>`;
   }).join("");
   const abrir = (Object.keys(EMPRESAS) as TipoEmpresa[]).filter((t) => !n.empresas.some((e) => e.tipo === t)).map((t) => {
@@ -2843,7 +2858,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2875,6 +2890,8 @@ document.addEventListener("click", (ev) => {
     else { operarCerteza = undefined; const r = operarJogo(save!, d.operar as ParteCorpo); msgJog = { ok: r.ok, texto: r.msg }; salvar(); }
     const y = window.scrollY; render(); window.scrollTo(0, y);
   }
+  else if (d.decide) { const r = decidirMesJogo(save!, d.decide, d.dop as DecisaoMes); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.franq) { const r = franquiaJogo(pacote, save!, d.franq); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.emp) { const r = agirEmpresaJogo(pacote, save!, d.emp, d.op as AcaoEmpresa); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.abrir) { const r = abrirEmpresaJogo(pacote, save!, d.abrir as TipoEmpresa); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.inv) { const r = aplicarJogo(save!, d.inv as TipoInvest, +d.valor!); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

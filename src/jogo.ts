@@ -10,7 +10,7 @@ import { comissaoDo, AGENTE_LEGADO } from "./agentes-banco.js";
 import type { NegAgente } from "./agentes.js";
 import { custoConsultores, tickConsultores, type DadosConsultores } from "./consultores.js";
 import type { DesignMarca } from "./marca-propria.js";
-import { salvarMarca, novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest } from "./negocios.js";
+import { salvarMarca, novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, decidirMes, abrirUnidade, DECISOES, FRANQUIAVEIS, aplicar, responderProposta, CUSTO_ASSESSOR, type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type TipoInvest, type DecisaoMes } from "./negocios.js";
 import { novaSaude, semanaSaude, feriasSaude, operar, riscoLesaoSaude, fatorDeclinio, recuperacaoSaude, custoEquipe, type EstadoSaude, type Staff, type ParteCorpo } from "./saude.js";
 import { semanaAmor, agendarCasamento, agendarLuaDeMel } from "./amor.js";
 import { semanaAcontecimentos } from "./acontecimentos.js";
@@ -2072,6 +2072,16 @@ export function agirEmpresaJogo(pacote: PacoteDados, s: Save, uid: string, acao:
   if (r.cansaco) c.cansaco = clamp(c.cansaco + r.cansaco, 0, 100);
   if (r.engajamento) c.engajamento = clamp((c.engajamento ?? 40) + r.engajamento, 0, 100);
   if (r.ok && acao === "vender") registrarMarco(s, { tipo: "marco", texto: r.msg });
+  return r;
+}
+/** Decisão do mês de um negócio (fica marcada até o mês fechar). */
+export function decidirMesJogo(s: Save, uid: string, op: DecisaoMes): { ok: boolean; msg: string } {
+  return decidirMes(negociosDe(s.carreira), uid, op);
+}
+/** Abre uma unidade por franquia e cobra o custo. */
+export function franquiaJogo(pacote: PacoteDados, s: Save, uid: string): { ok: boolean; msg: string } {
+  const r = abrirUnidade(negociosDe(s.carreira), uid, ctxNegocios(pacote, s));
+  if (r.ok && r.custo) s.casa.saldo -= r.custo;
   return r;
 }
 export function aplicarJogo(s: Save, tipo: TipoInvest, valor: number): { ok: boolean; msg: string } {

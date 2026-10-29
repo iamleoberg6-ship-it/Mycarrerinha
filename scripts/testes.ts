@@ -10,6 +10,7 @@ import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
+import { novoNegocios, abrirEmpresa, decidirMes, abrirUnidade, mesNegocios, EMPRESAS as EMPRESAS_NEG } from "../src/negocios.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor, podeTerCarro, vagasGaragem } from "../src/casa.js";
 import { campeoesDoClube, mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
 import { convocado, participantesCopa, escalacaoSelecao, participantesTorneio } from "../src/jogo.js";
@@ -1597,4 +1598,28 @@ teste("Marca própria: sugestões de nome são determinísticas, com o apelido, 
   assert.ok(svg.includes("LEO WEAR") && svg.includes("#C8102E"));
   assert.equal(bonusVitrine(undefined), 1);
   assert.ok(bonusVitrine({ nome: "x", fonte: 0, tamanho: 0, cor: "#fff", inclinacao: 0, posX: 0, posY: 0, pecas: [{ peca: "bone", cor: "#000" }, { peca: "tenis", cor: "#000" }] }) > 1);
+});
+
+teste("Gestão: franquia exige saúde, cobra por unidade e decisão mensal muda o lucro do mês", () => {
+  const ctx = { ano: 2026, semanaAbs: 10, fama: 60, seguidores: 50000, saldo: 99_000_000, apelido: "Teste", numero: "10" };
+  for (const t of ["perfumaria", "energetico", "padaria"] as const) assert.ok(EMPRESAS_NEG[t].nome, t);
+  const n = novoNegocios();
+  const r = abrirEmpresa(n, "barbearia", ctx, new RNG("g1"));
+  assert.ok(r.ok, r.msg);
+  const e = n.empresas.find((x) => x.tipo === "barbearia")!;
+  e.saude = 40;
+  assert.equal(abrirUnidade(n, e.uid, ctx).ok, false, "saúde baixa não abre unidade");
+  e.saude = 80;
+  const u = abrirUnidade(n, e.uid, ctx);
+  assert.ok(u.ok && (u.custo ?? 0) > 0 && e.unidades === 1);
+  assert.equal(abrirUnidade(n, abrirEmpresa(n, "escolinha", ctx, new RNG("g2")) && n.empresas.find((x) => x.tipo === "escolinha")!.uid, ctx).ok, false, "escolinha não tem franquia");
+  // decisão: mesmo valor, com e sem decisão de preço
+  const base = JSON.parse(JSON.stringify(n));
+  const semDec = mesNegocios(JSON.parse(JSON.stringify(base)), new RNG("m"), ctx).lucro;
+  const comDec = JSON.parse(JSON.stringify(base));
+  decidirMes(comDec, comDec.empresas.find((x: { tipo: string }) => x.tipo === "barbearia").uid, "preco");
+  assert.equal(comDec.empresas.find((x: { tipo: string }) => x.tipo === "barbearia").decisao, "preco");
+  const comLucro = mesNegocios(comDec, new RNG("m"), ctx).lucro;
+  assert.notEqual(comLucro, semDec, "a decisão mensal muda o lucro");
+  assert.equal(comDec.empresas.find((x: { tipo: string }) => x.tipo === "barbearia").decisao, undefined, "a decisão some depois do mês");
 });

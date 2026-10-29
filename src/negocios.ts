@@ -3,7 +3,7 @@
 import { RNG, clamp } from "./rng.js";
 import { bonusVitrine, type DesignMarca } from "./marca-propria.js";
 
-export type TipoEmpresa = "escolinha" | "barbearia" | "restaurante" | "academia" | "imoveis" | "marca" | "app";
+export type TipoEmpresa = "escolinha" | "barbearia" | "restaurante" | "academia" | "imoveis" | "marca" | "app" | "perfumaria" | "energetico" | "padaria";
 export interface InfoEmpresa {
   id: TipoEmpresa; nome: string; desc: string; custo: number; famaMin: number;
   /** lucro mensal sobre o valor da empresa quando ela vai bem (saúde 70) */
@@ -17,6 +17,9 @@ export interface InfoEmpresa {
   nomes: string[];
 }
 export const EMPRESAS: Record<TipoEmpresa, InfoEmpresa> = {
+  perfumaria: { id: "perfumaria", nome: "Perfumaria e cosméticos", desc: "Linha de beleza com o seu nome na tampa. Vende bem quando a fama está alta.", custo: 600_000, famaMin: 45, retorno: 0.012, risco: 8, famaPuxa: true, nomes: ["{apelido} Perfumes", "Essência {apelido}", "Cosméticos {numero}"] },
+  energetico: { id: "energetico", nome: "Bebida energética", desc: "Lata com a sua cara na geladeira do posto. Dá muito dinheiro e muito trabalho de estoque.", custo: 1_200_000, famaMin: 50, retorno: 0.014, risco: 11, famaPuxa: true, nomes: ["{apelido} Energy", "Pico {numero}", "Turbo {apelido}"] },
+  padaria: { id: "padaria", nome: "Padaria de bairro", desc: "Pão quentinho de manhã e a vizinhança toda na fila. Negócio de bairro, lucro pequeno e firme.", custo: 220_000, famaMin: 20, retorno: 0.009, risco: 5, nomes: ["Padaria do {apelido}", "Café {apelido}", "Pão do {numero}"] },
   escolinha: { id: "escolinha", nome: "Escolinha de futebol", desc: "Pouco lucro, muito carinho: a molecada do bairro com a sua camisa.", custo: 250_000, famaMin: 10, retorno: 0.006, risco: 4, bonus: { moral: 0.3, torcida: 0.05 }, nomes: ["Escolinha {apelido}", "Instituto {apelido}", "Projeto Craque {apelido}"] },
   barbearia: { id: "barbearia", nome: "Barbearia", desc: "Negócio pequeno e estável. Os companheiros cortam lá de graça.", custo: 180_000, famaMin: 15, retorno: 0.01, risco: 6, nomes: ["Barbearia do {apelido}", "{apelido} Barber Club", "Navalha {numero}"] },
   restaurante: { id: "restaurante", nome: "Restaurante", desc: "Dá dinheiro quando a fama ajuda e o dono aparece. Fecha rápido quando ninguém cuida.", custo: 700_000, famaMin: 30, retorno: 0.011, risco: 9, famaPuxa: true, bonus: { fama: 0.02 }, nomes: ["Cantina {apelido}", "{apelido} Grill", "Boteco da Camisa {numero}"] },
@@ -25,7 +28,7 @@ export const EMPRESAS: Record<TipoEmpresa, InfoEmpresa> = {
   marca: { id: "marca", nome: "Marca de roupas", desc: "Vive dos seus seguidores. Pode estourar, pode encalhar.", custo: 1_500_000, famaMin: 55, retorno: 0.017, risco: 12, famaPuxa: true, bonus: { fama: 0.04 }, nomes: ["{apelido} Wear", "Coleção {numero}", "{apelido} Original"] },
   app: { id: "app", nome: "Startup de tecnologia", desc: "Quase nunca dá lucro. Às vezes vale dez vezes mais. Às vezes, nada.", custo: 1_000_000, famaMin: 40, retorno: 0, risco: 10, nomes: ["App de pelada {apelido}", "Scout.ai", "Chuteira Digital"] },
 };
-export interface Empresa { uid: string; tipo: TipoEmpresa; nome: string; valor: number; investido: number; saude: number; desde: number; /** a marca de roupas do jogador: logo, nome e peças da coleção */ marca?: DesignMarca; lucroUlt?: number; cuidado?: number; acao?: number }
+export interface Empresa { uid: string; tipo: TipoEmpresa; nome: string; valor: number; investido: number; saude: number; desde: number; /** unidades abertas por franquia (além da primeira) */ unidades?: number; /** decisão do mês, aplicada quando o mês fecha */ decisao?: DecisaoMes; /** a marca de roupas do jogador: logo, nome e peças da coleção */ marca?: DesignMarca; lucroUlt?: number; cuidado?: number; acao?: number }
 export type TipoInvest = "rendaFixa" | "acoes" | "cripto";
 export const INVEST: Record<TipoInvest, { nome: string; desc: string }> = {
   rendaFixa: { nome: "Renda fixa", desc: "Rende pouco e sempre." },
@@ -62,6 +65,16 @@ export function abrirEmpresa(n: EstadoNegocios, tipo: TipoEmpresa, ctx: CtxNegoc
   n.empresas.push({ uid: `e${++n.uid}`, tipo, nome, valor: custo, investido: custo, saude: 55 + rng.int(0, 10), desde: ctx.ano });
   return { ok: true, msg: `${nome} abriu as portas!`, custo };
 }
+/** Decisões do mês de gestão: cada uma mexe no lucro, na saúde e no custo do negócio. */
+export type DecisaoMes = "preco" | "marketing" | "equipe";
+export const DECISOES: Record<DecisaoMes, { nome: string; desc: string; lucro: number; custo: number; saude: number }> = {
+  preco: { nome: "Subir o preço", desc: "Mais lucro por venda; a saúde sente um pouco.", lucro: 1.25, custo: 0, saude: -3 },
+  marketing: { nome: "Campanha nas redes", desc: "Custa 2% do valor da empresa, mas a fila volta.", lucro: 1, custo: 0.02, saude: 6 },
+  equipe: { nome: "Treinar a equipe", desc: "Custa 1,5% do valor; o atendimento melhora e o lucro cresce um pouco.", lucro: 1.1, custo: 0.015, saude: 3 },
+};
+/** Franquia: só negócios de bairro e de consumo abrem unidades. */
+export const FRANQUIAVEIS: TipoEmpresa[] = ["barbearia", "padaria", "perfumaria"];
+export const MAX_UNIDADES = 4;
 export type AcaoEmpresa = "cuidar" | "divulgar" | "investir" | "vender";
 /** Grava a marca (nome, logo e peças) numa empresa de roupas do jogador. */
 export function salvarMarca(n: EstadoNegocios, uid: string, marca: DesignMarca): ResultadoNeg {
@@ -69,6 +82,25 @@ export function salvarMarca(n: EstadoNegocios, uid: string, marca: DesignMarca):
   if (!e) return { ok: false, msg: "Essa marca não existe mais." };
   e.marca = marca; e.nome = marca.nome;
   return { ok: true, msg: `Coleção de ${marca.nome} pronta: ${marca.pecas.length} peça(s) à venda.` };
+}
+/** Escolhe a decisão do mês para um negócio (vale no fim do mês). */
+export function decidirMes(n: EstadoNegocios, uid: string, op: DecisaoMes): ResultadoNeg {
+  const e = n.empresas.find((x) => x.uid === uid);
+  if (!e) return { ok: false, msg: "Essa empresa não existe mais." };
+  e.decisao = op;
+  return { ok: true, msg: `${DECISOES[op].nome} em ${e.nome}: vale no fim do mês.` };
+}
+/** Abre uma unidade por franquia: cada uma aumenta o lucro do negócio (até o máximo). */
+export function abrirUnidade(n: EstadoNegocios, uid: string, ctx: CtxNegocios): ResultadoNeg {
+  const e = n.empresas.find((x) => x.uid === uid);
+  if (!e || !FRANQUIAVEIS.includes(e.tipo)) return { ok: false, msg: "Esse negócio não abre franquia." };
+  const feitas = e.unidades ?? 0;
+  if (feitas >= MAX_UNIDADES - 1) return { ok: false, msg: "Já são unidades demais para uma pessoa só cuidar." };
+  if (e.saude < 60) return { ok: false, msg: "Antes de abrir outra unidade, a saúde do negócio precisa estar acima de 60." };
+  const custo = Math.round(EMPRESAS[e.tipo].custo * 0.5 * (1 + feitas * 0.5));
+  if (ctx.saldo < custo) return { ok: false, msg: "Não tem dinheiro em conta para isso." };
+  e.unidades = feitas + 1; e.valor += custo * 0.5; e.investido += custo;
+  return { ok: true, msg: `Unidade nova de ${e.nome} aberta: agora são ${e.unidades + 1}.`, custo };
 }
 export function agirEmpresa(n: EstadoNegocios, uid: string, acao: AcaoEmpresa, ctx: CtxNegocios): ResultadoNeg {
   const e = n.empresas.find((x) => x.uid === uid);
@@ -147,8 +179,11 @@ export function mesNegocios(n: EstadoNegocios, rng: RNG, ctx: CtxNegocios): MesN
       else if (rng.chance(0.03) || e.saude < 12) { r.avisos.push(`${e.nome} fechou. O dinheiro investido virou pó.`); r.noticias.push({ titulo: `Startup de ${ctx.apelido} fecha as portas`, texto: `${e.nome} não conseguiu novo investimento.` }); n.empresas = n.empresas.filter((x) => x !== e); r.moral -= 3; continue; }
       e.lucroUlt = 0; continue;
     }
+    const dec = e.decisao ? DECISOES[e.decisao] : undefined; e.decisao = undefined;
+    if (dec) e.saude = clamp(e.saude + dec.saude, 0, 100);
     const segs = info.id === "marca" ? clamp(Math.log10(Math.max(1e4, ctx.seguidores)) / 6.5, 0.5, 1.5) : 1;
-    const lucro = Math.round(e.valor * info.retorno * segs * (e.saude - 35) / 35 * bonusVitrine(e.marca));
+    const unidades = 1 + (e.unidades ?? 0);
+    const lucro = Math.round(e.valor * info.retorno * segs * (e.saude - 35) / 35 * bonusVitrine(e.marca) * (dec?.lucro ?? 1) * unidades) - (dec ? Math.round(e.valor * dec.custo) : 0);
     e.lucroUlt = lucro; r.lucro += lucro;
     e.valor = Math.max(info.custo * 0.2, e.valor * (1 + (e.saude - 50) / 2500));
     // acontecimentos do mês
