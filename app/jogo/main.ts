@@ -1158,21 +1158,30 @@ function figurinhaSvg(f: Figurinha): string {
   const c1 = f.cores[0], c2 = f.cores[1] ?? "#111111", claro = c1.toUpperCase() === "#FFFFFF", fundo = claro ? c2 : c1;
   const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
   const id = f.id.replace(/[^a-zA-Z0-9]/g, "");
-  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: claro ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="14" y="30" width="132" height="146" ');
+  // o brasão é o destaque: escudo do clube, ou a bandeira quando a figurinha é da seleção
+  const selecao = f.clubeId.startsWith("sel-");
+  const brasao = (selecao ? bandeiraSvg(f.clubeId.slice(4)) : escudo(f.clubeId)).replace("<svg ", selecao ? '<svg x="36" y="32" width="88" height="104" style="width:88px;height:104px" ' : '<svg x="28" y="30" width="104" height="104" style="width:104px;height:104px" ');
+  // o jogador entra num medalhão pequeno no canto do brasão
+  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: claro ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ');
   const especial = f.tipo !== "temporada", faixa = especial ? NOME_TIPO_FIG[f.tipo].toUpperCase() : String(f.ano);
   const fw = especial ? 104 : 58;
-  const stat = (x: number, rot: string, v: number) => `<rect x="${x}" y="200" width="44" height="22" rx="4" fill="#ffffff14"/><text x="${x + 22}" y="209" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#cfd8d3">${rot}</text><text x="${x + 22}" y="219" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${v}</text>`;
+  const stat = (x: number, rot: string, v: number) => `<rect x="${x}" y="164" width="44" height="22" rx="4" fill="#0B1410" opacity=".8"/><text x="${x + 22}" y="173" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#cfd8d3">${rot}</text><text x="${x + 22}" y="186" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${v}</text>`;
   return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="${esc(NOME_TIPO_FIG[f.tipo])} ${f.ano}"><defs>
     <linearGradient id="fg${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${fundo}"/><stop offset=".62" stop-color="${fundo}" stop-opacity=".55"/><stop offset="1" stop-color="#0B1410"/></linearGradient>
-    <pattern id="lis${id}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><rect width="6" height="12" fill="#ffffff" opacity=".07"/></pattern></defs>
+    <pattern id="lis${id}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><rect width="6" height="12" fill="#ffffff" opacity=".07"/></pattern>
+    <linearGradient id="sh${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset=".42" stop-color="#ffffff" stop-opacity=".28"/><stop offset=".58" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    <clipPath id="cp${id}"><circle cx="124" cy="136" r="24"/></clipPath></defs>
     <rect x="1" y="1" width="158" height="228" rx="10" fill="url(#fg${id})"/><rect x="1" y="1" width="158" height="228" rx="10" fill="url(#lis${id})"/>
-    <circle cx="128" cy="78" r="56" fill="${c2}" opacity=".16"/>${rosto}
+    <circle cx="80" cy="82" r="54" fill="#ffffff" opacity=".12"/><circle cx="80" cy="82" r="62" fill="${c2}" opacity=".18"/>
+    ${brasao}
+    <circle cx="124" cy="136" r="27" fill="#0B1410" stroke="#E3B341" stroke-width="1.8"/><g clip-path="url(#cp${id})">${rosto}</g>
+    <rect x="0" y="0" width="160" height="180" rx="10" fill="url(#sh${id})"/>
     <rect x="6" y="6" width="${fw}" height="17" rx="5" fill="#0B1410" opacity=".85"/><text x="${6 + fw / 2}" y="18.5" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="11" letter-spacing=".4" fill="#fff">${esc(faixa)}</text>
     <circle cx="142" cy="24" r="13" fill="#E3B341" stroke="#0B1410" stroke-width="1.6"/><text x="142" y="29" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="15" fill="#0B1410">${f.ovr}</text>
-    <rect x="0" y="180" width="160" height="50" fill="#0B1410" opacity=".94"/><rect x="0" y="180" width="160" height="2" fill="#E3B341"/>
-    <text x="80" y="194" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${esc(f.clube.toUpperCase().slice(0, 24))}</text>
     ${stat(7, "JOGOS", f.jogos)}${stat(58, "GOLS", f.gols)}${stat(109, "ASSIST.", f.assist)}
-    <text x="80" y="226" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#E3B341">${esc(f.legenda.slice(0, 36))}</text></svg>`;
+    <rect x="0" y="194" width="160" height="36" fill="#0B1410" opacity=".94"/><rect x="0" y="194" width="160" height="2" fill="#E3B341"/>
+    <text x="80" y="209" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${esc(f.clube.toUpperCase().slice(0, 24))}</text>
+    <text x="80" y="224" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#E3B341">${esc(f.legenda.slice(0, 36))}</text></svg>`;
 }
 /** Página do álbum aberta (índice na lista de temporadas); undefined = a última. */
 let albumPag: number | undefined;
