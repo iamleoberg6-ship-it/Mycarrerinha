@@ -1,6 +1,6 @@
 // Perfil do clube: títulos da liga por temporada, elenco atual, time de todos os tempos (o melhor de cada posição
 // em cada temporada, pela nota média, somado ao longo da história do clube) e os dados do clube (cidade, estádio, técnico).
-import { mundo, infoClube, linhasDoClube, statsDaLinha, tecnicoDoClube, campeoesDoClube } from "./mundo.js";
+import { mundo, infoClube, linhasDoClube, linhasDoPais, statsDaLinha, tecnicoDoClube, campeoesDoClube } from "./mundo.js";
 import { VAGAS_433 } from "./partida.js";
 import { infoLiga } from "./ligas.js";
 import type { PacoteDados } from "./liga.js";
@@ -23,6 +23,8 @@ export interface TitularHistorico { nome: string; posicao: string; vezes: number
 
 /** O melhor de cada posição em cada temporada (mín. de jogos), contado ao longo da história; o time sai dos que mais vezes foram o melhor. */
 export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = []): TitularHistorico[] {
+  // seleção (NAT-XXX): as temporadas de todos os jogadores do país, em qualquer clube; clube: as temporadas no clube
+  const pool = clubeId.startsWith("NAT-") ? linhasDoPais(pacote, clubeId.slice(4)) : linhasDoClube(pacote, clubeId);
   const porTempo = new Map<string, { nome: string; posicao: string; nota: number }[]>();
   const notas = new Map<string, { soma: number; n: number; temporadas: number }>();
   const melhorTemp = new Map<string, { t: number; nota: number }>();
@@ -36,7 +38,7 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuari
     const mt = melhorTemp.get(nome);
     if (!mt || nota > mt.nota) melhorTemp.set(nome, { t, nota });
   };
-  for (const { nome, x } of linhasDoClube(pacote, clubeId)) {
+  for (const { nome, x } of pool) {
     const st = statsDaLinha(pacote, nome, x);
     if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
     entra(nome, x.t, x.posicao, st.n);
@@ -69,7 +71,7 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuari
   // clube com pouca história (nem os sobras bastam): o elenco atual completa as vagas, pelo overall, com nota e títulos zerados
   if (xi.length < 11) {
     const ja = new Set(xi.map((t) => t.nome));
-    const ano = Math.max(0, ...linhasDoClube(pacote, clubeId).map(({ x }) => x.t));
+    const ano = Math.max(0, ...pool.map(({ x }) => x.t));
     const elenco = plantelDoClube(pacote, clubeId).filter((j) => !ja.has(j.nome)).sort((a, b) => b.ovr - a.ovr);
     for (const [pos, n] of [["GOL", 1], ...Object.entries(VAGAS_433)] as [string, number][]) {
       const falta = n - xi.filter((t) => t.posicao === pos).length;

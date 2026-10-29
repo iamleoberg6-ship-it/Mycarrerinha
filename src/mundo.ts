@@ -599,3 +599,9 @@ export function linhasDoClube(pacote: PacoteDados, clubeId: string): { nome: str
   }
   return indiceClubes.mapa.get(clubeId) ?? [];
 }
+/** Todas as temporadas dos jogadores de um país, em qualquer clube: a base da seleção de todos os tempos. */
+export function linhasDoPais(pacote: PacoteDados, pais: string): { nome: string; x: LinhaHistorico }[] {
+  const out: { nome: string; x: LinhaHistorico }[] = [];
+  for (const [nome, ls] of garantir(pacote).hist) for (const x of ls) if (x.nat === pais) out.push({ nome, x });
+  return out;
+}

@@ -1099,9 +1099,11 @@ function clubeHtml(clubeId: string): string {
   if (!info || !cl) return `<p class="sub">Clube não encontrado.</p>`;
   const tit = titulosDoClube(pacote, clubeId);
   // as temporadas do usuário no clube (as já fechadas e a atual) entram nos recordes e no time de todos os tempos
+  // na seleção de todos os tempos entram as temporadas do jogador em qualquer clube, pela nacionalidade dele
+  const daSelecao = !!save && clubeId.startsWith("NAT-") && idSelecao(save.jogador.nacionalidade) === clubeId;
   const usuario: TemporadaUsuario[] = save ? [
-    ...save.carreira.historico.filter((h) => h.clubeId === clubeId).map((h) => ({ nome: save!.jogador.apelido, t: h.ano - ANO_INICIAL, j: h.jogos, g: h.gols, a: h.assist, pos: save!.jogador.posicao, nota: h.nota })),
-    ...(save.carreira.clubeId === clubeId ? [{ nome: save.jogador.apelido, t: save.carreira.temporada, j: save.carreira.stats.jogos, g: save.carreira.stats.gols, a: save.carreira.stats.assist, pos: save.jogador.posicao, nota: save.carreira.stats.notas.length ? save.carreira.stats.notas.reduce((a, b) => a + b, 0) / save.carreira.stats.notas.length : undefined }] : []),
+    ...save.carreira.historico.filter((h) => daSelecao || h.clubeId === clubeId).map((h) => ({ nome: save!.jogador.apelido, t: h.ano - ANO_INICIAL, j: h.jogos, g: h.gols, a: h.assist, pos: save!.jogador.posicao, nota: h.nota })),
+    ...((daSelecao || save.carreira.clubeId === clubeId) ? [{ nome: save.jogador.apelido, t: save.carreira.temporada, j: save.carreira.stats.jogos, g: save.carreira.stats.gols, a: save.carreira.stats.assist, pos: save.jogador.posicao, nota: save.carreira.stats.notas.length ? save.carreira.stats.notas.reduce((a, b) => a + b, 0) / save.carreira.stats.notas.length : undefined }] : []),
   ] : [];
   const xi = timeDeTodosOsTempos(pacote, clubeId, usuario);
   // o elenco do mundo não guarda o jogador do usuário: ele entra no elenco do clube em que joga e na seleção quando convocado
