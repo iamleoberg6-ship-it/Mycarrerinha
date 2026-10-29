@@ -10,7 +10,16 @@ export interface Recordes { gols: Lenda[]; jogos: Lenda[] }
 /** Lendas reais dos recordes de gols (números oficiais, só partidas oficiais). Entram na lista do clube. */
 const LENDAS_REAIS: Record<string, Lenda[]> = {
   SAN: [{ nome: "Pelé", valor: 643 }],
-  "ES-BAR": [{ nome: "Lionel Messi", valor: 672 }],
+  "ES-BAR": [{ nome: "Lionel Messi", valor: 672 }, { nome: "Johan Cruyff", valor: 59 }],
+  "NL-AJA": [{ nome: "Johan Cruyff", valor: 204 }],
+  "IT-NAP": [{ nome: "Diego Maradona", valor: 115 }],
+  "AR-BOC": [{ nome: "Martín Palermo", valor: 236 }, { nome: "Roberto Cherro", valor: 223 }, { nome: "Francisco Varallo", valor: 194 }, { nome: "Domingo Tarasconi", valor: 192 }],
+};
+/** Lendas reais dos recordes de gols pela seleção (partidas oficiais). */
+// Só nomes com gols verificados. A lista da seleção fica parcial até completar os artilheiros.
+const LENDAS_SELECAO: Record<string, Lenda[]> = {
+  ARG: [{ nome: "Lionel Messi", valor: 125 }, { nome: "Diego Maradona", valor: 34 }],
+  NED: [{ nome: "Memphis Depay", valor: 55 }, { nome: "Robin van Persie", valor: 50 }, { nome: "Klaas-Jan Huntelaar", valor: 42 }, { nome: "Johan Cruyff", valor: 33 }],
 };
 const cacheClube = new Map<string, Recordes>();
 /** Os 5 maiores artilheiros e os 5 que mais jogaram na história do clube (antes do jogador). */
@@ -26,7 +35,8 @@ export function recordesDoClube(clubeId: string, forca: number, pais: string): R
     jogos: [1, 0.9, 0.84, 0.78, 0.74].map((f) => ({ nome: nome(), valor: Math.round(topJ * f * rng.range(0.98, 1.02)) })).sort((a, b) => b.valor - a.valor),
   };
   const lendas = LENDAS_REAIS[clubeId];
-  if (lendas) r.gols = [...lendas, ...r.gols].sort((a, b) => b.valor - a.valor).slice(0, 5);
+  // os recordes reais ficam no topo: os números gerados só entram abaixo do menor deles
+  if (lendas) r.gols = [...lendas, ...r.gols.filter((g) => g.valor < Math.min(...lendas.map((x) => x.valor)))].sort((a, b) => b.valor - a.valor).slice(0, 5);
   cacheClube.set(clubeId, r);
   return r;
 }
@@ -42,6 +52,8 @@ export function recordesDaSelecao(pais: string, forca: number): Recordes {
     gols: [1, 0.86, 0.75, 0.66, 0.6].map((f) => ({ nome: gerarNome(rng, pais, usados), valor: Math.round(topG * f) })).sort((a, b) => b.valor - a.valor),
     jogos: [1, 0.92, 0.86, 0.8, 0.76].map((f) => ({ nome: gerarNome(rng, pais, usados), valor: Math.round(topJ * f) })).sort((a, b) => b.valor - a.valor),
   };
+  const lendas = LENDAS_SELECAO[pais];
+  if (lendas) r.gols = [...lendas].sort((a, b) => b.valor - a.valor);
   cacheSel.set(pais, r);
   return r;
 }
