@@ -83,6 +83,9 @@ import { svgComodo } from "../casa/iso";
 const pacote = pacoteJson as unknown as PacoteDados;
 void liga;
 const nomeDe = (id: string) => infoClube(pacote, id).nome;
+/** Nome de jogador e de clube clicáveis: abrem o perfil. */
+const linkJogador = (nome: string, texto: string = nome) => `<button class="nome-hist" data-hist="${esc(nome)}">${esc(texto)}</button>`;
+const linkClube = (id: string, texto?: string) => `<button class="nome-hist" data-perfil-clube="${id}">${esc(texto ?? nomeDe(id))}</button>`;
 const CHAVE_SAVE = "mycarrerinha:save", CHAVE_JOGADOR = "mycarrerinha:jogador", CHAVE_PLANO = "mycarrerinha:plano";
 const ler = <T>(k: string): T | null => { try { return JSON.parse(localStorage.getItem(k) ?? "null") as T | null; } catch { return null; } };
 const gravar = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem armazenamento */ } };
@@ -255,8 +258,8 @@ function telaSemana(s: Save): string {
   const escQ = jc ? (natJ ? escalacaoSelecao(pacote, s, prevQ!.cansaco) : escalacao(pacote, s, prevQ!.cansaco, true)) : undefined;
   const copaHtml = jc ? (() => {
     const j0 = jc.jogo, ida = idaDe(jc.copa, j0), cls = escQ === "titular" ? "titular" : escQ === "banco" ? "banco" : "ruim";
-    return `<p class="rotulo dia-jogo">${faixaComp(jc.copa.id, natJ ? `Convocado · ${esc(nomeDe(meuJ))} · ${jc.jogo.fase === "eliminatorias" ? "Eliminatórias" : jc.jogo.fase === "amistoso" ? "Amistoso" : esc(COPAS[jc.copa.id].nome)}` : `Quarta · ${esc(COPAS[jc.copa.id].nome)}`)}</p><div class="confronto"><div class="time">${escudo(j0.casa)}<span>${esc(nomeDe(j0.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(j0.fora))}</span>${escudo(j0.fora)}</div></div>
-      <div class="linha-info"><span>${j0.neutro ? "Campo neutro" : j0.casa === meuJ ? "Em casa" : "Fora de casa"}</span><span>${esc(rotuloJogo(j0))}</span>${ida ? `<span>Ida: ${esc(nomeDe(ida.casa))} <b>${ida.gc} × ${ida.gf}</b> ${esc(nomeDe(ida.fora))}</span>` : ""}</div>
+    return `<p class="rotulo dia-jogo">${faixaComp(jc.copa.id, natJ ? `Convocado · ${linkClube(meuJ)} · ${jc.jogo.fase === "eliminatorias" ? "Eliminatórias" : jc.jogo.fase === "amistoso" ? "Amistoso" : esc(COPAS[jc.copa.id].nome)}` : `Quarta · ${esc(COPAS[jc.copa.id].nome)}`)}</p><div class="confronto"><div class="time">${escudo(j0.casa)}<span>${linkClube(j0.casa)}</span></div><span class="vs">×</span><div class="time dir"><span>${linkClube(j0.fora)}</span>${escudo(j0.fora)}</div></div>
+      <div class="linha-info"><span>${j0.neutro ? "Campo neutro" : j0.casa === meuJ ? "Em casa" : "Fora de casa"}</span><span>${esc(rotuloJogo(j0))}</span>${ida ? `<span>Ida: ${linkClube(ida.casa)} <b>${ida.gc} × ${ida.gf}</b> ${linkClube(ida.fora)}</span>` : ""}</div>
       <div><span class="tag ${cls}">Previsão: ${NOME_ESCALACAO[escQ!].toLowerCase()}</span></div>${jogo ? `<p class="rotulo dia-jogo" style="margin-top:10px">${faixaComp(infoLiga(c.ligaId).id, `Domingo · ${esc(infoLiga(c.ligaId).curto)}`)}</p>` : ""}`;
   })() : (() => {
     const m = c.meioSemana;
@@ -264,8 +267,8 @@ function telaSemana(s: Save): string {
     const q = m.resumo;
     return `<p class="rotulo dia-jogo">${faixaComp(compPorNome(q.competicao), `Quarta · ${esc(q.competicao ?? "Copa")} · encerrado`)}</p><p style="margin:2px 0 8px;font-size:15px"><b>${esc(q.nomeCasa)} ${q.golsCasa} × ${q.golsFora} ${esc(q.nomeFora)}</b>${q.minutos > 0 ? ` <span class="sub">· nota ${q.nota.toFixed(1)}</span>` : ""}${q.penaltis ? ` <span class="sub">· ${esc(q.penaltis)} nos pênaltis</span>` : ""}</p><p class="rotulo dia-jogo">${faixaComp(infoLiga(c.ligaId).id, `Domingo · ${esc(infoLiga(c.ligaId).curto)}`)}</p>`;
   })();
-  const jogoHtml = jogo && !c.mercado?.semClube ? `${copaHtml ? "" : `<p class="rotulo dia-jogo">${faixaComp(c.formacao && !c.fase ? "BASE" : infoLiga(c.ligaId).id, `${esc(infoLiga(c.ligaId).curto)} · rodada ${jogo.rodada + 1}`)}</p>`}<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${esc(nomeDe(jogo.casa))}</span></div><span class="vs">×</span><div class="time dir"><span>${esc(nomeDe(jogo.fora))}</span>${escudo(jogo.fora)}</div></div>
-      <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(infoLiga(c.ligaId).curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${esc(clube.nome)} em <b>${pos || "–"}º</b></span></div>`
+  const jogoHtml = jogo && !c.mercado?.semClube ? `${copaHtml ? "" : `<p class="rotulo dia-jogo">${faixaComp(c.formacao && !c.fase ? "BASE" : infoLiga(c.ligaId).id, `${esc(infoLiga(c.ligaId).curto)} · rodada ${jogo.rodada + 1}`)}</p>`}<div class="confronto"><div class="time">${escudo(jogo.casa)}<span>${linkClube(jogo.casa)}</span></div><span class="vs">×</span><div class="time dir"><span>${linkClube(jogo.fora)}</span>${escudo(jogo.fora)}</div></div>
+      <div class="linha-info"><span>${jogo.souCasa ? "Em casa" : "Fora de casa"}</span><span>${esc(infoLiga(c.ligaId).curto)} · rodada <b>${jogo.rodada + 1}</b> de ${nRodadas(c)}</span><span>${linkClube(c.clubeId)} em <b>${pos || "–"}º</b></span></div>`
     : c.mercado?.semClube ? `<p class="sub"><b style="color:var(--ouro)">Sem clube.</b> Você treina por conta própria e não joga. As propostas chegam no Mercado; o agente pode te oferecer aos clubes.</p>`
     : c.semana >= SEMANAS_PRE + nRodadas(c) && c.copas?.MUN?.clubes.includes(c.clubeId) ? (jc ? "" : `<p class="sub">Semana do Mundial de Clubes.</p>`)
     : c.semana < SEMANAS_PRE ? `<p class="sub">Pré-temporada: sem jogo oficial. Semana de treino forte para chegar bem na estreia.</p>` : `<p class="sub">A ${esc(infoLiga(c.ligaId).curto)} já terminou. Semana de treino até o fim do calendário.</p>`;
@@ -284,7 +287,7 @@ function telaSemana(s: Save): string {
   return `${cabecalho}
   <section class="painel card-jogador" data-acao="perfil" role="button" tabindex="0" aria-label="Abrir o perfil do jogador">
     <div class="jogador"><div class="foto">${foto(s)}</div>
-      <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${esc(clube.nome)}${c.fase ? ` (${NOME_FASE[c.fase].toLowerCase().replace("eua", "EUA")})` : c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
+      <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${linkClube(c.clubeId)}${c.fase ? ` (${NOME_FASE[c.fase].toLowerCase().replace("eua", "EUA")})` : c.formacao ? " (base)" : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
       <div class="ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span></div></div>
     <div class="barras">${barra("Moral", c.moral, 100, "#74D394")}${barra(`Cansaço <small class="dica-barra">menos é melhor</small>`, c.cansaco, 100, c.cansaco > 60 ? "#EC7D69" : "#E3B341")}${barra("Forma", forma(c), 10, "#6FB7E0", forma(c).toFixed(1))}${barra("Técnico", c.relTecnico, 100, "#B9A3E8")}</div>
     <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${Math.round(c.fama)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
@@ -323,17 +326,17 @@ let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, ver
 let subTabela: "classificacao" | "estatisticas" | "premios" = "classificacao";
 const FASES_MM = ["derby", "desafio", "playoff", "oitavas", "quartas", "semi", "final"];
 function tabelaCopaHtml(t: LinhaTabela[], meu: string, zona?: (i: number) => string) {
-  return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${ordenar(t).map((x, i) => `<tr class="${x.clube === meu ? "meu" : ""} ${zona ? zona(i) : ""}"><td>${i + 1}</td><td><button class="nome-hist" data-perfil-clube="${x.clube}">${esc(nomeDe(x.clube))}</button></td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
+  return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${ordenar(t).map((x, i) => `<tr class="${x.clube === meu ? "meu" : ""} ${zona ? zona(i) : ""}"><td>${i + 1}</td><td>${linkClube(x.clube)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
 }
 function abaCopa(s: Save, id: CopaId): string {
   const e = copasDe(pacote, s)[id], c = s.carreira;
   if (!e) return `<p class="sub">Sem copa nesta temporada.</p>`;
   const nat = ehDeSelecao(id), meu = nat ? idSelecao(s.jogador.nacionalidade) : c.clubeId, estou = e.clubes.includes(meu);
-  const placar = (j: JogoCopa) => j.gc === undefined ? `<span class="sub">sem. ${j.semana + 1}</span>` : `<b>${j.gc} × ${j.gf}</b>${j.penaltis ? ` <small class="sub">(pên. ${esc(nomeDe(j.penaltis))})</small>` : ""}`;
-  const linhaJogo = (j: JogoCopa) => `<div class="jogo-copa${j.casa === meu || j.fora === meu ? " meu" : ""}"><span>${esc(nomeDe(j.casa))}</span>${placar(j)}<span>${esc(nomeDe(j.fora))}</span></div>`;
+  const placar = (j: JogoCopa) => j.gc === undefined ? `<span class="sub">sem. ${j.semana + 1}</span>` : `<b>${j.gc} × ${j.gf}</b>${j.penaltis ? ` <small class="sub">(pên. ${linkClube(j.penaltis)})</small>` : ""}`;
+  const linhaJogo = (j: JogoCopa) => `<div class="jogo-copa${j.casa === meu || j.fora === meu ? " meu" : ""}"><span>${linkClube(j.casa)}</span>${placar(j)}<span>${linkClube(j.fora)}</span></div>`;
   const meus = e.jogos.filter((j) => j.casa === meu || j.fora === meu);
   const prox = meus.filter((j) => j.gc === undefined).slice(0, 3);
-  const status = e.campeao ? `Campeão: <b>${esc(nomeDe(e.campeao))}</b>` : `Agora: ${esc(NOME_FASE_COPA[e.fase] ?? e.fase)}`;
+  const status = e.campeao ? `Campeão: <b>${linkClube(e.campeao)}</b>` : `Agora: ${esc(NOME_FASE_COPA[e.fase] ?? e.fase)}`;
   let tabelas = "";
   if (id === "UCL" && e.tabelas.Liga) tabelas = `<p class="sub" style="margin:10px 0 4px">1º–8º direto às oitavas · 9º–24º playoff · 25º–36º eliminados</p>${tabelaCopaHtml(e.tabelas.Liga, meu, (i) => i < 8 ? "z-dir" : i < 24 ? "z-play" : "z-fora")}`;
   else {
@@ -348,14 +351,14 @@ function abaCopa(s: Save, id: CopaId): string {
       const js = e.jogos.filter((j) => j.serie === sr), v = vencedorSerie(e, sr);
       if (js.length === 1) return `<div class="serie${v ? "" : " aberta"}">${linhaJogo(js[0])}</div>`;
       const [a, b] = [js[1].casa, js[1].fora], agg = js.every((j) => j.gc !== undefined) ? [js[0].gf! + js[1].gc!, js[0].gc! + js[1].gf!] : undefined;
-      return `<div class="serie${a === meu || b === meu ? " meu" : ""}"><div class="jogo-copa"><span class="${v === a ? "venc" : ""}">${esc(nomeDe(a))}</span>${agg ? `<b>${agg[0]} × ${agg[1]}</b>` : `<span class="sub">ida e volta</span>`}<span class="${v === b ? "venc" : ""}">${esc(nomeDe(b))}</span></div><small class="sub">${js.map((j) => `${esc(nomeDe(j.casa))} ${j.gc ?? "–"}×${j.gf ?? "–"}`).join(" · ")}${js[1].penaltis ? ` · pênaltis: ${esc(nomeDe(js[1].penaltis))}` : ""}</small></div>`;
+      return `<div class="serie${a === meu || b === meu ? " meu" : ""}"><div class="jogo-copa"><span class="${v === a ? "venc" : ""}">${linkClube(a)}</span>${agg ? `<b>${agg[0]} × ${agg[1]}</b>` : `<span class="sub">ida e volta</span>`}<span class="${v === b ? "venc" : ""}">${linkClube(b)}</span></div><small class="sub">${js.map((j) => `${linkClube(j.casa)} ${j.gc ?? "–"}×${j.gf ?? "–"}`).join(" · ")}${js[1].penaltis ? ` · pênaltis: ${linkClube(js[1].penaltis)}` : ""}</small></div>`;
     }).join("")}`;
   }).join("");
   const sl = c.selecao, selInfo = nat && sl ? `<div class="grade-n" style="display:flex;gap:14px;margin:6px 0 10px"><span><b>${sl.convocacoes}</b> <small class="sub">convocações</small></span><span><b>${sl.jogos}</b> <small class="sub">jogos</small></span><span><b>${sl.gols}</b> <small class="sub">gols</small></span><span><b>${sl.assist}</b> <small class="sub">assist.</small></span></div>${sl.copas.length ? `<p class="sub">Torneios: ${sl.copas.map((x) => `${esc(COPAS[x.id ?? "COP"].curto)} ${x.ano} · ${esc(x.fase)} (${x.jogos} j, ${x.gols} g)`).join(" · ")}</p>` : ""}` : "";
   const wrap = (html: string) => `<div class="comp-wrap" style="${estiloIdent(identidade(id))}">${html}</div>`;
-  if (id === "SEL") return wrap(`${bannerComp(id, esc(nomeDe(meu)), e.jogos[0]?.fase === "eliminatorias" ? "Eliminatórias" : "Amistosos")}`) + `<p class="rotulo" style="margin-bottom:2px">${esc(nomeDe(meu))} · ${e.jogos[0]?.fase === "eliminatorias" ? "Eliminatórias" : "Amistosos"}</p><p class="sub" style="margin-bottom:6px">Três datas FIFA na temporada. A convocação sai na semana de cada jogo: nível, fase e fama contra os outros ${esc(NOME_POS[s.jogador.posicao] ?? "Goleiro")}s do país.</p>${selInfo}${e.jogos.map((j) => linhaJogo(j) + (j.gc === undefined ? "" : `<small class="sub">${sl?.conv[`${c.temporada}-${j.semana}`] ? "convocado" : "fora da lista"}</small>`)).join("")}`;
-  return wrap(`${bannerComp(id, esc(COPAS[id].nome), `${esc(COPAS[id].regiao)} · ${ANO_INICIAL + c.temporada}`)}${selInfo}<p class="sub" style="margin-bottom:8px">${status}${estou && nat ? ` · ${esc(nomeDe(meu))}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : nat ? " · sua seleção não se classificou" : estou ? ` · ${esc(clubeDe(ligaAtual(pacote, s), meu).nome)}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : " · seu clube não está nesta copa"}</p>
-    ${prox.length ? `<p class="rotulo" style="margin:6px 0 4px">Seus próximos jogos</p>${prox.map((j) => `<div class="jogo-copa meu"><span>${esc(nomeDe(j.casa))}</span><span class="sub">sem. ${j.semana + 1} · ${esc(rotuloJogo(j))}</span><span>${esc(nomeDe(j.fora))}</span></div>`).join("")}` : ""}
+  if (id === "SEL") return wrap(`${bannerComp(id, linkClube(meu), e.jogos[0]?.fase === "eliminatorias" ? "Eliminatórias" : "Amistosos")}`) + `<p class="rotulo" style="margin-bottom:2px">${linkClube(meu)} · ${e.jogos[0]?.fase === "eliminatorias" ? "Eliminatórias" : "Amistosos"}</p><p class="sub" style="margin-bottom:6px">Três datas FIFA na temporada. A convocação sai na semana de cada jogo: nível, fase e fama contra os outros ${esc(NOME_POS[s.jogador.posicao] ?? "Goleiro")}s do país.</p>${selInfo}${e.jogos.map((j) => linhaJogo(j) + (j.gc === undefined ? "" : `<small class="sub">${sl?.conv[`${c.temporada}-${j.semana}`] ? "convocado" : "fora da lista"}</small>`)).join("")}`;
+  return wrap(`${bannerComp(id, esc(COPAS[id].nome), `${esc(COPAS[id].regiao)} · ${ANO_INICIAL + c.temporada}`)}${selInfo}<p class="sub" style="margin-bottom:8px">${status}${estou && nat ? ` · ${linkClube(meu)}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : nat ? " · sua seleção não se classificou" : estou ? ` · ${esc(clubeDe(ligaAtual(pacote, s), meu).nome)}: ${esc(NOME_FASE_COPA[e.chegou[meu]] ?? "na disputa")}` : " · seu clube não está nesta copa"}</p>
+    ${prox.length ? `<p class="rotulo" style="margin:6px 0 4px">Seus próximos jogos</p>${prox.map((j) => `<div class="jogo-copa meu"><span>${linkClube(j.casa)}</span><span class="sub">sem. ${j.semana + 1} · ${esc(rotuloJogo(j))}</span><span>${linkClube(j.fora)}</span></div>`).join("")}` : ""}
     ${mm}${tabelas}`);
 }
 let vistaSelecao: "rodada" | "mes" = "rodada";
@@ -382,7 +385,7 @@ function selecaoHtml(s: Save): string {
 function premiosLigaHtml(s: Save): string {
   const p = s.carreira.premiosLiga;
   if (!p || !p.selecao.length) return "";
-  const quem = (x?: Selecionado) => x ? `${x.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`} <small class="sub">${esc(nomeDe(x.clubeId))}</small>` : "–";
+  const quem = (x?: Selecionado) => x ? `${x.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`} <small class="sub">${linkClube(x.clubeId)}</small>` : "–";
   const linha = (rot: string, x: Selecionado | undefined, extra: string) => `<div class="premio-l"><span class="rotulo">${rot}</span><span>${quem(x)}</span><b>${extra}</b></div>`;
   const de = (k: string) => p.selecao.filter((x) => x.posicao === k);
   const cart = (x: Selecionado) => `<div class="sel-j${x.eu ? " eu" : ""}">${escudo(x.clubeId)}${x.eu ? `<b>${esc(s.jogador.apelido)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(nomeCurtoSel(x.nome))}</button>`}<small>${x.nota.toFixed(2).replace(".", ",")}</small></div>`;
@@ -399,7 +402,7 @@ function premiosLigaHtml(s: Save): string {
 function premiosMundoHtml(s: Save): string {
   const p = s.carreira.premiosMundo;
   if (!p) return "";
-  const quem = (x: LinhaPremio) => `${x.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`} <small class="sub">${esc(nomeDe(x.clubeId))}</small>`;
+  const quem = (x: LinhaPremio) => `${x.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`} <small class="sub">${linkClube(x.clubeId)}</small>`;
   const bola = p.premios.find((x) => x.id === "BOLA"), outros = p.premios.filter((x) => x.id !== "BOLA");
   const extra = (pr: PremioMundo, x: LinhaPremio) => pr.id === "CHUTEIRA" ? `${x.gols} gols` : pr.id === "YASHIN" ? `nota ${x.nota.toFixed(2).replace(".", ",")}` : `${x.gols} g · ${x.nota.toFixed(2).replace(".", ",")}`;
   const meu = bola?.ranking.findIndex((x) => x.eu) ?? -1;
@@ -412,7 +415,7 @@ function premiosMundoHtml(s: Save): string {
     <p class="sub" style="margin:10px 0 4px">Os outros prêmios <small>(cada um com os seus votantes)</small></p>
     ${outros.map((pr) => `<div class="premio-l largo"><span class="rotulo">${esc(pr.nome)}</span><span>${quem(pr.ranking[0])}</span><b>${extra(pr, pr.ranking[0])}</b></div>`).join("")}
     ${p.selecao.length ? `<p class="sub" style="margin:10px 0 6px">Seleção FIFA do Ano <small>(os 11 do mundo, votados pelos jogadores)</small></p><div class="campinho">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : ""}
-    ${gal.length > 1 ? `<details style="margin-top:8px"><summary class="sub">Galeria da Bola de Ouro</summary>${[...gal].reverse().map((g) => `<div class="premio-l"><span class="rotulo">${g.ano}</span><span>${g.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : esc(g.nome)} <small class="sub">${esc(nomeDe(g.clubeId))}</small></span><b></b></div>`).join("")}</details>` : ""}`;
+    ${gal.length > 1 ? `<details style="margin-top:8px"><summary class="sub">Galeria da Bola de Ouro</summary>${[...gal].reverse().map((g) => `<div class="premio-l"><span class="rotulo">${g.ano}</span><span>${g.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : esc(g.nome)} <small class="sub">${linkClube(g.clubeId)}</small></span><b></b></div>`).join("")}</details>` : ""}`;
 }
 const nomeCurtoSel = (n: string) => { const p = n.split(" "); return p.length > 2 ? `${p[0]} ${p[p.length - 1]}` : n; };
 /** Artilharia e assistências da liga até a rodada atual (os outros imaginados; você com os seus números de verdade). */
@@ -426,7 +429,7 @@ function rankingsHtml(s: Save): string {
     if (meu > 0) l.push({ nome: s.jogador.apelido, clubeId: c.clubeId, valor: meu, jogos: c.stats.jogos, eu: true });
     const top = l.sort((a, b) => b.valor - a.valor || Number(b.eu) - Number(a.eu)).slice(0, 10);
     if (!top.length) return "";
-    return `<p class="rotulo" style="margin:14px 0 6px">${rot}</p><table><tbody>${top.map((x, i) => `<tr class="${x.eu ? "meu" : ""}"><td>${i + 1}</td><td>${x.eu ? `<b>${esc(x.nome)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`}<br><small class="sub">${esc(nomeDe(x.clubeId))} · ${x.jogos} j</small></td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>`;
+    return `<p class="rotulo" style="margin:14px 0 6px">${rot}</p><table><tbody>${top.map((x, i) => `<tr class="${x.eu ? "meu" : ""}"><td>${i + 1}</td><td>${x.eu ? `<b>${esc(x.nome)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`}<br><small class="sub">${linkClube(x.clubeId)} · ${x.jogos} j</small></td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>`;
   };
   return lista("g", "Artilharia") + lista("a", "Assistências");
 }
@@ -451,11 +454,11 @@ function abaTabela(s: Save): string {
   if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "premios") return chips + subT + (premiosLigaHtml(s) + premiosMundoHtml(s) || `<p class="sub">Os prêmios saem no fim da primeira temporada.</p>`);
   if (vistaTabela === "base") {
     const tb = c.tabelaBase && c.tabelaBase.t === c.temporada && c.tabelaBase.cat === categoriaBase(s.jogador.idade) ? ordenar(c.tabelaBase.tabela) : ordenar(novaTabelaDe(c));
-    return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade("BASE"))}">${bannerComp("BASE", `${esc(infoLiga(c.ligaId).curto)} ${categoriaBase(s.jogador.idade)}`, "Os times da base, mesmos confrontos")}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${tb.map((x, i) => `<tr class="${x.clube === c.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${esc(nomeDe(x.clube))} ${categoriaBase(s.jogador.idade)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table></div>`;
+    return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade("BASE"))}">${bannerComp("BASE", `${esc(infoLiga(c.ligaId).curto)} ${categoriaBase(s.jogador.idade)}`, "Os times da base, mesmos confrontos")}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${tb.map((x, i) => `<tr class="${x.clube === c.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${linkClube(x.clube)} ${categoriaBase(s.jogador.idade)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table></div>`;
   }
   if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
   const lid = infoLiga(s.carreira.ligaId).id, feitas = Math.max(0, Math.min(nRodadas(c), c.semana - SEMANAS_PRE));
-  return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade(lid))}">${bannerComp(lid, esc(infoLiga(s.carreira.ligaId).nome), `${ANO_INICIAL + c.temporada} · ${feitas ? `${feitas} de ${nRodadas(c)} rodadas` : "antes da 1ª rodada"}`)}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th><th class="forma-th">Forma</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td><button class="nome-hist" data-perfil-clube="${x.clube}">${esc(nomeDe(x.clube))}</button></td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td><td>${bolinhasForma(x.f)}</td></tr>`).join("")}</tbody></table></div>${calendarioHtml(s)}`;
+  return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade(lid))}">${bannerComp(lid, esc(infoLiga(s.carreira.ligaId).nome), `${ANO_INICIAL + c.temporada} · ${feitas ? `${feitas} de ${nRodadas(c)} rodadas` : "antes da 1ª rodada"}`)}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th><th class="forma-th">Forma</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${linkClube(x.clube)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td><td>${bolinhasForma(x.f)}</td></tr>`).join("")}</tbody></table></div>${calendarioHtml(s)}`;
 }
 
 /** Os últimos 5 resultados em bolinhas (verde, cinza, vermelho). */
@@ -771,7 +774,7 @@ function cardCraque(s: Save): string {
   if (!cs.length) return "";
   return `<section class="painel craque"><p class="rotulo">Craque do outro lado</p>${cs.map((e) => {
     const x = rr.lista[e.nome], nivel = x?.nivel ?? 0, pedida = rr.camisaPedida === e.nome;
-    return `<div class="craque-linha">${camisaMini(e.clubeId, e.numero)}<div><b>${esc(e.nome)}</b><small>${esc(nomeDe(e.clubeId))} · ${NOME_POS[e.posicao] ?? "Goleiro"} · OVR ${e.ovr} · ${rotuloNivel(nivel)}${x?.camisa ? " · camisa na coleção" : ""}</small></div>
+    return `<div class="craque-linha">${camisaMini(e.clubeId, e.numero)}<div><b>${linkJogador(e.nome)}</b><small>${linkClube(e.clubeId)} · ${NOME_POS[e.posicao] ?? "Goleiro"} · OVR ${e.ovr} · ${rotuloNivel(nivel)}${x?.camisa ? " · camisa na coleção" : ""}</small></div>
       ${x?.camisa ? "" : pedida ? `<span class="tag titular">Camisa pedida · ${Math.round(100 * chanceCamisa(nivel, s.carreira.fama, e.fama))}%</span>` : `<button class="botao sec peq" data-rel="${esc(e.nome)}" data-op="camisa">Pedir a camisa<small>${Math.round(100 * chanceCamisa(nivel, s.carreira.fama, e.fama))}%</small></button>`}</div>`;
   }).join("")}<p class="sub" style="margin-top:6px">Se você jogar, a troca acontece no apito final. Quanto mais amizade, maior a chance.</p></section>`;
 }
@@ -785,7 +788,7 @@ function linhaRel(s: Save, x: Relacao, acoes: AcaoRel[], extra = "", clubeBusca?
   const e = estrelasDoMundo(pacote).find((k) => k.nome === x.nome), cor = x.nivel >= 80 ? "#E3B341" : x.nivel >= 60 ? "#74D394" : x.nivel >= 40 ? "#6FB7E0" : "#8A968E";
   const conhecido = !!relacoesDe(s.carreira).lista[x.nome], fav = relacoesDe(s.carreira).favoritos?.includes(x.nome);
   const aberto = relAberto === x.nome;
-  return `<div class="rel-linha${aberto ? " aberta" : ""}"><div class="rel-topo">${conhecido ? `<button class="fav${fav ? " on" : ""}" data-fav="${esc(x.nome)}" aria-label="${fav ? "Tirar dos favoritos" : "Pôr nos favoritos"}" aria-pressed="${!!fav}">★</button>` : ""}${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${x.aposentado ? "Aposentado" : esc(nomeDe(x.clubeId))}${extra}</small></div>
+  return `<div class="rel-linha${aberto ? " aberta" : ""}"><div class="rel-topo">${conhecido ? `<button class="fav${fav ? " on" : ""}" data-fav="${esc(x.nome)}" aria-label="${fav ? "Tirar dos favoritos" : "Pôr nos favoritos"}" aria-pressed="${!!fav}">★</button>` : ""}${camisaMini(x.clubeId, e?.numero ?? numeroDe(x.nome))}<div class="rel-nome"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button>${x.camisa ? ` <span class="selo" title="Camisa trocada">👕</span>` : ""}${e ? ` <span class="selo estrela" title="Estrela">★ ${e.ovr}</span>` : ""}<small>${x.aposentado ? "Aposentado" : linkClube(x.clubeId)}${extra}</small></div>
     <button class="rel-nivel abre" data-relabre="${esc(x.nome)}" aria-expanded="${aberto}" aria-label="Ações com ${esc(x.nome)}"><span style="color:${cor}">${rotuloNivel(x.nivel)} <em class="seta">${aberto ? "▴" : "▾"}</em></span><span class="rel-barra"><i style="width:${x.nivel}%;background:${cor}"></i></span></button></div>
     ${aberto ? `<div class="rel-acoes">${acoes.map((a) => `<button class="chip" data-rel="${esc(x.nome)}" data-op="${a}"${clubeBusca ? ` data-clube="${clubeBusca}"` : ""}>${NOME_ACAO_REL[a]}</button>`).join("")}</div>` : ""}</div>`;
 }
@@ -795,7 +798,7 @@ function historicoHtml(s: Save, nome: string): string {
   const h = historicoDe(pacote, nome), l = h.linhas, ult = l[l.length - 1], onde = ondeJoga(pacote, nome);
   const rel = relacoesDe(s.carreira).lista[nome];
   if (!ult) return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button><h1 style="margin-top:8px">${esc(nome)}</h1><p class="sub">Sem registro no mundo.</p>`;
-  const agora = onde ? (onde.base ? `Base do ${nomeDe(onde.clubeId)}` : nomeDe(onde.clubeId)) : h.aposentouEm !== undefined ? `Aposentado em ${ANO_INICIAL + h.aposentouEm}` : "Sem clube";
+  const agora = onde ? (onde.base ? `Base do ${linkClube(onde.clubeId)}` : linkClube(onde.clubeId)) : h.aposentouEm !== undefined ? `Aposentado em ${ANO_INICIAL + h.aposentouEm}` : "Sem clube";
   const pico = l.reduce((a, x) => (x.ovr > a.ovr ? x : a), l[0]);
   const tot = l.reduce((a, x) => { const st = statsDaLinha(pacote, nome, x); if (!st) return a; const e = x.t === s.carreira.temporada ? statsAte(st, Math.max(0, s.carreira.semana - SEMANAS_PRE), x.liga![4]) : st; return { j: a.j + e.j, g: a.g + e.g, a: a.a + e.a }; }, { j: 0, g: 0, a: 0 });
   const clubes = [...new Set(l.map((x) => x.clubeId))];
@@ -804,12 +807,12 @@ function historicoHtml(s: Save, nome: string): string {
     const ant = arr[i + 1], d = ant ? x.ovr - ant.ovr : 0, mudou = ant && ant.clubeId !== x.clubeId;
     const st = statsDaLinha(pacote, nome, x), atual = x.t === s.carreira.temporada, feitas = Math.max(0, s.carreira.semana - SEMANAS_PRE);
     const e = st ? (atual ? statsAte(st, feitas, x.liga![4]) : st) : undefined;
-    return `<tr${mudou ? ` class="mudou"` : ""}><td>${ANO_INICIAL + x.t}</td><td><span class="hist-clube">${escudo(x.clubeId)}<span>${esc(nomeDe(x.clubeId))}${x.base ? " <small>(base)</small>" : ""}</span></span></td><td class="n">${x.idade}</td><td class="n">${e ? e.j : "–"}</td><td class="n">${e ? e.g : "–"}</td><td class="n">${e ? e.a : "–"}</td><td class="n"><b>${x.ovr}</b>${d ? ` <small class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</small>` : ""}</td></tr>`;
+    return `<tr${mudou ? ` class="mudou"` : ""}><td>${ANO_INICIAL + x.t}</td><td><span class="hist-clube">${escudo(x.clubeId)}<span>${linkClube(x.clubeId)}${x.base ? " <small>(base)</small>" : ""}</span></span></td><td class="n">${x.idade}</td><td class="n">${e ? e.j : "–"}</td><td class="n">${e ? e.g : "–"}</td><td class="n">${e ? e.a : "–"}</td><td class="n"><b>${x.ovr}</b>${d ? ` <small class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</small>` : ""}</td></tr>`;
   }).join("");
   const nat = ult.nat ?? nacionalidadeDe(pacote, nome);
   const bandeira = nat ? `<span class="hist-pais">${bandeiraSvg(nat, "escudo bandeira")}<small>${esc(NOME_PAIS[nat] ?? nat)}</small></span>` : "";
   return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
-    <div class="hist-topo">${onde ? escudo(onde.clubeId) : ""}<div><small>${esc(NOME_POS[ult.posicao] ?? "Goleiro")} · ${ult.idade} anos</small><h1>${esc(nome)}</h1>${bandeira}<span class="sub">${esc(agora)}</span></div><div class="ovr"><strong>${ult.ovr}</strong><span>OVR</span></div></div>
+    <div class="hist-topo">${onde ? escudo(onde.clubeId) : ""}<div><small>${esc(NOME_POS[ult.posicao] ?? "Goleiro")} · ${ult.idade} anos</small><h1>${esc(nome)}</h1>${bandeira}<span class="sub">${agora}</span></div><div class="ovr"><strong>${ult.ovr}</strong><span>OVR</span></div></div>
     <div class="linha-info" style="margin:10px 0">${tag}<span>Pico <b>${pico.ovr}</b> em ${ANO_INICIAL + pico.t}</span><span><b>${clubes.length}</b> ${clubes.length === 1 ? "clube" : "clubes"}</span>${tot.j ? `<span><b>${tot.j}</b> jogos · <b>${tot.g}</b> gols · <b>${tot.a}</b> assist.</span>` : ""}${rel ? `<span>Relação: <b>${esc(rotuloNivel(rel.nivel))}</b></span>` : ""}</div>
     <table class="hist"><thead><tr><th>Ano</th><th>Clube</th><th class="n">Id.</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">OVR</th></tr></thead><tbody>${linhas}</tbody></table>
     ${l[0].t === 0 && !l[0].base ? `<p class="sub" style="margin-top:8px">Antes de ${ANO_INICIAL}: carreira fora do registro do jogo.</p>` : ""}`;
@@ -828,7 +831,7 @@ const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n 
 function linhaFam(s: Save, m: Familiar): string {
   if (m.falecido) return `<div class="rel-linha em-memoria"><div class="rel-topo"><span class="avatar-fam" style="--c:#8A968E">🕊️</span><div class="rel-nome"><b>${esc(m.nome)}</b><small>${NOME_PARENTESCO[m.parentesco]} · ${m.nasc}–${m.falecido} · em memória</small></div></div></div>`;
   const ctx = ctxFamilia(pacote, s), ano = ANO_INICIAL + s.carreira.temporada, fb = m.futebol, cor = corRelFam(m.relacao);
-  const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${esc(nomeDe(fb.clubeId))}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
+  const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${linkClube(fb.clubeId)}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
   return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome"><b>${esc(m.nome)}</b>${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
@@ -900,7 +903,7 @@ function celBusca(s: Save): string {
   // a disputa do próprio garoto na base: quem está na frente na posição
   const disputa = cl && cl.id === s.carreira.clubeId && s.carreira.formacao && !s.carreira.fase && base.length ? (() => {
     const d = disputaNaPosicao(base, s.jogador.posicao, Math.round(ovr(s.jogador)), VAGAS_433[s.jogador.posicao]);
-    const linhas = d.mesma.slice(0, 4).map((x) => `<div class="kv"><span>${NOME_POS[x.posicao] ?? ""} · ${x.idade} anos</span><b>${esc(x.nome)} · OVR ${x.ovr}</b></div>`).join("");
+    const linhas = d.mesma.slice(0, 4).map((x) => `<div class="kv"><span>${NOME_POS[x.posicao] ?? ""} · ${x.idade} anos</span><b>${linkJogador(x.nome)} · OVR ${x.ovr}</b></div>`).join("");
     return `<p class="rotulo" style="margin-top:12px">Disputa na sua posição</p>${linhas}<p class="sub" style="margin-top:6px">${d.titular ? "Você está entre os titulares da base." : `${d.acima} garoto(s) acima de você na posição: começa no banco até passar deles.`}</p>`;
   })() : "";
   const abas = cl && base.length ? `<div class="chips" style="margin-top:10px"><button class="chip${buscaBase ? "" : " ativo"}" data-bbase="0">Profissional</button><button class="chip${buscaBase ? " ativo" : ""}" data-bbase="1">Base (${base.length})</button></div>` : "";
@@ -953,7 +956,7 @@ function celMatch(s: Save): string {
   const filhos = n.filhos ?? [];
   const ano = ANO_INICIAL + c.temporada, g = n.gravidez;
   const gravidezHtml = g ? `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>` : "";
-  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-cab"><span class="filho-foto">${retratoFilho(s, f, i)}</span><div class="filho-info"><p class="filho-puxou">${esc(quemPuxou(s, f, i))}</p></div></div><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${esc(nomeDe(f.futebol.clubeId))}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
+  const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-cab"><span class="filho-foto">${retratoFilho(s, f, i)}</span><div class="filho-info"><p class="filho-puxou">${esc(quemPuxou(s, f, i))}</p></div></div><div class="filho-topo"><b>${esc(f.nome)}</b><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${linkClube(f.futebol.clubeId)}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
       <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
       ${f.nomear ? `<div class="nomear-filho"><p>👶 <b>${f.menina ? "Ela" : "Ele"} ainda não tem nome.</b> Por enquanto, todo mundo chama de ${esc(f.nome)}. Escolha:</p>
         <div class="chips" style="flex-wrap:wrap">${f.nomear.map((x) => `<button class="chip" data-nomefilho="${i}" data-nome="${esc(x)}">${esc(x)}</button>`).join("")}</div>
@@ -1063,7 +1066,7 @@ function clubeHtml(clubeId: string): string {
     <p class="rotulo" style="margin-top:16px">Time de todos os tempos</p>
     ${xi.length ? `<div class="campinho">${linhas.map((l) => `<div class="sel-linha">${l.map(cart).join("")}</div>`).join("")}</div>` : `<p class="sub">Ainda sem temporadas suficientes deste clube.</p>`}
     <p class="rotulo" style="margin-top:16px">Elenco atual</p>
-    <table><tbody>${elenco.map((j) => `<tr><td>${NOME_POS[j.posicao] ?? j.posicao}</td><td>${esc(j.nome)}</td><td class="n">${j.ovr}</td></tr>`).join("")}</tbody></table>
+    <table><tbody>${elenco.map((j) => `<tr><td>${NOME_POS[j.posicao] ?? j.posicao}</td><td>${linkJogador(j.nome)}</td><td class="n">${j.ovr}</td></tr>`).join("")}</tbody></table>
     <p class="rotulo" style="margin-top:16px">Clubes da mesma liga</p>
     <div class="chips" style="flex-wrap:wrap">${irmaos.map((x) => `<button class="chip${x.id === clubeId ? " ativo" : ""}" data-perfil-clube="${x.id}">${esc(x.nome)}</button>`).join("")}</div>
     <div style="text-align:center;margin-top:14px"><button class="botao sec peq" data-fechar-clube="1">Fechar</button></div>`;
@@ -1121,7 +1124,7 @@ function blocoClubeCorpo(s: Save): string {
     ${!k ? `<p class="sub">Contrato antigo, sem cláusulas. A próxima renovação ou transferência traz multa, bônus e % de venda.</p>` : ""}
     <div class="ferr-botoes"><button class="botao sec peq" data-aumento="1" ${k?.pedidoAumento === c.temporada ? "disabled" : ""}>Pedir aumento à diretoria</button></div>
     <p class="sub">Uma vez por temporada. Quem é titular e está em boa fase ganha renovação melhor; quem não está, ouve um não.</p></div>`;
-  return `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(info.estadio)}</span></div></div>
+  return `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${linkClube(c.clubeId, info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(info.estadio)}</span></div></div>
     ${sub("Técnico")}${tecnico}${sub("Vestiário")}${vest}${sub("Rival")}${rival}${passados}${sub("Torcida")}${torcida}${sub("Contrato")}${contrato}`;
 }
 /** A cidade onde o jogador mora. */
@@ -1342,7 +1345,7 @@ function janelaHtml(s: Save): string {
   const c = s.carreira, anos = janelasFeitas(pacote);
   const filtros: [typeof filtroJanela, string][] = [["todas", "Maiores"], ["liga", infoLiga(c.ligaId).curto], ["clube", "Meu clube"], ["base", "Da base"], ["aposentadorias", "Aposentadorias"], ["livres", "Agentes livres"], ["tecnicos", "Técnicos"], ["lesoes", "Lesões"]];
   const chipsFiltro = `<div class="chips" style="flex-wrap:wrap;margin:8px 0">${filtros.map(([k, n]) => `<button class="chip${filtroJanela === k ? " ativo" : ""}" data-fjanela="${k}">${esc(n)}</button>`).join("")}</div>`;
-  const clube = (id?: string, fora = "Estava sem clube") => id ? `<span class="neg-clube">${escudo(id)}<span>${esc(nomeDe(id))}</span></span>` : `<span class="neg-clube sub">${fora}</span>`;
+  const clube = (id?: string, fora = "Estava sem clube") => id ? `<span class="neg-clube">${escudo(id)}<span>${linkClube(id)}</span></span>` : `<span class="neg-clube sub">${fora}</span>`;
   if (filtroJanela === "livres") {
     const al = agentesLivres(pacote);
     return `${chipsFiltro}<p class="sub" style="margin-bottom:8px">${al.length ? `${al.length} jogadores sem clube: dispensados, fim de contrato, garotos que não subiram. Contratar um deles não custa taxa.` : "Ninguém sem clube ainda: o banco de agentes livres começa a encher na primeira janela."}</p>
@@ -1351,13 +1354,13 @@ function janelaHtml(s: Save): string {
   if (filtroJanela === "tecnicos") {
     const w = mundo(pacote), linhas = anos.length ? anos.filter((a) => !a.meio).slice(0, 3).flatMap((a) => trocasDeTecnicoEm(pacote, a.t)) : [];
     const meu = c.tecnico;
-    return `${chipsFiltro}${meu ? `<div class="negocio meu"><div class="neg-topo"><b>${esc(meu.nome)}</b><span class="neg-valor">${esc(NOME_ESTILO[meu.estilo][0])}</span></div><small class="sub">Seu técnico no ${esc(nomeDe(c.clubeId))} · ${meu.idade} anos · desde ${ANO_INICIAL + meu.desde} · ${esc(NOME_ESTILO[meu.estilo][1])}</small></div>` : ""}
-      ${linhas.length ? [...linhas].sort((a, b) => b.t - a.t || (w.clube[b.clubeId]?.forca ?? 0) - (w.clube[a.clubeId]?.forca ?? 0)).slice(0, 40).map((x) => `<div class="negocio"><div class="neg-topo"><span class="neg-clube">${escudo(x.clubeId)}<b>${esc(nomeDe(x.clubeId))}</b></span><span class="neg-valor">${ANO_INICIAL + x.t}</span></div><small class="sub">Sai ${esc(x.saiu ?? "–")}${x.motivo === "aposentou" ? " (aposentado)" : x.motivo === "levado" ? " (levado por um clube maior)" : " (demitido)"} · chega ${esc(x.entrou)}${x.de ? ` (do ${esc(nomeDe(x.de))})` : ""}</small></div>`).join("") : `<p class="sub">A dança dos técnicos começa na virada da temporada.</p>`}`;
+    return `${chipsFiltro}${meu ? `<div class="negocio meu"><div class="neg-topo"><b>${esc(meu.nome)}</b><span class="neg-valor">${esc(NOME_ESTILO[meu.estilo][0])}</span></div><small class="sub">Seu técnico no ${linkClube(c.clubeId)} · ${meu.idade} anos · desde ${ANO_INICIAL + meu.desde} · ${esc(NOME_ESTILO[meu.estilo][1])}</small></div>` : ""}
+      ${linhas.length ? [...linhas].sort((a, b) => b.t - a.t || (w.clube[b.clubeId]?.forca ?? 0) - (w.clube[a.clubeId]?.forca ?? 0)).slice(0, 40).map((x) => `<div class="negocio"><div class="neg-topo"><span class="neg-clube">${escudo(x.clubeId)}<b>${linkClube(x.clubeId)}</b></span><span class="neg-valor">${ANO_INICIAL + x.t}</span></div><small class="sub">Sai ${esc(x.saiu ?? "–")}${x.motivo === "aposentou" ? " (aposentado)" : x.motivo === "levado" ? " (levado por um clube maior)" : " (demitido)"} · chega ${esc(x.entrou)}${x.de ? ` (do ${linkClube(x.de)})` : ""}</small></div>`).join("") : `<p class="sub">A dança dos técnicos começa na virada da temporada.</p>`}`;
   }
   if (filtroJanela === "lesoes") {
     const rod = c.semana - SEMANAS_PRE, ls = lesoesDaTemporada(pacote).filter((x) => x.fim > rod && x.ini <= rod + 2).sort((a, b) => b.ovr - a.ovr).slice(0, 40);
     return `${chipsFiltro}<p class="sub" style="margin-bottom:8px">Lesões graves no mundo agora (e as que vêm nas próximas rodadas). Quem fica fora não joga, não soma números e perde terreno nos prêmios.</p>
-      ${ls.map((x) => `<div class="negocio${x.clubeId === c.clubeId ? " meu" : ""}"><div class="neg-topo"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button><span class="neg-valor">${x.fim - Math.max(rod, x.ini)} sem.</span></div><small class="sub">${esc(nomeDe(x.clubeId))} · OVR ${x.ovr} · ${esc(x.tipo)} · fora das rodadas ${x.ini + 1} a ${x.fim}</small></div>`).join("") || `<p class="sub">Ninguém machucado agora.</p>`}`;
+      ${ls.map((x) => `<div class="negocio${x.clubeId === c.clubeId ? " meu" : ""}"><div class="neg-topo"><button class="nome-hist" data-hist="${esc(x.nome)}"><b>${esc(x.nome)}</b></button><span class="neg-valor">${x.fim - Math.max(rod, x.ini)} sem.</span></div><small class="sub">${linkClube(x.clubeId)} · OVR ${x.ovr} · ${esc(x.tipo)} · fora das rodadas ${x.ini + 1} a ${x.fim}</small></div>`).join("") || `<p class="sub">Ninguém machucado agora.</p>`}`;
   }
   if (!anos.length) return `${chipsFiltro}<p class="sub">A primeira janela do mundo abre na virada da temporada: transferências, reforços, garotos que sobem da base e aposentadorias aparecem aqui.</p>`;
   const chave = (x: { t: number; meio: boolean }) => `${x.t}${x.meio ? "m" : ""}`;
@@ -1418,7 +1421,7 @@ function abaMercadoEu(s: Save): string {
   const aviso = msgMercado ? `<p class="msg-mercado ${msgMercado.ok ? "ok" : "nao"}">${esc(msgMercado.texto)}</p>` : "";
   msgMercado = undefined;
   const contrato = `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${esc(meu.nome)}</h2><span class="sub">${esc(ligaNome)} · força ${Math.round(meu.forca)} · você é ${NOME_PAPEL[papel].toLowerCase()}</span></div></div><p class="sub" style="margin-top:8px"><b>${esc(NOME_CULTURA[culturaBase(c.clubeId)])}.</b> ${esc(TEXTO_CULTURA[culturaBase(c.clubeId)])}</p>
-    <div class="kv" style="margin-top:8px"><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b>${m.emprestimo ? `<span>Empréstimo</span><b>Volta ao ${esc(nomeDe(m.emprestimo.origem))} no fim da temporada</b>` : ""}<span>Mercado</span><b>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : `Fechado · próxima: ${esc(proximaJanela(c))}`}</b></div>
+    <div class="kv" style="margin-top:8px"><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b>${m.emprestimo ? `<span>Empréstimo</span><b>Volta ao ${linkClube(m.emprestimo.origem)} no fim da temporada</b>` : ""}<span>Mercado</span><b>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : `Fechado · próxima: ${esc(proximaJanela(c))}`}</b></div>
     ${c.fase ? `<p class="sub" style="margin-top:8px">${c.fase === "varzea" ? "Na várzea, o caminho é o olheiro: jogue bem e os convites de peneira aparecem na tela da semana." : c.fase === "academia" ? "Na academia, o clube pode te oferecer contrato homegrown no fim da temporada, a partir dos 15 anos." : c.fase === "colegial" ? "No colégio, as universidades oferecem bolsa no fim do último ano." : "Na universidade, a partir do segundo ano você entra no draft da liga americana no fim da temporada."}</p>`
       : j.idade < 18 ? `<p class="sub" style="margin-top:8px">Na base você ainda não pode ser negociado. O primeiro contrato profissional chega aos 18.</p>`
       : c.formacao ? `<p class="sub" style="margin-top:8px">Na base você não pode ser negociado, mas pode pedir para ser emprestado. Os clubes que se interessarem mandam propostas na janela.</p><div class="ferr-botoes">${m.pedidoEmprestimo ? `<button class="botao sec peq" data-emp-pedido="nao">Tirar o pedido de empréstimo</button>` : `<button class="botao sec peq" data-emp-pedido="sim">Pedir para ser emprestado</button>`}</div>` : m.emprestimo ? "" :
@@ -1436,7 +1439,7 @@ function abaMercadoEu(s: Save): string {
       ? `<button class="botao" data-prop="${p.id}" data-op="forcar">Forçar a saída</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Desistir</button>`
       : `<button class="botao" data-prop="${p.id}" data-op="aceitar">${p.tipo === "renovacao" ? "Renovar" : p.tipo === "emprestimo" ? "Aceitar o empréstimo" : "Aceitar"}</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Recusar</button>`;
     return `<div class="oferta" style="--c1:${info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0]}"><div class="faixa"></div><div class="corpo">
-      <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(infoLiga(p.ligaId).curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)} · ${esc(NOME_CULTURA[culturaBase(p.clubeId)].toLowerCase())}</span></div></div>
+      <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${linkClube(p.clubeId, info.nome)}</h2><span class="sub">${esc(infoLiga(p.ligaId).curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)} · ${esc(NOME_CULTURA[culturaBase(p.clubeId)].toLowerCase())}</span></div></div>
       ${p.tipo === "emprestimo" ? `<p class="sub" style="margin:6px 0">${p.fracaoSalario && p.fracaoSalario < 1 ? `Divisão de salário: o ${esc(cl.nome)} paga ${Math.round(p.fracaoSalario * 100)}% e o clube atual, o resto.` : `O clube de destino paga o salário integral.`}${p.opcaoCompra ? ` Cláusula de compra: € ${(p.opcaoCompra / 1e6).toFixed(1)} mi, que o ${esc(cl.nome)} pode exercer no fim do empréstimo.` : ""}</p>` : ""}
       <div class="prop-vis">${escalacaoPapel(j.posicao, p.papel, info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0])}<div class="pv-lado"><span class="tag ${p.papel === "titular" ? "titular" : p.papel === "rotacao" ? "banco" : "ruim"}">${NOME_TIPO[p.tipo]}</span><b class="pv-papel">${NOME_PAPEL[p.papel]}</b><small class="sub">${p.papel === "titular" ? "Entra no time de cara" : p.papel === "rotacao" ? "Reveza com o titular" : "Começa no banco"}</small></div></div>
         ${comparaContrato([
@@ -1451,10 +1454,10 @@ function abaMercadoEu(s: Save): string {
       <div class="ferr-botoes">${botoes}</div></div></div>`;
   };
   const props = m.propostas.length ? `<div class="ofertas">${m.propostas.map(card).join("")}</div>` : `<p class="sub">${jan ? "Nenhuma proposta por enquanto. Elas chegam ao longo da janela; jogar bem e ter um bom agente ajudam." : "Fora da janela de transferências. Jogue bem: os clubes estão olhando."}</p>`;
-  const hist = m.transferencias.length ? `<p class="rotulo" style="margin-top:16px">Transferências</p><div class="kv">${m.transferencias.map((t) => `<span>${2026 + t.temporada}</span><b>${esc(nomeDe(t.de))} → ${esc(nomeDe(t.para))}${t.tipo === "emprestimo" ? " (empréstimo)" : t.taxa ? ` · ${milhoes(t.taxa)}` : t.tipo === "livre" ? " (de graça)" : ""}</b>`).join("")}</div>` : "";
+  const hist = m.transferencias.length ? `<p class="rotulo" style="margin-top:16px">Transferências</p><div class="kv">${m.transferencias.map((t) => `<span>${2026 + t.temporada}</span><b>${linkClube(t.de)} → ${linkClube(t.para)}${t.tipo === "emprestimo" ? " (empréstimo)" : t.taxa ? ` · ${milhoes(t.taxa)}` : t.tipo === "livre" ? " (de graça)" : ""}</b>`).join("")}</div>` : "";
   const sc = m.semClube;
   const semClube = sc ? `<section class="painel" style="border-color:var(--ouro);margin-bottom:12px"><p class="rotulo" style="color:var(--ouro)">Agente livre</p>
-      <p style="margin:4px 0">Você está sem clube desde ${esc(rotuloDaSemanaAbs(sc.desde))}. Último clube: <b>${esc(nomeDe(sc.ultimo))}</b>, último salário ${dinheiro(sc.salario)}/mês.</p>
+      <p style="margin:4px 0">Você está sem clube desde ${esc(rotuloDaSemanaAbs(sc.desde))}. Último clube: <b>${linkClube(sc.ultimo)}</b>, último salário ${dinheiro(sc.salario)}/mês.</p>
       <p class="sub">Pode assinar a qualquer momento, sem taxa. Quanto mais tempo parado, menos propostas chegam, os salários caem e a moral sofre. Você treina sozinho e não joga.</p>
       ${(sc.oferecendoAte ?? -1) >= semanaAbsJogo(c) ? `<p class="sub" style="color:var(--ouro-claro)">O agente está oferecendo você aos clubes.</p>` : `<button class="botao peq" data-acao="oferecer" style="margin-top:8px">Pedir ao agente para me oferecer</button>`}</section>` : "";
   const resumoContrato = `<details class="resumo-contrato"${m.propostas.length ? "" : " open"}><summary><span><b>${esc(meu.nome)}</b> · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</span><span class="dinheiro-nw">${dinheiro(c.salario)}/mês</span></summary>${contrato}</details>`;
@@ -1570,7 +1573,7 @@ function perfilHtml(s: Save): string {
       <button class="fechar" data-acao="fechar-perfil" aria-label="Fechar">✕</button>
       <div class="perfil-foto">${foto(s)}</div>
       <div class="perfil-nome"><small>${esc(NOME_POS[j.posicao])} · ${j.idade} anos · ${esc(NOME_PAIS[j.nacionalidade] ?? j.nacionalidade)}</small><h1>${esc(j.apelido)}</h1><span>${esc(j.nome)}</span>
-        <div class="perfil-clube">${escudo(c.clubeId)}<b>${esc(info.nome)}</b><small>${esc(infoLiga(c.ligaId).curto)}</small></div></div>
+        <div class="perfil-clube">${escudo(c.clubeId)}<b>${linkClube(c.clubeId, info.nome)}</b><small>${esc(infoLiga(c.ligaId).curto)}</small></div></div>
       <div class="perfil-ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span><small>Pot. ${j.faixaPot[0]}–${j.faixaPot[1]}</small></div>
     </div>
     <div class="perfil-corpo">
@@ -1823,7 +1826,7 @@ function telaDespedida(s: Save): string {
       <p class="sub">${esc(d.nivel.texto)}</p>
       <p>${esc(d.texto)}</p>
       <div class="tiles">${tile(String(t.jogos), "Jogos")}${tile(String(t.gols), "Gols")}${tile(String(t.assist), "Assistências")}${tile(String(t.titulos.length), "Títulos")}${tile(String(t.premios.length), "Prêmios")}${tile(sl?.jogos ? `${sl.jogos}/${sl.gols}` : "–", "Seleção (j/g)")}</div>
-      ${d.casa?.camisa ? `<p class="rotulo">Camisa aposentada</p><div class="linha-clube">${escudo(d.casa.clubeId)}<div><b>${esc(nomeDe(d.casa.clubeId))}</b><small>Ninguém mais veste a ${esc(d.casa.camisa)}</small></div><span>${d.casa.jogos} j · ${d.casa.gols} g</span></div>` : ""}
+      ${d.casa?.camisa ? `<p class="rotulo">Camisa aposentada</p><div class="linha-clube">${escudo(d.casa.clubeId)}<div><b>${linkClube(d.casa.clubeId)}</b><small>Ninguém mais veste a ${esc(d.casa.camisa)}</small></div><span>${d.casa.jogos} j · ${d.casa.gols} g</span></div>` : ""}
       ${d.recordes.length ? `<p class="rotulo">Recordes que ficam</p>${d.recordes.map((r) => `<div class="premio-l largo ouro"><span class="rotulo">★</span><span>${esc(r)}</span><b></b></div>`).join("")}` : ""}
       <p class="rotulo">Clubes</p>
       <div class="lista-clubes">${clubes.filter((k, i) => !k.clubeId || clubes.findIndex((x) => x.clubeId === k.clubeId) === i).map((k) => { const n = k.clubeId ? numerosNoClube(s, k.clubeId) : k; return `<div class="linha-clube">${k.clubeId ? escudo(k.clubeId) : ""}<div><b>${esc(k.clube)}</b><small>${k.de === k.ate ? k.de : `${k.de}–${k.ate}`}</small></div><span>${n.jogos} j · ${n.gols} g</span></div>`; }).join("")}</div>
