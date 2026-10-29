@@ -39,7 +39,7 @@ import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./p
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
-import { semanaDoClube, gatilhoClube, fimDeTemporadaClube, figurinhaDaSelecao } from "./clube-vivo.js";
+import { semanaDoClube, gatilhoClube, fimDeTemporadaClube, figurinhaDaSelecao, figurinhaDeGolaco } from "./clube-vivo.js";
 import type { Vestiario } from "./vestiario.js";
 import type { Rival } from "./rival.js";
 import type { EstadoTorcida } from "./torcida.js";
@@ -1170,6 +1170,8 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
       golacos: decisoes.filter((d) => d.nivel === 0 && d.meu === "gol" && d.min <= foraMin).map((d) => `${d.situacao}/${d.opcao}`),
     }, (id) => (s.casa.reliquias ?? []).some((r) => r.id === id));
     receberReliquias(s, ganhos, eventos);
+    // golaços (relíquias de bola) viram figurinha de golaço no álbum
+    for (const g of ganhos) if (g.reliquia.id.startsWith("bola-")) figurinhaDeGolaco(pacote, s, g.reliquia.id, `${g.reliquia.nome ?? "Golaço"} · ${meusGols} × ${golsAdv} contra o ${clubeCasa(pacote, adversario).apelido}`);
   }
   c.formaUlt = [...c.formaUlt.slice(-4), nota];
   const pesoJogo = partida.clima?.peso ?? 1;

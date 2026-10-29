@@ -12,7 +12,7 @@ import { novoVestiario, semanaVestiario, conversaTecnicoNovo, talvezGeladeira, t
 import { escolherRival, novoRival, registrarDuelo, semanaRival, anoDoRival } from "./rival.js";
 import { torcidaDe, semanaTorcida, recepcaoAeroporto } from "./torcida.js";
 import { perfilCidade, semanaCidade } from "./cidades.js";
-import { figurinhaDaTemporada, figurinhaEspecial, type Figurinha } from "./figurinhas.js";
+import { figurinhaDaTemporada, figurinhaEspecial, figurinhaDeMomento, type Figurinha } from "./figurinhas.js";
 import { propostaPorIndicacao, janelaAberta } from "./transferencias.js";
 import { temFuncao } from "./vida-social.js";
 import { noticia, registrarMarco, agendaDe, elencoAtual, ovr, semanaAbsJogo, ANO_INICIAL, parcasDe, jogoDaSemana, jogoCopaDaSemana, ehClassico, type Save, type ResumoTemporada } from "./jogo.js";
@@ -195,6 +195,21 @@ function baseFigurinha(pacote: PacoteDados, s: Save): Omit<Figurinha, "id" | "ti
   return { ano: ANO_INICIAL + c.temporada, clubeId: c.clubeId, clube: info?.nome ?? "", cores: [info?.cores[0] ?? "#FFFFFF", info?.cores[1] ?? "#111111"], numero: String(j.numero ?? 10), posicao: j.posicao,
     ovr: Math.round(ovr(j)), idade: j.idade, jogos: st.jogos, gols: st.gols, assist: st.assist, ap: { ...((j.aparencia as Record<string, unknown>) ?? {}) } };
 }
+/** Patrocínio fechado: figurinha do contrato com a marca. */
+export function figurinhaDePatrocinio(pacote: PacoteDados, s: Save, marca: string, chave: string) {
+  figurinhaDeMomento(albumDe(s.carreira), "patrocinio", baseFigurinha(pacote, s), chave, `Contrato com a ${marca}`, "prata");
+}
+/** Golaço (relíquia de gol de placa): figurinha do lance. */
+export function figurinhaDeGolaco(pacote: PacoteDados, s: Save, chave: string, legenda: string) {
+  figurinhaDeMomento(albumDe(s.carreira), "golaco", baseFigurinha(pacote, s), chave, legenda, "brilhante");
+}
+/** Noivado ou casamento: a pessoa da vida do jogador entra no álbum. */
+export function figurinhaDeFamilia(pacote: PacoteDados, s: Save) {
+  const par = s.carreira.namoro?.par;
+  if (!par || (par.etapa !== "noivos" && par.etapa !== "casados")) return;
+  const legenda = par.etapa === "casados" ? `Casou com ${par.nome.split(" ")[0]}` : `Noivou com ${par.nome.split(" ")[0]}`;
+  figurinhaDeMomento(albumDe(s.carreira), "familia", baseFigurinha(pacote, s), `${par.etapa}-${par.nome}`, legenda, par.etapa === "casados" ? "brilhante" : "prata");
+}
 /** Primeira convocação: figurinha da seleção. */
 export function figurinhaDaSelecao(pacote: PacoteDados, s: Save, nomeSelecao: string, cores: [string, string]) {
   const b = baseFigurinha(pacote, s);
@@ -204,6 +219,7 @@ export function figurinhaDaSelecao(pacote: PacoteDados, s: Save, nomeSelecao: st
 /** Fim de temporada: figurinha do ano, títulos (bônus de contrato, aeroporto, figurinha de campeão) e a briga com o rival. */
 export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev: string[]) {
   const c = s.carreira, j = s.jogador, ano = r.ano, info = infoClube(pacote, c.clubeId);
+  figurinhaDeFamilia(pacote, s);
   // títulos do clube no ano (liga e copas de clubes)
   const titulos: string[] = [];
   if (r.titulo && !c.formacao && !c.fase) titulos.push(r.liga ?? "a liga");

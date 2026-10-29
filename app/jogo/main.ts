@@ -70,7 +70,7 @@ import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
 import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visual/torneios";
 import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota, catEvento } from "./visuais";
-import { vestiarioDe, albumDe } from "../../src/clube-vivo";
+import { vestiarioDe, albumDe, figurinhaDePatrocinio } from "../../src/clube-vivo";
 import { perfilCidade, NOME_CLIMA, inverno } from "../../src/cidades";
 import { temOlheiro, rotuloPotencial, disputaNaPosicao } from "../../src/base-olheiro";
 import { VAGAS_433 } from "../../src/partida";
@@ -1126,13 +1126,25 @@ function figurinhaSvg(f: Figurinha): string {
     <rect x="0" y="186" width="160" height="44" fill="#0E1A15" opacity=".92"/><text x="80" y="202" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${esc(f.clube.toUpperCase().slice(0, 22))}</text>
     <text x="80" y="216" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#cfd8d3">${esc(f.posicao)} · ${f.jogos} J · ${f.gols} G · ${f.assist} A</text><text x="80" y="226" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#E3B341">${esc(f.legenda.slice(0, 34))}</text></svg>`;
 }
+/** Página do álbum aberta (índice na lista de temporadas); undefined = a última. */
+let albumPag: number | undefined;
+const ORDEM_FIG = ["temporada", "titulo", "capitao", "selecao", "estreia", "golaco", "patrocinio", "familia", "premio"];
 function albumHtml(s: Save): string {
   const album = albumDe(s.carreira);
   if (!album.length) return `<p class="rotulo">Álbum de figurinhas</p><p class="sub">A primeira figurinha sai no fim da primeira temporada como profissional. Momentos grandes (capitão, seleção, título) ganham figurinha especial.</p>`;
-  const ord = [...album].sort((a, b) => a.ano - b.ano || a.tipo.localeCompare(b.tipo));
-  const cont = (r: string) => album.filter((f) => f.raridade === r).length;
-  return `<p class="rotulo">Álbum de figurinhas · ${album.length}</p><p class="sub">${(["lenda", "brilhante", "prata", "comum"] as const).filter((r) => cont(r)).map((r) => `${cont(r)} ${NOME_RARIDADE[r].toLowerCase()}`).join(" · ")}</p>
-    <div class="album">${ord.map((f) => `<div class="fig ${f.raridade}"><span class="fig-tag">${esc(NOME_TIPO_FIG[f.tipo])}</span>${figurinhaSvg(f)}</div>`).join("")}</div>`;
+  const anos = [...new Set(album.map((f) => f.ano))].sort((a, b) => a - b);
+  const i = albumPag === undefined || albumPag < 0 || albumPag >= anos.length ? anos.length - 1 : albumPag;
+  const ano = anos[i], pagina = album.filter((f) => f.ano === ano).sort((a, b) => ORDEM_FIG.indexOf(a.tipo) - ORDEM_FIG.indexOf(b.tipo));
+  const clubes = [...new Set(pagina.map((f) => f.clube))].join(" · ");
+  const temTemp = pagina.some((f) => f.tipo === "temporada");
+  return `<p class="rotulo">Álbum de figurinhas · ${album.length}</p>
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:8px 0">
+      <button class="botao sec peq" data-album="${i - 1}" ${i === 0 ? "disabled" : ""}>‹ Anterior</button>
+      <div style="text-align:center"><b>Temporada ${ano}</b><div class="sub">${esc(clubes)}</div></div>
+      <button class="botao sec peq" data-album="${i + 1}" ${i === anos.length - 1 ? "disabled" : ""}>Próxima ›</button>
+    </div>
+    <div class="album">${pagina.map((f) => `<div class="fig ${f.raridade}"><span class="fig-tag">${esc(NOME_TIPO_FIG[f.tipo])}</span>${figurinhaSvg(f)}<p class="sub" style="margin:6px 0 0">${esc(f.legenda)}</p></div>`).join("")}${temTemp ? "" : `<div class="fig"><span class="fig-tag">Vaga</span><p class="sub">Figurinha da temporada ainda não colada.</p></div>`}</div>
+    <p class="sub">Uma página por temporada · página ${i + 1} de ${anos.length}</p>`;
 }
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
@@ -2235,7 +2247,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2298,7 +2310,7 @@ document.addEventListener("click", (ev) => {
   else if (d.decidir) decidir(+d.decidir, d.op!);
   else if (d.pen !== undefined) escolherSlot(+d.pen);
   else if (d.patro && save) {
-    if (d.patro === "recusar") recusarPatrocinio(save); else cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato);
+    if (d.patro === "recusar") recusarPatrocinio(save); else { cartazNovo = aceitarPatrocinio(save, d.patro as TipoContrato); if (cartazNovo) figurinhaDePatrocinio(pacote, save, MARCA[cartazNovo.marca]?.nome ?? cartazNovo.marca, `pat-${cartazNovo.marca}-${cartazNovo.desde}`); }
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
   else if (d.vis && save) {
@@ -2378,6 +2390,7 @@ document.addEventListener("click", (ev) => {
   else if (d.tpos !== undefined && save) { msgPos = { texto: treinarPosicao(save, (d.tpos || undefined) as never), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.mudapos && save) { const r = mudarPosicao(save, d.mudapos as never); msgPos = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.sug && save) { msgPos = { texto: responderSugestao(save, d.sug === "sim"), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.album !== undefined && save) { albumPag = +d.album; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.empPedido && save) { const r = pedirEmprestimo(save, d.empPedido === "sim"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.sair && save) { const r = pedirParaSair(save, true, d.sair as Destino); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

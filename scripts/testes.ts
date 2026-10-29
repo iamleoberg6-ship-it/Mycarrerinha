@@ -30,6 +30,7 @@ import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSeman
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
 import { pedirEmprestimo } from "../src/transferencias.js";
+import { figurinhaDeMomento, type Figurinha } from "../src/figurinhas.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
 import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
 import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, type Par } from "../src/namoro.js";
@@ -1540,6 +1541,16 @@ teste("Pedir empréstimo: o jogador só pede; propostas de clubes chegam na jane
   assert.ok(viu || mercadoDe(s.carreira).emprestimo, "um clube interessado manda proposta na janela");
   pedirEmprestimo(s, false); // tirar o pedido (se ainda estiver ativo, já foi limpo ao aceitar)
   assert.ok(!mercadoDe(s.carreira).pedidoEmprestimo);
+});
+
+teste("Álbum: momentos (patrocínio, família, golaço) entram uma vez por chave e na página da temporada", () => {
+  const album: Figurinha[] = [];
+  const base = { ano: 2030, clubeId: "BR-X", clube: "Clube X", cores: ["#000000", "#FFFFFF"] as [string, string], numero: "10", posicao: "ATA", ovr: 70, idade: 22, jogos: 30, gols: 10, assist: 3, ap: {} };
+  assert.ok(figurinhaDeMomento(album, "patrocinio", base, "pat-A-2030", "Contrato com a Marca A"));
+  assert.equal(figurinhaDeMomento(album, "patrocinio", base, "pat-A-2030", "repetida"), undefined);
+  assert.ok(figurinhaDeMomento(album, "golaco", base, "bola-falta", "Gol de falta", "brilhante"));
+  assert.equal(album.filter((f) => f.ano === 2030).length, 2);
+  assert.equal(album.find((f) => f.tipo === "golaco")?.raridade, "brilhante");
 });
 
 console.log(`\n${ok} testes passaram`);

@@ -3,8 +3,8 @@
 // A raridade sai do que o jogador fez: comum, prata, brilhante e lenda.
 export type Raridade = "comum" | "prata" | "brilhante" | "lenda";
 export const NOME_RARIDADE: Record<Raridade, string> = { comum: "Comum", prata: "Prata", brilhante: "Brilhante", lenda: "Lenda" };
-export type TipoFigurinha = "temporada" | "selecao" | "capitao" | "titulo" | "premio" | "estreia";
-export const NOME_TIPO_FIG: Record<TipoFigurinha, string> = { temporada: "Temporada", selecao: "Seleção", capitao: "Capitão", titulo: "Campeão", premio: "Prêmio", estreia: "Estreia" };
+export type TipoFigurinha = "temporada" | "selecao" | "capitao" | "titulo" | "premio" | "estreia" | "patrocinio" | "familia" | "golaco";
+export const NOME_TIPO_FIG: Record<TipoFigurinha, string> = { temporada: "Temporada", selecao: "Seleção", capitao: "Capitão", titulo: "Campeão", premio: "Prêmio", estreia: "Estreia", patrocinio: "Patrocínio", familia: "Família", golaco: "Golaço" };
 export interface Figurinha {
   id: string; ano: number; tipo: TipoFigurinha; raridade: Raridade;
   clubeId: string; clube: string; cores: [string, string]; numero: string; posicao: string;
@@ -30,6 +30,14 @@ export function figurinhaDaTemporada(album: Figurinha[], d: DadosTemporadaFig): 
   const r = raridadeDaTemporada(d);
   const destaque = d.premios.find((p) => PREMIO_LENDA.test(p)) ?? (d.titulo ? "Campeão da liga" : d.gols >= 12 ? `${d.gols} gols na temporada` : d.capitao ? "Capitão do time" : `${d.jogos} jogos`);
   const f: Figurinha = { id, ano: d.ano, tipo: "temporada", raridade: r, clubeId: d.clubeId, clube: d.clube, cores: d.cores, numero: d.numero, posicao: d.posicao, ovr: Math.round(d.ovr), idade: d.idade, jogos: d.jogos, gols: d.gols, assist: d.assist, legenda: destaque, ap: d.ap };
+  album.push(f);
+  return f;
+}
+/** Momento da carreira (patrocínio, família, golaço): uma figurinha por chave, por isso pode haver várias no mesmo ano. */
+export function figurinhaDeMomento(album: Figurinha[], tipo: Exclude<TipoFigurinha, "temporada">, base: Omit<Figurinha, "id" | "tipo" | "raridade" | "legenda">, chave: string, legenda: string, raridade: Raridade = "prata"): Figurinha | undefined {
+  const id = `${tipo}-${chave}`;
+  if (album.some((f) => f.id === id)) return undefined;
+  const f: Figurinha = { ...base, id, tipo, raridade, legenda };
   album.push(f);
   return f;
 }
