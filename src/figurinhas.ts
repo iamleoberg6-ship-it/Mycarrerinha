@@ -28,7 +28,8 @@ export function raridadeDaTemporada(d: DadosTemporadaFig): Raridade {
 /** A figurinha do ano (não repete o mesmo ano e clube). */
 export function figurinhaDaTemporada(album: Figurinha[], d: DadosTemporadaFig): Figurinha | undefined {
   const id = `t-${d.ano}-${d.clubeId}`;
-  if (album.some((f) => f.id === id) || d.jogos === 0) return undefined;
+  // toda temporada tem o escudo do clube em que o jogador esteve, mesmo sem jogo (base, várzea, colégio)
+  if (album.some((f) => f.id === id)) return undefined;
   const r = raridadeDaTemporada(d);
   const destaque = d.premios.find((p) => PREMIO_LENDA.test(p)) ?? (d.titulo ? "Campeão da liga" : d.gols >= 12 ? `${d.gols} gols na temporada` : d.capitao ? "Capitão do time" : `${d.jogos} jogos`);
   const f: Figurinha = { id, ano: d.ano, tipo: "temporada", raridade: r, clubeId: d.clubeId, clube: d.clube, cores: d.cores, numero: d.numero, posicao: d.posicao, ovr: Math.round(d.ovr), idade: d.idade, jogos: d.jogos, gols: d.gols, assist: d.assist, legenda: destaque, ap: d.ap };

@@ -243,10 +243,12 @@ export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTempo
     figurinhaEspecial(albumDe(c), "titulo", baseFigurinha(pacote, s), `Campeão: ${titulos.join(" e ")}`);
   }
   // figurinhas do ano: uma por clube em que jogou na temporada, com os números daquele clube
-  if (!c.fase && !c.formacao && info) {
+  // toda temporada tem ao menos um escudo: na base, no amador e na faculdade, o clube da fase (com os jogos da base)
+  if (info) {
     const conv = Object.entries(c.selecao?.conv ?? {}).some(([k, v]) => v && k.startsWith(`${c.temporada}-`));
     const porClube = Object.entries(c.clubesTemp ?? {}).filter(([, t]) => t.jogos > 0);
-    const lista: [string, { jogos: number; gols: number; assist: number }][] = porClube.length ? porClube : [[c.clubeId, { jogos: r.jogos, gols: r.gols, assist: r.assist }]];
+    const fase = !!(c.fase || c.formacao);
+    const lista: [string, { jogos: number; gols: number; assist: number }][] = porClube.length ? porClube : [[c.clubeId, fase ? { jogos: c.stats.base, gols: c.stats.baseGols, assist: 0 } : { jogos: r.jogos, gols: r.gols, assist: r.assist }]];
     // a seleção do ano: uma figurinha quando foi convocado no ano (com as cores e o nome da seleção)
     if (conv) {
       const sel = infoClube(pacote, idSelecao(j.nacionalidade));
@@ -258,6 +260,7 @@ export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTempo
       const f = figurinhaDaTemporada(albumDe(c), { ...baseDoClube(pacote, s, id), ano, ovr: r.ovr, idade: r.idade, jogos: t.jogos, gols: t.gols, assist: t.assist, titulo: atual && r.titulo, premios: atual ? r.premios ?? [] : [], selecao: atual && conv, capitao: atual && c.vestiario?.papel === "capitao" });
       if (f) ev.push(`Figurinha ${ano} no álbum: ${ic.nome} (${f.raridade}).`);
     }
+    if (albumDe(c).some((f) => f.ano === ano)) ev.push(`Pacote de figurinhas de ${ano}: abra no álbum.`);
   }
   // rival: quem fez mais gols no ano
   const rv = c.rival;

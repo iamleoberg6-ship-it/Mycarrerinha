@@ -1240,11 +1240,25 @@ function paginasDoAlbum(s: Save): PaginaAlbum[] {
   const anos = [...new Set(album.map((f) => f.ano))].filter((a) => abertos.includes(a)).sort((a, b) => a - b);
   return anos.flatMap((ano) => {
     const pag = album.filter((f) => f.ano === ano);
-    const onde = pag.filter((f) => f.tipo === "temporada" || f.tipo === "selecao").sort((x, y) => (x.tipo === "selecao" ? 1 : 0) - (y.tipo === "selecao" ? 1 : 0));
+    // escudos (clubes e seleção) primeiro: cada página tem pelo menos um
+    const escudos = pag.filter((f) => f.tipo === "temporada" || f.tipo === "selecao").sort((x, y) => (x.tipo === "selecao" ? 1 : 0) - (y.tipo === "selecao" ? 1 : 0));
     const momentos = pag.filter((f) => f.tipo !== "temporada" && f.tipo !== "selecao").sort((x, y) => ORDEM_FIG.indexOf(x.tipo) - ORDEM_FIG.indexOf(y.tipo));
-    const todas = [...onde, ...momentos], partes = Math.ceil(todas.length / 6), base = Math.floor(todas.length / partes), extra = todas.length % partes;
-    let pos = 0;
-    return Array.from({ length: partes }, (_, k) => { const n = base + (k < extra ? 1 : 0), fs = todas.slice(pos, pos + n); pos += n; return { ano, parte: k + 1, partes, fs }; });
+    const total = escudos.length + momentos.length;
+    if (!total) return [];
+    // até 6 por página, mas nunca mais páginas do que escudos (cada uma precisa de um)
+    const partes = Math.max(1, Math.min(Math.ceil(total / 6), escudos.length || 1));
+    const paginas: PaginaAlbum[] = [];
+    let e = 0, m = 0;
+    for (let k = 0; k < partes; k++) {
+      const alvo = Math.round(((k + 1) * total) / partes) - Math.round((k * total) / partes);
+      const nE = Math.max(1, Math.round(((k + 1) * escudos.length) / partes) - Math.round((k * escudos.length) / partes));
+      const fim = k === partes - 1;
+      const nM = fim ? momentos.length - m : Math.max(0, alvo - nE);
+      const fs = [...escudos.slice(e, e + nE), ...momentos.slice(m, m + nM)];
+      e += nE; m += nM;
+      paginas.push({ ano, parte: k + 1, partes, fs });
+    }
+    return paginas;
   });
 }
 /** Sentido da última virada de página (para a animação): 1 = avança, -1 = volta. */
