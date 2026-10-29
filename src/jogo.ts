@@ -102,6 +102,8 @@ export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
   suspensao?: number;
+  /** temporadas (ano) cujo pacote de figurinhas já foi aberto e colado no álbum */
+  pacotesAbertos?: number[];
   /** temporada cuja janela do meio do ano (dos outros clubes) já virou notícia */
   meioNoticiado?: number;
   /** copas continentais da temporada, suspensão na copa, estatísticas na copa, tabela final da temporada passada (vagas)

@@ -1222,38 +1222,62 @@ function albumCapaHtml(s: Save): string {
   const album = albumDe(s.carreira);
   if (!album.length) return `<p class="rotulo">Álbum de figurinhas</p><p class="sub">A primeira figurinha sai no fim da primeira temporada como profissional. Momentos grandes (capitão, seleção, título) ganham figurinha especial.</p>`;
   const anos = [...new Set(album.map((f) => f.ano))].sort((a, b) => a - b), ultimas = album.filter((f) => f.ano === anos[anos.length - 1]).slice(0, 3);
+  const pend = pacotesPendentes(s);
+  const aviso = pend.length ? `<button class="botao peq" data-abrir-pacote="${pend[0]}" style="margin-top:8px">Abrir o pacote de ${pend[0]} (${album.filter((f) => f.ano === pend[0]).length} figurinhas)</button>` : "";
   return `<p class="rotulo">Álbum de figurinhas</p>
     <button class="album-capa" data-abrir-album="1"><span class="album-capa-mini">${ultimas.map((f) => `<span class="fig ${f.raridade}">${figurinhaSvg(f)}</span>`).join("")}</span>
-      <span><b>Abrir álbum</b><small>${album.length} figurinhas · ${anos.length} ${anos.length === 1 ? "temporada" : "temporadas"}</small></span></button>`;
+      <span><b>Abrir álbum</b><small>${paginasDoAlbum(s).length} ${paginasDoAlbum(s).length === 1 ? "página" : "páginas"} coladas · ${album.length} figurinhas</small></span></button>${aviso}`;
 }
-/** Uma página do álbum: as figurinhas dos clubes e da seleção por onde jogou na temporada, depois os momentos. */
+/** Temporadas cujo pacote ainda não foi aberto (as figurinhas chegaram no fim do ano e estão fechadas). */
+function pacotesPendentes(s: Save): number[] {
+  const abertos = s.carreira.pacotesAbertos ?? [];
+  return [...new Set(albumDe(s.carreira).map((f) => f.ano))].filter((a) => !abertos.includes(a)).sort((a, b) => a - b);
+}
+/** Uma página do álbum: até 6 figurinhas, só de temporadas já coladas. Mais de 6 no ano geram outra página da mesma temporada. */
+type PaginaAlbum = { ano: number; parte: number; partes: number; fs: Figurinha[] };
+function paginasDoAlbum(s: Save): PaginaAlbum[] {
+  const album = albumDe(s.carreira), abertos = s.carreira.pacotesAbertos ?? [];
+  const anos = [...new Set(album.map((f) => f.ano))].filter((a) => abertos.includes(a)).sort((a, b) => a - b);
+  return anos.flatMap((ano) => {
+    const pag = album.filter((f) => f.ano === ano);
+    const onde = pag.filter((f) => f.tipo === "temporada" || f.tipo === "selecao").sort((x, y) => (x.tipo === "selecao" ? 1 : 0) - (y.tipo === "selecao" ? 1 : 0));
+    const momentos = pag.filter((f) => f.tipo !== "temporada" && f.tipo !== "selecao").sort((x, y) => ORDEM_FIG.indexOf(x.tipo) - ORDEM_FIG.indexOf(y.tipo));
+    const todas = [...onde, ...momentos], partes = Math.ceil(todas.length / 6), base = Math.floor(todas.length / partes), extra = todas.length % partes;
+    let pos = 0;
+    return Array.from({ length: partes }, (_, k) => { const n = base + (k < extra ? 1 : 0), fs = todas.slice(pos, pos + n); pos += n; return { ano, parte: k + 1, partes, fs }; });
+  });
+}
+/** Página do álbum: as figurinhas coladas, sem espaço vazio. */
 function albumPaginaHtml(s: Save): string {
-  const album = albumDe(s.carreira);
-  const anos = [...new Set(album.map((f) => f.ano))].sort((a, b) => a - b);
-  if (!anos.length) return `<p class="sub">Ainda sem figurinhas.</p>`;
-  const i = albumPag === undefined || albumPag < 0 || albumPag >= anos.length ? anos.length - 1 : albumPag;
-  const ano = anos[i], pagina = album.filter((f) => f.ano === ano);
-  const onde = pagina.filter((f) => f.tipo === "temporada" || f.tipo === "selecao").sort((a, b) => (a.tipo === "selecao" ? 1 : 0) - (b.tipo === "selecao" ? 1 : 0));
-  const momentos = pagina.filter((f) => f.tipo !== "temporada" && f.tipo !== "selecao").sort((a, b) => ORDEM_FIG.indexOf(a.tipo) - ORDEM_FIG.indexOf(b.tipo));
-  const grade = (fs: Figurinha[], minimo: number, rotulo: string) => {
-    const n = Math.max(minimo, Math.ceil(fs.length / 3) * 3);
-    return Array.from({ length: n }, (_, k) => fs[k] ? `<div class="fig ${fs[k].raridade}" title="${esc(NOME_TIPO_FIG[fs[k].tipo])}: ${esc(fs[k].legenda)}">${figurinhaSvg(fs[k])}</div>` : `<div class="album-slot"><span>${rotulo}</span></div>`).join("");
-  };
-  const clubes = [...new Set(onde.filter((f) => f.tipo === "temporada").map((f) => f.clube))];
+  const paginas = paginasDoAlbum(s), pend = pacotesPendentes(s);
+  if (!paginas.length) return `<p class="sub">${pend.length ? `Você ainda não colou nenhuma página. Abra o pacote de ${pend[0]} no fim da temporada.` : "Ainda sem figurinhas."}</p>
+    ${pend.length ? `<button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""}`;
+  const i = albumPag === undefined || albumPag < 0 || albumPag >= paginas.length ? paginas.length - 1 : albumPag;
+  const p = paginas[i];
+  const clubes = [...new Set(p.fs.filter((f) => f.tipo === "temporada").map((f) => f.clube))];
+  const colunas = p.fs.length === 4 ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
+  const grade = p.fs.map((f) => `<div class="fig ${f.raridade}" title="${esc(NOME_TIPO_FIG[f.tipo])}: ${esc(f.legenda)}">${figurinhaSvg(f)}</div>`).join("");
   return `<div class="album-fecha"><button class="botao sec peq" data-fechar-album="1">Fechar</button></div>
     <div class="album-cap">
       <div class="album-topo">
         <button class="album-seta" data-album="${i - 1}" ${i === 0 ? "disabled" : ""} aria-label="Página anterior">‹</button>
-        <div><div class="album-ano">${ano}</div><div class="album-sub">${esc(clubes.join(" · ") || "Sem clube nesta temporada")}</div></div>
-        <button class="album-seta" data-album="${i + 1}" ${i === anos.length - 1 ? "disabled" : ""} aria-label="Próxima página">›</button>
+        <div><div class="album-ano">${p.ano}</div><div class="album-sub">${esc(clubes.join(" · ") || "Seleção e momentos")}</div></div>
+        <button class="album-seta" data-album="${i + 1}" ${i === paginas.length - 1 ? "disabled" : ""} aria-label="Próxima página">›</button>
       </div>
-      <p class="album-meta">Página ${i + 1} de ${anos.length} · ${pagina.length} ${pagina.length === 1 ? "colada" : "coladas"}</p>
-      <div class="album-secao">Onde você jogou</div>
-      <div class="album-grid">${grade(onde, 3, "Clube")}</div>
-      <div class="album-secao">Momentos</div>
-      <div class="album-grid">${grade(momentos, 3, "Momento")}</div>
+      <p class="album-meta">Página ${i + 1} de ${paginas.length} · ${p.fs.length} coladas${p.partes > 1 ? ` · ${p.parte}ª página da temporada` : ""}</p>
+      <div class="album-grid" style="grid-template-columns:${colunas}">${grade}</div>
+      ${pend.length ? `<p class="sub" style="margin-top:12px">Tem pacote de ${pend[0]} esperando para colar.</p><button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""}
     </div>`;
 }
+/** Pacote da temporada: fechado, rasgando ou revelando as figurinhas uma a uma. */
+let pacoteAberto: { ano: number; estado: "fechado" | "rasgando" | "revelado" } | undefined;
+function pacoteHtml(s: Save, ano: number, estado: "fechado" | "rasgando" | "revelado"): string {
+  const fs = albumDe(s.carreira).filter((f) => f.ano === ano);
+  if (estado !== "revelado") return `<div class="pacote-cena"><button class="pacote${estado === "rasgando" ? " rasgando" : ""}" data-revelar-pacote="${ano}" ${estado === "rasgando" ? "disabled" : ""}><span>PACOTE</span><b>${ano}</b><small>${fs.length} figurinhas</small></button><p class="sub">${estado === "fechado" ? "Toque para rasgar o pacote." : ""}</p></div>`;
+  return `<p class="rotulo">Temporada ${ano}</p><div class="pacote-revela">${fs.map((f, k) => `<div class="fig ${f.raridade}" style="--i:${k}">${figurinhaSvg(f)}</div>`).join("")}</div>
+    <div class="ferr-botoes" style="margin-top:14px"><button class="botao peq" data-colar-pacote="${ano}">Colar no álbum</button></div>`;
+}
+function desenharPacote() { const t = $("telaPacote"); if (t && save && pacoteAberto) t.innerHTML = pacoteHtml(save, pacoteAberto.ano, pacoteAberto.estado); }
 /** Redesenha a janela do álbum (página nova ou álbum recém-aberto). */
 function desenharAlbum() { const t = $("telaAlbum"); if (t && save) t.innerHTML = albumPaginaHtml(save); }
 function abaJogador(s: Save): string {
@@ -2365,7 +2389,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-abrir-album],[data-fechar-album],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-emp-pedido],[data-album],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2513,6 +2537,9 @@ document.addEventListener("click", (ev) => {
   else if (d.album !== undefined && save) { albumPag = +d.album; desenharAlbum(); }
   else if (d.abrirAlbum !== undefined && save) { albumPag = undefined; desenharAlbum(); ($("dlgAlbum") as HTMLDialogElement).showModal(); }
   else if (d.fecharAlbum !== undefined) { ($("dlgAlbum") as HTMLDialogElement).close(); }
+  else if (d.abrirPacote !== undefined && save) { pacoteAberto = { ano: +d.abrirPacote, estado: "fechado" }; desenharPacote(); ($("dlgPacote") as HTMLDialogElement).showModal(); }
+  else if (d.revelarPacote !== undefined && pacoteAberto && pacoteAberto.estado === "fechado") { pacoteAberto.estado = "rasgando"; desenharPacote(); setTimeout(() => { if (pacoteAberto) { pacoteAberto.estado = "revelado"; desenharPacote(); } }, 750); }
+  else if (d.colarPacote !== undefined && save) { const ano = +d.colarPacote; save.carreira.pacotesAbertos = [...(save.carreira.pacotesAbertos ?? []), ano]; salvar(); pacoteAberto = undefined; ($("dlgPacote") as HTMLDialogElement).close(); albumPag = undefined; desenharAlbum(); ($("dlgAlbum") as HTMLDialogElement).showModal(); render(); }
   else if (d.empPedido && save) { const r = pedirEmprestimo(save, d.empPedido === "sim"); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.sair && save) { const r = pedirParaSair(save, true, d.sair as Destino); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); render(); }
   else if (d.evento && save) { msgEvento = resolverEvento(pacote, save, d.evento); salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

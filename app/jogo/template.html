@@ -253,6 +253,15 @@ tr.meu td { background: rgba(227, 179, 65, .14); font-weight: 700; color: var(--
 .sel-j { flex: 1; max-width: 25%; display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 11px; line-height: 1.2; color: #fff; }
 .sel-j svg { width: 20px; height: 22px; margin-bottom: 2px; } .sel-j .nome-hist, .sel-j b { font-size: 11px; color: #fff; } .sel-j small { color: rgba(255,255,255,.75); font-size: 10px; }
 .sel-j.eu b { color: var(--ouro); }
+.pacote-cena { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 0; }
+.pacote { width: 190px; height: 250px; border: 0; border-radius: 16px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #0B1410; font-family: 'Big Shoulders Display', sans-serif; background: linear-gradient(160deg, #2a1d05, #E3B341 35%, #fff1b8 50%, #E3B341 65%, #2a1d05); box-shadow: 0 10px 24px #0008; }
+.pacote span { font-size: 14px; letter-spacing: .25em; font-weight: 900; } .pacote b { font-size: 40px; font-weight: 900; line-height: 1; } .pacote small { font-size: 13px; font-weight: 700; }
+.pacote.rasgando { animation: rasgar .75s ease-in forwards; }
+@keyframes rasgar { 0% { transform: none; } 25% { transform: rotate(-4deg) scale(1.04); } 60% { transform: rotate(3deg) translateY(-10px); } 100% { transform: translateY(-120px) scale(.6); opacity: 0; } }
+.pacote-revela { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pacote-revela .fig { animation: surgir .6s both; animation-delay: calc(var(--i) * .18s); }
+@keyframes surgir { from { transform: translateY(40px) rotateY(90deg) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pacote.rasgando, .pacote-revela .fig { animation: none; } }
 .album-capa { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border-radius: 14px; border: 1px solid var(--linha); background: #F5EEDC; color: #1d2a22; text-align: left; cursor: pointer; font: inherit; }
 .album-capa-mini { display: flex; gap: 6px; flex: none; } .album-capa-mini .fig { width: 52px; } .album-capa small { display: block; font-size: 12px; color: #6b5a2c; } .album-capa b { font-size: 15px; }
 .dlg-album { max-width: 520px; width: 96vw; border: none; border-radius: 16px; padding: 0; background: transparent; }
@@ -632,6 +641,7 @@ dialog.jogo-grande .placar.ident { background-image: radial-gradient(120% 140% a
 <dialog id="dlgPerfil" aria-label="Perfil do jogador"><div class="tela perfil" id="telaPerfil"></div></dialog>
 <dialog id="dlgHist" aria-label="Histórico do jogador"><div class="tela" id="telaHist" style="position:relative;padding:18px 16px"></div></dialog>
 <dialog id="dlgAlbum" aria-label="Álbum de figurinhas" class="dlg-album"><div id="telaAlbum" style="position:relative;padding:14px 12px"></div></dialog>
+<dialog id="dlgPacote" aria-label="Pacote de figurinhas" class="dlg-album"><div id="telaPacote" style="position:relative;padding:18px 14px"></div></dialog>
 <dialog id="dlgClube" aria-label="Perfil do clube"><div class="tela" id="telaClube" style="position:relative;padding:18px 16px"></div></dialog>
 <script>/*__SCRIPT__*/</script>
 </body>
