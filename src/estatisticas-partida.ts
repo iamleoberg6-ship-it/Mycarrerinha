@@ -5,8 +5,8 @@ import type { RNG } from "./rng.js";
 
 /** Lado 0 = casa, 1 = fora. xg: chance de gol daquela finalização (0 a 1). alvo: foi no gol. */
 export interface Chute { min: number; lado: 0 | 1; xg: number; alvo: boolean }
-/** Contagens além dos chutes: falta, cartão, vermelho, escanteio e pré-assistência (o passe antes do passe que vira gol). */
-export type TipoEvento = "falta" | "amarelo" | "vermelho" | "escanteio" | "pre";
+/** Contagens além dos chutes: falta, cartão, vermelho e escanteio. */
+export type TipoEvento = "falta" | "amarelo" | "vermelho" | "escanteio";
 export interface EventoEst { min: number; lado: 0 | 1; tipo: TipoEvento }
 export interface EstatBase { /** posse de bola da casa, em % para cada minuto (0 a 90) */ posseCasa: number[]; chutes: Chute[]; eventos: EventoEst[] }
 
@@ -26,11 +26,11 @@ export function estatisticaBase(rng: RNG, forca: [number, number]): EstatBase {
       chutes.push({ min: rng.int(1, 90), lado, xg: +xg.toFixed(3), alvo: rng.chance(0.3 + xg) });
     }
   }
-  // faltas, cartões, escanteios e pré-assistências de fundo: quem joga mais tem mais escanteio e passe
+  // faltas, cartões e escanteios de fundo: quem joga mais tem mais escanteio
   const eventos: EventoEst[] = [];
   for (const lado of [0, 1] as const) {
     const f = lado === 0 ? fc : ff;
-    const medias: [TipoEvento, number][] = [["falta", 10 + (1 - f) * 3], ["amarelo", 1.6], ["escanteio", 3.5 + f * 3], ["pre", 4 + f * 4]];
+    const medias: [TipoEvento, number][] = [["falta", 10 + (1 - f) * 3], ["amarelo", 1.6], ["escanteio", 3.5 + f * 3]];
     for (const [tipo, media] of medias) {
       const n = Math.max(0, Math.round(media + rng.normal(0, 1.4)));
       for (let i = 0; i < n; i++) eventos.push({ min: rng.int(1, 90), lado, tipo });

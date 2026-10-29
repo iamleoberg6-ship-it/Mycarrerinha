@@ -2279,7 +2279,7 @@ function estatAte(m: number) {
   const posseCasa = fatias.length ? Math.round(fatias.reduce((a, b) => a + b, 0) / fatias.length) : 50;
   const ev = (tipo: TipoEvento) => [0, 1].map((l) => eventosJogo.filter((x) => x.min <= m && x.lado === l && x.tipo === tipo).length) as [number, number];
   const cart = [0, 1].map((l) => eventosJogo.filter((x) => x.min <= m && x.lado === l && (x.tipo === "amarelo" || x.tipo === "vermelho")).length) as [number, number];
-  return { escanteios: ev("escanteio"), faltas: ev("falta"), cartoes: cart, pre: ev("pre"), posseCasa, chutes: [conta(0), conta(1)] as [number, number], alvo: [conta(0, (c) => c.alvo), conta(1, (c) => c.alvo)] as [number, number], xg: [xg(0), xg(1)] as [number, number] };
+  return { escanteios: ev("escanteio"), faltas: ev("falta"), cartoes: cart, posseCasa, chutes: [conta(0), conta(1)] as [number, number], alvo: [conta(0, (c) => c.alvo), conta(1, (c) => c.alvo)] as [number, number], xg: [xg(0), xg(1)] as [number, number] };
 }
 function renderEstat() {
   const el = document.getElementById("estat");
@@ -2289,7 +2289,7 @@ function renderEstat() {
   const linha = (rotulo: string, [a, b]: [number, number], dec = 0) => `<div class="est-linha"><b>${a.toFixed(dec).replace(".", ",")}</b><span>${rotulo}</span><b>${b.toFixed(dec).replace(".", ",")}</b></div>`;
   const [cm, cf] = x(e.chutes), [am, af] = x(e.alvo), [gm, gf] = x(e.xg);
   el.innerHTML = `<div class="est-posse"><span>${posseMeu}%</span><i><b style="width:${posseMeu}%"></b></i><span>${100 - posseMeu}%</span></div><p class="est-rot">Posse de bola</p>
-    ${linha("Chutes", [cm, cf])}${linha("Chutes no alvo", [am, af])}${linha("Gol esperado (xG)", [gm, gf], 2)}${linha("Escanteios", x(e.escanteios))}${linha("Faltas", x(e.faltas))}${linha("Cartões", x(e.cartoes))}${linha("Pré-assistências", x(e.pre))}`;
+    ${linha("Chutes", [cm, cf])}${linha("Chutes no alvo", [am, af])}${linha("Gol esperado (xG)", [gm, gf], 2)}${linha("Escanteios", x(e.escanteios))}${linha("Faltas", x(e.faltas))}${linha("Cartões", x(e.cartoes))}`;
 }
 function adicionarLance(min: number, html: string, cls = "") {
   const el = document.createElement("div"); el.className = `lance ${cls}`; el.innerHTML = `<span class="m">${min}'</span><span>${html}</span>`;
@@ -2373,7 +2373,7 @@ function mostrarItem(item: ItemFila) {
     if (!t) { avancar(); return; }
     item.html = t; item.cls = "tenso";
   }
-  if (item.gol) { const lado = item.gol === "casa" ? 0 : 1; if (lado === 0) placar[0]++; else placar[1]++; chutesJogo.push({ min: item.min, lado, xg: xgDoGol(item.min, lado), alvo: true }); if ((item.min * 7 + lado * 3) % 10 < 5) eventosJogo.push({ min: item.min, lado, tipo: "pre" }); }
+  if (item.gol) { const lado = item.gol === "casa" ? 0 : 1; if (lado === 0) placar[0]++; else placar[1]++; chutesJogo.push({ min: item.min, lado, xg: xgDoGol(item.min, lado), alvo: true }); }
   atualizarPlacar();
   { // a bola no campinho: onde o lance aconteceu
     const meuLado = partida.souCasa ? "casa" : "fora", zona = zonaDoItem(item);
