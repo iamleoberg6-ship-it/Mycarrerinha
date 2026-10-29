@@ -15,16 +15,17 @@ const CORPO = "M30 8 C36 12 44 12 50 8 L66 13 L79 33 L68 41 L63 33 L63 92 C49 95
 
 function padrao(modelo: string, c2: string, c3: string, faixas?: string[]): string {
   switch (modelo) {
-    /** três faixas horizontais, cada uma numa cor (Quadricolor do Vale) */
-    case "tresFaixasH": return (faixas ?? [c2, c3, c2]).map((cor, i) => `<rect x="0" y="${26 + i * 13}" width="80" height="9" fill="${cor}"/>`).join("");
-    case "listrasV": return Array.from({ length: 6 }, (_, i) => `<rect x="${8 + i * 12}" y="0" width="6" height="100" fill="${c2}"/>`).join("");
-    case "listrasH": return Array.from({ length: 7 }, (_, i) => `<rect x="0" y="${22 + i * 11}" width="80" height="5.5" fill="${c2}"/>`).join("");
-    /** listras grossas horizontais (Fortaleza) */
-    case "listrasHG": return Array.from({ length: 3 }, (_, i) => `<rect x="0" y="${14 + i * 30}" width="80" height="14" fill="${c2}"/>`).join("");
+    /** três faixas horizontais, cada uma numa cor (Quadricolor do Vale); posição e espessura do uniforme do campo, na escala do armário */
+    case "tresFaixasH": return (faixas ?? [c2, c3, c2]).map((cor, i) => `<rect x="0" y="${38.9 + i * 8.1}" width="80" height="5.1" fill="${cor}"/>`).join("");
+    /** listras finas, no mesmo ritmo do uniforme do campo (uma listra a cada 8 unidades) */
+    case "listrasV": return Array.from({ length: 10 }, (_, i) => `<rect x="${4 + i * 8}" y="0" width="4" height="104" fill="${c2}"/>`).join("");
+    case "listrasH": return Array.from({ length: 11 }, (_, i) => `<rect x="0" y="${14.9 + i * 8}" width="80" height="4" fill="${c2}"/>`).join("");
+    /** listras grossas horizontais (Fortaleza): cinco faixas, a primeira logo abaixo do ombro */
+    case "listrasHG": return Array.from({ length: 5 }, (_, i) => `<rect x="0" y="${9.8 + i * 20.4}" width="80" height="10.2" fill="${c2}"/>`).join("");
     case "faixa": return `<path d="M10 12 L24 8 L70 92 L56 96 Z" fill="${c2}"/>`;
     case "faixaH": return `<rect x="0" y="44" width="80" height="14" fill="${c2}"/>`;
     /** duas faixas cruzando o meio: a de cima na cor 2, a de baixo na cor 3 (ex.: vermelha e preta sobre o branco) */
-    case "duasFaixasH": return `<rect x="0" y="40" width="80" height="8" fill="${c2}"/><rect x="0" y="49" width="80" height="8" fill="${c3}"/>`;
+    case "duasFaixasH": { const [f1, f2] = faixas ?? [c2, c3]; return `<rect x="0" y="42.6" width="80" height="5.1" fill="${f1}"/><rect x="0" y="51.3" width="80" height="5.1" fill="${f2}"/>`; }
     case "metade": return `<rect x="40" y="0" width="40" height="100" fill="${c2}"/>`;
     /** corte diagonal do ombro à barra (Mônaco): a metade direita na cor 2, como no uniforme do campo */
     case "metadeDiagonal": return `<path d="M8 0 L90 0 L90 104 L70 104 Z" fill="${c2}"/>`;

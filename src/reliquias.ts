@@ -65,18 +65,9 @@ export const UNIFORME_CLUBE: Record<string, { cores: [string, string]; padrao: s
   /** Tricolor paulista: camisa branca com duas faixas horizontais no meio, vermelha e preta, com um espaço entre elas. */
   SPA: { cores: ["#FFFFFF", "#C8102E"], padrao: "duasFaixasH", faixas: ["#C8102E", "#111111"], escudo: ["#C8102E", "#FFFFFF"] },
 };
-const KIT_VISUAL: Record<string, { cores: [string, string]; modelo: string; terceira: string; faixas?: string[] }> = {
-  BFC: { cores: ["#FFFFFF", "#000000"], modelo: "duasFaixasH", terceira: "#C8102E" },
-  "C-BRU": { cores: ["#FFFFFF", "#E2231A"], modelo: "tresFaixasH", terceira: "#0B7A3B", faixas: ["#0B7A3B", "#F5C400", "#E2231A"] },
-  SPA: { cores: ["#FFFFFF", "#C8102E"], modelo: "duasFaixasH", terceira: "#111111", faixas: ["#C8102E", "#111111"] },
-  CFC: { cores: ["#FFFFFF", "#00573F"], modelo: "duasFaixasH", terceira: "#00573F" },
-  FOR: { cores: ["#1C3F94", "#E2231A"], modelo: "listrasHG", terceira: "#111111" },
-  ACG: { cores: ["#E2231A", "#000000"], modelo: "metade", terceira: "#111111" },
-  "FR-ASM": { cores: ["#E31B23", "#FFFFFF"], modelo: "metadeDiagonal", terceira: "#111111" },
-};
 /** Cores, desenho e terceira cor com que a camisa é desenhada (o clube tem prioridade sobre o que foi guardado). */
 /** Calção de clubes cujo uniforme real não usa a cor 2 (Santos: calção branco, com o preto só na gola e nas mangas). */
-/** Cor do número de clubes que usam número de outra cor (Vasco: vermelho; Brighton: amarelo; Newcastle: vermelho). */
+/** Cor do número de clubes que usam número de outra cor (Vasco: vermelho; Brighton: amarelo; Newcastle: vermelho; Sporting e Bilbao: preto). */
 const NUMERO_COR: Record<string, string> = {
   VAS: "#C8102E",
   /** Brighton: número amarelo sobre o azul */
@@ -85,6 +76,8 @@ const NUMERO_COR: Record<string, string> = {
   "EN-NEW": "#C8102E",
   /** Athletic Bilbao: número e nome pretos sobre o vermelho e o branco */
   "ES-ATH": "#111111",
+  /** Sporting: número e nome pretos sobre o verde e o branco */
+  "PT-SCP": "#111111",
 };
 export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId ? NUMERO_COR[clubeId] : undefined);
 /** Uniforme da seleção: camisa, calção e meião (o escudo é a bandeira do país). */
@@ -95,9 +88,10 @@ export const UNIFORME_SELECAO: Record<string, { cores: [string, string]; padrao:
 /** Calção e meião que fogem do padrão da camisa (São Paulo e Fortaleza jogam de branco embaixo). */
 export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" || clubeId === "FOR" ? "#FFFFFF" : undefined);
 export const meiaoDoClube = (clubeId?: string): string | undefined => (clubeId === "FOR" ? "#FFFFFF" : undefined);
-export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; terceira?: string; faixas?: string[]; numeroCor?: string } {
-  const k = r.clubeId ? KIT_VISUAL[r.clubeId] : undefined, numeroCor = numeroCorClube(r.clubeId);
-  return k ? { cores: k.cores, modelo: k.modelo, terceira: k.terceira, faixas: k.faixas, numeroCor } : { cores: r.cores, modelo: r.modelo, numeroCor };
+/** A camisa do armário sai do mesmo uniforme que o campo usa (seleção, clube com uniforme próprio); os demais clubes, o que foi guardado. */
+export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; faixas?: string[]; numeroCor?: string } {
+  const us = r.clubeId ? UNIFORME_SELECAO[r.clubeId] : undefined, u = r.clubeId ? UNIFORME_CLUBE[r.clubeId] : undefined;
+  return { cores: us?.cores ?? u?.cores ?? r.cores, modelo: us?.padrao ?? u?.padrao ?? r.modelo, faixas: u?.faixas, numeroCor: numeroCorClube(r.clubeId) };
 }
 /** As bolas mudam de competição para competição e de ano para ano. */
 const BOLA_BASE: [string, string][] = [["#262626", "#262626"], ["#1B98E0", "#262626"], ["#C0392B", "#262626"]];
