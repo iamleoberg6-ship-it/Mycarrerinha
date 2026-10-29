@@ -58,7 +58,7 @@ import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
 import { ESTRUTURAS } from "../../src/casa";
 import { infoLiga } from "../../src/ligas";
-import { titulosDoClube, timeDeTodosOsTempos, plantelDoClube, tecnicoDoClube, recordesHistoricosDoClube, type TitularHistorico, type RecordeNome } from "../../src/perfil-clube";
+import { titulosDoClube, timeDeTodosOsTempos, plantelDoClube, tecnicoDoClube, recordesHistoricosDoClube, type TitularHistorico, type RecordeNome, type TemporadaUsuario } from "../../src/perfil-clube";
 import { culturaBase, NOME_CULTURA, TEXTO_CULTURA, type Cultura } from "../../src/identidade";
 import { consultorIniciar, consultorResponder } from "../../src/transferencias";
 import { ESPECIALIDADES, NOME_ESP, NOME_DEGRAU, novosConsultores, vagas, pedidoTexto, tabelaMes, valorOferta, eficacia, type Especialidade, type RespostaConsultor, type Oferta } from "../../src/consultores";
@@ -1060,8 +1060,13 @@ function clubeHtml(clubeId: string): string {
     return noClube || convocado ? [{ nome: j.nome, apelido: j.apelido, posicao: j.posicao, ovr: Math.round(ovr(j)), eu: true }] : [];
   })() : [];
   const elenco = [...eu, ...elencoMundo].sort((a, b) => b.ovr - a.ovr);
-  const rec = recordesHistoricosDoClube(pacote, clubeId);
-  const bloco = (titulo: string, lista: RecordeNome[], comAno: boolean) => lista.length ? `<p class="rotulo" style="margin-top:14px">${titulo}</p><table style="table-layout:fixed"><colgroup><col style="width:28px"><col><col style="width:64px"><col style="width:44px"></colgroup><tbody>${lista.map((x, i) => `<tr><td>${i + 1}</td><td>${linkJogador(x.nome)}</td><td class="n">${comAno ? ANO_INICIAL + (x.ano ?? 0) : ""}</td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : "";
+  // as temporadas do usuário no clube (as já fechadas e a atual) entram nos recordes
+  const usuario: TemporadaUsuario[] = save ? [
+    ...save.carreira.historico.filter((h) => h.clubeId === clubeId).map((h) => ({ nome: save!.jogador.apelido, t: h.ano - ANO_INICIAL, j: h.jogos, g: h.gols, a: h.assist })),
+    ...(save.carreira.clubeId === clubeId ? [{ nome: save.jogador.apelido, t: save.carreira.temporada, j: save.carreira.stats.jogos, g: save.carreira.stats.gols, a: save.carreira.stats.assist }] : []),
+  ] : [];
+  const rec = recordesHistoricosDoClube(pacote, clubeId, usuario);
+  const bloco = (titulo: string, lista: RecordeNome[], comAno: boolean) => lista.length ? `<p class="rotulo" style="margin-top:14px">${titulo}</p><table style="table-layout:fixed"><colgroup><col style="width:28px"><col><col style="width:64px"><col style="width:44px"></colgroup><tbody>${lista.map((x, i) => `<tr${x.eu ? ` class="meu"` : ""}><td>${i + 1}</td><td>${x.eu ? `<b style="color:var(--ouro)">${esc(x.nome)}</b> <small class="sub">(você)</small>` : linkJogador(x.nome)}</td><td class="n">${comAno ? ANO_INICIAL + (x.ano ?? 0) : ""}</td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : "";
   const recordes = [bloco("Mais gols em uma temporada", rec.golsTemp, true), bloco("Mais assistências em uma temporada", rec.assistTemp, true), bloco("Maiores artilheiros da história", rec.artilheiros, false), bloco("Maiores assistentes da história", rec.assistentes, false), bloco("Goleiros com mais jogos sem tomar gol", rec.semGol, false)].join("");
   const tec = tecnicoDoClube(pacote, clubeId), liga = info.ligaId, irmaos = w.liga[liga]?.clubes ?? [];
   const de = (p: string) => xi.filter((x) => x.posicao === p);

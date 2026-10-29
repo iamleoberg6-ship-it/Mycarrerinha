@@ -80,34 +80,46 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string): Titul
 }
 
 /** Recordes do clube na história: maiores artilheiros e assistentes, o melhor de uma temporada e goleiros que mais seguraram o zero. */
-export interface RecordeNome { nome: string; valor: number; ano?: number }
+export interface RecordeNome { nome: string; valor: number; ano?: number; eu?: boolean }
 export interface RecordesDoClube { golsTemp: RecordeNome[]; assistTemp: RecordeNome[]; artilheiros: RecordeNome[]; assistentes: RecordeNome[]; semGol: RecordeNome[] }
-const cacheRecordes = new Map<string, RecordesDoClube>();
-const topo = (m: Map<string, number>, ano?: Map<string, number>) => [...m].map(([nome, valor]) => ({ nome, valor, ...(ano ? { ano: ano.get(nome) } : {}) })).sort((a, b) => b.valor - a.valor).slice(0, 5);
-export function recordesHistoricosDoClube(pacote: PacoteDados, clubeId: string): RecordesDoClube {
-  const ja = cacheRecordes.get(clubeId);
-  if (ja) return ja;
-  const temp: RecordeNome[] = [], assistTemp: RecordeNome[] = [];
-  const gols = new Map<string, number>(), assist = new Map<string, number>(), sg = new Map<string, number>();
-  for (const { nome, x } of linhasDoClube(pacote, clubeId)) {
-    const st = statsDaLinha(pacote, nome, x);
-    if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
-    temp.push({ nome, valor: st.g, ano: x.t }); assistTemp.push({ nome, valor: st.a, ano: x.t });
-    gols.set(nome, (gols.get(nome) ?? 0) + st.g); assist.set(nome, (assist.get(nome) ?? 0) + st.a);
-    if (x.posicao === "GOL") {
-      // jogos sem sofrer gol: a simulação não guarda o zero a zero, então é uma estimativa pelo jogo e pela qualidade do goleiro
-      const rng = new RNG(`semgol|${x.t}|${clubeId}|${nome}`);
-      const f = rng.range(0.22, 0.42) + Math.min(0.18, Math.max(0, (x.ovr - 60) / 120));
-      sg.set(nome, (sg.get(nome) ?? 0) + Math.round(st.j * f));
+const cacheRecordes = new Map<string, { temp: RecordeNome[]; assistTemp: RecordeNome[]; gols: Map<string, number>; assist: Map<string, number>; sg: Map<string, number> }>();
+const topo = (m: Map<string, number>) => [...m].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor).slice(0, 5);
+/** Temporada do jogador do usuário no clube (o mundo simulado não guarda ele): ano é o índice da temporada. */
+export interface TemporadaUsuario { nome: string; t: number; j: number; g: number; a: number }
+/** Recordes do clube na história: maiores artilheiros e assistentes, o melhor de uma temporada e goleiros que mais seguraram o zero. */
+export function recordesHistoricosDoClube(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = []): RecordesDoClube {
+  let base = cacheRecordes.get(clubeId);
+  if (!base) {
+    const temp: RecordeNome[] = [], assistTemp: RecordeNome[] = [];
+    const gols = new Map<string, number>(), assist = new Map<string, number>(), sg = new Map<string, number>();
+    for (const { nome, x } of linhasDoClube(pacote, clubeId)) {
+      const st = statsDaLinha(pacote, nome, x);
+      if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
+      temp.push({ nome, valor: st.g, ano: x.t }); assistTemp.push({ nome, valor: st.a, ano: x.t });
+      gols.set(nome, (gols.get(nome) ?? 0) + st.g); assist.set(nome, (assist.get(nome) ?? 0) + st.a);
+      if (x.posicao === "GOL") {
+        // jogos sem sofrer gol: a simulação não guarda o zero a zero, então é uma estimativa pelo jogo e pela qualidade do goleiro
+        const rng = new RNG(`semgol|${x.t}|${clubeId}|${nome}`);
+        const f = rng.range(0.22, 0.42) + Math.min(0.18, Math.max(0, (x.ovr - 60) / 120));
+        sg.set(nome, (sg.get(nome) ?? 0) + Math.round(st.j * f));
+      }
     }
+    base = { temp, assistTemp, gols, assist, sg };
+    cacheRecordes.set(clubeId, base);
   }
-  const r: RecordesDoClube = {
-    golsTemp: temp.sort((a, b) => b.valor - a.valor).slice(0, 5),
-    assistTemp: assistTemp.sort((a, b) => b.valor - a.valor).slice(0, 5),
-    artilheiros: topo(gols), assistentes: topo(assist), semGol: topo(sg),
+  // o jogador do usuário entra com as temporadas dele no clube
+  const temp = [...base.temp], assistTemp = [...base.assistTemp];
+  const gols = new Map(base.gols), assist = new Map(base.assist);
+  for (const u of usuario.filter((x) => x.j >= MIN_JOGOS_TEMPORADA)) {
+    temp.push({ nome: u.nome, valor: u.g, ano: u.t, eu: true }); assistTemp.push({ nome: u.nome, valor: u.a, ano: u.t, eu: true });
+    gols.set(u.nome, (gols.get(u.nome) ?? 0) + u.g); assist.set(u.nome, (assist.get(u.nome) ?? 0) + u.a);
+  }
+  const marcaEu = (l: RecordeNome[]) => l.map((x) => (usuario.some((u) => u.nome === x.nome) ? { ...x, eu: true } : x));
+  return {
+    golsTemp: marcaEu([...temp].sort((a, b) => b.valor - a.valor).slice(0, 5)),
+    assistTemp: marcaEu([...assistTemp].sort((a, b) => b.valor - a.valor).slice(0, 5)),
+    artilheiros: marcaEu(topo(gols)), assistentes: marcaEu(topo(assist)), semGol: topo(base.sg),
   };
-  cacheRecordes.set(clubeId, r);
-  return r;
 }
 
 /** Elenco atual do clube (o do momento da simulação). */
