@@ -252,7 +252,9 @@ function renderImobiliaria() {
   $("imoveis").innerHTML = IMOVEIS.filter((m) => m.categoria === cat && (cat !== "alojamento" || alojamentosDoClube(st.e.clube).includes(m.id))).map((m) => {
     const aqui = m.id === st.e.imovel, dono = st.e.proprios.includes(m.id);
     const alug = podeMudar(st.e, m.id, "alugar", salario()), comp = m.compra ? podeMudar(st.e, m.id, "comprar", salario()) : undefined;
+    const modoDono = m.aluguel && alug.ok ? "alugar" : comp?.ok ? "comprar" : "alugar";
     const acoes = aqui ? `<button class="botao sec" disabled>Você mora aqui</button>`
+      : ehDono(st.e) ? `<button class="botao" data-mudar="${m.id}" data-modo="${modoDono}" data-antiga="vender">Vender a atual e mudar</button><button class="botao sec" data-mudar="${m.id}" data-modo="${modoDono}" data-antiga="alugar">Alugar a atual e mudar</button>`
       : dono ? `<button class="botao" data-mudar="${m.id}" data-modo="alugar">Voltar para cá</button>`
       : `<button class="botao" data-mudar="${m.id}" data-modo="alugar" ${alug.ok ? "" : "disabled"}>${m.aluguel ? "Alugar" : "Morar aqui"}</button>${comp ? `<button class="botao sec" data-mudar="${m.id}" data-modo="comprar" ${comp.ok ? "" : "disabled"}>Comprar</button>` : ""}`;
     const motivo = !aqui && !dono && !alug.ok ? `<span class="req">${esc(alug.msg)}</span>` : "";
@@ -372,7 +374,7 @@ document.addEventListener("click", (ev) => {
   } else if (d.venderdep) { const r = vender(st.e, d.venderdep); aviso(r.msg, !r.ok); tudo(); }
   else if (d.catimob) { ui.catImob = d.catimob as CategoriaImovel; renderImobiliaria(); }
   else if (d.mudar) {
-    const r = mudar(st.e, d.mudar, d.modo as "alugar" | "comprar", salario());
+    const r = mudar(st.e, d.mudar, d.modo as "alugar" | "comprar", salario(), d.antiga as "vender" | "alugar" | undefined);
     aviso(r.msg, !r.ok);
     if (r.ok && carreira) registrarMarco(carreira, { tipo: "casa", texto: `${d.modo === "comprar" ? "Compra" : "Muda para"} ${nomeImovel(st.e, imovelAtual(st.e))}` });
     if (r.ok) { ($("dlgImob") as HTMLDialogElement).close(); st.comodo = imovelAtual(st.e).comodos[0].id; ui.sel = undefined; ui.previa = undefined; ui.cat = "auto"; tudo(); window.scrollTo({ top: 0, behavior: "smooth" }); }

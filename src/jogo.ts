@@ -57,7 +57,7 @@ import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, aco
 import { agirFilho, programaPreferido, type AcaoFilho } from "./namoro.js";
 import { gostosDe, MAX_ACOES_NAMORO, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
-import { ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
+import { podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 
 // ------------------------------------------------------------------ tipos
 export interface Jogador {
@@ -218,6 +218,7 @@ export const ligaAtual = (pacote: PacoteDados, s: Save): Liga => mundo(pacote).l
 /** Saves de antes das ligas reais: clubes e ligas antigas viram os equivalentes atuais. Devolve true se mudou algo. */
 export function migrarSave(pacote: PacoteDados, s: Save): boolean {
   const c = s.carreira, w = mundo(pacote);
+  if (c.luxo?.some(ehCarro)) { s.casa.carros = [...(s.casa.carros ?? []), ...c.luxo.filter(ehCarro)]; c.luxo = c.luxo.filter((i) => !ehCarro(i)); }
   if (AGENTE_LEGADO[c.agente]) c.agente = AGENTE_LEGADO[c.agente];
   if (w.clube[c.clubeId]) sincronizar(pacote, s);
   const existe = (id: string) => !!w.clube[id];
@@ -1586,6 +1587,9 @@ export const namoroDe = (c: Carreira): EstadoNamoro => { const n = (c.namoro ??=
 export const agendaDe = (c: Carreira): EstadoAgenda => (c.agenda ??= novaAgenda());
 export const parcasDe = (s: Save): Parca[] => (s.carreira.parcas ??= parcasIniciais(rngDe(s, "parcas-iniciais"), s.jogador.nacionalidade, ANO_INICIAL + s.carreira.temporada));
 export const luxoDe = (c: Carreira): ItemLuxo[] => (c.luxo ??= []);
+/** Carros moram na garagem da casa, não na lista de luxo. */
+export const carrosDe = (s: Save): ItemLuxo[] => (s.casa.carros ??= []);
+const ehCarro = (i: ItemLuxo) => LUXO[i.tipo].cat === "carro";
 export const hobbiesDe = (c: Carreira): EstadoHobbies => (c.hobbies ??= { ativos: [], nivel: {} });
 export const estudosDe = (c: Carreira): EstadoEstudos => (c.estudos ??= { idiomas: {}, formacoes: [] });
 /** Cidade natal: a do primeiro clube da carreira. */
@@ -1599,7 +1603,7 @@ export function ctxSocial(pacote: PacoteDados, s: Save, temJogo: boolean): CtxSo
   return { semanaAbs: semanaAbsJogo(c), semana: c.semana, ano: ANO_INICIAL + c.temporada, idade: j.idade, fama: c.fama, saldo: s.casa.saldo, salario: c.salario, patrimonio,
     vidaNoturna: c.vidaNoturna, apelido: j.apelido, nac: j.nacionalidade, cidadeNatal: cidadeNatal(pacote, s), clube: infoClube(pacote, c.clubeId)?.nome ?? "", exterior: infoLiga(c.ligaId).regiao !== "BRA" && j.nacionalidade === "BRA", temJogo,
     assessor: !!negociosDe(c).assessor, ferias: c.semana < SEMANAS_PRE || c.semana >= SEMANAS_TEMPORADA - 1, casado: par?.etapa === "casados", nomePar: par?.nome.split(" ")[0],
-    familia: familiaDe(pacote, s).membros, filhos: n.filhos ?? [], parcas: parcasDe(s), carroEsportivo: temEsportivo(l), valoresEmCasa: valoresEmCasa(l) };
+    familia: familiaDe(pacote, s).membros, filhos: n.filhos ?? [], parcas: parcasDe(s), carroEsportivo: temEsportivo([...l, ...carrosDe(s)]), valoresEmCasa: valoresEmCasa(l) };
 }
 /** Aplica o efeito de um momento da agenda (ou de um acontecimento) na vida do jogador. */
 export function aplicarEfeitoVida(pacote: PacoteDados, s: Save, ef: EfeitoVida) {
@@ -1709,7 +1713,7 @@ function semanaVidaFora(pacote: PacoteDados, s: Save, eventos: string[], temJogo
   // garagem: coisa nova dá alegria por umas semanas; o status puxa a fama
   const l = luxoDe(c);
   if (l.some((i) => ab - i.novidade <= 4)) c.moral = clamp(c.moral + 0.8, 0, 100);
-  c.fama = clamp(c.fama + Math.min(0.03, statusLuxo(l) / 3000), 0, 100);
+  c.fama = clamp(c.fama + Math.min(0.03, statusLuxo([...l, ...carrosDe(s)]) / 3000), 0, 100);
   // a vida a dois: datas, crises, a ex, a mudança, a carreira dela
   { const n = namoroDe(c), par = n.par; semanaAmor(a, rng, n, { semanaAbs: ab, semana: c.semana, ano: ANO_INICIAL + c.temporada, fama: c.fama, salario: c.salario, exterior: infoLiga(c.ligaId).regiao !== "BRA", apelido: j.apelido, temFilhoComEla: !!par && (n.filhos ?? []).some((f) => f.mae === par.nome) }); }
   // família, filhos, parças, convites, encrencas
@@ -1723,6 +1727,7 @@ function mesVidaFora(s: Save, eventos: string[]): number {
   const c = s.carreira, ps = parcasDe(s);
   let custo = efeitosParcas(ps).custo;
   mesLuxo(luxoDe(c), rngDe(s, "luxo-mes"));
+  mesLuxo(carrosDe(s), rngDe(s, "luxo-mes-carro"));
   if (c.fundacao) {
     const f = mesFundacao(c.fundacao);
     custo += f.custo; c.torcida = clamp((c.torcida ?? 50) + f.torcida, 0, 100);
@@ -1799,19 +1804,23 @@ export function afastarParcaJogo(pacote: PacoteDados, s: Save, id: string): Res 
   return { ok: true, msg: `${p.apelido} saiu do grupo.` };
 }
 export function comprarLuxoJogo(s: Save, t: TipoLuxo): Res {
-  const c = s.carreira, l = luxoDe(c), x = LUXO[t];
+  const c = s.carreira, x = LUXO[t];
   if (c.fama < x.famaMin) return { ok: false, msg: `Isso é para quem tem fama ${x.famaMin}.` };
   if (s.casa.saldo < x.preco) return { ok: false, msg: "Não tem dinheiro em conta para isso." };
-  if (l.length >= MAX_LUXO) return { ok: false, msg: "A garagem e o cofre estão cheios. Venda alguma coisa." };
+  const carro = x.cat === "carro";
+  if (carro) { const g = podeTerCarro(s.casa); if (!g.ok) return g; }
+  else if (luxoDe(c).length >= MAX_LUXO) return { ok: false, msg: "O cofre está cheio. Venda alguma coisa." };
   s.casa.saldo -= x.preco;
-  l.push({ uid: `l${Date.now() % 1e7}${l.length}`, tipo: t, valor: x.preco, ano: ANO_INICIAL + c.temporada, novidade: semanaAbsJogo(c) });
+  const novo = { uid: `l${Date.now() % 1e7}${(carro ? carrosDe(s) : luxoDe(c)).length}`, tipo: t, valor: x.preco, ano: ANO_INICIAL + c.temporada, novidade: semanaAbsJogo(c) };
+  if (carro) carrosDe(s).push(novo); else luxoDe(c).push(novo);
   if (x.preco >= 3_000_000) { noticia(s, "dinheiro", `${s.jogador.apelido} compra ${x.nome.toLowerCase()}`, `Aquisição de R$ ${(x.preco / 1e6).toFixed(1).replace(".", ",")} milhões chamou atenção nas redes.`); registrarMarco(s, { tipo: "marco", texto: `Compra ${x.nome.toLowerCase()}` }); }
-  return { ok: true, msg: `${x.emoji} ${x.nome} na sua garagem.` };
+  return { ok: true, msg: carro ? `${x.emoji} ${x.nome} na vaga ${veiculosDaCasa(s.casa)} de ${vagasGaragem(s.casa)} da garagem.` : `${x.emoji} ${x.nome} guardado no cofre.` };
 }
 export function venderLuxoJogo(s: Save, uid: string): Res {
-  const l = luxoDe(s.carreira), i = l.find((x) => x.uid === uid);
+  const l = luxoDe(s.carreira), carros = carrosDe(s), i = [...l, ...carros].find((x) => x.uid === uid);
   if (!i) return { ok: false, msg: "Esse item não está mais com você." };
-  s.carreira.luxo = l.filter((x) => x !== i); s.casa.saldo += i.valor;
+  if (carros.includes(i)) s.casa.carros = carros.filter((x) => x !== i); else s.carreira.luxo = l.filter((x) => x !== i);
+  s.casa.saldo += i.valor;
   return { ok: true, msg: `Vendeu ${LUXO[i.tipo].nome.toLowerCase()} por R$ ${i.valor.toLocaleString("pt-BR")}.` };
 }
 export function hobbyJogo(s: Save, hb: Hobby): Res {

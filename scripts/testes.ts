@@ -9,7 +9,7 @@ import { Carreira } from "../src/carreira.js";
 import { definirPerfil, estiloDeJogo } from "../src/perfil.js";
 import { IMOVEIS, ITENS, TIPOS, TETO, CATALOGO, REVEST, REVESTIMENTOS, novoEstado, cabe, comprar, mover, girar, guardar, tirarDoDeposito, reformar, mudar, fecharMes, efeitosDaCasa, conforto, bonusDeEstilo, acabamento, travado, alojamentosDoClube, motivoNaoCabe, vender, nomeImovel, estruturaDoClube, imovelAtual, areaM2, IMOVEL } from "../src/casa.js";
 import { CLUBES_CASA } from "../src/clubes.js";
-import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor } from "../src/casa.js";
+import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor, podeTerCarro, vagasGaragem } from "../src/casa.js";
 import { mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
 import { convocado, participantesCopa, escalacaoSelecao, participantesTorneio } from "../src/jogo.js";
 import { ehTorneioContinental, ehFinalissima } from "../src/copas.js";
@@ -175,7 +175,7 @@ teste("Casa: imóveis válidos, inclusos cabem, catálogo completo", () => {
       const r = REVEST[c[l].id]; assert.ok(r && r.ambientes.includes(c.ambiente) && c[l].cor < r.cores.length, `${m.id}.${c.id} ${l}`);
     }
   }
-  for (const tipo of Object.keys(TIPOS)) if (TIPOS[tipo as keyof typeof TIPOS].categoria !== "conquistas") assert.ok(CATALOGO.some((i) => i.tipo === tipo), `sem produto: ${tipo}`);
+  for (const tipo of Object.keys(TIPOS)) if (TIPOS[tipo as keyof typeof TIPOS].categoria !== "conquistas" && tipo !== "carro") assert.ok(CATALOGO.some((i) => i.tipo === tipo), `sem produto: ${tipo}`);
   for (const it of CATALOGO) { assert.ok(it.preco > 0 && it.cores.length > 0, it.id); if (it.aVenda) assert.ok(Object.values(it.efeitos).some((v) => v !== 0), `${it.id} sem efeito`); }
   assert.equal(new Set(CATALOGO.map((i) => i.id)).size, CATALOGO.length);
   console.log(`   ${IMOVEIS.length} imóveis, ${CATALOGO.length} itens, ${REVESTIMENTOS.length} revestimentos`);
@@ -207,14 +207,39 @@ teste("Casa: comprar, mover, girar, guardar, reformar e mudar", () => {
   assert.ok(mudar(e, "casa-cond", "comprar", 0).ok);
   assert.ok(reformar(e, "sala", "piso", "marmore", 0).ok);
   assert.ok(comprar(e, "piscina-basico-1-3", 0, "quintal").ok);
-  assert.ok(comprar(e, "carro-gamer-4-4", 2, "garagem").ok);
-  const ef = efeitosDaCasa(e).total; assert.ok(ef.recuperacao >= 2 && ef.fama >= 6);
-  assert.ok(mudar(e, "kit-ct", "alugar", 1e6).ok);
-  assert.ok(e.deposito.some((g) => g.item === "piscina-basico-1-3") && e.deposito.some((g) => g.item === "carro-gamer-4-4"));
+  e.carros = [{ uid: "car1", tipo: "super", valor: 3000000, ano: 2030, novidade: 0 }];
+  const ef = efeitosDaCasa(e).total; assert.ok(ef.recuperacao >= 2);
+  assert.ok(mudar(e, "kit-ct", "alugar", 1e6, "alugar").ok);
+  assert.equal((e.carros ?? []).length, 0, "sem vaga na garagem nova, o carro foi vendido");
+  assert.ok(e.deposito.some((g) => g.item === "piscina-basico-1-3"));
   assert.ok(mudar(e, "casa-cond", "alugar", 0).ok); // é dono
   assert.equal(acabamento(e, "sala").piso.id, "marmore");
   assert.ok(e.objetos.some((x) => x.item === "piscina-basico-1-3"));
-  assert.equal(e.objetos.find((x) => x.item === "carro-gamer-4-4")!.cor, 2);
+});
+
+teste("Garagem: vagas pelo tamanho, carro sem vaga é recusado, mudança de casa própria exige escolha", () => {
+  const e = novoEstado(1e8, "aloj-vila");
+  assert.equal(podeTerCarro(e).ok, false, "alojamento não tem garagem");
+  assert.ok(mudar(e, "casa-cond", "comprar", 0).ok);
+  const vagas = vagasGaragem(e);
+  assert.ok(vagas >= 1, `vagas ${vagas}`);
+  assert.equal(podeTerCarro(e).ok, true);
+  e.carros = Array.from({ length: vagas }, (_, i) => ({ uid: `c${i}`, tipo: "popular" as const, valor: 90000, ano: 2030, novidade: 0 }));
+  assert.equal(podeTerCarro(e).ok, false, "garagem cheia recusa mais um carro");
+  // casa própria: sair dela exige escolher vender ou alugar a antiga
+  const r = mudar(e, "kit-ct", "alugar", 1e6);
+  assert.equal(r.ok, false);
+  assert.ok(r.msg.includes("vender ou alugar"));
+  const saldo0 = e.saldo;
+  assert.ok(mudar(e, "kit-ct", "alugar", 1e6, "vender").ok);
+  assert.ok(!e.proprios.includes("casa-cond") && e.saldo > saldo0, "casa vendida entra no caixa");
+  // casa alugada rende todo mês
+  const e2 = novoEstado(1e8, "aloj-vila");
+  assert.ok(mudar(e2, "casa-cond", "comprar", 0).ok);
+  assert.ok(mudar(e2, "kit-ct", "alugar", 1e6, "alugar").ok);
+  assert.ok((e2.alugadas ?? []).includes("casa-cond"));
+  const antes = e2.saldo; fecharMes(e2, 0);
+  assert.ok(e2.saldo > antes - imovelAtual(e2).aluguel, "renda da casa alugada entra no mês");
 });
 
 teste("Casa: estilo completo dá bônus e conforto cresce", () => {
@@ -247,7 +272,7 @@ teste("Casa: cada móvel no seu cômodo, instalação só com escritura, alojame
   assert.ok(comprar(e, "pia-moderno-2-2", 0, "banheiro").ok);
   mudar(e, "ap-2q", "alugar", 1e6); mudar(e, "casa-cond", "alugar", 0);
   assert.equal(e.objetos.filter((o) => o.comodo === "banheiro" && o.item.startsWith("pia")).length, 1);
-  assert.equal((comprar(e, "carro-basico-1-1", 0, "sala") as { comodo?: string }).comodo, "garagem");
+  assert.ok(!CATALOGO.some((i) => i.tipo === "carro"), "carro não se compra na casa: vem da loja de luxo");
   // alojamento depende do clube
   const pal = CLUBES_CASA.find((c) => c.id === "PAL")!, pobre = CLUBES_CASA.find((c) => estruturaDoClube(c) === 1)!;
   assert.deepEqual(alojamentosDoClube(pal), ["aloj-elite", "aloj-familia"]);
@@ -1278,6 +1303,8 @@ teste("Vida fora de campo 2: agenda, família que envelhece, estudos, adaptaçã
   const rr = criarJogador({ nome: "Vida", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: "ATA", semente: "vida2" });
   const s = novoJogo(pacote, { resultado: rr, aparencia: {}, clube: null }, "FLA", "vida2");
   s.carreira.formacao = false; s.carreira.fama = 50; s.casa.saldo = 5e6; s.jogador.idade = 25;
+  assert.equal(jogoMod.comprarLuxoJogo(s, "suv").ok, false, "sem garagem não tem carro");
+  assert.ok(mudar(s.casa, "casa-cond", "comprar", 0).ok);
   assert.ok(jogoMod.comprarLuxoJogo(s, "suv").ok); assert.ok(jogoMod.hobbyJogo(s, "pesca").ok); assert.ok(jogoMod.matricularJogo(s, "licenca-c").ok);
   for (let w = 0; w < 10; w++) semanaAutomatica(pacote, s);
   assert.ok(jogoMod.estudosDe(s.carreira).atual!.progresso >= 5);

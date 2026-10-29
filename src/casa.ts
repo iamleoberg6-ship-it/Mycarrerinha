@@ -1,3 +1,4 @@
+import { LUXO, type ItemLuxo } from "./estilo.js";
 // A casa do jogador: imobiliária com vários imóveis por faixa, móveis posicionados livremente no chão,
 // estilos de decoração, cores por móvel e revestimentos de parede e piso por cômodo.
 // Unidade do chão: ladrilho de meio metro. x corre ao longo da parede da direita (y=0), y ao longo da parede da esquerda (x=0).
@@ -216,15 +217,6 @@ const PRODUTOS: Partial<Record<TipoMovel, Linha[]>> = {
   trave: [["basico", 1, 2, "Trave de treino"], ["moderno", 2, 3, "Gol com rede de finalização"]],
   jacuzzi: [["moderno", 1, 3, "Jacuzzi para seis"]],
   fogueira: [["rustico", 1, 2, "Fogueira de pedra"], ["moderno", 2, 3, "Lareira externa a gás"]],
-  carro: [
-    ["basico", 1, 1, "Hatch popular", { preco: 90000, efeitos: { moral: 1 }, cores: ["#C0392B", "#ECECEC", "#2C3E50", "#7F8C8D"] }],
-    ["brasileiro", 5, 1, "Kombi reformada", { preco: 120000, efeitos: { moral: 2 }, cores: ["#1B98E0", "#2E7D4F", "#F08A24"] }],
-    ["rustico", 6, 2, "Picape cabine dupla", { preco: 250000, efeitos: { moral: 1, fama: 1 }, cores: ["#2C2C2C", "#ECECEC", "#7B4A2A"] }],
-    ["classico", 2, 2, "Sedã executivo", { preco: 280000, efeitos: { moral: 1, fama: 1 }, cores: ["#2C3E50", "#111111", "#ECECEC"] }],
-    ["moderno", 3, 3, "SUV premium", { preco: 600000, efeitos: { moral: 1, fama: 2 }, cores: ["#ECECEC", "#111111", "#4F6B5A"] }],
-    ["moderno", 4, 3, "Esportivo conversível", { preco: 1200000, efeitos: { moral: 2, fama: 3 }, cores: ["#C0392B", "#1F3A5F", "#ECECEC"] }],
-    ["gamer", 4, 4, "Superesportivo", { preco: 3000000, efeitos: { moral: 2, fama: 6 }, cores: ["#F1C40F", "#18E0C8", "#C0392B", "#8E44AD"] }],
-  ],
   moto: [
     ["basico", 1, 1, "Moto de entregador", { preco: 15000, efeitos: { moral: 1 }, cores: ["#C0392B", "#2C2C2C"] }],
     ["gamer", 2, 2, "Moto esportiva", { preco: 90000, efeitos: { moral: 1, fama: 1 }, cores: ["#18E0C8", "#C0392B", "#111111"] }],
@@ -475,6 +467,10 @@ export interface EstadoCasa {
   mes: number; seq: number;
   /** camisas, bolas e troféus conquistados (podem estar na casa ou no depósito) */
   reliquias?: Reliquia[];
+  /** carros comprados na loja de luxo: moram na garagem da casa */
+  carros?: ItemLuxo[];
+  /** casas próprias que você alugou para outra pessoa (renda mensal) */
+  alugadas?: string[];
 }
 export type Resultado = { ok: true; msg: string; uid?: string; comodo?: string } | { ok: false; msg: string };
 
@@ -761,6 +757,19 @@ export function reformar(e: EstadoCasa, comodo: string, lugar: "parede" | "piso"
 }
 
 // ------------------------------------------------------------------ mudança e mês
+/** Vagas da garagem: cada 45 unidades de área da garagem cabem um veículo (no mínimo um). Casa sem garagem não tem vaga. */
+export const vagasGaragem = (e: EstadoCasa) => imovelAtual(e).comodos.filter((c) => c.tipo === "garagem").reduce((a, c) => a + Math.max(1, Math.round((c.w * c.d) / 45)), 0);
+/** Carros e motos que ocupam vaga: os da loja de luxo e as motos da casa (no cômodo ou no depósito). */
+export const veiculosDaCasa = (e: EstadoCasa) => (e.carros?.length ?? 0) + [...e.objetos.map((o) => o.item), ...e.deposito.map((d) => d.item)].filter((id) => ITENS[id]?.tipo === "moto").length;
+/** Antes de comprar um carro: precisa de garagem com vaga livre. */
+export function podeTerCarro(e: EstadoCasa): Resultado {
+  const total = vagasGaragem(e), ocupadas = veiculosDaCasa(e);
+  if (!total) return { ok: false, msg: "Sua casa não tem garagem. Carro precisa de vaga." };
+  if (ocupadas >= total) return { ok: false, msg: `A garagem está cheia: ${ocupadas} de ${total} vagas. Venda um veículo antes.` };
+  return { ok: true, msg: "" };
+}
+/** Valor de revenda de uma casa própria vendida (fração do preço de compra). */
+export const VALOR_REVENDA_IMOVEL = 0.6;
 export const rendaMinima = (m: Imovel) => m.aluguel * 3;
 export function podeMudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", salario: number): Resultado {
   const m = IMOVEL[id];
@@ -779,10 +788,25 @@ export function podeMudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar",
 }
 
 /** Muda de imóvel. Tudo o que você comprou vai junto e é arrumado em cômodos do mesmo tipo; o que não couber vai para o depósito. */
-export function mudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", salario: number): Resultado {
+export function mudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", salario: number, antiga?: "vender" | "alugar"): Resultado {
   const ok = podeMudar(e, id, modo, salario);
   if (!ok.ok) return ok;
   const m = IMOVEL[id];
+  const saindoDeCasaPropria = id !== e.imovel && e.proprios.includes(e.imovel);
+  if (saindoDeCasaPropria && !antiga) return { ok: false, msg: "Você é dono da casa atual: escolha vender ou alugar a casa antiga." };
+  let avisoAntiga = "";
+  if (saindoDeCasaPropria) {
+    const velha = IMOVEL[e.imovel];
+    if (antiga === "vender") {
+      const v = Math.round((velha.compra ?? 0) * VALOR_REVENDA_IMOVEL);
+      e.proprios = e.proprios.filter((x) => x !== velha.id); e.saldo += v;
+      avisoAntiga = ` A casa antiga foi vendida por ${dinheiro(v)}.`;
+    } else {
+      e.alugadas = [...(e.alugadas ?? []), velha.id];
+      avisoAntiga = ` A casa antiga está alugada: ${dinheiro(velha.aluguel)} por mês.`;
+    }
+  }
+  e.alugadas = (e.alugadas ?? []).filter((x) => x !== id);
   if (!e.proprios.includes(id)) {
     if (modo === "comprar") { e.saldo -= m.compra!; e.proprios.push(id); } else e.saldo -= m.aluguel;
   }
@@ -802,21 +826,43 @@ export function mudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", sal
     }
     if (!posto) e.deposito.push({ uid: g.uid, item: g.item, cor: g.cor });
   }
-  return { ok: true, msg: `Mudança feita: ${nomeImovel(e, m)}.${e.deposito.length ? ` ${e.deposito.length} ${e.deposito.length > 1 ? "itens foram" : "item foi"} para o depósito.` : ""}` };
+  const vendidos = ajustarVeiculos(e);
+  return { ok: true, msg: `Mudança feita: ${nomeImovel(e, m)}.${e.deposito.length ? ` ${e.deposito.length} ${e.deposito.length > 1 ? "itens foram" : "item foi"} para o depósito.` : ""}${avisoAntiga}${vendidos.map((v) => ` Sem vaga na garagem nova, ${v} foi vendido.`).join("")}` };
+}
+/** Garagem nova com menos vagas: os veículos que sobram são vendidos (os mais baratos primeiro). Devolve os nomes vendidos. */
+function ajustarVeiculos(e: EstadoCasa): string[] {
+  const vendidos: string[] = [];
+  let sobra = veiculosDaCasa(e) - vagasGaragem(e);
+  while (sobra > 0) {
+    const carros = [...(e.carros ?? [])].sort((a, b) => a.valor - b.valor);
+    if (carros.length) {
+      const c = carros[0];
+      e.carros = (e.carros ?? []).filter((x) => x.uid !== c.uid); e.saldo += c.valor;
+      vendidos.push(LUXO[c.tipo].nome); sobra--; continue;
+    }
+    const lista = [...e.objetos.map((o) => ({ o, obj: true })), ...e.deposito.map((o) => ({ o, obj: false }))];
+    const k = lista.find((x) => ITENS[x.o.item]?.tipo === "moto");
+    if (!k) break;
+    if (k.obj) e.objetos = e.objetos.filter((o) => o.uid !== k.o.uid); else e.deposito = e.deposito.filter((o) => o.uid !== k.o.uid);
+    e.saldo += Math.round(ITENS[k.o.item].preco * VALOR_REVENDA);
+    vendidos.push(ITENS[k.o.item].nome); sobra--;
+  }
+  return vendidos;
 }
 
 /** Custo de manter o que é seu: imóveis próprios (condomínio, IPTU, funcionários) e veículos (seguro, IPVA, revisão). */
 export function manutencaoMensal(e: EstadoCasa): { nome: string; valor: number }[] {
   const imoveis = e.proprios.reduce((a, id) => a + (IMOVEL[id]?.compra ?? 0) * 0.0035, 0);
-  const veiculos = [...e.objetos.map((o) => o.item), ...e.deposito.map((d) => d.item)].filter((id) => ["carro", "moto"].includes(ITENS[id]?.tipo)).reduce((a, id) => a + ITENS[id].preco * 0.012, 0);
+  const veiculos = [...e.objetos.map((o) => o.item), ...e.deposito.map((d) => d.item)].filter((id) => ["carro", "moto"].includes(ITENS[id]?.tipo)).reduce((a, id) => a + ITENS[id].preco * 0.012, 0) + (e.carros ?? []).reduce((a, c) => a + c.valor * 0.012, 0);
   return [{ nome: "Imóveis próprios (condomínio, IPTU, funcionários)", valor: Math.round(imoveis) }, { nome: "Veículos (seguro, IPVA, revisão)", valor: Math.round(veiculos) }];
 }
 
-export function fecharMes(e: EstadoCasa, salario: number): { aluguel: number } {
+export function fecharMes(e: EstadoCasa, salario: number): { aluguel: number; renda: number } {
   const aluguel = e.proprios.includes(e.imovel) ? 0 : imovelAtual(e).aluguel;
-  e.saldo += salario - aluguel;
+  const renda = (e.alugadas ?? []).reduce((a, id) => a + (IMOVEL[id]?.aluguel ?? 0), 0);
+  e.saldo += salario - aluguel + renda;
   e.mes++;
-  return { aluguel };
+  return { aluguel, renda };
 }
 
 // ------------------------------------------------------------------ efeitos, estilo e conforto
