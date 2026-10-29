@@ -22,6 +22,7 @@ import {
   carrosDe, copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, chatDe, responderChatJogo, responderCenaJogo, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { RNG } from "../../src/rng";
+import { vidaDe } from "../../src/vida-npc";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, falaSobreVoce, jeitoDe, type AcaoFamilia, type Familiar } from "../../src/familia";
 import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
@@ -830,10 +831,12 @@ function historicoHtml(s: Save, nome: string): string {
     return `<tr${mudou ? ` class="mudou"` : ""}><td>${ANO_INICIAL + x.t}</td><td><span class="hist-clube">${escudo(x.clubeId)}<span>${linkClube(x.clubeId)}${x.base ? " <small>(base)</small>" : ""}</span></span></td><td class="n">${x.idade}</td><td class="n">${e ? e.j : "–"}</td><td class="n">${e ? e.g : "–"}</td><td class="n">${e ? e.a : "–"}</td><td class="n"><b>${x.ovr}</b>${d ? ` <small class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</small>` : ""}</td></tr>`;
   }).join("");
   const nat = ult.nat ?? nacionalidadeDe(pacote, nome);
+  const vida = vidaDe(nome, ult.idade);
   const bandeira = nat ? `<span class="hist-pais">${bandeiraSvg(nat, "escudo bandeira")}<small>${esc(NOME_PAIS[nat] ?? nat)}</small></span>` : "";
   return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
     <div class="hist-topo">${onde ? escudo(onde.clubeId) : ""}<div><small>${esc(NOME_POS[ult.posicao] ?? "Goleiro")} · ${ult.idade} anos</small><h1>${esc(nome)}</h1>${bandeira}<span class="sub">${agora}</span></div><div class="ovr"><strong>${ult.ovr}</strong><span>OVR</span></div></div>
     <div class="linha-info" style="margin:10px 0">${tag}<span>Pico <b>${pico.ovr}</b> em ${ANO_INICIAL + pico.t}</span><span><b>${clubes.length}</b> ${clubes.length === 1 ? "clube" : "clubes"}</span>${tot.j ? `<span><b>${tot.j}</b> jogos · <b>${tot.g}</b> gols · <b>${tot.a}</b> assist.</span>` : ""}${rel ? `<span>Relação: <b>${esc(rotuloNivel(rel.nivel))}</b></span>` : ""}</div>
+    ${bloco("Fora do campo", [vida.origem, ...vida.familia, ...vida.jeito, `Gosta de ${vida.hobby}.`, `Sonha em ${vida.sonho}.`])}
     <table class="hist"><thead><tr><th>Ano</th><th>Clube</th><th class="n">Id.</th><th class="n">J</th><th class="n">G</th><th class="n">A</th><th class="n">OVR</th></tr></thead><tbody>${linhas}</tbody></table>
     ${l[0].t === 0 && !l[0].base ? `<p class="sub" style="margin-top:8px">Antes de ${ANO_INICIAL}: carreira fora do registro do jogo.</p>` : ""}`;
 }
