@@ -1155,7 +1155,13 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
       receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: "lisa", numero: j.numero } }], eventos);
     }
   } else if (copa && ehDeSelecao(copa.id)) {
-    // amistoso da seleção: não entra em nenhuma estatística
+    // amistoso da seleção: fora das estatísticas, mas a estreia conta (a camisa vai para o armário)
+    const sl = (c.selecao ??= { jogos: 0, gols: 0, assist: 0, convocacoes: 0, copas: [], conv: {} });
+    if (!sl.estreia) {
+      sl.estreia = ANO_INICIAL + c.temporada; eventos.push("Estreia pela seleção!");
+      const sel = selecaoDe(pacote, j.nacionalidade)!, info = infoClube(pacote, sel.id);
+      receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: "lisa", numero: j.numero } }], eventos);
+    }
   } else if (copa) { const vazio = () => ({ jogos: 0, gols: 0, assist: 0, notas: [] as number[] }); const sc = ehEstadual(copa.id) ? (c.statsEstadual ??= vazio()) : copa.id === "INT" || copa.id === "MUN" ? ((c.statsExtra ??= {})[copa.id] ??= vazio()) : (c.statsCopa ??= vazio()); sc.jogos++; sc.gols += gols; sc.assist += assist; sc.notas.push(nota); }
   else if (pro) {
     c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota);
