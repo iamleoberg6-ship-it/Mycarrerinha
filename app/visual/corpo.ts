@@ -168,6 +168,8 @@ function padraoKit(k: Kit, g: Geo): string {
     // listras grossas: faixas largas na cor 2 sobre a cor 1 (Fortaleza: azul com vermelho)
     case "listrasHG": return Array.from({ length: 5 }, (_, i) => `<rect x="${x0}" y="${236 + i * 56}" width="${x1 - x0}" height="28" fill="${c2}"/>`).join("");
     case "diagonais": return [0, 1, 2].map((i) => `<path d="M${x0} ${262 + i * 70 + 60} L${x1} ${262 + i * 70 - 40} L${x1} ${262 + i * 70 - 16} L${x0} ${262 + i * 70 + 84} Z" fill="${c2}"/>`).join("");
+    // corte diagonal do ombro até a barra: a metade da direita na cor 2 (Mônaco: vermelho e branco)
+    case "metadeDiagonal": return `<path d="M${150 - g.ombro + 4} 246 L${x1} 246 L${x1} 490 L${150 + g.quadril + 4} 490 Z" fill="${c2}"/>`;
     case "faixa": return `<path d="M${150 - g.ombro + 4} 252 L${150 - g.ombro + 34} 246 L${150 + g.quadril + 34} 480 L${150 + g.quadril + 4} 480 Z" fill="${c2}"/>`;
     case "faixaH": return `<rect x="${x0}" y="318" width="${x1 - x0}" height="28" fill="${c2}"/>`;
     default: return "";

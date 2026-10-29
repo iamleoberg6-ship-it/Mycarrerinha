@@ -57,6 +57,8 @@ export const padraoCamisa = (clubeId: string) => PADRAO_CAMISA[clubeId] ?? "lisa
 /** Uniforme real de alguns clubes que o padrão simples não representa. Corpo branco com duas faixas cruzando o meio (vermelha e preta). */
 /** Quadricolor do Vale (Brusque): camisa branca com três faixas (verde, amarela e vermelha); o escudo segue as cores do clube. */
 export const UNIFORME_CLUBE: Record<string, { cores: [string, string]; padrao: string; faixas: string[]; escudo: [string, string] }> = {
+  // Mônaco: metade vermelha e metade branca, divididas por um corte diagonal do ombro até a barra
+  "FR-ASM": { cores: ["#E31B23", "#FFFFFF"], padrao: "metadeDiagonal", faixas: [], escudo: ["#E31B23", "#FFFFFF"] },
   "C-BRU": { cores: ["#FFFFFF", "#E2231A"], padrao: "tresFaixasH", faixas: ["#0B7A3B", "#F5C400", "#E2231A"], escudo: ["#E2231A", "#FFFFFF"] },
   /** Pantera de Ribeirão (Botafogo-SP): como o São Paulo, com as cores da faixa invertidas (preta em cima, vermelha embaixo). */
   BFC: { cores: ["#FFFFFF", "#000000"], padrao: "duasFaixasH", faixas: ["#000000", "#C8102E"], escudo: ["#C8102E", "#FFFFFF"] },

@@ -42,6 +42,8 @@ const inicial = (nome?: string) => {
 };
 /** O desenho do escudo no quadro 26 × 30 (sem o <svg>): contorno, desenho interno recortado e a borda. */
 export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: string, borda = 1.6): string {
+  // Marselha: só um M azul, sem escudo
+  if (chave === "FR-OM") return `<text x="13" y="23" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="26" fill="${c2r ?? "#2FAEE0"}" stroke="#0A0A0A" stroke-width=".8" paint-order="stroke">M</text>`;
   // São Paulo: escudo branco com um triângulo invertido, cortado em faixas preta, branca e vermelha
   if (chave === "SPA") {
     const escudo = "M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z", tri = "M2 3 H24 L13 27 Z";
