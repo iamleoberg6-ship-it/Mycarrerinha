@@ -1247,26 +1247,43 @@ function paginasDoAlbum(s: Save): PaginaAlbum[] {
     return Array.from({ length: partes }, (_, k) => { const n = base + (k < extra ? 1 : 0), fs = todas.slice(pos, pos + n); pos += n; return { ano, parte: k + 1, partes, fs }; });
   });
 }
-/** Página do álbum: as figurinhas coladas, sem espaço vazio. */
+/** Sentido da última virada de página (para a animação): 1 = avança, -1 = volta. */
+let direcaoAlbum: 1 | -1 = 1;
+/** Capa do álbum: a primeira coisa que aparece ao abrir. */
+function capaAlbumHtml(s: Save, paginas: PaginaAlbum[]): string {
+  const anos = [...new Set(paginas.map((p) => p.ano))];
+  const de = anos.length ? `${anos[0]}–${anos[anos.length - 1]}` : "";
+  return `<div class="album-capa-livro">
+    <div class="capa-marca">MY<br>CARREIRINHA</div>
+    <div class="capa-sub">Álbum de figurinhas</div>
+    <div class="capa-nome">${esc(s.jogador.apelido)}</div>
+    ${de ? `<div class="capa-anos">${de}</div>` : ""}
+    <button class="botao" data-album="0" style="margin-top:14px">Abrir o álbum ›</button>
+  </div>`;
+}
+/** Página do álbum: cabeçalho My Carreirinha e o ano; as figurinhas coladas, sem espaço vazio. */
 function albumPaginaHtml(s: Save): string {
   const paginas = paginasDoAlbum(s), pend = pacotesPendentes(s);
-  if (!paginas.length) return `<p class="sub">${pend.length ? `Você ainda não colou nenhuma página. Abra o pacote de ${pend[0]} no fim da temporada.` : "Ainda sem figurinhas."}</p>
-    ${pend.length ? `<button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""}`;
-  const i = albumPag === undefined || albumPag < 0 || albumPag >= paginas.length ? paginas.length - 1 : albumPag;
+  const fecha = `<div class="album-fecha"><button class="botao sec peq" data-fechar-album="1">Fechar</button></div>`;
+  if (albumPag === -1) return fecha + capaAlbumHtml(s, paginas);
+  if (!paginas.length) return `${fecha}<div class="album-folha"><p class="sub">${pend.length ? `Você ainda não colou nenhuma página. Abra o pacote de ${pend[0]} no fim da temporada.` : "Ainda sem figurinhas."}</p>
+    ${pend.length ? `<button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""}</div>`;
+  const i = albumPag === undefined || albumPag >= paginas.length ? paginas.length - 1 : albumPag;
   const p = paginas[i];
   const clubes = [...new Set(p.fs.filter((f) => f.tipo === "temporada").map((f) => f.clube))];
-  const colunas = p.fs.length === 4 ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
+  const colunas = `repeat(${p.fs.length === 4 ? 2 : Math.min(p.fs.length, 3)}, 1fr)`;
   const grade = p.fs.map((f) => `<div class="fig ${f.raridade}" title="${esc(NOME_TIPO_FIG[f.tipo])}: ${esc(f.legenda)}">${figurinhaSvg(f)}</div>`).join("");
-  return `<div class="album-fecha"><button class="botao sec peq" data-fechar-album="1">Fechar</button></div>
-    <div class="album-cap">
-      <div class="album-topo">
-        <button class="album-seta" data-album="${i - 1}" ${i === 0 ? "disabled" : ""} aria-label="Página anterior">‹</button>
-        <div><div class="album-ano">${p.ano}</div><div class="album-sub">${esc(clubes.join(" · ") || "Seleção e momentos")}</div></div>
+  return `${fecha}
+    <div class="album-folha virar-${direcaoAlbum > 0 ? "dir" : "esq"}" data-pagina="${i}">
+      <div class="pag-cab"><span class="pag-marca">MY CARREIRINHA</span><span class="pag-ano">${p.ano}</span></div>
+      <div class="pag-sub">${esc(clubes.join(" · ") || "Seleção e momentos")}${p.partes > 1 ? ` · ${p.parte}ª página da temporada` : ""}</div>
+      <div class="album-grid" style="grid-template-columns:${colunas}">${grade}</div>
+      <div class="pag-rodape">
+        <button class="album-seta" data-album="${i - 1}" aria-label="Página anterior">‹</button>
+        <span class="album-meta">Página ${i + 1} de ${paginas.length} · ${p.fs.length} coladas</span>
         <button class="album-seta" data-album="${i + 1}" ${i === paginas.length - 1 ? "disabled" : ""} aria-label="Próxima página">›</button>
       </div>
-      <p class="album-meta">Página ${i + 1} de ${paginas.length} · ${p.fs.length} coladas${p.partes > 1 ? ` · ${p.parte}ª página da temporada` : ""}</p>
-      <div class="album-grid" style="grid-template-columns:${colunas}">${grade}</div>
-      ${pend.length ? `<p class="sub" style="margin-top:12px">Tem pacote de ${pend[0]} esperando para colar.</p><button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""}
+      ${pend.length ? `<p class="sub" style="margin-top:10px">Tem pacote de ${pend[0]} esperando para colar.</p><button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""}
     </div>`;
 }
 /** Pacote da temporada: fechado, rasgando ou revelando as figurinhas uma a uma. */
@@ -2534,8 +2551,8 @@ document.addEventListener("click", (ev) => {
   else if (d.sug && save) { msgPos = { texto: responderSugestao(save, d.sug === "sim"), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.perfilClube) { abrirPerfilClube(d.perfilClube); }
   else if (d.fecharClube !== undefined) { ($("dlgClube") as HTMLDialogElement).close(); }
-  else if (d.album !== undefined && save) { albumPag = +d.album; desenharAlbum(); }
-  else if (d.abrirAlbum !== undefined && save) { albumPag = undefined; desenharAlbum(); ($("dlgAlbum") as HTMLDialogElement).showModal(); }
+  else if (d.album !== undefined && save) { const novo = +d.album; direcaoAlbum = albumPag === undefined || albumPag === -1 || novo > albumPag ? 1 : -1; albumPag = novo; desenharAlbum(); }
+  else if (d.abrirAlbum !== undefined && save) { albumPag = -1; desenharAlbum(); ($("dlgAlbum") as HTMLDialogElement).showModal(); }
   else if (d.fecharAlbum !== undefined) { ($("dlgAlbum") as HTMLDialogElement).close(); }
   else if (d.abrirPacote !== undefined && save) { pacoteAberto = { ano: +d.abrirPacote, estado: "fechado" }; desenharPacote(); ($("dlgPacote") as HTMLDialogElement).showModal(); }
   else if (d.revelarPacote !== undefined && pacoteAberto && pacoteAberto.estado === "fechado") { pacoteAberto.estado = "rasgando"; desenharPacote(); setTimeout(() => { if (pacoteAberto) { pacoteAberto.estado = "revelado"; desenharPacote(); } }, 750); }
