@@ -87,6 +87,11 @@ const NUMERO_COR: Record<string, string> = {
   "ES-ATH": "#111111",
 };
 export const numeroCorClube = (clubeId?: string): string | undefined => (clubeId ? NUMERO_COR[clubeId] : undefined);
+/** Uniforme da seleção: camisa, calção e meião (o escudo é a bandeira do país). */
+export const UNIFORME_SELECAO: Record<string, { cores: [string, string]; padrao: string; calcao: string; meiao: string }> = {
+  /** Brasil: camisa amarela com gola verde, calção azul, meião branco */
+  "NAT-BRA": { cores: ["#F5C400", "#009C3B"], padrao: "lisa", calcao: "#1B3D8F", meiao: "#FFFFFF" },
+};
 /** Calção e meião que fogem do padrão da camisa (São Paulo e Fortaleza jogam de branco embaixo). */
 export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" || clubeId === "FOR" ? "#FFFFFF" : undefined);
 export const meiaoDoClube = (clubeId?: string): string | undefined => (clubeId === "FOR" ? "#FFFFFF" : undefined);

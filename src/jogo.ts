@@ -52,7 +52,7 @@ import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMe
 import { gradeDeNumeros, numeroLivre, numeroParaChegada, limparNumeros, type Camisa } from "./numeros.js";
 import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
 import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, type LinhaNarracao } from "./narracao.js";
-import { reliquiasDaPartida, premiosDaTemporada, type Ganho } from "./reliquias.js";
+import { reliquiasDaPartida, premiosDaTemporada, UNIFORME_SELECAO, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, acoesDe, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
 import { agirFilho, programaPreferido, type AcaoFilho } from "./namoro.js";
 import { gostosDe, MAX_ACOES_NAMORO, type Par } from "./namoro.js";
@@ -1177,10 +1177,13 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
     sl.jogos++; sl.gols += gols; sl.assist += assist; sl.notaSoma = (sl.notaSoma ?? 0) + nota; sl.notaJogos = (sl.notaJogos ?? 0) + 1;
     if (copa.id !== "SEL") { const nc = ((sl.naTorneio ??= {})[copa.id] ??= { jogos: 0, gols: 0, assist: 0 }); nc.jogos++; nc.gols += gols; nc.assist += assist; }
     c.fama = clamp(c.fama + (copa.id === "COP" ? 1.5 : copa.id === "SEL" ? 0.7 : 1.1) + gols * 0.5, 0, 100);
+    // a camisa da seleção na competição: uma por torneio e ano, com o uniforme do país
+    { const ano = ANO_INICIAL + c.temporada, sel = selecaoDe(pacote, j.nacionalidade), us = sel ? UNIFORME_SELECAO[sel.id] : undefined;
+      if (sel && us) receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: `rel-camisa-selecao-${copa.id}-${ano}`, chave: "camisa-selecao", tipo: "camisa", nome: `Camisa da seleção · ${COPAS[copa.id].curto}`, legenda: `${sel.nome} · ${COPAS[copa.id].nome} ${ano}`, ano, cores: us.cores, modelo: us.padrao, numero: String(j.numero ?? 10) } }], eventos); }
     if (!sl.estreia) {
       sl.estreia = ANO_INICIAL + c.temporada; eventos.push("Estreia pela seleção!");
       const sel = selecaoDe(pacote, j.nacionalidade)!, info = infoClube(pacote, sel.id);
-      receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: "lisa", numero: j.numero } }], eventos);
+      receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: UNIFORME_SELECAO[sel.id]?.cores ?? [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: UNIFORME_SELECAO[sel.id]?.padrao ?? "lisa", numero: j.numero } }], eventos);
     }
   } else if (copa && ehDeSelecao(copa.id)) {
     // amistoso da seleção: fora das estatísticas, mas a estreia conta (a camisa vai para o armário)
@@ -1188,7 +1191,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
     if (!sl.estreia) {
       sl.estreia = ANO_INICIAL + c.temporada; eventos.push("Estreia pela seleção!");
       const sel = selecaoDe(pacote, j.nacionalidade)!, info = infoClube(pacote, sel.id);
-      receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: "lisa", numero: j.numero } }], eventos);
+      receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: UNIFORME_SELECAO[sel.id]?.cores ?? [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: UNIFORME_SELECAO[sel.id]?.padrao ?? "lisa", numero: j.numero } }], eventos);
     }
   } else if (copa) { const vazio = () => ({ jogos: 0, gols: 0, assist: 0, notas: [] as number[] }); const sc = ehEstadual(copa.id) ? (c.statsEstadual ??= vazio()) : copa.id === "INT" || copa.id === "MUN" ? ((c.statsExtra ??= {})[copa.id] ??= vazio()) : (c.statsCopa ??= vazio()); sc.jogos++; sc.gols += gols; sc.assist += assist; sc.notas.push(nota); }
   else if (pro) {

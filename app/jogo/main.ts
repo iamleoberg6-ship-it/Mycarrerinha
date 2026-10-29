@@ -3,7 +3,7 @@ import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { camisaCostas } from "../visual/camisas";
-import { kitVisual, calcaoDoClube, meiaoDoClube, numeroCorClube, UNIFORME_CLUBE } from "../../src/reliquias";
+import { kitVisual, calcaoDoClube, meiaoDoClube, numeroCorClube, UNIFORME_CLUBE, UNIFORME_SELECAO } from "../../src/reliquias";
 import type { Reliquia } from "../../src/casa";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
@@ -128,6 +128,12 @@ function escudo(id: string): string {
 }
 /** Uniforme do clube (cores e padrão) com a chuteira do patrocinador de material esportivo, se houver. */
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
+  const us = UNIFORME_SELECAO[clubeId];
+  if (us) {
+    // seleção: a camisa, o calção e o meião do país; o escudo é a bandeira
+    const info = infoClube(pacote, clubeId);
+    return { cor1: us.cores[0], cor2: us.cores[1], escudo: { chave: clubeId, nome: info?.nome ?? "", cores: us.cores }, calcao: us.calcao, meiao: us.meiao, padrao: us.padrao, numero: s.jogador.numero } as Kit;
+  }
   const info = infoClube(pacote, clubeId), [a0, b0] = info.cores, u = UNIFORME_CLUBE[clubeId];
   const [a, b] = u ? u.cores : [a0, b0];
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
@@ -1589,7 +1595,7 @@ function selecaoPerfilHtml(s: Save): string {
   const sl = s.carreira.selecao, nat = idSelecao(s.jogador.nacionalidade), nome = infoClube(pacote, nat)?.nome ?? "";
   const linhas = sl?.copas ?? [];
   return `<p class="rotulo">Seleção${nome ? ` · ${esc(nome)}` : ""}</p>
-    <div class="tiles">${tile(String(sl?.convocacoes ?? 0), "Convocações", "📨")}${tile(String(sl?.jogos ?? 0), "Jogos", "🏟️")}${tile(String(sl?.gols ?? 0), "Gols", "⚽")}${tile(String(sl?.assist ?? 0), "Assistências", "👟")}</div>
+    <div class="tiles">${tile(String(sl?.convocacoes ?? 0), "Convocações", "📨")}${tile(String(sl?.jogos ?? 0), "Jogos", "🏟️")}${tile(String(sl?.gols ?? 0), "Gols", "⚽")}${tile(String(sl?.assist ?? 0), "Assistências", "👟")}</div>${UNIFORME_SELECAO[nat] ? `<div class="perfil-uniforme">${corpoDe(s, "jogo", nat)}</div><p class="sub" style="text-align:center;margin:4px 0 0">Uniforme da seleção</p>` : ""}
     <p class="sub">${sl?.estreia ? `Estreia em ${sl.estreia}.` : "Ainda sem jogo pela seleção. Convocações e estreia aparecem aqui."}</p>
     ${linhas.length ? `<table><thead><tr><th>Ano</th><th>Competição</th><th class="n">J</th><th class="n">G</th><th class="n">A</th></tr></thead><tbody>${linhas.map((x) => `<tr><td>${x.ano}</td><td>${esc(x.id ? COPAS[x.id].nome : "Seleção")} · ${esc(x.fase)}${x.campeao ? " 🏆" : ""}</td><td class="n">${x.jogos}</td><td class="n">${x.gols}</td><td class="n">${x.assist ?? 0}</td></tr>`).join("")}</tbody></table>` : ""}`;
 }

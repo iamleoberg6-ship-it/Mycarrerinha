@@ -1,3 +1,4 @@
+import { bandeiraSvg } from "../../src/bandeiras";
 // Escudos genéricos (nada de escudo real): cada clube ganha, de forma fixa, um formato e um desenho interno,
 // sorteados pelo id do clube, sempre com as cores dele. Desenhados num quadro de 26 × 30.
 const TINTA = "#0A0A0A";
@@ -42,6 +43,8 @@ const inicial = (nome?: string) => {
 };
 /** O desenho do escudo no quadro 26 × 30 (sem o <svg>): contorno, desenho interno recortado e a borda. */
 export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: string, borda = 1.6): string {
+  // seleção: a bandeira do país no lugar do escudo
+  if (chave.startsWith("NAT-")) return bandeiraSvg(chave.slice(4), "").replace("<svg ", '<svg x="2" y="2" width="26" height="30" ');
   // Marselha: só um M azul, sem escudo
   if (chave === "FR-OM") return `<text x="13" y="23" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="26" fill="${c2r ?? "#2FAEE0"}" stroke="#0A0A0A" stroke-width=".8" paint-order="stroke">M</text>`;
   // São Paulo: escudo branco com um triângulo invertido, cortado em faixas preta, branca e vermelha
