@@ -2224,7 +2224,7 @@ function abrirJogo() {
   $("telaJogo").innerHTML = `<div class="placar ident" style="${estiloIdent(idt)}">${p.clima ? `<p class="selo-jogo"><span>${esc(p.clima.tag)}</span></p>` : ""}<p class="comp-linha">${seloSvg(idt, 22)}<span>${p.copa ? `${esc(COPAS[p.copa.id].curto)} · ${esc(p.copa.rotulo)}${p.copa.neutro ? " · campo neutro" : ""}` : p.tipo === "base" ? `${esc(infoLiga(save.carreira.ligaId).curto)} ${categoriaBase(save.jogador.idade).replace("s", "S")}` : `${esc(infoLiga(save.carreira.ligaId).curto)} · ${esc(rotuloSemana(save.carreira))}`}</span></p>
     <div class="linha"><div class="time">${escudo(p.casa)}<span>${esc(p.nomeCasa)}</span></div><div class="gols" id="gols">0 × 0</div><div class="time dir"><span>${esc(p.nomeFora)}</span>${escudo(p.fora)}</div></div>
     <div class="min" id="minuto">0'</div><div class="placar-extra"><span id="agregado"></span><span class="nota-viva" id="notaViva"></span></div>
-    ${campinhoSvg(p)}<div class="pressao" aria-label="Quem está melhor no jogo"><span>${esc(p.souCasa ? p.nomeCasa : p.nomeFora)}</span><i><b id="pressaoBar"></b></i><span>${esc(p.souCasa ? p.nomeFora : p.nomeCasa)}</span></div></div>
+    ${barraJogo(p)}</div>
     <div class="vel" aria-label="Velocidade da partida">${[1, 2, 4, 20, 40].map((v) => `<button class="chip${v === velocidade ? " ativo" : ""}" data-vel="${v}">${v}x</button>`).join("")}</div>
     <div class="estat" id="estat"></div>
     <div class="lances" id="lances"></div><div class="rodape" id="rodapeJogo"><button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button></div>`;
@@ -2300,14 +2300,17 @@ function adicionarLance(min: number, html: string, cls = "") {
 
 // ------------------------------------------------------------------ campinho: a bola anda conforme o lance
 let pressao = 0, passoBola = 0;
-function campinhoSvg(p: Partida): string {
+/** Cor de cada time na barra: a primeira; se as duas forem iguais, a segunda do visitante. */
+function coresBarra(p: Partida): [string, string] {
+  const casa = cores(p.casa), fora = cores(p.fora);
+  const c1 = casa[0], f1 = fora[0];
+  return [c1, f1.toLowerCase() === c1.toLowerCase() ? (fora[1] ?? "#FFFFFF") : f1];
+}
+/** Barra de ataque: a cor de cada time ocupa o lado dele e cresce conforme a bola vai para o outro lado. */
+function barraJogo(p: Partida): string {
   pressao = 0; passoBola = 0;
-  const [m1] = cores(p.souCasa ? p.casa : p.fora), [a1] = cores(p.souCasa ? p.fora : p.casa);
-  const faixas = Array.from({ length: 8 }, (_, i) => `<rect x="${i * 37.5}" y="0" width="37.5" height="110" fill="${i % 2 ? "#2F7A45" : "#2A6E3F"}"/>`).join("");
-  return `<svg class="campinho" viewBox="0 0 300 110" aria-hidden="true">${faixas}<g fill="none" stroke="#ffffffaa" stroke-width="1.4"><rect x="4" y="4" width="292" height="102"/><path d="M150 4 V106"/><circle cx="150" cy="55" r="15"/><rect x="4" y="30" width="34" height="50"/><rect x="262" y="30" width="34" height="50"/><rect x="4" y="44" width="10" height="22"/><rect x="286" y="44" width="10" height="22"/></g>
-    <rect x="0" y="45" width="4" height="20" fill="${m1}" stroke="#fff" stroke-width=".8"/><rect x="296" y="45" width="4" height="20" fill="${a1}" stroke="#fff" stroke-width=".8"/>
-    <g id="voce" class="voce" transform="translate(180 55)" style="opacity:${p.entrada === 0 ? 1 : 0}"><circle r="7" fill="${m1}" stroke="#fff" stroke-width="1.6"/><text y="3" text-anchor="middle" font-size="8" font-weight="900" fill="${luzCor(m1) > 0.6 ? "#111" : "#fff"}">${esc(save!.jogador.numero)}</text></g>
-    <g id="bola" class="bola" transform="translate(150 55)"><circle r="4.2" fill="#fff" stroke="#111" stroke-width="1"/></g></svg>`;
+  const [cc, cf] = coresBarra(p);
+  return `<div class="pressao" aria-label="Quem está atacando"><span>${esc(p.nomeCasa)}</span><div class="barra-jogo"><b id="pbCasa" style="background:${cc}"></b><b id="pbFora" style="background:${cf}"></b></div><span>${esc(p.nomeFora)}</span></div>`;
 }
 const luzCor = (hex: string) => { const n = parseInt(hex.replace("#", "").slice(0, 6), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
 /** Leva a bola para uma faixa do campo (0 = nosso gol, 300 = gol deles) e mexe na barra de pressão. */
@@ -2320,8 +2323,10 @@ function moverBola(_xMin: number, _xMax: number, dPressao: number, voce = false,
   if (v) v.style.opacity = emCampo ? "1" : "0";
   if (v) { v.setAttribute("transform", voce ? `translate(${(x - 10).toFixed(0)} ${(y + 6).toFixed(0)})` : `translate(${Math.min(250, Math.max(110, x - 30)).toFixed(0)} ${(y > 60 ? 86 : 30).toFixed(0)})`); v.classList.toggle("ativo", voce); }
   pressao = Math.max(-1, Math.min(1, pressao * 0.8 + dPressao));
-  const b = document.getElementById("pressaoBar");
-  if (b) { b.style.width = `${Math.abs(pressao) * 50}%`; b.style.left = pressao >= 0 ? "50%" : `${50 - Math.abs(pressao) * 50}%`; b.className = pressao >= 0 ? "pos" : "neg"; }
+  // a barra: o lado de cada time cresce conforme ele está no ataque; gol deixa a barra toda da cor de quem marcou
+  const ce = document.getElementById("pbCasa"), fe = document.getElementById("pbFora");
+  const w = 50 + (partida?.souCasa ? pressao : -pressao) * 50;
+  if (ce && fe) { ce.style.flexGrow = String(Math.max(0.001, w)); fe.style.flexGrow = String(Math.max(0.001, 100 - w)); }
 }
 /** Onde a bola está no campinho conforme o lance: escanteio no canto, falta, pênalti, gol, área ou meio-campo. */
 function zonaDoItem(item: ItemFila): [number, number] {
@@ -2379,7 +2384,7 @@ function mostrarItem(item: ItemFila) {
   atualizarPlacar();
   { // a bola no campinho: onde o lance aconteceu
     const meuLado = partida.souCasa ? "casa" : "fora", zona = zonaDoItem(item);
-    if (item.gol) { const meu = item.gol === meuLado; moverBola(0, 0, meu ? 0.6 : -0.6, item.meu === "gol", zona); flashGol(meu, item.meu === "gol" ? save.jogador.apelido : meu ? (partida.souCasa ? partida.nomeCasa : partida.nomeFora) : (partida.souCasa ? partida.nomeFora : partida.nomeCasa)); }
+    if (item.gol) { const meu = item.gol === meuLado; moverBola(0, 0, meu ? 2 : -2, item.meu === "gol", zona); flashGol(meu, item.meu === "gol" ? save.jogador.apelido : meu ? (partida.souCasa ? partida.nomeCasa : partida.nomeFora) : (partida.souCasa ? partida.nomeFora : partida.nomeCasa)); }
     else if (item.jogador) moverBola(0, 0, 0.12, true, zona);
     else if (item.cls === "meu") moverBola(0, 0, 0.18, false, zona);
     else if (item.cls === "contra") moverBola(0, 0, -0.18, false, zona);
