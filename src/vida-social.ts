@@ -85,11 +85,6 @@ export function semanaSocial(a: EstadoAgenda, rng: RNG, x: CtxSocial, avisos: st
         op("afastar", "Afastar ele do grupo", `${n} saiu do grupo. Ficou um vazio, e um certo alívio.`, { moral: -2, gatilho: `parca-afastar:${p.id}` }, { chance: 0.4, texto: `${n} saiu atirando: deu entrevista contando tudo.`, ef: { moral: -5, torcida: -3, gatilho: `parca-afastar:${p.id}`, noticia: { titulo: `Ex-parça detona ${x.apelido}`, texto: "Amigo afastado falou da vida pessoal do jogador num programa de fofoca.", tipo: "polemica" } } }),
         op("ignorar", "Deixar para lá", "Você deixou para lá.", { parca: [p.id, -5] }),
       ] }, 25);
-    } else if (p.perfil === "trabalhador" && x.saldo > 300_000) {
-      ag({ origem: "parca", chave: `parca-negocio-${p.id}`, titulo: `${n} quer abrir um negócio`, texto: `${n} juntou dinheiro a vida toda e quer abrir uma oficina. Falta ${reais(150_000)}. Ele propõe sociedade.`, opcoes: [
-        op("socio", "Entrar de sócio", `A oficina abriu com o seu nome na placa. ${n} trabalha de domingo a domingo.`, { dinheiro: -150_000, parca: [p.id, 20], moral: 3 }, { chance: 0.3, texto: "A oficina não vingou. Fechou em seis meses, mas a amizade ficou.", ef: { dinheiro: -150_000, parca: [p.id, 10] } }),
-        op("negar", "Desejar sorte", `${n} entendeu. Abriu menor, com empréstimo do banco.`, { parca: [p.id, -4] }),
-      ] }, 60);
     } else {
       ag({ origem: "parca", chave: `parca-aniver-${p.id}`, titulo: `Aniversário do ${n}`, texto: `Churrasco na laje da mãe do ${n}, no bairro onde vocês cresceram. Ele faz questão.`, opcoes: [
         op("ir", "Ir e levar a carne", "Pagode até tarde, histórias da infância. Lavou a alma.", { moral: 5, cansaco: 6, parca: [p.id, 12], dinheiro: -3_000 }),

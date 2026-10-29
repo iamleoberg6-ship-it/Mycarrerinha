@@ -108,10 +108,6 @@ export const EVENTOS: EventoVida[] = [
     op("ir", "Ir e voltar de madrugada", "Fez o discurso, chorou, voltou às 5 da manhã para a concentração.", { moral: 8, cansaco: 20 }),
     op("video", "Mandar um vídeo", "Ele entendeu. Disse que entendeu.", { moral: -3 }),
   ], { unico: true }),
-  ev("investimento-imovel", ["estabelecido", "estrela", "veterano"], "Oportunidade de negócio", "Um amigo do agente propõe sociedade numa rede de academias.", [
-    op("entrar", "Entrar como sócio", "Três unidades abertas no primeiro ano. Dá trabalho e dá dinheiro, um dia.", { sal: -5, moral: 2 }, { chance: 0.4, resultado: "A rede quebrou na pandemia de gripe do ano seguinte. Prejuízo total.", efeitos: { moral: -6 } }),
-    op("nao", "Ficar fora", "Dinheiro parado também não perde.", {}),
-  ], { quando: (c) => c.saldo > 1e6 }),
   ev("lesao-amigo", ["estabelecido", "estrela"], "Companheiro lesionado", "Seu parceiro de quarto rompeu o ligamento e está mal. Você pode passar as folgas com ele na fisioterapia.", [
     op("acompanhar", "Acompanhar a recuperação", "O elenco reparou. O capitão disse que é isso que faz um grupo.", { moral: 4, relTecnico: 4, cansaco: 5 }),
     op("mensagem", "Mandar mensagem e seguir a vida", "Ele respondeu com um joinha.", {}),
