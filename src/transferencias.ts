@@ -443,6 +443,27 @@ export function pedirParaSair(s: Save, sim: boolean, destino: Destino = "qualque
   return { ok: true, msg: especifico ? `Pedido feito: o agente vai atrás de clubes ${ONDE_DESTINO[destino]}. Vazou na imprensa: técnico e torcida não gostaram.` : "Pedido feito: o clube vai ouvir propostas. O técnico não gostou." };
 }
 
+/** Clubes que o jogador pode pedir como destino de empréstimo: os mais perto do nível dele na própria liga e na de baixo. */
+export function clubesParaEmprestimo(pacote: PacoteDados, s: Save): Clube[] {
+  const c = s.carreira, w = mundo(pacote), atual = infoLiga(c.ligaId), abaixo = atual.abaixo ? w.liga[atual.abaixo] : undefined;
+  const pool = [...(w.liga[atual.id]?.clubes ?? []), ...(abaixo?.clubes ?? [])].filter((x) => x.id !== c.clubeId);
+  const nivel = ovr(s.jogador);
+  return pool.sort((a, b) => Math.abs(a.forca - nivel) - Math.abs(b.forca - nivel)).slice(0, 4);
+}
+/** Pedir para ser emprestado a um clube da lista. Só na janela, só se o clube atual não precisar de você como titular e o destino achar que você tem nível. */
+export function pedirEmprestimo(pacote: PacoteDados, s: Save, clubeId: string): R {
+  const c = s.carreira, m = mercadoDe(c), j = s.jogador, w = mundo(pacote);
+  if (c.formacao || j.idade < 18) return { ok: false, msg: "Na base ainda não dá para pedir empréstimo." };
+  if (m.emprestimo) return { ok: false, msg: "Você já está emprestado." };
+  if (!janelaAberta(c)) return { ok: false, msg: "Empréstimo só se negocia na janela de transferências." };
+  const destino = w.clube[clubeId], origem = w.clube[c.clubeId];
+  if (!destino || destino.id === origem.id || !clubesParaEmprestimo(pacote, s).some((x) => x.id === clubeId)) return { ok: false, msg: "Esse clube não está na sua lista." };
+  if (papelNoClube(origem, s) === "titular") return { ok: false, msg: `O ${origem.nome} não libera você: você é titular e precisa jogar.` };
+  if (ovr(j) < destino.forca - 12) return { ok: false, msg: `O ${destino.nome} não quis: você ainda não tem o nível deles.` };
+  const p = nova(m, { tipo: "emprestimo", clubeId: destino.id, ligaId: destino.ligaId, salario: c.salario, anos: 0, taxa: 0, luvas: 0, papel: "titular", interesse: 0.7, expira: fimDaJanela(c) });
+  m.propostas.push(p);
+  return aceitar(pacote, s, p.id);
+}
 export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false): R {
   const c = s.carreira, m = mercadoDe(c), p = m.propostas.find((x) => x.id === id);
   if (!p) return { ok: false, msg: "Proposta não encontrada." };

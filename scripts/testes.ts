@@ -29,6 +29,7 @@ import { novoJogo, ofertasDeBase, semanaAutomatica, SEMANAS_TEMPORADA, prepararP
 import { agirRelacao, treinarPosicao, mudarPosicao, familiaridadeDe, jogoDaSemana, melhoresAmigos, ovr as ovrJ, ovrEm } from "../src/jogo.js";
 import { estrelas, relacoesDe, chanceCamisa } from "../src/relacoes.js";
 import { caminhoDe, aceitarConvite, caminhosDisponiveis } from "../src/caminhos.js";
+import { pedirEmprestimo, clubesParaEmprestimo } from "../src/transferencias.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
 import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
 import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, type Par } from "../src/namoro.js";
@@ -1514,6 +1515,25 @@ teste("Banco de agentes: 40 agentes em 5 níveis, alcance pelo país do agente, 
   assert.equal(responderAgente({ ...n }, { tipo: "contrapor", comissao: 0.001 }).status, "desistiu");
   assert.ok(habilidadeDoAgente(AGENTE_MEDIO, 0.02) < habilidadeDoAgente(AGENTE_MEDIO), "pagar menos reduz a habilidade");
   assert.equal(habilidadeDoAgente(FAMILIA), 0);
+});
+
+teste("Pedir empréstimo: só na janela, só para clube da lista e não para quem já está emprestado", () => {
+  const r = criarJogador({ nome: "Teste", pais: "BRA", familia: "humilde", formacao: "rua", alturaCm: 178, pe: "direito", posicao: "ATA", semente: "emprestimo-teste" });
+  const dados = { resultado: r, aparencia: {}, clube: null };
+  const s = novoJogo(pacote, dados, ofertasDeBase(pacote, dados)[0].clubeId, "emp-teste");
+  for (let k = 0; k < 2 * SEMANAS_TEMPORADA; k++) semanaAutomatica(pacote, s);
+  s.carreira.formacao = false; s.carreira.fase = undefined;
+  s.carreira.semana = 40; // fora da janela
+  assert.equal(pedirEmprestimo(pacote, s, clubesParaEmprestimo(pacote, s)[0].id).ok, false);
+  s.carreira.semana = 1; // janela aberta
+  const lista = clubesParaEmprestimo(pacote, s);
+  assert.ok(lista.length > 0 && lista.every((c) => c.id !== s.carreira.clubeId));
+  assert.equal(pedirEmprestimo(pacote, s, "CLUBE-INEXISTENTE").ok, false);
+  const ok1 = pedirEmprestimo(pacote, s, lista[0].id);
+  if (ok1.ok) {
+    assert.equal(mercadoDe(s.carreira).emprestimo?.origem !== undefined, true);
+    assert.equal(pedirEmprestimo(pacote, s, lista[1].id).ok, false, "já emprestado não pede de novo");
+  }
 });
 
 console.log(`\n${ok} testes passaram`);
