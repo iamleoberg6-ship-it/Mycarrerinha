@@ -2577,7 +2577,7 @@ function diagramaLance(d: Decisao): string {
 }
 function mostrarDecisao(d: Decisao) {
   const i = nDec++; decisoesAbertas[i] = d;
-  const el = document.createElement("div"); el.className = "decisao"; el.id = `dec${i}`;
+  const el = document.createElement("div"); el.className = "decisao atual"; el.id = `dec${i}`;
   const pos = SITUACAO[d.situacao]?.momento === "pos";
   const diag = diagramaLance(d);
   el.innerHTML = `<p class="rotulo" style="color:var(--ouro)">${pos ? "Depois do jogo" : `${d.min}' · Sua decisão`}</p><h2>${esc(d.titulo)}</h2>${diag}<p class="sub" style="font-size:15px;color:var(--giz)">${esc(d.texto)}</p>
@@ -2592,7 +2592,6 @@ function decidir(i: number, op: string) {
   const p = partida!, d = decisoesAbertas[i];
   if (!d) return;
   delete decisoesAbertas[i];
-  if (!Object.keys(decisoesAbertas).length) $("telaJogo").classList.remove("decidindo");
   const r = resolverDecisao(save!, p, d, op);
   const el = $(`dec${i}`);
   if (d.situacao === "disputaPenaltis" && pen) {
@@ -2636,8 +2635,8 @@ function decidir(i: number, op: string) {
   if (re && !r.vermelho && !r.sai) novos.push({ min: d.min, html: re, cls: "reacao" });
   fila.unshift(...novos);
   atualizarPlacar();
-  $("rodapeJogo").innerHTML = `<button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button>`;
-  timer = window.setTimeout(avancar, 1300);
+  // a consequência fica na tela até você continuar: nada de voltar sozinho para o campo
+  if (!Object.keys(decisoesAbertas).length) $("rodapeJogo").innerHTML = `<button class="botao grande" data-acao="continuar">Continuar o jogo</button>`;
 }
 
 // ------------------------------------------------------------------ fim da semana
@@ -2904,6 +2903,7 @@ document.addEventListener("click", (ev) => {
       msgMercado = erro ? { texto: `A simulação parou depois de ${n} semanas por um erro: ${erro}. Baixe o save (aba Vida) e mande para corrigir.`, ok: false } : { texto: `${n} semanas simuladas.${feito.length ? ` Nesse tempo, você ${feito.join(", ")}.` : ""}`, ok: true }; salvar(); render(); window.scrollTo(0, 0);
     } break;
     case "acelerar": clearTimeout(timer); pular = true; avancar(); break;
+    case "continuar": $("telaJogo").classList.remove("decidindo"); document.querySelectorAll(".decisao.atual").forEach((x) => x.classList.remove("atual")); $("rodapeJogo").innerHTML = `<button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button>`; avancar(); break;
     case "fimjogo": fecharSemana(); break;
     case "fimcopa": fecharJogoDaCopa(); break;
     case "proxima": ($("dlgResumo") as HTMLDialogElement).close(); window.scrollTo(0, 0); break;
