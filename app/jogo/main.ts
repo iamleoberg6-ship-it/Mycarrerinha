@@ -971,7 +971,7 @@ function abaPessoas(s: Save): string {
   return `<div class="celular">${abas}${msg}${corpo}</div>`;
 }
 function abaImprensa(s: Save): string {
-  const abas = `<div class="sub-abas rolar" role="tablist">${([["noticias", "Notícias"], ["redes", midiaDe(s).pauta ? "Redes •" : "Redes"]] as const).map(([k, n]) => `<button class="${subImprensa === k ? "ativo" : ""}" data-subimp="${k}" role="tab" aria-selected="${subImprensa === k}">${n}</button>`).join("")}</div>`;
+  const abas = `<div class="chips" role="tablist" aria-label="Notícias e redes" style="flex-wrap:wrap;margin-bottom:10px">${([["noticias", "Notícias"], ["redes", midiaDe(s).pauta ? "Redes •" : "Redes"]] as const).map(([k, n]) => `<button class="chip${subImprensa === k ? " ativo" : ""}" data-subimp="${k}" role="tab" aria-selected="${subImprensa === k}">${n}</button>`).join("")}</div>`;
   if (subImprensa === "redes") {
     const msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
     msgRel = undefined;
