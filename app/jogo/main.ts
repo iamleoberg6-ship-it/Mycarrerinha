@@ -2065,7 +2065,7 @@ function abaNoticias(s: Save): string {
   casualMini = undefined;
   if (!s.noticias.length) return `<p class="sub">Nada por enquanto.</p>`;
   const filtros: [typeof filtroNoticia, string][] = [["todas", "Todas"], ["jogo", "Jogos"], ["clube", "Clube e mundo"], ["vida", "Vida"], ["dinheiro", "Dinheiro"], ["polemica", "Polêmicas e lesões"]];
-  const chips = `<div class="chips" style="flex-wrap:wrap;margin-bottom:12px">${filtros.map(([k, n]) => `<button class="chip${filtroNoticia === k ? " ativo" : ""}" data-fnot="${k}">${n}</button>`).join("")}</div>`;
+  const chips = `<div class="filtros-noticia" role="tablist" aria-label="Tipo de notícia">${filtros.map(([k, n]) => `<button class="filtro-n${filtroNoticia === k ? " ativo" : ""}" data-fnot="${k}" role="tab" aria-selected="${filtroNoticia === k}">${n}</button>`).join("")}</div>`;
   const base = filtroNoticia === "todas" ? s.noticias : s.noticias.filter((n) => filtroNoticia === "polemica" ? n.tipo === "polemica" || n.tipo === "lesao" : n.tipo === filtroNoticia);
   if (!base.length) return chips + `<p class="sub">Nenhuma notícia desse tipo por enquanto.</p>`;
   // notícia sem imagem própria e sem arte temática vira uma linha curta com ícone

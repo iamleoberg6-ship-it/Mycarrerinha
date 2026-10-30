@@ -732,6 +732,10 @@ dialog.jogo-grande .placar.ident { background-image: radial-gradient(120% 140% a
 body:has(.fixo-jogar:not(.mini)) { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 .tiles-perfil > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 .semana-abas { margin-top: 4px; }
+/* filtros de notícia: texto leve, para não competir com os chips de Notícias/Redes */
+.filtros-noticia { display: flex; flex-wrap: wrap; gap: 2px 16px; margin: 0 0 12px; border-bottom: 1px solid currentColor; border-bottom-color: rgba(127,127,127,.25); }
+.filtro-n { background: none; border: 0; padding: 8px 0 7px; min-height: 36px; font: inherit; font-size: 13px; color: inherit; opacity: .6; cursor: pointer; box-shadow: inset 0 -2px 0 transparent; }
+.filtro-n.ativo { opacity: 1; font-weight: 700; box-shadow: inset 0 -2px 0 currentColor; }
 </style>
 </head>
 <body>
