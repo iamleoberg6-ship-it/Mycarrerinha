@@ -1236,8 +1236,9 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
       receberReliquias(s, [{ conquista: "camisa-selecao", reliquia: { id: "rel-camisa-selecao", chave: "camisa-selecao", tipo: "camisa", nome: "Camisa da estreia pela seleção", legenda: `${sel.nome} · ${partida.nomeCasa} ${gc} × ${gf} ${partida.nomeFora} · ${ANO_INICIAL + c.temporada}`, ano: ANO_INICIAL + c.temporada, cores: UNIFORME_SELECAO[sel.id]?.cores ?? [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: UNIFORME_SELECAO[sel.id]?.padrao ?? "lisa", numero: j.numero } }], eventos);
     }
   } else if (copa && ehDeSelecao(copa.id)) {
-    // amistoso da seleção: fora das estatísticas, mas a estreia conta (a camisa vai para o armário)
+    // amistoso da seleção: conta nas estatísticas (jogos, gols, assistências), fora das copas; a estreia vai para o armário
     const sl = (c.selecao ??= { jogos: 0, gols: 0, assist: 0, convocacoes: 0, copas: [], conv: {} });
+    sl.jogos++; sl.gols += gols; sl.assist += assist;
     if (!sl.estreia) {
       sl.estreia = ANO_INICIAL + c.temporada; eventos.push("Estreia pela seleção!");
       const sel = selecaoDe(pacote, j.nacionalidade)!, info = infoClube(pacote, sel.id);
@@ -2571,9 +2572,9 @@ export function recordesDoJogador(pacote: PacoteDados, s: Save): ListaRecorde[] 
   const sel = selecaoDe(pacote, j.nacionalidade), sl = c.selecao;
   if (sel && sl?.jogos) {
     const rec = recordesDaSelecao(j.nacionalidade, infoClube(pacote, sel.id)?.forca ?? sel.forca);
-    for (const [tipo, titulo, unidade] of [["gols", "Maiores artilheiros", "gols"], ["jogos", "Mais jogos", "jogos"]] as const) {
-      const { lista, pos } = comJogador(rec[tipo], j.apelido, sl[tipo]);
-      out.push({ chave: `sel-${tipo}`, titulo: `${titulo} da ${sel.nome}`, unidade, lista, pos, valor: sl[tipo], clubeId: sel.id });
+    for (const [tipo, titulo, unidade] of [["gols", "Maiores artilheiros", "gols"], ["jogos", "Mais jogos", "jogos"], ["assist", "Maiores assistentes", "assistências"]] as const) {
+      const { lista, pos } = comJogador(rec[tipo] ?? [], j.apelido, sl[tipo] ?? 0);
+      out.push({ chave: `sel-${tipo}`, titulo: `${titulo} da ${sel.nome}`, unidade, lista, pos, valor: sl[tipo] ?? 0, clubeId: sel.id });
     }
   }
   if (!c.fase && !c.formacao) {

@@ -5,7 +5,7 @@ import { RNG } from "./rng.js";
 import { gerarNome } from "./nomes.js";
 
 export interface Lenda { nome: string; valor: number; eu?: boolean }
-export interface Recordes { gols: Lenda[]; jogos: Lenda[] }
+export interface Recordes { gols: Lenda[]; jogos: Lenda[]; assist?: Lenda[] }
 
 /** Lendas reais dos recordes de gols (números oficiais, só partidas oficiais). Entram na lista do clube. */
 const LENDAS_REAIS: Record<string, Lenda[]> = {
@@ -48,10 +48,13 @@ export function recordesDaSelecao(pais: string, forca: number): Recordes {
   const rng = new RNG(`recordes|NAT|${pais}`), usados = new Set<string>();
   const topG = Math.max(18, Math.round((25 + (forca - 62) * 2.5) * rng.range(0.88, 1.12)));
   const topJ = Math.round((105 + (forca - 62) * 2.6) * rng.range(0.9, 1.1));
-  const r = {
+  const r: Recordes = {
     gols: [1, 0.86, 0.75, 0.66, 0.6].map((f) => ({ nome: gerarNome(rng, pais, usados), valor: Math.round(topG * f) })).sort((a, b) => b.valor - a.valor),
     jogos: [1, 0.92, 0.86, 0.8, 0.76].map((f) => ({ nome: gerarNome(rng, pais, usados), valor: Math.round(topJ * f) })).sort((a, b) => b.valor - a.valor),
   };
+  // assistências: sorteado depois dos gols e dos jogos, para não mudar os nomes já sorteados
+  const topA = Math.max(12, Math.round((18 + (forca - 62) * 2) * rng.range(0.88, 1.12)));
+  r.assist = [1, 0.84, 0.74, 0.65, 0.58].map((f) => ({ nome: gerarNome(rng, pais, usados), valor: Math.round(topA * f) })).sort((a, b) => b.valor - a.valor);
   const lendas = LENDAS_SELECAO[pais];
   if (lendas) r.gols = [...lendas].sort((a, b) => b.valor - a.valor);
   cacheSel.set(pais, r);

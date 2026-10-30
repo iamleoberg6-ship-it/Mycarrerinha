@@ -1694,7 +1694,7 @@ function radar(at: Record<Atributo, number>): string {
 }
 const tile = (valor: string, rotulo: string, icone?: string) => `<div class="tile${icone ? " com-ico" : ""}">${icone ? `<i aria-hidden="true">${icone}</i>` : ""}<b>${valor}</b><span>${rotulo}</span></div>`;
 /** Barras de gols (dourado) e assistências (verde) por temporada. */
-/** Registro pela seleção no perfil: convocações, jogos, gols, estreia e as copas disputadas (amistosos não entram). */
+/** Registro pela seleção no perfil: convocações, jogos, gols, assistências, estreia e as copas disputadas (amistosos entram nos números). */
 function selecaoPerfilHtml(s: Save): string {
   const sl = s.carreira.selecao, nat = idSelecao(s.jogador.nacionalidade), nome = infoClube(pacote, nat)?.nome ?? "";
   const linhas = sl?.copas ?? [];
