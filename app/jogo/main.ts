@@ -111,6 +111,7 @@ if (save && (save.jogador.aparencia as { v?: number } | undefined)?.v === 2) { s
 if (save) registrarReliquias(save.casa);
 let plano: Plano = ler<Plano>(CHAVE_PLANO) ?? planoPadrao();
 let aba: "semana" | "carreira" | "pessoas" | "mercado" | "vida" | "imprensa" = "semana";
+let semanaSub: "jogo" | "treino" | "tempo" = "jogo";
 /** semana em que as sub-abas foram vistas pela última vez: cada semana nova volta ao começo de cada aba */
 let ultimaSemanaVista = -1;
 let verOpcoes = false;
@@ -223,7 +224,7 @@ function render() {
     return;
   }
   const semAbs = semanaAbsJogo(save.carreira);
-  if (semAbs !== ultimaSemanaVista) { ultimaSemanaVista = semAbs; subJogador = "atributos"; subVida = "agenda"; vistaMercado = "eu"; subTabela = "classificacao"; }
+  if (semAbs !== ultimaSemanaVista) { ultimaSemanaVista = semAbs; subJogador = "atributos"; subVida = "agenda"; vistaMercado = "eu"; subTabela = "classificacao"; semanaSub = "jogo"; }
   app.innerHTML = save.carreira.encerrada ? telaDespedida(save) : telaSemana(save);
   // sub-abas que rolam: a escolhida fica à vista
   const rol = document.querySelector<HTMLElement>(".sub-abas.rolar"), at = rol?.querySelector<HTMLElement>(".ativo");
@@ -301,7 +302,7 @@ function telaSemana(s: Save): string {
   nPendencias = pend.length;
   const rotuloJogar = jc && escQ !== "lesionado" ? (aba === "semana" ? "Ir para o jogo de quarta" : "Jogo de quarta") : jogo && escPrev !== "lesionado" ? (aba === "semana" ? "Ir para o jogo" : "Jogar") : (aba === "semana" ? "Fechar a semana" : "Fechar semana");
   const botaoJogar = aba === "semana" ? `<button class="botao grande fixo-jogar" data-acao="jogar">${rotuloJogar}</button>` : `<button class="botao grande fixo-jogar mini" data-acao="jogar" aria-label="${rotuloJogar}" title="${rotuloJogar}"><span aria-hidden="true">▶</span></button>`;
-  const nav = `<nav class="abas" role="tablist" aria-label="Menu">${([["semana", "Semana", pend.length ? String(pend.length) : ""], ["carreira", "Carreira", ""], ["pessoas", "Pessoas", (namoroDe(s.carreira).filhos ?? []).some((f) => f.nomear) ? "👶" : ""], ["mercado", "Mercado", nProp ? String(nProp) : ""], ["vida", "Vida", agendaDe(s.carreira).pendentes.length ? String(agendaDe(s.carreira).pendentes.length) : ""], ["imprensa", "Imprensa", ""]] as const).map(([k, n, badge]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}"><span class="aba-ico">${ICONE_ABA[k]}${badge ? `<i class="aba-badge">${badge}</i>` : ""}</span><span class="aba-nome">${n}</span></button>`).join("")}</nav>`;
+  const nav = `<nav class="abas" role="tablist" aria-label="Menu">${([["semana", "Semana", pend.length ? String(pend.length) : ""], ["carreira", "Carreira", ""], ["pessoas", "Pessoas", (namoroDe(s.carreira).filhos ?? []).some((f) => f.nomear) ? "👶" : ""], ["mercado", "Mercado", nProp ? String(nProp) : ""], ["vida", "Vida", agendaDe(s.carreira).pendentes.length ? String(agendaDe(s.carreira).pendentes.length) : ""]] as const).map(([k, n, badge]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}"><span class="aba-ico">${ICONE_ABA[k]}${badge ? `<i class="aba-badge">${badge}</i>` : ""}</span><span class="aba-nome">${n}</span></button>`).join("")}</nav>`;
   const cabecalho = `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}${c.aposentadoria ? " · última temporada" : ""}</span><button class="engrenagem${verOpcoes ? " ativo" : ""}" data-acao="opcoes" aria-label="Opções: salvar, carregar e simular" aria-expanded="${verOpcoes}">${ic(`<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>`)}</button></header>
   ${verOpcoes ? opcoesHtml(s) : ""}`;
   if (aba !== "semana") return `${cabecalho}<section class="painel tela-aba">${aba === "carreira" ? abaJogador(s) : aba === "pessoas" ? abaPessoas(s) : aba === "mercado" ? abaMercado(s) : aba === "vida" ? abaVida(s) : abaImprensa(s)}</section>${botaoJogar}${nav}`;
@@ -314,16 +315,18 @@ function telaSemana(s: Save): string {
     <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${Math.round(c.fama)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
   </section>
 
-  <section class="painel jogo-card"><p class="rotulo">Esta semana</p>${copaHtml}${jogoHtml}${previsao}</section>
   ${pend.length ? `<p class="rotulo pend-titulo">Pendências <i>${pend.length}</i></p><div class="pendencias">${pend.join("")}</div>` : ""}
-
-  <section class="painel grupo-plano" aria-label="Plano da semana">
+  <div class="sub-abas rolar semana-abas" role="tablist" aria-label="Partes da semana">${([["jogo", "Jogo"], ["treino", "Treino"], ["tempo", "Tempo livre"]] as const).map(([k, n]) => `<button class="${semanaSub === k ? "ativo" : ""}" data-semsub="${k}" role="tab" aria-selected="${semanaSub === k}">${n}</button>`).join("")}</div>
+  ${semanaSub === "jogo" ? `<section class="painel jogo-card"><p class="rotulo">Esta semana</p>${copaHtml}${jogoHtml}${previsao}</section>` : ""}
+  ${semanaSub === "treino" ? `<section class="painel grupo-plano" aria-label="Treino do clube">
     <p class="rotulo">Treino do clube</p>
     <p class="sub" style="margin:8px 0 6px">Foco</p>
     <div class="chips" style="flex-wrap:wrap">${focos.map(([k, n]) => `<button class="chip${plano.foco === k ? " ativo" : ""}" data-foco="${k}">${n}</button>`).join("")}</div>
     <p class="sub" style="margin:10px 0 6px">Intensidade</p>
     <div class="chips" style="flex-wrap:wrap">${ints.map(([k, n]) => `<button class="chip${plano.intensidade === k ? " ativo" : ""}" data-int="${k}">${n}</button>`).join("")}</div>
     ${blocoTreinoPosicao(s)}
+  </section>` : ""}
+  ${semanaSub === "tempo" ? `<section class="painel grupo-plano" aria-label="Tempo livre">
     <p class="rotulo" style="margin-top:6px">Seu tempo livre</p><p class="sub" style="margin:4px 0 8px">Toque num dia para escolher a atividade daquele dia. Uma por dia.</p>
     <div class="grade-semana" role="grid" aria-label="Tempo livre de segunda a domingo">
       <div class="cab-linha" role="row">${DIAS.map((d, i) => `<span class="cab${travados.includes(i) ? " jogo" : ""}">${d}${travados.includes(i) ? "<small>jogo</small>" : i === 4 && jogo ? "<small>vésp.</small>" : ""}</span>`).join("")}${FIM_SEMANA.map((d, i) => `<span class="cab trav">${d}<small>${jogo ? (i ? "jogo" : "conc.") : "folga"}</small></span>`).join("")}</div>
@@ -331,7 +334,7 @@ function telaSemana(s: Save): string {
     </div>
     ${travados.length ? `<p class="sub" style="margin-top:6px">Quarta é dia de jogo ${(() => { const k = COPAS[jc?.copa.id ?? copaDoClube(s.carreira.copas, s.carreira.clubeId)!.id]; return `${k.prep === "do" ? "pelo" : "pela"} ${esc(k.curto)}`; })()}: só sobram quatro dias livres. O cansaço da quarta chega no domingo.</p>` : ""}
     <div class="previa"><span>Cansaço no jogo <b>${prev.cansaco}</b></span><span>Moral <b>${prev.moral}</b></span><span>Evolução <b>${sinal(prev.evolucao)}%</b></span>${prev.notaExtra ? `<span>Nota <b>+${prev.notaExtra.toFixed(2)}</b></span>` : ""}</div>
-  </section>
+  </section>` : ""}
   ${botaoJogar}${nav}`;
 }
 
@@ -1102,7 +1105,7 @@ function abaAmigos(s: Save): string {
     ${aposentados.length ? `<details class="dobra" style="margin-top:14px"><summary class="rotulo">Aposentados (${aposentados.length})</summary>${aposentados.slice(0, 20).map((x) => linhaRel(s, x, ["mensagem"])).join("")}</details>` : ""}`;
 }
 
-let subJogador: "atributos" | "clube" | "tabela" | "saude" | "negocios" | "visual" = "atributos";
+let subJogador: "atributos" | "clube" | "tabela" | "saude" | "negocios" | "imprensa" | "visual" = "atributos";
 let msgJog: { ok: boolean; texto: string } | undefined, operarCerteza: string | undefined;
 
 // ------------------------------------------------------------------ saúde e longevidade
@@ -1499,7 +1502,7 @@ function abaJogador(s: Save): string {
   const visual = blocoVisual(s);
   const media = st.notas.length ? (st.notas.reduce((a, b) => a + b, 0) / st.notas.length).toFixed(2) : "–";
   const grupos: [string, Grupo][] = [["Físico", "fisico"], ["Técnico", "tecnico"], ["Tático", "tatico"]];
-  const sub = `<div class="sub-abas rolar">${([["atributos", "Atributos"], ["clube", "Clube"], ["tabela", "Tabela"], ["saude", "Saúde"], ["negocios", "Negócios"], ["visual", "Visual"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
+  const sub = `<div class="sub-abas rolar">${([["atributos", "Atributos"], ["clube", "Clube"], ["tabela", "Tabela"], ["saude", "Saúde"], ["negocios", "Negócios"], ["imprensa", "Imprensa"], ["visual", "Visual"]] as const).map(([k, n]) => `<button class="${subJogador === k ? "ativo" : ""}" data-subjog="${k}">${n}</button>`).join("")}</div>`;
   const msg = msgJog ? `<p class="msg-mercado ${msgJog.ok ? "ok" : "nao"}">${esc(msgJog.texto)}</p>` : "";
   msgJog = undefined;
   if (subJogador === "visual") return sub + visual;
@@ -1507,6 +1510,7 @@ function abaJogador(s: Save): string {
   if (subJogador === "tabela") return sub + abaTabela(s);
   if (subJogador === "saude") return sub + msg + blocoSaude(s);
   if (subJogador === "negocios") return sub + msg + blocoNegocios(s);
+  if (subJogador === "imprensa") return sub + abaImprensa(s);
   return `${sub}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
@@ -1759,10 +1763,10 @@ function perfilHtml(s: Save): string {
     </div>
     <div class="perfil-corpo">
       <p class="bio">${esc(bio)}</p>
-      <div class="kv perfil-info"><span>Altura</span><b>${j.alturaCm ? `${(j.alturaCm / 100).toFixed(2).replace(".", ",")} m` : "–"}</b><span>Pé</span><b>${j.pe === "esquerdo" ? "Esquerdo" : j.pe === "ambidestro" ? "Ambidestro" : "Direito"}</b><span>Valor de mercado</span><b>${milhoes(vm)}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.formacao ? "Base" : `${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}`}</b><span>Seguidores</span><b>${compacto(c.seguidores)}</b></div>
+      <div class="kv perfil-info"><span>Altura</span><b>${j.alturaCm ? `${(j.alturaCm / 100).toFixed(2).replace(".", ",")} m` : "–"}</b><span>Pé</span><b>${j.pe === "esquerdo" ? "Esquerdo" : j.pe === "ambidestro" ? "Ambidestro" : "Direito"}</b><span>Valor de mercado</span><b>${vm >= 500000 ? milhoes(vm) : "Ainda sem valor"}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.formacao ? "Base" : `${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}`}</b><span>Seguidores</span><b>${compacto(c.seguidores)}</b></div>
 
       <p class="rotulo">Carreira</p>
-      <div class="tiles">${tile(String(t.jogos), "Jogos", "🏟️")}${tile(String(t.gols), "Gols", "⚽")}${tile(String(t.assist), "Assistências", "👟")}${tile(String(t.gols + t.assist), "G/A (gols + assist.)", "🎯")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média", "⭐")}${tile(String(t.titulos.length), "Títulos", "🏆")}${tile(String(t.premios.length), "Prêmios", "🌟")}</div>
+      <div class="tiles tiles-perfil">${tile(String(t.jogos), "Jogos", "🏟️")}${tile(String(t.gols), "Gols", "⚽")}${tile(String(t.assist), "Assistências", "👟")}${tile(String(t.gols + t.assist), "G/A (gols + assist.)", "🎯")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média", "⭐")}${tile(String(t.titulos.length), "Títulos", "🏆")}${tile(String(t.premios.length), "Prêmios", "🌟")}</div>
       ${(() => { const soma = (k: "mvp" | "selRodada" | "selMes") => c.historico.reduce((a, h) => a + (h[k] ?? 0), 0) + (c.stats[k] ?? 0); return `<div class="tiles">${tile(String(soma("mvp")), "Melhor em campo", "🥇")}${tile(String(soma("selRodada")), "Seleção da rodada", "📋")}${tile(String(soma("selMes")), "Seleção do mês", "🗓️")}</div>`; })()}
       ${barrasCarreira(hist.map(comCampanhas))}
       ${(() => { const cl = clubes.filter((k) => k.assist > 0).sort((a, b) => b.assist - a.assist); if (!cl.length) return ""; const max = Math.max(...cl.map((k) => k.assist)); return `<p class="rotulo">Assistências por clube</p><div class="barras">${cl.map((k) => barra(esc(k.clube), k.assist, max, "#74D394", `${k.assist} · ${k.jogos} j`)).join("")}</div>`; })()}
@@ -2861,7 +2865,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2902,7 +2906,7 @@ document.addEventListener("click", (ev) => {
   else if (d.assessor) { const r = assessorJogo(save!, d.assessor === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.post) { const r = postarJogo(pacote, save!, d.post as TipoPost); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.pauta) { const r = responderEntrevistaJogo(pacote, save!, d.pauta); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
-  else if (d.aba) { aba = d.aba as typeof aba; if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") subImprensa = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); window.scrollTo(0, 0); }
+  else if (d.aba) { aba = d.aba as typeof aba; if (d.aba === "imprensa") { aba = "carreira"; subJogador = "imprensa"; } if (d.ir === "negocios" || d.ir === "saude") subJogador = d.ir; if (d.ir === "redes") subImprensa = "redes"; if (d.ir === "agenda") subVida = "agenda"; render(); window.scrollTo(0, 0); }
   else if (d.negoc && save) { const r = negociarItem(pacote, save, d.negoc, d.item as never); msgMercado = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.aumento && save) { const r = pedirAumento(pacote, save, forma(save.carreira)); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.prop && save) {
@@ -2983,6 +2987,7 @@ document.addEventListener("click", (ev) => {
     else relAberto = relAberto === d.relabre ? undefined : d.relabre;
     const y = window.scrollY; render(); window.scrollTo(0, y);
   }
+  else if (d.semsub) { semanaSub = d.semsub as typeof semanaSub; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.subimp) { subImprensa = d.subimp as typeof subImprensa; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.subjog) { subJogador = d.subjog as typeof subJogador; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.vtab) { vistaTabela = d.vtab as typeof vistaTabela; tabelaEscolhida = true; const y = window.scrollY; render(); window.scrollTo(0, y); }
