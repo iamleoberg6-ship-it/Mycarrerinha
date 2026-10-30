@@ -6,9 +6,10 @@ import { gerarNome } from "./nomes.js";
 import { agendar, type EstadoAgenda, type OpcaoOcasiao, type EfeitoVida, type Ocasiao } from "./agenda.js";
 import type { Familiar } from "./familia.js";
 import type { Filho } from "./namoro.js";
+import { valorBrl, curtoBrl } from "./moeda.js";
 
 const op = (id: string, rotulo: string, texto: string, ef: EfeitoVida, risco?: OpcaoOcasiao["risco"]): OpcaoOcasiao => ({ id, rotulo, texto, ef, ...(risco ? { risco } : {}) });
-const reais = (v: number) => `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
+const reais = (v: number) => `${valorBrl(Math.round(v))}`;
 const primeiro = (n: string) => n.split(" ")[0];
 
 // ------------------------------------------------------------------ parças
@@ -257,7 +258,7 @@ export function semanaSocial(a: EstadoAgenda, rng: RNG, x: CtxSocial, avisos: st
         op("recusar", "Recusar", "Férias são para descansar.", {}),
       ] }, 60));
       opcoes.push(() => ag({ origem: "convite", chave: "beneficente", titulo: "Jogo beneficente", texto: "Um jogo de famosos contra ex-craques, com a renda para hospitais infantis.", opcoes: [
-        op("jogar", "Jogar", "Golaço de bicicleta contra um ex-goleiro de seleção. R$ 2 milhões arrecadados.", { torcida: 3, impacto: 8, fama: 1, imprensa: 3, cansaco: 6 }),
+        op("jogar", "Jogar", `Golaço de bicicleta contra um ex-goleiro de seleção. ${curtoBrl(2_000_000)} arrecadados.`, { torcida: 3, impacto: 8, fama: 1, imprensa: 3, cansaco: 6 }),
         op("recusar", "Recusar", "Você mandou uma camisa autografada para o leilão.", { impacto: 1 }),
       ] }, 60));
     }

@@ -8,6 +8,7 @@ import type { PacoteDados } from "./liga.js";
 import type { Posicao } from "./atributos.js";
 import { mundo, infoClube } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
+import { valorBrl } from "./moeda.js";
 
 export type Parentesco = "pai" | "mae" | "irmao" | "irma";
 export type TracoFamilia = "treinador" | "exJogador";
@@ -198,12 +199,12 @@ export function agirFamilia(f: EstadoFamilia, id: string, acao: AcaoFamilia, ctx
       if (!ctx.exterior) return feito(8, `Almoço de domingo com ${primeiro}.`, { moral: 2, cansaco: 4 });
       const custo = 6000;
       if (ctx.saldo < custo) return { ok: false, msg: "A passagem está cara demais para agora." };
-      return feito(11, `Você pegou um voo para ver ${primeiro}: R$ ${custo.toLocaleString("pt-BR")}.`, { custo, moral: 3, cansaco: 10 });
+      return feito(11, `Você pegou um voo para ver ${primeiro}: ${valorBrl(custo)}.`, { custo, moral: 3, cansaco: 10 });
     }
     case "presente": {
       const custo = Math.round(Math.max(400, ctx.salario * 0.03));
       if (ctx.saldo < custo) return { ok: false, msg: "Dinheiro curto para presente." };
-      return feito(6, `Presente para ${primeiro}: R$ ${custo.toLocaleString("pt-BR")}.`, { custo });
+      return feito(6, `Presente para ${primeiro}: ${valorBrl(custo)}.`, { custo });
     }
     case "jogo": return feito(7, `${primeiro} vai estar na arquibancada no jogo desta semana.`, { moral: 2 });
     case "conselho": {

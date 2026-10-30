@@ -1,3 +1,4 @@
+import { curtoBrl } from "./moeda.js";
 // Cidade onde o jogador mora (a do clube): clima, custo de vida, vida noturna, praia e perigo. Mexe no custo do mês,
 // na noite, no humor no inverno de quem veio de país quente, e traz momentos próprios (conhecer a cidade, festa típica,
 // a primeira neve, o trânsito).
@@ -129,7 +130,7 @@ export function semanaCidade(e: EstadoCidade, p: PerfilCidade, a: EstadoAgenda, 
     op("atrasar", "Chegar quando der", "Multa do clube e cara feia do técnico.", { relTecnico: -4, dinheiro: -Math.round(c.salario * 0.05) }),
   ] }, 20);
   if (p.perigo >= 2 && c.fama >= 30 && rng.chance(0.01)) agendar(a, c.ab, { origem: "cidade", chave: "susto-rua", titulo: "Susto na rua", prazo: 1, texto: "Uma moto emparelhou no sinal. Você percebeu a tempo e saiu acelerando.", opcoes: [
-    op("blindar", "Blindar o carro", "R$ 120 mil depois, a família dorme melhor.", { dinheiro: -120000, moral: 1 }),
+    op("blindar", "Blindar o carro", `${curtoBrl(120000)} depois, a família dorme melhor.`, { dinheiro: -120000, moral: 1 }),
     op("seguir", "Seguir a vida", "Foi só um susto.", { moral: -3, pressao: 3 }),
   ] }, 40);
   return ef;

@@ -4,9 +4,10 @@
 // Uns só acontecem (viram notícia e mexem na vida); outros pedem uma escolha (vão para a agenda).
 import { RNG } from "./rng.js";
 import { agendar, type EstadoAgenda, type OpcaoOcasiao, type EfeitoVida } from "./agenda.js";
+import { valorBrl } from "./moeda.js";
 
 const op = (id: string, rotulo: string, texto: string, ef: EfeitoVida, risco?: OpcaoOcasiao["risco"]): OpcaoOcasiao => ({ id, rotulo, texto, ef, ...(risco ? { risco } : {}) });
-const reais = (v: number) => `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
+const reais = (v: number) => `${valorBrl(Math.round(v))}`;
 
 export interface CtxAcontece {
   ab: number; semana: number; ano: number; apelido: string; clube: string; cidade: string; idade: number; fama: number; salario: number; saldo: number;

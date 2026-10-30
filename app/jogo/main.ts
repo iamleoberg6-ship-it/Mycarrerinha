@@ -88,6 +88,7 @@ import { VAGAS_433 } from "../../src/partida";
 import { paiTreinador } from "../../src/familia";
 import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
 import { svgComodo } from "../casa/iso";
+import { valorBrl, valorEur, numBrl, numEur, simboloAtual, definirMoeda, moedaSugerida, MOEDAS, curtoBrl, curtoEur } from "../../src/moeda.js";
 
 const pacote = pacoteJson as unknown as PacoteDados;
 void liga;
@@ -116,7 +117,7 @@ let semanaSub: "jogo" | "treino" | "tempo" = "jogo";
 let ultimaSemanaVista = -1;
 let verOpcoes = false;
 let msgNumero: { texto: string; ok: boolean } | undefined, numeroVisto: number | undefined;
-let caminhoSel: Caminho = "base", cidadeSel: string | undefined, msgConvite: { texto: string; ok: boolean } | undefined;
+let moedaEscolhida: string | undefined, caminhoSel: Caminho = "base", cidadeSel: string | undefined, msgConvite: { texto: string; ok: boolean } | undefined;
 let msgRel: { texto: string; ok: boolean } | undefined, msgPos: { texto: string; ok: boolean } | undefined;
 let msgMercado: { texto: string; ok: boolean } | undefined;
 const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, plano); };
@@ -217,6 +218,7 @@ const sinal = (v: number, casas = 0) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Ma
 
 // ------------------------------------------------------------------ telas
 function render() {
+  definirMoeda(save?.moeda);
   const app = $("app");
   if (!save) {
     const dados = ler<DadosCriacao>(CHAVE_JOGADOR);
@@ -243,11 +245,14 @@ function telaInicio(): string {
 function telaOfertas(d: DadosCriacao): string {
   const r = d.resultado, disp = caminhosDisponiveis(r.escolhas.pais, r.escolhas.familia, r.potencial);
   if (!disp.includes(caminhoSel)) caminhoSel = "base";
+  const moedaAgora = moedaEscolhida ?? moedaSugerida(caminhoSel);
+  definirMoeda(moedaAgora);
   const cidade = cidadeSel ?? cidadeDaVarzea(pacote, d.clube);
   const of = ofertasDoCaminho(pacote, d, caminhoSel, cidade);
   const titulo = caminhoSel === "base" ? "Três clubes querem você na base." : caminhoSel === "varzea" ? `Três times da várzea ${DA_CIDADE[cidade]} querem você.` : caminhoSel === "eua_academia" ? "Três academias da liga americana abrem as portas." : caminhoSel === "academia_elite" ? "Três categorias de base de elite querem você." : caminhoSel === "peneira_exterior" ? "Três clubes estrangeiros chamam para peneira." : caminhoSel === "japao_universidade" ? "Três colégios japoneses aceitam você." : "Três colégios nos EUA aceitam você.";
   return `<header class="marca"><strong>Mycarrerinha</strong><span>Primeira decisão</span></header>
     <p class="rotulo">${esc(r.escolhas.nome)} · ${NOME_POS[r.escolhas.posicao]} · OVR ${r.ovr}</p>
+    <p class="rotulo" style="margin-top:6px">Moeda da carreira</p><div class="chips" style="flex-wrap:wrap;margin-bottom:6px">${(Object.keys(MOEDAS) as (keyof typeof MOEDAS)[]).map((k) => `<button class="chip${moedaAgora === k ? " ativo" : ""}" data-moeda="${k}">${MOEDAS[k].simbolo} ${MOEDAS[k].curto}</button>`).join("")}</div>
     ${disp.length > 1 ? `<p class="rotulo" style="margin-top:6px">Por onde começar</p><div class="caminhos">${disp.map((k) => `<button class="caminho${caminhoSel === k ? " ativo" : ""}" data-caminho="${k}"><b>${esc(CAMINHOS[k].nome)}</b><small>Começa aos ${CAMINHOS[k].idade}</small></button>`).join("")}</div>
       <p class="sub">${esc(CAMINHOS[caminhoSel].texto)}</p>` : ""}
     ${caminhoSel === "varzea" ? `<div class="chips" style="flex-wrap:wrap;margin-bottom:8px">${Object.entries(CIDADES_VARZEA).map(([k, n]) => `<button class="chip${k === cidade ? " ativo" : ""}" data-cidade="${k}">${esc(n)}</button>`).join("")}</div>` : ""}
@@ -1160,7 +1165,7 @@ function blocoNegocios(s: Save): string {
     return `<div class="abrir-emp${pode ? "" : " trava"}"><div><b>${esc(i.nome)}</b><small>${esc(i.desc)}</small>${c.fama < i.famaMin ? `<small class="falta">Precisa de fama ${i.famaMin}</small>` : ""}</div><button class="botao peq${pode ? "" : " sec"}" data-abrir="${t}" ${pode ? "" : "disabled"}>${dinheiro(i.custo)}</button></div>`;
   }).join("");
   const invs = (Object.keys(INVEST) as TipoInvest[]).map((k) => `<div class="invest"><div><b>${INVEST[k].nome}</b><small>${esc(INVEST[k].desc)}</small></div><b class="inv-v">${dinheiro(n.invest[k])}</b>
-    <div class="ferr-botoes">${[100_000, 1_000_000].map((v) => `<button class="chip" data-inv="${k}" data-valor="${v}" ${saldo >= v ? "" : "disabled"}>+${dinheiroCurto(v).replace("R$ ", "")}</button>`).join("")}${n.invest[k] > 0 ? `<button class="chip" data-inv="${k}" data-valor="-1e15">Resgatar</button>` : ""}</div></div>`).join("");
+    <div class="ferr-botoes">${[100_000, 1_000_000].map((v) => `<button class="chip" data-inv="${k}" data-valor="${v}" ${saldo >= v ? "" : "disabled"}>+${dinheiroCurto(v).replace(simboloAtual() + " ", "")}</button>`).join("")}${n.invest[k] > 0 ? `<button class="chip" data-inv="${k}" data-valor="-1e15">Resgatar</button>` : ""}</div></div>`).join("");
   const golpes = n.golpes.map((g) => `<div class="invest"><div><b>${esc(g.nome)}</b><small>O extrato não para de subir.</small></div><b class="inv-v" style="color:#74D394">${dinheiro(g.mostrado)}</b></div>`).join("");
   return `${prop}<div class="tiles">${tile(dinheiroCurto(saldo), "Em conta")}${tile(dinheiroCurto(inv), "Investido")}${tile(dinheiroCurto(saldo + inv), "Patrimônio")}</div>
     ${n.mes ? `<p class="sub" style="margin-top:6px">Último mês: empresas ${n.mes.empresas >= 0 ? "+" : "−"}${dinheiro(Math.abs(n.mes.empresas))} · investimentos ${n.mes.invest >= 0 ? "+" : "−"}${dinheiro(Math.abs(Math.round(n.mes.invest)))}</p>` : ""}
@@ -1269,7 +1274,7 @@ function blocoClubeCorpo(s: Save): string {
     ${tv && (tv.protestos || tv.aeroporto) ? `<p class="sub">${tv.aeroporto ? `${tv.aeroporto} festa${tv.aeroporto > 1 ? "s" : ""} no aeroporto` : ""}${tv.aeroporto && tv.protestos ? " · " : ""}${tv.protestos ? `${tv.protestos} protesto${tv.protestos > 1 ? "s" : ""} no CT` : ""}</p>` : ""}
     ${Object.values(c.torcidaViva ?? {}).filter((x) => x.clubeId !== c.clubeId && (x.apelido || x.musica)).map((x) => `<p class="sub">No ${esc(infoClube(pacote, x.clubeId)?.nome ?? "")}: ${x.apelido ? `"${esc(x.apelido)}"` : ""}${x.musica ? " · tinha música" : ""}</p>`).join("")}</div>`;
   const k = c.contrato;
-  const contrato = `<div class="card-clube"><div class="kv"><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b>${k ? `<span>Multa rescisória</span><b>€ ${(k.multa / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi</b>${k.pctVenda ? `<span>Da venda futura</span><b>${k.pctVenda}%</b>` : ""}<span>Bônus por gol</span><b>${k.bonusGol ? dinheiro(k.bonusGol) : "–"}</b><span>Bônus por título</span><b>${k.bonusTitulo ? dinheiro(k.bonusTitulo) : "–"}</b>` : ""}</div>
+  const contrato = `<div class="card-clube"><div class="kv"><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b>${k ? `<span>Multa rescisória</span><b>${curtoEur(k.multa)}</b>${k.pctVenda ? `<span>Da venda futura</span><b>${k.pctVenda}%</b>` : ""}<span>Bônus por gol</span><b>${k.bonusGol ? dinheiro(k.bonusGol) : "–"}</b><span>Bônus por título</span><b>${k.bonusTitulo ? dinheiro(k.bonusTitulo) : "–"}</b>` : ""}</div>
     ${!k ? `<p class="sub">Contrato antigo, sem cláusulas. A próxima renovação ou transferência traz multa, bônus e % de venda.</p>` : ""}
     <div class="ferr-botoes"><button class="botao sec peq" data-aumento="1" ${k?.pedidoAumento === c.temporada ? "disabled" : ""}>Pedir aumento à diretoria</button></div>
     <p class="sub">Uma vez por temporada. Quem é titular e está em boa fase ganha renovação melhor; quem não está, ouve um não.</p></div>`;
@@ -1316,7 +1321,7 @@ function figurinhaPatrocinioSvg(f: Figurinha): string {
   const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
   const rosto = svgFoto({ aparencia: ap, camisa: { cor1: "#F4F4F2", cor2: c1, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="54" y="106" width="52" height="56" ');
   const logo = m ? logoSvg(m, 44).replace("<svg ", '<svg x="14" y="24" width="132" height="64" style="width:132px;height:64px" ') : "";
-  const reais = (v: number) => `R$ ${v >= 1e6 ? `${(v / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi` : v >= 1e3 ? `${Math.round(v / 1e3).toLocaleString("pt-BR")} mil` : v.toLocaleString("pt-BR")}`;
+  const reais = (v: number) => curtoBrl(v);
   const tipo = k.tipo === "fixo" ? "valor fixo" : k.tipo === "desempenho" ? "por desempenho" : "longo prazo";
   const pill = k.luvas ? `LUVAS ${reais(k.luvas)}` : tipo.toUpperCase();
   return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="Patrocínio ${f.ano}"><defs>
@@ -1519,7 +1524,7 @@ function abaJogador(s: Save): string {
 }
 
 // ------------------------------------------------------------------ mercado
-const milhoes = (euros: number) => `€ ${(euros / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+const milhoes = (euros: number) => `${simboloAtual()} ${(numEur(euros) / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
 const NOME_TIPO: Record<PropostaSave["tipo"], string> = { transferencia: "Transferência", livre: "Sem custo", emprestimo: "Empréstimo", renovacao: "Renovação" };
 // ------------------------------------------------------------------ janela de transferências do mundo
 let vistaMercado: "eu" | "mundo" = "eu", janelaVista: string | undefined, filtroJanela: "todas" | "liga" | "clube" | "base" | "aposentadorias" | "livres" | "tecnicos" | "lesoes" = "todas";
@@ -1594,7 +1599,7 @@ function clausulasHtml(p: PropostaSave): string {
   if (save) comClausulas(pacote, save, p);
   const pac = p.paciencia ?? 0, pedidos = p.pedidos ?? [];
   const itens = (Object.keys(NOME_ITEM) as (keyof typeof NOME_ITEM)[]).filter((k) => !pedidos.includes(k));
-  return `<div class="kv clausulas"><span>Multa rescisória</span><b>€ ${((p.multa ?? 0) / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi</b>${p.pctVenda ? `<span>Da venda futura</span><b>${p.pctVenda}% para você</b>` : ""}<span>Bônus por gol</span><b>${p.bonusGol ? dinheiro(p.bonusGol) : "–"}</b><span>Bônus por título</span><b>${p.bonusTitulo ? dinheiro(p.bonusTitulo) : "–"}</b></div>
+  return `<div class="kv clausulas"><span>Multa rescisória</span><b>${curtoEur(p.multa ?? 0)}</b>${p.pctVenda ? `<span>Da venda futura</span><b>${p.pctVenda}% para você</b>` : ""}<span>Bônus por gol</span><b>${p.bonusGol ? dinheiro(p.bonusGol) : "–"}</b><span>Bônus por título</span><b>${p.bonusTitulo ? dinheiro(p.bonusTitulo) : "–"}</b></div>
     <details class="dobra negociar"${pedidos.length ? " open" : ""}><summary class="rotulo">Negociar · paciência da diretoria ${"●".repeat(Math.max(0, pac))}${"○".repeat(Math.max(0, 4 - pac))}</summary>
     ${pac > 0 ? `<div class="chips" style="flex-wrap:wrap">${itens.map((k) => `<button class="chip" data-negoc="${p.id}" data-item="${k}" title="${esc(NOME_ITEM[k][1])}">${esc(NOME_ITEM[k][0])}</button>`).join("")}</div><p class="sub">Cada pedido que não colar gasta paciência. Quando acaba, é pegar ou largar${p.tipo === "renovacao" ? "" : ", e o clube pode desistir"}.</p>` : `<p class="sub">A diretoria encerrou a conversa: é pegar ou largar.</p>`}</details>`;
 }
@@ -1623,7 +1628,7 @@ function abaMercadoEu(s: Save): string {
       : `<button class="botao" data-prop="${p.id}" data-op="aceitar">${p.tipo === "renovacao" ? "Renovar" : p.tipo === "emprestimo" ? "Aceitar o empréstimo" : "Aceitar"}</button><button class="botao sec" data-prop="${p.id}" data-op="recusar">Recusar</button>`;
     return `<div class="oferta" style="--c1:${info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0]}"><div class="faixa"></div><div class="corpo">
       <div style="display:flex;gap:10px;align-items:center">${escudo(p.clubeId)}<div><h2 style="margin:0">${linkClube(p.clubeId, info.nome)}</h2><span class="sub">${esc(infoLiga(p.ligaId).curto)} · ${esc(info.cidade)} · força ${Math.round(cl.forca)} · ${esc(NOME_CULTURA[culturaBase(p.clubeId)].toLowerCase())}</span></div></div>
-      ${p.tipo === "emprestimo" ? `<p class="sub" style="margin:6px 0">${p.fracaoSalario && p.fracaoSalario < 1 ? `Divisão de salário: o ${esc(cl.nome)} paga ${Math.round(p.fracaoSalario * 100)}% e o clube atual, o resto.` : `O clube de destino paga o salário integral.`}${p.opcaoCompra ? ` Cláusula de compra: € ${(p.opcaoCompra / 1e6).toFixed(1)} mi, que o ${esc(cl.nome)} pode exercer no fim do empréstimo.` : ""}</p>` : ""}
+      ${p.tipo === "emprestimo" ? `<p class="sub" style="margin:6px 0">${p.fracaoSalario && p.fracaoSalario < 1 ? `Divisão de salário: o ${esc(cl.nome)} paga ${Math.round(p.fracaoSalario * 100)}% e o clube atual, o resto.` : `O clube de destino paga o salário integral.`}${p.opcaoCompra ? ` Cláusula de compra: ${curtoEur(p.opcaoCompra)}, que o ${esc(cl.nome)} pode exercer no fim do empréstimo.` : ""}</p>` : ""}
       <div class="prop-vis">${escalacaoPapel(j.posicao, p.papel, info.cores[0].toUpperCase() === "#FFFFFF" ? info.cores[1] : info.cores[0])}<div class="pv-lado"><span class="tag ${p.papel === "titular" ? "titular" : p.papel === "rotacao" ? "banco" : "ruim"}">${NOME_TIPO[p.tipo]}</span><b class="pv-papel">${NOME_PAPEL[p.papel]}</b><small class="sub">${p.papel === "titular" ? "Entra no time de cara" : p.papel === "rotacao" ? "Reveza com o titular" : "Começa no banco"}</small></div></div>
         ${comparaContrato([
           ["Salário/mês", dinheiroCurto(c.salario), c.salario, dinheiroCurto(p.salario), p.salario],
@@ -1825,8 +1830,8 @@ function pontosEvolucao(s: Save, m: MetricaEvo): { rot: string; v: number; agora
 }
 const fmtEvo = (m: MetricaEvo, v: number) => m === "valor" || m === "salario" ? dinheiroCurto(v) : m === "seguidores" ? compacto(v) : String(Math.round(v));
 function dinheiroCurto(v: number): string {
-  const a = Math.abs(v), n = a >= 1e9 ? `${(v / 1e9).toFixed(1)} bi` : a >= 1e6 ? `${(v / 1e6).toFixed(a >= 1e7 ? 0 : 1)} mi` : a >= 1e3 ? `${Math.round(v / 1e3)} mil` : String(Math.round(v));
-  return `R$ ${n.replace(".", ",")}`;
+  const x = numBrl(v), a = Math.abs(x), n = a >= 1e9 ? `${(x / 1e9).toFixed(1)} bi` : a >= 1e6 ? `${(x / 1e6).toFixed(a >= 1e7 ? 0 : 1)} mi` : a >= 1e3 ? `${Math.round(x / 1e3)} mil` : String(Math.round(x));
+  return `${simboloAtual()} ${n.replace(".", ",")}`;
 }
 function evolucaoHtml(s: Save): string {
   const pts = pontosEvolucao(s, metricaEvo);
@@ -2139,7 +2144,7 @@ function vidaParcas(s: Save): string {
   const ps = parcasDe(s), c = s.carreira, ab = semanaAbsJogo(c);
   const card = (p: typeof ps[number]) => {
     const cor = p.lealdade >= 70 ? "#74D394" : p.lealdade >= 45 ? "#E3B341" : "#EC7D69";
-    return `<div class="parca"><div class="parca-topo"><span class="avatar-fam" style="--c:${cor}">${esc(p.apelido.slice(0, 2).toUpperCase())}</span><div><b>${esc(p.apelido)}</b> <span class="selo">${NOME_PERFIL[p.perfil]}</span><small>${esc(p.nome)} · amigo desde ${p.desde}${p.funcao ? ` · ${FUNCOES[p.funcao].nome.toLowerCase()}` : ""}${p.divida ? ` · te deve R$ ${p.divida.toLocaleString("pt-BR")}` : ""}</small></div></div>
+    return `<div class="parca"><div class="parca-topo"><span class="avatar-fam" style="--c:${cor}">${esc(p.apelido.slice(0, 2).toUpperCase())}</span><div><b>${esc(p.apelido)}</b> <span class="selo">${NOME_PERFIL[p.perfil]}</span><small>${esc(p.nome)} · amigo desde ${p.desde}${p.funcao ? ` · ${FUNCOES[p.funcao].nome.toLowerCase()}` : ""}${p.divida ? ` · te deve ${valorBrl(p.divida)}` : ""}</small></div></div>
       <div class="emp-saude"><span>Lealdade</span><span class="rel-barra"><i style="width:${p.lealdade}%;background:${cor}"></i></span></div>
       <div class="rel-acoes" style="margin-left:0">${(Object.keys(FUNCOES) as FuncaoParca[]).map((f) => `<button class="chip${p.funcao === f ? " ativo" : ""}" data-parca="${p.id}" data-funcao="${p.funcao === f ? "" : f}">${FUNCOES[f].nome}${p.funcao === f ? " ✓" : ""}</button>`).join("")}<button class="chip" data-afastar="${p.id}">${afastarCerteza === p.id ? "Toque de novo para afastar" : "Afastar"}</button></div></div>`;
   };
@@ -2865,7 +2870,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -2873,8 +2878,11 @@ document.addEventListener("click", (ev) => {
     const dados = ler<DadosCriacao>(CHAVE_JOGADOR)!;
     dados.aparencia = aparenciaCompat(dados.aparencia);
     dados.caminho = caminhoSel; dados.cidade = caminhoSel === "varzea" ? cidadeSel ?? cidadeDaVarzea(pacote, dados.clube) : undefined;
-    save = novoJogo(pacote, dados, d.assinar); plano = planoPadrao(); salvar(); render(); window.scrollTo(0, 0);
-  } else if (d.foco) { plano.foco = d.foco as Grupo; salvar(); render(); }
+    const moedaFinal = moedaEscolhida ?? moedaSugerida(caminhoSel);
+    definirMoeda(moedaFinal);
+    save = novoJogo(pacote, dados, d.assinar); save.moeda = moedaFinal; plano = planoPadrao(); salvar(); render(); window.scrollTo(0, 0);
+  } else if (d.moeda) { moedaEscolhida = d.moeda; render(); }
+  else if (d.foco) { plano.foco = d.foco as Grupo; salvar(); render(); }
   else if (d.int) { plano.intensidade = d.int as Intensidade; salvar(); render(); }
   else if (d.dia) { plano.acoes[+d.dia] = d.a as Acao; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.oca) { const r = responderOcasiaoJogo(pacote, save!, d.oca, d.op!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

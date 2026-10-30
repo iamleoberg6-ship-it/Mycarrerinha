@@ -16,6 +16,7 @@ import { salarioMensal } from "./mercado.js";
 import { mudarDeClube, mercadoDe } from "./transferencias.js";
 import { ANO_INICIAL, SEMANAS_TEMPORADA, noticia, ovr, type Carreira, type Save } from "./jogo.js";
 import type { FamiliaId, PaisId } from "./dna.js";
+import { valorBrl } from "./moeda.js";
 
 export type Caminho = "base" | "varzea" | "eua_academia" | "eua_escola" | "academia_elite" | "peneira_exterior" | "japao_universidade";
 export type Fase = "varzea" | "academia" | "colegial" | "universidade";
@@ -97,7 +98,7 @@ function convitePeneira(pacote: PacoteDados, s: Save, rng: RNG, garantido = fals
   if (!clube) return;
   const li = infoLiga(clube.ligaId);
   return novoConvite(s, { tipo: "peneira", clubeId: clube.id, titulo: `Peneira no ${clube.nome}`, salario: ajudaBase(li.id), anos: 2,
-    texto: `Um olheiro do ${clube.nome} (${li.curto}) viu você jogar e chamou para a base. Ajuda de custo de R$ ${ajudaBase(li.id).toLocaleString("pt-BR")} por mês e alojamento do clube.` });
+    texto: `Um olheiro do ${clube.nome} (${li.curto}) viu você jogar e chamou para a base. Ajuda de custo de ${valorBrl(ajudaBase(li.id))} por mês e alojamento do clube.` });
 }
 function conviteProfissional(pacote: PacoteDados, s: Save, rng: RNG, ids: string[], motivo: string): Convite | undefined {
   const w = mundo(pacote), e = caminhoDe(s.carreira);
@@ -106,7 +107,7 @@ function conviteProfissional(pacote: PacoteDados, s: Save, rng: RNG, ids: string
   const liga = w.liga[clube.ligaId], j = s.jogador;
   const sal = Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga, clube, agente: s.carreira.agente, fama: s.carreira.fama }));
   return novoConvite(s, { tipo: "profissional", clubeId: clube.id, titulo: `Contrato com o ${clube.nome}`, salario: sal, anos: 2,
-    texto: `${motivo} O ${clube.nome} (${infoLiga(liga.id).curto}) oferece contrato profissional de 2 anos: R$ ${sal.toLocaleString("pt-BR")} por mês.` });
+    texto: `${motivo} O ${clube.nome} (${infoLiga(liga.id).curto}) oferece contrato profissional de 2 anos: ${valorBrl(sal)} por mês.` });
 }
 function convitesUniversidade(pacote: PacoteDados, s: Save, rng: RNG) {
   const w = mundo(pacote), unis = [...w.liga[caminhoDe(s.carreira).tipo === "japao_universidade" ? "JPN-UNI" : "USA-NCAA"].clubes].sort((a, b) => b.forca - a.forca);
@@ -128,7 +129,7 @@ function draft(pacote: PacoteDados, s: Save, rng: RNG): Convite | undefined {
   const sal = Math.max(base, generation ? 75000 : 40000);
   const rodada = Math.ceil(pick / 30);
   return novoConvite(s, { tipo: "draft", clubeId: clube.id, titulo: `Draft: ${pick}ª escolha`, salario: sal, anos: generation ? 4 : 3, pick, generation,
-    texto: `O ${clube.nome} escolheu você na ${rodada}ª rodada do draft (${pick}ª escolha geral).${generation ? " Contrato especial de jovem talento: salário acima do piso de novato." : ""} Oferta: R$ ${sal.toLocaleString("pt-BR")} por mês.` }, 8);
+    texto: `O ${clube.nome} escolheu você na ${rodada}ª rodada do draft (${pick}ª escolha geral).${generation ? " Contrato especial de jovem talento: salário acima do piso de novato." : ""} Oferta: ${valorBrl(sal)} por mês.` }, 8);
 }
 
 // ------------------------------------------------------------------ semana e fim de temporada
@@ -190,7 +191,7 @@ export function fimDeTemporadaDoCaminho(pacote: PacoteDados, s: Save, eventos: s
       const liga = mundo(pacote).liga[clube.ligaId] ?? mundo(pacote).liga.USA1;
       const sal = Math.max(40000, Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga, clube, agente: c.agente, fama: c.fama })));
       avisar(novoConvite(s, { tipo: "homegrown", clubeId: c.clubeId, titulo: `Contrato homegrown com o ${clube.nome}`, salario: sal, anos: 4,
-        texto: `Cria da academia, você pode assinar com o time principal do ${clube.nome} sem passar pelo draft: 4 anos, R$ ${sal.toLocaleString("pt-BR")} por mês.` }, 10));
+        texto: `Cria da academia, você pode assinar com o time principal do ${clube.nome} sem passar pelo draft: 4 anos, ${valorBrl(sal)} por mês.` }, 10));
     } else if (j.idade >= 18) {
       eventos.push("A academia não vai te profissionalizar.");
       noticia(s, "clube", "Fim da academia", `O ${clube.nome} não vai oferecer contrato profissional. Hora de procurar outro caminho.`);
@@ -214,7 +215,7 @@ export function aceitarConvite(pacote: PacoteDados, s: Save, id: string): { ok: 
   e.convites = []; // aceitar um convite encerra os outros
   if (cv.tipo === "homegrown") {
     c.fase = undefined; c.formacao = false; c.salario = cv.salario; c.anosContrato = cv.anos; c.escolhaNumero = "chegada";
-    noticia(s, "clube", "Contrato homegrown", `${j.apelido} assina com o time principal do ${destino.nome} aos ${j.idade} anos: ${cv.anos} anos, R$ ${cv.salario.toLocaleString("pt-BR")} por mês.`, { k: "transferencia", clube: destino.id, tipo: "livre", ate: ANO_INICIAL + c.temporada + cv.anos, taxa: 0 });
+    noticia(s, "clube", "Contrato homegrown", `${j.apelido} assina com o time principal do ${destino.nome} aos ${j.idade} anos: ${cv.anos} anos, ${valorBrl(cv.salario)} por mês.`, { k: "transferencia", clube: destino.id, tipo: "livre", ate: ANO_INICIAL + c.temporada + cv.anos, taxa: 0 });
     return { ok: true, msg: `Você é profissional do ${destino.nome}!` };
   }
   if (cv.tipo === "universidade") { c.fase = "universidade"; c.formacao = true; e.temporadasFase = 0; }

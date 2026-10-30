@@ -4,6 +4,7 @@
 import { RNG, clamp } from "./rng.js";
 import type { Conversa } from "./conversas.js";
 import { nomeFeminino, sugestoesBebe } from "./pessoas.js";
+import { valorBrl } from "./moeda.js";
 
 export const IDADE_MINIMA_APP = 18;
 export type Profissao = "influencer" | "psicologa" | "agente" | "modelo" | "medica" | "jornalista" | "personal" | "nutricionista" | "advogada" | "professora" | "estudante" | "arquiteta";
@@ -283,7 +284,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       const g = fatorGosto(p, L.gosto);
       p.relacao = clamp(p.relacao + 7 * rende * g * (p.jeito === "romântica" ? 1.15 : 1), 0, 100); n.feitas++; p.vezes.n++;
       p.cena = sortearCena(rng, lugar);
-      return { ok: true, msg: `${L.nome} com ${nome}${c > 200 ? ` (R$ ${c.toLocaleString("pt-BR")})` : ""}.${comentarioGosto(p, L.gosto)}`, custo: c, moral: 2 };
+      return { ok: true, msg: `${L.nome} com ${nome}${c > 200 ? ` (${valorBrl(c)})` : ""}.${comentarioGosto(p, L.gosto)}`, custo: c, moral: 2 };
     }
     case "tentarFilho": {
       n.feitas++;
@@ -301,7 +302,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
     case "spa": { const c = custo(0.015, 800); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para o spa." }; sobe(rng.int(5, 8)); return { ok: true, msg: `Dia de spa com ${nome}: massagem, ofurô e celular desligado.`, custo: c, cansaco: -8, moral: 3 }; }
     case "amigasDela": { sobe(rng.int(3, 7)); const r2 = rng.next(); return { ok: true, msg: r2 < 0.6 ? `As amigas de ${nome} te aprovaram: "Esse pode ficar."${gc}` : r2 < 0.9 ? `Uma das amigas fez um interrogatório. Você sobreviveu.${gc}` : `Você contou uma piada que não pegou. ${nome} riu de pena.`, moral: 1, custo: custo(0.006, 300) }; }
     case "eventoDela": sobe(rng.int(6, 10)); return { ok: true, msg: `Você foi ao evento do trabalho de ${nome} e ficou no canto, só torcendo por ela. Ela falou disso a semana toda.`, moral: 2, cansaco: 2 };
-    case "viagemInternacional": { const c = custo(0.5, 25000); if (ctx.saldo < c) return { ok: false, msg: "Uma viagem dessas não cabe no bolso agora." }; sobe(rng.int(14, 20)); return { ok: true, msg: `${rng.pick(["Paris", "Maldivas", "Nova York", "Lisboa", "Tóquio", "Santorini"])} com ${nome}: fotos que vão durar a vida inteira. R$ ${c.toLocaleString("pt-BR")}.${gc}`, custo: c, moral: 8, cansaco: 10, engajamento: 6 }; }
+    case "viagemInternacional": { const c = custo(0.5, 25000); if (ctx.saldo < c) return { ok: false, msg: "Uma viagem dessas não cabe no bolso agora." }; sobe(rng.int(14, 20)); return { ok: true, msg: `${rng.pick(["Paris", "Maldivas", "Nova York", "Lisboa", "Tóquio", "Santorini"])} com ${nome}: fotos que vão durar a vida inteira. ${valorBrl(c)}.${gc}`, custo: c, moral: 8, cansaco: 10, engajamento: 6 }; }
     case "cafeNaCama": sobe(rng.int(4, 7)); return { ok: true, msg: `Café da manhã na cama: pão de queijo, suco e ${nome} meio dormindo, sorrindo.${gc}`, moral: 2 };
     case "adotarPet": { const pet = rng.pick(["Pelé", "Bolinha", "Mel", "Thor", "Pipoca", "Amora", "Zico", "Luna"]); p.pet = pet; sobe(rng.int(8, 12)); return { ok: true, msg: `Vocês adotaram ${pet}! A casa ganhou mais bagunça e mais alegria.`, moral: 6, custo: 2000, noticia: `${nome} e o jogador adotam ${pet}` }; }
     case "cozinhar": sobe(rng.int(3, 6)); return { ok: true, msg: `Você cozinhou para ${nome}. Não ficou bom, mas a intenção valeu.${gc}`, moral: 1 };
@@ -312,7 +313,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
     case "encontroEscondido": {
       const c = custo(0.02, 400); if (ctx.saldo < c) return { ok: false, msg: "Hotel discreto custa caro. Falta dinheiro." };
       sobe(rng.int(6, 10)); p.escondidos = (p.escondidos ?? 0) + 1;
-      return { ok: true, msg: `Encontro escondido com ${nome} num hotel longe do centro: R$ ${c.toLocaleString("pt-BR")}.`, custo: c, moral: 2, cansaco: 4 };
+      return { ok: true, msg: `Encontro escondido com ${nome} num hotel longe do centro: ${valorBrl(c)}.`, custo: c, moral: 2, cansaco: 4 };
     }
     case "assumir": {
       n.feitas++;
@@ -324,7 +325,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
         n.ex.push(antiga.nome);
         const div = antiga.etapa === "casados" ? Math.round(ctx.saldo * 0.3) : 0;
         n.escandalos = (n.escandalos ?? 0) + 1;
-        return { ok: true, msg: `Você terminou com ${antiga.nome.split(" ")[0]} e assumiu ${nome}.${div ? ` O divórcio custou R$ ${div.toLocaleString("pt-BR")}.` : ""}`, custo: div, moral: -3, fama: 0.8, torcida: -2, escandalo: true,
+        return { ok: true, msg: `Você terminou com ${antiga.nome.split(" ")[0]} e assumiu ${nome}.${div ? ` O divórcio custou ${valorBrl(div)}.` : ""}`, custo: div, moral: -3, fama: 0.8, torcida: -2, escandalo: true,
           noticia: `${antiga.etapa === "casados" ? "Divórcio e namoro novo" : "Troca de namorada"}: o jogador assume ${nome} depois de terminar com ${antiga.nome.split(" ")[0]}` };
       }
       return { ok: true, msg: `Agora é oficial: você e ${nome}.`, moral: 4, noticia: `${nome} é a namorada nova do jogador` };
@@ -340,9 +341,9 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       for (const x of outros) n.ex.push(x.nome);
       return { ok: true, msg: `${nome} disse sim. Agora é namoro!${outros.length ? ` Você avisou ${outros.map((x) => x.nome.split(" ")[0]).join(" e ")} que agora namora sério.` : ""}`, moral: 6, noticia: `${nome} é a namorada nova do jogador` };
     }
-    case "jantar": { const c = custo(0.015, 250); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para jantar fora." }; sobe(6); return { ok: true, msg: `Jantar com ${nome}: R$ ${c.toLocaleString("pt-BR")}.${gc}`, custo: c, moral: 2 }; }
-    case "presente": { const c = custo(0.04, 500); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(7); return { ok: true, msg: `Presente para ${nome}: R$ ${c.toLocaleString("pt-BR")}.${gc}`, custo: c }; }
-    case "viagem": { const c = custo(0.15, 3000); if (ctx.saldo < c) return { ok: false, msg: "A viagem não cabe no bolso agora." }; sobe(12); return { ok: true, msg: `Fim de semana viajando com ${nome}: R$ ${c.toLocaleString("pt-BR")}.${gc}`, custo: c, moral: 5, cansaco: 6 }; }
+    case "jantar": { const c = custo(0.015, 250); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para jantar fora." }; sobe(6); return { ok: true, msg: `Jantar com ${nome}: ${valorBrl(c)}.${gc}`, custo: c, moral: 2 }; }
+    case "presente": { const c = custo(0.04, 500); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(7); return { ok: true, msg: `Presente para ${nome}: ${valorBrl(c)}.${gc}`, custo: c }; }
+    case "viagem": { const c = custo(0.15, 3000); if (ctx.saldo < c) return { ok: false, msg: "A viagem não cabe no bolso agora." }; sobe(12); return { ok: true, msg: `Fim de semana viajando com ${nome}: ${valorBrl(c)}.${gc}`, custo: c, moral: 5, cansaco: 6 }; }
     case "morarJunto": {
       n.feitas++;
       if (!rng.chance(clamp((p.relacao - 50) / 35, 0.2, 0.95))) return { ok: true, msg: `${nome} acha cedo para morar junto.` };
@@ -359,8 +360,8 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       if (!rng.chance(clamp((p.relacao - 55) / 30 + bonus, 0.2, 0.97))) { p.relacao = clamp(p.relacao - 8, 0, 100); return { ok: true, msg: modo === "estadio" ? `${nome} ficou vermelha com o estádio inteiro olhando e pediu para conversarem em casa. Ainda não.` : `${nome} chorou, abraçou e pediu para esperar mais um pouco.`, custo: extraCusto, ...(modo === "estadio" ? { fama: 1, engajamento: 10, noticia: `${nome} não responde ao pedido de casamento do jogador no gramado` } : {}) }; }
       p.etapa = "noivos"; p.desde = ctx.semanaAbs;
       if (modo === "estadio") return { ok: true, msg: `De joelhos no gramado, com o telão mostrando os dois: ${nome} disse SIM! O estádio inteiro aplaudiu.`, custo: c, moral: 12, fama: 2, engajamento: 18, torcida: 3, noticia: `${nome} e o jogador estão noivos: pedido foi no gramado, na frente da torcida` };
-      if (modo === "viagem") return { ok: true, msg: `No pôr do sol, longe de tudo: ${nome} disse SIM! Aliança e viagem: R$ ${(c + extraCusto).toLocaleString("pt-BR")}.`, custo: c + extraCusto, moral: 12, noticia: `${nome} e o jogador estão noivos` };
-      return { ok: true, msg: `Ela disse SIM! Aliança de R$ ${c.toLocaleString("pt-BR")}. O casamento é no fim da temporada.`, custo: c, moral: 10, noticia: `${nome} e o jogador estão noivos` };
+      if (modo === "viagem") return { ok: true, msg: `No pôr do sol, longe de tudo: ${nome} disse SIM! Aliança e viagem: ${valorBrl((c + extraCusto))}.`, custo: c + extraCusto, moral: 12, noticia: `${nome} e o jogador estão noivos` };
+      return { ok: true, msg: `Ela disse SIM! Aliança de ${valorBrl(c)}. O casamento é no fim da temporada.`, custo: c, moral: 10, noticia: `${nome} e o jogador estão noivos` };
     }
     case "terminar": {
       n.ex.push(p.nome);
@@ -369,7 +370,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       n.par = undefined;
       if (p.etapa === "casados" || p.etapa === "noivos") {
         const div = p.etapa === "casados" ? Math.round(ctx.saldo * 0.3) : 0;
-        return { ok: true, msg: p.etapa === "casados" ? `Divórcio de ${nome}. Metade da casa e um advogado caro: R$ ${div.toLocaleString("pt-BR")}.` : `Noivado desfeito com ${nome}.`, custo: div, moral: -10,
+        return { ok: true, msg: p.etapa === "casados" ? `Divórcio de ${nome}. Metade da casa e um advogado caro: ${valorBrl(div)}.` : `Noivado desfeito com ${nome}.`, custo: div, moral: -10,
           noticia: p.etapa === "casados" ? `Fim do casamento: o jogador e ${nome} se separam` : `Noivado desfeito: o jogador e ${nome} terminam` };
       }
       return { ok: true, msg: `Você terminou com ${nome}.`, moral: -4 };
@@ -391,7 +392,7 @@ export function agirFilho(n: EstadoNamoro, i: number, acao: AcaoFilho, ctx: CtxN
   switch (acao) {
     case "brincar": sobe(5); return { ok: true, msg: `Tarde inteira brincando com ${f.nome}${longe}.`, moral: 2 };
     case "passear": sobe(7); return { ok: true, msg: `Passeio no parque com ${f.nome}${longe}. Teve sorvete.`, moral: 3, cansaco: 2 };
-    case "presente": { const c = Math.round(Math.max(200, ctx.salario * 0.01)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(5); return { ok: true, msg: `Presente para ${f.nome}: R$ ${c.toLocaleString("pt-BR")}.`, custo: c, moral: 1 }; }
+    case "presente": { const c = Math.round(Math.max(200, ctx.salario * 0.01)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(5); return { ok: true, msg: `Presente para ${f.nome}: ${valorBrl(c)}.`, custo: c, moral: 1 }; }
     case "levarJogo": sobe(9); return { ok: true, msg: `${f.nome} foi ao estádio com a sua camisa.`, moral: 3, fama: 0.1 };
     case "historia": sobe(5); return { ok: true, msg: `Histórias antes de dormir com ${f.nome}${longe}. Pediu a mesma três vezes.`, moral: 2 };
     case "bola": {
@@ -400,7 +401,7 @@ export function agirFilho(n: EstadoNamoro, i: number, acao: AcaoFilho, ctx: CtxN
       if (idade < 4) return { ok: false, msg: `${f.nome} ainda é pequeno demais para bola.` };
       sobe(6); return { ok: true, msg: `Treino de chute no quintal com ${f.nome}${longe}. Já chuta com as duas pernas, diz o pai orgulhoso.`, moral: 2 };
     }
-    case "festa": { const c = Math.round(Math.max(400, ctx.salario * 0.02)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a festa." }; sobe(8); return { ok: true, msg: `Festa de aniversário de ${f.nome}, com bolo e os primos. R$ ${c.toLocaleString("pt-BR")}.`, custo: c, moral: 3 }; }
+    case "festa": { const c = Math.round(Math.max(400, ctx.salario * 0.02)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a festa." }; sobe(8); return { ok: true, msg: `Festa de aniversário de ${f.nome}, com bolo e os primos. ${valorBrl(c)}.`, custo: c, moral: 3 }; }
   }
 }
 export interface EfeitosNamoro { moral: number; fama: number; engajamento: number; recuperacao: number; evolucao: number; torcida: number; pressao: number; noite: number; agente: number; luvas: number; conforto: number }
@@ -509,7 +510,7 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   if (p.relacao < (p.etapa === "saindo" ? 25 : 15)) {
     n.ex.push(p.nome); n.par = undefined; moral -= p.etapa === "casados" ? 12 : 7;
     const custo = p.etapa === "casados" ? Math.round(ctx.saldo * 0.3) : 0;
-    avisos.push(p.etapa === "casados" ? `${nome} pediu o divórcio${custo ? `: R$ ${custo.toLocaleString("pt-BR")} na partilha` : ""}.` : `${nome} terminou com você.`);
+    avisos.push(p.etapa === "casados" ? `${nome} pediu o divórcio${custo ? `: ${valorBrl(custo)} na partilha` : ""}.` : `${nome} terminou com você.`);
     return { avisos, moral, custo, escandalo, noticia: noticiaCaso ? `${noticiaCaso}. ${nome} termina com ele` : p.etapa === "casados" ? `Fim do casamento: ${nome} pede o divórcio` : undefined };
   }
   return { avisos, moral, ...(noticiaCaso ? { noticia: noticiaCaso, escandalo } : {}) };
@@ -558,8 +559,8 @@ export function temporadaNamoro(n: EstadoNamoro, eventos: string[], ctx?: { seme
   }
   const pensao = ctx ? filhos.filter((f) => f.pensao).length * Math.round(Math.max(3000, ctx.salario * 0.08)) * 12 : 0;
   const criacao = ctx ? filhos.filter((f) => !f.pensao).length * Math.round(Math.max(1500, ctx.salario * 0.03)) * 12 : 0;
-  if (pensao) eventos.push(`Pensão dos filhos no ano: R$ ${pensao.toLocaleString("pt-BR")}.`);
-  if (criacao) eventos.push(`Escola, plano de saúde e tudo mais dos filhos em casa: R$ ${criacao.toLocaleString("pt-BR")} no ano.`);
+  if (pensao) eventos.push(`Pensão dos filhos no ano: ${valorBrl(pensao)}.`);
+  if (criacao) eventos.push(`Escola, plano de saúde e tudo mais dos filhos em casa: ${valorBrl(criacao)} no ano.`);
   return { custo: pensao + criacao, noticia, escandalo, ...(casou ? { casou } : {}) };
 }
 

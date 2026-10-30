@@ -1,3 +1,4 @@
+import { curtoBrl } from "./moeda.js";
 // Estilo de vida: a garagem (carros, relógios, arte), os hobbies, os estudos (idiomas, licença de técnico, faculdade),
 // a adaptação quando o jogador vai jogar num país de outra língua e a fundação (filantropia, com prêmio no fim do ano).
 import { RNG, clamp } from "./rng.js";
@@ -51,11 +52,11 @@ export function semanaHobbies(h: EstadoHobbies, a: EstadoAgenda, rng: RNG, seman
     if (k === "leitura") { e.pressao -= 0.5; e.imprensa += 0.15; }
     e.dinheiro -= Math.round(HOBBIES[k].custo / 4);
     // marcos de cada hobby
-    if (k === "poquer" && n >= 40 && rng.chance(0.02)) agendar(a, semanaAbs, { origem: "hobby", chave: "poquer-torneio", titulo: "Torneio de pôquer", texto: "Um torneio internacional de pôquer em Las Vegas convidou você. Buy-in de R$ 250 mil.", opcoes: [
-      op("jogar", "Jogar o torneio", "Mesa final! Você saiu com R$ 1,8 milhão e uma foto com lendas do pôquer.", { dinheiro: 1_550_000, fama: 1, moral: 5, vidaNoturna: 4 }, { chance: 0.7, texto: "Caiu no segundo dia com um par de ases. Faz parte.", ef: { dinheiro: -250_000, moral: -2, vidaNoturna: 4 } }),
+    if (k === "poquer" && n >= 40 && rng.chance(0.02)) agendar(a, semanaAbs, { origem: "hobby", chave: "poquer-torneio", titulo: "Torneio de pôquer", texto: `Um torneio internacional de pôquer em Las Vegas convidou você. Buy-in de ${curtoBrl(250_000)}.`, opcoes: [
+      op("jogar", "Jogar o torneio", `Mesa final! Você saiu com ${curtoBrl(1_800_000)} e uma foto com lendas do pôquer.`, { dinheiro: 1_550_000, fama: 1, moral: 5, vidaNoturna: 4 }, { chance: 0.7, texto: "Caiu no segundo dia com um par de ases. Faz parte.", ef: { dinheiro: -250_000, moral: -2, vidaNoturna: 4 } }),
       op("recusar", "Recusar", "Pôquer fica no apartamento com os amigos.", {}),
     ] }, 60);
-    if (k === "games" && n >= 40 && !h.esports && rng.chance(0.03)) agendar(a, semanaAbs, { origem: "hobby", chave: "esports", titulo: "Seu time de e-sports", texto: "Uma organização propõe montar um time de e-sports com o seu nome. Precisa de R$ 400 mil.", opcoes: [
+    if (k === "games" && n >= 40 && !h.esports && rng.chance(0.03)) agendar(a, semanaAbs, { origem: "hobby", chave: "esports", titulo: "Seu time de e-sports", texto: `Uma organização propõe montar um time de e-sports com o seu nome. Precisa de ${curtoBrl(400_000)}.`, opcoes: [
       op("montar", "Montar o time", "O time estreou no campeonato nacional com o seu escudo.", { dinheiro: -400_000, engajamento: 10, gatilho: "esports" }),
       op("recusar", "Recusar", "Você segue só jogando.", {}),
     ] }, 80);
@@ -163,7 +164,7 @@ export function mesFundacao(f: Fundacao): { custo: number; impacto: number; torc
 export function ocasioesFundacao(a: EstadoAgenda, rng: RNG, f: Fundacao, semanaAbs: number) {
   if (!rng.chance(0.025)) return;
   if (rng.chance(0.4)) agendar(a, semanaAbs, { origem: "fundacao", chave: "enchente", titulo: `Enchente em ${f.cidade}`, texto: `A chuva destruiu o bairro onde você cresceu. A ${f.nome} pode ajudar.`, opcoes: [
-    op("doar", "Doar R$ 1 milhão", "Cestas, colchões e casas reformadas. O bairro pintou um mural com o seu rosto.", { dinheiro: -1_000_000, impacto: 30, torcida: 4, fama: 1, imprensa: 5, moral: 4 }),
+    op("doar", `Doar ${curtoBrl(1_000_000)}`, "Cestas, colchões e casas reformadas. O bairro pintou um mural com o seu rosto.", { dinheiro: -1_000_000, impacto: 30, torcida: 4, fama: 1, imprensa: 5, moral: 4 }),
     op("visitar", "Ir até lá ajudar com as próprias mãos", "Você carregou caixas o dia inteiro. As fotos emocionaram o país.", { impacto: 12, cansaco: 12, imprensa: 6, torcida: 3, moral: 5, relTecnico: -2 }),
     op("mensagem", "Fazer uma campanha nas redes", "Seus seguidores doaram muito.", { impacto: 5, engajamento: 6 }),
   ] }, 60);

@@ -3,6 +3,7 @@
 // com a fase (má fase, boa fase, rumor de transferência, vida pessoal, técnico, seleção).
 import { primeiroNome } from "./pessoas.js";
 import { RNG, clamp } from "./rng.js";
+import { valorBrl } from "./moeda.js";
 
 export type TomPost = 1 | 0 | -1;
 export interface Post { autor: string; arroba: string; tipo: "torcedor" | "rival" | "jornalista" | "meme" | "fa"; texto: string; tom: TomPost; curtidas: number }
@@ -109,7 +110,7 @@ export function postar(m: EstadoMidia, t: TipoPost, rng: RNG, x: CtxMidia): Efei
       if (forma < 6.4 || rng.chance(0.12)) return { msg: "Bombou, mas do jeito errado: \"carrão e nada em campo\".", engajamento: 10, hype: 0.05, torcida: -4, imprensa: -4, noticia: { titulo: `Ostentação de ${x.apelido} irrita a torcida`, texto: "Post com carro de luxo em plena fase ruim virou assunto nas redes.", polemica: true } };
       return { msg: "Carro novo na garagem e milhares de curtidas.", engajamento: 10, hype: 0.07 };
     }
-    case "publi": { const v = Math.round(clamp(x.seguidores * 0.004, 2_000, 450_000)); return { msg: `Publi feita: R$ ${v.toLocaleString("pt-BR")} na conta.`, dinheiro: v, engajamento: -3 }; }
+    case "publi": { const v = Math.round(clamp(x.seguidores * 0.004, 2_000, 450_000)); return { msg: `Publi feita: ${valorBrl(v)} na conta.`, dinheiro: v, engajamento: -3 }; }
     case "resposta": {
       const chance = clamp(0.35 + x.carisma / 40 - x.temperamento / 50, 0.1, 0.85);
       if (rng.chance(chance)) return { msg: "Resposta afiada e com classe. Virou o assunto do dia, a seu favor.", hype: 0.12, fama: 1, torcida: 2, engajamento: 8 };

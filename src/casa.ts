@@ -1,4 +1,5 @@
 import { LUXO, type ItemLuxo } from "./estilo.js";
+import { valorBrl, numBrl, simboloAtual } from "./moeda.js";
 // A casa do jogador: imobiliária com vários imóveis por faixa, móveis posicionados livremente no chão,
 // estilos de decoração, cores por móvel e revestimentos de parede e piso por cômodo.
 // Unidade do chão: ladrilho de meio metro. x corre ao longo da parede da direita (y=0), y ao longo da parede da esquerda (x=0).
@@ -1019,8 +1020,8 @@ export function patrimonio(e: EstadoCasa): number {
 }
 
 export function dinheiro(v: number): string {
-  const a = Math.abs(v), sinal = v < 0 ? "−" : "";
-  if (a >= 1e6) return `${sinal}R$ ${(a / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: a >= 1e7 ? 1 : 2 })} mi`;
-  if (a >= 1e4) return `${sinal}R$ ${Math.round(a / 1e3).toLocaleString("pt-BR")} mil`;
-  return `${sinal}R$ ${Math.round(a).toLocaleString("pt-BR")}`;
+  const a = Math.abs(numBrl(v)), sinal = v < 0 ? "−" : "", s = simboloAtual();
+  if (a >= 1e6) return `${sinal}${s} ${(a / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: a >= 1e7 ? 1 : 2 })} mi`;
+  if (a >= 1e4) return `${sinal}${s} ${Math.round(a / 1e3).toLocaleString("pt-BR")} mil`;
+  return `${sinal}${s} ${Math.round(a).toLocaleString("pt-BR")}`;
 }

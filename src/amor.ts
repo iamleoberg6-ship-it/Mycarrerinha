@@ -4,6 +4,7 @@
 import { RNG, clamp } from "./rng.js";
 import { agendar, type EstadoAgenda, type OpcaoOcasiao, type EfeitoVida, type Ocasiao } from "./agenda.js";
 import type { EstadoNamoro, Par } from "./namoro.js";
+import { valorBrl } from "./moeda.js";
 
 const op = (id: string, rotulo: string, texto: string, ef: EfeitoVida, risco?: OpcaoOcasiao["risco"]): OpcaoOcasiao => ({ id, rotulo, texto, ef, ...(risco ? { risco } : {}) });
 const pn = (p: Par) => p.nome.split(" ")[0];
@@ -131,8 +132,8 @@ export function semanaAmor(a: EstadoAgenda, rng: RNG, n: EstadoNamoro, x: CtxAmo
 export function agendarCasamento(a: EstadoAgenda, semanaAbs: number, nome: string, salario: number) {
   const v = (base: number, k: number) => Math.round(Math.max(base, salario * k) / 1000) * 1000;
   agendar(a, semanaAbs, { origem: "amor", chave: `casamento-${nome}`, titulo: `O casamento com ${nome}`, texto: `Está marcado. Agora, como vai ser a festa?`, prazo: 3, opcoes: [
-    op("festao", `Festão para 600 convidados (R$ ${v(400_000, 6).toLocaleString("pt-BR")})`, "Companheiros, parças, famosos e a família toda. Festa até o sol nascer, capa de revista.", { dinheiro: -v(400_000, 6), fama: 2, moral: 8, engajamento: 15, gatilho: "par:10", marco: { tipo: "amor", texto: `Casa com ${nome} num festão` }, noticia: { titulo: `O casamento do ano: o jogador e ${nome}`, texto: "Seiscentos convidados, show particular e jogadores de vários clubes.", tipo: "vida" } }),
-    op("praia", `Casamento na praia (R$ ${v(150_000, 3).toLocaleString("pt-BR")})`, "Pé na areia, pôr do sol, só quem importa.", { dinheiro: -v(150_000, 3), moral: 8, gatilho: "par:12", marco: { tipo: "amor", texto: `Casa com ${nome} na praia` } }),
+    op("festao", `Festão para 600 convidados (${valorBrl(v(400_000, 6))})`, "Companheiros, parças, famosos e a família toda. Festa até o sol nascer, capa de revista.", { dinheiro: -v(400_000, 6), fama: 2, moral: 8, engajamento: 15, gatilho: "par:10", marco: { tipo: "amor", texto: `Casa com ${nome} num festão` }, noticia: { titulo: `O casamento do ano: o jogador e ${nome}`, texto: "Seiscentos convidados, show particular e jogadores de vários clubes.", tipo: "vida" } }),
+    op("praia", `Casamento na praia (${valorBrl(v(150_000, 3))})`, "Pé na areia, pôr do sol, só quem importa.", { dinheiro: -v(150_000, 3), moral: 8, gatilho: "par:12", marco: { tipo: "amor", texto: `Casa com ${nome} na praia` } }),
     op("pequeno", "Cerimônia pequena só com a família", "Simples e bonito. A sua mãe e a dela choraram juntas.", { dinheiro: -v(30_000, 0.5), moral: 6, gatilho: "par:8", marco: { tipo: "amor", texto: `Casa com ${nome}` } }),
     op("cartorio", "Só o cartório", "Assinatura, almoço e pronto.", { moral: 3, gatilho: "par:-3", marco: { tipo: "amor", texto: `Casa com ${nome} no cartório` } }),
   ] }, 0);
@@ -140,9 +141,9 @@ export function agendarCasamento(a: EstadoAgenda, semanaAbs: number, nome: strin
 export function agendarLuaDeMel(a: EstadoAgenda, semanaAbs: number, salario: number) {
   const v = (base: number, k: number) => Math.round(Math.max(base, salario * k) / 1000) * 1000;
   agendar(a, semanaAbs, { origem: "amor", chave: `lua-${semanaAbs}`, titulo: "Lua de mel", texto: "Para onde vai a lua de mel?", prazo: 2, opcoes: [
-    op("maldivas", `Maldivas (R$ ${v(120_000, 2).toLocaleString("pt-BR")})`, "Bangalô sobre o mar, sem sinal de celular. Perfeito.", { dinheiro: -v(120_000, 2), moral: 8, desgaste: -8, gatilho: "par:10", engajamento: 8 }),
-    op("paris", `Paris (R$ ${v(80_000, 1.5).toLocaleString("pt-BR")})`, "Torre Eiffel, croissant e um jantar inesquecível.", { dinheiro: -v(80_000, 1.5), moral: 7, desgaste: -6, gatilho: "par:9" }),
-    op("noronha", `Fernando de Noronha (R$ ${v(40_000, 0.8).toLocaleString("pt-BR")})`, "Mergulho com tartaruga e pôr do sol no Boldró.", { dinheiro: -v(40_000, 0.8), moral: 6, desgaste: -6, gatilho: "par:8" }),
+    op("maldivas", `Maldivas (${valorBrl(v(120_000, 2))})`, "Bangalô sobre o mar, sem sinal de celular. Perfeito.", { dinheiro: -v(120_000, 2), moral: 8, desgaste: -8, gatilho: "par:10", engajamento: 8 }),
+    op("paris", `Paris (${valorBrl(v(80_000, 1.5))})`, "Torre Eiffel, croissant e um jantar inesquecível.", { dinheiro: -v(80_000, 1.5), moral: 7, desgaste: -6, gatilho: "par:9" }),
+    op("noronha", `Fernando de Noronha (${valorBrl(v(40_000, 0.8))})`, "Mergulho com tartaruga e pôr do sol no Boldró.", { dinheiro: -v(40_000, 0.8), moral: 6, desgaste: -6, gatilho: "par:8" }),
     op("depois", "Deixar para depois", "Ela entendeu. Mais ou menos.", { gatilho: "par:-6" }),
   ] }, 0);
 }

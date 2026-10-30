@@ -62,6 +62,7 @@ import { agirFilho, programaPreferido, type AcaoFilho } from "./namoro.js";
 import { gostosDe, MAX_ACOES_NAMORO, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
+import { valorBrl, curtoBrl } from "./moeda.js";
 
 // ------------------------------------------------------------------ tipos
 export interface Jogador {
@@ -230,7 +231,7 @@ export interface Carreira {
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
-export interface Save { versao: 1; semente: string; jogador: Jogador; carreira: Carreira; casa: EstadoCasa; noticias: Noticia[] }
+export interface Save { versao: 1; semente: string; jogador: Jogador; carreira: Carreira; casa: EstadoCasa; noticias: Noticia[]; /** moeda da carreira (BRL, EUR, USD, GBP, CNY); sem ela, real */ moeda?: string }
 
 export const ANO_INICIAL = 2026;
 export const SEMANAS_PRE = 2, RODADAS = 38, SEMANAS_TEMPORADA = SEMANAS_PRE + RODADAS;
@@ -504,7 +505,7 @@ export function novoJogo(pacote: PacoteDados, d: DadosCriacao, clubeId: string, 
   const casa = novoEstado(r.dinheiroInicial, fase ? "aloj-familia" : alojamentosDoClube(cc)[0], cc);
   const save: Save = { versao: 1, semente, jogador, carreira, casa, noticias: [] };
   const c = clubeDe(l, clubeId);
-  if (!fase) noticia(save, "clube", `Bem-vindo ao ${c.nome}`, `${jogador.apelido} assina com a base do ${c.nome}. Mora em: ${nomeImovel(casa, IMOVEL[casa.imovel])}. Ajuda de custo de R$ 3.000 por mês.`);
+  if (!fase) noticia(save, "clube", `Bem-vindo ao ${c.nome}`, `${jogador.apelido} assina com a base do ${c.nome}. Mora em: ${nomeImovel(casa, IMOVEL[casa.imovel])}. Ajuda de custo de ${valorBrl(3000)} por mês.`);
   else noticia(save, "clube", fase === "varzea" ? `${jogador.apelido} no ${c.nome}` : fase === "academia" ? `De mudança para os EUA` : `Primeiro dia no colégio`,
     fase === "varzea" ? `Aos ${jogador.idade} anos, ${jogador.apelido} começa no ${c.nome}, na várzea ${DA_CIDADE[d.cidade ?? "SP"]}. Sem salário: a família banca. Jogando bem, aparece olheiro.`
     : fase === "academia" ? `A família de ${jogador.apelido} se muda para ${infoClube(pacote, clubeId).cidade}. Ele entra na academia do ${c.nome}, aos ${jogador.idade} anos.`
@@ -1495,7 +1496,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (c.semana % 4 === 3) {
     // bônus por gol do contrato (antes de os números do mês zerarem)
     const bonusGol = c.fase || c.formacao ? 0 : (c.contrato?.bonusGol ?? 0) * (c.mesStats?.gols ?? 0);
-    if (bonusGol) eventos.push(`Bônus por gol do contrato: R$ ${bonusGol.toLocaleString("pt-BR")}.`);
+    if (bonusGol) eventos.push(`Bônus por gol do contrato: ${valorBrl(bonusGol)}.`);
     const pat = fecharMesPatrocinios(s, eventos) + bonusGol;
     // várzea, academia, colégio e universidade: a família paga o custo de vida
     const liquido = salarioLiquido(c) + pat, g = c.fase ? { itens: [], total: 0 } : gastosDoMes(padraoDe(c), c.ligaId, c.salario, c.fama, c.formacao, manutencaoMensal(s.casa), c.cidade ? perfilCidade(c.cidade.nome, c.cidade.pais).custo : 1);
@@ -1512,9 +1513,9 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
     if (mn.torcida) c.torcida = clamp((c.torcida ?? 50) + mn.torcida, 0, 100);
     eventos.push(...mn.avisos);
     for (const x of mn.noticias) noticia(s, x.polemica ? "polemica" : "dinheiro", x.titulo, x.texto);
-    if (negociosDe(c).empresas.length || mn.invest) eventos.push(`Negócios no mês: ${mn.lucro >= 0 ? "+" : "−"}R$ ${Math.abs(Math.round(mn.lucro)).toLocaleString("pt-BR")} das empresas${mn.invest ? `, ${mn.invest >= 0 ? "+" : "−"}R$ ${Math.abs(Math.round(mn.invest)).toLocaleString("pt-BR")} nos investimentos` : ""}.`);
+    if (negociosDe(c).empresas.length || mn.invest) eventos.push(`Negócios no mês: ${mn.lucro >= 0 ? "+" : "−"}${valorBrl(Math.abs(Math.round(mn.lucro)))} das empresas${mn.invest ? `, ${mn.invest >= 0 ? "+" : "−"}${valorBrl(Math.abs(Math.round(mn.invest)))} nos investimentos` : ""}.`);
     dinheiro = { salario: Math.round(liquido), aluguel, gastos: g.total + equipe };
-    noticia(s, "dinheiro", "Fechou o mês", `R$ ${Math.round(liquido).toLocaleString("pt-BR")} de salário líquido, R$ ${g.total.toLocaleString("pt-BR")} de custo de vida${aluguel ? `, R$ ${aluguel.toLocaleString("pt-BR")} de aluguel` : ""}.`);
+    noticia(s, "dinheiro", "Fechou o mês", `${valorBrl(Math.round(liquido))} de salário líquido, ${valorBrl(g.total)} de custo de vida${aluguel ? `, ${valorBrl(aluguel)} de aluguel` : ""}.`);
     if (s.casa.saldo < 0) { c.moral = clamp(c.moral - 4, 0, 100); eventos.push("Conta no vermelho: o custo de vida está maior que o salário."); noticia(s, "dinheiro", "Conta no vermelho", "Os gastos passaram do que entra. Hora de rever o padrão de vida."); }
   }
 
@@ -1654,7 +1655,7 @@ export function eventoPendente(pacote: PacoteDados, s: Save) {
 function aplicarEfeito(s: Save, f: EfeitoEvento): string[] {
   const c = s.carreira, notas: string[] = [];
   const din = dinheiroDoEfeito(f, c.salario);
-  if (din) { s.casa.saldo += din; notas.push(`${din > 0 ? "+" : "−"}R$ ${Math.abs(din).toLocaleString("pt-BR")}`); }
+  if (din) { s.casa.saldo += din; notas.push(`${din > 0 ? "+" : "−"}${valorBrl(Math.abs(din))}`); }
   if (f.moral) c.moral = clamp(c.moral + f.moral, 0, 100);
   if (f.fama) c.fama = clamp(c.fama + f.fama, 0, 100);
   if (f.relTecnico) c.relTecnico = clamp(c.relTecnico + f.relTecnico, 0, 100);
@@ -1665,7 +1666,7 @@ function aplicarEfeito(s: Save, f: EfeitoEvento): string[] {
   if (f.cansaco) c.cansaco = clamp(c.cansaco + f.cansaco, 0, 100);
   if (f.evolucao) c.bonusEvolucao += f.evolucao;
   const pat = patrocinioDoEfeito(f, c.salario);
-  if (pat && f.patrocinio) { c.patrocinioMensal += pat; c.mesesPatrocinio = Math.max(c.mesesPatrocinio, f.patrocinio.meses); notas.push(`patrocínio de R$ ${pat.toLocaleString("pt-BR")}/mês`); }
+  if (pat && f.patrocinio) { c.patrocinioMensal += pat; c.mesesPatrocinio = Math.max(c.mesesPatrocinio, f.patrocinio.meses); notas.push(`patrocínio de ${valorBrl(pat)}/mês`); }
   if (c.familia && (f.pais || f.irmao || f.irmaoPot || f.irmaoPara)) {
     const ms = c.familia.membros;
     for (const m of ms) if (f.pais && (m.parentesco === "pai" || m.parentesco === "mae")) m.relacao = clamp(m.relacao + f.pais, 0, 100);
@@ -1821,7 +1822,7 @@ function semanaVidaFora(pacote: PacoteDados, s: Save, eventos: string[], temJogo
   c.moral = clamp(c.moral + ep.moral, 0, 100); c.cansaco = clamp(c.cansaco + ep.cansaco, 0, 100);
   c.engajamento = clamp((c.engajamento ?? 40) + ep.engajamento, 0, 100); c.vidaNoturna = clamp(c.vidaNoturna + ep.vidaNoturna, 0, 100);
   for (const p of ps) {
-    if (p.divida && p.perfil !== "interesseiro" && rng.chance(0.04)) { s.casa.saldo += p.divida; eventos.push(`${p.apelido} pagou o que devia: R$ ${p.divida.toLocaleString("pt-BR")}.`); p.divida = undefined; p.lealdade = clamp(p.lealdade + 5, 0, 100); }
+    if (p.divida && p.perfil !== "interesseiro" && rng.chance(0.04)) { s.casa.saldo += p.divida; eventos.push(`${p.apelido} pagou o que devia: ${valorBrl(p.divida)}.`); p.divida = undefined; p.lealdade = clamp(p.lealdade + 5, 0, 100); }
     p.lealdade = clamp(p.lealdade - 0.15, 0, 100);
   }
   // hobbies
@@ -1956,7 +1957,7 @@ export function comprarLuxoJogo(s: Save, t: TipoLuxo): Res {
   s.casa.saldo -= x.preco;
   const novo = { uid: `l${Date.now() % 1e7}${(carro ? carrosDe(s) : luxoDe(c)).length}`, tipo: t, valor: x.preco, ano: ANO_INICIAL + c.temporada, novidade: semanaAbsJogo(c) };
   if (carro) carrosDe(s).push(novo); else luxoDe(c).push(novo);
-  if (x.preco >= 3_000_000) { noticia(s, "dinheiro", `${s.jogador.apelido} compra ${x.nome.toLowerCase()}`, `Aquisição de R$ ${(x.preco / 1e6).toFixed(1).replace(".", ",")} milhões chamou atenção nas redes.`); registrarMarco(s, { tipo: "marco", texto: `Compra ${x.nome.toLowerCase()}` }); }
+  if (x.preco >= 3_000_000) { noticia(s, "dinheiro", `${s.jogador.apelido} compra ${x.nome.toLowerCase()}`, `Aquisição de ${curtoBrl(x.preco)} chamou atenção nas redes.`); registrarMarco(s, { tipo: "marco", texto: `Compra ${x.nome.toLowerCase()}` }); }
   return { ok: true, msg: carro ? `${x.emoji} ${x.nome} na vaga ${veiculosDaCasa(s.casa)} de ${vagasGaragem(s.casa)} da garagem.` : `${x.emoji} ${x.nome} guardado no cofre.` };
 }
 export function venderLuxoJogo(s: Save, uid: string): Res {
@@ -1964,7 +1965,7 @@ export function venderLuxoJogo(s: Save, uid: string): Res {
   if (!i) return { ok: false, msg: "Esse item não está mais com você." };
   if (carros.includes(i)) s.casa.carros = carros.filter((x) => x !== i); else s.carreira.luxo = l.filter((x) => x !== i);
   s.casa.saldo += i.valor;
-  return { ok: true, msg: `Vendeu ${LUXO[i.tipo].nome.toLowerCase()} por R$ ${i.valor.toLocaleString("pt-BR")}.` };
+  return { ok: true, msg: `Vendeu ${LUXO[i.tipo].nome.toLowerCase()} por ${valorBrl(i.valor)}.` };
 }
 export function hobbyJogo(s: Save, hb: Hobby): Res {
   const h = hobbiesDe(s.carreira);
@@ -2096,7 +2097,7 @@ export function responderPropostaNegocio(pacote: PacoteDados, s: Save, aceitar: 
   if (r.custo) s.casa.saldo -= r.custo;
   return r;
 }
-export function assessorJogo(s: Save, on: boolean) { negociosDe(s.carreira).assessor = on; return { ok: true, msg: on ? `Assessor financeiro contratado: R$ ${CUSTO_ASSESSOR.toLocaleString("pt-BR")} por mês.` : "Assessor dispensado." }; }
+export function assessorJogo(s: Save, on: boolean) { negociosDe(s.carreira).assessor = on; return { ok: true, msg: on ? `Assessor financeiro contratado: ${valorBrl(CUSTO_ASSESSOR)} por mês.` : "Assessor dispensado." }; }
 export function equipeJogo(s: Save, k: Staff, on: boolean) { saudeDe(s.carreira).equipe[k] = on; return { ok: true, msg: on ? "Contratado. Começa já na semana que vem." : "Dispensado." }; }
 export function tratarJogo(s: Save, parte: ParteCorpo) {
   const sd = saudeDe(s.carreira), cr = sd.cronicas.find((x) => x.parte === parte);
@@ -2211,7 +2212,7 @@ function fecharMesPatrocinios(s: Save, eventos: string[]): number {
   for (const k of c.patrocinios ?? []) {
     const b = bonusDoMes(k, ms);
     total += k.mensal + b;
-    if (b) eventos.push(`Bônus da ${MARCA[k.marca]?.nome}: R$ ${b.toLocaleString("pt-BR")}.`);
+    if (b) eventos.push(`Bônus da ${MARCA[k.marca]?.nome}: ${valorBrl(b)}.`);
     k.restantes--;
   }
   for (const k of (c.patrocinios ?? []).filter((x) => x.restantes <= 0)) noticia(s, "dinheiro", `Fim do contrato com a ${MARCA[k.marca]?.nome}`, `O contrato de ${k.meses} meses terminou. A marca pode voltar a procurar ${s.jogador.apelido}.`);
@@ -2228,7 +2229,7 @@ export function aceitarPatrocinio(s: Save, tipo: TipoContrato): ContratoPatrocin
   if (o.luvas) s.casa.saldo += o.luvas;
   c.fama = clamp(c.fama + 1, 0, 100);
   const m = MARCA[p.marca];
-  noticia(s, "dinheiro", `${s.jogador.apelido} é o novo rosto da ${m.nome}`, `Contrato ${tipo === "fixo" ? "de valor fixo" : tipo === "desempenho" ? "por desempenho" : "de longo prazo"}: ${o.meses} meses, R$ ${o.mensal.toLocaleString("pt-BR")} por mês${o.luvas ? ` e R$ ${o.luvas.toLocaleString("pt-BR")} de luvas` : ""}. "${m.slogan}"`, { k: "patrocinio", marca: m.id });
+  noticia(s, "dinheiro", `${s.jogador.apelido} é o novo rosto da ${m.nome}`, `Contrato ${tipo === "fixo" ? "de valor fixo" : tipo === "desempenho" ? "por desempenho" : "de longo prazo"}: ${o.meses} meses, ${valorBrl(o.mensal)} por mês${o.luvas ? ` e ${valorBrl(o.luvas)} de luvas` : ""}. "${m.slogan}"`, { k: "patrocinio", marca: m.id });
   return k;
 }
 export function recusarPatrocinio(s: Save) {
@@ -2247,7 +2248,7 @@ export function tatuar(s: Save, area: AreaTatuagem, id: string): { ok: boolean; 
   s.casa.saldo -= t.preco; v.tatuagens[area] = id;
   s.carreira.moral = clamp(s.carreira.moral + 2, 0, 100); s.carreira.hype = clamp((s.carreira.hype ?? 0) + 0.05, -0.3, 1.5);
   noticia(s, "vida", "Tatuagem nova", `${s.jogador.apelido} apareceu com ${t.nome.toLowerCase()} ${noArea(area)}. A foto rodou as redes.`, { k: "tatuagem" });
-  return { ok: true, msg: `${t.nome} ${noArea(area)}: R$ ${t.preco.toLocaleString("pt-BR")}.` };
+  return { ok: true, msg: `${t.nome} ${noArea(area)}: ${valorBrl(t.preco)}.` };
 }
 export function removerTatuagem(s: Save, area: AreaTatuagem): { ok: boolean; msg: string } {
   const v = visualDe(s.jogador), id = v.tatuagens[area];
@@ -2255,7 +2256,7 @@ export function removerTatuagem(s: Save, area: AreaTatuagem): { ok: boolean; msg
   const custo = custoRemocao(id);
   if (s.casa.saldo < custo) return { ok: false, msg: "O laser é caro: dinheiro não dá." };
   s.casa.saldo -= custo; delete v.tatuagens[area];
-  return { ok: true, msg: `Removida com laser: R$ ${custo.toLocaleString("pt-BR")}.` };
+  return { ok: true, msg: `Removida com laser: ${valorBrl(custo)}.` };
 }
 function fisicoInicial(at: Record<string, number>): Fisico {
   const vals = Object.values(at), media = vals.reduce((a, b) => a + b, 0) / vals.length;
@@ -2305,7 +2306,7 @@ export function agirRelacao(pacote: PacoteDados, s: Save, nome: string, acao: Ac
       const custo = Math.round(Math.max(300, c.salario * 0.01));
       if (s.casa.saldo < custo) return { ok: false, msg: "Dinheiro curto para o jantar." };
       s.casa.saldo -= custo;
-      return fazer(7, `Jantar com ${nome}: R$ ${custo.toLocaleString("pt-BR")}.`);
+      return fazer(7, `Jantar com ${nome}: ${valorBrl(custo)}.`);
     }
     case "redes": {
       if (!est) return { ok: false, msg: "Comentar nas redes é para estrela." };
@@ -2466,11 +2467,11 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     c.escolhaNumero = "chegada"; // sobe para o profissional: escolhe o número no elenco de cima
     c.formacao = false; c.anosContrato = 3;
     c.salario = Math.round(salarioMensal({ ovr: ovr(j), idade: j.idade, liga: lN, clube, agente: c.agente, fama: c.fama }));
-    noticia(s, "clube", "Primeiro contrato profissional", `${j.apelido} assina por 3 anos: R$ ${c.salario.toLocaleString("pt-BR")} por mês.`);
+    noticia(s, "clube", "Primeiro contrato profissional", `${j.apelido} assina por 3 anos: ${valorBrl(c.salario)} por mês.`);
   } else if (c.anosContrato <= 0 && c.formacao) {
     c.anosContrato = 2;
     c.salario = Math.round(Math.max(3000, salarioMensal({ ovr: ovr(j), idade: j.idade, liga: lN, clube, agente: c.agente, fama: c.fama, formacao: true })));
-    noticia(s, "clube", "Contrato renovado", `Mais 2 anos na base, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`);
+    noticia(s, "clube", "Contrato renovado", `Mais 2 anos na base, ${valorBrl(c.salario)} por mês.`);
   }
   // aposentadoria: anunciada, aos 40, ou sem clube depois dos 35
   if (!c.fase && (c.aposentadoria?.temporada === c.temporada - 1 || r.idade >= 40 || (!!c.mercado?.semClube && r.idade >= 35))) {

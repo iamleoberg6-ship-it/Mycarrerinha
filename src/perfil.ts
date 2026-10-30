@@ -1,3 +1,4 @@
+import { valorBrl } from "./moeda.js";
 // Perfil de craque e estilo de jogo, definidos depois da criação a partir do DNA.
 // Cada perfil dá efeitos iniciais e, em alguns casos, a primeira decisão da carreira.
 import { type Atributo, ATRIBUTOS, peso } from "./atributos.js";
@@ -40,7 +41,7 @@ export function definirPerfil(r: ResultadoCriacao): PerfilCraque {
       efeitos: { fama: 15, seguidores: 60000, pressao: 40 },
       evento: {
         remetente: `${MARCA_CHUTEIRA} Brasil`, titulo: "Proposta de contrato de chuteira",
-        texto: `A ${MARCA_CHUTEIRA} quer assinar com você por 3 anos: R$ 4.000 por mês, chuteiras exclusivas e uma sessão de fotos. Em troca, você vira o rosto da nova linha de base da marca.`,
+        texto: `A ${MARCA_CHUTEIRA} quer assinar com você por 3 anos: ${valorBrl(4000)} por mês, chuteiras exclusivas e uma sessão de fotos. Em troca, você vira o rosto da nova linha de base da marca.`,
         opcoes: [
           { id: "aceitar", rotulo: "Assinar com a marca", resultado: "Contrato assinado. Seu rosto vai estar em outdoor antes do primeiro jogo profissional.", efeitos: { patrocinioMensal: 4000, mesesPatrocinio: 36, fama: 8, seguidores: 90000, pressao: 20, exposicao: 15 } },
           { id: "recusar", rotulo: "Recusar e focar no futebol", resultado: "Seu pai achou cedo demais. A marca disse que a porta continua aberta.", efeitos: { profissionalismo: 1, pressao: -10 } },

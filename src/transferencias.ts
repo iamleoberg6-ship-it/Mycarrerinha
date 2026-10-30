@@ -16,6 +16,7 @@ import { bonusJovem } from "./identidade.js";
 import { saltoTransferencia } from "./vida.js";
 import { alojamentosDoClube, imovelAtual, mudar, nomeImovel, IMOVEL } from "./casa.js";
 import { fecharPassagemNoClube, alvoDeSeguidores, SEMANAS_PRE, SEMANAS_TEMPORADA, ANO_INICIAL, clubeCasa, ligaAtual, noticia, ovr, type Carreira, type Save } from "./jogo.js";
+import { valorBrl, curtoEur } from "./moeda.js";
 
 // ------------------------------------------------------------------ tipos
 export type TipoProposta = "transferencia" | "emprestimo" | "renovacao" | "livre";
@@ -276,7 +277,7 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
       const d = rng.pick(destinos.sort((a, b) => Math.abs(a.forca - nivel) - Math.abs(b.forca - nivel)).slice(0, 4));
       const opcao = Math.round(valorMercado(nivel, j.idade, Math.max(1, c.anosContrato), l.fLiga) * 0.9);
       m.propostas.push(nova(m, { tipo: "emprestimo", clubeId: d.id, ligaId: d.ligaId, salario: c.salario, anos: 0, taxa: 0, luvas: 0, papel: papelNoClube(d, s), interesse: 0.6, expira: fimDaJanela(c), opcaoCompra: opcao }));
-      eventos.push(`O ${d.nome} quer você por empréstimo, com opção de compra de € ${(opcao / 1e6).toFixed(1)} mi.`);
+      eventos.push(`O ${d.nome} quer você por empréstimo, com opção de compra de ${curtoEur(opcao)}.`);
     }
   }
   // 3. propostas de outros clubes (quem acabou de chegar espera a próxima temporada)
@@ -313,7 +314,7 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
     if (mu && prop.tipo === "transferencia" && prop.taxa >= mu * 0.6 && p.orcamento >= mu * 0.9 && rng.chance(0.35)) { prop.taxa = mu; prop.pagaMulta = true; }
     m.propostas.push(prop);
     eventos.push(`Proposta nova: o ${p.clube.nome} (${infoLiga(p.liga.id).curto}) quer você.`);
-    noticia(s, "clube", "Proposta na mesa", `O ${p.clube.nome} fez uma proposta por ${j.apelido}${prop.taxa ? `: € ${(prop.taxa / 1e6).toFixed(1)} mi ao ${clube.nome}` : ""}.`);
+    noticia(s, "clube", "Proposta na mesa", `O ${p.clube.nome} fez uma proposta por ${j.apelido}${prop.taxa ? `: ${curtoEur(prop.taxa)} ao ${clube.nome}` : ""}.`);
   }
 }
 
@@ -356,7 +357,7 @@ export function negociar(pacote: PacoteDados, s: Save, id: string): R {
   if (rng.chance(chance)) {
     const f = 1.06 + habilidadeAgente(s) * 0.3 + efeitosNamoro(s.carreira.namoro).luvas * 0.2;
     p.salario = Math.round(Math.min(p.salario * f, Math.max(p.salario, tetoSalarial(mundo(pacote).clube[p.clubeId], mundo(pacote).liga[p.ligaId]) * 1.05))); p.luvas = Math.round(p.luvas * (f + 0.1));
-    return { ok: true, msg: `Deu certo: ${nome} subiu o salário para R$ ${p.salario.toLocaleString("pt-BR")}.` };
+    return { ok: true, msg: `Deu certo: ${nome} subiu o salário para ${valorBrl(p.salario)}.` };
   }
   if (p.tipo !== "renovacao" && rng.chance(0.4)) {
     m.propostas = m.propostas.filter((x) => x.id !== id);
@@ -382,12 +383,12 @@ export function negociarItem(pacote: PacoteDados, s: Save, id: string, item: Ite
     const teto = tetoSalarial(mundo(pacote).clube[p.clubeId], mundo(pacote).liga[p.ligaId]) * 1.05;
     switch (item) {
       case "salario": { const estrelaSal = s.carreira.agente === FAMILIA ? 1 : habilidadesDoAgente(s.carreira.agente).salario; p.salario = Math.round(Math.min(p.salario * (1.07 + estrelaSal * 0.02), Math.max(p.salario, teto))); }
-        return { ok: true, msg: `${Nome} subiu o salário para R$ ${p.salario.toLocaleString("pt-BR")}.` };
-      case "luvas": p.luvas = Math.round(Math.max(p.luvas * 1.4, p.salario)); return { ok: true, msg: `Luvas de R$ ${p.luvas.toLocaleString("pt-BR")}.` };
-      case "multa": p.multa = Math.round((p.multa! * 0.55) / 1e5) * 1e5; return { ok: true, msg: `Multa rescisória baixou para € ${(p.multa / 1e6).toFixed(1)} mi.` };
+        return { ok: true, msg: `${Nome} subiu o salário para ${valorBrl(p.salario)}.` };
+      case "luvas": p.luvas = Math.round(Math.max(p.luvas * 1.4, p.salario)); return { ok: true, msg: `Luvas de ${valorBrl(p.luvas)}.` };
+      case "multa": p.multa = Math.round((p.multa! * 0.55) / 1e5) * 1e5; return { ok: true, msg: `Multa rescisória baixou para ${curtoEur(p.multa)}.` };
       case "venda": p.pctVenda = Math.min(20, 10 + Math.round(hab * 20)); return { ok: true, msg: `${p.pctVenda}% de uma venda futura ficam com você.` };
-      case "gols": p.bonusGol = Math.round(Math.max(p.bonusGol! * 2, p.salario * 0.04) / 100) * 100; return { ok: true, msg: `R$ ${p.bonusGol.toLocaleString("pt-BR")} por gol na liga.` };
-      case "titulo": p.bonusTitulo = Math.round((p.bonusTitulo! * 2) / 1000) * 1000; return { ok: true, msg: `R$ ${p.bonusTitulo.toLocaleString("pt-BR")} por título.` };
+      case "gols": p.bonusGol = Math.round(Math.max(p.bonusGol! * 2, p.salario * 0.04) / 100) * 100; return { ok: true, msg: `${valorBrl(p.bonusGol)} por gol na liga.` };
+      case "titulo": p.bonusTitulo = Math.round((p.bonusTitulo! * 2) / 1000) * 1000; return { ok: true, msg: `${valorBrl(p.bonusTitulo)} por título.` };
     }
   }
   p.paciencia = (p.paciencia ?? 1) - 1;
@@ -417,7 +418,7 @@ export function pedirAumento(pacote: PacoteDados, s: Save, forma: number): R {
   const p = comClausulas(pacote, s, nova(m, { tipo: "renovacao", clubeId: c.clubeId, ligaId: l.id, salario: sal, anos: Math.max(c.anosContrato, j.idade <= 28 ? 4 : 2), taxa: 0, luvas: Math.round(sal), papel, interesse: 0.85, expira: semanaAbs(c) + 4, blindagem: true }));
   m.propostas.push(p);
   noticia(s, "clube", "Aumento a caminho", `O ${clube.nome} topou conversar: oferece novo contrato a ${j.apelido}.`);
-  return { ok: true, msg: `A diretoria topou: proposta de R$ ${sal.toLocaleString("pt-BR")}/mês por ${p.anos} anos. Está na mesa.` };
+  return { ok: true, msg: `A diretoria topou: proposta de ${valorBrl(sal)}/mês por ${p.anos} anos. Está na mesa.` };
 }
 /** Clube que quer segurar o craque: renovação antecipada, com salário maior e multa alta. */
 function blindagem(pacote: PacoteDados, s: Save, rng: RNG, eventos: string[]) {
@@ -432,7 +433,7 @@ function blindagem(pacote: PacoteDados, s: Save, rng: RNG, eventos: string[]) {
   p.multa = Math.round((p.multa! * 1.8) / 1e5) * 1e5;
   m.propostas.push(p);
   eventos.push(`O ${clube.nome} quer te blindar: renovação antecipada com multa alta.`);
-  noticia(s, "clube", `${clube.nome} quer blindar ${j.apelido}`, `Com o assédio de outros clubes, a diretoria oferece renovação antecipada: salário maior e multa de € ${(p.multa / 1e6).toFixed(0)} mi.`);
+  noticia(s, "clube", `${clube.nome} quer blindar ${j.apelido}`, `Com o assédio de outros clubes, a diretoria oferece renovação antecipada: salário maior e multa de ${curtoEur(p.multa)}.`);
 }
 
 export function recusar(pacote: PacoteDados, s: Save, id: string): R {
@@ -501,7 +502,7 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
     c.salario = p.salario; c.anosContrato = p.anos; c.relTecnico = clamp(c.relTecnico + 3, 0, 100);
     receberLuvas(s, p.luvas);
     m.propostas = m.propostas.filter((x) => x.id !== id);
-    noticia(s, "clube", "Renovou", `${s.jogador.apelido} renova com o ${destino.nome} até ${ANO_INICIAL + c.temporada + p.anos}: R$ ${p.salario.toLocaleString("pt-BR")} por mês.`);
+    noticia(s, "clube", "Renovou", `${s.jogador.apelido} renova com o ${destino.nome} até ${ANO_INICIAL + c.temporada + p.anos}: ${valorBrl(p.salario)} por mês.`);
     return { ok: true, msg: `Contrato renovado por ${p.anos} anos.` };
   }
   if (p.tipo === "emprestimo") {
@@ -517,14 +518,14 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
     const origem = w.clube[c.clubeId];
     if (p.travada && !forcar && !p.pagaMulta) return { ok: false, msg: `O ${origem.nome} não liberou. Você pode forçar a saída.` };
     if (p.pagaMulta || (c.contrato?.multa && p.taxa >= c.contrato.multa)) {
-      noticia(s, "clube", "Multa paga", `O ${destino.nome} depositou a multa rescisória de € ${(p.taxa / 1e6).toFixed(1)} mi. O ${origem.nome} não pôde fazer nada.`);
+      noticia(s, "clube", "Multa paga", `O ${destino.nome} depositou a multa rescisória de ${curtoEur(p.taxa)}. O ${origem.nome} não pôde fazer nada.`);
     } else if (!p.travada) {
       const vm = valorMercado(ovr(s.jogador), s.jogador.idade, c.anosContrato, w.liga[infoLiga(c.ligaId).id].fLiga);
       const importancia = (papelNoClube(origem, s) === "titular" ? 1.35 : 1.0) * (m.listaTransferencia ? 0.8 : 1) * (c.anosContrato >= 3 ? 1.1 : 1) * ((c.contrato?.multa ?? 0) > vm * 3 ? 1.15 : 1);
       const prop = { taxa: p.taxa, orcamento: p.taxa * 1.4 } as Proposta;
       if (!clubeAceitaVenda(rngAcao(s, "venda", id), prop, vm, importancia)) {
         p.travada = true;
-        return { ok: false, msg: `O ${origem.nome} recusou vender por € ${(p.taxa / 1e6).toFixed(1)} mi. Você pode forçar a saída ou esperar outra proposta.` };
+        return { ok: false, msg: `O ${origem.nome} recusou vender por ${curtoEur(p.taxa)}. Você pode forçar a saída ou esperar outra proposta.` };
       }
       p.taxa = Math.round(prop.taxa);
     } else {
@@ -538,7 +539,7 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
   if (p.tipo === "transferencia" && p.taxa && c.contrato?.pctVenda) {
     const parte = Math.round(p.taxa * CAMBIO * c.contrato.pctVenda / 100);
     s.casa.saldo += parte;
-    noticia(s, "dinheiro", "Parte da venda", `Pela cláusula do contrato, ${c.contrato.pctVenda}% da venda ficam com ${s.jogador.apelido}: R$ ${parte.toLocaleString("pt-BR")}.`);
+    noticia(s, "dinheiro", "Parte da venda", `Pela cláusula do contrato, ${c.contrato.pctVenda}% da venda ficam com ${s.jogador.apelido}: ${valorBrl(parte)}.`);
   }
   novoContrato();
   c.salario = p.salario; c.anosContrato = p.anos; c.formacao = false;
@@ -553,7 +554,7 @@ function receberLuvas(s: Save, luvas: number) {
   if (!luvas) return;
   const liquido = Math.round(luvas * (1 - comissaoDo(s.carreira.agente, s.carreira.comissaoAgente)));
   s.casa.saldo += liquido;
-  noticia(s, "dinheiro", "Luvas", `R$ ${liquido.toLocaleString("pt-BR")} de luvas na conta${comissaoDo(s.carreira.agente, s.carreira.comissaoAgente) ? " (já descontada a comissão do agente)" : ""}.`);
+  noticia(s, "dinheiro", "Luvas", `${valorBrl(liquido)} de luvas na conta${comissaoDo(s.carreira.agente, s.carreira.comissaoAgente) ? " (já descontada a comissão do agente)" : ""}.`);
 }
 
 /** Troca de clube no meio da carreira: liga, tabela, técnico novo, moradia. */
@@ -580,7 +581,7 @@ export function mudarDeClube(pacote: PacoteDados, s: Save, destino: Clube, tipo:
   if (imovelAtual(s.casa).categoria === "alojamento") mudar(s.casa, alojamentosDoClube(cc)[0], "alugar", c.salario);
   const ano = ANO_INICIAL + c.temporada, ligaNome = infoLiga(destino.ligaId).curto;
   const titulo = tipo === "emprestimo" ? `Emprestado ao ${destino.nome}` : tipo === "livre" ? `${s.jogador.apelido} acerta com o ${destino.nome}` : `${s.jogador.apelido} é do ${destino.nome}`;
-  noticia(s, "clube", titulo, `${tipo === "transferencia" ? `Negócio de € ${(taxa / 1e6).toFixed(1)} mi. ` : ""}${ligaNome}, ${ano}. ${tipo === "emprestimo" ? "Volta no fim da temporada." : `Contrato de ${c.anosContrato} anos, R$ ${c.salario.toLocaleString("pt-BR")} por mês.`}${imovelAtual(s.casa).categoria === "alojamento" ? ` Mora em: ${nomeImovel(s.casa, IMOVEL[s.casa.imovel])}.` : ""}`, { k: "transferencia", clube: destino.id, tipo, ate: tipo === "emprestimo" ? ano : ano + c.anosContrato, taxa });
+  noticia(s, "clube", titulo, `${tipo === "transferencia" ? `Negócio de ${curtoEur(taxa)}. ` : ""}${ligaNome}, ${ano}. ${tipo === "emprestimo" ? "Volta no fim da temporada." : `Contrato de ${c.anosContrato} anos, ${valorBrl(c.salario)} por mês.`}${imovelAtual(s.casa).categoria === "alojamento" ? ` Mora em: ${nomeImovel(s.casa, IMOVEL[s.casa.imovel])}.` : ""}`, { k: "transferencia", clube: destino.id, tipo, ate: tipo === "emprestimo" ? ano : ano + c.anosContrato, taxa });
   const dSeg = c.seguidores - seg0;
   if (Math.abs(dSeg) >= 1000) noticia(s, "vida", dSeg > 0 ? "Chuva de seguidores" : "Menos holofote", dSeg > 0 ? `A torcida do ${destino.nome} chegou junto: +${dSeg.toLocaleString("pt-BR")} seguidores na primeira semana.` : `Longe dos holofotes de antes, ${s.jogador.apelido} perdeu ${(-dSeg).toLocaleString("pt-BR")} seguidores.`);
 }
@@ -620,7 +621,7 @@ export function fimDaTemporadaNoMercado(pacote: PacoteDados, s: Save, eventos: s
       const sal = Math.round(salarioMensal({ ovr: ovr(s.jogador), idade: s.jogador.idade, liga, clube: dest, agente: c.agente, fama: c.fama }));
       const expira = (c.temporada + 1) * SEMANAS_TEMPORADA + JANELAS[0].fim + 1;
       m.propostas.push(nova(m, { tipo: "transferencia", clubeId: dest.id, ligaId: dest.ligaId, salario: sal, anos: 3, taxa: e.opcaoCompra, luvas: 0, papel: papelNoClube(dest, s), interesse: 0.8, expira }));
-      eventos.push(`O ${dest.nome} exerce a opção de compra: € ${(e.opcaoCompra / 1e6).toFixed(1)} mi. Você decide se assina.`);
+      eventos.push(`O ${dest.nome} exerce a opção de compra: ${curtoEur(e.opcaoCompra)}. Você decide se assina.`);
       noticia(s, "clube", "Opção de compra", `O ${dest.nome} quer você em definitivo. A decisão é sua.`);
     }
   }

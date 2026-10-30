@@ -2,6 +2,7 @@
 // ações, cripto) e as propostas que chegam pelo celular, algumas delas golpes. O mês fecha junto com o salário.
 import { RNG, clamp } from "./rng.js";
 import { bonusVitrine, type DesignMarca } from "./marca-propria.js";
+import { valorBrl, curtoBrl } from "./moeda.js";
 
 export type TipoEmpresa = "escolinha" | "barbearia" | "restaurante" | "academia" | "imoveis" | "marca" | "app" | "perfumaria" | "energetico" | "padaria";
 export interface InfoEmpresa {
@@ -109,14 +110,14 @@ export function agirEmpresa(n: EstadoNegocios, uid: string, acao: AcaoEmpresa, c
   if (acao === "vender") {
     const v = Math.round(e.valor * (0.6 + e.saude / 250));
     n.empresas = n.empresas.filter((x) => x !== e);
-    return { ok: true, msg: `Vendeu ${e.nome} por R$ ${v.toLocaleString("pt-BR")}.`, ganho: v };
+    return { ok: true, msg: `Vendeu ${e.nome} por ${valorBrl(v)}.`, ganho: v };
   }
   if (e.acao === ctx.semanaAbs) return { ok: false, msg: "Já mexeu nessa empresa nesta semana." };
   if (acao === "investir") {
     const v = Math.round(info.custo * 0.25);
     if (ctx.saldo < v) return { ok: false, msg: "Não tem dinheiro em conta para isso." };
     e.valor += v; e.investido += v; e.saude = clamp(e.saude + 4, 0, 100); e.acao = ctx.semanaAbs;
-    return { ok: true, msg: `Mais R$ ${v.toLocaleString("pt-BR")} em ${e.nome}: reforma e gente nova.`, custo: v };
+    return { ok: true, msg: `Mais ${valorBrl(v)} em ${e.nome}: reforma e gente nova.`, custo: v };
   }
   e.acao = ctx.semanaAbs;
   if (acao === "cuidar") { e.cuidado = ctx.semanaAbs; e.saude = clamp(e.saude + 5, 0, 100); return { ok: true, msg: `Você passou a tarde em ${e.nome}: conferiu as contas, conversou com a equipe.`, cansaco: 4 }; }
@@ -129,7 +130,7 @@ export function aplicar(n: EstadoNegocios, tipo: TipoInvest, valor: number, sald
   if (valor < 0 && n.invest[tipo] <= 0) return { ok: false, msg: "Não tem nada aplicado aí." };
   const v = valor < 0 ? -Math.min(n.invest[tipo], -valor) : valor;
   n.invest[tipo] += v;
-  return v > 0 ? { ok: true, msg: `Aplicou R$ ${v.toLocaleString("pt-BR")} em ${INVEST[tipo].nome.toLowerCase()}.`, custo: v } : { ok: true, msg: `Resgatou R$ ${(-v).toLocaleString("pt-BR")} de ${INVEST[tipo].nome.toLowerCase()}.`, ganho: -v };
+  return v > 0 ? { ok: true, msg: `Aplicou ${valorBrl(v)} em ${INVEST[tipo].nome.toLowerCase()}.`, custo: v } : { ok: true, msg: `Resgatou ${valorBrl((-v))} de ${INVEST[tipo].nome.toLowerCase()}.`, ganho: -v };
 }
 
 // ------------------------------------------------------------------ propostas e golpes
@@ -175,7 +176,7 @@ export function mesNegocios(n: EstadoNegocios, rng: RNG, ctx: CtxNegocios): MesN
     const cuidou = e.cuidado !== undefined && ctx.semanaAbs - e.cuidado <= 6;
     e.saude = clamp(e.saude + rng.normal(0, info.risco) * 0.6 + (cuidou ? 1.5 : -1.5) + (n.assessor ? 1 : 0) + (info.famaPuxa ? (ctx.fama - 50) / 25 : 0), 0, 100);
     if (e.tipo === "app") {
-      if (rng.chance(0.025)) { e.valor *= rng.range(4, 10); e.saude = 85; r.avisos.push(`${e.nome} recebeu um aporte milionário: a startup agora vale R$ ${Math.round(e.valor).toLocaleString("pt-BR")}!`); r.noticias.push({ titulo: `A startup de ${ctx.apelido} vale milhões`, texto: `${e.nome} recebeu investimento de um fundo estrangeiro.` }); }
+      if (rng.chance(0.025)) { e.valor *= rng.range(4, 10); e.saude = 85; r.avisos.push(`${e.nome} recebeu um aporte milionário: a startup agora vale ${valorBrl(Math.round(e.valor))}!`); r.noticias.push({ titulo: `A startup de ${ctx.apelido} vale milhões`, texto: `${e.nome} recebeu investimento de um fundo estrangeiro.` }); }
       else if (rng.chance(0.03) || e.saude < 12) { r.avisos.push(`${e.nome} fechou. O dinheiro investido virou pó.`); r.noticias.push({ titulo: `Startup de ${ctx.apelido} fecha as portas`, texto: `${e.nome} não conseguiu novo investimento.` }); n.empresas = n.empresas.filter((x) => x !== e); r.moral -= 3; continue; }
       e.lucroUlt = 0; continue;
     }
@@ -189,13 +190,13 @@ export function mesNegocios(n: EstadoNegocios, rng: RNG, ctx: CtxNegocios): MesN
     // acontecimentos do mês
     if (rng.chance(0.05)) {
       if (rng.chance(0.55)) { e.saude = clamp(e.saude + 15, 0, 100); r.avisos.push(`${e.nome} apareceu num programa de TV. Movimento lá em cima.`); }
-      else if (rng.chance(0.5)) { const m = Math.round(info.custo * 0.04); r.lucro -= m; e.saude = clamp(e.saude - 8, 0, 100); r.avisos.push(`Fiscalização em ${e.nome}: multa de R$ ${m.toLocaleString("pt-BR")}.`); }
+      else if (rng.chance(0.5)) { const m = Math.round(info.custo * 0.04); r.lucro -= m; e.saude = clamp(e.saude - 8, 0, 100); r.avisos.push(`Fiscalização em ${e.nome}: multa de ${valorBrl(m)}.`); }
       else { e.valor *= 0.75; e.saude = clamp(e.saude - 10, 0, 100); r.avisos.push(`O gerente de ${e.nome} desviou dinheiro. A empresa perdeu um quarto do valor.`); r.noticias.push({ titulo: `Desfalque em empresa de ${ctx.apelido}`, texto: `O gerente de ${e.nome} sumiu com parte do caixa.`, polemica: true }); }
     }
     if (e.saude < 12) {
       const v = Math.round(e.valor * 0.2);
       r.lucro += v; r.moral -= 4; n.empresas = n.empresas.filter((x) => x !== e);
-      r.avisos.push(`${e.nome} faliu. Sobraram R$ ${v.toLocaleString("pt-BR")} na venda dos móveis.`);
+      r.avisos.push(`${e.nome} faliu. Sobraram ${valorBrl(v)} na venda dos móveis.`);
       r.noticias.push({ titulo: `${e.nome} fecha as portas`, texto: `O negócio de ${ctx.apelido} não resistiu.`, polemica: true });
       continue;
     }
@@ -215,8 +216,8 @@ export function mesNegocios(n: EstadoNegocios, rng: RNG, ctx: CtxNegocios): MesN
   for (const g of [...n.golpes]) {
     if (ctx.semanaAbs >= g.revela) {
       n.golpes = n.golpes.filter((x) => x !== g); r.moral -= 10;
-      r.avisos.push(`"${g.nome}" era golpe. Os R$ ${g.valor.toLocaleString("pt-BR")} sumiram.`);
-      r.noticias.push({ titulo: `${ctx.apelido} cai em golpe de R$ ${(g.valor / 1e6).toFixed(1).replace(".", ",")} mi`, texto: `O jogador investiu em "${g.nome}". A polícia investiga o esquema, que fez outras vítimas no futebol.`, polemica: true });
+      r.avisos.push(`"${g.nome}" era golpe. Os ${valorBrl(g.valor)} sumiram.`);
+      r.noticias.push({ titulo: `${ctx.apelido} cai em golpe de ${curtoBrl(g.valor)}`, texto: `O jogador investiu em "${g.nome}". A polícia investiga o esquema, que fez outras vítimas no futebol.`, polemica: true });
     } else g.mostrado = Math.round(g.mostrado * 1.08);
   }
   if (n.assessor) r.lucro -= CUSTO_ASSESSOR;

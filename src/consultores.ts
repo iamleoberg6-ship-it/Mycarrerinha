@@ -3,6 +3,7 @@
 // Fase 1: Negociador, Networking e Jurídico; modelos percentual e fixo.
 import { RNG } from "./rng.js";
 import { comissaoDo, type TipoAgente } from "./agentes-banco.js";
+import { valorBrl } from "./moeda.js";
 
 export type Especialidade = "negociador" | "networking" | "juridico";
 /** Especialidades disponíveis nesta fase. As outras (imagem, preparador, mental, imprensa, financeiro, exterior) entram depois. */
@@ -45,7 +46,7 @@ export function efeitoConsultores(d: DadosConsultores | undefined): Record<Espec
   return r;
 }
 
-const reais = (v: number) => `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
+const reais = (v: number) => `${valorBrl(Math.round(v))}`;
 export const pedidoTexto = (o: Oferta) => o.modelo === "percentual" ? `${(o.valor * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do salário` : `${reais(o.valor)} por mês`;
 
 /** Abre a conversa com um consultor da especialidade. A reserva é sorteada e fica oculta. */

@@ -17,6 +17,7 @@ import { propostaPorIndicacao, janelaAberta } from "./transferencias.js";
 import { MARCA, type ContratoPatrocinio } from "./marcas.js";
 import { temFuncao } from "./vida-social.js";
 import { noticia, registrarMarco, agendaDe, elencoAtual, ovr, semanaAbsJogo, ANO_INICIAL, parcasDe, jogoDaSemana, jogoCopaDaSemana, ehClassico, type Save, type ResumoTemporada } from "./jogo.js";
+import { valorBrl } from "./moeda.js";
 
 const rngDe = (s: Save, ...p: (string | number)[]) => new RNG(`${s.semente}|${s.carreira.temporada}|${s.carreira.semana}|clube|${p.join("|")}`);
 const ativo = (s: Save) => { const c = s.carreira; return !c.fase && !c.formacao && !c.mercado?.semClube && !c.encerrada; };
@@ -241,7 +242,7 @@ export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTempo
   for (const e of Object.values(c.copas ?? {})) if (e && e.campeao === c.clubeId && e.temporada === c.temporada) titulos.push(COPAS[e.id].nome);
   if (titulos.length && ativo(s)) {
     const bt = c.contrato?.bonusTitulo ?? 0;
-    if (bt) { s.casa.saldo += bt * titulos.length; noticia(s, "dinheiro", "Bônus por título", `Pela cláusula do contrato: R$ ${(bt * titulos.length).toLocaleString("pt-BR")} por ${titulos.length === 1 ? "título" : `${titulos.length} títulos`}.`); }
+    if (bt) { s.casa.saldo += bt * titulos.length; noticia(s, "dinheiro", "Bônus por título", `Pela cláusula do contrato: ${valorBrl((bt * titulos.length))} por ${titulos.length === 1 ? "título" : `${titulos.length} títulos`}.`); }
     if ((c.torcida ?? 50) >= 40 && info) {
       const tv = torcidaDe((c.torcidaViva ??= {}), c.clubeId), n = recepcaoAeroporto(tv, { clube: info.nome, apelido: j.apelido, torcida: c.torcida ?? 50, titulo: titulos[0] });
       if (n) { noticia(s, "vida", n.titulo, n.texto); c.moral = clamp(c.moral + 5, 0, 100); }
