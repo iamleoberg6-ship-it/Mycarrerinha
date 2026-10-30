@@ -34,6 +34,8 @@ export interface PropostaSave {
   /** o seu clube não aceitou vender */ travada?: boolean;
   /** cláusulas: multa rescisória (€), % da venda futura para o jogador, bônus por gol e por título (R$) */
   multa?: number; pctVenda?: number; bonusGol?: number; bonusTitulo?: number;
+  /** bônus por jogos pelo clube: valor pago a cada `bonusJogosCada` jogos; bônus por prêmio individual (craque, artilheiro...) */
+  bonusJogos?: number; bonusJogosCada?: number; bonusPremio?: number;
   /** quantas vezes ainda dá para pedir algo antes de a diretoria encerrar a conversa, e o que já foi pedido */
   paciencia?: number; pedidos?: ItemNegociacao[];
   /** o clube comprador paga a multa (o seu clube não pode segurar) */
@@ -41,17 +43,19 @@ export interface PropostaSave {
   /** renovação para blindar o jogador (oferecida antes do fim do contrato) */
   blindagem?: boolean;
 }
-export type ItemNegociacao = "salario" | "luvas" | "multa" | "venda" | "gols" | "titulo";
+export type ItemNegociacao = "salario" | "luvas" | "multa" | "venda" | "gols" | "titulo" | "jogos" | "premio";
 export const NOME_ITEM: Record<ItemNegociacao, [string, string]> = {
   salario: ["Mais salário", "O agente pede um aumento no salário mensal."],
   luvas: ["Mais luvas", "Um valor maior na assinatura."],
   multa: ["Multa mais baixa", "Fica mais fácil sair quando aparecer um clube grande."],
   venda: ["% da venda futura", "Quando o clube te vender, uma parte vai para você."],
   gols: ["Bônus por gol", "Um valor a cada gol na liga."],
+  jogos: ["Bônus por jogos", "Um valor a cada 20 ou 25 jogos pelo clube, conforme o agente."],
+  premio: ["Bônus por prêmio", "Um valor por prêmio individual: craque, artilheiro, garçom, revelação, sub-21 ou seleção do campeonato."],
   titulo: ["Bônus por título", "Um prêmio por cada taça levantada."],
 };
 /** As cláusulas do contrato em vigor. */
-export interface ClausulasContrato { multa: number; pctVenda: number; bonusGol: number; bonusTitulo: number; desde: number; pedidoAumento?: number; blindadoEm?: number }
+export interface ClausulasContrato { multa: number; pctVenda: number; bonusGol: number; bonusTitulo: number; desde: number; pedidoAumento?: number; blindadoEm?: number; bonusJogos?: number; bonusJogosCada?: number; bonusPremio?: number }
 export interface Transferencia { temporada: number; semana: number; de: string; para: string; tipo: TipoProposta; taxa: number }
 export interface DadosMercado {
   propostas: PropostaSave[];
@@ -376,7 +380,7 @@ export function negociarItem(pacote: PacoteDados, s: Save, id: string, item: Ite
   if ((p.paciencia ?? 0) <= 0) return { ok: false, msg: "A diretoria encerrou a negociação: é pegar ou largar." };
   if (p.pedidos!.includes(item)) return { ok: false, msg: "Esse pedido já foi feito." };
   p.pedidos!.push(item); p.negociada = true;
-  const hab = habilidadeAgente(s), dif: Record<ItemNegociacao, number> = { salario: 0, luvas: 0, multa: 0.08, venda: 0.12, gols: -0.06, titulo: -0.1 };
+  const hab = habilidadeAgente(s), dif: Record<ItemNegociacao, number> = { salario: 0, luvas: 0, multa: 0.08, venda: 0.12, gols: -0.06, titulo: -0.1, jogos: 0.05, premio: 0.08 };
   const chance = clamp(0.35 + hab + (p.interesse - 0.6) + s.carreira.fama / 500 - dif[item], 0.12, 0.88);
   const nome = `o ${nomeClube(pacote, p.clubeId)}`, Nome = nome[0].toUpperCase() + nome.slice(1);
   if (rngAcao(s, "item", id, item).chance(chance)) {
@@ -389,6 +393,9 @@ export function negociarItem(pacote: PacoteDados, s: Save, id: string, item: Ite
       case "venda": p.pctVenda = Math.min(20, 10 + Math.round(hab * 20)); return { ok: true, msg: `${p.pctVenda}% de uma venda futura ficam com você.` };
       case "gols": p.bonusGol = Math.round(Math.max(p.bonusGol! * 2, p.salario * 0.04) / 100) * 100; return { ok: true, msg: `${valorBrl(p.bonusGol)} por gol na liga.` };
       case "titulo": p.bonusTitulo = Math.round((p.bonusTitulo! * 2) / 1000) * 1000; return { ok: true, msg: `${valorBrl(p.bonusTitulo)} por título.` };
+      // agente forte negocia um marco mais curto e um valor maior; o pai (família) pede menos e num intervalo maior
+      case "jogos": p.bonusJogosCada = hab >= 0.3 ? 20 : 25; p.bonusJogos = Math.round((p.salario * (0.8 + hab)) / 100) * 100; return { ok: true, msg: `${valorBrl(p.bonusJogos)} a cada ${p.bonusJogosCada} jogos pelo clube.` };
+      case "premio": p.bonusPremio = Math.round((p.salario * 3 * (0.8 + hab)) / 100) * 100; return { ok: true, msg: `${valorBrl(p.bonusPremio)} por prêmio individual.` };
     }
   }
   p.paciencia = (p.paciencia ?? 1) - 1;
@@ -496,7 +503,7 @@ export function aceitar(pacote: PacoteDados, s: Save, id: string, forcar = false
   const c = s.carreira, m = mercadoDe(c), p = m.propostas.find((x) => x.id === id);
   if (!p) return { ok: false, msg: "Proposta não encontrada." };
   const w = mundo(pacote), destino = w.clube[p.clubeId];
-  const novoContrato = () => { comClausulas(pacote, s, p); c.contrato = { multa: p.multa ?? 0, pctVenda: p.pctVenda ?? 0, bonusGol: p.bonusGol ?? 0, bonusTitulo: p.bonusTitulo ?? 0, desde: c.temporada, pedidoAumento: c.contrato?.pedidoAumento, blindadoEm: c.contrato?.blindadoEm }; };
+  const novoContrato = () => { comClausulas(pacote, s, p); c.contrato = { multa: p.multa ?? 0, pctVenda: p.pctVenda ?? 0, bonusGol: p.bonusGol ?? 0, bonusTitulo: p.bonusTitulo ?? 0, bonusJogos: p.bonusJogos, bonusJogosCada: p.bonusJogosCada, bonusPremio: p.bonusPremio, desde: c.temporada, pedidoAumento: c.contrato?.pedidoAumento, blindadoEm: c.contrato?.blindadoEm }; };
   if (p.tipo === "renovacao") {
     novoContrato();
     c.salario = p.salario; c.anosContrato = p.anos; c.relTecnico = clamp(c.relTecnico + 3, 0, 100);

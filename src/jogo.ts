@@ -1254,6 +1254,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   else { c.stats.base++; c.stats.baseGols += gols; (c.stats.baseNotas ??= []).push(nota); }
   if (pro) { const ms = (c.mesStats ??= { gols: 0, assist: 0, notas8: 0 }); ms.gols += gols; ms.assist += assist; if (nota >= 8) ms.notas8++; }
   if (pro && !copa) { c.jogosPorClube ??= {}; c.jogosPorClube[c.clubeId] = (c.jogosPorClube[c.clubeId] ?? 0) + 1; }
+  { const k = c.contrato, n = c.jogosPorClube?.[c.clubeId] ?? 0; if (pro && !copa && k?.bonusJogos && k.bonusJogosCada && n % k.bonusJogosCada === 0) { s.casa.saldo += k.bonusJogos; noticia(s, "dinheiro", "Bônus por jogos", `Pela cláusula do contrato: ${valorBrl(k.bonusJogos)} por ${n} jogos com o clube.`); eventos.push(`Bônus por jogos: ${valorBrl(k.bonusJogos)}.`); } }
   if (!copa) {
     // relíquias do jogo: estreia, primeiro gol, hat-trick, golaços, marcas
     const meusGols = partida.souCasa ? gc : gf, golsAdv = partida.souCasa ? gf : gc, cc = clubeCasa(pacote, c.clubeId);
@@ -2347,10 +2348,14 @@ function posicaoNaTabela(fixa: number | undefined, s: Save): number {
 }
 
 /** Coloca as relíquias ganhas na casa e conta na semana e nas notícias. */
+/** prêmios individuais que a cláusula de bônus por prêmio cobre */
+const PREMIOS_COM_BONUS = new Set(["trofeu-craque", "trofeu-artilheiro", "trofeu-garcom", "trofeu-revelacao", "trofeu-sub21", "trofeu-selecao"]);
 function receberReliquias(s: Save, ganhos: Ganho[], eventos: string[]) {
   for (const g of ganhos) {
     const r = ganharReliquia(s.casa, g.reliquia);
     if (!r.ok) continue;
+    const bp = s.carreira.contrato?.bonusPremio;
+    if (bp && PREMIOS_COM_BONUS.has(g.conquista)) { s.casa.saldo += bp; noticia(s, "dinheiro", "Bônus por prêmio", `Pela cláusula do contrato: ${valorBrl(bp)} por ${g.reliquia.nome.toLowerCase()}.`); eventos.push(`Bônus por prêmio: ${valorBrl(bp)}.`); }
     eventos.push(`Relíquia nova: ${r.msg}`);
     (s.conquistasNovas ??= []).push({ nome: g.reliquia.nome, legenda: g.reliquia.legenda });
     noticia(s, "vida", g.reliquia.tipo === "trofeu" ? g.reliquia.nome : `Relíquia: ${g.reliquia.nome}`, `${g.reliquia.legenda}. Já faz parte da coleção de ${s.jogador.apelido}.`, { k: "trofeu" });
