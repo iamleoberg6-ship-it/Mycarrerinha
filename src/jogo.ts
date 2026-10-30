@@ -231,7 +231,7 @@ export interface Carreira {
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
-export interface Save { versao: 1; semente: string; jogador: Jogador; carreira: Carreira; casa: EstadoCasa; noticias: Noticia[]; /** moeda da carreira (BRL, EUR, USD, GBP, CNY); sem ela, real */ moeda?: string }
+export interface Save { versao: 1; semente: string; jogador: Jogador; carreira: Carreira; casa: EstadoCasa; noticias: Noticia[]; /** conquistas desbloqueadas que ainda não foram vistas na aba Semana */ conquistasNovas?: { nome: string; legenda: string }[]; /** moeda da carreira (BRL, EUR, USD, GBP, CNY); sem ela, real */ moeda?: string }
 
 export const ANO_INICIAL = 2026;
 export const SEMANAS_PRE = 2, RODADAS = 38, SEMANAS_TEMPORADA = SEMANAS_PRE + RODADAS;
@@ -2352,6 +2352,7 @@ function receberReliquias(s: Save, ganhos: Ganho[], eventos: string[]) {
     const r = ganharReliquia(s.casa, g.reliquia);
     if (!r.ok) continue;
     eventos.push(`Relíquia nova: ${r.msg}`);
+    (s.conquistasNovas ??= []).push({ nome: g.reliquia.nome, legenda: g.reliquia.legenda });
     noticia(s, "vida", g.reliquia.tipo === "trofeu" ? g.reliquia.nome : `Relíquia: ${g.reliquia.nome}`, `${g.reliquia.legenda}. Já faz parte da coleção de ${s.jogador.apelido}.`, { k: "trofeu" });
   }
 }

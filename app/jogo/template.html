@@ -736,6 +736,19 @@ body:has(.fixo-jogar:not(.mini)) { padding-bottom: calc(150px + env(safe-area-in
 .filtros-noticia { display: flex; flex-wrap: wrap; gap: 2px 16px; margin: 0 0 12px; border-bottom: 1px solid currentColor; border-bottom-color: rgba(127,127,127,.25); }
 .filtro-n { background: none; border: 0; padding: 8px 0 7px; min-height: 36px; font: inherit; font-size: 13px; color: inherit; opacity: .6; cursor: pointer; box-shadow: inset 0 -2px 0 transparent; }
 .filtro-n.ativo { opacity: 1; font-weight: 700; box-shadow: inset 0 -2px 0 currentColor; }
+/* próximas conquistas no perfil: barra de progresso até a próxima marca */
+.conq-prog { display: grid; gap: 10px; margin: 6px 0 14px; }
+.conq-linha { display: grid; gap: 4px; }
+.conq-topo { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-size: 14px; }
+.conq-topo small { color: #E3B341; font-weight: 700; white-space: nowrap; }
+.conq-barra { height: 8px; border-radius: 4px; background: rgba(127,127,127,.25); overflow: hidden; }
+.conq-barra > i { display: block; height: 100%; width: var(--v); background: #E3B341; border-radius: 4px; transition: width .4s ease; }
+/* conquista desbloqueada: destaque próprio na aba Semana */
+.conquista-nova { display: flex; align-items: center; gap: 12px; border: 1px solid #E3B341; background: rgba(227,179,65,.12); }
+.conquista-nova > span { font-size: 26px; }
+.conquista-nova > div { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.conquista-nova small { opacity: .85; }
+
 </style>
 </head>
 <body>

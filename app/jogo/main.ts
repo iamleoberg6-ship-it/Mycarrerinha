@@ -1,3 +1,4 @@
+import { proximasMetas } from "../../src/progresso-conquistas.js";
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
 import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
@@ -303,7 +304,7 @@ function telaSemana(s: Save): string {
   const focos: [Grupo, string][] = [["fisico", "Físico"], ["tecnico", "Técnico"], ["tatico", "Tático"]];
   const ints: [Intensidade, string][] = [["leve", "Leve"], ["normal", "Normal"], ["alta", "Puxado"]];
   const acoesDisp = (Object.keys(ACOES) as Acao[]).filter((a) => a !== "video" || jogo);
-  const pend = [cardAnuncio(s), cardPatrocinio(s), cardEvento(s), cardAgenda(s), cardNumero(s), cardConvites(s), cardSugestao(s), cardCraque(s), cardNegocioMidia(s), nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"} · tocar para ver ›</small></span></button>` : ""].filter((x) => x.trim());
+  const pend = [cardConquista(s), cardAnuncio(s), cardPatrocinio(s), cardEvento(s), cardAgenda(s), cardNumero(s), cardConvites(s), cardSugestao(s), cardCraque(s), cardNegocioMidia(s), nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"} · tocar para ver ›</small></span></button>` : ""].filter((x) => x.trim());
   nPendencias = pend.length;
   const rotuloJogar = jc && escQ !== "lesionado" ? (aba === "semana" ? "Ir para o jogo de quarta" : "Jogo de quarta") : jogo && escPrev !== "lesionado" ? (aba === "semana" ? "Ir para o jogo" : "Jogar") : (aba === "semana" ? "Fechar a semana" : "Fechar semana");
   const botaoJogar = aba === "semana" ? `<button class="botao grande fixo-jogar" data-acao="jogar">${rotuloJogar}</button>` : `<button class="botao grande fixo-jogar mini" data-acao="jogar" aria-label="${rotuloJogar}" title="${rotuloJogar}"><span aria-hidden="true">▶</span></button>`;
@@ -346,6 +347,12 @@ function telaSemana(s: Save): string {
 /** Pendências da semana (para o número na barra). */
 let nPendencias = 0;
 /** Proposta de negócio e pedido de entrevista: atalhos que levam direto ao lugar de responder. */
+/** Conquista desbloqueada por uma partida: fica na Semana até o jogador tocar em Ok. */
+function cardConquista(s: Save): string {
+  const n = s.conquistasNovas ?? [];
+  if (!n.length) return "";
+  return `<div class="painel conquista-nova"><span aria-hidden="true">🏆</span><div><b>${n.length === 1 ? "Conquista desbloqueada" : `${n.length} conquistas desbloqueadas`}</b><small>${n.map((x) => esc(x.nome)).join(" · ")}</small></div><button class="botao sec peq" data-acao="vista-conquista">Ok</button></div>`;
+}
 function cardNegocioMidia(s: Save): string {
   return `${(() => { const n = negociosDe(s.carreira), m = midiaDe(s); return (n.proposta ? `<button class="painel aviso-mercado" data-aba="carreira" data-ir="negocios"><span>💼</span><span><b>Proposta de negócio: ${esc(n.proposta.titulo)}</b><small>Tocar para responder ›</small></span></button>` : "") + (m.pauta ? `<button class="painel aviso-mercado" data-aba="amigos" data-ir="redes"><span>🎤</span><span><b>Pedido de entrevista</b><small>${esc(tituloDaPauta(m.pauta))} · tocar para responder ›</small></span></button>` : ""); })()}`;
 }
@@ -1770,6 +1777,7 @@ function perfilHtml(s: Save): string {
       <p class="bio">${esc(bio)}</p>
       <div class="kv perfil-info"><span>Altura</span><b>${j.alturaCm ? `${(j.alturaCm / 100).toFixed(2).replace(".", ",")} m` : "–"}</b><span>Pé</span><b>${j.pe === "esquerdo" ? "Esquerdo" : j.pe === "ambidestro" ? "Ambidestro" : "Direito"}</b><span>Valor de mercado</span><b>${vm >= 500000 ? milhoes(vm) : "Ainda sem valor"}</b><span>Salário</span><b>${dinheiro(c.salario)}/mês</b><span>Contrato</span><b>${c.formacao ? "Base" : `${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}`}</b><span>Seguidores</span><b>${compacto(c.seguidores)}</b></div>
 
+      ${(() => { const metas = proximasMetas({ jogos: t.jogos, gols: t.gols, jogosNoClube: c.jogosPorClube?.[c.clubeId] ?? 0 }); return `<p class="rotulo">Próximas conquistas</p><div class="conq-prog">${metas.map((m) => `<div class="conq-linha"><div class="conq-topo"><b>${esc(m.nome)}</b><small>faltam ${m.meta - m.atual}</small></div><div class="conq-barra"><i style="--v:${Math.round((100 * m.atual) / m.meta)}%"></i></div><small class="sub">${esc(m.dica)}</small></div>`).join("")}</div>`; })()}
       <p class="rotulo">Carreira</p>
       <div class="tiles tiles-perfil">${tile(String(t.jogos), "Jogos", "🏟️")}${tile(String(t.gols), "Gols", "⚽")}${tile(String(t.assist), "Assistências", "👟")}${tile(String(t.gols + t.assist), "G/A (gols + assist.)", "🎯")}${tile(t.nota ? t.nota.toFixed(2) : "–", "Nota média", "⭐")}${tile(String(t.titulos.length), "Títulos", "🏆")}${tile(String(t.premios.length), "Prêmios", "🌟")}</div>
       ${(() => { const soma = (k: "mvp" | "selRodada" | "selMes") => c.historico.reduce((a, h) => a + (h[k] ?? 0), 0) + (c.stats[k] ?? 0); return `<div class="tiles">${tile(String(soma("mvp")), "Melhor em campo", "🥇")}${tile(String(soma("selRodada")), "Seleção da rodada", "📋")}${tile(String(soma("selMes")), "Seleção do mês", "🗓️")}</div>`; })()}
@@ -3051,6 +3059,7 @@ document.addEventListener("click", (ev) => {
       break;
     case "desistir-aposentadoria": desistirAposentadoria(save!); salvar(); abrirPerfil(); render(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
+    case "vista-conquista": save!.conquistasNovas = undefined; salvar(); render(); break;
     case "vida-toda": { vidaAberta = !vidaAberta; const t = $("telaPerfil"), y = t.scrollTop; t.innerHTML = perfilHtml(save!); t.scrollTop = y; break; }
     case "churrasco": { const r = churrascoJogo(save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case "fundacao": { const r = criarFundacaoJogo(pacote, save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
