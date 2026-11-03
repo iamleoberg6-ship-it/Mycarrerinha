@@ -17,7 +17,7 @@ import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from ".
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono, vagasGaragem, veiculosDaCasa, podeTerCarro } from "../../src/casa";
 import {
-  ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, adversarioDaSemana, liga, novoJogo,
+  trocaDeCamisa, type LinhaTroca, ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, adversarioDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, jogosDaRodada, ehClassico, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, campanhasAtuais, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
@@ -822,18 +822,16 @@ function cardSugestao(s: Save): string {
     <div class="ferr-botoes"><button class="botao" data-sug="sim">Topo treinar<small>Técnico +4</small></button><button class="botao sec" data-sug="nao">Prefiro minha posição<small>Técnico −2</small></button></div></section>`;
 }
 // ------------------------------------------------------------------ relações
-/** Estrela do adversário desta semana: chance de conversar no túnel e pedir a camisa. */
+/** Escalação provável do adversário da semana (clube ou seleção): a chance de troca com cada um e o pedido. */
 function cardCraque(s: Save): string {
-  const adv = adversarioDaSemana(pacote, s);
-  if (!adv) return "";
-  if (s.carreira.formacao && !s.carreira.fase && escalacao(pacote, s) === "base") return ""; // jogo da base: os craques do profissional não estão lá
-  const rr = relacoesDe(s.carreira), cs = estrelasDoMundo(pacote).filter((e) => e.clubeId === adv).slice(0, 2);
-  if (!cs.length) return "";
-  return `<section class="painel craque"><p class="rotulo">Craque do outro lado</p>${cs.map((e) => {
-    const x = rr.lista[e.nome], nivel = x?.nivel ?? 0, pedida = rr.camisaPedida === e.nome;
-    return `<div class="craque-linha">${camisaMini(e.clubeId, e.numero)}<div><b>${linkJogador(e.nome)}</b><small>${linkClube(e.clubeId)} · ${NOME_POS[e.posicao] ?? "Goleiro"} · OVR ${e.ovr} · ${rotuloNivel(nivel)}${x?.camisa ? " · camisa na coleção" : ""}</small></div>
-      ${x?.camisa ? "" : pedida ? `<span class="tag titular">Camisa pedida · ${Math.round(100 * chanceCamisa(nivel, s.carreira.fama, e.fama))}%</span>` : `<button class="botao sec peq" data-rel="${esc(e.nome)}" data-op="camisa">Pedir a camisa<small>${Math.round(100 * chanceCamisa(nivel, s.carreira.fama, e.fama))}%</small></button>`}</div>`;
-  }).join("")}<p class="sub" style="margin-top:6px">Se você jogar, a troca acontece no apito final. Quanto mais amizade, maior a chance.</p></section>`;
+  const t = trocaDeCamisa(pacote, s);
+  if (!t || !t.onze.length) return "";
+  const pedida = t.onze.find((x) => x.pedida), pct = (v: number) => `${Math.round(100 * v)}%`;
+  const linha = (x: LinhaTroca) => `<div class="craque-linha">${camisaMini(t.adv, x.numero)}<div><b>${linkJogador(x.nome)}</b><small>${NOME_POS[x.posicao] ?? "Goleiro"} · OVR ${x.ovr} · ${rotuloNivel(x.nivel)}</small></div>
+      ${x.tenho ? `<span class="tag">Camisa na coleção</span>` : x.pedida ? `<button class="botao peq" data-rel="${esc(x.nome)}" data-op="camisa">Pedida · ${pct(x.chance)}<small>tocar para cancelar</small></button>` : `<button class="botao sec peq" data-rel="${esc(x.nome)}" data-op="camisa">Pedir a camisa<small>${pct(x.chance)}</small></button>`}</div>`;
+  return `<section class="painel craque"><p class="rotulo">Troca de camisa · ${linkClube(t.adv)}</p>
+    <p class="sub">${pedida ? `Pedido feito: <b>${esc(pedida.nome)}</b>, ${pct(pedida.chance)} de chance.` : "Nenhum pedido. Escolha um jogador ou deixe sem pedir."} Um pedido por jogo; se você jogar, a troca acontece no apito final. Mais amizade, mais chance.</p>
+    <details${pedida ? "" : " open"}><summary>Escalação provável (${t.onze.length})</summary>${t.onze.map(linha).join("")}</details></section>`;
 }
 function camisaMini(clubeId: string, numero: number): string {
   const [a, b] = cores(clubeId), c2 = b ?? "#FFFFFF";

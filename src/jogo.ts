@@ -38,7 +38,7 @@ import { ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type
 import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
-import { todasEstrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
+import { todasEstrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, famaPorOvr, onzeProvavel, numeroDe, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
 import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./perfil-jogador.js";
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
 import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, limitePatrocinios, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
@@ -1008,7 +1008,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const ligacoes = [...ligacoesDoElenco(pacote, poolMeu), ...ligacoesDoElenco(pacote, poolAdv)];
   const estadio = cj?.neutro ? `estádio da ${NOME_FASE[cj.fase].toLowerCase()}` : base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
   // as camisas que você já tem (das trocas guardadas e das marcadas na relação): o craque da troca sai dos outros
-  const jaTenho = new Set<string>([...(s.casa.reliquias ?? []).filter((r) => r.chave === "camisa-troca").map((r) => r.nome.replace(/^Camisa d[eoa] /, "")), ...Object.entries(relacoesDe(c).lista).filter(([, x]) => x.camisa).map(([n]) => n)]);
+  const jaTenho = camisasQueTenho(s);
   const nomes = nomesDaPartida(rngN, elMeu, elAdv, { nome: j.apelido, meu: cp(meuId).apelido, adv: cp(jogo.adversario).apelido, estadio, posJogador: j.posicao, jaTenho, tracos });
   const posTab = posicaoNaTabela(undefined, s), reta = c.semana >= SEMANAS_PRE + 28;
   const jogosPro = c.stats.jogos + c.historico.reduce((acc, h) => acc + h.jogos, 0);
@@ -1317,6 +1317,7 @@ export function concluirJogoDaCopa(pacote: PacoteDados, s: Save, plano: Plano, p
   const resumo: ResumoPartida = r.resumo ?? { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, idCasa: partida.casa, idFora: partida.fora, golsCasa: jg.gc!, golsFora: jg.gf!, nota: 0, gols: 0, assist: 0, minutos: 0, tipo: "profissional", competicao: info.nome, rotulo: info.rotulo, escalacao: partida.escalacao };
   if (jg.penaltis) { resumo.penaltis = w.info[jg.penaltis]?.nome; eventos.push(`Decisão nos pênaltis: ${w.info[jg.penaltis]?.nome} passou.`); }
   noticiasDaCopa(pacote, s, e, eventos);
+  resolverCamisaPedida(pacote, s, advId, r.participacao === "titular" || r.participacao === "entrou", eventos);
   c.meioSemana = { semana: c.semana, resumo, participacao: r.participacao, nota: r.nota, eventos };
   return resumo;
 }
@@ -1565,21 +1566,10 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       const e = seguidas.length && r4.chance(0.7) ? r4.pick(seguidas) : r4.pick(est.slice(0, 60));
       subir(relacao(rr, e.nome, e.clubeId, ano), 2 * atencao(c.fama, e.fama));
     }
-    if (jogo && partida && participacao !== "naoJogou" && participacao !== "base") {
-      for (const e of est.filter((x) => x.clubeId === jogo.adversario)) {
-        const x = relacao(rr, e.nome, e.clubeId, ano); subir(x, 2);
-        if (rr.camisaPedida === e.nome) {
-          rr.camisaPedida = undefined;
-          if (r4.chance(chanceCamisa(x.nivel, c.fama, e.fama))) {
-            x.camisa = true; subir(x, 8);
-            const info = infoClube(pacote, e.clubeId);
-            receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${e.nome.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", clubeId: e.clubeId, nome: `Camisa de ${e.nome}`, legenda: `${info.nome} · troca depois do jogo · ${ano}`, ano, cores: [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: info.padrao, numero: String(e.numero) } }], eventos);
-            eventos.push(`${e.nome} trocou de camisa com você no fim do jogo!`);
-          } else { subir(x, -2); eventos.push(`Você pediu, mas ${e.nome} trocou a camisa com outro jogador.`); }
-        }
-      }
-    }
-    if (rr.camisaPedida && (!jogo || !est.some((e) => e.nome === rr.camisaPedida && e.clubeId === jogo.adversario))) rr.camisaPedida = undefined;
+    if (jogo && partida && participacao !== "naoJogou" && participacao !== "base") for (const e of est.filter((x) => x.clubeId === jogo.adversario)) subir(relacao(rr, e.nome, e.clubeId, ano), 2);
+    // troca de camisa pedida para o jogo da liga (a do jogo de copa ou de seleção já foi resolvida na quarta)
+    if (jogo) resolverCamisaPedida(pacote, s, jogo.adversario, rj?.participacao === "titular" || rj?.participacao === "entrou", eventos);
+    rr.camisaPedida = undefined;
   }
   // 10. treino de posição e sugestão do técnico
   {
@@ -2329,7 +2319,54 @@ export function mudarPosicao(s: Save, p: Posicao): { ok: boolean; msg: string } 
   return { ok: true, msg: `Agora você joga de ${NOME_POSICAO[p].toLowerCase()}.` };
 }
 /** Uma conversa com outro jogador (até 3 por semana, uma por pessoa). */
+// ------------------------------------------------------------------ troca de camisa
+/** Camisas que você já tem: das trocas guardadas no armário e das marcadas na relação. */
+export function camisasQueTenho(s: Save): Set<string> {
+  return new Set<string>([...(s.casa.reliquias ?? []).filter((r) => r.chave === "camisa-troca").map((r) => r.nome.replace(/^Camisa d[eoa] /, "")), ...Object.entries(relacoesDe(s.carreira).lista).filter(([, x]) => x.camisa).map(([n]) => n)]);
+}
+export interface LinhaTroca { nome: string; posicao: string; ovr: number; numero: number; nivel: number; chance: number; tenho: boolean; pedida: boolean }
+/** Escalação provável do adversário da semana (clube ou seleção), com a chance de troca de cada um. */
+export function trocaDeCamisa(pacote: PacoteDados, s: Save): { adv: string; onze: LinhaTroca[] } | undefined {
+  const c = s.carreira, adv = adversarioDaSemana(pacote, s);
+  if (!adv) return;
+  if (c.formacao && !c.fase && escalacao(pacote, s) === "base") return; // jogo da base: os profissionais não estão lá
+  const cl = mundo(pacote).clube[idClube(adv)];
+  if (!cl) return;
+  const pool = cl.id.startsWith("NAT-") ? cl.elenco : elencoDisponivel(pacote, s, cl.id);
+  const rr = relacoesDe(c), tenho = camisasQueTenho(s);
+  return { adv: cl.id, onze: onzeProvavel(pool).map((j) => {
+    const nivel = rr.lista[j.nome]?.nivel ?? 0;
+    return { nome: j.nome, posicao: j.posicao, ovr: j.ovr, numero: j.numero ?? numeroDe(j.nome), nivel, chance: chanceCamisa(nivel, c.fama, famaPorOvr(j.ovr)), tenho: tenho.has(j.nome), pedida: rr.camisaPedida === j.nome };
+  }) };
+}
+/** Pede (ou cancela) a camisa de um jogador da escalação do adversário. Um pedido por jogo. */
+function pedirCamisa(pacote: PacoteDados, s: Save, nome: string): { ok: boolean; msg: string } {
+  const t = trocaDeCamisa(pacote, s), l = t?.onze.find((x) => x.nome === nome);
+  if (!t || !l) return { ok: false, msg: "Só dá para pedir a camisa de quem joga contra você nesta semana." };
+  const rr = relacoesDe(s.carreira);
+  if (l.pedida) { rr.camisaPedida = undefined; return { ok: true, msg: `Pedido cancelado: você não vai pedir a camisa de ${nome}.` }; }
+  if (l.tenho) return { ok: false, msg: `Você já tem a camisa de ${nome}.` };
+  const antes = rr.camisaPedida;
+  rr.camisaPedida = nome;
+  return { ok: true, msg: `${antes ? `Pedido trocado: no lugar de ${antes}, ` : "Combinado: "}depois do jogo você pede a camisa de ${nome}. Chance de ${Math.round(100 * l.chance)}%.` };
+}
+/** No apito final: se você jogou, pede a camisa combinada; a camisa vem com as cores do clube ou da seleção. */
+function resolverCamisaPedida(pacote: PacoteDados, s: Save, adv: string, jogou: boolean, eventos: string[]) {
+  const c = s.carreira, rr = relacoesDe(c), nome = rr.camisaPedida;
+  if (!nome) return;
+  const cl = mundo(pacote).clube[idClube(adv)], j = cl?.elenco.find((x) => x.nome === nome);
+  if (!cl || !j) return; // pedido de outro jogo da semana
+  rr.camisaPedida = undefined;
+  if (!jogou) { eventos.push(`Você não entrou em campo e não deu para pedir a camisa de ${nome}.`); return; }
+  const ano = ANO_INICIAL + c.temporada, x = rr.lista[nome] ?? relacao(rr, nome, ondeJoga(pacote, nome)?.clubeId ?? cl.id, ano);
+  if (!rngDe(s, "camisa", nome, ano).chance(chanceCamisa(x.nivel, c.fama, famaPorOvr(j.ovr)))) { subir(x, -2); eventos.push(`Você pediu, mas ${nome} trocou a camisa com outro jogador.`); return; }
+  x.camisa = true; subir(x, 8);
+  const info = infoClube(pacote, cl.id), us = UNIFORME_SELECAO[cl.id];
+  receberReliquias(s, [{ conquista: "camisa-troca", reliquia: { id: `rel-camisa-troca-${nome.replace(/\W+/g, "")}-${ano}`, chave: "camisa-troca", tipo: "camisa", clubeId: cl.id, nome: `Camisa de ${nome}`, legenda: `${info.nome} · troca depois do jogo · ${ano}`, ano, cores: us?.cores ?? [info.cores[0], info.cores[1] ?? "#FFFFFF"], modelo: us?.padrao ?? info.padrao, numero: String(j.numero ?? numeroDe(nome)) } }], eventos);
+  eventos.push(`${nome} trocou de camisa com você no fim do jogo!`);
+}
 export function agirRelacao(pacote: PacoteDados, s: Save, nome: string, acao: AcaoRel, clubeId?: string): { ok: boolean; msg: string } {
+  if (acao === "camisa") return pedirCamisa(pacote, s, nome);
   const c = s.carreira, rr = relacoesDe(c), x = rr.lista[nome], ano = ANO_INICIAL + c.temporada;
   const est = todasEstrelas(pacote).find((e) => e.nome === nome);
   // achado na busca do celular (liga → clube → jogador): vira contato
@@ -2337,7 +2374,7 @@ export function agirRelacao(pacote: PacoteDados, s: Save, nome: string, acao: Ac
   const alvo = x ?? achado ?? (est ? relacao(rr, est.nome, est.clubeId, ano) : undefined);
   if (!alvo) return { ok: false, msg: "Jogador não encontrado." };
   const bloqueio = podeAgir(rr, semanaAbsJogo(c), nome);
-  if (bloqueio && acao !== "camisa") return { ok: false, msg: bloqueio };
+  if (bloqueio) return { ok: false, msg: bloqueio };
   const fazer = (v: number, msg: string) => { subir(alvo, v); rr.feitas.push(nome); return { ok: true, msg: `${msg} (${rotuloNivel(alvo.nivel).toLowerCase()} · ${Math.round(alvo.nivel)})` }; };
   switch (acao) {
     case "mensagem": return fazer(est && !alvo.companheiro ? 3 * atencao(c.fama, est.fama) : 3, `Você mandou mensagem para ${nome}.`);
@@ -2352,13 +2389,6 @@ export function agirRelacao(pacote: PacoteDados, s: Save, nome: string, acao: Ac
       if (!est) return { ok: false, msg: "Comentar nas redes é para estrela." };
       c.engajamento = clamp((c.engajamento ?? 40) + 3, 0, 100);
       return fazer(3 * atencao(c.fama, est.fama), `Você comentou na foto de ${nome}.`);
-    }
-    case "camisa": {
-      const adv = adversarioDaSemana(pacote, s);
-      if (!est || !adv || adv !== est.clubeId) return { ok: false, msg: "Só dá para pedir a camisa na semana do jogo contra ele." };
-      if (alvo.camisa) return { ok: false, msg: "Você já tem a camisa dele." };
-      rr.camisaPedida = nome;
-      return { ok: true, msg: `Combinado: depois do jogo você pede a camisa de ${nome}. Chance de ${Math.round(100 * chanceCamisa(alvo.nivel, c.fama, est.fama))}%.` };
     }
     case "indicacao": {
       if (alvo.companheiro) return { ok: false, msg: "Ele já joga com você." };

@@ -89,6 +89,16 @@ export function podeAgir(r: EstadoRelacoes, semanaAbs: number, nome: string): st
 }
 /** Quanto a estrela dá bola para você: estrela grande responde mais para quem também é conhecido. */
 export const atencao = (famaJogador: number, famaEstrela: number) => clamp((famaJogador + 25) / famaEstrela, 0.15, 1.2);
+/** Fama de um jogador qualquer pelo OVR (a mesma régua das estrelas). */
+export const famaPorOvr = (ovr: number) => clamp((ovr - 58) * 3.2, 20, 100);
+/** Escalação provável de um time (4-3-3): o melhor de cada posição; falta de gente na posição completa com o melhor que sobrou. */
+export function onzeProvavel(elenco: JogadorNPC[]): JogadorNPC[] {
+  const vagas: [string, number][] = [["GOL", 1], ["ZAG", 2], ["LAT", 2], ["VOL", 1], ["MEI", 2], ["PON", 2], ["ATA", 1]];
+  const ord = [...elenco].sort((a, b) => b.ovr - a.ovr), usados = new Set<JogadorNPC>(), onze: JogadorNPC[] = [];
+  for (const [p, n] of vagas) for (const j of ord.filter((x) => x.posicao === p && !usados.has(x)).slice(0, n)) { usados.add(j); onze.push(j); }
+  for (const j of ord) { if (onze.length >= 11) break; if (!usados.has(j) && j.posicao !== "GOL") { usados.add(j); onze.push(j); } }
+  return onze;
+}
 /** Chance da troca de camisa depois do jogo. */
 export const chanceCamisa = (nivel: number, famaJogador: number, famaEstrela: number) => clamp(0.08 + (nivel / 100) * 0.75 + (famaJogador - famaEstrela) / 250, 0.05, 0.95);
 /** Chance de o amigo conseguir que o clube dele faça uma proposta. */
