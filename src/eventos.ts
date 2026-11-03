@@ -2,6 +2,7 @@
 // carro e o empresário; já estabelecido, patrocínio e televisão; como estrela, documentário, gala e marca própria;
 // veterano, despedida, mentor e o que fazer depois. Um por vez, com decisão.
 import { RNG, clamp } from "./rng.js";
+import { CADEIAS } from "./cadeias-dados.js";
 
 export type Fase = "base" | "inicio" | "estabelecido" | "estrela" | "veterano";
 export interface CtxEvento {
@@ -51,11 +52,7 @@ export const EVENTOS: EventoVida[] = [
     op("show", "Jogar para aparecer", "Você tentou tudo sozinho. O olheiro anotou seu nome, o técnico anotou outra coisa.", { fama: 2, relTecnico: -3 }),
     op("time", "Jogar pelo time", "Jogo simples e correto. O técnico da base elogiou na frente de todos.", { relTecnico: 4, moral: 2 }),
   ]),
-  ev("base-empresario", ["base"], "Um empresário na porta", "Um homem de camisa polo e relógio dourado para na frente da sua casa. Diz que é empresário, que tem um contato num clube da Europa, e que \"em dois anos você está lá\". Ele pede dez minutos com seus pais.", [
-    op("ouvir", "Chamar seus pais e ouvir junto", "Seus pais ouviram tudo na mesa da cozinha. Ele deixou um contrato de dez páginas.", { moral: 2, fama: 1 }),
-    op("sozinho", "Conversar com ele sozinho, na porta mesmo", "Você conversou com ele na porta. Ele falou baixo e rápido, e não pediu nada escondido.", { fama: 1 }),
-    op("recusar", "Agradecer e dizer que está focado no clube", "Você agradeceu e disse que está focado no clube. Ele entregou um cartão e foi embora.", { moral: 1 }),
-  ], { unico: true }),
+  ev("base-empresario", ["base"], CADEIAS["base-empresario"].inicio.titulo, CADEIAS["base-empresario"].inicio.texto, CADEIAS["base-empresario"].inicio.opcoes.map((o) => op(o.id, o.rotulo, o.resultado, o.efeitos ?? {})), { unico: true }),
   // ------------------------------------------------------------ início de carreira
   ev("primeiro-carro", ["inicio"], "O primeiro carro", "Com o primeiro salário de profissional, a concessionária do bairro oferece um carro em 48 parcelas.", [
     op("popular", "Um popular usado", "Simples e pago à vista. Seu pai dirigiu primeiro.", { sal: -1.5, moral: 4 }),

@@ -1,5 +1,5 @@
 import { proximasMetas } from "../../src/progresso-conquistas.js";
-import { CONSEQUENCIAS, EMPRESARIO } from "../../src/empresario.js";
+import { CADEIAS } from "../../src/cadeias-dados.js";
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
 import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
@@ -350,11 +350,12 @@ let nPendencias = 0;
 /** Proposta de negócio e pedido de entrevista: atalhos que levam direto ao lugar de responder. */
 /** Consequência do empresário: painel na Semana, com Ver ficha (nome e linhas da ficha) e Ok. */
 function cardEmpresario(s: Save): string {
-  const emp = s.carreira.empresario, p = emp?.painel;
-  if (!emp || !p) return "";
-  const t = CONSEQUENCIAS[p];
-  return `<div class="painel conquista-nova empresario-painel"><span aria-hidden="true">🤝</span><div><b>${esc(t.titulo)}</b><small>${esc(t.texto)}</small>
-    <details class="ficha-emp"><summary>Ver ficha</summary><b>${esc(EMPRESARIO.nome)}</b><p class="sub">${esc(EMPRESARIO.bio)}</p><ul>${emp.ficha.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details></div><button class="botao sec peq" data-acao="fechar-empresario">Ok</button></div>`;
+  const cads = s.carreira.cadeias ?? {};
+  return Object.entries(cads).filter(([, est]) => est.painel).map(([id, est]) => {
+    const cad = CADEIAS[id], t = cad.consequencias[est.painel!];
+    return `<div class="painel conquista-nova empresario-painel"><span aria-hidden="true">🤝</span><div><b>${esc(t.titulo)}</b><small>${esc(t.texto)}</small>
+    <details class="ficha-emp"><summary>Ver ficha</summary><b>${esc(cad.personagem.nome)}</b><p class="sub">${esc(cad.personagem.bio)}</p><ul>${est.ficha.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details></div><button class="botao sec peq" data-acao="fechar-cadeia" data-cad="${esc(id)}">Ok</button></div>`;
+  }).join("");
 }
 /** Conquista desbloqueada por uma partida: fica na Semana até o jogador tocar em Ok. */
 function cardConquista(s: Save): string {
@@ -3078,7 +3079,7 @@ document.addEventListener("click", (ev) => {
     case "desistir-aposentadoria": desistirAposentadoria(save!); salvar(); abrirPerfil(); render(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
     case "vista-conquista": save!.conquistasNovas = undefined; salvar(); render(); break;
-    case "fechar-empresario": if (save!.carreira.empresario) save!.carreira.empresario.painel = undefined; salvar(); render(); break;
+    case "fechar-cadeia": { const est = save!.carreira.cadeias?.[b.dataset.cad ?? ""]; if (est) est.painel = undefined; salvar(); render(); break; }
     case "vida-toda": { vidaAberta = !vidaAberta; const t = $("telaPerfil"), y = t.scrollTop; t.innerHTML = perfilHtml(save!); t.scrollTop = y; break; }
     case "churrasco": { const r = churrascoJogo(save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case "fundacao": { const r = criarFundacaoJogo(pacote, save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
