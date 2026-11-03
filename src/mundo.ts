@@ -415,6 +415,13 @@ export function nacionalidadeDe(pacote: PacoteDados, nome: string): string | und
   return garantir(pacote).hist.get(nome)?.at(-1)?.nat;
 }
 /** Temporada imaginada (jogos, gols, assistências, nota) de uma linha do histórico; sempre a mesma para a mesma carreira. */
+/** Números de uma linha até a rodada `feitas` da temporada em curso (as temporadas passadas saem inteiras). */
+export function statsDaLinhaAte(pacote: PacoteDados, nome: string, x: LinhaHistorico, feitas: number): { j: number; g: number; a: number; n: number } | undefined {
+  const st = statsDaLinha(pacote, nome, x);
+  if (!st) return undefined;
+  if (x.t !== garantir(pacote).temporada || !x.liga) return st;
+  return statsAte(st, feitas, x.liga[4]);
+}
 export function statsDaLinha(pacote: PacoteDados, nome: string, x: LinhaHistorico): StatsNPC | undefined {
   if (x.st || !x.liga) return x.st;
   const [rank, vagas, forca, media, n, ini, fim] = x.liga;

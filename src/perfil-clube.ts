@@ -1,6 +1,6 @@
 // Perfil do clube: títulos da liga por temporada, elenco atual, time de todos os tempos (o melhor de cada posição
 // em cada temporada, pela nota média, somado ao longo da história do clube) e os dados do clube (cidade, estádio, técnico).
-import { mundo, infoClube, linhasDoClube, linhasDoPais, statsDaLinha, tecnicoDoClube, campeoesDoClube } from "./mundo.js";
+import { mundo, infoClube, linhasDoClube, linhasDoPais, statsDaLinha, statsDaLinhaAte, tecnicoDoClube, campeoesDoClube } from "./mundo.js";
 import { VAGAS_433 } from "./partida.js";
 import { infoLiga } from "./ligas.js";
 import type { PacoteDados } from "./liga.js";
@@ -22,7 +22,7 @@ export function titulosDoClube(pacote: PacoteDados, clubeId: string): { total: n
 export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number; melhorAno: number; melhorNota: number; /** o próprio jogador do usuário */ eu?: boolean }
 
 /** O melhor de cada posição em cada temporada (mín. de jogos), contado ao longo da história; o time sai dos que mais vezes foram o melhor. */
-export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = []): TitularHistorico[] {
+export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = [], feitas = 999): TitularHistorico[] {
   // seleção (NAT-XXX): as temporadas de todos os jogadores do país, em qualquer clube; clube: as temporadas no clube
   const pool = clubeId.startsWith("NAT-") ? linhasDoPais(pacote, clubeId.slice(4)) : linhasDoClube(pacote, clubeId);
   const porTempo = new Map<string, { nome: string; posicao: string; nota: number }[]>();
@@ -39,7 +39,7 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuari
     if (!mt || nota > mt.nota) melhorTemp.set(nome, { t, nota });
   };
   for (const { nome, x } of pool) {
-    const st = statsDaLinha(pacote, nome, x);
+    const st = statsDaLinhaAte(pacote, nome, x, feitas);
     if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
     entra(nome, x.t, x.posicao, st.n);
   }
@@ -94,13 +94,13 @@ const topo = (m: Map<string, number>) => [...m].map(([nome, valor]) => ({ nome, 
 /** Temporada do jogador do usuário no clube (o mundo simulado não guarda ele): ano é o índice da temporada. */
 export interface TemporadaUsuario { nome: string; t: number; j: number; g: number; a: number; /** posição de jogo e nota média da temporada (entram no time de todos os tempos) */ pos?: string; nota?: number }
 /** Recordes do clube na história: maiores artilheiros e assistentes, o melhor de uma temporada e goleiros que mais seguraram o zero. */
-export function recordesHistoricosDoClube(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = []): RecordesDoClube {
+export function recordesHistoricosDoClube(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = [], feitas = 999): RecordesDoClube {
   let base = cacheRecordes.get(clubeId);
   if (!base) {
     const temp: RecordeNome[] = [], assistTemp: RecordeNome[] = [];
     const gols = new Map<string, number>(), assist = new Map<string, number>(), sg = new Map<string, number>();
     for (const { nome, x } of linhasDoClube(pacote, clubeId)) {
-      const st = statsDaLinha(pacote, nome, x);
+      const st = statsDaLinhaAte(pacote, nome, x, feitas);
       if (!st || st.j < MIN_JOGOS_TEMPORADA) continue;
       temp.push({ nome, valor: st.g, ano: x.t }); assistTemp.push({ nome, valor: st.a, ano: x.t });
       gols.set(nome, (gols.get(nome) ?? 0) + st.g); assist.set(nome, (assist.get(nome) ?? 0) + st.a);

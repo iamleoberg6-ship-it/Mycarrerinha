@@ -466,6 +466,8 @@ function premiosMundoHtml(s: Save): string {
     ${gal.length > 1 ? `<details style="margin-top:8px"><summary class="sub">Galeria da Bola de Ouro</summary>${[...gal].reverse().map((g) => `<div class="premio-l"><span class="rotulo">${g.ano}</span><span>${g.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : esc(g.nome)} <small class="sub">${linkClube(g.clubeId)}</small></span><b></b></div>`).join("")}</details>` : ""}`;
 }
 const nomeCurtoSel = (n: string) => { const p = n.split(" "); return p.length > 2 ? `${p[0]} ${p[p.length - 1]}` : n; };
+/** Rodadas já jogadas na temporada em curso (999 = temporada inteira, quando não há jogo em andamento). */
+const rodadasFeitas = (s?: Save | null) => (s ? Math.max(0, s.carreira.semana - SEMANAS_PRE) : 999);
 /** Artilharia e assistências da liga até a rodada atual (os outros imaginados; você com os seus números de verdade). */
 function rankingsHtml(s: Save): string {
   const c = s.carreira;
@@ -1206,7 +1208,7 @@ function clubeHtml(clubeId: string): string {
     ...save.carreira.historico.filter((h) => daSelecao || h.clubeId === clubeId).map((h) => ({ nome: save!.jogador.apelido, t: h.ano - ANO_INICIAL, j: h.jogos, g: h.gols, a: h.assist, pos: save!.jogador.posicao, nota: h.nota })),
     ...((daSelecao || save.carreira.clubeId === clubeId) ? [{ nome: save.jogador.apelido, t: save.carreira.temporada, j: save.carreira.stats.jogos, g: save.carreira.stats.gols, a: save.carreira.stats.assist, pos: save.jogador.posicao, nota: save.carreira.stats.notas.length ? save.carreira.stats.notas.reduce((a, b) => a + b, 0) / save.carreira.stats.notas.length : undefined }] : []),
   ] : [];
-  const xi = timeDeTodosOsTempos(pacote, clubeId, usuario);
+  const xi = timeDeTodosOsTempos(pacote, clubeId, usuario, rodadasFeitas(save));
   // o elenco do mundo não guarda o jogador do usuário: ele entra no elenco do clube em que joga e na seleção quando convocado
   const elencoMundo = plantelDoClube(pacote, clubeId).slice(0, 25).map((j) => ({ nome: j.nome, apelido: j.nome, posicao: j.posicao, ovr: j.ovr, eu: false }));
   const sv = save, eu = sv ? (() => {
@@ -1216,7 +1218,7 @@ function clubeHtml(clubeId: string): string {
     return noClube || convocado ? [{ nome: j.nome, apelido: j.apelido, posicao: j.posicao, ovr: Math.round(ovr(j)), eu: true }] : [];
   })() : [];
   const elenco = [...eu, ...elencoMundo].sort((a, b) => b.ovr - a.ovr);
-  const rec = recordesHistoricosDoClube(pacote, clubeId, usuario);
+  const rec = recordesHistoricosDoClube(pacote, clubeId, usuario, rodadasFeitas(save));
   const bloco = (titulo: string, lista: RecordeNome[], comAno: boolean) => lista.length ? `<p class="rotulo" style="margin-top:14px">${titulo}</p><table style="table-layout:fixed"><colgroup><col style="width:28px"><col><col style="width:64px"><col style="width:44px"></colgroup><tbody>${lista.map((x, i) => `<tr${x.eu ? ` class="meu"` : ""}><td>${i + 1}</td><td>${x.eu ? `<b style="color:var(--ouro)">${esc(x.nome)}</b> <small class="sub">(você)</small>` : linkJogador(x.nome)}</td><td class="n">${comAno ? ANO_INICIAL + (x.ano ?? 0) : ""}</td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : "";
   const recordes = [bloco("Mais gols em uma temporada", rec.golsTemp, true), bloco("Mais assistências em uma temporada", rec.assistTemp, true), bloco("Maiores artilheiros da história", rec.artilheiros, false), bloco("Maiores assistentes da história", rec.assistentes, false), bloco("Goleiros com mais jogos sem tomar gol", rec.semGol, false)].join("");
   const tec = tecnicoDoClube(pacote, clubeId), liga = info.ligaId, irmaos = w.liga[liga]?.clubes ?? [];
@@ -2841,7 +2843,7 @@ function mostrarRodada(r: ResumoSemana) {
       }
     }
   }
-  const artilharia = (tipo: "g" | "a") => rankingDaLiga(pacote, ligaId, 999, tipo, 5).map((x, i) => `<div><span>${i + 1}. ${esc(x.nome)} · ${esc(nomeC(x.clubeId))}</span><b>${x.valor}</b></div>`).join("");
+  const artilharia = (tipo: "g" | "a") => rankingDaLiga(pacote, ligaId, rodadasFeitas(save), tipo, 5).map((x, i) => `<div><span>${i + 1}. ${esc(x.nome)} · ${esc(nomeC(x.clubeId))}</span><b>${x.valor}</b></div>`).join("");
   blocos.push(`<section class="painel"><p class="rotulo">Artilheiros</p><div class="rr-lista">${artilharia("g")}</div></section>`);
   blocos.push(`<section class="painel"><p class="rotulo">Assistências</p><div class="rr-lista">${artilharia("a")}</div></section>`);
   if (r.partida) blocos.push(`<section class="painel"><p class="rotulo">Sua atuação</p><div class="rr-lista"><div><span>Nota</span><b>${r.partida.nota.toFixed(1)}</b></div>${r.partida.melhorEmCampo ? `<div><span>Destaque</span><b>★ Melhor em campo</b></div>` : ""}</div></section>`);
