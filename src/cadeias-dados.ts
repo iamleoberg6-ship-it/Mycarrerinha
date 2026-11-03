@@ -299,4 +299,162 @@ export const CADEIAS: Record<string, Cadeia> = {
     marcas: { treino: "mentor", recusou: "sumiu", tecnico: "agradeceu" },
     fichaMarca: { treino: "Aceitou o treino extra com o capitão.", recusou: "Recusou o treino extra do capitão.", tecnico: "Perguntou ao técnico sobre o treino extra." },
   },
+  // ------------------------------------------------------------ estabelecido
+  "mae-casa": {
+    id: "mae-casa", fases: ["inicio", "estabelecido"], unico: true, quando: (c) => c.salario >= 20000,
+    personagens: pessoas("Corretor da imobiliária do bairro. Conhece cada rua e cada prazo de entrada.", { BRA: "Rosana Tavares", FRA: "Sandrine Lacroix", ENG: "Linda Ashby", ESP: "Marisa Lorente", ITA: "Carla Benedetti", USA: "Donna Mercer" }),
+    fichaInicio: "Primeiro contato com {pessoa}: {quando}, por telefone.",
+    inicio: {
+      titulo: "A casa da mãe",
+      texto: "Sua mãe mora de aluguel há vinte anos. {pessoa} te liga com uma casa a dois quarteirões dela e diz que a entrada ainda está aberta.",
+      origem: "familia",
+      opcoes: [
+        { id: "comprar", rotulo: "Dar a casa para ela", resultado: "Ela chorou na entrega das chaves. Você também.", marca: "comprar", efeitos: { sal: -6, moral: 12 } },
+        { id: "depois", rotulo: "Prometer para o ano que vem", resultado: "Ela disse que não tem pressa. Tem.", marca: "depois", efeitos: { moral: -2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      chaves: { titulo: "Chaves na mão", texto: "{pessoa} entregou as chaves pessoalmente. Sua mãe chorou na porta.", ficha: "Deu a casa para a mãe. {pessoa} entregou as chaves.", semanas: 2 },
+      prazo: { titulo: "A casa que passou", texto: "{pessoa} ligou avisando que a casa foi vendida para outra família.", ficha: "Perdeu a casa da mãe; {pessoa} avisou." },
+    },
+    marcas: { comprar: "chaves", depois: "prazo" },
+    fichaMarca: { comprar: "Comprou a casa da mãe.", depois: "Prometeu comprar a casa da mãe para o ano que vem." },
+  },
+
+  "podcast": {
+    id: "podcast", fases: ["inicio", "estabelecido"],
+    personagens: pessoas("Apresentador do podcast de futebol mais ouvido do país. Não grava nada sem roteiro e sem corte.", { BRA: "Caio Frade", FRA: "Mathieu Sérieux", ENG: "Ollie Stone", ESP: "Dani Cortés", ITA: "Lorenzo Vitale", USA: "Josh Carver" }),
+    fichaInicio: "Convite do podcast feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Convite para podcast",
+      texto: "{pessoa} quer você no próximo episódio. \"Três horas de conversa, sem roteiro. Só eu, você e a infância.\"",
+      origem: "convite",
+      opcoes: [
+        { id: "ir", rotulo: "Ir e falar de tudo", resultado: "Três horas de conversa e um corte viral sobre a infância.", marca: "ir", efeitos: { fama: 4, engajamento: 15 } },
+        { id: "recusar", rotulo: "Recusar: foco no campo", resultado: "O assessor do clube agradeceu. Ninguém mais lembrou.", marca: "recusar", efeitos: { relTecnico: 2 } },
+        { id: "condicao", rotulo: "Aceitar, mas com uma condição: nada sobre o técnico", resultado: "{pessoa} topou a condição e marcou a gravação.", proximo: "2a", efeitos: { fama: 1 } },
+      ],
+    },
+    passos: {
+      "2a": {
+        titulo: "O corte", origem: "convite", prazo: 2,
+        texto: "Duas semanas depois, {pessoa} manda o trecho editado. Uma frase sobre o técnico ficou de fora, mas outra, que você nem lembra de ter dito, foi para o começo do vídeo.",
+        opcoes: [
+          { id: "corte", rotulo: "Pedir para cortar a frase", resultado: "{pessoa} cortou a frase e mandou a versão nova no mesmo dia.", marca: "corte", ef: { relTecnico: 1 } },
+          { id: "deixou", rotulo: "Deixar como está", resultado: "{pessoa} publicou o trecho sem mudar nada.", marca: "deixou", ef: { fama: 3 } },
+        ],
+      },
+    },
+    consequencias: {
+      corte: { titulo: "Corte aceito", texto: "{pessoa} tirou a frase. O vídeo circulou com a parte boa.", ficha: "Pediu corte no podcast; o trecho saiu.", semanas: 2 },
+      viral: { titulo: "Frase que viralizou", texto: "A frase saiu do contexto e virou manchete. O técnico comentou na entrevista coletiva.", ficha: "Frase no podcast virou manchete; técnico comentou." },
+      recusa: { titulo: "Recusa elegante", texto: "{pessoa} agradeceu e disse que a porta fica aberta.", ficha: "Recusou o podcast; {pessoa} convidou de novo.", semanas: 2 },
+    },
+    marcas: { corte: "corte", deixou: "viral", recusar: "recusa", ir: "viral" },
+    fichaMarca: { ir: "Foi ao podcast e falou de tudo.", recusar: "Recusou o convite do podcast.", corte: "Pediu corte da frase sobre o técnico.", deixou: "Deixou o trecho do podcast como estava." },
+  },
+
+  "tv-programa": {
+    id: "tv-programa", fases: ["estabelecido", "estrela"],
+    personagens: pessoas("Produtora do programa de auditório de domingo. Escolhe quem dança e quem fica na plateia.", { BRA: "Vanessa Lobo", FRA: "Clémence Aubert", ENG: "Sophie Trent", ESP: "Lucía Barrera", ITA: "Silvia Monti", USA: "Kelly Brandt" }),
+    fichaInicio: "Convite da TV feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Convite da TV",
+      texto: "{pessoa} liga e pergunta se você topa entrar no quadro de talentos do programa de domingo. \"Ninguém precisa saber dançar. Basta ter cara de quem topa.\"",
+      origem: "convite",
+      opcoes: [
+        { id: "dancar", rotulo: "Ir e dançar no palco", resultado: "O Brasil inteiro viu você dançando mal. O Brasil inteiro adorou.", marca: "dancar", efeitos: { fama: 5, engajamento: 10, cansaco: 5 } },
+        { id: "recusar", rotulo: "Recusar com educação", resultado: "Domingo em casa, com a família.", marca: "recusar", efeitos: { moral: 3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      viu: { titulo: "O Brasil inteiro viu", texto: "O vídeo da dança virou meme e {pessoa} ligou para marcar outro quadro.", ficha: "Dançou no programa de domingo; {pessoa} quer outro quadro.", semanas: 2 },
+      casa: { titulo: "Domingo em casa", texto: "{pessoa} mandou uma mensagem agradecendo e disse que o convite fica para a próxima temporada.", ficha: "Recusou o programa de domingo." },
+    },
+    marcas: { dancar: "viu", recusar: "casa" },
+    fichaMarca: { dancar: "Dançou no programa de domingo.", recusar: "Recusou o convite do programa de domingo." },
+  },
+
+  "polemica-rede": {
+    id: "polemica-rede", fases: ["estabelecido", "estrela"],
+    personagens: pessoas("Torcedor rival que fez a piada e tem muitos seguidores na rede.", { BRA: "Jairo Maciel", FRA: "Bastien Roux", ENG: "Gaz Holloway", ESP: "Pepe Galván", ITA: "Ciro Mancini", USA: "Tanner Rhodes" }),
+    fichaInicio: "A piada de {pessoa} começou a circular: {quando}.",
+    inicio: {
+      titulo: "Comentário que viralizou",
+      texto: "{pessoa} postou uma piada sobre sua última partida. A piada tem mais de cem mil curtidas e a torcida rival já respondeu com o emoji de sempre.",
+      origem: "rival",
+      opcoes: [
+        { id: "humor", rotulo: "Responder com humor", resultado: "Sua resposta foi a melhor do dia. Os dois lados riram.", marca: "humor", efeitos: { engajamento: 8, moral: 2 } },
+        { id: "ignorar", rotulo: "Ignorar", resultado: "Você não respondeu. A piada perdeu graça sozinha.", marca: "ignorar" },
+        { id: "ataque", rotulo: "Responder com ataque", resultado: "A resposta foi dura. Virou print em menos de uma hora.", proximo: "2a", efeitos: { fama: 2, relTecnico: -3 } },
+      ],
+    },
+    passos: {
+      "2a": {
+        titulo: "A resposta do rival", origem: "rival", prazo: 2,
+        texto: "{pessoa} respondeu à sua resposta, e agora a discussão está no jornal da cidade.",
+        opcoes: [
+          { id: "desculpa", rotulo: "Pedir desculpas em público", resultado: "Você pediu desculpas numa foto com a família.", marca: "desculpa", ef: { moral: -2 } },
+          { id: "sair", rotulo: "Sair da rede e deixar esfriar", resultado: "Você saiu da rede por uma semana. A discussão morreu sem você.", marca: "sair", ef: {} },
+        ],
+      },
+    },
+    consequencias: {
+      humor: { titulo: "Piada de volta", texto: "{pessoa} reconheceu a graça e marcou um amistoso de brincadeira com o seu clube.", ficha: "Respondeu com humor; {pessoa} entrou na brincadeira.", semanas: 2 },
+      ignorar: { titulo: "Briga que esfriou", texto: "A discussão morreu sozinha, mas {pessoa} continuou comentando em outros posts.", ficha: "Ignorou a piada; {pessoa} seguiu provocando." },
+      desculpa: { titulo: "Desculpa que pegou mal", texto: "{pessoa} tirou um print da desculpa e postou com a frase \"fim da discussão\".", ficha: "Pediu desculpa em público; {pessoa} zombou." },
+    },
+    marcas: { humor: "humor", ignorar: "ignorar", desculpa: "desculpa", sair: "ignorar" },
+    fichaMarca: { humor: "Respondeu a piada com humor.", ignorar: "Ignorou a piada do rival.", desculpa: "Pediu desculpas em público.", sair: "Saiu da rede para a discussão esfriar." },
+  },
+
+  "lesao-amigo": {
+    id: "lesao-amigo", fases: ["estabelecido", "estrela"],
+    personagens: pessoas("Companheiro de elenco que rompeu o ligamento. Fica no quarto do CT sem prazo para voltar.", { BRA: "Rafa Monteiro", FRA: "Lucas Ferrand", ENG: "Jamie Pryor", ESP: "Dani Ruiz", ITA: "Alessio Conti", USA: "Jordan Price" }),
+    fichaInicio: "Lesão de {pessoa}: {quando}, no treino de quinta.",
+    inicio: {
+      titulo: "Companheiro lesionado",
+      texto: "{pessoa} rompeu o ligamento no treino de quinta. Ele está sozinho no quarto do CT, e o clube não tem prazo para voltar.",
+      origem: "vestiario",
+      opcoes: [
+        { id: "visita", rotulo: "Visitar todo dia no hospital", resultado: "Você passou a semana toda no quarto dele, levando comida de casa.", marca: "visita", efeitos: { moral: 4, cansaco: 5 } },
+        { id: "mensagem", rotulo: "Mandar mensagem e seguir a rotina", resultado: "A mensagem chegou às dez da noite, com emoji de coração.", marca: "mensagem", efeitos: { moral: -1 } },
+        { id: "agente", rotulo: "Pedir para o agente cuidar da fisioterapia", resultado: "O agente ligou para a clínica no mesmo dia.", marca: "agente", efeitos: { moral: 2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      volta: { titulo: "Volta do amigo", texto: "{pessoa} voltou ao treino e lembrou quem apareceu todo dia.", ficha: "Visitou {pessoa} todo dia durante a recuperação.", semanas: 4 },
+      silencio: { titulo: "Silêncio no grupo", texto: "{pessoa} percebeu que ninguém perguntou mais.", ficha: "Não acompanhou a recuperação de {pessoa}." },
+      fisio: { titulo: "Fisioterapia paga", texto: "O agente conseguiu a clínica, e {pessoa} agradeceu no grupo do elenco.", ficha: "O agente cuidou da fisioterapia de {pessoa}." },
+    },
+    marcas: { visita: "volta", mensagem: "silencio", agente: "fisio" },
+    fichaMarca: { visita: "Visitou o companheiro lesionado.", mensagem: "Mandou mensagem e seguiu a rotina.", agente: "Pediu ao agente para cuidar da fisioterapia do companheiro." },
+  },
+
+  "instituto": {
+    id: "instituto", fases: ["estabelecido", "estrela"], unico: true,
+    personagens: pessoas("Ex-treinador do campinho onde você começou. Treinou você quando era criança.", { BRA: "Seu Nelson", FRA: "Jacques Fontaine", ENG: "Barry Nolan", ESP: "Don Manuel Ortiz", ITA: "Franco Basile", USA: "Ray Dillard" }),
+    fichaInicio: "Pedido de {pessoa} sobre o campinho: {quando}.",
+    inicio: {
+      titulo: "Projeto social",
+      texto: "O campinho onde você começou está abandonado. {pessoa}, que treinou você quando criança, pede que você ajude a reformar o espaço.",
+      origem: "cidade",
+      opcoes: [
+        { id: "projeto", rotulo: "Montar um projeto no seu nome", resultado: "Você marcou a primeira reunião com os pais das crianças.", marca: "projeto", efeitos: { fama: 3, moral: 3 } },
+        { id: "doacao", rotulo: "Doar uma parte do salário", resultado: "O dinheiro foi para as traves e a rede. {pessoa} chorou no telefone.", marca: "doacao", efeitos: { sal: -1 } },
+        { id: "clube", rotulo: "Pedir ajuda ao clube", resultado: "O clube aceitou avaliar o pedido na reunião da diretoria.", marca: "clube", efeitos: { relTecnico: 2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      reforma: { titulo: "Campinho reformado", texto: "{pessoa} enviou fotos da inauguração. As crianças usam as traves novas.", ficha: "Projeto no campinho de {pessoa} saiu do papel.", semanas: 4 },
+      abandono: { titulo: "Ninguém cuidou", texto: "O projeto parou no segundo mês, e {pessoa} ficou com a chave do portão.", ficha: "O projeto do campinho parou." },
+      apoio: { titulo: "Clube ajudou", texto: "O clube mandou material e um dia de treino com as crianças.", ficha: "O clube apoiou o campinho de {pessoa}." },
+    },
+    marcas: { projeto: "reforma", doacao: "reforma", clube: "apoio" },
+    fichaMarca: { projeto: "Montou um projeto para o campinho.", doacao: "Doou uma parte do salário para o campinho.", clube: "Pediu ao clube apoio para o campinho." },
+  },
 };

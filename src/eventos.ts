@@ -42,33 +42,11 @@ export const EVENTOS: EventoVida[] = [
     unico: cad.unico, quando: (c) => Object.keys(cad.personagens).includes(c.paisClube ?? "") && (cad.quando?.(c) ?? true),
   })),
   // ------------------------------------------------------------ base
-  ev("mae-casa", ["inicio", "estabelecido"], "A casa da mãe", "Sua mãe mora de aluguel há vinte anos. Você pode dar a entrada numa casa para ela.", [
-    op("comprar", "Dar a casa", "Ela chorou na entrega das chaves. Você também.", { sal: -6, moral: 12 }),
-    op("depois", "Prometer para o ano que vem", "Ela disse que não tem pressa. Tem.", { moral: -2 }),
-  ], { unico: true, quando: (c) => c.salario >= 20000 }),
-  ev("podcast", ["inicio", "estabelecido"], "Convite para podcast", "Um podcast de futebol com milhões de visualizações quer você no próximo episódio.", [
-    op("ir", "Ir e falar de tudo", "Três horas de conversa e um corte viral sobre a infância.", { fama: 4, engajamento: 15, hype: 0.15 }, { chance: 0.25, resultado: "Uma frase sobre o técnico saiu de contexto e virou manchete.", efeitos: { relTecnico: -8, pressao: 8 } }),
-    op("recusar", "Recusar: foco no campo", "O assessor do clube agradeceu. Ninguém mais lembrou.", { relTecnico: 2 }),
-  ]),
   ev("faculdade", ["inicio", "estabelecido"], "Faculdade à distância", "Um curso de Administração à distância encaixa na sua rotina, se você abrir mão de algumas folgas.", [
     op("matricular", "Fazer a matrícula", "Aula gravada à noite, prova no sábado. Cansa, mas a cabeça agradece.", { dinheiro: -1200, cansaco: 5, moral: 3, evolucao: 0.01 }),
     op("depois", "Deixar para depois da carreira", "O futebol primeiro. O curso continua lá.", {}),
   ], { unico: true }),
   // ------------------------------------------------------------ estabelecido
-  ev("tv-programa", ["estabelecido", "estrela"], "Convite da TV", "Um programa de auditório de domingo quer você no quadro de talentos.", [
-    op("ir", "Ir e dançar no palco", "O Brasil inteiro viu você dançando mal. O Brasil inteiro adorou.", { fama: 5, hype: 0.2, engajamento: 10, cansaco: 5 }),
-    op("recusar", "Recusar com educação", "Domingo em casa, com a família.", { moral: 3 }),
-  ]),
-  ev("instituto", ["estabelecido", "estrela"], "Projeto social", "O campinho onde você começou está abandonado. Dá para reformar e montar uma escolinha.", [
-    op("fazer", "Bancar a reforma", "Cem crianças com uniforme novo. A foto do primeiro treino rodou o país.", { sal: -3, moral: 8, fama: 4, hype: 0.1 }),
-    op("ajudar", "Doar material esportivo", "Bolas, coletes e chuteiras. Um começo.", { sal: -0.5, moral: 3, fama: 1 }),
-    op("nao", "Não agora", "O campinho continua lá, esperando.", {}),
-  ], { unico: true }),
-  ev("polemica-rede", ["estabelecido", "estrela"], "Comentário que viralizou", "Um torcedor rival fez piada com sua família nas redes. Todo mundo espera sua resposta.", [
-    op("responder", "Responder à altura", "A resposta foi genial e cruel. Engajamento recorde, nota de repúdio do clube.", { engajamento: 15, hype: 0.25, relTecnico: -5, pressao: 6 }),
-    op("ignorar", "Ignorar", "Em dois dias ninguém lembrava. Você dormiu bem.", { moral: 1 }),
-    op("gol", "Responder em campo", "Você guardou o print. A resposta vem no domingo.", { moral: 3, pressao: 3 }),
-  ]),
   ev("videogame", ["estabelecido", "estrela"], "Capa de videogame regional", "Um jogo de futebol quer você na capa da edição do seu país.", [
     op("aceitar", "Aceitar", "Seu rosto em todas as lojas. O sobrinho jogou com você o fim de semana inteiro.", { patrocinio: { pct: 0.1, piso: 30000, meses: 12 }, fama: 6, hype: 0.2 }),
     op("recusar", "Recusar", "Dizem que capa de videogame dá azar.", {}),
@@ -77,10 +55,6 @@ export const EVENTOS: EventoVida[] = [
     op("ir", "Ir e voltar de madrugada", "Fez o discurso, chorou, voltou às 5 da manhã para a concentração.", { moral: 8, cansaco: 20 }),
     op("video", "Mandar um vídeo", "Ele entendeu. Disse que entendeu.", { moral: -3 }),
   ], { unico: true }),
-  ev("lesao-amigo", ["estabelecido", "estrela"], "Companheiro lesionado", "Seu parceiro de quarto rompeu o ligamento e está mal. Você pode passar as folgas com ele na fisioterapia.", [
-    op("acompanhar", "Acompanhar a recuperação", "O elenco reparou. O capitão disse que é isso que faz um grupo.", { moral: 4, relTecnico: 4, cansaco: 5 }),
-    op("mensagem", "Mandar mensagem e seguir a vida", "Ele respondeu com um joinha.", {}),
-  ]),
   ev("exterior-adaptacao", ["inicio", "estabelecido", "estrela"], "Saudade de comida de casa", "Faz meses que você não come arroz e feijão de verdade. Tem um restaurante brasileiro a uma hora daqui.", [
     op("ir", "Ir toda semana", "O dono virou amigo. A saudade diminuiu.", { moral: 6, dinheiro: -1500 }),
     op("aula", "Fazer aula do idioma no lugar", "Ainda erra os verbos, mas já pede café sem apontar.", { relTecnico: 4, moral: 1 }),
