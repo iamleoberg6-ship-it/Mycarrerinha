@@ -18,13 +18,31 @@ export const VALORES: Record<ChaveValor, Record<string, number>> = {
   comentario: { BRL: 150000, EUR: 25500, GBP: 22500, USD: 28500 },
   curso: { BRL: 30000, EUR: 5100, GBP: 4500, USD: 5700 },
 };
+/** Todo país do jogo cai num grupo de nomes (países com língua e cultura parecidas dividem o mesmo conjunto). */
+export const GRUPO_DO_PAIS: Record<string, string> = {
+  BRA: "BRA", POR: "POR", ESP: "ESP", ITA: "ITA", FRA: "FRA", ENG: "ENG", USA: "USA", GER: "GER", NED: "NED", TUR: "TUR", CRO: "CRO",
+  MAR: "MAR", KSA: "KSA", IRN: "IRN", NGA: "NGA", JPN: "JPN", KOR: "KOR",
+  ARG: "LATAM", URU: "LATAM", COL: "LATAM", CHI: "LATAM", PAR: "LATAM", ECU: "LATAM", PER: "LATAM", VEN: "LATAM", BOL: "LATAM", MEX: "LATAM", CRC: "LATAM", HON: "LATAM", PAN: "LATAM",
+  SCO: "ENG", AUS: "ENG", NZL: "ENG", RSA: "ENG", CAN: "ENG", JAM: "ENG", INT: "ENG",
+  AUT: "GER", SUI: "GER", BEL: "NED", DEN: "NED", NOR: "NED", SWE: "NED",
+  POL: "CRO", UKR: "CRO", SRB: "CRO", ALG: "MAR", TUN: "MAR", EGY: "MAR", CIV: "FRA", CMR: "FRA", MLI: "FRA", SEN: "FRA",
+  UAE: "KSA", QAT: "KSA", IRQ: "KSA", GHA: "NGA", CHN: "KOR", THA: "KOR", MAS: "KOR",
+};
+/** Personagem do país (ou do grupo dele) para uma cadeia. */
+export const temPersonagem = (cad: { personagens: Record<string, unknown> }, pais?: string): boolean => !!pais && cad.personagens[GRUPO_DO_PAIS[pais] ?? pais] !== undefined;
+
 /** Moeda de cada país onde há personagem de cadeia. */
-const MOEDA_DO_PAIS: Record<string, keyof typeof MOEDAS> = { BRA: "BRL", FRA: "EUR", ESP: "EUR", ITA: "EUR", ENG: "GBP", USA: "USD" };
+const MOEDA_DO_PAIS: Record<string, keyof typeof MOEDAS> = {
+  BRA: "BRL", FRA: "EUR", ESP: "EUR", ITA: "EUR", POR: "EUR", GER: "EUR", NED: "EUR", AUT: "EUR", BEL: "EUR", CRO: "EUR",
+  ENG: "GBP", SCO: "GBP",
+};
+/** Países sem moeda própria no jogo usam dólar, como padrão. */
+const moedaDoPais = (pais: string): keyof typeof MOEDAS => MOEDA_DO_PAIS[pais] ?? "USD";
 
 /** Valor de um uso, convertido para reais (o save guarda reais). */
 export function valorDoPais(chave: ChaveValor, pais: string): number {
-  const m = MOEDA_DO_PAIS[pais] ?? "BRL";
-  const local = VALORES[chave][m] ?? VALORES[chave].BRL;
+  const m = moedaDoPais(pais);
+  const local = VALORES[chave][m];
   return Math.round(local / MOEDAS[m].porBrl);
 }
 
@@ -78,7 +96,7 @@ export const novaCadeia = (): EstadoCadeia => ({ ficha: [], marcas: [], feitas: 
 
 /** Personagem de um país; o nome e a bio ficam no save quando o evento começa. */
 export function pessoaDaCadeia(cad: Cadeia, pais = "BRA"): PessoaCadeia {
-  return cad.personagens[pais] ?? Object.values(cad.personagens)[0];
+  return cad.personagens[GRUPO_DO_PAIS[pais] ?? pais] ?? cad.personagens[pais] ?? Object.values(cad.personagens)[0];
 }
 /** Troca {pessoa} pelo nome do personagem. */
 export const preencherPessoa = (t: string, p?: PessoaCadeia): string => t.replaceAll("{pessoa}", p?.nome ?? "");

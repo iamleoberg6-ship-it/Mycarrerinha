@@ -3,6 +3,7 @@
 // veterano, despedida, mentor e o que fazer depois. Um por vez, com decisão.
 import { RNG, clamp } from "./rng.js";
 import { CADEIAS } from "./cadeias-dados.js";
+import { temPersonagem } from "./cadeias.js";
 
 export type Fase = "base" | "inicio" | "estabelecido" | "estrela" | "veterano";
 export interface CtxEvento {
@@ -39,7 +40,7 @@ const op = (id: string, rotulo: string, resultado: string, efeitos: EfeitoEvento
 export const EVENTOS: EventoVida[] = [
   // Eventos com cadeia: textos e escolhas vêm de cadeias-dados.ts, com um personagem por país do clube.
   ...Object.values(CADEIAS).map((cad) => ev(cad.id, cad.fases, cad.inicio.titulo, cad.inicio.texto, cad.inicio.opcoes.map((o) => op(o.id, o.rotulo, o.resultado, {})), {
-    unico: cad.unico, quando: (c) => Object.keys(cad.personagens).includes(c.paisClube ?? "") && (cad.quando?.(c) ?? true),
+    unico: cad.unico, quando: (c) => temPersonagem(cad, c.paisClube) && (cad.quando?.(c) ?? true),
   })),
   // ------------------------------------------------------------ base
   ev("faculdade", ["inicio", "estabelecido"], "Faculdade à distância", "Um curso de Administração à distância encaixa na sua rotina, se você abrir mão de algumas folgas.", [

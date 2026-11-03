@@ -740,3 +740,444 @@ export const CADEIAS: Record<string, Cadeia> = {
     fichaMarca: { aceitar: "Aceitou o documentário sobre a temporada.", recusar: "Recusou o documentário e manteve a vida privada." },
   },
 };
+
+// Nomes dos grupos de países (ver GRUPO_DO_PAIS em cadeias.ts). O empresário leva a agência no nome.
+const NOMES_GRUPOS: Record<string, Record<string, string | [string, string]>> = {
+ "escola-prova": {
+  "POR": "Dona Graça Almeida",
+  "LATAM": "Profesora Mariela Ortiz",
+  "GER": "Frau Ingrid Vogel",
+  "NED": "Mevrouw Anneke de Ruiter",
+  "TUR": "Öğretmen Nermin Kaya",
+  "CRO": "Profesorica Vesna Horvat",
+  "MAR": "Mme Naima El Idrissi",
+  "KSA": "Ustaza Noura Al-Harbi",
+  "IRN": "Khanum Farzaneh Mousavi",
+  "NGA": "Mrs. Adaeze Okafor",
+  "JPN": "Hayashi Keiko",
+  "KOR": "Kim Mi-sook"
+ },
+ "base-saudade": {
+  "POR": "Tiago Figueiredo",
+  "LATAM": "Emiliano Rojas",
+  "GER": "Jonas Brandt",
+  "NED": "Daan Visser",
+  "TUR": "Emre Yıldız",
+  "CRO": "Luka Marić",
+  "MAR": "Youssef Benali",
+  "KSA": "Faisal Al-Otaibi",
+  "IRN": "Arash Rahimi",
+  "NGA": "Chidi Eze",
+  "JPN": "Mori Kenta",
+  "KOR": "Park Min-jun"
+ },
+ "base-chuteira": {
+  "POR": "Sr. Albano",
+  "LATAM": "Don Ramiro",
+  "GER": "Kurt Lehmann",
+  "NED": "Piet Hoekstra",
+  "TUR": "Ahmet Abi",
+  "CRO": "Stjepan Vuk",
+  "MAR": "Hajj Mustapha",
+  "KSA": "Abu Saeed",
+  "IRN": "Amu Hassan",
+  "NGA": "Baba Musa",
+  "JPN": "Tanaka Shigeru",
+  "KOR": "Ajeossi Byung-ho"
+ },
+ "base-olheiro": {
+  "POR": "Rui Bettencourt",
+  "LATAM": "Alejandro Sosa",
+  "GER": "Dieter Kessler",
+  "NED": "Ruud Bakker",
+  "TUR": "Kerem Altun",
+  "CRO": "Darko Vuković",
+  "MAR": "Karim Bennis",
+  "KSA": "Talal Al-Qahtani",
+  "IRN": "Behrouz Sadeghi",
+  "NGA": "Emeka Nwosu",
+  "JPN": "Ito Ryosuke",
+  "KOR": "Lee Sang-woo"
+ },
+ "primeiro-carro": {
+  "POR": "Vítor Sampaio",
+  "LATAM": "Gustavo Parra",
+  "GER": "Markus Herzog",
+  "NED": "Wim van Dijk",
+  "TUR": "Burak Tekin",
+  "CRO": "Ivica Babić",
+  "MAR": "Hamid Ouazzani",
+  "KSA": "Saud Al-Shehri",
+  "IRN": "Reza Karimi",
+  "NGA": "Tunde Adeyemi",
+  "JPN": "Matsuda Hiroshi",
+  "KOR": "Jung Ho-sik"
+ },
+ "festa-elenco": {
+  "POR": "Zé Pedro Lopes",
+  "LATAM": "Chino Benítez",
+  "GER": "Lukas Krüger",
+  "NED": "Bram Smit",
+  "TUR": "Okan Demir",
+  "CRO": "Mate Jurić",
+  "MAR": "Adil Chraibi",
+  "KSA": "Hamad Al-Dossari",
+  "IRN": "Pouya Ahmadi",
+  "NGA": "Kunle Balogun",
+  "JPN": "Takahashi Shin",
+  "KOR": "Choi Dong-hyun"
+ },
+ "golpe-pix": {
+  "POR": "Rodrigo Esteves",
+  "LATAM": "Facundo Miranda",
+  "GER": "Florian Schulz",
+  "NED": "Joris Mulder",
+  "TUR": "Serkan Aydın",
+  "CRO": "Dario Kovač",
+  "MAR": "Rachid Tazi",
+  "KSA": "Badr Al-Mutairi",
+  "IRN": "Kaveh Tehrani",
+  "NGA": "Ifeanyi Obi",
+  "JPN": "Nakamura Daisuke",
+  "KOR": "Han Seung-jae"
+ },
+ "treino-extra-veterano": {
+  "POR": "Mário Pacheco",
+  "LATAM": "Hernán Suárez",
+  "GER": "Stefan Roth",
+  "NED": "Frank Bosch",
+  "TUR": "Hakan Yılmaz",
+  "CRO": "Ante Radić",
+  "MAR": "Mehdi Lahlou",
+  "KSA": "Nawaf Al-Subaie",
+  "IRN": "Hossein Moradi",
+  "NGA": "Segun Adebayo",
+  "JPN": "Ueda Kenji",
+  "KOR": "Kang Tae-min"
+ },
+ "mae-casa": {
+  "POR": "Sílvia Morgado",
+  "LATAM": "Verónica Castillo",
+  "GER": "Birgit Hahn",
+  "NED": "Marieke Jansen",
+  "TUR": "Ayşe Kılıç",
+  "CRO": "Ana Perić",
+  "MAR": "Soukaina Benjelloun",
+  "KSA": "Reem Al-Zahrani",
+  "IRN": "Mina Hosseini",
+  "NGA": "Ngozi Chukwu",
+  "JPN": "Yamamoto Emi",
+  "KOR": "Seo Ji-yeon"
+ },
+ "podcast": {
+  "POR": "Diogo Sardinha",
+  "LATAM": "Matías Quiroga",
+  "GER": "Tobias Richter",
+  "NED": "Sven Koopman",
+  "TUR": "Cem Ertürk",
+  "CRO": "Igor Lovrić",
+  "MAR": "Anas Berrada",
+  "KSA": "Yazeed Al-Shammari",
+  "IRN": "Siamak Azari",
+  "NGA": "Femi Ajayi",
+  "JPN": "Okada Shun",
+  "KOR": "Yoon Tae-hwan"
+ },
+ "tv-programa": {
+  "POR": "Inês Carvalhal",
+  "LATAM": "Lorena Vega",
+  "GER": "Sabine Möller",
+  "NED": "Lotte Verhoeven",
+  "TUR": "Zeynep Arslan",
+  "CRO": "Petra Novak",
+  "MAR": "Nadia Lamrani",
+  "KSA": "Lujain Al-Ghamdi",
+  "IRN": "Shirin Moghadam",
+  "NGA": "Bisi Afolabi",
+  "JPN": "Fujita Mariko",
+  "KOR": "Jang Hye-jin"
+ },
+ "polemica-rede": {
+  "POR": "Jorge Sobral",
+  "LATAM": "Kevin Lozano",
+  "GER": "Marco Bauer",
+  "NED": "Jeroen Blom",
+  "TUR": "Tolga Önal",
+  "CRO": "Zoran Pavić",
+  "MAR": "Otmane Hajji",
+  "KSA": "Sultan Al-Zahrani",
+  "IRN": "Ali Shahbazi",
+  "NGA": "Sunday Okon",
+  "JPN": "Kobayashi Taku",
+  "KOR": "Oh Jin-ho"
+ },
+ "lesao-amigo": {
+  "POR": "Miguel Fontes",
+  "LATAM": "Lautaro Ibáñez",
+  "GER": "Niklas Vogt",
+  "NED": "Thijs Meijer",
+  "TUR": "Yusuf Acar",
+  "CRO": "Filip Radović",
+  "MAR": "Omar Ziani",
+  "KSA": "Khaled Al-Anazi",
+  "IRN": "Amir Rezaei",
+  "NGA": "Tobi Akin",
+  "JPN": "Maeda Ren",
+  "KOR": "Shin Dong-woo"
+ },
+ "instituto": {
+  "POR": "Sr. Armindo",
+  "LATAM": "Don Eusebio Caballero",
+  "GER": "Opa Heinz",
+  "NED": "Oom Henk",
+  "TUR": "Amca Rıza",
+  "CRO": "Deda Josip",
+  "MAR": "Si Abdelkader",
+  "KSA": "Abu Fahd",
+  "IRN": "Agha Mehdi",
+  "NGA": "Papa Olu",
+  "JPN": "Ogawa Ichiro",
+  "KOR": "Gang Man-su"
+ },
+ "videogame": {
+  "POR": "Duarte Lemos",
+  "LATAM": "Sebastián Acosta",
+  "GER": "Patrick Lindner",
+  "NED": "Maarten Hof",
+  "TUR": "Murat Bozkurt",
+  "CRO": "Tomislav Đurić",
+  "MAR": "Sofiane Kettani",
+  "KSA": "Fahad Al-Ruwaili",
+  "IRN": "Navid Jafari",
+  "NGA": "Chukwuma Eze",
+  "JPN": "Iwasaki Hayato",
+  "KOR": "Seo Hyun-woo"
+ },
+ "casamento-amigo": {
+  "POR": "Nuno Teixeira",
+  "LATAM": "Sergio Villalba",
+  "GER": "Dennis Wolf",
+  "NED": "Rick van Zanten",
+  "TUR": "Eren Kaplan",
+  "CRO": "Marin Tomić",
+  "MAR": "Hicham Sabri",
+  "KSA": "Mishaal Al-Enezi",
+  "IRN": "Farhad Nouri",
+  "NGA": "Obinna Chidi",
+  "JPN": "Sasaki Yuta",
+  "KOR": "Lim Jae-hyuk"
+ },
+ "gala": {
+  "POR": "Beatriz Galvão",
+  "LATAM": "Carolina Benavides",
+  "GER": "Verena Koch",
+  "NED": "Anouk Veldhuis",
+  "TUR": "Selin Erdem",
+  "CRO": "Lucija Vuković",
+  "MAR": "Imane Ouahbi",
+  "KSA": "Hessa Al-Mutairi",
+  "IRN": "Parisa Ghanbari",
+  "NGA": "Amara Nnaji",
+  "JPN": "Kawai Nanami",
+  "KOR": "Ryu Seo-yeon"
+ },
+ "marca-propria": {
+  "POR": "Leonor Santos",
+  "LATAM": "Valentina Ríos",
+  "GER": "Julia Brenner",
+  "NED": "Fenna de Boer",
+  "TUR": "Defne Aksoy",
+  "CRO": "Mia Kralj",
+  "MAR": "Khadija Berrada",
+  "KSA": "Lama Al-Otaibi",
+  "IRN": "Sara Ebrahimi",
+  "NGA": "Ada Okeke",
+  "JPN": "Mizuno Ayaka",
+  "KOR": "Baek Ha-yoon"
+ },
+ "assedio": {
+  "POR": "Rúben Cardoso",
+  "LATAM": "Gonzalo Reyes",
+  "GER": "Moritz Kaiser",
+  "NED": "Stijn Dekker",
+  "TUR": "Furkan Güneş",
+  "CRO": "Dominik Babić",
+  "MAR": "Yassine Tahiri",
+  "KSA": "Turki Al-Harbi",
+  "IRN": "Vahid Shokri",
+  "NGA": "Ola Fashola",
+  "JPN": "Nishimura Kaito",
+  "KOR": "Kwon Min-seok"
+ },
+ "selecao-convocacao": {
+  "POR": "Pedro Vilela",
+  "LATAM": "Ignacio Herrera",
+  "GER": "Christoph Ziegler",
+  "NED": "Erik Brouwer",
+  "TUR": "Mert Özkan",
+  "CRO": "Krešimir Lukić",
+  "MAR": "Brahim Chaoui",
+  "KSA": "Waleed Al-Dosari",
+  "IRN": "Ramin Farahani",
+  "NGA": "Kayode Lawal",
+  "JPN": "Murakami Hideki",
+  "KOR": "Yoo Ji-hoon"
+ },
+ "leilao": {
+  "POR": "Helena Brito",
+  "LATAM": "Mercedes Lobo",
+  "GER": "Ursula Winkler",
+  "NED": "Esther Mulder",
+  "TUR": "Gül Tuncer",
+  "CRO": "Snježana Kovač",
+  "MAR": "Zineb Lahlou",
+  "KSA": "Moudhi Al-Shamrani",
+  "IRN": "Azar Hosseini",
+  "NGA": "Funke Ogunleye",
+  "JPN": "Takeda Sayuri",
+  "KOR": "Shim Eun-ji"
+ },
+ "mentor": {
+  "POR": "Gonçalo Brandão",
+  "LATAM": "Tomás Aguirre",
+  "GER": "Leon Hartmann",
+  "NED": "Lars Bakker",
+  "TUR": "Eymen Şahin",
+  "CRO": "Nikola Perić",
+  "MAR": "Ayoub Tahiri",
+  "KSA": "Rayan Al-Otaibi",
+  "IRN": "Parsa Nazari",
+  "NGA": "Chinedu Okafor",
+  "JPN": "Takahashi Sota",
+  "KOR": "Ha Jun-seo"
+ },
+ "comentarista": {
+  "POR": "Filipe Meneses",
+  "LATAM": "Rolando Peña",
+  "GER": "Oliver Strauss",
+  "NED": "Mark de Groot",
+  "TUR": "Burhan Yalçın",
+  "CRO": "Mirko Šimunić",
+  "MAR": "Hassan Benkirane",
+  "KSA": "Majed Al-Hussaini",
+  "IRN": "Kamran Hashemi",
+  "NGA": "Olu Adekunle",
+  "JPN": "Nagano Makoto",
+  "KOR": "Jeon Tae-ho"
+ },
+ "corpo": {
+  "POR": "Ricardo Abreu",
+  "LATAM": "Osvaldo Quintana",
+  "GER": "Andreas Frick",
+  "NED": "Hans Bijl",
+  "TUR": "Murat Aslan",
+  "CRO": "Vedran Zorić",
+  "MAR": "Mourad Chaoui",
+  "KSA": "Tariq Al-Mansour",
+  "IRN": "Bijan Rostami",
+  "NGA": "Ifeoma Nwankwo",
+  "JPN": "Kuroda Hiroshi",
+  "KOR": "Ahn Seong-bae"
+ },
+ "despedida-cidade": {
+  "POR": "Armando Rebelo",
+  "LATAM": "Gerardo Molina",
+  "GER": "Werner Klein",
+  "NED": "Gerrit Vos",
+  "TUR": "Halil Demirci",
+  "CRO": "Ante Barić",
+  "MAR": "Mohamed Alaoui",
+  "KSA": "Abdulaziz Al-Mutairi",
+  "IRN": "Mohsen Karimi",
+  "NGA": "Tunde Akinola",
+  "JPN": "Shigi Nobuo",
+  "KOR": "Gu Chang-ho"
+ },
+ "futuro": {
+  "POR": "Jorge Moreira",
+  "LATAM": "Ariel Mansilla",
+  "GER": "Bernd Ackermann",
+  "NED": "Pieter Groen",
+  "TUR": "Ertuğrul Bayram",
+  "CRO": "Tomo Lukić",
+  "MAR": "Driss Benslimane",
+  "KSA": "Sultan Al-Harthi",
+  "IRN": "Majid Bahrami",
+  "NGA": "Seun Ajayi",
+  "JPN": "Komatsu Ichiro",
+  "KOR": "Nam Gi-tae"
+ },
+ "documentario": {
+  "POR": "Francisco Lopes",
+  "LATAM": "Joaquín Ferrer",
+  "GER": "Henning Roth",
+  "NED": "Dirk Smeets",
+  "TUR": "Cenk Ergin",
+  "CRO": "Robert Tadić",
+  "MAR": "Walid Benkirane",
+  "KSA": "Yousef Al-Khalidi",
+  "IRN": "Pejman Kazemi",
+  "NGA": "Emeka Anyanwu",
+  "JPN": "Nishioka Ren",
+  "KOR": "Lee Ji-ho"
+ },
+ "base-empresario": {
+  "POR": [
+   "Rui Melo",
+   "Melo Sports Management"
+  ],
+  "LATAM": [
+   "Ricardo Almada",
+   "Almada Sports"
+  ],
+  "GER": [
+   "Stefan Krauss",
+   "Krauss Sportmanagement"
+  ],
+  "NED": [
+   "Bert Smulders",
+   "Smulders Sports"
+  ],
+  "TUR": [
+   "Kemal Sönmez",
+   "Sönmez Sports"
+  ],
+  "CRO": [
+   "Ivan Sertić",
+   "Sertić Sport"
+  ],
+  "MAR": [
+   "Karim Idrissi",
+   "Idrissi Sports"
+  ],
+  "KSA": [
+   "Fahad Al-Shalan",
+   "Al-Shalan Sports"
+  ],
+  "IRN": [
+   "Amir Hosseinzadeh",
+   "Hosseinzadeh Sport"
+  ],
+  "NGA": [
+   "Chike Nwachukwu",
+   "Nwachukwu Sports"
+  ],
+  "JPN": [
+   "Hiroshi Ito",
+   "Ito Sports Agency"
+  ],
+  "KOR": [
+   "Park Jun-seok",
+   "Park Sports"
+  ]
+ }
+};
+for (const [id, grupos] of Object.entries(NOMES_GRUPOS)) {
+  const cad = CADEIAS[id];
+  const bio = Object.values(cad.personagens)[0].bio;
+  for (const [grupo, nome] of Object.entries(grupos)) {
+    cad.personagens[grupo] = Array.isArray(nome)
+      ? { nome: nome[0], bio: `Empresário da ${nome[1]}. Relógio dourado, fala rápido e promete clube no exterior em dois anos.` }
+      : { nome, bio };
+  }
+}
