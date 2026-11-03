@@ -17,7 +17,7 @@ import { semanaAcontecimentos } from "./acontecimentos.js";
 import { conversaDaSemana, opcoesConversa, responderConversa, type Conversa, type CtxConversa, type OpcaoConversa } from "./conversas.js";
 import { novaAgenda, resolverOcasiao, vencidas, agendar, type EstadoAgenda, type EfeitoVida } from "./agenda.js";
 import { CADEIAS } from "./cadeias-dados.js";
-import { novaCadeia, registrarMarca, semanaCadeia, passoDaAgenda, lerGatilho, type EstadoCadeia } from "./cadeias.js";
+import { novaCadeia, registrarMarca, semanaCadeia, passoDaAgenda, lerGatilho, pessoaDaCadeia, preencherPessoa, efeitosDaOpcao, type EstadoCadeia } from "./cadeias.js";
 import { parcasIniciais, novoParca, efeitosParcas, semanaSocial, agendarFerias, temFuncao, FUNCOES, type Parca, type PerfilParca, type FuncaoParca, type CtxSocial } from "./vida-social.js";
 import { LUXO, MAX_LUXO, mesLuxo, statusLuxo, valoresEmCasa, temEsportivo, HOBBIES, MAX_HOBBIES, semanaHobbies, semanaEstudos, infoCurso, novaAdaptacao, semanaAdaptacao, moralAdaptacao, fatorAdaptacao, ocasioesExterior, linguaNativa, mesFundacao, ocasioesFundacao, ganhouCoracaoDeOuro, CUSTO_FUNDACAO, type ItemLuxo, type TipoLuxo, type EstadoHobbies, type Hobby, type EstadoEstudos, type Curso, type Adaptacao, type Fundacao } from "./estilo.js";
 import { patrimonioInvestido } from "./negocios.js";
@@ -1607,7 +1607,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   for (const cad of Object.values(CADEIAS)) {
     const est = c.cadeias?.[cad.id];
     const cons = est && semanaCadeia(est, cad, semanaAbsJogo(c), c.fama);
-    if (cons) { const txt = cad.consequencias[cons]; eventos.push(`${cad.personagem.nome}: ${txt.titulo}.`); noticia(s, "vida", txt.titulo, txt.texto, { k: "vida" }); }
+    if (cons && est) { const txt = cad.consequencias[cons], pessoa = est.pessoa; eventos.push(`${pessoa?.nome ?? ""}: ${txt.titulo}.`); noticia(s, "vida", preencherPessoa(txt.titulo, pessoa), preencherPessoa(txt.texto, pessoa), { k: "vida" }); }
   }
   // 12. negócios (propostas pelo celular) e imprensa/redes (feed da semana e pedido de entrevista)
   {
@@ -1650,7 +1650,7 @@ export function salarioLiquido(c: Carreira): number {
 export function contextoEvento(pacote: PacoteDados, s: Save): CtxEvento {
   const c = s.carreira, info = infoClube(pacote, c.clubeId), li = infoLiga(c.ligaId);
   const fam = familiaDe(pacote, s), ano = ANO_INICIAL + c.temporada, pai = membro(fam, "pai");
-  const base = { pais: s.jogador.pais, idade: s.jogador.idade, fama: c.fama, salario: c.salario, saldo: s.casa.saldo, exterior: li.regiao !== "BRA", golfo: li.id === "KSA1",
+  const base = { pais: s.jogador.pais, paisClube: info.pais, idade: s.jogador.idade, fama: c.fama, salario: c.salario, saldo: s.casa.saldo, exterior: li.regiao !== "BRA", golfo: li.id === "KSA1",
     titular: c.stats.titular > c.stats.jogos / 2, nome: s.jogador.apelido, clube: info.nome, cidade: info.cidade, liga: li.curto, temporada: c.temporada, seguidores: c.seguidores,
     paiVelho: !!pai && ano - pai.nasc >= 50, irmaoJoga: fam.membros.some((m) => (m.futebol?.fase === "amador" || m.futebol?.fase === "base") && ano - m.nasc >= 12 && ano - m.nasc <= 19),
     irmaoPro: fam.membros.some((m) => m.futebol?.fase === "pro"), proposta: (c.mercado?.propostas.length ?? 0) > 0 };
@@ -1660,8 +1660,13 @@ export function contextoEvento(pacote: PacoteDados, s: Save): CtxEvento {
 export function eventoPendente(pacote: PacoteDados, s: Save) {
   const e = s.carreira.evento ? EVENTO[s.carreira.evento] : undefined;
   if (!e) return undefined;
-  const ctx = contextoEvento(pacote, s);
-  return { id: e.id, titulo: e.titulo, texto: preencher(e.texto, ctx), opcoes: e.opcoes.map((o) => ({ id: o.id, rotulo: o.rotulo, custo: dinheiroDoEfeito(o.efeitos, s.carreira.salario) })) };
+  const ctx = contextoEvento(pacote, s), cad = CADEIAS[e.id], pessoa = cad ? pessoaDaCadeia(cad, ctx.paisClube) : undefined;
+  return { id: e.id, titulo: e.titulo, texto: preencher(e.texto, ctx, pessoa), opcoes: e.opcoes.map((o) => ({ id: o.id, rotulo: o.rotulo, custo: dinheiroDoEfeito(efeitosDaEscolha(e.id, o.id, o.efeitos, ctx.paisClube), s.carreira.salario) })) };
+}
+/** Efeitos de uma escolha: as cadeias têm o dinheiro do país; os outros eventos, os efeitos fixos. */
+function efeitosDaEscolha(eventoId: string, opcaoId: string, fixos: EfeitoEvento, pais = "BRA"): EfeitoEvento {
+  const oc = CADEIAS[eventoId]?.inicio.opcoes.find((x) => x.id === opcaoId);
+  return oc ? efeitosDaOpcao(oc, pais) : fixos;
 }
 function aplicarEfeito(s: Save, f: EfeitoEvento): string[] {
   const c = s.carreira, notas: string[] = [];
@@ -1696,19 +1701,22 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   const c = s.carreira, e = c.evento ? EVENTO[c.evento] : undefined, o = e?.opcoes.find((x) => x.id === opcaoId);
   if (!e || !o) return;
   c.evento = undefined;
-  const ctx = contextoEvento(pacote, s);
-  let texto = preencher(o.resultado, ctx), notas = aplicarEfeito(s, o.efeitos);
+  const ctx = contextoEvento(pacote, s), pais = ctx.paisClube ?? "BRA";
+  const cad = CADEIAS[e.id], oc = cad?.inicio.opcoes.find((x) => x.id === opcaoId);
+  // o personagem é sorteado pelo país do clube agora e fica até o fim da cadeia
+  const est = cad ? ((c.cadeias ??= {})[cad.id] ??= novaCadeia()) : undefined;
+  if (cad && est && !est.pessoa) { est.pessoa = pessoaDaCadeia(cad, pais); est.pais = pais; }
+  let texto = preencher(o.resultado, ctx, est?.pessoa), notas = aplicarEfeito(s, oc ? efeitosDaEscolha(e.id, opcaoId, o.efeitos, pais) : o.efeitos);
   if (o.risco && rngDe(s, "evento-risco", e.id).chance(o.risco.chance)) { texto += " " + preencher(o.risco.resultado, ctx); notas = [...notas, ...aplicarEfeito(s, o.risco.efeitos)]; }
   const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");
   if (e.id === "marca-propria" && opcaoId === "lancar") abrirEmpresa(negociosDe(s.carreira), "marca", ctxNegocios(pacote, s), rngDe(s, "marca-propria"), 0);
   if (e.id === "documentario" && opcaoId === "aceitar") { const r = rngDe(s, "documentario", ANO_INICIAL + s.carreira.temporada); (s.carreira.documentarios ??= []).push({ ano: ANO_INICIAL + s.carreira.temporada, titulo: r.pick(TITULOS_DOC), cenario: r.int(0, 5) }); }
   if (e.id === "videogame" && opcaoId === "aceitar") { ganharCapa(s, true); return { titulo: e.titulo, texto: final }; }
-  const cad = CADEIAS[e.id], oc = cad?.inicio.opcoes.find((x) => x.id === opcaoId);
-  if (cad && oc) {
-    const est = ((c.cadeias ??= {})[cad.id] ??= novaCadeia()), ab = semanaAbsJogo(c);
-    est.ficha.push(cad.fichaInicio.replace("{quando}", rotuloSemana(c)));
+  if (cad && oc && est) {
+    const ab = semanaAbsJogo(c);
+    est.ficha.push(preencherPessoa(cad.fichaInicio.replace("{quando}", rotuloSemana(c)), est.pessoa));
     registrarMarca(est, cad, oc.marca, ab);
-    if (oc.proximo) agendar(agendaDe(c), ab, passoDaAgenda(cad, oc.proximo));
+    if (oc.proximo) agendar(agendaDe(c), ab, passoDaAgenda(cad, oc.proximo, est.pais ?? pais, est.pessoa));
   }
   noticia(s, "vida", e.titulo, final, { k: "vida" });
   return { titulo: e.titulo, texto: final };
@@ -1799,7 +1807,7 @@ function gatilhoVida(pacote: PacoteDados, s: Save, g: string) {
   const lc = lerGatilho(g);
   if (lc) {
     const cad = CADEIAS[lc.cadId];
-    if (cad) { const est = ((s.carreira.cadeias ??= {})[cad.id] ??= novaCadeia()), ab = semanaAbsJogo(s.carreira); registrarMarca(est, cad, lc.marca, ab); if (lc.proximo) agendar(agendaDe(s.carreira), ab, passoDaAgenda(cad, lc.proximo)); }
+    if (cad) { const est = ((s.carreira.cadeias ??= {})[cad.id] ??= novaCadeia()), ab = semanaAbsJogo(s.carreira); registrarMarca(est, cad, lc.marca, ab); if (lc.proximo) agendar(agendaDe(s.carreira), ab, passoDaAgenda(cad, lc.proximo, est.pais ?? "BRA", est.pessoa)); }
     return;
   }
   const c = s.carreira, [k, a, b] = g.split(":"), ps = parcasDe(s);

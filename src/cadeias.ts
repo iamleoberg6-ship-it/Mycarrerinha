@@ -1,9 +1,31 @@
 // Motor das cadeias de evento: um evento com passos (escolhas que levam a outras), marcas no save e consequências
 // com personagem nomeado e ficha. Cada evento é só dado (src/cadeias-dados.ts); este arquivo interpreta tudo.
+// O personagem depende do país do clube no momento do evento e fica fixo até o fim da cadeia.
 // O primeiro passo é o próprio evento de vida; os seguintes entram na agenda; a consequência vira painel na Semana.
 import type { OrigemOcasiao, Ocasiao, OpcaoOcasiao, EfeitoVida } from "./agenda.js";
-import type { EfeitoEvento } from "./eventos.js";
+import type { EfeitoEvento, CtxEvento, Fase } from "./eventos.js";
+import { MOEDAS } from "./moeda.js";
 
+/** Valores em dinheiro de cada uso, na moeda local (o motor converte para reais pela taxa do jogo). */
+export type ChaveValor = "chuteira" | "investimentoPequeno" | "investimentoTotal" | "lucro" | "adiantamento";
+export const VALORES: Record<ChaveValor, Record<string, number>> = {
+  chuteira: { BRL: 600, EUR: 100, GBP: 90, USD: 115 },
+  investimentoPequeno: { BRL: 5000, EUR: 850, GBP: 750, USD: 950 },
+  investimentoTotal: { BRL: 50000, EUR: 8500, GBP: 7500, USD: 9500 },
+  lucro: { BRL: 400, EUR: 70, GBP: 60, USD: 75 },
+  adiantamento: { BRL: 2000, EUR: 340, GBP: 300, USD: 380 },
+};
+/** Moeda de cada país onde há personagem de cadeia. */
+const MOEDA_DO_PAIS: Record<string, keyof typeof MOEDAS> = { BRA: "BRL", FRA: "EUR", ESP: "EUR", ITA: "EUR", ENG: "GBP", USA: "USD" };
+
+/** Valor de um uso, convertido para reais (o save guarda reais). */
+export function valorDoPais(chave: ChaveValor, pais: string): number {
+  const m = MOEDA_DO_PAIS[pais] ?? "BRL";
+  const local = VALORES[chave][m] ?? VALORES[chave].BRL;
+  return Math.round(local / MOEDAS[m].porBrl);
+}
+
+export interface PessoaCadeia { nome: string; bio: string }
 export interface OpcaoCadeia {
   id: string;
   rotulo: string;
@@ -17,6 +39,8 @@ export interface OpcaoCadeia {
   efeitos?: EfeitoEvento;
   /** efeitos quando a escolha é na agenda */
   ef?: EfeitoVida;
+  /** dinheiro do uso no país (sinal 1 entra, −1 sai); vale no evento ou na agenda */
+  valor?: { chave: ChaveValor; sinal: 1 | -1 };
 }
 export interface PassoCadeia { titulo: string; texto: string; origem: OrigemOcasiao; prazo?: number; opcoes: OpcaoCadeia[] }
 export interface ConsequenciaCadeia {
@@ -28,8 +52,15 @@ export interface ConsequenciaCadeia {
 }
 export interface Cadeia {
   id: string;
-  personagem: { nome: string; bio: string };
-  /** linha da ficha no primeiro contato; {quando} vira a semana */
+  /** fases da carreira em que o evento pode sair */
+  fases: Fase[];
+  /** só uma vez na carreira */
+  unico?: boolean;
+  /** condição extra além do país e da fase */
+  quando?: (c: CtxEvento) => boolean;
+  /** um personagem por país do clube; o evento só sai nesses países */
+  personagens: Record<string, PessoaCadeia>;
+  /** linha da ficha no primeiro contato; {quando} vira a semana e {pessoa} o nome */
   fichaInicio: string;
   inicio: PassoCadeia;
   passos: Record<string, PassoCadeia>;
@@ -39,14 +70,25 @@ export interface Cadeia {
   /** marca → linha da ficha */
   fichaMarca: Record<string, string>;
 }
-export interface EstadoCadeia { ficha: string[]; marcas: string[]; agendada?: { cons: string; quando: number }; painel?: string; feitas: string[] }
+export interface EstadoCadeia { ficha: string[]; marcas: string[]; agendada?: { cons: string; quando: number }; painel?: string; feitas: string[]; pessoa?: PessoaCadeia; pais?: string }
 export const novaCadeia = (): EstadoCadeia => ({ ficha: [], marcas: [], feitas: [] });
+
+/** Personagem de um país; o nome e a bio ficam no save quando o evento começa. */
+export function pessoaDaCadeia(cad: Cadeia, pais = "BRA"): PessoaCadeia {
+  return cad.personagens[pais] ?? Object.values(cad.personagens)[0];
+}
+/** Troca {pessoa} pelo nome do personagem. */
+export const preencherPessoa = (t: string, p?: PessoaCadeia): string => t.replaceAll("{pessoa}", p?.nome ?? "");
+/** Efeitos de uma escolha no evento, com o dinheiro do país. */
+export function efeitosDaOpcao(o: OpcaoCadeia, pais: string): EfeitoEvento {
+  return { ...(o.efeitos ?? {}), ...(o.valor ? { dinheiro: o.valor.sinal * valorDoPais(o.valor.chave, pais) } : {}) };
+}
 
 /** Marca uma escolha: guarda a marca, põe a linha na ficha e agenda a consequência dela. */
 export function registrarMarca(e: EstadoCadeia, cad: Cadeia, marca: string | undefined, ab: number) {
   if (!marca) return;
   e.marcas.push(marca);
-  if (cad.fichaMarca[marca]) e.ficha.push(cad.fichaMarca[marca]);
+  if (cad.fichaMarca[marca]) e.ficha.push(preencherPessoa(cad.fichaMarca[marca], e.pessoa));
   const consId = cad.marcas[marca];
   if (!consId) return;
   const cons = cad.consequencias[consId];
@@ -61,19 +103,22 @@ export function semanaCadeia(e: EstadoCadeia, cad: Cadeia, ab: number, fama: num
   if (!pronta) return undefined;
   e.painel = a.cons;
   e.feitas.push(a.cons);
-  e.ficha.push(cons.ficha);
+  e.ficha.push(preencherPessoa(cons.ficha, e.pessoa));
   e.agendada = undefined;
   return a.cons;
 }
 
 /** Opções de um passo na forma da agenda: a escolha carrega a marca e o próximo passo no gatilho. */
-export function opcoesDaAgenda(cadId: string, passo: PassoCadeia): OpcaoOcasiao[] {
-  return passo.opcoes.map((o) => ({ id: o.id, rotulo: o.rotulo, texto: o.resultado, ef: { ...(o.ef ?? {}), gatilho: `cadeia|${cadId}|${o.marca ?? ""}|${o.proximo ?? ""}` } }));
+export function opcoesDaAgenda(cadId: string, passo: PassoCadeia, pais: string, pessoa?: PessoaCadeia): OpcaoOcasiao[] {
+  return passo.opcoes.map((o) => ({
+    id: o.id, rotulo: o.rotulo, texto: preencherPessoa(o.resultado, pessoa),
+    ef: { ...(o.ef ?? {}), ...(o.valor ? { dinheiro: o.valor.sinal * valorDoPais(o.valor.chave, pais) } : {}), gatilho: `cadeia|${cadId}|${o.marca ?? ""}|${o.proximo ?? ""}` },
+  }));
 }
 /** Um passo da cadeia como momento da agenda. A primeira opção é a que vale se o jogador não responder. */
-export function passoDaAgenda(cad: Cadeia, passoId: string): Omit<Ocasiao, "uid" | "expira"> & { prazo?: number } {
+export function passoDaAgenda(cad: Cadeia, passoId: string, pais: string, pessoa?: PessoaCadeia): Omit<Ocasiao, "uid" | "expira"> & { prazo?: number } {
   const p = cad.passos[passoId];
-  return { origem: p.origem, chave: `cadeia-${cad.id}-${passoId}`, titulo: p.titulo, texto: p.texto, prazo: p.prazo ?? 2, opcoes: opcoesDaAgenda(cad.id, p) };
+  return { origem: p.origem, chave: `cadeia-${cad.id}-${passoId}`, titulo: preencherPessoa(p.titulo, pessoa), texto: preencherPessoa(p.texto, pessoa), prazo: p.prazo ?? 2, opcoes: opcoesDaAgenda(cad.id, p, pais, pessoa) };
 }
 /** Gatilho "cadeia|id|marca|proximo" lido pela agenda. */
 export function lerGatilho(g: string): { cadId: string; marca?: string; proximo?: string } | undefined {

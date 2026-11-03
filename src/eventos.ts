@@ -10,6 +10,8 @@ export interface CtxEvento {
   pais?: string;
   fase: Fase[]; idade: number; fama: number; salario: number; saldo: number; exterior: boolean; golfo: boolean; titular: boolean;
   nome: string; clube: string; cidade: string; liga: string; temporada: number; seguidores: number;
+  /** país do clube no momento do evento: escolhe o personagem da cadeia */
+  paisClube?: string;
   /** família: pai com mais idade, irmão mais novo que joga, irmão profissional, proposta na mesa */
   paiVelho?: boolean; irmaoJoga?: boolean; irmaoPro?: boolean; proposta?: boolean;
 }
@@ -35,34 +37,11 @@ const ev = (id: string, fases: Fase[], titulo: string, texto: string, opcoes: Op
 const op = (id: string, rotulo: string, resultado: string, efeitos: EfeitoEvento, risco?: OpcaoEvento["risco"]): OpcaoEvento => ({ id, rotulo, resultado, efeitos, risco });
 
 export const EVENTOS: EventoVida[] = [
+  // Eventos com cadeia: textos e escolhas vêm de cadeias-dados.ts, com um personagem por país do clube.
+  ...Object.values(CADEIAS).map((cad) => ev(cad.id, cad.fases, cad.inicio.titulo, cad.inicio.texto, cad.inicio.opcoes.map((o) => op(o.id, o.rotulo, o.resultado, {})), {
+    unico: cad.unico, quando: (c) => Object.keys(cad.personagens).includes(c.paisClube ?? "") && (cad.quando?.(c) ?? true),
+  })),
   // ------------------------------------------------------------ base
-  ev("escola-prova", ["base"], "Semana de provas", "A escola do clube marcou as provas finais na mesma semana dos treinos em dois períodos.", [
-    op("estudar", "Virar a noite estudando", "Passou em tudo. A mãe mandou print do boletim para a família inteira.", { moral: 4, cansaco: 15 }),
-    op("treino", "Priorizar o treino", "Treinou forte, mas a recuperação ficou para janeiro. O coordenador da base não gostou.", { relTecnico: 3, moral: -3 }),
-  ]),
-  ev("base-saudade", ["base"], "Saudade de casa", "Faz dois meses que você não vê a família. O alojamento está quieto no domingo.", [
-    op("visitar", "Pegar o ônibus e ir visitar", "Doze horas de estrada, um almoço de domingo e a cabeça no lugar.", { moral: 8, cansaco: 10, dinheiro: -400 }),
-    op("ligar", "Fazer chamada de vídeo e ficar", "A avó chorou na chamada. Você chorou depois, sozinho.", { moral: 2 }),
-  ]),
-  ev("base-chuteira", ["base"], "Chuteira furada", "A chuteira abriu na sola no meio do treino. A nova custa metade da sua ajuda de custo.", [
-    op("comprar", "Comprar a nova", "Pé firme no gramado. O mês vai ser de miojo.", { dinheiro: -600, moral: 2 }),
-    op("colar", "Colar com cola de sapateiro", "Aguentou duas semanas. No terceiro treino, abriu de novo.", { moral: -2 }, { chance: 0.3, resultado: "A sola soltou num pique e você torceu o tornozelo.", efeitos: { moral: -4, cansaco: 20 } }),
-  ]),
-  ev("base-olheiro", ["base"], "Olheiro na arquibancada", "Dizem que tem gente de um clube grande vendo o jogo da base no sábado.", [
-    op("show", "Jogar para aparecer", "Você tentou tudo sozinho. O olheiro anotou seu nome, o técnico anotou outra coisa.", { fama: 2, relTecnico: -3 }),
-    op("time", "Jogar pelo time", "Jogo simples e correto. O técnico da base elogiou na frente de todos.", { relTecnico: 4, moral: 2 }),
-  ]),
-  ev("base-empresario", ["base"], CADEIAS["base-empresario"].inicio.titulo, CADEIAS["base-empresario"].inicio.texto, CADEIAS["base-empresario"].inicio.opcoes.map((o) => op(o.id, o.rotulo, o.resultado, o.efeitos ?? {})), { unico: true }),
-  // ------------------------------------------------------------ início de carreira
-  ev("primeiro-carro", ["inicio"], "O primeiro carro", "Com o primeiro salário de profissional, a concessionária do bairro oferece um carro em 48 parcelas.", [
-    op("popular", "Um popular usado", "Simples e pago à vista. Seu pai dirigiu primeiro.", { sal: -1.5, moral: 4 }),
-    op("financiar", "Financiar o importado", "Todo mundo no CT reparou. A parcela também vai reparar em você todo mês.", { sal: -4, moral: 6, fama: 2, pressao: 5 }),
-    op("nada", "Continuar de aplicativo", "O dinheiro fica guardado. O motorista do aplicativo já te conhece.", { moral: -1 }),
-  ], { unico: true, quando: (c) => c.salario >= 8000 }),
-  ev("festa-elenco", ["inicio", "estabelecido"], "Convite para a festa", "Os mais velhos do elenco vão a uma festa depois do jogo. Te chamaram.", [
-    op("ir", "Ir com o grupo", "Você virou parte da turma. Voltou às 4 da manhã.", { moral: 5, vidaNoturna: 6, cansaco: 15, relTecnico: -1 }, { chance: 0.2, resultado: "Alguém filmou a mesa. O vídeo chegou na diretoria.", efeitos: { relTecnico: -6, fama: 2, pressao: 6 } }),
-    op("casa", "Agradecer e ir para casa", "Sono de atleta. No dia seguinte, ninguém lembrava que você não foi.", { cansaco: -5 }),
-  ]),
   ev("mae-casa", ["inicio", "estabelecido"], "A casa da mãe", "Sua mãe mora de aluguel há vinte anos. Você pode dar a entrada numa casa para ela.", [
     op("comprar", "Dar a casa", "Ela chorou na entrega das chaves. Você também.", { sal: -6, moral: 12 }),
     op("depois", "Prometer para o ano que vem", "Ela disse que não tem pressa. Tem.", { moral: -2 }),
@@ -75,14 +54,6 @@ export const EVENTOS: EventoVida[] = [
     op("matricular", "Fazer a matrícula", "Aula gravada à noite, prova no sábado. Cansa, mas a cabeça agradece.", { dinheiro: -1200, cansaco: 5, moral: 3, evolucao: 0.01 }),
     op("depois", "Deixar para depois da carreira", "O futebol primeiro. O curso continua lá.", {}),
   ], { unico: true }),
-  ev("treino-extra-veterano", ["inicio"], "O capitão te chama", "O capitão do time oferece ficar depois do treino para te ensinar a se posicionar.", [
-    op("ficar", "Ficar todos os dias", "Um mês de aulas no campo vazio. Você joga diferente.", { evolucao: 0.02, relTecnico: 3, cansaco: 10 }),
-    op("ir", "Agradecer e ir descansar", "Ele entendeu. Chamou outro garoto.", {}),
-  ], { unico: true }),
-  ev("golpe-pix", ["inicio", "estabelecido"], "Investimento milagroso", "Um conhecido do bairro oferece um investimento que 'rende 10% ao mês, garantido'.", [
-    op("investir", "Colocar um dinheiro", "O site saiu do ar três semanas depois. O conhecido também.", { sal: -2, moral: -6 }),
-    op("recusar", "Recusar e contar para o agente", "O agente riu: é o golpe mais velho do mundo.", { moral: 1 }),
-  ], { unico: true, quando: (c) => c.saldo > 20000 }),
   // ------------------------------------------------------------ estabelecido
   ev("tv-programa", ["estabelecido", "estrela"], "Convite da TV", "Um programa de auditório de domingo quer você no quadro de talentos.", [
     op("ir", "Ir e dançar no palco", "O Brasil inteiro viu você dançando mal. O Brasil inteiro adorou.", { fama: 5, hype: 0.2, engajamento: 10, cansaco: 5 }),
@@ -267,7 +238,7 @@ export function sortearEvento(rng: RNG, ctx: CtxEvento, vistos: Record<string, n
   return pool.length ? rng.pick(pool) : undefined;
 }
 
-export const preencher = (t: string, c: CtxEvento) => t.replaceAll("{clube}", c.clube).replaceAll("{cidade}", c.cidade).replaceAll("{nome}", c.nome);
+export const preencher = (t: string, c: CtxEvento, pessoa?: { nome: string }) => t.replaceAll("{clube}", c.clube).replaceAll("{cidade}", c.cidade).replaceAll("{nome}", c.nome).replaceAll("{pessoa}", pessoa?.nome ?? "");
 export const dinheiroDoEfeito = (e: EfeitoEvento, salario: number) => Math.round((e.dinheiro ?? 0) + (e.sal ?? 0) * Math.max(3000, salario));
 export const patrocinioDoEfeito = (e: EfeitoEvento, salario: number) => (e.patrocinio ? Math.round(Math.max(e.patrocinio.piso, e.patrocinio.pct * salario)) : 0);
 export const limitar = (x: number) => clamp(x, 0, 100);

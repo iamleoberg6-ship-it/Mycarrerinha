@@ -1,5 +1,6 @@
 import { proximasMetas } from "../../src/progresso-conquistas.js";
 import { CADEIAS } from "../../src/cadeias-dados.js";
+import { preencherPessoa } from "../../src/cadeias.js";
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
 import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
@@ -353,8 +354,8 @@ function cardEmpresario(s: Save): string {
   const cads = s.carreira.cadeias ?? {};
   return Object.entries(cads).filter(([, est]) => est.painel).map(([id, est]) => {
     const cad = CADEIAS[id], t = cad.consequencias[est.painel!];
-    return `<div class="painel conquista-nova empresario-painel"><span aria-hidden="true">🤝</span><div><b>${esc(t.titulo)}</b><small>${esc(t.texto)}</small>
-    <details class="ficha-emp"><summary>Ver ficha</summary><b>${esc(cad.personagem.nome)}</b><p class="sub">${esc(cad.personagem.bio)}</p><ul>${est.ficha.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details></div><button class="botao sec peq" data-acao="fechar-cadeia" data-cad="${esc(id)}">Ok</button></div>`;
+    return `<div class="painel conquista-nova empresario-painel"><span aria-hidden="true">🤝</span><div><b>${esc(preencherPessoa(t.titulo, est.pessoa))}</b><small>${esc(preencherPessoa(t.texto, est.pessoa))}</small>
+    <details class="ficha-emp"><summary>Ver ficha</summary><b>${esc(est.pessoa?.nome ?? "")}</b><p class="sub">${esc(est.pessoa?.bio ?? "")}</p><ul>${est.ficha.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details></div><button class="botao sec peq" data-acao="fechar-cadeia" data-cad="${esc(id)}">Ok</button></div>`;
   }).join("");
 }
 /** Conquista desbloqueada por uma partida: fica na Semana até o jogador tocar em Ok. */
