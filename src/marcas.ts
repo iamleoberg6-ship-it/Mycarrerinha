@@ -162,6 +162,8 @@ export const MARCAS: Marca[] = [
   { id: "rdutch", nome: "KLMm", categoria: "aerea", cores: ["#00A1DE", "#FFFFFF", "#003145"], simbolo: "aviao", slogan: "Real, holandesa e no horário.", peso: 1.3, famaMin: 35, letra: "fina", regioes: ["HOL"] },
 ];
 export const MARCA: Record<string, Marca> = Object.fromEntries(MARCAS.map((m) => [m.id, m]));
+/** Clubes que pertencem a uma marca: o logo vai no peito da camisa e o perfil do clube mostra a dona. */
+export const CLUBE_DA_MARCA: Record<string, string> = { RBB: "redboi", "DE-RBL": "redboi", "US-NYR": "redboi", "AT-SAL": "redboi" };
 
 // ------------------------------------------------------------------ contratos
 export type TipoContrato = "fixo" | "desempenho" | "longo";

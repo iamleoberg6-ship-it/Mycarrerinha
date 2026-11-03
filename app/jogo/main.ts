@@ -32,8 +32,8 @@ import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, DESIGN_PADRAO, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
 import { salvarMarcaNegocio, convidarEmbaixador as convidarEmbaixadorJogo } from "../../src/jogo";
-import { MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
-import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
+import { MARCA, CLUBE_DA_MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
+import { cartazPatrocinio, logoSvg, logoMarca, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia, capaVideogame, capaDocumentario } from "../visual/cartazes";
 import { svgEscudo } from "../visual/escudos";
@@ -139,6 +139,11 @@ function escudo(id: string): string {
   return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome);
 }
 /** Uniforme do clube (cores e padrão) com a chuteira do patrocinador de material esportivo, se houver. */
+/** Logo da marca dona do clube, para o peito da camisa (vermelho com o sol amarelo, como fica na camisa branca). */
+function patrocinioDoClube(clubeId: string): string | undefined {
+  const m = MARCA[CLUBE_DA_MARCA[idClube(clubeId)] ?? ""];
+  return m ? logoMarca(m, m.cores[1], m.cores[2]) : undefined;
+}
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const us = UNIFORME_SELECAO[clubeId];
   if (us) {
@@ -150,7 +155,7 @@ function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const [a, b] = u ? u.cores : [a0, b0];
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
   const ch = mat?.chuteira ?? (mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1], mat.cores[2]] : undefined);
-  return { cor1: a, cor2: b ?? "#FFFFFF", faixas: u?.faixas, escudo: { chave: idClube(clubeId), nome: info.nome, cores: u?.escudo ?? [a0, b0] }, numeroCor: numeroCorClube(clubeId), calcao: calcaoDoClube(clubeId), meiao: meiaoDoClube(clubeId), padrao: u?.padrao ?? info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
+  return { patrocinio: patrocinioDoClube(clubeId), cor1: a, cor2: b ?? "#FFFFFF", faixas: u?.faixas, escudo: { chave: idClube(clubeId), nome: info.nome, cores: u?.escudo ?? [a0, b0] }, numeroCor: numeroCorClube(clubeId), calcao: calcaoDoClube(clubeId), meiao: meiaoDoClube(clubeId), padrao: u?.padrao ?? info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
 }
 /** Aparência com os acessórios dos patrocinadores (óculos e fone) por cima. */
 function apDe(s: Save, forcar?: Marca): Aparencia {
@@ -1230,7 +1235,7 @@ function clubeHtml(clubeId: string): string {
     : `<p class="sub">Ainda sem títulos de liga.</p>`;
   return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(infoLiga(liga).curto)}</span></div></div>
     <div class="kv" style="margin-top:10px"><span>Estádio</span><b>${esc(info.estadio)}${info.capacidade ? ` · ${info.capacidade.toLocaleString("pt-BR")} lugares` : ""}</b><span>Técnico</span><b>${tec ? esc(tec.nome) : "—"}</b></div>
-    <div class="perfil-uniforme">${save ? corpoDe(save, "jogo", clubeId) : camisaMini(clubeId, 10)}</div><p class="sub" style="text-align:center;margin:4px 0 0">${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</p>
+    <div class="perfil-uniforme">${save ? corpoDe(save, "jogo", clubeId) : camisaMini(clubeId, 10)}</div>${MARCA[CLUBE_DA_MARCA[idClube(clubeId)] ?? ""] ? `<p class="sub" style="text-align:center;margin:6px 0 0">Clube da ${logoSvg(MARCA[CLUBE_DA_MARCA[idClube(clubeId)]], 22)}</p>` : ""}<p class="sub" style="text-align:center;margin:4px 0 0">${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</p>
     <p class="rotulo" style="margin-top:16px">Títulos${tit.total ? ` · ${tit.total}` : ""}</p>
     <div class="titulos">${trofeus}</div>
     <p class="rotulo" style="margin-top:16px">Time de todos os tempos</p>
