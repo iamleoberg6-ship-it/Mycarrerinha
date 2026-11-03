@@ -1069,6 +1069,139 @@ export const CADEIAS: Record<string, Cadeia> = {
     marcas: { dancar: "bloco", sentar: "avo" },
     fichaMarca: { dancar: "Dançou cumbia na festa do bairro.", sentar: "Ficou sentado com a família na festa do bairro." },
   },
+
+  // ------------------------------------------------------------ família (personagem é o parente real)
+  "aniversario-mae": {
+    id: "aniversario-mae", fases: ["base", "inicio", "estabelecido", "estrela", "veterano"], familia: "mae", personagens: {},
+    fichaInicio: "Aniversário de {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Aniversário da sua mãe",
+      texto: "Hoje é aniversário de {pessoa}, e o treino do {clube} é à tarde.",
+      origem: "familia",
+      opcoes: [
+        { id: "festa", rotulo: "Fazer uma festa surpresa", resultado: "A casa encheu de tia, primo e vizinho. {pessoa} chorou no parabéns.", marca: "festa", efeitos: { sal: -0.3, moral: 5, pais: 8 } },
+        { id: "flores", rotulo: "Ligar cedo e mandar flores", resultado: "{pessoa} mandou foto das flores para o grupo da família inteira.", marca: "flores", efeitos: { moral: 2, pais: 4 }, valor: { chave: "flores", sinal: -1 } },
+        { id: "esquecer", rotulo: "Deixar para depois", resultado: "{pessoa} não reclamou. A família reclamou por ela.", marca: "esquecer", efeitos: { moral: -3, pais: -10 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      festa: { titulo: "A festa que ninguém esqueceu", texto: "{pessoa} mandou um áudio agradecendo e pediu para repetir no ano que vem.", ficha: "Fez festa surpresa para {pessoa}; ela chorou no parabéns.", semanas: 2 },
+      flores: { titulo: "As flores no grupo", texto: "{pessoa} espalhou as flores pelo grupo da família e marcou você em todas as fotos.", ficha: "Mandou flores para {pessoa} no aniversário.", semanas: 2 },
+      esquecer: { titulo: "O aniversário ficou para depois", texto: "{pessoa} disse que não se importa, mas a família inteira notou.", ficha: "Deixou o aniversário de {pessoa} para depois.", semanas: 2 },
+    },
+    marcas: { festa: "festa", flores: "flores", esquecer: "esquecer" },
+    fichaMarca: { festa: "Fez festa surpresa para {pessoa}.", flores: "Mandou flores para {pessoa}.", esquecer: "Deixou o aniversário de {pessoa} para depois." },
+  },
+
+  "pai-saude": {
+    id: "pai-saude", fases: ["base", "inicio", "estabelecido", "estrela", "veterano"], familia: "pai", quando: (c) => !!c.paiVelho, personagens: {},
+    fichaInicio: "Internação de {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Seu pai no hospital",
+      texto: "{pessoa} passou mal e ficou internado. Os médicos pedem exames caros.",
+      origem: "familia",
+      opcoes: [
+        { id: "melhor", rotulo: "Pagar o melhor hospital", resultado: "{pessoa} saiu em uma semana, mandando você voltar a treinar.", marca: "melhor", efeitos: { sal: -1.5, moral: 2, pais: 12 } },
+        { id: "plano", rotulo: "Pagar um plano de saúde", resultado: "Tratamento bom, sem luxo. {pessoa} já está em casa.", marca: "plano", efeitos: { pais: 6 }, valor: { chave: "planoSaude", sinal: -1 } },
+        { id: "publico", rotulo: "Deixar com o hospital público", resultado: "Demorou, mas {pessoa} está bem. A família comentou.", marca: "publico", efeitos: { moral: -3, pais: -8 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      melhor: { titulo: "Alta antes do previsto", texto: "{pessoa} mandou você voltar a treinar e disse que o hospital foi o melhor da cidade.", ficha: "Pagou o melhor hospital para {pessoa}.", semanas: 2 },
+      plano: { titulo: "Tratamento em casa", texto: "{pessoa} está em casa, seguindo o tratamento do plano.", ficha: "Pagou plano de saúde para {pessoa}.", semanas: 2 },
+      publico: { titulo: "A fila do hospital", texto: "{pessoa} ficou semanas na fila do público. A família comentou.", ficha: "Deixou {pessoa} no hospital público.", semanas: 3 },
+    },
+    marcas: { melhor: "melhor", plano: "plano", publico: "publico" },
+    fichaMarca: { melhor: "Pagou o melhor hospital para {pessoa}.", plano: "Pagou plano de saúde para {pessoa}.", publico: "Deixou {pessoa} no hospital público." },
+  },
+
+  "irmao-largar": {
+    id: "irmao-largar", fases: ["base", "inicio", "estabelecido", "estrela", "veterano"], familia: "irmaoJoga", quando: (c) => !!c.irmaoJoga, personagens: {},
+    fichaInicio: "Conversa com {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Seu irmão quer largar o futebol",
+      texto: "{pessoa} cansou de ser cobrado e diz que quer largar a bola para estudar.",
+      origem: "familia",
+      opcoes: [
+        { id: "convencer", rotulo: "Convencer a continuar", resultado: "{pessoa} voltou para o treino. Sem muita vontade, mas voltou.", marca: "convencer", efeitos: { irmao: -4 } },
+        { id: "escolinha", rotulo: "Pagar uma escolinha particular", resultado: "Treinador novo, chuteira nova. O brilho nos olhos de {pessoa} voltou.", marca: "escolinha", efeitos: { irmao: 8, irmaoPot: 3 }, valor: { chave: "escolinha", sinal: -1 } },
+        { id: "apoiar", rotulo: "Apoiar a decisão dele", resultado: "{pessoa} vai fazer cursinho e disse que você é o melhor irmão do mundo.", marca: "apoiar", efeitos: { irmao: 10, irmaoPara: true } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      convencer: { titulo: "De volta ao treino", texto: "{pessoa} voltou ao treino, mas o técnico percebeu que ele não quer estar lá.", ficha: "Convenceu {pessoa} a continuar no futebol.", semanas: 2 },
+      escolinha: { titulo: "Escolinha nova", texto: "{pessoa} falou da escolinha e do treinador, e pediu para você ir ver um treino.", ficha: "Pagou escolinha particular para {pessoa}.", semanas: 2 },
+      apoiar: { titulo: "Cursinho", texto: "{pessoa} passou no cursinho e mandou a notícia com foto.", ficha: "Apoiou {pessoa} a largar o futebol para estudar.", semanas: 3 },
+    },
+    marcas: { convencer: "convencer", escolinha: "escolinha", apoiar: "apoiar" },
+    fichaMarca: { convencer: "Convenceu {pessoa} a continuar no futebol.", escolinha: "Pagou escolinha particular para {pessoa}.", apoiar: "Apoiou {pessoa} a largar o futebol para estudar." },
+  },
+
+  "pai-transferencia": {
+    id: "pai-transferencia", fases: ["inicio", "estabelecido", "estrela", "veterano"], familia: "pai", quando: (c) => !!c.proposta, personagens: {},
+    fichaInicio: "Ligação de {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Seu pai quer opinar",
+      texto: "Tem proposta na mesa e {pessoa} ligou: quer conversar antes de você decidir.",
+      origem: "familia",
+      opcoes: [
+        { id: "ouvir", rotulo: "Ouvir o pai com calma", resultado: "{pessoa} falou da cidade, do clube e da sua mãe. Você ficou mais tranquilo.", marca: "ouvir", efeitos: { pais: 6, moral: 2 } },
+        { id: "sozinho", rotulo: "Decidir sozinho", resultado: "A carreira é sua. {pessoa} entendeu, mas ficou magoado.", marca: "sozinho", efeitos: { pais: -5 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      ouvir: { titulo: "Conselho de pai", texto: "{pessoa} mandou um recado: a decisão é sua, mas ele quer ver você feliz.", ficha: "Ouviu {pessoa} sobre a proposta.", semanas: 2 },
+      sozinho: { titulo: "Silêncio na linha", texto: "{pessoa} não atendeu a ligação de volta.", ficha: "Decidiu a proposta sozinho; {pessoa} ficou magoado.", semanas: 2 },
+    },
+    marcas: { ouvir: "ouvir", sozinho: "sozinho" },
+    fichaMarca: { ouvir: "Ouviu {pessoa} sobre a proposta.", sozinho: "Decidiu a proposta sozinho; {pessoa} ficou magoado." },
+  },
+
+  "visita-exterior": {
+    id: "visita-exterior", fases: ["inicio", "estabelecido", "estrela", "veterano"], familia: "mae", quando: (c) => c.exterior, personagens: {},
+    fichaInicio: "Lista da visita feita por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Saudade de casa",
+      texto: "A família quer vir passar as férias com você em {cidade}. {pessoa} já fez a lista de quem vem.",
+      origem: "familia",
+      opcoes: [
+        { id: "pagar", rotulo: "Pagar as passagens de todo mundo", resultado: "Duas semanas de casa cheia e comida de mãe. {pessoa} não cabe em si.", marca: "pagar", efeitos: { sal: -0.5, moral: 6, pais: 10 } },
+        { id: "adiar", rotulo: "Pedir para virem no ano que vem", resultado: "{pessoa} disse que tudo bem. Não estava tudo bem.", marca: "adiar", efeitos: { pais: -6, moral: -2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      pagar: { titulo: "Casa cheia", texto: "{pessoa} mandou as fotos da casa cheia e pediu para repetir no fim da temporada.", ficha: "Pagou as passagens da família; {pessoa} liderou a lista.", semanas: 2 },
+      adiar: { titulo: "Ano que vem", texto: "{pessoa} perguntou de novo quando vão poder vir.", ficha: "Pediu para a família adiar a visita; {pessoa} perguntou de novo.", semanas: 3 },
+    },
+    marcas: { pagar: "pagar", adiar: "adiar" },
+    fichaMarca: { pagar: "Pagou as passagens da família; {pessoa} liderou a lista.", adiar: "Pediu para a família adiar a visita." },
+  },
+
+  "irmao-ajuda": {
+    id: "irmao-ajuda", fases: ["base", "inicio", "estabelecido", "estrela", "veterano"], familia: "irmaoPro", quando: (c) => !!c.irmaoPro, personagens: {},
+    fichaInicio: "Pedido de ajuda de {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Seu irmão precisa de ajuda",
+      texto: "{pessoa} se machucou e o clube dele não paga a fisioterapia.",
+      origem: "familia",
+      opcoes: [
+        { id: "pagar", rotulo: "Pagar a fisioterapia", resultado: "{pessoa} voltou a jogar em dois meses e postou agradecendo.", marca: "pagar", efeitos: { irmao: 10 }, valor: { chave: "fisio", sinal: -1 } },
+        { id: "fisio", rotulo: "Pedir ajuda ao fisioterapeuta do seu clube", resultado: "O fisioterapeuta do seu clube atendeu {pessoa} de graça nas folgas.", marca: "fisio", efeitos: { irmao: 6, relTecnico: -1 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      pagar: { titulo: "De volta ao campo", texto: "{pessoa} postou agradecendo e marcou você na foto da primeira partida.", ficha: "Pagou a fisioterapia de {pessoa}.", semanas: 3 },
+      fisio: { titulo: "Fisio de graça", texto: "{pessoa} mandou um recado: o fisioterapeuta do seu clube salvou a temporada dele.", ficha: "Pediu ajuda ao fisioterapeuta do seu clube para {pessoa}.", semanas: 2 },
+    },
+    marcas: { pagar: "pagar", fisio: "fisio" },
+    fichaMarca: { pagar: "Pagou a fisioterapia de {pessoa}.", fisio: "Pediu ajuda ao fisioterapeuta do seu clube para {pessoa}." },
+  },
 };
 
 // Nomes dos grupos de países (ver GRUPO_DO_PAIS em cadeias.ts). O empresário leva a agência no nome.

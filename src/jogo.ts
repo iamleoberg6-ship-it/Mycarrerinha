@@ -17,7 +17,7 @@ import { semanaAcontecimentos } from "./acontecimentos.js";
 import { conversaDaSemana, opcoesConversa, responderConversa, type Conversa, type CtxConversa, type OpcaoConversa } from "./conversas.js";
 import { novaAgenda, resolverOcasiao, vencidas, agendar, type EstadoAgenda, type EfeitoVida } from "./agenda.js";
 import { CADEIAS } from "./cadeias-dados.js";
-import { novaCadeia, registrarMarca, semanaCadeia, passoDaAgenda, lerGatilho, pessoaDaCadeia, preencherPessoa, efeitosDaOpcao, type EstadoCadeia } from "./cadeias.js";
+import { novaCadeia, registrarMarca, semanaCadeia, passoDaAgenda, lerGatilho, pessoaDaCadeia, preencherPessoa, efeitosDaOpcao, type EstadoCadeia, type Cadeia } from "./cadeias.js";
 import { parcasIniciais, novoParca, efeitosParcas, semanaSocial, agendarFerias, temFuncao, FUNCOES, type Parca, type PerfilParca, type FuncaoParca, type CtxSocial } from "./vida-social.js";
 import { LUXO, MAX_LUXO, mesLuxo, statusLuxo, valoresEmCasa, temEsportivo, HOBBIES, MAX_HOBBIES, semanaHobbies, semanaEstudos, infoCurso, novaAdaptacao, semanaAdaptacao, moralAdaptacao, fatorAdaptacao, ocasioesExterior, linguaNativa, mesFundacao, ocasioesFundacao, ganhouCoracaoDeOuro, CUSTO_FUNDACAO, type ItemLuxo, type TipoLuxo, type EstadoHobbies, type Hobby, type EstadoEstudos, type Curso, type Adaptacao, type Fundacao } from "./estilo.js";
 import { patrimonioInvestido } from "./negocios.js";
@@ -1656,11 +1656,19 @@ export function contextoEvento(pacote: PacoteDados, s: Save): CtxEvento {
     irmaoPro: fam.membros.some((m) => m.futebol?.fase === "pro"), proposta: (c.mercado?.propostas.length ?? 0) > 0 };
   return { ...base, fase: fasesDe(base, c.formacao) };
 }
+/** Personagem de uma cadeia: nas de família é o parente real do jogador (com o nome que ele já tem no jogo). */
+function pessoaDeCadeia(cad: Cadeia, pais: string, fam: EstadoFamilia | undefined, ano: number) {
+  if (!cad.familia) return pessoaDaCadeia(cad, pais);
+  const m = cad.familia === "pai" || cad.familia === "mae" ? fam && membro(fam, cad.familia)
+    : cad.familia === "irmaoJoga" ? fam?.membros.find((x) => (x.futebol?.fase === "amador" || x.futebol?.fase === "base") && ano - x.nasc >= 12 && ano - x.nasc <= 19)
+    : fam?.membros.find((x) => x.futebol?.fase === "pro");
+  return m ? { nome: m.nome, bio: m.profissao } : undefined;
+}
 /** Evento esperando decisão (com o texto já preenchido). */
 export function eventoPendente(pacote: PacoteDados, s: Save) {
   const e = s.carreira.evento ? EVENTO[s.carreira.evento] : undefined;
   if (!e) return undefined;
-  const ctx = contextoEvento(pacote, s), cad = CADEIAS[e.id], pessoa = cad ? pessoaDaCadeia(cad, ctx.paisClube) : undefined;
+  const ctx = contextoEvento(pacote, s), cad = CADEIAS[e.id], pessoa = cad ? pessoaDeCadeia(cad, ctx.paisClube ?? "BRA", familiaDe(pacote, s), ANO_INICIAL + s.carreira.temporada) : undefined;
   return { id: e.id, titulo: e.titulo, texto: preencher(e.texto, ctx, pessoa), opcoes: e.opcoes.map((o) => ({ id: o.id, rotulo: o.rotulo, custo: dinheiroDoEfeito(efeitosDaEscolha(e.id, o.id, o.efeitos, ctx.paisClube), s.carreira.salario) })) };
 }
 /** Efeitos de uma escolha: as cadeias têm o dinheiro do país; os outros eventos, os efeitos fixos. */
@@ -1705,7 +1713,7 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   const cad = CADEIAS[e.id], oc = cad?.inicio.opcoes.find((x) => x.id === opcaoId);
   // o personagem é sorteado pelo país do clube agora e fica até o fim da cadeia
   const est = cad ? ((c.cadeias ??= {})[cad.id] ??= novaCadeia()) : undefined;
-  if (cad && est && !est.pessoa) { est.pessoa = pessoaDaCadeia(cad, pais); est.pais = pais; }
+  if (cad && est && !est.pessoa) { est.pessoa = pessoaDeCadeia(cad, pais, familiaDe(pacote, s), ANO_INICIAL + c.temporada); est.pais = pais; }
   let texto = preencher(o.resultado, ctx, est?.pessoa), notas = aplicarEfeito(s, oc ? efeitosDaEscolha(e.id, opcaoId, o.efeitos, pais) : o.efeitos);
   if (o.risco && rngDe(s, "evento-risco", e.id).chance(o.risco.chance)) { texto += " " + preencher(o.risco.resultado, ctx); notas = [...notas, ...aplicarEfeito(s, o.risco.efeitos)]; }
   const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");

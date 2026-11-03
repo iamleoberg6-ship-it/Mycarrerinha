@@ -7,7 +7,7 @@ import type { EfeitoEvento, CtxEvento, Fase } from "./eventos.js";
 import { MOEDAS } from "./moeda.js";
 
 /** Valores em dinheiro de cada uso, na moeda local (o motor converte para reais pela taxa do jogo). */
-export type ChaveValor = "chuteira" | "investimentoPequeno" | "investimentoTotal" | "lucro" | "adiantamento" | "gala" | "comentario" | "curso" | "matricula" | "viagem" | "festa" | "jantar" | "onsen" | "presente" | "passeio" | "churrasco";
+export type ChaveValor = "chuteira" | "investimentoPequeno" | "investimentoTotal" | "lucro" | "adiantamento" | "gala" | "comentario" | "curso" | "matricula" | "viagem" | "festa" | "jantar" | "onsen" | "presente" | "passeio" | "churrasco" | "flores" | "planoSaude" | "escolinha" | "fisio";
 export const VALORES: Record<ChaveValor, Record<string, number>> = {
   chuteira: { BRL: 600, EUR: 100, GBP: 90, USD: 115 },
   investimentoPequeno: { BRL: 5000, EUR: 850, GBP: 750, USD: 950 },
@@ -25,6 +25,10 @@ export const VALORES: Record<ChaveValor, Record<string, number>> = {
   presente: { BRL: 500, EUR: 83, GBP: 75, USD: 96 },
   passeio: { BRL: 1000, EUR: 167, GBP: 150, USD: 192 },
   churrasco: { BRL: 300, EUR: 50, GBP: 45, USD: 58 },
+  flores: { BRL: 400, EUR: 67, GBP: 60, USD: 77 },
+  planoSaude: { BRL: 8000, EUR: 1333, GBP: 1200, USD: 1533 },
+  escolinha: { BRL: 6000, EUR: 1000, GBP: 900, USD: 1150 },
+  fisio: { BRL: 12000, EUR: 2000, GBP: 1800, USD: 2300 },
 };
 /** Todo país do jogo cai num grupo de nomes (países com língua e cultura parecidas dividem o mesmo conjunto). */
 export const GRUPO_DO_PAIS: Record<string, string> = {
@@ -87,8 +91,10 @@ export interface Cadeia {
   unico?: boolean;
   /** condição extra além do país e da fase */
   quando?: (c: CtxEvento) => boolean;
-  /** um personagem por país do clube; o evento só sai nesses países */
+  /** um personagem por país do clube; o evento só sai nesses países (vazio nas cadeias de família) */
   personagens: Record<string, PessoaCadeia>;
+  /** cadeia de família: o personagem é o parente real do jogador (pai, mãe, irmão que joga ou irmão profissional) */
+  familia?: "pai" | "mae" | "irmaoJoga" | "irmaoPro";
   /** linha da ficha no primeiro contato; {quando} vira a semana e {pessoa} o nome */
   fichaInicio: string;
   inicio: PassoCadeia;
