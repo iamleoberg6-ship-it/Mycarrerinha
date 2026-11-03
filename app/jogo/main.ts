@@ -22,7 +22,7 @@ import {
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
   familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo, agirFilhoJogo,
-  carrosDe, copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, chatDe, responderChatJogo, responderCenaJogo, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
+  carrosDe, copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, comparativoSelecao, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, chatDe, responderChatJogo, responderCenaJogo, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { RNG } from "../../src/rng";
 import { vidaDe } from "../../src/vida-npc";
@@ -1723,12 +1723,19 @@ function radar(at: Record<Atributo, number>): string {
 const tile = (valor: string, rotulo: string, icone?: string) => `<div class="tile${icone ? " com-ico" : ""}">${icone ? `<i aria-hidden="true">${icone}</i>` : ""}<b>${valor}</b><span>${rotulo}</span></div>`;
 /** Barras de gols (dourado) e assistências (verde) por temporada. */
 /** Registro pela seleção no perfil: convocações, jogos, gols, assistências, estreia e as copas disputadas (amistosos entram nos números). */
+/** Comparativo da seleção do jogador com todos os convocados e as lendas do país. */
+function comparativoSeleHtml(s: Save): string {
+  const comp = comparativoSelecao(pacote, s), nomes = { gols: "Gols", assist: "Assistências", jogos: "Jogos" } as const;
+  const blocos = (Object.keys(nomes) as (keyof typeof nomes)[]).map((k) => `<p class="rotulo" style="margin:12px 0 4px">${nomes[k]}</p><table><tbody>${comp[k].map((x, i) => `<tr${x.eu ? ' style="color:#E3B341;font-weight:700"' : ""}><td>${i + 1}</td><td>${esc(x.nome)}</td><td class="sub">${x.situacao === "lenda" ? "lenda" : "convocado"}</td><td class="n">${x.valor}</td></tr>`).join("")}</tbody></table>`).join("");
+  return `<p class="rotulo" style="margin-top:14px">Comparativo da seleção <small>(convocados atuais estimados pelo scout; lendas são recordes do país)</small></p>${blocos}`;
+}
 function selecaoPerfilHtml(s: Save): string {
   const sl = s.carreira.selecao, nat = idSelecao(s.jogador.nacionalidade), nome = infoClube(pacote, nat)?.nome ?? "";
   const linhas = sl?.copas ?? [];
   return `<p class="rotulo">Seleção${nome ? ` · ${esc(nome)}` : ""}</p>
     <div class="tiles">${tile(String(sl?.convocacoes ?? 0), "Convocações", "📨")}${tile(String(sl?.jogos ?? 0), "Jogos", "🏟️")}${tile(String(sl?.gols ?? 0), "Gols", "⚽")}${tile(String(sl?.assist ?? 0), "Assistências", "👟")}</div>${UNIFORME_SELECAO[nat] ? `<div class="perfil-uniforme">${corpoDe(s, "jogo", nat)}</div><p class="sub" style="text-align:center;margin:4px 0 0">Uniforme da seleção</p>` : ""}
     <p class="sub">${sl?.estreia ? `Estreia em ${sl.estreia}.` : "Ainda sem jogo pela seleção. Convocações e estreia aparecem aqui."}</p>
+    ${comparativoSeleHtml(s)}
     ${linhas.length ? `<table><thead><tr><th>Ano</th><th>Competição</th><th class="n">J</th><th class="n">G</th><th class="n">A</th></tr></thead><tbody>${linhas.map((x) => `<tr><td>${x.ano}</td><td>${esc(x.id ? COPAS[x.id].nome : "Seleção")} · ${esc(x.fase)}${x.campeao ? " 🏆" : ""}</td><td class="n">${x.jogos}</td><td class="n">${x.gols}</td><td class="n">${x.assist ?? 0}</td></tr>`).join("")}</tbody></table>` : ""}`;
 }
 /** Os artilheiros históricos da seleção (nome que aparece no jogo; lendas aposentadas com o nome real). */

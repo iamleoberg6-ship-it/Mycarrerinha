@@ -40,7 +40,7 @@ import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE
 import { todasEstrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
 import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./perfil-jogador.js";
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
-import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
+import { MARCA, ofertasDaMarca, marcaInteressada, bonusDoMes, limitePatrocinios, type ContratoPatrocinio, type PropostaPatrocinio, type TipoContrato } from "./marcas.js";
 import { EVENTO, fasesDe, sortearEvento, preencher, dinheiroDoEfeito, patrocinioDoEfeito, type CtxEvento, type EfeitoEvento } from "./eventos.js";
 import { semanaDoClube, gatilhoClube, fimDeTemporadaClube, figurinhaDaSelecao, figurinhaDeGolaco, figurinhaDeFilho } from "./clube-vivo.js";
 import type { Vestiario } from "./vestiario.js";
@@ -1546,7 +1546,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   }
   // 8. patrocinadores: proposta vence em 4 semanas; marcas novas aparecem conforme a fama
   if (c.propPatrocinio && semanaAbsJogo(c) >= c.propPatrocinio.expira) { eventos.push(`A proposta da ${MARCA[c.propPatrocinio.marca]?.nome ?? "marca"} expirou.`); c.propPatrocinio = undefined; }
-  if (!c.propPatrocinio && (c.patrocinios?.length ?? 0) < 4) {
+  if (!c.propPatrocinio && (c.patrocinios?.length ?? 0) < limitePatrocinios(c.fama)) {
     const r3 = rngDe(s, "patrocinio");
     if (r3.chance(0.025 + c.fama / 700)) {
       const m = marcaInteressada(r3, c.fama, j.idade, c.patrocinios ?? [], c.recusadas ?? [], c.seguidores, infoClube(pacote, c.clubeId)?.pais, j.pais);
@@ -2579,6 +2579,32 @@ export function numerosNoClube(s: Save, clubeId: string): { jogos: number; gols:
 }
 export interface ListaRecorde { chave: string; titulo: string; unidade: string; lista: Lenda[]; pos: number; valor: number; clubeId?: string }
 /** As listas de recordes que interessam ao jogador: cada clube por onde passou (gols e jogos), a seleção e o recorde de gols numa temporada da liga atual. */
+/** Uma linha do comparativo da seleção: convocado atual (estimado) ou lenda (recorde histórico). */
+export interface LinhaSelecao { nome: string; valor: number; situacao: "convocado" | "lenda"; eu?: boolean }
+/** Comparativo da seleção do jogador: todos os convocados atuais (estimados) e as lendas, mais o próprio jogador. */
+export function comparativoSelecao(pacote: PacoteDados, s: Save): Record<"gols" | "assist" | "jogos", LinhaSelecao[]> {
+  const sl = s.carreira.selecao, pais = s.jogador.nacionalidade, forca = infoClube(pacote, idSelecao(pais))?.forca ?? 70;
+  const leg = recordesDaSelecao(pais, forca), elenco = selecaoDe(pacote, pais)?.elenco ?? [];
+  // estimativa do scout para o convocado: jogos pela idade, gols e passes pela posição e pela nota (determinística)
+  const est = (j: JogadorNPC) => {
+    const rng = new RNG(`sel-est|${pais}|${j.nome}`);
+    const jogos = Math.min(140, Math.round(Math.max(0, j.idade - 19) * rng.range(4, 7)));
+    const pg = ({ ATA: 0.42, PON: 0.3, MEI: 0.16, VOL: 0.05, LAT: 0.03, ZAG: 0.03, GOL: 0 } as Record<string, number>)[j.posicao] ?? 0.03;
+    const pa = ({ MEI: 0.24, PON: 0.22, ATA: 0.16, LAT: 0.12, VOL: 0.09, ZAG: 0.04, GOL: 0 } as Record<string, number>)[j.posicao] ?? 0.04;
+    const fator = Math.max(0.5, Math.min(1.3, (j.ovr - 55) / 25));
+    return { jogos, gols: Math.round(jogos * pg * fator * rng.range(0.8, 1.2)), assist: Math.round(jogos * pa * fator * rng.range(0.8, 1.2)) };
+  };
+  const linhas = (k: "gols" | "assist" | "jogos"): LinhaSelecao[] => {
+    const lendas: LinhaSelecao[] = ((leg[k] ?? []) as Lenda[]).map((x) => ({ nome: x.nome, valor: x.valor, situacao: "lenda" }));
+    const atuais: LinhaSelecao[] = elenco.map((j) => ({ nome: j.nome, valor: est(j)[k], situacao: "convocado" }));
+    const eu: LinhaSelecao = { nome: `${s.jogador.apelido} (você)`, valor: sl?.[k] ?? 0, situacao: "convocado", eu: true };
+    const todos = [...lendas, ...atuais].sort((a, b) => b.valor - a.valor);
+    const top = todos.slice(0, 10);
+    { const i = top.findIndex((x) => x.valor < eu.valor); top.splice(i < 0 ? top.length : i, 0, eu); }
+    return top.slice(0, 11);
+  };
+  return { gols: linhas("gols"), assist: linhas("assist"), jogos: linhas("jogos") };
+}
 export function recordesDoJogador(pacote: PacoteDados, s: Save): ListaRecorde[] {
   const c = s.carreira, j = s.jogador, out: ListaRecorde[] = [];
   const clubes = [...new Set([...c.historico.filter((h) => !h.fase && h.clubeId && h.jogos).map((h) => h.clubeId!), ...(c.fase || c.formacao || c.encerrada ? [] : [c.clubeId])])];

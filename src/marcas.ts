@@ -1,5 +1,6 @@
 // Patrocinadores: marcas-paródia (nome e cores lembram a real; logo e slogan são nossos) e os contratos que oferecem.
-// Uma marca por categoria (exclusividade), até quatro patrocinadores ao mesmo tempo.
+// Uma marca por categoria (exclusividade). Quantos patrocinadores ao mesmo tempo cresce com a fama: quem é estrela recebe mais marcas.
+export const limitePatrocinios = (fama: number): number => 3 + Math.floor(Math.max(0, fama) / 12);
 import { RNG } from "./rng.js";
 
 export type Categoria = "banco" | "refrigerante" | "cerveja" | "energetico" | "carro" | "celular" | "material" | "comida" | "oculos" | "relogio" | "fone" | "aerea";
