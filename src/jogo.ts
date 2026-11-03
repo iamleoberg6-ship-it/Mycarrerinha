@@ -1711,13 +1711,13 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   const final = texto + (notas.length ? ` (${notas.join(", ")})` : "");
   if (e.id === "marca-propria" && opcaoId === "lancar") abrirEmpresa(negociosDe(s.carreira), "marca", ctxNegocios(pacote, s), rngDe(s, "marca-propria"), 0);
   if (e.id === "documentario" && opcaoId === "aceitar") { const r = rngDe(s, "documentario", ANO_INICIAL + s.carreira.temporada); (s.carreira.documentarios ??= []).push({ ano: ANO_INICIAL + s.carreira.temporada, titulo: r.pick(TITULOS_DOC), cenario: r.int(0, 5) }); }
-  if (e.id === "videogame" && opcaoId === "aceitar") { ganharCapa(s, true); return { titulo: e.titulo, texto: final }; }
   if (cad && oc && est) {
     const ab = semanaAbsJogo(c);
     est.ficha.push(preencherPessoa(cad.fichaInicio.replace("{quando}", rotuloSemana(c)), est.pessoa));
     registrarMarca(est, cad, oc.marca, ab);
     if (oc.proximo) agendar(agendaDe(c), ab, passoDaAgenda(cad, oc.proximo, est.pais ?? pais, est.pessoa));
   }
+  if (e.id === "videogame" && opcaoId === "aceitar") { ganharCapa(s, true); return { titulo: e.titulo, texto: final }; }
   noticia(s, "vida", e.titulo, final, { k: "vida" });
   return { titulo: e.titulo, texto: final };
 }

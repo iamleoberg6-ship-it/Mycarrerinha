@@ -47,14 +47,6 @@ export const EVENTOS: EventoVida[] = [
     op("depois", "Deixar para depois da carreira", "O futebol primeiro. O curso continua lá.", {}),
   ], { unico: true }),
   // ------------------------------------------------------------ estabelecido
-  ev("videogame", ["estabelecido", "estrela"], "Capa de videogame regional", "Um jogo de futebol quer você na capa da edição do seu país.", [
-    op("aceitar", "Aceitar", "Seu rosto em todas as lojas. O sobrinho jogou com você o fim de semana inteiro.", { patrocinio: { pct: 0.1, piso: 30000, meses: 12 }, fama: 6, hype: 0.2 }),
-    op("recusar", "Recusar", "Dizem que capa de videogame dá azar.", {}),
-  ], { unico: true, quando: (c) => c.fama >= 50 }),
-  ev("casamento-amigo", ["estabelecido", "estrela", "veterano"], "Casamento do melhor amigo", "Seu amigo de infância casa no sábado, no interior. O clube joga no domingo.", [
-    op("ir", "Ir e voltar de madrugada", "Fez o discurso, chorou, voltou às 5 da manhã para a concentração.", { moral: 8, cansaco: 20 }),
-    op("video", "Mandar um vídeo", "Ele entendeu. Disse que entendeu.", { moral: -3 }),
-  ], { unico: true }),
   ev("exterior-adaptacao", ["inicio", "estabelecido", "estrela"], "Saudade de comida de casa", "Faz meses que você não come arroz e feijão de verdade. Tem um restaurante brasileiro a uma hora daqui.", [
     op("ir", "Ir toda semana", "O dono virou amigo. A saudade diminuiu.", { moral: 6, dinheiro: -1500 }),
     op("aula", "Fazer aula do idioma no lugar", "Ainda erra os verbos, mas já pede café sem apontar.", { relTecnico: 4, moral: 1 }),
@@ -64,50 +56,7 @@ export const EVENTOS: EventoVida[] = [
     op("aguentar", "Aguentar a rotina", "O dinheiro na conta compensa. Quase sempre.", { moral: -3 }),
   ], { quando: (c) => c.golfo }),
   // ------------------------------------------------------------ estrela
-  ev("documentario", ["estrela"], "Documentário sobre você", "Uma plataforma de streaming quer filmar sua temporada inteira para uma série.", [
-    op("aceitar", "Abrir as portas", "Câmera no vestiário, na cozinha e no carro. A série estreou em 190 países.", { patrocinio: { pct: 0.2, piso: 200000, meses: 6 }, fama: 6, hype: 0.35, pressao: 10, relTecnico: -3 }),
-    op("recusar", "Manter a vida privada", "Sua casa continua sendo sua casa.", { moral: 3 }),
-  ], { unico: true, quando: (c) => c.fama >= 70 }),
-  ev("gala", ["estrela"], "Gala do prêmio de melhor do mundo", "Você foi indicado ao prêmio de melhor jogador do mundo. A cerimônia é em Paris, numa segunda-feira.", [
-    op("ir", "Ir de terno sob medida", "Não ganhou, mas a foto no tapete vermelho correu o mundo.", { fama: 5, hype: 0.3, moral: 5, cansaco: 10, dinheiro: -80000 }),
-    op("ficar", "Ficar treinando", "O técnico gostou. Os patrocinadores, não.", { relTecnico: 5, fama: -2 }),
-  ], { quando: (c) => c.fama >= 85 }),
-  ev("marca-propria", ["estrela", "veterano"], "Sua própria marca", "Você pode lançar uma linha de roupas com seu apelido.", [
-    op("lancar", "Lançar a coleção", "Esgotou em uma hora no primeiro lote. A marca agora está em Negócios, pronta para ganhar logo e peças.", { sal: -4, fama: 3, engajamento: 10 }),
-    op("nao", "Deixar quieto", "Um time de marketing a menos para gerenciar.", {}),
-  ], { unico: true, quando: (c) => c.fama >= 65 }),
-  ev("assedio", ["estrela"], "Fãs na porta de casa", "Tem fã acampado na frente do condomínio desde segunda.", [
-    op("atender", "Descer, tirar foto com todos", "Duas horas de fotos. Um garoto chorou abraçado em você.", { moral: 3, fama: 2, engajamento: 8, cansaco: 5 }),
-    op("seguranca", "Contratar mais segurança", "Carro blindado, horário trocado. A vida ficou mais estranha.", { sal: -0.5, moral: -2 }),
-  ]),
-  ev("selecao-convocacao", ["estrela"], "A seleção chamou", "Seu nome saiu na convocação. Jogo de eliminatória daqui a duas semanas.", [
-    op("comemorar", "Comemorar com a família", "Seu pai emoldurou o recorte do jornal.", { moral: 10, fama: 5, hype: 0.25, cansaco: 10 }),
-  ], { quando: (c) => c.fama >= 75 }),
-  ev("leilao", ["estrela", "veterano"], "Leilão beneficente", "Um hospital infantil pede uma camisa autografada para leilão. Você pode doar também o valor que ela atingir.", [
-    op("doar", "Doar a camisa e dobrar o valor", "A camisa saiu por uma fortuna. Você dobrou. A ala nova leva o nome da sua mãe.", { sal: -1, moral: 8, fama: 3 }),
-    op("camisa", "Só a camisa", "Ajudou bastante. O hospital mandou uma carta escrita pelas crianças.", { moral: 4, fama: 1 }),
-  ]),
   // ------------------------------------------------------------ veterano
-  ev("mentor", ["veterano"], "O garoto da base", "Um garoto de 17 anos que subiu agora joga na sua posição. Ele te pede conselho.", [
-    op("ensinar", "Ser o mentor dele", "Ele vai jogar no seu lugar um dia. E vai lembrar de quem ensinou.", { moral: 5, relTecnico: 5 }),
-    op("disputar", "Disputar a vaga sem dó", "Ele é bom, mas a camisa ainda é sua.", { moral: 1, pressao: 3 }),
-  ]),
-  ev("comentarista", ["veterano"], "Convite para comentarista", "Uma emissora quer você comentando jogos da Copa nas férias.", [
-    op("aceitar", "Aceitar o trabalho de férias", "Você é bom nisso. A emissora já fala em contrato depois que pendurar as chuteiras.", { dinheiro: 150000, fama: 3, cansaco: 10 }),
-    op("descansar", "Descansar nas férias", "Corpo de veterano precisa de férias de verdade.", { cansaco: -15, moral: 2 }),
-  ], { unico: true }),
-  ev("corpo", ["veterano"], "O corpo reclama", "O joelho dói de manhã. O fisioterapeuta sugere um tratamento caro com câmara hiperbárica.", [
-    op("tratar", "Fazer o tratamento", "Duas semanas e o joelho parece de 28 anos de novo. Quase.", { sal: -0.5, cansaco: -20, evolucao: 0.01 }),
-    op("seguir", "Seguir com gelo e analgésico", "Funciona. Por enquanto.", { moral: -2 }),
-  ]),
-  ev("despedida-cidade", ["veterano"], "Homenagem da cidade natal", "A câmara da sua cidade quer te dar o título de cidadão ilustre e batizar uma rua.", [
-    op("ir", "Ir à cerimônia", "A rua da sua infância agora tem seu nome. Seu pai não parava de tirar foto da placa.", { moral: 10, fama: 2 }),
-  ], { unico: true, quando: (c) => c.fama >= 50 }),
-  ev("futuro", ["veterano"], "E depois?", "O agente pergunta o que você quer fazer quando parar: técnico, dirigente, empresário ou praia.", [
-    op("tecnico", "Começar o curso de treinador", "Licença de treinador nas férias. Você começa a ver o jogo com outros olhos.", { dinheiro: -30000, relTecnico: 6, evolucao: 0.01 }),
-    op("empresa", "Montar uma empresa de gestão de carreira", "Três garotos da base já assinaram com você.", { sal: -2, moral: 3 }),
-    op("praia", "Praia, e não se fala mais nisso", "O agente riu. Você não.", { moral: 4 }),
-  ], { unico: true }),
 ];
 
 // ------------------------------------------------------------ fora de campo por nacionalidade

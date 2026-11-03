@@ -7,13 +7,16 @@ import type { EfeitoEvento, CtxEvento, Fase } from "./eventos.js";
 import { MOEDAS } from "./moeda.js";
 
 /** Valores em dinheiro de cada uso, na moeda local (o motor converte para reais pela taxa do jogo). */
-export type ChaveValor = "chuteira" | "investimentoPequeno" | "investimentoTotal" | "lucro" | "adiantamento";
+export type ChaveValor = "chuteira" | "investimentoPequeno" | "investimentoTotal" | "lucro" | "adiantamento" | "gala" | "comentario" | "curso";
 export const VALORES: Record<ChaveValor, Record<string, number>> = {
   chuteira: { BRL: 600, EUR: 100, GBP: 90, USD: 115 },
   investimentoPequeno: { BRL: 5000, EUR: 850, GBP: 750, USD: 950 },
   investimentoTotal: { BRL: 50000, EUR: 8500, GBP: 7500, USD: 9500 },
   lucro: { BRL: 400, EUR: 70, GBP: 60, USD: 75 },
   adiantamento: { BRL: 2000, EUR: 340, GBP: 300, USD: 380 },
+  gala: { BRL: 80000, EUR: 13600, GBP: 12000, USD: 15200 },
+  comentario: { BRL: 150000, EUR: 25500, GBP: 22500, USD: 28500 },
+  curso: { BRL: 30000, EUR: 5100, GBP: 4500, USD: 5700 },
 };
 /** Moeda de cada país onde há personagem de cadeia. */
 const MOEDA_DO_PAIS: Record<string, keyof typeof MOEDAS> = { BRA: "BRL", FRA: "EUR", ESP: "EUR", ITA: "EUR", ENG: "GBP", USA: "USD" };

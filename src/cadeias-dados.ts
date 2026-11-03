@@ -457,4 +457,286 @@ export const CADEIAS: Record<string, Cadeia> = {
     marcas: { projeto: "reforma", doacao: "reforma", clube: "apoio" },
     fichaMarca: { projeto: "Montou um projeto para o campinho.", doacao: "Doou uma parte do salário para o campinho.", clube: "Pediu ao clube apoio para o campinho." },
   },
+  // ------------------------------------------------------------ estrela e veterano
+  "videogame": {
+    id: "videogame", fases: ["estabelecido", "estrela"], unico: true, quando: (c) => c.fama >= 50,
+    personagens: pessoas("Diretor de marketing da produtora do jogo. Só fala em números de venda.", { BRA: "Bruno Veiga", FRA: "Hugo Martel", ENG: "Ryan Foss", ESP: "Álex Mora", ITA: "Marco Ferri", USA: "Tyler Ross" }),
+    fichaInicio: "Proposta do jogo feita por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Capa de videogame regional",
+      texto: "Um jogo de futebol quer você na capa da edição do seu país. {pessoa} explica que o contrato dá patrocínio por um ano.",
+      origem: "convite",
+      opcoes: [
+        { id: "aceitar", rotulo: "Aceitar", resultado: "Seu rosto em todas as lojas. O sobrinho jogou com você o fim de semana inteiro.", marca: "aceitar", efeitos: { patrocinio: { pct: 0.1, piso: 30000, meses: 12 }, fama: 6, hype: 0.2 } },
+        { id: "recusar", rotulo: "Recusar", resultado: "Dizem que capa de videogame dá azar.", marca: "recusar" },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      lojas: { titulo: "Seu rosto nas lojas", texto: "{pessoa} mandou as fotos da caixa. O sobrinho jogou com você o fim de semana inteiro.", ficha: "Capa de videogame: {pessoa} entregou as caixas.", semanas: 2 },
+      recusa: { titulo: "Sem capa, sem azar", texto: "{pessoa} entendeu e disse que a porta fica aberta.", ficha: "Recusou a capa do videogame." },
+    },
+    marcas: { aceitar: "lojas", recusar: "recusa" },
+    fichaMarca: { aceitar: "Aceitou ser a capa do videogame.", recusar: "Recusou a capa do videogame." },
+  },
+
+  "casamento-amigo": {
+    id: "casamento-amigo", fases: ["estabelecido", "estrela", "veterano"], unico: true,
+    personagens: pessoas("Seu amigo de infância. Conhece você antes do clube, da fama e das chuteiras.", { BRA: "Dudu Serra", FRA: "Florian Girard", ENG: "Kieran Moss", ESP: "Quique Llorente", ITA: "Simone Cava", USA: "Derek Lang" }),
+    fichaInicio: "Convite de casamento de {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Casamento do melhor amigo",
+      texto: "{pessoa}, seu amigo de infância, casa no sábado, no interior. O clube joga no domingo.",
+      origem: "familia",
+      opcoes: [
+        { id: "ir", rotulo: "Ir e voltar de madrugada", resultado: "Fez o discurso, chorou, voltou às 5 da manhã para a concentração.", marca: "ir", efeitos: { moral: 8, cansaco: 20 } },
+        { id: "video", rotulo: "Mandar um vídeo", resultado: "{pessoa} entendeu. Disse que entendeu.", marca: "video", efeitos: { moral: -3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      discurso: { titulo: "O discurso que todo mundo lembra", texto: "{pessoa} disse que nunca esquece a viagem de madrugada. A festa inteira repetiu a história.", ficha: "Foi ao casamento de {pessoa}, de madrugada.", semanas: 2 },
+      magoa: { titulo: "Um vídeo no lugar da festa", texto: "{pessoa} não respondeu mais no grupo por um mês.", ficha: "Mandou vídeo para o casamento de {pessoa}; o amigo ficou magoado." },
+    },
+    marcas: { ir: "discurso", video: "magoa" },
+    fichaMarca: { ir: "Foi ao casamento do amigo de infância.", video: "Mandou vídeo para o casamento do amigo." },
+  },
+
+  "gala": {
+    id: "gala", fases: ["estrela"], quando: (c) => c.fama >= 85,
+    personagens: pessoas("Produtora da gala de premiação. Confirma cada convidado pelo nome e pela cadeira.", { BRA: "Renata Maia", FRA: "Céline Duval", ENG: "Helen Marsh", ESP: "Patricia Soler", ITA: "Giulia Rossi", USA: "Amanda Vance" }),
+    fichaInicio: "Indicação à gala confirmada por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Gala do prêmio de melhor do mundo",
+      texto: "Você foi indicado ao prêmio de melhor jogador do mundo. {pessoa}, da produção, pede a confirmação até sexta. A cerimônia é em Paris, numa segunda-feira.",
+      origem: "convite",
+      opcoes: [
+        { id: "ir", rotulo: "Ir de terno sob medida", resultado: "Não ganhou, mas a foto no tapete vermelho correu o mundo.", marca: "ir", efeitos: { fama: 5, hype: 0.3, moral: 5, cansaco: 10 }, valor: { chave: "gala", sinal: -1 } },
+        { id: "ficar", rotulo: "Ficar treinando", resultado: "O técnico gostou. Os patrocinadores, não.", marca: "ficar", efeitos: { relTecnico: 5, fama: -2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      tapete: { titulo: "A foto no tapete vermelho", texto: "Não ganhou, mas {pessoa} mandou a foto para o mundo inteiro.", ficha: "Foi à gala; {pessoa} publicou a foto no tapete.", semanas: 2 },
+      patrocinio: { titulo: "Os patrocinadores não gostaram", texto: "{pessoa} disse que a marca preferia ver você na cerimônia.", ficha: "Ficou no treino na gala; {pessoa} cobrou os patrocinadores." },
+    },
+    marcas: { ir: "tapete", ficar: "patrocinio" },
+    fichaMarca: { ir: "Foi à gala do melhor do mundo.", ficar: "Ficou treinando e não foi à gala." },
+  },
+
+  "marca-propria": {
+    id: "marca-propria", fases: ["estrela", "veterano"], unico: true, quando: (c) => c.fama >= 65,
+    personagens: pessoas("Consultora de marcas. Tem um plano de três anos pronto antes de você abrir a porta.", { BRA: "Lívia Prado", FRA: "Inès Bardot", ENG: "Charlotte Vane", ESP: "Sofía Benítez", ITA: "Chiara Lombardi", USA: "Megan Holt" }),
+    fichaInicio: "Plano da marca apresentado por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Sua própria marca",
+      texto: "Você pode lançar uma linha de roupas com seu apelido. {pessoa} tem um plano de três anos pronto.",
+      origem: "convite",
+      opcoes: [
+        { id: "lancar", rotulo: "Lançar a coleção", resultado: "Esgotou em uma hora no primeiro lote. A marca agora está em Negócios, pronta para ganhar logo e peças.", marca: "lancar", efeitos: { sal: -4, fama: 3, engajamento: 10 } },
+        { id: "nao", rotulo: "Deixar quieto", resultado: "Um time de marketing a menos para gerenciar.", marca: "nao" },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      esgotou: { titulo: "A coleção esgotou", texto: "No primeiro lote, a coleção acabou em uma hora. {pessoa} já pede a segunda linha.", ficha: "Coleção própria esgotou; {pessoa} pede a segunda linha." },
+    },
+    marcas: { lancar: "esgotou" },
+    fichaMarca: { lancar: "Lançou a própria linha de roupas.", nao: "Deixou a marca própria quieta." },
+  },
+
+  "assedio": {
+    id: "assedio", fases: ["estrela"],
+    personagens: pessoas("Líder do grupo de fãs que acampou na porta. Organiza a fila e conhece os horários.", { BRA: "Tiago Brandão", FRA: "Dorian Pelletier", ENG: "Owen Pryce", ESP: "Rubén Ibarra", ITA: "Luca Serra", USA: "Caleb Nash" }),
+    fichaInicio: "Primeiro encontro com {pessoa}: {quando}, na porta do condomínio.",
+    inicio: {
+      titulo: "Fãs na porta de casa",
+      texto: "Tem fã acampado na frente do condomínio desde segunda. {pessoa} organizou o grupo e pede cinco minutos.",
+      origem: "torcida",
+      opcoes: [
+        { id: "atender", rotulo: "Descer, tirar foto com todos", resultado: "Duas horas de fotos. Um garoto chorou abraçado em você.", marca: "atender", efeitos: { moral: 3, fama: 2, engajamento: 8, cansaco: 5 } },
+        { id: "seguranca", rotulo: "Contratar mais segurança", resultado: "Carro blindado, horário trocado. A vida ficou mais estranha.", marca: "seguranca", efeitos: { sal: -0.5, moral: -2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      grupo: { titulo: "O grupo virou fã-clube", texto: "{pessoa} passou a organizar a fila e a avisar quando você sai.", ficha: "Virou referência do grupo de fãs na porta de casa.", semanas: 2 },
+      distancia: { titulo: "A rua ficou vazia", texto: "Com o novo segurança, {pessoa} foi o único que não voltou à porta.", ficha: "Trocou a rotina por segurança; {pessoa} sentiu." },
+    },
+    marcas: { atender: "grupo", seguranca: "distancia" },
+    fichaMarca: { atender: "Desceu e tirou foto com os fãs.", seguranca: "Contratou mais segurança para a porta de casa." },
+  },
+
+  "selecao-convocacao": {
+    id: "selecao-convocacao", fases: ["estrela"], quando: (c) => c.fama >= 75,
+    personagens: pessoas("Assessor da seleção. Liga para confirmar apresentação, horário e quarto de hotel.", { BRA: "Henrique Sá", FRA: "Thierry Lamy", ENG: "Martin Hale", ESP: "Jordi Font", ITA: "Andrea Fabbri", USA: "Scott Keane" }),
+    fichaInicio: "Convocação confirmada por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "A seleção chamou",
+      texto: "Seu nome saiu na convocação. {pessoa} liga para confirmar a apresentação e diz que o jogo de eliminatória é daqui a duas semanas.",
+      origem: "convite",
+      opcoes: [
+        { id: "comemorar", rotulo: "Comemorar com a família", resultado: "Seu pai emoldurou o recorte do jornal.", marca: "comemorar", efeitos: { moral: 10, fama: 5, hype: 0.25, cansaco: 10 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      recorte: { titulo: "O recorte da convocação", texto: "{pessoa} mandou o recorte da convocação com um bilhete de parabéns.", ficha: "Convocado para a seleção; {pessoa} mandou o recorte.", semanas: 2 },
+    },
+    marcas: { comemorar: "recorte" },
+    fichaMarca: { comemorar: "Comemorou a convocação com a família." },
+  },
+
+  "leilao": {
+    id: "leilao", fases: ["estrela", "veterano"],
+    personagens: pessoas("Organizadora do leilão do hospital infantil. Não aceita lance sem recibo.", { BRA: "Lúcia Mendes", FRA: "Nathalie Brun", ENG: "Joanne Pike", ESP: "Elena Roca", ITA: "Paola Gentile", USA: "Lauren Hayes" }),
+    fichaInicio: "Pedido do leilão feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Leilão beneficente",
+      texto: "Um hospital infantil pede uma camisa autografada para leilão. {pessoa} coordena o evento e pergunta se você pode doar também o valor que ela atingir.",
+      origem: "cidade",
+      opcoes: [
+        { id: "doar", rotulo: "Doar a camisa e dobrar o valor", resultado: "A camisa saiu por uma fortuna. Você dobrou o valor.", marca: "doar", efeitos: { sal: -1, moral: 8, fama: 3 } },
+        { id: "camisa", rotulo: "Só a camisa", resultado: "Ajudou bastante. O hospital mandou uma carta escrita pelas crianças.", marca: "camisa", efeitos: { moral: 4, fama: 1 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      ala: { titulo: "A ala nova do hospital", texto: "{pessoa} mandou as fotos da ala nova. Ela leva o nome da sua mãe.", ficha: "Doou a camisa e dobrou o valor; a ala nova ganhou o nome da mãe.", semanas: 3 },
+      carta: { titulo: "Carta das crianças", texto: "O hospital mandou uma carta escrita pelas crianças. {pessoa} leu no sábado.", ficha: "O hospital agradeceu a camisa com uma carta das crianças.", semanas: 2 },
+    },
+    marcas: { doar: "ala", camisa: "carta" },
+    fichaMarca: { doar: "Doou a camisa autografada e dobrou o valor.", camisa: "Doou a camisa autografada." },
+  },
+
+  "mentor": {
+    id: "mentor", fases: ["veterano"],
+    personagens: pessoas("Garoto de 17 anos que subiu da base e joga na sua posição. Pergunta tudo depois do treino.", { BRA: "Davi Lacerda", FRA: "Nolan Benoît", ENG: "Riley Bennett", ESP: "Adrián Campos", ITA: "Samuele Ferrante", USA: "Jaylen Foster" }),
+    fichaInicio: "Primeira conversa com {pessoa}: {quando}, depois do treino.",
+    inicio: {
+      titulo: "O garoto da base",
+      texto: "{pessoa} tem 17 anos, subiu agora e joga na sua posição. Ele te pede conselho depois do treino.",
+      origem: "vestiario",
+      opcoes: [
+        { id: "ensinar", rotulo: "Ser o mentor dele", resultado: "Você passou a tarde mostrando como se posicionar.", marca: "ensinar", efeitos: { moral: 5, relTecnico: 5 } },
+        { id: "disputar", rotulo: "Disputar a vaga sem dó", resultado: "Ele é bom, mas a camisa ainda é sua.", marca: "disputar", efeitos: { moral: 1, pressao: 3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      discipulo: { titulo: "Ele lembra de quem ensinou", texto: "{pessoa} mandou uma mensagem depois do primeiro jogo como titular: \"Foi você que me ensinou.\"", ficha: "Ensinou {pessoa}, que virou titular." },
+      rival: { titulo: "Ele quer sua vaga", texto: "{pessoa} treina mais que todo mundo, e o técnico já comenta a disputa.", ficha: "Disputa de vaga com {pessoa}." },
+    },
+    marcas: { ensinar: "discipulo", disputar: "rival" },
+    fichaMarca: { ensinar: "Virou mentor do garoto da base.", disputar: "Disputou a vaga com o garoto da base." },
+  },
+
+  "comentarista": {
+    id: "comentarista", fases: ["veterano"], unico: true,
+    personagens: pessoas("Produtor da emissora de esportes. Liga cedo e quer resposta na semana.", { BRA: "Rodrigo Bastos", FRA: "Vincent Lasalle", ENG: "Tony Garrow", ESP: "Miguel Lozano", ITA: "Alberto Rizzi", USA: "Chad Morrow" }),
+    fichaInicio: "Convite da emissora feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Convite para comentarista",
+      texto: "Uma emissora quer você comentando jogos da Copa nas férias. {pessoa} quer resposta em uma semana.",
+      origem: "convite",
+      opcoes: [
+        { id: "aceitar", rotulo: "Aceitar o trabalho de férias", resultado: "Você é bom nisso. A emissora já fala em contrato depois que pendurar as chuteiras.", marca: "aceitar", valor: { chave: "comentario", sinal: 1 }, efeitos: { fama: 3, cansaco: 10 } },
+        { id: "descansar", rotulo: "Descansar nas férias", resultado: "Corpo de veterano precisa de férias de verdade.", marca: "descansar", efeitos: { cansaco: -15, moral: 2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      contrato: { titulo: "A emissora fala em contrato", texto: "Você foi bem nos jogos de férias. {pessoa} já sugeriu um contrato para depois da carreira.", ficha: "Comentou jogos da Copa; {pessoa} quer contrato depois da carreira." },
+      descanso: { titulo: "Férias de verdade", texto: "{pessoa} entendeu e disse que a proposta fica de pé.", ficha: "Recusou comentar nas férias; {pessoa} deixou a proposta de pé.", semanas: 2 },
+    },
+    marcas: { aceitar: "contrato", descansar: "descanso" },
+    fichaMarca: { aceitar: "Aceitou comentar os jogos da Copa.", descansar: "Recusou comentar e foi descansar." },
+  },
+
+  "corpo": {
+    id: "corpo", fases: ["veterano"],
+    personagens: pessoas("Fisioterapeuta do clube há quinze anos. Não promete milagre, mas sabe onde dói.", { BRA: "Gustavo Prates", FRA: "Pascal Morin", ENG: "Dan Whitlock", ESP: "Iñaki Peralta", ITA: "Fabrizio Neri", USA: "Glenn Harper" }),
+    fichaInicio: "Avaliação do joelho por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "O corpo reclama",
+      texto: "O joelho dói de manhã. {pessoa} sugere um tratamento caro com câmara hiperbárica.",
+      origem: "vestiario",
+      opcoes: [
+        { id: "tratar", rotulo: "Fazer o tratamento", resultado: "Duas semanas de câmara. O joelho ficou mais leve a cada sessão.", marca: "tratar", efeitos: { sal: -0.5, cansaco: -20, evolucao: 0.01 } },
+        { id: "seguir", rotulo: "Seguir com gelo e analgésico", resultado: "Funciona. Por enquanto.", marca: "seguir", efeitos: { moral: -2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      joelho: { titulo: "O joelho ficou quase novo", texto: "{pessoa} disse que o joelho parece de 28 anos de novo. Quase.", ficha: "Fez o tratamento da câmara com {pessoa}.", semanas: 2 },
+      dor: { titulo: "A dor voltou", texto: "{pessoa} avisou que a dor volta na próxima temporada se o gelo não bastar.", ficha: "Seguiu com gelo e analgésico; {pessoa} avisou da dor." },
+    },
+    marcas: { tratar: "joelho", seguir: "dor" },
+    fichaMarca: { tratar: "Fez o tratamento com câmara hiperbárica.", seguir: "Seguiu com gelo e analgésico no joelho." },
+  },
+
+  "despedida-cidade": {
+    id: "despedida-cidade", fases: ["veterano"], unico: true, quando: (c) => c.fama >= 50,
+    personagens: pessoas("Vereador que organiza a homenagem da cidade natal. Fala de você no discurso antes de ouvir sua resposta.", { BRA: "Nilo Freitas", FRA: "Hervé Lacaze", ENG: "Alan Price", ESP: "Ramiro Ortega", ITA: "Piero Bianchi", USA: "Rick Dalton" }),
+    fichaInicio: "Homenagem da cidade proposta por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Homenagem da cidade natal",
+      texto: "A câmara da sua cidade quer te dar o título de cidadão ilustre e batizar uma rua. {pessoa} espera você na cerimônia.",
+      origem: "cidade",
+      opcoes: [
+        { id: "ir", rotulo: "Ir à cerimônia", resultado: "A rua da sua infância agora tem seu nome. Seu pai não parava de tirar foto da placa.", marca: "ir", efeitos: { moral: 10, fama: 2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      rua: { titulo: "A rua da sua infância", texto: "A cerimônia teve discurso de {pessoa} e placa com o seu nome.", ficha: "Virou cidadão ilustre; {pessoa} batizou uma rua." },
+    },
+    marcas: { ir: "rua" },
+    fichaMarca: { ir: "Foi à homenagem da cidade natal." },
+  },
+
+  "futuro": {
+    id: "futuro", fases: ["veterano"], unico: true,
+    personagens: pessoas("Seu agente há anos. Sabe quanto cada opção custa antes de você perguntar.", { BRA: "Mauro Caldas", FRA: "Serge Kerbrat", ENG: "Phil Dacre", ESP: "Ricardo Llopis", ITA: "Dario Fiore", USA: "Gordon Cole" }),
+    fichaInicio: "Conversa sobre o futuro com {pessoa}: {quando}.",
+    inicio: {
+      titulo: "E depois?",
+      texto: "{pessoa} pergunta o que você quer fazer quando parar: técnico, dirigente, empresário ou praia.",
+      origem: "contrato",
+      opcoes: [
+        { id: "tecnico", rotulo: "Começar o curso de treinador", resultado: "Licença de treinador nas férias. Você começa a ver o jogo com outros olhos.", marca: "tecnico", valor: { chave: "curso", sinal: -1 }, efeitos: { relTecnico: 6, evolucao: 0.01 } },
+        { id: "empresa", rotulo: "Montar uma empresa de gestão de carreira", resultado: "Três garotos da base já assinaram com você.", marca: "empresa", efeitos: { sal: -2, moral: 3 } },
+        { id: "praia", rotulo: "Praia, e não se fala mais nisso", resultado: "{pessoa} riu. Você não.", marca: "praia", efeitos: { moral: 4 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      curso: { titulo: "Curso de treinador", texto: "Você começou o curso nas férias. {pessoa} já tem vagas de estágio na base.", ficha: "Começou o curso de treinador; {pessoa} arrumou estágio." },
+      agencia: { titulo: "Três garotos da base", texto: "Os três garotos assinaram com a sua empresa. {pessoa} cuida da papelada.", ficha: "Montou empresa de gestão; três garotos assinaram." },
+    },
+    marcas: { tecnico: "curso", empresa: "agencia" },
+    fichaMarca: { tecnico: "Começou o curso de treinador.", empresa: "Montou empresa de gestão de carreira.", praia: "Decidiu curtir a praia depois da carreira." },
+  },
+
+  "documentario": {
+    id: "documentario", fases: ["estrela"], unico: true, quando: (c) => c.fama >= 70,
+    personagens: pessoas("Diretor do documentário da plataforma. Quer a câmara no vestiário e na cozinha.", { BRA: "Felipe Amaral", FRA: "Adrien Morvan", ENG: "Simon Ryle", ESP: "Andrés Quiroga", ITA: "Nicola Ferraro", USA: "Ethan Burke" }),
+    fichaInicio: "Proposta da plataforma feita por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Documentário sobre você",
+      texto: "Uma plataforma de streaming quer filmar sua temporada inteira para uma série. {pessoa} é o diretor e pede uma resposta até sexta.",
+      origem: "convite",
+      opcoes: [
+        { id: "aceitar", rotulo: "Abrir as portas", resultado: "Câmera no vestiário, na cozinha e no carro.", marca: "aceitar", efeitos: { patrocinio: { pct: 0.2, piso: 200000, meses: 6 }, fama: 6, hype: 0.35, pressao: 10, relTecnico: -3 } },
+        { id: "recusar", rotulo: "Manter a vida privada", resultado: "Sua casa continua sendo sua casa.", marca: "recusar", efeitos: { moral: 3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      serie: { titulo: "A série estreou", texto: "A série estreou em 190 países. {pessoa} já fala em segunda temporada.", ficha: "Aceitou o documentário; {pessoa} quer segunda temporada.", semanas: 3 },
+      privacidade: { titulo: "Vida privada", texto: "{pessoa} respeitou a decisão e disse que a casa segue sendo sua.", ficha: "Recusou o documentário; {pessoa} respeitou.", semanas: 2 },
+    },
+    marcas: { aceitar: "serie", recusar: "privacidade" },
+    fichaMarca: { aceitar: "Aceitou o documentário sobre a temporada.", recusar: "Recusou o documentário e manteve a vida privada." },
+  },
 };
