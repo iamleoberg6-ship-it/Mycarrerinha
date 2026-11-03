@@ -1,4 +1,5 @@
 import { proximasMetas } from "../../src/progresso-conquistas.js";
+import { CONSEQUENCIAS, EMPRESARIO } from "../../src/empresario.js";
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
 import { bandeiraSvg } from "../../src/bandeiras";
 import { cruzar, type GenesFilho } from "../../src/genes";
@@ -304,7 +305,7 @@ function telaSemana(s: Save): string {
   const focos: [Grupo, string][] = [["fisico", "Físico"], ["tecnico", "Técnico"], ["tatico", "Tático"]];
   const ints: [Intensidade, string][] = [["leve", "Leve"], ["normal", "Normal"], ["alta", "Puxado"]];
   const acoesDisp = (Object.keys(ACOES) as Acao[]).filter((a) => a !== "video" || jogo);
-  const pend = [cardConquista(s), cardAnuncio(s), cardPatrocinio(s), cardEvento(s), cardAgenda(s), cardNumero(s), cardConvites(s), cardSugestao(s), cardCraque(s), cardNegocioMidia(s), nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"} · tocar para ver ›</small></span></button>` : ""].filter((x) => x.trim());
+  const pend = [cardEmpresario(s), cardConquista(s), cardAnuncio(s), cardPatrocinio(s), cardEvento(s), cardAgenda(s), cardNumero(s), cardConvites(s), cardSugestao(s), cardCraque(s), cardNegocioMidia(s), nProp ? `<button class="painel aviso-mercado" data-aba="mercado"><span>📩</span><span><b>${nProp} ${nProp === 1 ? "proposta" : "propostas"} na mesa</b><small>${jan ? `Janela aberta até a semana ${jan.fim + 1}` : "Responda antes que expire"} · tocar para ver ›</small></span></button>` : ""].filter((x) => x.trim());
   nPendencias = pend.length;
   const rotuloJogar = jc && escQ !== "lesionado" ? (aba === "semana" ? "Ir para o jogo de quarta" : "Jogo de quarta") : jogo && escPrev !== "lesionado" ? (aba === "semana" ? "Ir para o jogo" : "Jogar") : (aba === "semana" ? "Fechar a semana" : "Fechar semana");
   const botaoJogar = aba === "semana" ? `<button class="botao grande fixo-jogar" data-acao="jogar">${rotuloJogar}</button>` : `<button class="botao grande fixo-jogar mini" data-acao="jogar" aria-label="${rotuloJogar}" title="${rotuloJogar}"><span aria-hidden="true">▶</span></button>`;
@@ -347,6 +348,14 @@ function telaSemana(s: Save): string {
 /** Pendências da semana (para o número na barra). */
 let nPendencias = 0;
 /** Proposta de negócio e pedido de entrevista: atalhos que levam direto ao lugar de responder. */
+/** Consequência do empresário: painel na Semana, com Ver ficha (nome e linhas da ficha) e Ok. */
+function cardEmpresario(s: Save): string {
+  const emp = s.carreira.empresario, p = emp?.painel;
+  if (!emp || !p) return "";
+  const t = CONSEQUENCIAS[p];
+  return `<div class="painel conquista-nova empresario-painel"><span aria-hidden="true">🤝</span><div><b>${esc(t.titulo)}</b><small>${esc(t.texto)}</small>
+    <details class="ficha-emp"><summary>Ver ficha</summary><b>${esc(EMPRESARIO.nome)}</b><p class="sub">${esc(EMPRESARIO.bio)}</p><ul>${emp.ficha.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details></div><button class="botao sec peq" data-acao="fechar-empresario">Ok</button></div>`;
+}
 /** Conquista desbloqueada por uma partida: fica na Semana até o jogador tocar em Ok. */
 function cardConquista(s: Save): string {
   const n = s.conquistasNovas ?? [];
@@ -3060,6 +3069,7 @@ document.addEventListener("click", (ev) => {
     case "desistir-aposentadoria": desistirAposentadoria(save!); salvar(); abrirPerfil(); render(); break;
     case "fechar-perfil": ($("dlgPerfil") as HTMLDialogElement).close(); break;
     case "vista-conquista": save!.conquistasNovas = undefined; salvar(); render(); break;
+    case "fechar-empresario": if (save!.carreira.empresario) save!.carreira.empresario.painel = undefined; salvar(); render(); break;
     case "vida-toda": { vidaAberta = !vidaAberta; const t = $("telaPerfil"), y = t.scrollTop; t.innerHTML = perfilHtml(save!); t.scrollTop = y; break; }
     case "churrasco": { const r = churrascoJogo(save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case "fundacao": { const r = criarFundacaoJogo(pacote, save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }

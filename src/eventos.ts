@@ -51,9 +51,10 @@ export const EVENTOS: EventoVida[] = [
     op("show", "Jogar para aparecer", "Você tentou tudo sozinho. O olheiro anotou seu nome, o técnico anotou outra coisa.", { fama: 2, relTecnico: -3 }),
     op("time", "Jogar pelo time", "Jogo simples e correto. O técnico da base elogiou na frente de todos.", { relTecnico: 4, moral: 2 }),
   ]),
-  ev("base-empresario", ["base"], "Um empresário na porta", "Um empresário com relógio dourado quer conversar com seus pais. Promete clube na Europa em dois anos.", [
-    op("ouvir", "Ouvir a proposta com a família", "Muita promessa e um contrato de dez páginas. Seu pai pediu tempo para pensar.", { moral: 2, fama: 1 }),
-    op("recusar", "Agradecer e recusar", "Ele saiu batendo a porta do carro. Seu pai disse que fez bem.", { moral: 1 }),
+  ev("base-empresario", ["base"], "Um empresário na porta", "Um homem de camisa polo e relógio dourado para na frente da sua casa. Diz que é empresário, que tem um contato num clube da Europa, e que \"em dois anos você está lá\". Ele pede dez minutos com seus pais.", [
+    op("ouvir", "Chamar seus pais e ouvir junto", "Seus pais ouviram tudo na mesa da cozinha. Ele deixou um contrato de dez páginas.", { moral: 2, fama: 1 }),
+    op("sozinho", "Conversar com ele sozinho, na porta mesmo", "Você conversou com ele na porta. Ele falou baixo e rápido, e não pediu nada escondido.", { fama: 1 }),
+    op("recusar", "Agradecer e dizer que está focado no clube", "Você agradeceu e disse que está focado no clube. Ele entregou um cartão e foi embora.", { moral: 1 }),
   ], { unico: true }),
   // ------------------------------------------------------------ início de carreira
   ev("primeiro-carro", ["inicio"], "O primeiro carro", "Com o primeiro salário de profissional, a concessionária do bairro oferece um carro em 48 parcelas.", [

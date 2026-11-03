@@ -15,7 +15,8 @@ import { novaSaude, semanaSaude, feriasSaude, operar, riscoLesaoSaude, fatorDecl
 import { semanaAmor, agendarCasamento, agendarLuaDeMel } from "./amor.js";
 import { semanaAcontecimentos } from "./acontecimentos.js";
 import { conversaDaSemana, opcoesConversa, responderConversa, type Conversa, type CtxConversa, type OpcaoConversa } from "./conversas.js";
-import { novaAgenda, resolverOcasiao, vencidas, type EstadoAgenda, type EfeitoVida } from "./agenda.js";
+import { novaAgenda, resolverOcasiao, vencidas, agendar, type EstadoAgenda, type EfeitoVida } from "./agenda.js";
+import { novoEmpresario, passoEmpresario, marcaEmpresario, semanaEmpresario, agendarRecusa, CONSEQUENCIAS, PASSO_2A, PASSO_2B, EMPRESARIO, type EstadoEmpresario, type MarcaEmpresario } from "./empresario.js";
 import { parcasIniciais, novoParca, efeitosParcas, semanaSocial, agendarFerias, temFuncao, FUNCOES, type Parca, type PerfilParca, type FuncaoParca, type CtxSocial } from "./vida-social.js";
 import { LUXO, MAX_LUXO, mesLuxo, statusLuxo, valoresEmCasa, temEsportivo, HOBBIES, MAX_HOBBIES, semanaHobbies, semanaEstudos, infoCurso, novaAdaptacao, semanaAdaptacao, moralAdaptacao, fatorAdaptacao, ocasioesExterior, linguaNativa, mesFundacao, ocasioesFundacao, ganhouCoracaoDeOuro, CUSTO_FUNDACAO, type ItemLuxo, type TipoLuxo, type EstadoHobbies, type Hobby, type EstadoEstudos, type Curso, type Adaptacao, type Fundacao } from "./estilo.js";
 import { patrimonioInvestido } from "./negocios.js";
@@ -186,6 +187,8 @@ export interface Carreira {
   padrao?: PadraoVida;
   /** evento fora de campo esperando decisão, e a temporada em que cada evento apareceu */
   evento?: string; eventosVistos?: Record<string, number>;
+  /** protótipo: empresário da base (cadeia de escolhas, marcas e consequências) */
+  empresario?: EstadoEmpresario;
   /** reputação com a torcida do clube atual (0–100) */
   torcida?: number;
   /** relacionamento com outros jogadores */
@@ -1599,6 +1602,11 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       if (e) { c.evento = e.id; c.eventosVistos[e.id] = c.temporada; eventos.push(`Fora de campo: ${e.titulo}.`); }
     }
   }
+  // protótipo do empresário: a consequência da marca abre um painel na Semana, com nome e ficha
+  if (c.empresario) {
+    const cons = semanaEmpresario(c.empresario, semanaAbsJogo(c), c.fama);
+    if (cons) { const txt = CONSEQUENCIAS[cons]; eventos.push(`${EMPRESARIO.nome}: ${txt.titulo}.`); noticia(s, "vida", txt.titulo, txt.texto, { k: "vida" }); }
+  }
   // 12. negócios (propostas pelo celular) e imprensa/redes (feed da semana e pedido de entrevista)
   {
     const n = negociosDe(c), ab = semanaAbsJogo(c);
@@ -1693,6 +1701,12 @@ export function resolverEvento(pacote: PacoteDados, s: Save, opcaoId: string): {
   if (e.id === "marca-propria" && opcaoId === "lancar") abrirEmpresa(negociosDe(s.carreira), "marca", ctxNegocios(pacote, s), rngDe(s, "marca-propria"), 0);
   if (e.id === "documentario" && opcaoId === "aceitar") { const r = rngDe(s, "documentario", ANO_INICIAL + s.carreira.temporada); (s.carreira.documentarios ??= []).push({ ano: ANO_INICIAL + s.carreira.temporada, titulo: r.pick(TITULOS_DOC), cenario: r.int(0, 5) }); }
   if (e.id === "videogame" && opcaoId === "aceitar") { ganharCapa(s, true); return { titulo: e.titulo, texto: final }; }
+  if (e.id === "base-empresario") {
+    const emp = (c.empresario ??= novoEmpresario());
+    passoEmpresario(emp, opcaoId as "ouvir" | "sozinho" | "recusar", rotuloSemana(c));
+    if (opcaoId === "recusar") agendarRecusa(emp);
+    else agendar(agendaDe(c), semanaAbsJogo(c), opcaoId === "ouvir" ? PASSO_2A : PASSO_2B);
+  }
   noticia(s, "vida", e.titulo, final, { k: "vida" });
   return { titulo: e.titulo, texto: final };
 }
@@ -1780,6 +1794,7 @@ export function aplicarEfeitoVida(pacote: PacoteDados, s: Save, ef: EfeitoVida) 
 function gatilhoVida(pacote: PacoteDados, s: Save, g: string) {
   if (gatilhoClube(pacote, s, g)) return;
   const c = s.carreira, [k, a, b] = g.split(":"), ps = parcasDe(s);
+  if (k === "empresario") { marcaEmpresario((c.empresario ??= novoEmpresario()), b as MarcaEmpresario, semanaAbsJogo(c)); return; }
   if (k === "parca-divida") { const p = ps.find((x) => x.id === a); if (p) p.divida = (p.divida ?? 0) + +b; }
   else if (k === "parca-afastar") c.parcas = ps.filter((x) => x.id !== a);
   else if (k === "parca-novo") { const n = ps.length + 1 + Math.floor(rngDe(s, "parca-id").next() * 1000); ps.push(novoParca(rngDe(s, "parca-novo"), s.jogador.nacionalidade, ANO_INICIAL + c.temporada, new Set(ps.map((x) => x.nome)), a as PerfilParca, `p${n}`)); }
