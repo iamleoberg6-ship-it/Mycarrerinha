@@ -251,6 +251,7 @@ function telaInicio(): string {
     <h1>Sua carreira começa na base, na várzea ou nos EUA.</h1>
     <p class="sub" style="font-size:16px">Crie o jogador, escolha por onde começar e jogue semana a semana: treino, descanso, família, redes, o jogo de domingo e a casa que você vai montando com o salário.</p>
     <a class="botao grande" href="criacao.html">Criar meu jogador</a>
+    <a class="botao sec" href="tecnico.html">Começar como técnico</a>
     <button class="botao sec" data-acao="exemplo">Começar com um jogador de exemplo</button>
     <button class="botao sec" data-acao="carregar-save">Carregar um save</button><p id="avisoSave" class="sub aviso-save" role="status"></p>`;
 }
@@ -380,7 +381,7 @@ function cardNegocioMidia(s: Save): string {
 /** Painel de opções (abre pela engrenagem do topo). */
 function opcoesHtml(s: Save): string {
   void s;
-  return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador. Para não perder a carreira (trocar de aparelho, limpar o navegador), baixe o save de vez em quando.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p></section>`;
+  return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador. Para não perder a carreira (trocar de aparelho, limpar o navegador), baixe o save de vez em quando.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p><a class="botao sec peq" href="tecnico.html" style="margin-top:8px">Carreira de técnico</a></section>`;
 }
 let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, verOutras = false;
 let subTabela: "classificacao" | "estatisticas" | "premios" = "classificacao";
@@ -2062,6 +2063,7 @@ function telaDespedida(s: Save): string {
       ${t.titulos.length ? `<p class="rotulo">Títulos</p><p class="sub">${t.titulos.map((x) => `${esc(x.nome)} ${x.ano}`).join(" · ")}</p>` : ""}
       ${t.premios.length ? `<p class="rotulo">Prêmios</p><p class="sub">${t.premios.map((x) => `${esc(x.nome)} ${x.ano}`).join(" · ")}</p>` : ""}
       <button class="botao grande" data-acao="perfil">Ver o perfil completo</button>
+      <a class="botao" href="tecnico.html">Começar a carreira de técnico</a>
       <button class="botao sec" data-acao="recomecar">Começar uma nova carreira</button>
     </section>`;
 }

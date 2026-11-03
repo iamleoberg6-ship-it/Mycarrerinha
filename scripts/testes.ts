@@ -1,5 +1,7 @@
 // Testes do motor: fórmulas do documento e propriedades da simulação.
 import assert from "node:assert/strict";
+import * as T from "../src/tecnico/motor.js";
+import * as M from "../src/tecnico/modelo.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1636,4 +1638,26 @@ teste("Arte de personagens: todo sorteio existe no pacote de imagens e é determ
     assert.ok(sortearMulherCorpo("c" + i).src.startsWith("data:image/webp"));
     assert.ok(sortearBebe("b" + i).src.startsWith("data:image/webp"));
   }
+});
+
+teste("Técnico: temporada completa com tabela fechada, dinheiro, escalação e virada para o ano seguinte", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-tecnico");
+  assert.equal(s.esc.titulares.filter(Boolean).length, 11);
+  assert.ok(s.elenco.every((a) => Object.values(a.at).every(Number.isFinite) && M.ovrDe(a) > 30));
+  const n = T.semanasDaTemporada(s);
+  for (let k = 0; k < n && !s.demitido; k++) {
+    if (k === 6) { const a = s.elenco[3]; assert.ok(T.conversar(s, a.id, "elogiar").ok); T.mudarFormacao(s, "4-4-2"); }
+    T.avancarSemana(pacote, s);
+  }
+  assert.equal(s.temporada, 1);
+  assert.equal(s.historico.length, 1);
+  assert.ok(Number.isFinite(s.clube.saldo));
+  assert.ok(s.financas.length >= 8);
+  assert.ok(s.elenco.length >= 18);
+  // a mesma semente dá a mesma temporada
+  const b = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-tecnico");
+  for (let k = 0; k < 10; k++) T.avancarSemana(pacote, b);
+  const c = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-tecnico");
+  for (let k = 0; k < 10; k++) T.avancarSemana(pacote, c);
+  assert.deepEqual(b.tabela, c.tabela);
 });

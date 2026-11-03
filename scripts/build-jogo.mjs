@@ -1,6 +1,6 @@
 // Gera dist/jogo/: o jogo completo em três páginas que dividem o mesmo save (index = semana, criacao, casa).
 import { build } from "esbuild";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
 
 async function pagina(entrada, template, saida, carreira) {
   const r = await build({ entryPoints: [entrada], bundle: true, format: "iife", minify: true, write: false, target: "es2020", define: { __CARREIRA__: String(carreira) } });
@@ -26,3 +26,10 @@ mkdirSync("dist/jogo", { recursive: true });
 await pagina("app/jogo/main.ts", "app/jogo/template.html", "dist/jogo/index.html", true);
 await pagina("app/criacao/main.ts", "app/criacao/template.html", "dist/jogo/criacao.html", true);
 await pagina("app/casa/main.ts", "app/casa/template.html", "dist/jogo/casa.html", true);
+// modo técnico: o mesmo visual do jogo (o estilo-base vem do template da semana)
+{
+  const base = readFileSync("app/jogo/template.html", "utf8"), estilo = base.slice(base.indexOf("<style>") + 7, base.indexOf("</style>"));
+  writeFileSync("dist/jogo/.tecnico-template.html", readFileSync("app/tecnico/template.html", "utf8").replace("/*__ESTILO_BASE__*/", () => estilo));
+  await pagina("app/tecnico/main.ts", "dist/jogo/.tecnico-template.html", "dist/jogo/tecnico.html", true);
+  unlinkSync("dist/jogo/.tecnico-template.html");
+}
