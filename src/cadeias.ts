@@ -7,7 +7,7 @@ import type { EfeitoEvento, CtxEvento, Fase } from "./eventos.js";
 import { MOEDAS } from "./moeda.js";
 
 /** Valores em dinheiro de cada uso, na moeda local (o motor converte para reais pela taxa do jogo). */
-export type ChaveValor = "chuteira" | "investimentoPequeno" | "investimentoTotal" | "lucro" | "adiantamento" | "gala" | "comentario" | "curso";
+export type ChaveValor = "chuteira" | "investimentoPequeno" | "investimentoTotal" | "lucro" | "adiantamento" | "gala" | "comentario" | "curso" | "matricula" | "viagem" | "festa" | "jantar" | "onsen" | "presente" | "passeio" | "churrasco";
 export const VALORES: Record<ChaveValor, Record<string, number>> = {
   chuteira: { BRL: 600, EUR: 100, GBP: 90, USD: 115 },
   investimentoPequeno: { BRL: 5000, EUR: 850, GBP: 750, USD: 950 },
@@ -17,6 +17,14 @@ export const VALORES: Record<ChaveValor, Record<string, number>> = {
   gala: { BRL: 80000, EUR: 13600, GBP: 12000, USD: 15200 },
   comentario: { BRL: 150000, EUR: 25500, GBP: 22500, USD: 28500 },
   curso: { BRL: 30000, EUR: 5100, GBP: 4500, USD: 5700 },
+  matricula: { BRL: 1200, EUR: 200, GBP: 180, USD: 230 },
+  viagem: { BRL: 1500, EUR: 250, GBP: 225, USD: 288 },
+  festa: { BRL: 1200, EUR: 200, GBP: 180, USD: 230 },
+  jantar: { BRL: 900, EUR: 150, GBP: 135, USD: 173 },
+  onsen: { BRL: 800, EUR: 133, GBP: 120, USD: 153 },
+  presente: { BRL: 500, EUR: 83, GBP: 75, USD: 96 },
+  passeio: { BRL: 1000, EUR: 167, GBP: 150, USD: 192 },
+  churrasco: { BRL: 300, EUR: 50, GBP: 45, USD: 58 },
 };
 /** Todo país do jogo cai num grupo de nomes (países com língua e cultura parecidas dividem o mesmo conjunto). */
 export const GRUPO_DO_PAIS: Record<string, string> = {

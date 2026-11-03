@@ -739,6 +739,336 @@ export const CADEIAS: Record<string, Cadeia> = {
     marcas: { aceitar: "serie", recusar: "privacidade" },
     fichaMarca: { aceitar: "Aceitou o documentário sobre a temporada.", recusar: "Recusou o documentário e manteve a vida privada." },
   },
+  // ------------------------------------------------------------ exterior, golfo, faculdade e nacionais
+  "faculdade": {
+    id: "faculdade", fases: ["inicio", "estabelecido"], unico: true,
+    personagens: pessoas("Coordenadora do curso de Administração à distância. Manda a grade do semestre e cobra a presença nas provas.", { BRA: "Cristina Mendonça", POR: "Fátima Leitão", ESP: "Rocío Sánchez", ITA: "Elena Ferrara", FRA: "Sophie Lenoir", ENG: "Gemma Thorne", USA: "Brenda Hollis", GER: "Heike Brandt", NED: "Yvonne Bakker", TUR: "Gülay Sezer", CRO: "Marija Tadić", MAR: "Hanane Benjelloun", KSA: "Shaikha Al-Qahtani", IRN: "Mahsa Rezaei", NGA: "Ngozi Ibe", JPN: "Kobayashi Yumi", KOR: "Yoo Mi-ran", LATAM: "Lucía Fernández" }),
+    fichaInicio: "Matrícula proposta por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Faculdade à distância",
+      texto: "Um curso de Administração à distância encaixa na sua rotina, se você abrir mão de algumas folgas. {pessoa} te manda a grade do semestre.",
+      origem: "convite",
+      opcoes: [
+        { id: "matricular", rotulo: "Fazer a matrícula", resultado: "Aula gravada à noite, prova no sábado. Cansa, mas a cabeça agradece.", marca: "matricular", efeitos: { cansaco: 5, moral: 3, evolucao: 0.01 }, valor: { chave: "matricula", sinal: -1 } },
+        { id: "depois", rotulo: "Deixar para depois da carreira", resultado: "O futebol primeiro. O curso continua lá.", marca: "depois" },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      prova: { titulo: "Primeira prova", texto: "{pessoa} mandou a nota: passou com folga, e pediu que você conte a história para a turma.", ficha: "Passou na primeira prova da faculdade; {pessoa} mandou a nota.", semanas: 2 },
+      adiado: { titulo: "O curso continua lá", texto: "{pessoa} ligou perguntando se você ainda quer a vaga do semestre que vem.", ficha: "Adiou a faculdade; {pessoa} guardou a vaga.", semanas: 4 },
+    },
+    marcas: { matricular: "prova", depois: "adiado" },
+    fichaMarca: { matricular: "Fez a matrícula da faculdade à distância.", depois: "Deixou a faculdade para depois da carreira." },
+  },
+
+  "exterior-adaptacao": {
+    id: "exterior-adaptacao", fases: ["inicio", "estabelecido", "estrela"], quando: (c) => c.exterior,
+    personagens: pessoas("Dono do restaurante de comida de casa, a uma hora do clube. Guarda a mesa para quem chega de longe.", { BRA: "Seu Edmilson", POR: "Sr. Joaquim", ESP: "Don Benito Moya", ITA: "Nonno Vincenzo", FRA: "Monsieur Fabrice", ENG: "Ravi Shah", USA: "Sal Ramirez", GER: "Oskar Lenz", NED: "Jaap Meijer", TUR: "Hasan Amca", CRO: "Ivo Dragić", MAR: "Hajj Larbi", KSA: "Abu Yousef", IRN: "Hadi Sharifi", NGA: "Chef Bola Ojo", JPN: "Sato Kazuo", KOR: "Jeong Ho-young", LATAM: "Don Ramón Quiroga" }),
+    fichaInicio: "Primeira visita ao restaurante com {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Saudade de comida de casa",
+      texto: "Faz meses que você não come arroz e feijão de verdade. {pessoa} tem um restaurante de comida de casa a uma hora daqui e liga para te convidar.",
+      origem: "exterior",
+      opcoes: [
+        { id: "ir", rotulo: "Ir toda semana", resultado: "O dono virou amigo. A saudade diminuiu.", marca: "ir", efeitos: { moral: 6 }, valor: { chave: "viagem", sinal: -1 } },
+        { id: "aula", rotulo: "Fazer aula do idioma no lugar", resultado: "Ainda erra os verbos, mas já pede café sem apontar.", marca: "aula", efeitos: { relTecnico: 4, moral: 1 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      amigo: { titulo: "O dono virou amigo", texto: "{pessoa} guarda sua mesa todo sábado e manda a pauta do jogo para o prato do dia.", ficha: "Frequenta o restaurante de comida de casa; {pessoa} virou amigo." },
+      idioma: { titulo: "Já pede café sem apontar", texto: "{pessoa} elogiou o sotaque e pediu que você volte com o idioma na semana que vem.", ficha: "Começou aula de idioma; {pessoa} deu o empurrão.", semanas: 2 },
+    },
+    marcas: { ir: "amigo", aula: "idioma" },
+    fichaMarca: { ir: "Passou a frequentar o restaurante de comida de casa.", aula: "Começou aula do idioma local." },
+  },
+
+  "golfo-calor": {
+    id: "golfo-calor", fases: ["estabelecido", "estrela", "veterano"], quando: (c) => c.golfo,
+    personagens: pessoas("Treinador de preparação física. Monta a rotina de treino para o horário do calor.", { BRA: "Rogério Fontana", POR: "Hélder Vieira", ESP: "Joel Cortés", ITA: "Marcello Russo", FRA: "Lucien Rey", ENG: "Craig Hudson", USA: "Derek Owens", GER: "Thomas Wendt", NED: "Ron Mulder", TUR: "Caner Ateş", CRO: "Goran Babić", MAR: "Redouane Amrani", KSA: "Nasser Al-Ghamdi", IRN: "Saeed Mansouri", NGA: "Kemi Olaniyan", JPN: "Nakagawa Ken", KOR: "Choi Jae-sung", LATAM: "Esteban Galarza" }),
+    fichaInicio: "Horário de treino ajustado por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Calor de 45 graus",
+      texto: "Treino às 22h, jogo à meia-noite. {pessoa} explica o horário novo do preparo físico e pergunta como sua família está aguentando o condomínio.",
+      origem: "familia",
+      opcoes: [
+        { id: "viagem", rotulo: "Levar a família para viajar na folga", resultado: "Dubai, deserto, parque aquático. Todo mundo voltou feliz.", marca: "viagem", efeitos: { sal: -0.3, moral: 7 } },
+        { id: "aguentar", rotulo: "Aguentar a rotina", resultado: "O dinheiro na conta compensa. Quase sempre.", marca: "aguentar", efeitos: { moral: -3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      folga: { titulo: "A família voltou do deserto", texto: "{pessoa} montou uma rotina de folga com a sua família e pediu que você avise antes da próxima viagem.", ficha: "Levou a família para viajar na folga; {pessoa} organizou o roteiro." },
+      cansaco: { titulo: "Cansaço de quem não dorme", texto: "{pessoa} notou que você dorme mal e sugeriu um horário mais cedo para o próximo ciclo.", ficha: "Aguentou a rotina noturna; {pessoa} alertou sobre o sono." },
+    },
+    marcas: { viagem: "folga", aguentar: "cansaco" },
+    fichaMarca: { viagem: "Levou a família para viajar na folga do calor.", aguentar: "Aguentou a rotina de treino à noite." },
+  },
+
+  "jp-onsen": {
+    id: "jp-onsen", fases: ["estabelecido", "estrela"], quando: (c) => c.pais === "JPN",
+    personagens: pessoas("Veterano do elenco que organiza o onsen depois das fases difíceis. Insiste que todo mundo vá.", { BRA: "Wagner Ribeiro", POR: "Vasco Pinhal", ESP: "Ramón Bermejo", ITA: "Gianluca Fiore", FRA: "Stéphane Roy", ENG: "Neil Garside", USA: "Greg Mallory", GER: "Uwe Brandl", NED: "Huub Dekker", TUR: "Ferhat Güler", CRO: "Vinko Lasić", MAR: "Brahim Idrissi", KSA: "Majed Al-Rashidi", IRN: "Hamid Taheri", NGA: "Victor Ezeh", JPN: "Yamada Tatsuya", KOR: "Kwon Sang-hoon", LATAM: "Daniel Quintero" }),
+    fichaInicio: "Convite para o onsen feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Água quente com o time",
+      texto: "No Japão, o time inteiro costuma ir a um onsen depois de uma fase difícil. {pessoa} insiste que você vá com os mais velhos.",
+      origem: "vestiario",
+      opcoes: [
+        { id: "ir", rotulo: "Ir com o grupo", resultado: "Silêncio, água quente e uma conversa que o treinador nunca ouviria. O elenco voltou mais unido.", marca: "ir", efeitos: { moral: 6, cansaco: -8 }, valor: { chave: "onsen", sinal: -1 } },
+        { id: "nao", rotulo: "Ficar no hotel", resultado: "Você preferiu o descanso sozinho. Ninguém brigou, mas percebeu.", marca: "nao", efeitos: { cansaco: -4, engajamento: -2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      uniao: { titulo: "O elenco voltou mais unido", texto: "{pessoa} passou a sentar do seu lado no ônibus e a te chamar para os jantares do grupo.", ficha: "Foi ao onsen com o time; {pessoa} virou companhia de jantar." },
+      distancia: { titulo: "O grupo percebeu", texto: "{pessoa} comentou no vestiário que você prefere ficar sozinho depois das vitórias.", ficha: "Ficou no hotel no onsen; {pessoa} comentou no vestiário." },
+    },
+    marcas: { ir: "uniao", nao: "distancia" },
+    fichaMarca: { ir: "Foi ao onsen com o time.", nao: "Ficou no hotel em vez de ir ao onsen." },
+  },
+
+  "kr-soju": {
+    id: "kr-soju", fases: ["estabelecido", "estrela"], quando: (c) => c.pais === "KOR",
+    personagens: pessoas("Veterano coreano do elenco. Sabe quando você já bebeu o suficiente e não deixa ninguém esquecer.", { BRA: "Wilson Lopes", POR: "Rui Tavares", ESP: "Javi Lorenzo", ITA: "Mauro Bruno", FRA: "Patrice Lacroix", ENG: "Stuart Lowe", USA: "Gary Whitman", GER: "Ralf Wenzel", NED: "Rudi Vermeer", TUR: "Selçuk Arık", CRO: "Ivan Matić", MAR: "Abdelaziz Haddad", KSA: "Saleh Al-Mutlaq", IRN: "Mehran Karami", NGA: "Gbenga Adeyemi", JPN: "Okamoto Shinji", KOR: "Han Sang-min", LATAM: "Gerardo Silva" }),
+    fichaInicio: "Primeiro brinde com {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Brinde depois da vitória",
+      texto: "Depois de uma vitória grande, {pessoa} pede um brinde com o elenco. Ele sabe quando você já bebeu o suficiente.",
+      origem: "vestiario",
+      opcoes: [
+        { id: "brindar", rotulo: "Brindar com os veteranos", resultado: "Três copos e uma história que você vai contar por anos. Fama de quem sabe respeitar.", marca: "brindar", efeitos: { moral: 5, fama: 2, relTecnico: 2 } },
+        { id: "recusar", rotulo: "Pedir água", resultado: "Você ficou sóbrio e os veteranos respeitaram. A conversa foi sobre o próximo jogo.", marca: "recusar", efeitos: { moral: 1, relTecnico: 1 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      respeito: { titulo: "Respeito de veterano", texto: "{pessoa} te chamou para o próximo brinde e disse que você tem jeito de capitão.", ficha: "Brindou com os veteranos; {pessoa} te chamou de próximo capitão." },
+      sobrio: { titulo: "Água no copo", texto: "{pessoa} comentou que quem fica sóbrio também ganha respeito, e contou a história para o elenco.", ficha: "Pediu água no brinde; {pessoa} contou para o elenco.", semanas: 2 },
+    },
+    marcas: { brindar: "respeito", recusar: "sobrio" },
+    fichaMarca: { brindar: "Brindou com os veteranos depois da vitória.", recusar: "Pediu água no brinde do elenco." },
+  },
+
+  "ma-cha": {
+    id: "ma-cha", fases: ["inicio", "estabelecido", "estrela"], quando: (c) => c.pais === "MAR",
+    personagens: pessoas("Vizinha mais antiga da rua. Organiza o chá de menta e sabe da vida de todo mundo.", { BRA: "Dona Cida Matos", POR: "Dona Lurdes Pires", ESP: "Doña Pilar Lara", ITA: "Nonna Assunta", FRA: "Madame Odette Garnier", ENG: "Mrs. Edna Pryce", USA: "Mrs. Lorraine Hardy", GER: "Frau Gisela Ott", NED: "Tante Riet", TUR: "Teyze Fatma", CRO: "Baka Zora", MAR: "Lalla Zahra", KSA: "Umm Saad", IRN: "Khanum Nasrin", NGA: "Mama Folake", JPN: "Obaasan Haruko", KOR: "Halmeoni Park Bok-hee", LATAM: "Doña Blanca Ruiz" }),
+    fichaInicio: "Convite para o chá feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Chá de menta para a vizinhança",
+      texto: "Em Marrocos, quem chega do estrangeiro recebe a vizinhança para o chá de menta. {pessoa} avisa que a casa inteira espera a sua visita.",
+      origem: "cidade",
+      opcoes: [
+        { id: "receber", rotulo: "Receber todo mundo", resultado: "Chá até tarde, bolo de mel e a rua inteira na sala. A casa virou ponto de encontro.", marca: "receber", efeitos: { moral: 6, fama: 1 }, valor: { chave: "festa", sinal: -1 } },
+        { id: "pouco", rotulo: "Receber só a família", resultado: "Uma visita curta e um pedido de desculpas por não ter tempo. A mãe não gostou.", marca: "pouco", efeitos: { moral: -2, pais: -3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      rua: { titulo: "A rua inteira fala de você", texto: "{pessoa} espalhou o chá pela vizinhança e ninguém esqueceu a noite.", ficha: "Recebeu a vizinhança para o chá de menta; {pessoa} contou para a rua." },
+      visita: { titulo: "A visita que faltou", texto: "{pessoa} perguntou se você ainda vai passar, e sua família não tocou no assunto.", ficha: "Recebeu só a família; {pessoa} sentiu a falta." },
+    },
+    marcas: { receber: "rua", pouco: "visita" },
+    fichaMarca: { receber: "Recebeu a vizinhança para o chá de menta.", pouco: "Recebeu só a família no chá." },
+  },
+
+  "ma-eid": {
+    id: "ma-eid", fases: ["inicio", "estabelecido", "estrela"], quando: (c) => c.pais === "MAR",
+    personagens: pessoas("Tio da família que organiza a festa de Eid e quer você na mesa principal.", { BRA: "Tio Zé Antônio", POR: "Tio Armando", ESP: "Tío Lorenzo", ITA: "Zio Pino", FRA: "Oncle Henri", ENG: "Uncle Desmond", USA: "Uncle Ray", GER: "Onkel Wolfgang", NED: "Oom Jan", TUR: "Amca Hasan", CRO: "Ujak Mladen", MAR: "Am Mohamed", KSA: "Amm Khalid", IRN: "Dayi Bahram", NGA: "Uncle Segun", JPN: "Oji Hideo", KOR: "Samchon Kim Dong-jin", LATAM: "Tío Ernesto" }),
+    fichaInicio: "Convite da festa de Eid feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Festa de fim de Ramadã",
+      texto: "A festa de Eid cai na semana de folga. {pessoa} quer você na mesa principal, com a cidade inteira.",
+      origem: "familia",
+      opcoes: [
+        { id: "ficar", rotulo: "Largar tudo e ir", resultado: "A mesa mais cheia da sua vida. Sua avó pediu para você contar a história da estreia de novo.", marca: "ficar", efeitos: { moral: 8, cansaco: -5 }, valor: { chave: "jantar", sinal: -1 } },
+        { id: "treinar", rotulo: "Treinar na folga", resultado: "O técnico elogiou a dedicação. Sua família entendeu, mas ficou um pouco longe da festa.", marca: "treinar", efeitos: { relTecnico: 3, pais: -2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      mesa: { titulo: "A mesa principal", texto: "{pessoa} contou para toda a família a noite em que você ficou na festa.", ficha: "Largou tudo para a festa de Eid; {pessoa} espalhou a notícia." },
+      distancia: { titulo: "Família de longe", texto: "{pessoa} disse que a família agora liga só nos domingos.", ficha: "Treinou na folga de Eid; {pessoa} sentiu a distância." },
+    },
+    marcas: { ficar: "mesa", treinar: "distancia" },
+    fichaMarca: { ficar: "Largou tudo para a festa de Eid.", treinar: "Treinou na folga de Eid." },
+  },
+
+  "hr-dalmacia": {
+    id: "hr-dalmacia", fases: ["estabelecido", "estrela"], quando: (c) => c.pais === "CRO",
+    personagens: pessoas("Amigo de infância que tem barco na costa. Liga quando o verão começa.", { BRA: "Rafael Coutinho", POR: "Hugo Vaz", ESP: "Iván Bravo", ITA: "Matteo Conti", FRA: "Julien Bertrand", ENG: "Liam Heald", USA: "Ben Collier", GER: "Felix Brandt", NED: "Stijn Haas", TUR: "Burak Sönmez", CRO: "Ante Mikulić", MAR: "Ilyas Benkhalifa", KSA: "Turki Al-Sharif", IRN: "Shahin Abedi", NGA: "Dele Ogunbiyi", JPN: "Watanabe Ryo", KOR: "Jeong Min-seok", LATAM: "Mauricio Vergara" }),
+    fichaInicio: "Convite do barco feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Verão na costa",
+      texto: "Na Croácia, o verão é de barco e de jantar à beira-mar. {pessoa} ligou com o barco pronto para uma semana.",
+      origem: "convite",
+      opcoes: [
+        { id: "barco", rotulo: "Ir de barco por uma semana", resultado: "Mar, sal e nenhum celular por dias. Você voltou com o corpo descansado.", marca: "barco", efeitos: { moral: 7, cansaco: -12 }, valor: { chave: "viagem", sinal: -1 } },
+        { id: "ficar", rotulo: "Ficar treinando", resultado: "O treino rendeu, mas a equipe percebeu que você estava cansado de si mesmo.", marca: "ficar", efeitos: { relTecnico: 3, moral: -3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      mar: { titulo: "Uma semana no mar", texto: "{pessoa} mandou as fotos do barco e um convite para o próximo verão.", ficha: "Passou uma semana de barco na costa; {pessoa} mandou fotos." },
+      cansaco: { titulo: "Treino sem descanso", texto: "{pessoa} percebeu que você não parou e pediu que o técnico cuidasse da sua carga.", ficha: "Ficou treinando no verão; {pessoa} pediu cuidado com a carga." },
+    },
+    marcas: { barco: "mar", ficar: "cansaco" },
+    fichaMarca: { barco: "Passou uma semana de barco na costa.", ficar: "Ficou treinando no verão." },
+  },
+
+  "hr-avo": {
+    id: "hr-avo", fases: ["base", "inicio"], quando: (c) => c.pais === "CRO",
+    personagens: pessoas("Avó que cozinha peixe para o neto que joga longe e quer saber se ele come direito.", { BRA: "Vó Lurdinha", POR: "Avó Conceição", ESP: "Abuela Rosario", ITA: "Nonna Carmela", FRA: "Mamie Yvette", ENG: "Nan Joan", USA: "Grandma Dot", GER: "Oma Ilse", NED: "Oma Trijn", TUR: "Babaanne Hatice", CRO: "Baka Marija", MAR: "Jeddati Fatima", KSA: "Jaddati Hessa", IRN: "Mamanbozorg Shahla", NGA: "Mama Iyabo", JPN: "Obaachan Michiko", KOR: "Halmeoni Lee Soon-ja", LATAM: "Abuela Consuelo" }),
+    fichaInicio: "Ligação da avó feita por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "A avó e o peixe",
+      texto: "{pessoa} cozinha peixe para o neto que joga longe. Ela quer saber se você está comendo direito.",
+      origem: "familia",
+      opcoes: [
+        { id: "comer", rotulo: "Comer tudo que ela fez", resultado: "Três pratos e uma bronca carinhosa. Você voltou ao CT com a energia de quem foi cuidado.", marca: "comer", efeitos: { moral: 5, cansaco: -4 } },
+        { id: "dieta", rotulo: "Dizer que está de dieta", resultado: "Ela se ofendeu e mandou um pote para o seu quarto mesmo assim.", marca: "dieta", efeitos: { moral: 1, pais: 2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      pote: { titulo: "O pote chegou", texto: "{pessoa} mandou um pote de peixe pelo correio, com um bilhete pedindo que você descanse.", ficha: "Comeu tudo que a avó cozinhou; o pote chegou no CT.", semanas: 2 },
+      bilhete: { titulo: "Bilhete da avó", texto: "{pessoa} mandou um bilhete dizendo que dieta é coisa de quem não tem avó.", ficha: "Disse que estava de dieta; {pessoa} não aceitou." },
+    },
+    marcas: { comer: "pote", dieta: "bilhete" },
+    fichaMarca: { comer: "Comeu tudo que a avó cozinhou.", dieta: "Disse à avó que estava de dieta." },
+  },
+
+  "pt-fado": {
+    id: "pt-fado", fases: ["inicio", "estabelecido", "estrela"], quando: (c) => c.pais === "POR",
+    personagens: pessoas("Vizinho que puxa o fado na rua. Quer ver quem canta junto no refrão.", { BRA: "Seu Ataíde Brito", POR: "Alfredo Leal", ESP: "Manolo Ferrer", ITA: "Gigi Carosi", FRA: "Gilbert Mercier", ENG: "Fred Barlow", USA: "Vince Morella", GER: "Rudi Maier", NED: "Gerard Pieters", TUR: "Nihat Kurt", CRO: "Dragan Pavlović", MAR: "Abdellah Mouline", KSA: "Saad Al-Jabri", IRN: "Hassan Kiani", NGA: "Sola Bakare", JPN: "Kimura Masaru", KOR: "Park Yong-soo", LATAM: "Tito Benavídez" }),
+    fichaInicio: "Roda de fado começou com {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Noite de fado no bairro",
+      texto: "A rua se junta para ouvir fado. {pessoa} pediu para você cantar uma música e a roda inteira te encara.",
+      origem: "cidade",
+      opcoes: [
+        { id: "cantar", rotulo: "Cantar, mesmo sem saber a letra", resultado: "Os vizinhos cantaram junto no refrão. O vídeo rodou o bairro e a torcida gostou.", marca: "cantar", efeitos: { fama: 3, moral: 4, engajamento: 2 } },
+        { id: "ouvir", rotulo: "Ouvir e aplaudir", resultado: "Você ficou no canto, aplaudindo. A noite foi boa, e ninguém te cobrou nada.", marca: "ouvir", efeitos: { moral: 3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      refrao: { titulo: "O refrão que virou vídeo", texto: "{pessoa} postou o vídeo da roda cantando e marcou você.", ficha: "Cantou fado com a vizinhança; {pessoa} postou o vídeo." },
+      aplausos: { titulo: "A roda da rua", texto: "{pessoa} convidou você para a próxima noite de fado, sem pedir nada em troca.", ficha: "Ouviu o fado no bairro; {pessoa} convidou de novo.", semanas: 2 },
+    },
+    marcas: { cantar: "refrao", ouvir: "aplausos" },
+    fichaMarca: { cantar: "Cantou fado com a vizinhança.", ouvir: "Ouviu o fado no bairro e aplaudiu." },
+  },
+
+  "pt-pastel": {
+    id: "pt-pastel", fases: ["base", "inicio"], quando: (c) => c.pais === "POR",
+    personagens: pessoas("Tia que mora em Portugal e manda pastéis de nata com bilhete para você descansar.", { BRA: "Tia Neusa", POR: "Tia Olga", ESP: "Tía Remedios", ITA: "Zia Rina", FRA: "Tante Simone", ENG: "Auntie Maureen", USA: "Aunt Marcy", GER: "Tante Renate", NED: "Tante Annie", TUR: "Teyze Nazlı", CRO: "Teta Vesna", MAR: "Khalti Samira", KSA: "Ammah Latifa", IRN: "Ammeh Parvin", NGA: "Auntie Bisola", JPN: "Oba Sachiko", KOR: "Imo Choi Eun-hee", LATAM: "Tía Graciela" }),
+    fichaInicio: "Caixa de pastéis enviada por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Pastel de nata e saudade",
+      texto: "Você recebeu uma caixa de pastéis de nata da sua tia, {pessoa}, que mora em Portugal. Ela mandou um bilhete pedindo que você descanse.",
+      origem: "familia",
+      opcoes: [
+        { id: "dividir", rotulo: "Dividir com o time", resultado: "O vestiário inteiro comeu em dois minutos. Virou tradição de quinta-feira.", marca: "dividir", efeitos: { moral: 5, relTecnico: 1 } },
+        { id: "guardar", rotulo: "Guardar para você", resultado: "Você comeu um por dia, em silêncio, como ela gosta.", marca: "guardar", efeitos: { moral: 3 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      tradicao: { titulo: "Quinta dos pastéis", texto: "O time passou a esperar a caixa da tia de {pessoa} toda quinta-feira.", ficha: "Dividiu os pastéis de nata; virou tradição no vestiário." },
+      saudade: { titulo: "Um por dia", texto: "{pessoa} ligou perguntando se os pastéis chegaram inteiros e se você comeu um por dia.", ficha: "Guardou os pastéis; {pessoa} ligou para saber.", semanas: 2 },
+    },
+    marcas: { dividir: "tradicao", guardar: "saudade" },
+    fichaMarca: { dividir: "Dividiu os pastéis de nata com o time.", guardar: "Guardou os pastéis de nata para comer em silêncio." },
+  },
+
+  "usa-tailgate": {
+    id: "usa-tailgate", fases: ["base", "inicio", "estabelecido"], quando: (c) => c.pais === "USA",
+    personagens: pessoas("Líder do grupo de torcedores que faz churrasco no estacionamento antes do jogo.", { BRA: "Diego Pacheco", POR: "Pedro Alves", ESP: "Sergi Puig", ITA: "Fabio Lodi", FRA: "Mathis Dupuy", ENG: "Dean Harker", USA: "Trey Callahan", GER: "Benno Hoffmann", NED: "Kees Brouwer", TUR: "Mustafa Yüce", CRO: "Josip Mandić", MAR: "Oussama Chakir", KSA: "Ayman Al-Dosari", IRN: "Pouria Javadi", NGA: "Tayo Adeleke", JPN: "Kato Riku", KOR: "Yang Joon-ho", LATAM: "Ariel Guzmán" }),
+    fichaInicio: "Convite do churrasco feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Churrasco antes do jogo",
+      texto: "A torcida faz churrasco no estacionamento antes do jogo. {pessoa} pede que você passe por lá.",
+      origem: "torcida",
+      opcoes: [
+        { id: "passar", rotulo: "Passar e ficar um pouco", resultado: "Hambúrguer, cerveja de lata e uma foto com todo mundo de camisa. A torcida lembrou do seu nome.", marca: "passar", efeitos: { fama: 2, moral: 4 }, valor: { chave: "churrasco", sinal: -1 } },
+        { id: "direto", rotulo: "Ir direto ao vestiário", resultado: "Foco total no jogo. Os amigos entenderam, mas ficaram com a ideia de que você mudou.", marca: "direto", efeitos: { relTecnico: 2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      torcida: { titulo: "A torcida lembrou do seu nome", texto: "{pessoa} montou um grupo do churrasco e marca você em todas as fotos.", ficha: "Passou no churrasco do estacionamento; {pessoa} criou o grupo." },
+      mudou: { titulo: "A ideia de que você mudou", texto: "{pessoa} disse que a turma do churrasco não entende quem fica no vestiário.", ficha: "Foi direto ao vestiário; {pessoa} ficou magoado.", semanas: 2 },
+    },
+    marcas: { passar: "torcida", direto: "mudou" },
+    fichaMarca: { passar: "Passou no churrasco da torcida antes do jogo.", direto: "Foi direto ao vestiário sem passar no churrasco." },
+  },
+
+  "usa-thanksgiving": {
+    id: "usa-thanksgiving", fases: ["estabelecido", "estrela"], quando: (c) => c.pais === "USA",
+    personagens: pessoas("Primo que organiza a ceia de Ação de Graças e liga toda quinta para saber da viagem.", { BRA: "Primo Eduardo", POR: "Primo Nuno Lima", ESP: "Primo Álvaro Gil", ITA: "Cugino Dario", FRA: "Cousin Lucas Perrin", ENG: "Cousin Jake Lowry", USA: "Cousin Mike Turner", GER: "Cousin Florian Berg", NED: "Neef Joost", TUR: "Kuzen Emir", CRO: "Brat Marko", MAR: "Ibn-Amm Yassin", KSA: "Ibn Amm Fahd", IRN: "Pesar-amou Navid", NGA: "Cousin Tobi Okoye", JPN: "Itoko Daiki", KOR: "Sachon Jun-ho", LATAM: "Primo Emiliano Vera" }),
+    fichaInicio: "Ligação de Ação de Graças feita por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Ação de Graças",
+      texto: "Na quinta de Ação de Graças, {pessoa} liga do Estados Unidos e pergunta quando vai ser a próxima viagem.",
+      origem: "familia",
+      opcoes: [
+        { id: "visitar", rotulo: "Viajar para a festa", resultado: "Peru assado, jogo de futebol americano na TV e a casa inteira junta. Você voltou a tempo do treino.", marca: "visitar", efeitos: { moral: 7, pais: 3 }, valor: { chave: "passeio", sinal: -1 } },
+        { id: "ligar", rotulo: "Fazer chamada de vídeo", resultado: "A mesa inteira te mostrou para os primos. Foi bom, mas você sentiu a falta do cheiro da casa.", marca: "ligar", efeitos: { moral: 3, pais: 1 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      ceia: { titulo: "A ceia que todo mundo lembra", texto: "{pessoa} mandou as fotos da mesa e marcou a viagem do ano que vem.", ficha: "Foi à ceia de Ação de Graças; {pessoa} mandou as fotos." },
+      saudade: { titulo: "Saudade da mesa", texto: "{pessoa} disse que a família ainda espera a sua visita no Natal.", ficha: "Fez chamada na Ação de Graças; {pessoa} espera a visita de Natal." },
+    },
+    marcas: { visitar: "ceia", ligar: "saudade" },
+    fichaMarca: { visitar: "Viajou para a ceia de Ação de Graças.", ligar: "Fez chamada de vídeo na Ação de Graças." },
+  },
+
+  "mx-mariachi": {
+    id: "mx-mariachi", fases: ["inicio", "estabelecido", "estrela"], quando: (c) => c.pais === "MEX",
+    personagens: pessoas("Tio que contrata o mariachi para a serenata na porta de casa.", { BRA: "Tio Valdir", POR: "Tio Vitor Moura", ESP: "Tío Ceferino", ITA: "Zio Ettore", FRA: "Oncle Gaston", ENG: "Uncle Pat", USA: "Uncle Frank", GER: "Onkel Helmut", NED: "Oom Pieter", TUR: "Dayı Kadir", CRO: "Ujak Ivan", MAR: "Am Yahya", KSA: "Amm Hamad", IRN: "Dayi Majid", NGA: "Uncle Dapo", JPN: "Oji Kenzo", KOR: "Samchon Lee Jae-gu", LATAM: "Tío Chuy Ocampo" }),
+    fichaInicio: "Serenata combinada por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Serenata na porta de casa",
+      texto: "{pessoa} combinou uma serenata de mariachi na porta da sua casa. A vizinhança está na calçada.",
+      origem: "familia",
+      opcoes: [
+        { id: "cantar", rotulo: "Descer e cantar junto", resultado: "Um dos tios chorou no refrão final. Você ganhou um sombrero de presente e uma torcida na rua.", marca: "cantar", efeitos: { moral: 7, fama: 2 }, valor: { chave: "presente", sinal: -1 } },
+        { id: "janela", rotulo: "Ficar na janela e acenar", resultado: "Os tios gritaram seu nome e a rua inteira riu. Foi uma noite diferente.", marca: "janela", efeitos: { moral: 4 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      serenata: { titulo: "A serenata da rua", texto: "{pessoa} contratou o mariachi de novo para o aniversário da sua mãe.", ficha: "Desceu para a serenata de {pessoa}; a rua inteira cantou." },
+      riso: { titulo: "A rua riu", texto: "{pessoa} ainda conta a história da janela em todas as festas.", ficha: "Acenou da janela na serenata; {pessoa} conta a história.", semanas: 2 },
+    },
+    marcas: { cantar: "serenata", janela: "riso" },
+    fichaMarca: { cantar: "Desceu e cantou na serenata de mariachi.", janela: "Acenou da janela na serenata." },
+  },
+
+  "co-cumbia": {
+    id: "co-cumbia", fases: ["base", "inicio", "estabelecido", "estrela"], quando: (c) => c.pais === "COL",
+    personagens: pessoas("Líder do bloco do bairro. Chama todo mundo para dançar na rua no sábado.", { BRA: "Mestre Dedé", POR: "Mestre Joaquim Sá", ESP: "Maestro Julián Pardo", ITA: "Maestro Bruno Serra", FRA: "Maître Yannick Aubry", ENG: "Mr. Dexter Hall", USA: "Dex Rivera", GER: "Meister Hanno Franz", NED: "Meester Ruben Dijkman", TUR: "Usta Kenan", CRO: "Majstor Zlatko", MAR: "Maâlem Hamid", KSA: "Shaikh Mazen", IRN: "Ostad Keyvan", NGA: "Baba Ajibola", JPN: "Sensei Hiroto", KOR: "Min Ki-tae", LATAM: "Don Alirio Rivas" }),
+    fichaInicio: "Convite do bloco feito por {pessoa}: {quando}.",
+    inicio: {
+      titulo: "Festa de bairro com cumbia",
+      texto: "O bairro faz festa na rua no sábado, e a cumbia não para. {pessoa} te chamou para dançar na frente de todo mundo.",
+      origem: "cidade",
+      opcoes: [
+        { id: "dancar", rotulo: "Dançar até cansar", resultado: "Você mostrou ritmo fora do campo também. O bairro não esqueceu.", marca: "dancar", efeitos: { moral: 6, cansaco: 6, fama: 1 } },
+        { id: "sentar", rotulo: "Ficar sentado com a família", resultado: "A avó te deu café e disse que você ainda vai ser maior do que ela imagina.", marca: "sentar", efeitos: { moral: 3, pais: 2 } },
+      ],
+    },
+    passos: {},
+    consequencias: {
+      bloco: { titulo: "O bloco do bairro", texto: "{pessoa} disse que o bloco vai te esperar no próximo sábado.", ficha: "Dançou cumbia na rua; {pessoa} espera no próximo sábado." },
+      avo: { titulo: "Café com a avó", texto: "{pessoa} contou que a avó perguntou de você no mercado.", ficha: "Ficou sentado com a família; {pessoa} mandou notícias da avó." },
+    },
+    marcas: { dancar: "bloco", sentar: "avo" },
+    fichaMarca: { dancar: "Dançou cumbia na festa do bairro.", sentar: "Ficou sentado com a família na festa do bairro." },
+  },
 };
 
 // Nomes dos grupos de países (ver GRUPO_DO_PAIS em cadeias.ts). O empresário leva a agência no nome.
