@@ -82,6 +82,8 @@ const NUMERO_COR: Record<string, string> = {
   "PT-SCP": "#111111",
   /** Brentford (Brentiforde no jogo): número e nome pretos sobre o vermelho e o branco */
   "EN-BRE": "#111111",
+  /** Atlético de Madrid: número e nome azuis sobre o vermelho e o branco */
+  "ES-ATM": "#1F3C88",
   /** Seleção Brasileira: número e nome verdes sobre o amarelo */
   "NAT-BRA": "#009C3B",
 };
