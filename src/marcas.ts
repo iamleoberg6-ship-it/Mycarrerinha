@@ -225,12 +225,12 @@ export function forteEm(m: Marca, r: Regiao): boolean {
  *  pesam muito mais; as do país do jogador aparecem quando ele já é conhecido; as de outro canto do mundo, quase nunca. */
 export function marcaInteressada(rng: RNG, fama: number, idade: number, ativos: ContratoPatrocinio[], recusadas: string[], seguidores = 0, paisClube?: string, paisJogador?: string): Marca | undefined {
   const ocupadas = new Set(ativos.map((c) => MARCA[c.marca]?.categoria));
-  const regiao = regiaoDoPais(paisClube ?? "BRA");
+  const regiao = regiaoDoPais(paisClube ?? "BRA"), casa = paisJogador ? regiaoDoPais(paisJogador) : regiao;
   const pool = MARCAS.filter((m) => !m.soClube && !ocupadas.has(m.categoria) && fama >= m.famaMin && seguidores >= (m.seguidoresMin ?? 0) && (m.categoria !== "cerveja" || (idade >= 18 && regiao !== "GOLFO")) && !recusadas.includes(m.id));
   if (!pool.length) return undefined;
   // marca grande tem preferência quando o jogador já é grande; a região decide quem bate na porta
-  // marca regional só patrocina quem joga na região dela (Gororó Antártica só no Brasil); as globais aparecem em todo lugar
-  const fatorRegiao = (m: Marca) => !m.regioes ? 1 : forteEm(m, regiao) ? 4 : 0;
+  // a região do clube decide quem bate na porta; a marca do país do jogador o acompanha quando ele já é conhecido lá fora
+  const fatorRegiao = (m: Marca) => !m.regioes ? 1 : forteEm(m, regiao) ? 4 : forteEm(m, casa) && fama >= 45 ? 1.2 : 0.04;
   const pesos = pool.map((m) => (1 + (fama - m.famaMin) / 40 + m.peso) * fatorRegiao(m));
   let x = rng.next() * pesos.reduce((a, b) => a + b, 0);
   for (let i = 0; i < pool.length; i++) { x -= pesos[i]; if (x <= 0) return pool[i]; }

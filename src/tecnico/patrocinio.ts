@@ -56,9 +56,11 @@ export function patrociniosDe(pacote: PacoteDados, s: SaveMin): PatrociniosClube
 function candidatas(pacote: PacoteDados, s: SaveMin, cota: Cota): Marca[] {
   const info = infoClube(pacote, s.clubeId), reg = regiaoDoPais(info?.pais), forca = forcaDe(pacote, s.clubeId);
   const fama = clamp((forca - 55) * 2.4, 0, 100);
-  return MARCAS.filter((m) => COTAS[cota].cats.includes(m.categoria) && fama >= m.famaMin - 10 && (!m.regioes || forteEm(m, reg)) && !(m.categoria === "cerveja" && reg === "GOLFO"))
+  // clube de alcance internacional (os gigantes) também atrai as marcas grandes de outras regiões
+  const alcance = forca >= 80;
+  return MARCAS.filter((m) => COTAS[cota].cats.includes(m.categoria) && fama >= m.famaMin - 10 && (!m.regioes || forteEm(m, reg) || (alcance && m.peso >= 1.4)) && !(m.categoria === "cerveja" && reg === "GOLFO"))
     // a marca da casa vem primeiro: regional pesa mais que a global do mesmo tamanho
-    .sort((a, b) => (b.peso + (b.regioes ? 0.8 : 0)) - (a.peso + (a.regioes ? 0.8 : 0)));
+    .sort((a, b) => (b.peso + (b.regioes && forteEm(b, reg) ? 0.8 : 0)) - (a.peso + (a.regioes && forteEm(a, reg) ? 0.8 : 0)));
 }
 /** Valor justo de uma cota por mês para uma marca (o peso da marca, a torcida e o tamanho do estádio mexem). */
 function valorJusto(s: SaveMin, p: PatrociniosClube, cota: Cota, m: Marca, r: RNG): number {
