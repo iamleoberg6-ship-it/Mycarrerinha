@@ -9,6 +9,9 @@ import { infoLiga } from "../ligas.js";
 import { gerarNome } from "../nomes.js";
 import { onzeProvavel } from "../relacoes.js";
 import { valorMercado, CAMBIO } from "../mercado.js";
+import { curtoBrl } from "../moeda.js";
+/** Dinheiro nas mensagens: na moeda que a tela está usando. */
+const dinheiroT = (v: number) => curtoBrl(v);
 import {
   FORMACOES, FUNCOES, NOME_FUNCAO, atletaDoMundo, custoObra, disponivel, forcaDoTime, formaDe, gerarAtributos, melhorEscalacao, ovrDe, ovrNaVaga, precoIngresso,
   salarioJusto, salarioStaff, taticaPadrao, valorAtleta, type Atleta, type Escalacao, type Funcao, type Membro, type PosT, type Tatica,
@@ -248,7 +251,7 @@ export function renovar(pacote: PacoteDados, s: SaveTecnico, id: string, anos: n
   if (a.querSair || a.moral < 35) return { ok: false, msg: `${a.nome} não quer conversar sobre renovação agora.` };
   if (a.idade >= 34 && anos > 1) return { ok: false, msg: `Com ${a.idade} anos, ${a.nome} só aceita um ano.` };
   const novo = pedidoRenovacao(s, a, mundo(pacote).clube[s.clubeId]?.fClube ?? 1);
-  if (folhaDe(s) - a.salario + novo > s.clube.tetoFolha) return { ok: false, msg: `A diretoria barrou: o salário pedido (${novo.toLocaleString("pt-BR")}) passa do teto da folha.` };
+  if (folhaDe(s) - a.salario + novo > s.clube.tetoFolha) return { ok: false, msg: `A diretoria barrou: o salário pedido (${dinheiroT(novo)}) passa do teto da folha.` };
   a.salario = novo; a.contratoAte = Math.max(a.contratoAte, s.temporada) + anos; a.moral = clamp(a.moral + 5, 0, 100);
   noticia(s, "elenco", `${a.nome} renovou até ${ANO_INICIAL_T + a.contratoAte}.`);
   return { ok: true, msg: `${a.nome} renovou até ${ANO_INICIAL_T + a.contratoAte}.` };
@@ -293,7 +296,7 @@ export function agentesLivresT(pacote: PacoteDados, s: SaveTecnico): Livre[] {
 export function contratarLivre(pacote: PacoteDados, s: SaveTecnico, nome: string, anos: number): { ok: boolean; msg: string } {
   const x = agentesLivresT(pacote, s).find((l) => l.nome === nome);
   if (!x) return { ok: false, msg: "Esse jogador já acertou com outro clube." };
-  if (s.elenco.length >= 32) return { ok: false, msg: "O elenco está cheio (32). Dispense alguém antes." };
+  if (s.elenco.length >= 36) return { ok: false, msg: "O elenco está cheio (36). Dispense alguém antes." };
   if (folhaDe(s) + x.pedido > s.clube.tetoFolha) return { ok: false, msg: "A diretoria barrou: esse salário passa do teto da folha." };
   const forca = mundo(pacote).clube[s.clubeId]?.forca ?? 65, limite = forca + 3 + s.tecnico.reputacao / 15;
   if (x.ovr > limite) { s.recusas.push(x.nome); return { ok: false, msg: `${x.nome} preferiu esperar uma proposta de um clube maior.` }; }
@@ -613,7 +616,7 @@ export { valorAtleta, ovrDe, formaDe, disponivel };
 
 // ------------------------------------------------------------------ mercado de transferências
 export interface Alvo { nome: string; pos: PosT; idade: number; ovr: number; nac: string; clubeId: string; ligaId: string; valor: number; titular: boolean }
-export interface PropostaRecebida { id: string; atletaId: string; clubeId: string; valor: number; expira: number; contra?: boolean }
+export interface PropostaRecebida { id: string; atletaId: string; clubeId: string; valor: number; expira: number; contra?: boolean | number; /** o máximo que o clube topa pagar (não aparece na tela) */ max?: number }
 export interface Transferencia { t: number; nome: string; de: string; para: string; valor: number; venda: boolean }
 const PRE_JANELA = SEMANAS_PRE_T + 4, MEIO_INI = SEMANAS_PRE_T + 17, MEIO_FIM = SEMANAS_PRE_T + 22;
 /** Janela aberta: pré-temporada até a 4ª rodada e no meio do ano, da 18ª à 22ª. */
@@ -669,13 +672,13 @@ export function fazerProposta(pacote: PacoteDados, s: SaveTecnico, nome: string,
   if (neg.tentativas >= 3) return { ok: false, status: "recusado", msg: `O ${infoClube(pacote, clubeId).nome} encerrou a conversa por ${nome} nesta janela.` };
   const int = interesseDo(pacote, s, a);
   if (!int.topa) return { ok: false, status: "recusado", msg: int.motivo };
-  if (s.elenco.length >= 32) return { ok: false, status: "erro", msg: "O elenco está cheio (32). Venda ou dispense alguém antes." };
+  if (s.elenco.length >= 36) return { ok: false, status: "erro", msg: "O elenco está cheio (36). Venda ou dispense alguém antes." };
   if (s.clube.saldo < valor) return { ok: false, status: "erro", msg: "O clube não tem esse dinheiro em caixa." };
-  if (folhaDe(s) + int.salario > s.clube.tetoFolha) return { ok: false, status: "erro", msg: `A diretoria barrou: o salário dele (${int.salario.toLocaleString("pt-BR")}/mês) passa do teto da folha.` };
+  if (folhaDe(s) + int.salario > s.clube.tetoFolha) return { ok: false, status: "erro", msg: `A diretoria barrou: o salário dele (${dinheiroT(int.salario)}/mês) passa do teto da folha.` };
   neg.tentativas++;
   const minimo = neg.pedido ?? minimoDoClube(s, a), nomeC = infoClube(pacote, clubeId).nome;
   if (valor < minimo) {
-    if (valor >= minimo * 0.8 && neg.tentativas < 3) { neg.pedido = Math.round(minimo * 1.03 / 1000) * 1000; return { ok: false, status: "contra", msg: `O ${nomeC} recusou, mas aceita vender por ${neg.pedido.toLocaleString("pt-BR")}.`, pedido: neg.pedido }; }
+    if (valor >= minimo * 0.8 && neg.tentativas < 3) { neg.pedido = Math.round(minimo * 1.03 / 1000) * 1000; return { ok: false, status: "contra", msg: `O ${nomeC} recusou, mas aceita vender por ${dinheiroT(neg.pedido)}.`, pedido: neg.pedido }; }
     return { ok: false, status: "recusado", msg: `O ${nomeC} achou a oferta baixa demais.${neg.tentativas >= 3 ? " A conversa acabou nesta janela." : ""}` };
   }
   // fechado
@@ -689,7 +692,7 @@ export function fazerProposta(pacote: PacoteDados, s: SaveTecnico, nome: string,
   delete s.negociacoes![`${clubeId}|${nome}`];
   versaoAplicada = -1;
   prepararMundo(pacote, s);
-  noticia(s, "elenco", `${nome} (${a.pos}, ${a.idade} anos) chega do ${nomeC} por ${valor.toLocaleString("pt-BR")}, com contrato até ${ANO_INICIAL_T + at.contratoAte}.`);
+  noticia(s, "elenco", `${nome} (${a.pos}, ${a.idade} anos) chega do ${nomeC} por ${dinheiroT(valor)}, com contrato até ${ANO_INICIAL_T + at.contratoAte}.`);
   return { ok: true, status: "fechado", msg: `Fechado! ${nome} assinou até ${ANO_INICIAL_T + at.contratoAte}.` };
 }
 function buscarAlvo(pacote: PacoteDados, s: SaveTecnico, nome: string, clubeId: string): Alvo | undefined {
@@ -724,17 +727,23 @@ function propostasDaSemana(pacote: PacoteDados, s: SaveTecnico, eventos: string[
     eventos.push(`Proposta do ${w.info[c.id]?.nome ?? c.id} por ${a.nome}.`);
   }
 }
-export function responderPropostaT(pacote: PacoteDados, s: SaveTecnico, id: string, r: "aceitar" | "recusar" | "contra"): { ok: boolean; msg: string } {
+export function responderPropostaT(pacote: PacoteDados, s: SaveTecnico, id: string, r: "aceitar" | "recusar" | "contra", pedido?: number): { ok: boolean; msg: string } {
   const p = (s.propostas ?? []).find((x) => x.id === id), a = p && s.elenco.find((x) => x.id === p.atletaId);
   if (!p || !a) return { ok: false, msg: "Essa proposta não vale mais." };
   const nomeC = infoClube(pacote, p.clubeId)?.nome ?? p.clubeId;
   const tirar = () => { s.propostas = s.propostas!.filter((x) => x.id !== id); };
   if (r === "recusar") { tirar(); if (a.querSair) a.moral = clamp(a.moral - 8, 0, 100); return { ok: true, msg: `Você recusou a proposta do ${nomeC}.${a.querSair ? ` ${a.nome} ficou chateado.` : ""}` }; }
   if (r === "contra") {
-    if (p.contra) return { ok: false, msg: "Você já pediu mais uma vez." };
-    p.contra = true;
-    if (rngT(s, "contra", id).chance(0.45)) { p.valor = Math.round(p.valor * 1.2 / 1000) * 1000; return { ok: true, msg: `O ${nomeC} aceitou subir para ${p.valor.toLocaleString("pt-BR")}. Agora é com você.` }; }
-    tirar(); return { ok: false, msg: `O ${nomeC} não subiu a oferta e desistiu.` };
+    // o clube tem um máximo que topa pagar (fica escondido): pedir até ele fecha pelo pedido; acima, ele sobe até o máximo; muito acima, desiste
+    const max = (p.max ??= Math.round(p.valor * rngT(s, "max", id).range(1.02, 1.35) / 1000) * 1000);
+    const quer = Math.round((pedido ?? p.valor) / 1000) * 1000;
+    if (quer <= p.valor) return responderPropostaT(pacote, s, id, "aceitar");
+    p.contra = (typeof p.contra === "number" ? p.contra : p.contra ? 1 : 0) + 1;
+    if (quer <= max) { p.valor = quer; return responderPropostaT(pacote, s, id, "aceitar"); }
+    if (quer > max * 1.4 || (p.contra as number) >= 3) { tirar(); return { ok: false, msg: `O ${nomeC} achou ${dinheiroT(quer)} fora da realidade e desistiu.` }; }
+    if (p.valor >= max) return { ok: false, msg: `O ${nomeC} não passa de ${dinheiroT(p.valor)}. É pegar ou largar.` };
+    p.valor = max;
+    return { ok: true, msg: `O ${nomeC} não paga ${dinheiroT(quer)}, mas subiu a oferta para ${dinheiroT(max)}. Disse que é o máximo.` };
   }
   if (s.elenco.length <= 18) return { ok: false, msg: "O elenco ficaria curto demais (mínimo de 18)." };
   tirar();
@@ -743,6 +752,6 @@ export function responderPropostaT(pacote: PacoteDados, s: SaveTecnico, id: stri
   (s.transferencias ??= []).unshift({ t: s.temporada, nome: a.nome, de: s.clubeId, para: p.clubeId, valor: p.valor, venda: true });
   if (ovrDe(a) >= (mundo(pacote).clube[s.clubeId]?.forca ?? 60) + 2) s.clube.torcida = clamp(s.clube.torcida - 4, 0, 100);
   versaoAplicada = -1; prepararMundo(pacote, s);
-  noticia(s, "elenco", `${a.nome} é vendido ao ${nomeC} por ${p.valor.toLocaleString("pt-BR")}.`);
+  noticia(s, "elenco", `${a.nome} é vendido ao ${nomeC} por ${dinheiroT(p.valor)}.`);
   return { ok: true, msg: `${a.nome} vendido ao ${nomeC}.` };
 }

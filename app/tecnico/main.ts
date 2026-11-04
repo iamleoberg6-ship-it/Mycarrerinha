@@ -5,7 +5,7 @@ import { ordenar } from "../../src/liga";
 import { mundo, infoClube, idClube } from "../../src/mundo";
 import { infoLiga } from "../../src/ligas";
 import { ATRIBUTOS } from "../../src/atributos";
-import { valorBrl, curtoBrl, definirMoeda } from "../../src/moeda";
+import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
 import { svgEscudo } from "../visual/escudos";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
@@ -31,6 +31,10 @@ let aba: "inicio" | "elenco" | "tatica" | "liga" | "clube" = "inicio";
 let sub = { elenco: "jogadores", clube: "financas" } as Record<string, string>;
 let filtro = "todos";
 let filtroMercado: { pos?: PosT; idadeMax?: number; minhaLiga: boolean; alcance: boolean } = { minhaLiga: true, alcance: true };
+/** Valor digitado (na moeda da tela) para reais, que é como o jogo guarda. */
+const lerValor = (id: string) => { const el = document.getElementById(id) as HTMLInputElement | null, n = +(el?.value ?? "").replace(/\D/g, ""); return n > 0 ? Math.round(n / MOEDAS[moedaAtual()].porBrl) : 0; };
+const naTela = (brl: number) => Math.round(numBrl(brl)).toLocaleString("pt-BR");
+const campoValor = (id: string, brl: number) => `<label class="campo-valor"><span>${esc(simboloAtual())}</span><input id="${id}" inputmode="numeric" autocomplete="off" value="${naTela(brl)}" aria-label="Valor em ${esc(simboloAtual())}"></label>`;
 let anosProposta = 3, msgNeg: { texto: string; ok: boolean; pedido?: number } | undefined;
 let msg: { texto: string; ok: boolean } | undefined;
 let ligaEscolhida = "BRA1";
@@ -190,15 +194,19 @@ function negociarHtml(s: SaveTecnico, nome: string, clubeId: string): string {
     <p class="aviso-t ${int.topa ? "ok" : "erro"}">${esc(int.motivo)}</p>
     ${msgNeg ? `<p class="aviso-t ${msgNeg.ok ? "ok" : "erro"}" role="status">${esc(msgNeg.texto)}</p>` : ""}
     ${!jan.aberta ? `<p class="sub">${esc(jan.texto)}</p>` : int.topa ? `<div><p class="rotulo">Contrato</p><div class="chips" style="margin-top:6px">${[1, 2, 3, 4, 5].map((n) => `<button class="chip${anosProposta === n ? " ativo" : ""}" data-anosprop="${n}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
-    <div><p class="rotulo">Oferta ao clube</p><div class="botoes" style="margin-top:6px">${msgNeg?.pedido ? `<button class="botao peq" data-oferta="${msgNeg.pedido}" data-alvo-n="${esc(a.nome)}" data-clube="${a.clubeId}">Pagar ${curtoBrl(msgNeg.pedido)}</button>` : ""}${ofertas.map((v, i) => `<button class="botao sec peq" data-oferta="${v}" data-alvo-n="${esc(a.nome)}" data-clube="${a.clubeId}">${["80%", "100%", "120%", "150%"][i]} · ${curtoBrl(v)}</button>`).join("")}</div>
-    <p class="sub" style="margin-top:6px">Titular, garoto e rival da mesma liga custam mais. Até 3 tentativas por janela.</p></div>` : ""}`;
+    <div><p class="rotulo">Sua oferta ao clube</p>${campoValor("ofertaValor", msgNeg?.pedido ?? a.valor)}
+      <div class="chips" style="margin:8px 0">${msgNeg?.pedido ? `<button class="chip ativo" data-preencher="ofertaValor" data-v="${msgNeg.pedido}">O clube pede ${curtoBrl(msgNeg.pedido)}</button>` : ""}${[0.8, 1, 1.2, 1.5].map((k) => `<button class="chip" data-preencher="ofertaValor" data-v="${Math.round(a.valor * k / 1000) * 1000}">${Math.round(k * 100)}% · ${curtoBrl(a.valor * k)}</button>`).join("")}</div>
+      <button class="botao" data-enviar-oferta data-alvo-n="${esc(a.nome)}" data-clube="${a.clubeId}" style="width:100%">Enviar proposta</button>
+    <p class="sub" style="margin-top:6px">Digite o valor que quiser. Os atalhos só preenchem o campo. O clube pede mais por titular, garoto e rival da mesma liga. Até 3 tentativas por janela.</p></div></div>` : ""}`;
 }
 function abaPropostas(s: SaveTecnico): string {
   const ps = s.propostas ?? [], jan = janelaT(s), por = new Map(s.elenco.map((a) => [a.id, a]));
   const hist = (s.transferencias ?? []).slice(0, 15);
   return `${aviso()}<p class="sub" style="margin-bottom:8px">${esc(jan.texto)} Coloque jogadores à venda pela ficha deles para atrair propostas.</p>
-    ${ps.length ? ps.map((p) => { const a = por.get(p.atletaId)!; return `<div class="painel" style="margin-bottom:8px"><div class="clube-op" style="border:0;padding:0">${escudo(p.clubeId)}<div><b>${esc(a.nome)}</b> <small class="sub">(${a.pos}, ${ovrDe(a)})</small><br><small class="sub">${esc(nomeClube(p.clubeId))} oferece</small></div><b style="font-size:16px">${curtoBrl(p.valor)}</b></div>
-      <p class="sub" style="margin:6px 0">Vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))} · responde até a próxima semana</p><div class="botoes"><button class="botao peq" data-prop="${esc(p.id)}" data-r="aceitar">Vender</button>${p.contra ? "" : `<button class="botao sec peq" data-prop="${esc(p.id)}" data-r="contra">Pedir 20% a mais</button>`}<button class="botao sec peq" data-prop="${esc(p.id)}" data-r="recusar">Recusar</button></div></div>`; }).join("") : `<p class="sub">Nenhuma proposta agora.</p>`}
+    ${ps.length ? ps.map((p, i) => { const a = por.get(p.atletaId)!; return `<div class="painel" style="margin-bottom:8px"><div class="clube-op" style="border:0;padding:0">${escudo(p.clubeId)}<div><b>${esc(a.nome)}</b> <small class="sub">(${a.pos}, ${ovrDe(a)})</small><br><small class="sub">${esc(nomeClube(p.clubeId))} oferece</small></div><b style="font-size:16px">${curtoBrl(p.valor)}</b></div>
+      <p class="sub" style="margin:6px 0">Vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))} no mercado · responde até a próxima semana</p>
+      <div class="botoes" style="margin-bottom:8px"><button class="botao peq" data-prop="${esc(p.id)}" data-r="aceitar">Vender por ${curtoBrl(p.valor)}</button><button class="botao sec peq" data-prop="${esc(p.id)}" data-r="recusar">Recusar</button></div>
+      <p class="rotulo">Ou peça outro valor</p>${campoValor(`pedir${i}`, Math.round(p.valor * 1.2 / 1000) * 1000)}<button class="botao sec peq" data-prop="${esc(p.id)}" data-r="contra" data-campo="pedir${i}" style="margin-top:6px">Pedir esse valor</button></div>`; }).join("") : `<p class="sub">Nenhuma proposta agora.</p>`}
     ${hist.length ? `<p class="rotulo" style="margin-top:14px">Transferências</p>${hist.map((t) => `<div class="not"><small>${ANO_INICIAL_T + t.t} · ${t.venda ? "venda" : "compra"}</small>${esc(t.nome)}: ${t.venda ? `para o ${esc(nomeClube(t.para))}` : `do ${esc(nomeClube(t.de))}`} · ${curtoBrl(t.valor)}</div>`).join("")}` : ""}`;
 }
 function abaLivres(s: SaveTecnico): string {
@@ -384,15 +392,22 @@ document.addEventListener("click", (ev) => {
   if (d.mliga !== undefined) { filtroMercado.minhaLiga = d.mliga === "1"; render(); return; }
   if (d.malc !== undefined) { filtroMercado.alcance = d.malc === "1"; render(); return; }
   if (d.alvo && d.clube) { msgNeg = undefined; abrir(negociarHtml(s, d.alvo, d.clube)); return; }
-  if (d.anosprop) { anosProposta = +d.anosprop; const n = $("tela").querySelector<HTMLElement>("[data-oferta]"); if (n) abrir(negociarHtml(s, n.dataset.alvoN!, n.dataset.clube!)); return; }
-  if (d.oferta && d.alvoN && d.clube) {
-    const r = fazerProposta(pacote, s, d.alvoN, d.clube, +d.oferta, anosProposta);
+  if (d.anosprop) { anosProposta = +d.anosprop; const n = $("tela").querySelector<HTMLElement>("[data-enviar-oferta]"), v = (document.getElementById("ofertaValor") as HTMLInputElement | null)?.value; if (n) { abrir(negociarHtml(s, n.dataset.alvoN!, n.dataset.clube!)); const el = document.getElementById("ofertaValor") as HTMLInputElement | null; if (el && v) el.value = v; } return; }
+  if (d.preencher && d.v) { const el = document.getElementById(d.preencher) as HTMLInputElement | null; if (el) { el.value = naTela(+d.v); el.focus(); } return; }
+  if (d.enviarOferta !== undefined && d.alvoN && d.clube) {
+    const v = lerValor("ofertaValor");
+    if (!v) { msgNeg = { texto: "Digite o valor da oferta.", ok: false }; abrir(negociarHtml(s, d.alvoN, d.clube)); return; }
+    const r = fazerProposta(pacote, s, d.alvoN, d.clube, v, anosProposta);
     msgNeg = { texto: r.msg, ok: r.ok, ...(r.pedido ? { pedido: r.pedido } : {}) }; salvar();
     if (r.status === "fechado") { fechar(); msg = { texto: r.msg, ok: true }; sub.elenco = "jogadores"; render(); return; }
     abrir(negociarHtml(s, d.alvoN, d.clube)); render(); return;
   }
   if (d.venda) { msg = { texto: alternarVenda(s, d.venda), ok: true }; salvar(); abrir(fichaJogador(s, d.venda)); render(); return; }
-  if (d.prop && d.r) { const r = responderPropostaT(pacote, s, d.prop, d.r as "aceitar" | "recusar" | "contra"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.prop && d.r) {
+    const pedido = d.campo ? lerValor(d.campo) : undefined;
+    if (d.r === "contra" && !pedido) { msg = { texto: "Digite quanto você quer pelo jogador.", ok: false }; redesenhar(); return; }
+    const r = responderPropostaT(pacote, s, d.prop, d.r as "aceitar" | "recusar" | "contra", pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return;
+  }
   if (d.irPropostas !== undefined) { aba = "elenco"; sub.elenco = "propostas"; render(); window.scrollTo(0, 0); return; }
   if (d.livre && d.anos) { const r = contratarLivre(pacote, s, d.livre, +d.anos); msg = { texto: r.msg, ok: r.ok }; if (r.ok) prepararMundo(pacote, s); redesenhar(); return; }
   if (d.recomecar !== undefined) { anterior = s; save = null; render(); window.scrollTo(0, 0); return; }
