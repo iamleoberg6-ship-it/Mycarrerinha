@@ -57,7 +57,7 @@ export interface SaveTecnico {
   diretoria: { confianca: number; expectativa: { pos: number; texto: string }; obras: Obra[] };
   noticias: Noticia[];
   ultima?: Relatorio;
-  historico: { t: number; ligaId: string; pos: number; n: number; pts: number; esperado: number; campeao?: boolean }[];
+  historico: { t: number; clubeId?: string; ligaId: string; pos: number; n: number; pts: number; esperado: number; campeao?: boolean }[];
   tabelasReais: TabelasReais;
   demitido?: string;
   /** contratados nesta temporada (agentes livres não voltam a aparecer) */ recusas: string[];
@@ -65,6 +65,8 @@ export interface SaveTecnico {
   aoVivo?: AoVivo;
   /** patrocínios do clube: master, fornecedor, manga e naming rights da arena */ patro?: PatrociniosClube;
   /** prêmios, evento da semana esperando resposta, contatos e bio da época de jogador, família que joga */
+  /** temporadas dos atletas do seu elenco em cada clube que você treinou (a história do clube usa no lugar do mundo simulado) */
+  temporadasElenco?: { clubeId: string; t: number; nome: string; pos: string; j: number; g: number; a: number; nota?: number }[];
   premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
@@ -300,7 +302,15 @@ export function dispensar(s: SaveTecnico, id: string): { ok: boolean; msg: strin
   noticia(s, "elenco", `${a.nome} foi dispensado.`);
   return { ok: true, msg: `${a.nome} foi dispensado. Rescisão: metade do que faltava do contrato.` };
 }
+/** Guarda a temporada de um atleta no clube (entra na história do clube: recordes e time de todos os tempos). */
+export function guardarTemporada(s: SaveTecnico, a: Atleta) {
+  if (!a.jogos) return;
+  const nota = a.notas.length ? +(a.notas.reduce((x, y) => x + y, 0) / a.notas.length).toFixed(2) : undefined;
+  (s.temporadasElenco ??= []).push({ clubeId: s.clubeId, t: s.temporada, nome: a.nome, pos: a.pos, j: a.jogos, g: a.gols, a: a.assist, ...(nota !== undefined ? { nota } : {}) });
+}
 function tirarDoElenco(s: SaveTecnico, id: string) {
+  const sai = s.elenco.find((x) => x.id === id);
+  if (sai) guardarTemporada(s, sai);
   s.elenco = s.elenco.filter((x) => x.id !== id);
   s.esc.titulares = s.esc.titulares.map((x) => (x === id ? null : x));
   s.esc.reservas = s.esc.reservas.filter((x) => x !== id);
@@ -797,7 +807,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   const diff = esperado - pos;
   s.diretoria.confianca = clamp(s.diretoria.confianca + clamp(diff * 4, -25, 25) + (campeao ? 15 : 0), 0, 100);
   s.tecnico.reputacao = clamp(s.tecnico.reputacao + clamp(diff, -6, 8) + (campeao ? 8 : 0) + 1, 0, 100);
-  s.historico.push({ t, ligaId: s.ligaId, pos, n, pts: final[pos - 1]?.pts ?? 0, esperado, ...(campeao ? { campeao: true } : {}) });
+  s.historico.push({ t, clubeId: s.clubeId, ligaId: s.ligaId, pos, n, pts: final[pos - 1]?.pts ?? 0, esperado, ...(campeao ? { campeao: true } : {}) });
   s.tabelasReais[t] = { ligaId: s.ligaId, ordem: final.map((x) => x.clube) };
   const resumo = `${ANO_INICIAL_T + t}: ${pos}º lugar na ${li.curto}${campeao ? " — CAMPEÃO!" : ""} (a diretoria esperava ${esperado}º).`;
   noticia(s, "clube", resumo);
@@ -813,6 +823,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
     if (aposenta && (a.curso?.licenca ?? 0) >= 1) { (s.exAtletas ??= []).push({ nome: a.nome, nac: a.nac, idade: a.idade, licenca: a.curso!.licenca, lid: exDe(a).LID, pos: a.pos }); noticia(s, "clube", `${a.nome} se aposenta com a ${LICENCAS[a.curso!.licenca]}: pode entrar na sua comissão técnica.`); }
     if (aposenta) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
   }
+  for (const a of s.elenco) guardarTemporada(s, a);
   for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
   for (const av of viradaPatro(pacote, s)) noticia(s, "dinheiro", av);

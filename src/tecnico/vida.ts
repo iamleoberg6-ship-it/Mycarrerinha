@@ -10,7 +10,8 @@ import { ovrDe, type Atleta } from "./modelo.js";
 export interface Premio { t: number; nome: string; texto: string }
 export interface Contato { nome: string; nivel: number; tipo: "amigo" | "excompanheiro" | "extecnico" }
 /** Quem você foi como jogador (fica na bio do técnico). */
-export interface BioJogador { apelido: string; nivel?: string; texto?: string; clubes: string[]; jogos: number; gols: number; assist: number; titulos: number; aposentouEm: number; idade: number; recordes?: string[]; premios?: string[] }
+export interface BioJogador { apelido: string; nivel?: string; texto?: string; clubes: string[]; jogos: number; gols: number; assist: number; titulos: number; aposentouEm: number; idade: number; recordes?: string[]; premios?: string[];
+  /** posição e as temporadas de jogador clube a clube (entram na história de cada clube em que jogou) */ pos?: string; temporadas?: { clubeId: string; t: number; j: number; g: number; a: number; nota?: number }[] }
 /** Filho ou irmão que ainda joga: dá para levar para o seu time. */
 export interface FamiliarJogador { nome: string; parentesco: string; idade: number; ovr: number; pot: number; pos: "GOL" | "ZAG" | "LAT" | "VOL" | "MEI" | "PON" | "ATA"; clubeId?: string; fase: string; noClube?: boolean }
 export interface OpcaoEventoT { id: string; rotulo: string }

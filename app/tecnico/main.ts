@@ -15,12 +15,13 @@ import { UNIFORME_CLUBE } from "../../src/reliquias";
 import { responderEvento, rankingT, TIPO_CONTATO } from "../../src/tecnico/vida";
 import { patrociniosDe, ofertasPatro, assinarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
+import { titulosDoClube, timeDeTodosOsTempos, recordesHistoricosDoClube, plantelDoClube, type TemporadaUsuario, type RecordeNome, type TitularHistorico } from "../../src/perfil-clube";
 import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
 import { NOME_LINGUA, rotuloNivel, linguaDe, nivelEm, idiomasIniciais } from "../../src/idiomas";
 /** Do save do jogador aposentado: licença (dos Estudos) e idiomas (nível de 0 a 3 vira 0 a 95). */
-type HistJ = { ano: number; idade: number; clube: string; jogos: number; gols: number; assist: number; titulo: boolean; base: number; parcial?: boolean; premios?: string[] };
-type SaveJogador = { semente: string; jogador: { nome: string; apelido: string; nacionalidade: string; idade: number };
+type HistJ = { ano: number; idade: number; clube: string; clubeId?: string; nota?: number; jogos: number; gols: number; assist: number; titulo: boolean; base: number; parcial?: boolean; premios?: string[] };
+type SaveJogador = { semente: string; jogador: { nome: string; apelido: string; nacionalidade: string; idade: number; posicao?: string };
   carreira: { encerrada?: { ano: number; idade: number; texto: string; nivel?: { titulo: string }; recordes?: string[] }; fama: number; temporada: number; historico?: HistJ[];
     estudos?: { idiomas: Record<string, number>; formacoes: string[] };
     relacoes?: { lista: Record<string, { nome: string; clubeId: string; nivel: number; aposentado?: boolean; companheiro?: boolean }> };
@@ -38,8 +39,11 @@ function vindoDoJogador(jog: SaveJogador, pausa: number): NonNullable<DadosTecni
     ...(c.namoro?.filhos ?? []).filter((f) => f.futebol && f.futebol.fase !== "parou").map((f) => ({ nome: f.nome, parentesco: f.menina ? "filha" : "filho", idade: ano - f.ano, ovr: f.futebol!.ovr, pot: f.futebol!.pot, pos: POS[hh(f.nome) % POS.length], clubeId: f.futebol!.clubeId, fase: f.futebol!.fase })),
     ...(c.familia?.membros ?? []).filter((m) => !m.falecido && m.futebol && ["base", "pro", "amador"].includes(m.futebol.fase) && (m.parentesco === "irmao" || m.parentesco === "irma")).map((m) => ({ nome: m.nome, parentesco: m.parentesco === "irma" ? "irmã" : "irmão", idade: ano - m.nasc, ovr: m.futebol!.ovr, pot: m.futebol!.pot, pos: (m.futebol!.posicao as PosT) ?? "MEI", clubeId: m.futebol!.clubeId, fase: m.futebol!.fase })),
   ].filter((f) => f.idade >= 15 && f.idade <= 37);
+  // as temporadas de jogador, clube a clube: entram na história de cada clube (recordes e time de todos os tempos)
+  const temporadas = h.filter((x) => x.clubeId && x.jogos > 0).map((x) => ({ clubeId: x.clubeId!, t: x.ano - ANO_INICIAL_T, j: x.jogos, g: x.gols, a: x.assist, ...(x.nota ? { nota: x.nota } : {}) }));
+  const bioCompleta = { ...bio, ...(jog.jogador.posicao ? { pos: jog.jogador.posicao } : {}), temporadas };
   // a temporada em que ele parou (a carreira de técnico começa na seguinte, mais a pausa)
-  return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio, contatos, familia };
+  return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio: bioCompleta, contatos, familia };
 }
 let pausaEscolhida = 0;
 function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, number> } {
@@ -371,14 +375,63 @@ function abaLiga(s: SaveTecnico): string {
   }
   return `${subs}<p class="rotulo">${esc(li.nome)} · ${ANO_INICIAL_T + s.temporada}</p>
     <table class="tab" style="margin-top:6px"><thead><tr><th>#</th><th style="text-align:left">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th>Pts</th></tr></thead><tbody>${tab.map((t, i) =>
-      `<tr class="${t.clube === s.clubeId ? "eu" : ""}${li.acima && i < (li.rebaixados ?? 3) ? " sobe" : ""}${li.abaixo && i >= n - li.rebaixados ? " cai" : ""}"><td>${i + 1}</td><td class="cl">${escudo(t.clube, "escudo esc-p")}${esc(nomeClube(t.clube))}</td><td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${t.gp - t.gc}</td><td><b>${t.pts}</b></td></tr>`).join("")}</tbody></table>
+      `<tr class="${t.clube === s.clubeId ? "eu" : ""}${li.acima && i < (li.rebaixados ?? 3) ? " sobe" : ""}${li.abaixo && i >= n - li.rebaixados ? " cai" : ""}"><td>${i + 1}</td><td class="cl"><button class="link-clube" data-perfil="${t.clube}">${escudo(t.clube, "escudo esc-p")}${esc(nomeClube(t.clube))}</button></td><td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${t.gp - t.gc}</td><td><b>${t.pts}</b></td></tr>`).join("")}</tbody></table>
     ${rodada}`;
+}
+
+// ------------------------------------------------------------------ perfil do clube (história)
+/** Carreira de técnico começada antes de a bio guardar as temporadas de jogador: completa com o save do modo jogador. */
+function completarBio(s: SaveTecnico) {
+  if (!s.bio || s.bio.temporadas) return;
+  const jog = ler<SaveJogador>("mycarrerinha:save");
+  if (!jog || jog.jogador.apelido !== s.bio.apelido) { s.bio.temporadas = []; return; }
+  s.bio.pos ??= jog.jogador.posicao;
+  s.bio.temporadas = (jog.carreira.historico ?? []).filter((x) => x.clubeId && x.jogos > 0).map((x) => ({ clubeId: x.clubeId!, t: x.ano - ANO_INICIAL_T, j: x.jogos, g: x.gols, a: x.assist, ...(x.nota ? { nota: x.nota } : {}) }));
+}
+/** Perfil do clube no modo técnico: títulos, o time de todos os tempos e os recordes. O mundo simulado conta a história
+ *  de todos os clubes; nas temporadas em que você treinou o clube, valem os números de verdade do seu elenco; e as suas
+ *  temporadas de jogador entram como em qualquer outro clube em que você jogou. */
+function perfilClubeT(s: SaveTecnico, clubeId: string): string {
+  const info = infoClube(pacote, clubeId);
+  if (!info) return `<p class="sub">Clube não encontrado.</p>`;
+  completarBio(s);
+  const feitas = Math.max(0, s.semana - SEMANAS_PRE_T), meu = clubeId === s.clubeId;
+  const dele = (s.temporadasElenco ?? []).filter((x) => x.clubeId === clubeId);
+  const ignorar = [...new Set([...dele.map((x) => x.t), ...s.historico.filter((h) => h.clubeId === clubeId).map((h) => h.t), ...(meu ? [s.temporada] : [])])];
+  const usuario: TemporadaUsuario[] = [
+    ...dele.map((x) => ({ nome: x.nome, t: x.t, j: x.j, g: x.g, a: x.a, pos: x.pos, nota: x.nota, outro: true })),
+    ...(meu ? s.elenco.filter((a) => a.jogos > 0).map((a) => ({ nome: a.nome, t: s.temporada, j: a.jogos, g: a.gols, a: a.assist, pos: a.pos, nota: a.notas.length ? a.notas.reduce((x, y) => x + y, 0) / a.notas.length : undefined, outro: true })) : []),
+    ...(s.bio?.temporadas ?? []).filter((x) => x.clubeId === clubeId).map((x) => ({ nome: s.bio!.apelido, t: x.t, j: x.j, g: x.g, a: x.a, pos: s.bio!.pos, nota: x.nota })),
+  ];
+  const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId, usuario, feitas, ignorar), rec = recordesHistoricosDoClube(pacote, clubeId, usuario, feitas, ignorar);
+  const ano = (t?: number) => (t === undefined ? "" : String(ANO_INICIAL_T + t));
+  const nomeEu = (nome: string, eu?: boolean) => eu ? `<b style="color:var(--ouro, #E3B341)">${esc(nome)}</b>` : esc(nome);
+  const bloco = (titulo: string, l: RecordeNome[], comAno: boolean) => l.length ? `<p class="rotulo" style="margin-top:14px">${titulo}</p><table class="tab"><tbody>${l.map((x, i) => `<tr${x.eu ? ' class="eu"' : ""}><td>${i + 1}</td><td class="cl" style="text-align:left">${nomeEu(x.nome, x.eu)}</td>${comAno ? `<td class="sub">${ano(x.ano)}</td>` : ""}<td><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : "";
+  const ordemPos = ["GOL", "LAT", "ZAG", "VOL", "MEI", "PON", "ATA"], NOMES: Record<string, string> = { GOL: "Goleiro", LAT: "Lateral", ZAG: "Zagueiro", VOL: "Volante", MEI: "Meia", PON: "Ponta", ATA: "Atacante" };
+  const xiOrd = [...xi].sort((a, b) => ordemPos.indexOf(a.posicao) - ordemPos.indexOf(b.posicao));
+  const linhaXi = (x: TitularHistorico) => `<tr${x.eu ? ' class="eu"' : ""}><td class="sub" style="text-align:left">${NOMES[x.posicao] ?? x.posicao}</td><td class="cl" style="text-align:left">${nomeEu(x.nome, x.eu)}</td><td class="sub">${x.vezes ? `${ano(x.melhorAno)} · ${x.melhorNota.toFixed(2).replace(".", ",")}` : "elenco atual"}</td></tr>`;
+  const trofeus = tit.ligas.length ? tit.ligas.map((l) => `<div class="not"><b>${"🏆".repeat(Math.min(l.anos.length, 6))}${l.anos.length > 6 ? ` ×${l.anos.length}` : ""} ${esc(l.curto)}</b><br><small class="sub">${l.anos.map((a) => ANO_INICIAL_T + a).join(", ")}</small></div>`).join("") : `<p class="sub">Ainda sem títulos de liga.</p>`;
+  // a sua passagem pelo clube: como técnico (temporada a temporada) e como jogador
+  const comoTec = s.historico.filter((h) => h.clubeId === clubeId);
+  const comoJog = (s.bio?.temporadas ?? []).filter((x) => x.clubeId === clubeId);
+  const passagem = comoTec.length || comoJog.length || meu ? `<p class="rotulo" style="margin-top:14px">Sua história no clube</p>
+    ${comoJog.length ? `<div class="not">Como jogador: ${comoJog.length} ${comoJog.length === 1 ? "temporada" : "temporadas"} (${comoJog.map((x) => ANO_INICIAL_T + x.t).join(", ")}) · ${comoJog.reduce((a, x) => a + x.j, 0)} jogos, ${comoJog.reduce((a, x) => a + x.g, 0)} gols, ${comoJog.reduce((a, x) => a + x.a, 0)} assistências</div>` : ""}
+    ${comoTec.map((h) => `<div class="not">Técnico em ${ANO_INICIAL_T + h.t}: ${h.pos}º lugar na ${esc(infoLiga(h.ligaId).curto)}${h.campeao ? " · CAMPEÃO" : ""}</div>`).join("")}
+    ${meu ? `<div class="not">Técnico em ${ANO_INICIAL_T + s.temporada}: temporada em andamento</div>` : ""}` : "";
+  const elenco = meu ? [] : plantelDoClube(pacote, clubeId).slice(0, 5);
+  return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade ?? "")} · ${esc(infoLiga(info.ligaId).curto)}${info.estadio ? ` · ${esc(info.estadio)}` : ""}</span></div></div>
+    <p class="rotulo" style="margin-top:14px">Títulos</p>${trofeus}
+    ${passagem}
+    <p class="rotulo" style="margin-top:14px">Time de todos os tempos</p><p class="sub" style="margin-bottom:4px">Quem mais vezes foi o melhor da posição numa temporada. Ao lado, o melhor ano e a nota.</p><table class="tab"><tbody>${xiOrd.map(linhaXi).join("")}</tbody></table>
+    ${bloco("Mais gols em uma temporada", rec.golsTemp, true)}${bloco("Mais assistências em uma temporada", rec.assistTemp, true)}${bloco("Maiores artilheiros da história", rec.artilheiros, false)}${bloco("Maiores assistentes da história", rec.assistentes, false)}${bloco("Goleiros com mais jogos sem tomar gol", rec.semGol, false)}
+    ${elenco.length ? `<p class="rotulo" style="margin-top:14px">Destaques do elenco atual</p>${elenco.map((j) => `<div class="not">${esc(j.nome)} <small class="sub">${j.posicao} · ${j.ovr}</small></div>`).join("")}` : ""}
+    <div class="botoes" style="margin-top:14px"><button class="botao sec" data-fechar>Fechar</button></div>`;
 }
 
 // ------------------------------------------------------------------ Clube
 function abaClube(s: SaveTecnico): string {
-  const subs = `<div class="sub-abas">${[["carreira", "Sua carreira"], ["noticias", "Notícias"], ["financas", "Finanças"], ["patrocinios", "Patrocínios"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
-  return subs + aviso() + (sub.clube === "diretoria" ? abaDiretoria(s) : sub.clube === "comissao" ? abaComissao(s) : sub.clube === "patrocinios" ? abaPatrocinios(s) : sub.clube === "carreira" ? abaCarreira(s) : sub.clube === "noticias" ? abaNoticias(s) : abaFinancas(s));
+  const subs = `<div class="sub-abas">${[["carreira", "Sua carreira"], ["historia", "História do clube"], ["noticias", "Notícias"], ["financas", "Finanças"], ["patrocinios", "Patrocínios"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
+  return subs + aviso() + (sub.clube === "diretoria" ? abaDiretoria(s) : sub.clube === "comissao" ? abaComissao(s) : sub.clube === "patrocinios" ? abaPatrocinios(s) : sub.clube === "carreira" ? abaCarreira(s) : sub.clube === "historia" ? perfilClubeT(s, s.clubeId).replace(/<div class="botoes" style="margin-top:14px"><button class="botao sec" data-fechar>Fechar<\/button><\/div>/, "") : sub.clube === "noticias" ? abaNoticias(s) : abaFinancas(s));
 }
 // ------------------------------------------------------------------ patrocínios do clube
 const hexRgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) || 0);
@@ -583,6 +636,7 @@ document.addEventListener("click", (ev) => {
   const s = save;
   if (d.aba) { aba = d.aba as typeof aba; msg = undefined; selEsc = undefined; if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; } fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
+  if (d.perfil) { abrir(perfilClubeT(s, d.perfil)); salvar(); return; }
   if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
   if (d.evt) { const r = responderEvento(pacote, s, d.evt); msg = r ? { texto: r, ok: true } : undefined; redesenhar(); return; }
   if (d.familia) { const r = trazerFamiliar(pacote, s, d.familia); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }

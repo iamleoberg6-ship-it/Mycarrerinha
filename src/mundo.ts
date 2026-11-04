@@ -312,6 +312,8 @@ export function tecnicoLivrePara(pacote: PacoteDados, clubeId: string, chave: st
 let versao = 0;
 /** Muda a cada vez que o mundo muda (caches de quem lê o mundo comparam com isto). */
 export const versaoMundo = () => versao;
+/** Temporada em que o mundo está agora. */
+export const temporadaDoMundo = (pacote: PacoteDados) => garantir(pacote).temporada;
 
 /** Põe o mundo na temporada t da carreira de semente `semente` (0 = elencos reais de 2026, com as bases sorteadas). */
 /** Semana em que fecha a janela do meio do ano (os negócios dos outros clubes saem nela). */
