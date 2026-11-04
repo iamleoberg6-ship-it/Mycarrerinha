@@ -2966,7 +2966,11 @@ function mostrarRodada(r: ResumoSemana) {
   const blocos: string[] = [];
   if (r.rodada) {
     blocos.push(`<section class="painel"><p class="rotulo">${esc(infoLiga(c.ligaId).curto)} · Rodada ${r.rodada.rodada + 1}</p>${r.rodada.jogos.map((g) => linhaJogo(g.casa, g.fora, g.a, g.b)).join("")}</section>`);
-    blocos.push(`<section class="painel"><p class="rotulo">Classificação · ${esc(infoLiga(c.ligaId).curto)}</p>${tabelaCopaHtml(c.tabela, meu)}</section>`);
+    // a mesma tabela da aba Tabela: na base, a da categoria do jogador; no profissional, a da liga
+    const naBase = c.formacao && !c.fase && c.tabelaBase && c.tabelaBase.t === c.temporada && c.tabelaBase.cat === categoriaBase(save!.jogador.idade) && !c.stats.jogos;
+    blocos.push(naBase
+      ? `<section class="painel"><p class="rotulo">Classificação · ${esc(infoLiga(c.ligaId).curto)} ${categoriaBase(save!.jogador.idade)}</p>${tabelaCopaHtml(c.tabelaBase!.tabela, meu)}</section>`
+      : `<section class="painel"><p class="rotulo">Classificação · ${esc(infoLiga(c.ligaId).curto)}</p>${tabelaCopaHtml(c.tabela, meu)}</section>`);
   }
   if (r.copa) {
     const cid = compPorNome(r.copa.competicao) as CopaId, cp = copasDe(pacote, save!)[cid];
