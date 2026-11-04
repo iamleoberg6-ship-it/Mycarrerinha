@@ -367,6 +367,10 @@ table.hist td { vertical-align: middle; } table.hist tr.mudou td { border-top: 1
 .link-inline { background: none; border: 0; padding: 0; color: var(--ouro-claro); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 .ferr-botoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .agente { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; background: var(--campo-2); }
+.avatar-fam.foto { overflow: hidden; width: 46px; height: 46px; } .avatar-fam.foto img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.ag-rosto { flex: none; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; border: 2px solid var(--linha); display: block; } .ag-rosto img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.ag-rosto.grande { width: 56px; height: 56px; border-color: var(--ouro); } .agente > .ag-rosto { flex: none; }
+.ag-nome { display: flex; gap: 8px; align-items: flex-start; }
 .agente.atual { border-color: var(--ouro); } .agente > div { flex: 1 1 220px; }
 .kv small.pos { color: var(--pos); } .kv small.neg { color: var(--neg); }
 .noticia { border-left: 3px solid var(--linha); padding: 4px 0 4px 12px; display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }

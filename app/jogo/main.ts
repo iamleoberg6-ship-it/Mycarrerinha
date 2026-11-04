@@ -41,6 +41,7 @@ import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
 import { svgEscudo } from "../visual/escudos";
 import { fotoDoPerfil } from "../visual/mulheres";
+import { rostoParente, rostoAgente } from "../visual/rostos";
 /** Arte do casal: o jogador e a parceira lado a lado, com os mesmos retratos do app. */
 const casalArte = (s: Save, casal?: { id: string; profissao: string }) => `<div class="casal-arte">${casal ? `<div class="ca-x">${foto(s)}</div><div class="ca-y">${fotoDoPerfil(casal)}</div>` : `<div class="ca-x">${foto(s)}</div>`}</div>`;
 import { trofeuSvg } from "../casa/iso";
@@ -656,7 +657,7 @@ function cardEvento(s: Save): string {
 function agentesHtml(s: Save): string {
   const c = s.carreira, pct = (x: number) => `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
   const n = c.negAgente, a = infoAgente(c.agente), com = comissaoDo(c.agente, c.comissaoAgente), h = habilidadesDoAgente(c.agente);
-  const resumo = `<div class="agente atual"><div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span>
+  const resumo = `<div class="agente atual">${avatarAgente(s, c.agente, "ag-rosto grande")}<div><b>${esc(a.nome)}</b> <span class="sub">· ${esc(a.quem)}</span>
     <p class="sub" style="margin:2px 0">Comissão ${pct(com)}${c.agente === FAMILIA ? "" : ` · Negociação ${estrelas(h.negociacao)} · Rede ${estrelas(h.rede)} · Salário ${estrelas(h.salario)}`}</p></div></div>`;
   const painel = n ? `<div class="agente atual"><div><b>Conversa com ${esc(infoAgente(n.id).quem)}</b><p class="sub" style="margin:2px 0">Ele pede ${pct(n.pedido)} de comissão. Rodada ${n.rodada} de 4.</p>
     <div class="ferr-botoes"><button class="botao peq" data-agente-resp="aceitar">Aceitar</button><button class="botao sec peq" data-agente-resp="recusar">Recusar</button></div>
@@ -700,11 +701,11 @@ function telaAgentesHtml(s: Save): string {
     const pode = podeContratarAgente(s, id);
     return pode.ok ? `<button class="botao sec peq" data-agente-iniciar="${id}">Negociar</button>` : `<small class="sub">${esc(pode.msg || "Não aceita você")}</small>`;
   };
-  const familia = `<tr class="${c.agente === FAMILIA ? "atual" : ""}"><td><b>Família</b><br><small class="sub">Seu pai cuida de tudo. Não cobra, mas conhece pouca gente.</small></td><td>${esc(paisNomeAgente(s.jogador.pais))}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0%</td><td>Local</td><td>Sem exigência</td><td>${c.agente === FAMILIA ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${FAMILIA}">Voltar para a família</button>`}</td></tr>`;
+  const familia = `<tr class="${c.agente === FAMILIA ? "atual" : ""}"><td><div class="ag-nome">${avatarAgente(s, FAMILIA)}<div><b>Família</b><br><small class="sub">Seu pai cuida de tudo. Não cobra, mas conhece pouca gente.</small></div></div></td><td>${esc(paisNomeAgente(s.jogador.pais))}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0%</td><td>Local</td><td>Sem exigência</td><td>${c.agente === FAMILIA ? `<span class="tag titular">Seu agente</span>` : `<button class="botao sec peq" data-agente="${FAMILIA}">Voltar para a família</button>`}</td></tr>`;
   const linhas = lista.map((a) => {
     const h = habilidadesDoAgente(a.id), p = perfilAgente(a.id), ligas = ligasDoAgente(a.id, s.jogador.pais);
     const alcance = ligas === "todas" ? "Mundo" : alcanceCurto(ligas);
-    return `<tr class="${c.agente === a.id ? "atual" : ""}"><td><b>${esc(a.nome)}</b><br><small class="sub">${esc(a.frase)}</small></td><td>${esc(paisNomeAgente(a.pais))}</td><td>${estrelas(a.nivel)}</td><td>${estrelas(h.negociacao)}</td><td>${estrelas(h.rede)}</td><td>${estrelas(h.salario)}</td><td>${pct(p.comissao)}</td><td>${esc(alcance)}</td><td>${p.requisito.fama ? `fama ${p.requisito.fama}+ ou nível ${p.requisito.ovr}+` : "Sem exigência"}</td><td>${situacao(a.id)}</td></tr>`;
+    return `<tr class="${c.agente === a.id ? "atual" : ""}"><td><div class="ag-nome">${avatarAgente(s, a.id)}<div><b>${esc(a.nome)}</b><br><small class="sub">${esc(a.frase)}</small></div></div></td><td>${esc(paisNomeAgente(a.pais))}</td><td>${estrelas(a.nivel)}</td><td>${estrelas(h.negociacao)}</td><td>${estrelas(h.rede)}</td><td>${estrelas(h.salario)}</td><td>${pct(p.comissao)}</td><td>${esc(alcance)}</td><td>${p.requisito.fama ? `fama ${p.requisito.fama}+ ou nível ${p.requisito.ovr}+` : "Sem exigência"}</td><td>${situacao(a.id)}</td></tr>`;
   }).join("");
   return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Agentes</h2><button class="botao sec peq" data-ag-fechar="1">Fechar</button></div>
     <div class="ferr-botoes" style="margin:10px 0;flex-wrap:wrap">
@@ -1003,12 +1004,20 @@ function abrirHistorico(nome: string) {
 // ------------------------------------------------------------------ celular: contatos, busca e app de namoro
 let telaCel: "contatos" | "busca" | "match" | "agente" | "parcas" = "contatos", subImprensa: "noticias" | "redes" = "noticias", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
 const iniciais = (nome: string) => nome.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+const peleDoJogador = (s: Save) => (s.jogador.aparencia as { pele?: number } | undefined)?.pele;
+/** Rosto do agente: do banco pela região; a família (o pai cuidando da carreira) usa o rosto do pai. */
+function rostoDoAgente(s: Save, id: string): string | undefined {
+  if (id === FAMILIA) { const pai = familiaDe(pacote, s).membros.find((m) => m.parentesco === "pai" && !m.falecido); return pai ? rostoParente("pai", pai.id, peleDoJogador(s)) : undefined; }
+  const a = BANCO.find((x) => x.id === id);
+  return a ? rostoAgente(a.id, a.nome, a.pais) : undefined;
+}
+const avatarAgente = (s: Save, id: string, cls = "ag-rosto") => { const r = rostoDoAgente(s, id); return r ? `<span class="${cls}">${r}</span>` : ""; };
 const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n >= 40 ? "#6FB7E0" : n >= 20 ? "#C9A24D" : "#EC7D69");
 function linhaFam(s: Save, m: Familiar): string {
   if (m.falecido) return `<div class="rel-linha em-memoria"><div class="rel-topo"><span class="avatar-fam" style="--c:#8A968E">🕊️</span><div class="rel-nome"><b>${esc(m.nome)}</b><small>${NOME_PARENTESCO[m.parentesco]} · ${m.nasc}–${m.falecido} · em memória</small></div></div></div>`;
   const ctx = ctxFamilia(pacote, s), ano = ANO_INICIAL + s.carreira.temporada, fb = m.futebol, cor = corRelFam(m.relacao);
   const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${linkClube(fb.clubeId)}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
-  return `<div class="rel-linha"><div class="rel-topo"><span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span><div class="rel-nome">${fb ? `<button class="nome-hist" data-irmao="${m.id}">${esc(m.nome)}</button>` : `<button class="nome-hist" data-parente="${m.id}">${esc(m.nome)}</button>`}${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
+  return `<div class="rel-linha"><div class="rel-topo">${(() => { const r = rostoParente(m.parentesco, m.id, peleDoJogador(s)); return r ? `<span class="avatar-fam foto" style="--c:${cor}">${r}</span>` : `<span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span>`; })()}<div class="rel-nome">${fb ? `<button class="nome-hist" data-irmao="${m.id}">${esc(m.nome)}</button>` : `<button class="nome-hist" data-parente="${m.id}">${esc(m.nome)}</button>`}${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
