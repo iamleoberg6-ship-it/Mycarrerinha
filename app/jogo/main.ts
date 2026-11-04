@@ -1013,7 +1013,7 @@ function linhaFam(s: Save, m: Familiar): string {
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
 function abaPessoas(s: Save): string {
-  const abas = `<div class="sub-abas rolar" role="tablist">${([["contatos", "Contatos"], ["busca", "Buscar"], ["match", "Match"], ["agente", "Agente"], ["parcas", "Parças"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
+  const abas = `<div class="sub-abas rolar" role="tablist">${([["contatos", "Família"], ["busca", "Buscar"], ["match", "Match"], ["agente", "Agente"], ["parcas", "Parças"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
   let msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
   msgRel = undefined;
   let corpo: string;
@@ -1057,8 +1057,9 @@ function celContatos(s: Save): string {
   const c = s.carreira, rr = relacoesDe(c), fam = familiaDe(pacote, s);
   const favs = (rr.favoritos ?? []).map((n) => rr.lista[n]).filter(Boolean) as Relacao[];
   const famFeitas = fam.semana === semanaAbsJogo(c) ? fam.feitas.length : 0;
-  return `${favs.length ? `<p class="rotulo">Favoritos</p>${favs.map((x) => linhaRel(s, x, x.companheiro ? ["mensagem", "jantar"] : ["mensagem"])).join("")}` : ""}
-    <p class="rotulo" style="margin-top:${favs.length ? 14 : 0}px">Família <small>· ${MAX_ACOES_FAMILIA - famFeitas} ${MAX_ACOES_FAMILIA - famFeitas === 1 ? "conversa livre" : "conversas livres"} nesta semana</small></p>
+  const amor = celMatch(s, "familia");
+  return `${amor}${favs.length ? `<p class="rotulo" style="margin-top:${amor ? 14 : 0}px">Favoritos</p>${favs.map((x) => linhaRel(s, x, x.companheiro ? ["mensagem", "jantar"] : ["mensagem"])).join("")}` : ""}
+    <p class="rotulo" style="margin-top:${favs.length || amor ? 14 : 0}px">Parentes <small>· ${MAX_ACOES_FAMILIA - famFeitas} ${MAX_ACOES_FAMILIA - famFeitas === 1 ? "conversa livre" : "conversas livres"} nesta semana</small></p>
     <p class="sub">Família perto e bem cuidada dá moral. A ajuda mensal (em Jogador › Padrão de vida) aproxima os pais; morar longe e sumir afasta.</p>
     ${fam.membros.map((m) => linhaFam(s, m)).join("")}
     <p class="rotulo" style="margin-top:14px">Amigos do futebol</p>${abaAmigos(s)}`;
@@ -1095,8 +1096,9 @@ function cartaoPar(p: Par | Perfil, botoes: string, extra = ""): string {
     <p>“${esc(p.bio)}”</p><small class="efeito-prof">${esc(prof.efeito)}</small>${extra}</div><div class="perfil-app-botoes">${botoes}</div></div>`;
 }
 let escolhaNam: { id: string; op: string } | undefined;
-function celMatch(s: Save): string {
-  if (s.jogador.idade < IDADE_MINIMA_APP) return `<p class="sub">O app de namoro é só a partir dos ${IDADE_MINIMA_APP} anos.</p>`;
+/** O app (parte "app": perfis e matches novos) ou a vida amorosa e os filhos (parte "familia", na tela Família). */
+function celMatch(s: Save, parte: "app" | "familia" = "app"): string {
+  if (parte === "app" && s.jogador.idade < IDADE_MINIMA_APP) return `<p class="sub">O app de namoro é só a partir dos ${IDADE_MINIMA_APP} anos.</p>`;
   const c = s.carreira, n = namoroDe(c), par = n.par, ab = semanaAbsJogo(c);
   const feitas = n.semana === ab ? n.feitas : 0;
   const escolha = (p: Par) => escolhaNam?.id === p.id ? (escolhaNam.op === "pedirCasamento"
@@ -1143,7 +1145,13 @@ function celMatch(s: Save): string {
   const deck = perfis.length ? perfis.map((p) => cartaoPar(p, `<button class="botao sec peq" data-curtir="${p.id}" data-sim="0">Passar</button><button class="botao peq" data-curtir="${p.id}" data-sim="1">Curtir</button>`, `<small class="sub">Chance de match: ${Math.round(100 * chanceMatch(p, c.fama))}%</small>`)).join("") : `<p class="sub">Acabaram os perfis desta semana. Novos chegam na próxima.</p>`;
   const matches = n.matches.length ? `<p class="rotulo" style="margin-top:14px">Matches</p>${n.matches.map((m) => `${cartaoPar(m, "", `<small class="sub">${m.conversas} ${m.conversas === 1 ? "conversa" : "conversas"}${m.conversas < 2 ? " · converse mais antes de chamar para sair" : ""}</small>${conheceGostos(m) ? sobreEla(m) : ""}`)}${chat(m)}<div class="rel-acoes" style="margin-left:0">${acoes(m)}</div>${escolha(m)}`).join("")}` : "";
   const aviso = par ? `<p class="sub">Você namora sério: quem você chamar para sair vira caso escondido.</p>` : fic.length ? `<p class="sub">Sem compromisso: quem você chamar para sair vira mais um casinho.</p>` : "";
-  return `${parHtml}${ficHtml}${gravidezHtml}${casosHtml}${filhosHtml}${livres}<p class="rotulo" style="margin-top:14px">Perfis da semana</p>${aviso}<p class="sub">Fama ajuda no match. A profissão dela mexe no seu jogo.</p>${deck}${matches}`;
+  if (parte === "familia") {
+    const tem = parHtml || ficHtml || casosHtml;
+    return `${tem ? `${parHtml}${ficHtml}${casosHtml}${livres}` : ""}${gravidezHtml}${filhosHtml}`;
+  }
+  const ja = [par && `${esc(par.nome.split(" ")[0])} (${NOME_ETAPA[par.etapa].toLowerCase()})`, fic.length && `${fic.length} ${fic.length === 1 ? "casinho" : "casinhos"}`, casos.length && `${casos.length} ${casos.length === 1 ? "caso" : "casos"}`, filhos.length && `${filhos.length} ${filhos.length === 1 ? "filho" : "filhos"}`].filter(Boolean);
+  const naFamilia = ja.length ? `<p class="sub">${ja.join(", ")}: estão na aba <button class="link-inline" data-cel="contatos">Família</button>.</p>` : "";
+  return `${naFamilia}${n.matches.length ? livres : ""}<p class="rotulo" style="margin-top:14px">Perfis da semana</p>${aviso}<p class="sub">Fama ajuda no match. A profissão dela mexe no seu jogo.</p>${deck}${matches}`;
 }
 function abaAmigos(s: Save): string {
   const c = s.carreira, rr = relacoesDe(c), lista = Object.values(rr.lista), est = estrelasDoMundo(pacote);
