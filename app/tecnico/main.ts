@@ -7,6 +7,7 @@ import { infoLiga } from "../../src/ligas";
 import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda } from "../../src/moeda";
 import { svgEscudo } from "../visual/escudos";
+import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
   proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
@@ -32,7 +33,8 @@ let msg: { texto: string; ok: boolean } | undefined;
 let ligaEscolhida = "BRA1";
 /** Técnico demitido procurando clube: leva a reputação e o histórico. */
 let anterior: SaveTecnico | null = null;
-const salvar = () => { if (save) gravar(CHAVE_TECNICO, save); };
+const nuvem = criarAgendador(() => save ? { chave: chaveNuvem("tec", save.semente), modo: "tecnico", json: JSON.stringify(save), rotulo: `${save.tecnico.nome} · ${infoClube(pacote, save.clubeId)?.nome ?? ""} · ${ANO_INICIAL_T + save.temporada}` } : null);
+const salvar = () => { if (save) gravar(CHAVE_TECNICO, save); nuvem.agendar(); };
 
 /** Moeda do país da liga (como nos eventos do modo jogador). */
 const EURO = new Set(["POR", "ESP", "ITA", "FRA", "GER", "NED", "BEL", "AUT", "CRO", "IRL", "GRE", "FIN"]);
@@ -310,7 +312,7 @@ document.addEventListener("click", (ev) => {
     const ex = d.ex === "1" && jog?.carreira?.encerrada ? { apelido: jog.jogador.apelido, fama: jog.carreira.fama } : undefined;
     save = novaCarreiraTecnico(pacote, { nome, nac, idade: ex ? jog!.jogador.idade + 1 : 38, ...(ex ? { exJogador: ex } : {}) }, d.assumir);
     if (anterior) { save.tecnico.reputacao = anterior.tecnico.reputacao; save.historico = anterior.historico; anterior = null; }
-    aba = "inicio"; msg = undefined; salvar(); render(); window.scrollTo(0, 0); return;
+    aba = "inicio"; msg = undefined; salvar(); nuvem.agora(); render(); window.scrollTo(0, 0); return;
   }
   if (!save) return;
   const s = save;
@@ -348,3 +350,12 @@ document.addEventListener("click", (ev) => {
 
 if (save) prepararMundo(pacote, save);
 render();
+void (async () => {
+  if (!(await nuvemDisponivel())) return;
+  if (save) { nuvem.agora(); return; }
+  const r = await ultimoDaNuvem("tecnico");
+  const s = r ? (JSON.parse(r.json) as SaveTecnico) : null;
+  if (!s?.elenco || save) return;
+  save = s; gravar(CHAVE_TECNICO, s); prepararMundo(pacote, s);
+  msg = { texto: `Carreira recuperada da sua conta: ${r!.meta.rotulo}.`, ok: true }; render();
+})();

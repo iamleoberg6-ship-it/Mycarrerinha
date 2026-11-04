@@ -92,6 +92,7 @@ import { paiTreinador } from "../../src/familia";
 import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
 import { svgComodo } from "../casa/iso";
 import { valorBrl, valorEur, numBrl, numEur, simboloAtual, definirMoeda, moedaSugerida, MOEDAS, curtoBrl, curtoEur } from "../../src/moeda.js";
+import { criarAgendador, chaveNuvem, ultimoDaNuvem, listarNuvem, lerDaNuvem, nuvemDisponivel } from "../nuvem";
 
 const pacote = pacoteJson as unknown as PacoteDados;
 void liga;
@@ -123,7 +124,13 @@ let msgNumero: { texto: string; ok: boolean } | undefined, numeroVisto: number |
 let moedaEscolhida: string | undefined, caminhoSel: Caminho = "base", cidadeSel: string | undefined, msgConvite: { texto: string; ok: boolean } | undefined;
 let msgRel: { texto: string; ok: boolean } | undefined, msgPos: { texto: string; ok: boolean } | undefined;
 let msgMercado: { texto: string; ok: boolean } | undefined;
-const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, plano); };
+/** Cópia na conta Claude (além do navegador): o save completo, por carreira. */
+let nuvemStatus: { ok: boolean; quando: number } | undefined;
+const pacoteSave = () => JSON.stringify({ app: "mycarrerinha", v: 1, salvoEm: new Date().toISOString(), save, plano, jogador: ler(CHAVE_JOGADOR) });
+const nuvem = criarAgendador(() => save ? { chave: chaveNuvem("car", save.semente), modo: "jogador", json: pacoteSave(), rotulo: `${save.jogador.apelido} · ${nomeDe(save.carreira.clubeId)} · ${ANO_INICIAL + save.carreira.temporada}` } : null,
+  (ok, quando) => { nuvemStatus = { ok, quando }; const el = document.getElementById("statusNuvem"); if (el) el.textContent = textoNuvem(); });
+const textoNuvem = () => !nuvemStatus ? "Cópia na sua conta: aguardando o primeiro envio." : nuvemStatus.ok ? `Cópia na sua conta salva às ${new Date(nuvemStatus.quando).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.` : "Não deu para salvar na sua conta agora (fora do Claude ou sem conexão). O save no navegador continua valendo.";
+const salvar = () => { if (save) gravar(CHAVE_SAVE, save); gravar(CHAVE_PLANO, plano); nuvem.agendar(); };
 
 // ------------------------------------------------------------------ peças visuais
 function cores(id: string): string[] { return clubeCasa(pacote, id).cores; }
@@ -379,9 +386,18 @@ function cardNegocioMidia(s: Save): string {
   return `${(() => { const n = negociosDe(s.carreira), m = midiaDe(s); return (n.proposta ? `<button class="painel aviso-mercado" data-aba="carreira" data-ir="negocios"><span>💼</span><span><b>Proposta de negócio: ${esc(n.proposta.titulo)}</b><small>Tocar para responder ›</small></span></button>` : "") + (m.pauta ? `<button class="painel aviso-mercado" data-aba="amigos" data-ir="redes"><span>🎤</span><span><b>Pedido de entrevista</b><small>${esc(tituloDaPauta(m.pauta))} · tocar para responder ›</small></span></button>` : ""); })()}`;
 }
 /** Painel de opções (abre pela engrenagem do topo). */
+/** Saves guardados na conta: um por carreira (criar outra não apaga a antiga). */
+function preencherListaNuvem() {
+  void listarNuvem("jogador").then((l) => {
+    const el = document.getElementById("listaNuvem");
+    if (!el) return;
+    el.innerHTML = l.length ? `<b style="color:var(--giz)">Carreiras na sua conta</b>${l.slice(0, 8).map((m) => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--linha)"><span>${esc(m.rotulo)}<br><small>${new Date(m.quando).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</small></span><button class="botao sec peq" data-acao="nuvem-carregar" data-chave="${esc(m.chave)}">Carregar</button></div>`).join("")}` : "";
+  });
+}
 function opcoesHtml(s: Save): string {
   void s;
-  return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador. Para não perder a carreira (trocar de aparelho, limpar o navegador), baixe o save de vez em quando.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p><a class="botao sec peq" href="tecnico.html" style="margin-top:8px">Carreira de técnico</a></section>`;
+  setTimeout(preencherListaNuvem, 0);
+  return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador e, dentro do Claude, também na sua conta: se o navegador perder o save, a carreira volta sozinha. Baixar o arquivo é uma cópia extra.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><p id="statusNuvem" class="sub" style="font-size:12.5px">${textoNuvem()}</p><div id="listaNuvem" class="sub" style="font-size:13px;margin:6px 0"></div><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p><a class="botao sec peq" href="tecnico.html" style="margin-top:8px">Carreira de técnico</a></section>`;
 }
 let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, verOutras = false;
 let subTabela: "classificacao" | "estatisticas" | "premios" = "classificacao";
@@ -2009,7 +2025,7 @@ async function baixarSave() {
   try {
     const url = URL.createObjectURL(new Blob([conteudo], { type: "application/json" })), a = document.createElement("a");
     a.href = url; a.download = nome; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
-    avisoSave("Save baixado. Guarde o arquivo: com ele você continua de onde parou em qualquer aparelho.");
+    avisoSave("Se o arquivo não apareceu nos downloads, este visualizador bloqueou o download. A cópia na sua conta continua valendo.");
   } catch { avisoSave("Não deu para baixar o save aqui.", true); }
 }
 function avisoSave(msg: string, erro = false) {
@@ -3096,6 +3112,18 @@ document.addEventListener("click", (ev) => {
     case "fundacao": { const r = criarFundacaoJogo(pacote, save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case "fechar-retro": ($("dlgRetro") as HTMLDialogElement).close(); retro = undefined; break;
     case "baixar-save": void baixarSave(); break;
+    case "nuvem-carregar": {
+      if (save && !b.dataset.certeza && chaveNuvem("car", save.semente) !== b.dataset.chave) { b.dataset.certeza = "1"; b.textContent = "Toque de novo: troca de carreira"; break; }
+      b.textContent = "Carregando…";
+      void lerDaNuvem(b.dataset.chave ?? "").then((r) => {
+        const d = r ? JSON.parse(r.json) as { save?: Save; plano?: Plano; jogador?: unknown } : null;
+        if (!d?.save?.carreira) { avisoSave("Não deu para ler esse save da sua conta.", true); return; }
+        nuvem.agora();
+        gravar(CHAVE_SAVE, d.save); if (d.plano) gravar(CHAVE_PLANO, d.plano); if (d.jogador) gravar(CHAVE_JOGADOR, d.jogador);
+        location.reload();
+      });
+      break;
+    }
     case "carregar-save":
       if (save && !b.dataset.certeza) { b.dataset.certeza = "1"; b.textContent = "Toque de novo: substitui a carreira atual"; break; }
       ($("arqSave") as HTMLInputElement).click(); break;
@@ -3156,3 +3184,13 @@ const mostrarErro = (e: unknown) => {
 window.addEventListener("error", (ev) => mostrarErro(ev.error ?? ev.message));
 window.addEventListener("unhandledrejection", (ev) => mostrarErro(ev.reason));
 try { render(); } catch (e) { mostrarErro(e); }
+// sem save no navegador: procura a carreira mais recente na conta; com save: manda uma cópia já na abertura
+void (async () => {
+  if (!(await nuvemDisponivel())) return;
+  if (save) { nuvem.agora(); return; }
+  const r = await ultimoDaNuvem("jogador");
+  const d = r ? (JSON.parse(r.json) as { save?: Save; plano?: Plano; jogador?: unknown }) : null;
+  if (!d?.save?.carreira || save) return;
+  gravar(CHAVE_SAVE, d.save); if (d.plano) gravar(CHAVE_PLANO, d.plano); if (d.jogador) gravar(CHAVE_JOGADOR, d.jogador);
+  location.reload();
+})();
