@@ -102,7 +102,7 @@ export interface Filho { nome: string; mae: string; ano: number; /** mãe não �
   /** recém-nascido esperando o pai escolher o nome: as sugestões (o nome provisório é a primeira) */ nomear?: string[];
   /** relação com o pai (0–100) e a semana do último programa juntos */ relacao?: number; contato?: number; vezes?: { s: number; n: number };
   /** o filho que quer ser jogador: escolinha, base de um clube, profissional, ou largou */
-  futebol?: { fase: "escolinha" | "base" | "pro" | "parou"; ovr: number; pot: number; clubeId?: string };
+  futebol?: { fase: "escolinha" | "base" | "pro" | "parou"; ovr: number; pot: number; clubeId?: string; /** treinos com o pai e o ano do treinador particular */ treino?: number; personal?: number };
   adulto?: boolean;
   /** semana em que o pai prometeu um gol para ele; os marcos da infância já vividos (idades) */ promessa?: number; marcos?: number[];
   /** o pai estava no parto? */ parto?: "presente" | "licenca" | "ausente" }
@@ -470,15 +470,21 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
 }
 
 export type AcaoFilho = "brincar" | "passear" | "presente" | "levarJogo" | "historia" | "bola" | "festa"
-  | "ninar" | "banho" | "escola" | "videogame" | "parque" | "viagem" | "conversa" | "dirigir" | "jantar" | "gol";
+  | "ninar" | "banho" | "escola" | "videogame" | "parque" | "viagem" | "conversa" | "dirigir" | "jantar" | "gol" | "escolinha" | "treinoFut" | "personal";
 export const NOME_ACAO_FILHO: Record<AcaoFilho, string> = {
   brincar: "Brincar em casa", passear: "Passeio no parque", presente: "Dar um presente", levarJogo: "Levar ao jogo", historia: "Contar uma história",
   bola: "Treinar bola no quintal", festa: "Festa de aniversário", ninar: "Ninar de madrugada", banho: "Dar banho", escola: "Levar à escola",
   videogame: "Jogar videogame", parque: "Parque de diversões", viagem: "Viagem em família", conversa: "Conversa de pai para filho",
   dirigir: "Ensinar a dirigir", jantar: "Jantar juntos", gol: "Prometer um gol para ele",
+  escolinha: "Matricular na escolinha de futebol", treinoFut: "Treino de futebol com você", personal: "Contratar treinador particular",
 };
 /** O que dá para fazer com o filho em cada idade (bebê, criança, adolescente, adulto). */
 export function acoesFilho(f: Filho, idade: number): AcaoFilho[] {
+  const fb = f.futebol, formando = fb && (fb.fase === "escolinha" || fb.fase === "base");
+  const bola: AcaoFilho[] = [...(!fb && idade >= 4 && idade <= 13 ? ["escolinha"] as AcaoFilho[] : []), ...(formando ? ["treinoFut", "personal"] as AcaoFilho[] : [])];
+  return acoesFilhoBase(f, idade).filter((a) => !(formando && a === "bola")).concat(bola);
+}
+function acoesFilhoBase(f: Filho, idade: number): AcaoFilho[] {
   if (idade <= 2) return ["ninar", "banho", "passear", "historia", "gol", "presente", "levarJogo"];
   const comuns: AcaoFilho[] = ["levarJogo", "gol", "presente", "viagem"];
   if (idade <= 12) return (["brincar", "passear", "historia", "escola", ...(idade >= 4 ? ["bola"] as AcaoFilho[] : []), ...(idade >= 6 ? ["videogame"] as AcaoFilho[] : []), "parque", ...comuns, "festa"] as AcaoFilho[]).filter((a) => !(a === "historia" && idade > 9));
@@ -514,6 +520,24 @@ export function agirFilho(n: EstadoNamoro, i: number, acao: AcaoFilho, ctx: CtxN
     case "conversa": sobe(8); return { ok: true, msg: idade >= 18 ? `Conversa longa com ${f.nome} sobre a vida e o futuro.` : `Conversa séria com ${f.nome} sobre escola, amigos e o que ${ele} quer da vida. ${ele[0].toUpperCase() + ele.slice(1)} se abriu com você.`, moral: 2 };
     case "dirigir": sobe(9); return { ok: true, msg: `Aula de direção com ${f.nome} no estacionamento do CT. Sobreviveram os dois.`, moral: 2 };
     case "jantar": sobe(6); return { ok: true, msg: `Jantar com ${f.nome}. Agora quem conta as novidades é ${ele}.`, moral: 2 };
+    case "escolinha": {
+      const c = custa(500, 0.01); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a matrícula." };
+      const r = new RNG(`${ctx.semente}|escolinha|${f.nome}|${f.ano}`);
+      f.futebol = { fase: "escolinha", ovr: r.int(26, 36), pot: r.int(50, 86), treino: 0 }; sobe(6);
+      return { ok: true, msg: `${f.nome} começou na escolinha de futebol (${valorBrl(c)}). Chuteira nova e o seu número nas costas.`, custo: c, moral: 3 };
+    }
+    case "treinoFut": {
+      const fb = f.futebol!; fb.treino = Math.min(12, (fb.treino ?? 0) + 1); sobe(6);
+      const fala = fb.treino >= 12 ? "Ele já sabe tudo que dá para ensinar nesta temporada." : rngFrase(ctx, f, ["Finalização com as duas pernas.", "Domínio e passe de primeira.", "Posicionamento: você mostrou vídeos dos seus jogos.", "Cobrança de falta no quintal.", "Drible e arrancada."]);
+      return { ok: true, msg: `Treino com ${f.nome}: ${fala} (${fb.treino}/12 nesta temporada)`, moral: 2, cansaco: 3 };
+    }
+    case "personal": {
+      const fb = f.futebol!, ano = ctx.ano ?? 0;
+      if (fb.personal === ano) return { ok: false, msg: "Ele já tem treinador particular nesta temporada." };
+      const c = custa(4000, 0.06); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para o treinador." };
+      fb.personal = ano; sobe(3);
+      return { ok: true, msg: `Treinador particular para ${f.nome} pela temporada toda: ${valorBrl(c)}.`, custo: c, moral: 1 };
+    }
     case "gol": {
       if (f.promessa === ctx.semanaAbs) return { ok: false, msg: "Você já prometeu um gol nesta semana." };
       f.promessa = ctx.semanaAbs; f.vezes.n++; n.feitas++; f.contato = ctx.semanaAbs;
@@ -521,6 +545,7 @@ export function agirFilho(n: EstadoNamoro, i: number, acao: AcaoFilho, ctx: CtxN
     }
   }
 }
+const rngFrase = (ctx: CtxNamoro, f: Filho, l: string[]) => new RNG(`${ctx.semente}|treinoFut|${f.nome}|${ctx.semanaAbs}`).pick(l);
 /** Marcos da infância (uma vez por filho): primeiros passos, primeira palavra, escola, a primeira chuteira... */
 const MARCOS: [number, (f: Filho) => string][] = [
   [1, (f) => `${f.nome} deu os primeiros passos, direto para a bola de plástico da sala.`],

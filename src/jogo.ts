@@ -2028,7 +2028,10 @@ function fimDeTemporadaVida(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev
   for (const fi of namoroDe(c).filhos ?? []) {
     const fb = fi.futebol, idade = ano + 1 - fi.ano;
     if (!fb || fb.fase === "parou") continue;
-    if (fb.fase !== "pro") fb.ovr = Math.min(fb.pot, fb.ovr + rr.int(2, 7));
+    // treinar com o pai (até 12 vezes por temporada) e o treinador particular aceleram; muito treino ainda sobe um pouco o teto
+    const extraTreino = Math.min(6, (fb.treino ?? 0) * 0.5) + (fb.personal === ano ? 2.5 : 0);
+    if (fb.fase !== "pro") { if ((fb.treino ?? 0) >= 10 && fb.pot < 92) fb.pot += 1; fb.ovr = Math.min(fb.pot, Math.round(fb.ovr + rr.int(2, 7) + extraTreino)); }
+    fb.treino = 0;
     if (fb.fase === "escolinha" && idade >= 14) { fb.fase = "base"; fb.clubeId = c.clubeId; noticia(s, "vida", `Filho de ${s.jogador.apelido} entra na base`, `${fi.nome}, ${idade} anos, passou na peneira do ${infoClube(pacote, c.clubeId)?.nome ?? "clube"}.`); registrarMarco(s, { tipo: "filho", texto: `${fi.nome} entra na base do ${infoClube(pacote, c.clubeId)?.nome ?? "clube"}` }); }
     else if (fb.fase === "base" && idade >= 18) {
       const forca = fb.clubeId ? w.clube[fb.clubeId]?.forca ?? 70 : 70;

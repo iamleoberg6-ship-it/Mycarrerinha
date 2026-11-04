@@ -1223,6 +1223,10 @@ teste("Vida amorosa: caso escondido vira escândalo, divórcio custa caro, filho
   assert.ok(acoesFilhoT(n.filhos![0], 0).includes("ninar") && !acoesFilhoT(n.filhos![0], 0).includes("videogame"));
   assert.ok(acoesFilhoT(n.filhos![0], 16).includes("dirigir") && !acoesFilhoT(n.filhos![0], 16).includes("ninar"));
   assert.ok(!agirFilho(n, 0, "videogame", { ...ctx, semanaAbs: parto + 2, ano: 2030 }).ok, "bebê não joga videogame");
+  // escolinha e treino com o pai
+  assert.ok(agirFilho(n, 0, "escolinha", { ...ctx, semanaAbs: parto + 300, ano: 2036 }).ok && n.filhos![0].futebol?.fase === "escolinha");
+  for (let w = 0; w < 14; w++) agirFilho(n, 0, "treinoFut", { ...ctx, semanaAbs: parto + 301 + w, ano: 2036 });
+  assert.equal(n.filhos![0].futebol!.treino, 12, "até 12 treinos por temporada");
   n.par = par("Carla", "casados", 90);
   let filhos = 0; for (let a = 2030; a < 2045; a++) { temporadaNamoro(n, [], { semente: "amor", ano: a, salario: 100000 }); filhos = n.filhos!.length; }
   assert.ok(filhos >= 1);

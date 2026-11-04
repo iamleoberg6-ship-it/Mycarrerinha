@@ -1010,7 +1010,7 @@ function filhoHtml(s: Save, f: Filho, i: number): string {
     <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação com você · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
     <p>“${esc(falaSobreVoce(r))}”</p>
     ${f.parto ? `<p class="sub">${f.parto === "ausente" ? "Você não estava no parto: ficou concentrado com o time." : f.parto === "licenca" ? "Você tirou licença-paternidade e estava lá quando nasceu." : "Você correu para a maternidade e viu nascer."}</p>` : ""}
-    ${fase && f.futebol ? `<p class="sub">${fase} · OVR ${f.futebol.ovr} (potencial ${f.futebol.pot})</p>` : ""}
+    ${fase && f.futebol ? `<p class="sub">${fase} · OVR ${f.futebol.ovr} (potencial ${f.futebol.pot})</p>${f.futebol.fase === "escolinha" || f.futebol.fase === "base" ? `<p class="sub">Treinos com você nesta temporada: ${f.futebol.treino ?? 0} de 12${f.futebol.personal === ANO_INICIAL + s.carreira.temporada ? " · tem treinador particular" : ""}. Cada treino acelera a evolução no fim da temporada.</p>` : ""}` : ""}
     ${idade >= 3 ? `<p class="rotulo" style="margin-top:12px">Habilidades</p>${habs.map(([n, v]) => barra(n, v)).join("")}` : `<p class="sub" style="margin-top:12px">Ainda é bebê: as habilidades aparecem a partir dos 3 anos.</p>`}
     ${bloco("Jeito", jeitoDe({ id: `filho${i}-${f.ano}`, nome: f.nome }, s.semente, true, meninaDe(f)))}
     <p class="sub" style="margin-top:8px">${esc(quemPuxou(s, f, i))}</p>`;
