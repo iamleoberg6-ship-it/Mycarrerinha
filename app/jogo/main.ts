@@ -36,6 +36,7 @@ import { MARCA, CLUBE_DA_MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatr
 import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia, capaVideogame, capaDocumentario } from "../visual/cartazes";
+import { svgEstadio, formatoDoEstadio } from "../visual/estadio";
 import { svgEscudo } from "../visual/escudos";
 import { fotoDoPerfil } from "../visual/mulheres";
 /** Arte do casal: o jogador e a parceira lado a lado, com os mesmos retratos do app. */
@@ -1257,7 +1258,7 @@ function clubeHtml(clubeId: string): string {
     : `<p class="sub">Ainda sem títulos de liga.</p>`;
   return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(infoLiga(liga).curto)}</span></div></div>
     <div class="kv" style="margin-top:10px"><span>Estádio</span><b>${esc(info.estadio)}${info.capacidade ? ` · ${info.capacidade.toLocaleString("pt-BR")} lugares` : ""}</b><span>Técnico</span><b>${tec ? esc(tec.nome) : "—"}</b></div>
-    <div class="perfil-uniforme">${save ? corpoDe(save, "jogo", clubeId) : camisaMini(clubeId, 10)}</div>${MARCA[CLUBE_DA_MARCA[idClube(clubeId)] ?? ""] ? `<p class="sub" style="text-align:center;margin:6px 0 0">Clube da ${logoSvg(MARCA[CLUBE_DA_MARCA[idClube(clubeId)]], 22)}</p>` : ""}<p class="sub" style="text-align:center;margin:4px 0 0">${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</p>
+    <div class="perfil-uniforme">${save ? corpoDe(save, "jogo", clubeId) : camisaMini(clubeId, 10)}</div>${info.capacidade ? `<div style="margin:12px 0 0">${svgEstadio({ nome: info.estadio || `Estádio do ${info.nome}`, capacidade: info.capacidade, cores: info.cores, formato: formatoDoEstadio(info.id, info.pais, info.capacidade) }).replace("<svg ", '<svg style="width:100%;height:auto;display:block;border-radius:12px" ')}</div>` : ""}${MARCA[CLUBE_DA_MARCA[idClube(clubeId)] ?? ""] ? `<p class="sub" style="text-align:center;margin:6px 0 0">Clube da ${logoSvg(MARCA[CLUBE_DA_MARCA[idClube(clubeId)]], 22)}</p>` : ""}<p class="sub" style="text-align:center;margin:4px 0 0">${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</p>
     <p class="rotulo" style="margin-top:16px">Títulos${tit.total ? ` · ${tit.total}` : ""}</p>
     <div class="titulos">${trofeus}</div>
     <p class="rotulo" style="margin-top:16px">Time de todos os tempos</p>

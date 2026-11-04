@@ -7,6 +7,7 @@ import { infoLiga } from "../../src/ligas";
 import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
 import { svgEscudo } from "../visual/escudos";
+import { svgEstadio, formatoDoEstadio } from "../visual/estadio";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
@@ -296,8 +297,10 @@ function abaDiretoria(s: SaveTecnico): string {
     const c = custoPedido(s, p), andando = d.obras.find((o) => o.tipo === p), max = (p === "ct" && s.clube.ctNivel >= 5) || (p === "base" && s.clube.baseNivel >= 5);
     return `<div class="not"><b>${titulo}</b><small style="font-size:13px;margin:2px 0 6px">${texto}${c.custo ? ` · custo ${curtoBrl(c.custo)}` : ""}</small>${andando ? `<span class="pill aviso">Em obra · ${andando.fim - ab} semanas</span>` : max ? `<span class="pill bom">Nível máximo</span>` : `<button class="botao sec peq" data-ped="${p}">Pedir à diretoria</button>`}</div>`;
   };
-  const cE = custoPedido(s, "estadio");
-  return `<div class="dl"><span>Confiança</span><b>${Math.round(d.confianca)}/100</b><span>Meta da temporada</span><b>${esc(d.expectativa.texto)} (${d.expectativa.pos}º)</b><span>Centro de treinamento</span><b>${estrelas(s.clube.ctNivel)}</b><span>Categoria de base</span><b>${estrelas(s.clube.baseNivel)}</b></div>
+  const cE = custoPedido(s, "estadio"), info = infoClube(pacote, s.clubeId), obraEst = d.obras.find((o) => o.tipo === "estadio");
+  const est = `<div class="estadio-box">${svgEstadio({ nome: info?.estadio || `Estádio do ${info?.nome ?? ""}`, capacidade: s.clube.capacidade, cores: info?.cores ?? ["#2E7D4F", "#FFFFFF"], obra: !!obraEst, formato: formatoDoEstadio(s.clubeId, info?.pais ?? "BRA", info?.capacidade ?? s.clube.capacidade) })}</div>
+    ${obraEst ? `<p class="sub" style="text-align:center;margin:-4px 0 10px">Obra de ampliação: +${(obraEst.lugares ?? 0).toLocaleString("pt-BR")} lugares em ${obraEst.fim - ab} semanas.</p>` : ""}`;
+  return `${est}<div class="dl"><span>Confiança</span><b>${Math.round(d.confianca)}/100</b><span>Meta da temporada</span><b>${esc(d.expectativa.texto)} (${d.expectativa.pos}º)</b><span>Centro de treinamento</span><b>${estrelas(s.clube.ctNivel)}</b><span>Categoria de base</span><b>${estrelas(s.clube.baseNivel)}</b></div>
     <p class="rotulo" style="margin-top:14px">Pedidos</p>
     ${pedido("estadio", "Ampliar o estádio", `+${(cE.lugares ?? 0).toLocaleString("pt-BR")} lugares, mais bilheteria. Precisa de confiança 55`)}
     ${pedido("ct", `Reformar o centro de treinamento (nível ${Math.min(5, s.clube.ctNivel + 1)})`, "Todo o elenco evolui mais. Precisa de confiança 50")}
