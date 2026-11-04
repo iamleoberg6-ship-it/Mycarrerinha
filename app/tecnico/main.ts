@@ -32,7 +32,7 @@ import {
   proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
-  iniciarPartida, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
+  iniciarPartida, jogarAte, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import {
@@ -54,7 +54,14 @@ let filtroMercado: { pos?: PosT; idadeMax?: number; minhaLiga: boolean; alcance:
 /** Valor digitado (na moeda da tela) para reais, que é como o jogo guarda. */
 const lerValor = (id: string) => { const el = document.getElementById(id) as HTMLInputElement | null, n = +(el?.value ?? "").replace(/\D/g, ""); return n > 0 ? Math.round(n / MOEDAS[moedaAtual()].porBrl) : 0; };
 const naTela = (brl: number) => Math.round(numBrl(brl)).toLocaleString("pt-BR");
-const campoValor = (id: string, brl: number) => `<label class="campo-valor"><span>${esc(simboloAtual())}</span><input id="${id}" inputmode="numeric" autocomplete="off" value="${naTela(brl)}" aria-label="Valor em ${esc(simboloAtual())}"></label>`;
+/** Campo de valor com + e − por casa (as quatro casas que importam para o tamanho do valor): dá para ajustar sem digitar. */
+const rotuloPasso = (v: number) => v >= 1e6 ? `${v / 1e6} mi` : v >= 1e3 ? `${v / 1e3} mil` : String(v);
+const campoValor = (id: string, brl: number) => {
+  const tela = Math.max(1, Math.round(numBrl(brl))), base = Math.max(100, Math.pow(10, Math.floor(Math.log10(tela)) - 2));
+  const passos = [base * 1000, base * 100, base * 10, base];
+  return `<label class="campo-valor"><span>${esc(simboloAtual())}</span><input id="${id}" inputmode="numeric" autocomplete="off" value="${naTela(brl)}" aria-label="Valor em ${esc(simboloAtual())}"></label>
+    <div class="passos" role="group" aria-label="Ajustar o valor">${passos.map((p) => `<div class="passo"><button type="button" data-passo="${id}|${p}" aria-label="Mais ${rotuloPasso(p)}">+</button><small>${rotuloPasso(p)}</small><button type="button" data-passo="${id}|-${p}" aria-label="Menos ${rotuloPasso(p)}">−</button></div>`).join("")}</div>`;
+};
 let anosProposta = 3, msgNeg: { texto: string; ok: boolean; pedido?: number } | undefined;
 let msg: { texto: string; ok: boolean } | undefined;
 let ligaEscolhida = "BRA1";
@@ -128,7 +135,8 @@ function abaInicio(s: SaveTecnico): string {
   const jogo = pj ? `<section class="painel"><p class="rotulo">Rodada ${pj.rodada + 1} de ${nRodadasT(s)} · ${pj.souCasa ? "em casa" : "fora"}</p>
       <div class="prox"><div class="lado">${escudo(pj.souCasa ? s.clubeId : pj.adv)}<span>${esc(nomeClube(pj.souCasa ? s.clubeId : pj.adv))}</span></div><span class="x">×</span><div class="lado">${escudo(pj.souCasa ? pj.adv : s.clubeId)}<span>${esc(nomeClube(pj.souCasa ? pj.adv : s.clubeId))}</span></div></div>
       <p class="sub" style="text-align:center">Seu time em campo: <b style="color:var(--giz)">${Math.round(f.geral)}</b> · adversário: <b style="color:var(--giz)">${Math.round(w.clube[pj.adv]?.forca ?? 0)}</b></p>
-      ${s.aoVivo ? `<p class="placar-vivo">Intervalo: <b>${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}</b></p><div class="botoes" style="justify-content:center"><button class="botao sec" data-ver-intervalo>Ver o 1º tempo</button><button class="botao sec" data-aba="tatica">Mexer no time</button></div><button class="botao grande" data-avancar style="margin-top:10px">Jogar o 2º tempo</button>` : `<button class="botao grande" data-primeiro-tempo style="margin-top:10px">Jogar o 1º tempo</button>`}</section>`
+      ${s.aoVivo ? `<p class="placar-vivo">Jogo parado no ${s.aoVivo.minuto ?? 0}': <b>${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}</b></p><div class="botoes" style="justify-content:center"><button class="botao sec" data-aba="tatica">Mexer no time</button></div><button class="botao grande" data-vivo style="margin-top:10px">Voltar para o jogo</button>`
+        : `<button class="botao grande" data-vivo style="margin-top:10px">▶ Jogar ao vivo</button><button class="botao sec" data-avancar style="margin-top:8px;width:100%">Simular direto</button>`}</section>`
     : `<section class="painel"><p class="rotulo">${s.semana < SEMANAS_PRE_T ? "Pré-temporada" : "Fim de temporada"}</p><h2>${s.semana < SEMANAS_PRE_T ? "Treinos e ajustes antes da estreia" : "Última semana do ano"}</h2>
       <p class="sub">${s.semana < SEMANAS_PRE_T ? "Defina a tática e o treino. O entrosamento sobe com o foco tático." : "A temporada fecha: premiação, balanço da diretoria e contratos que acabam."}</p>
       <button class="botao grande" data-avancar style="margin-top:10px">Avançar semana</button></section>`;
@@ -261,11 +269,11 @@ function abaTatica(s: SaveTecnico): string {
     <div class="forca3" style="margin-bottom:10px"><div><strong>${Math.round(f.defesa)}</strong><span>Defesa</span></div><div><strong>${Math.round(f.meio)}</strong><span>Meio</span></div><div><strong>${Math.round(f.ataque)}</strong><span>Ataque</span></div></div>
     ${campo}
     <p class="sub" style="margin:8px 0">Toque num jogador para trocar. Entrosamento no ${t.formacao}: <b style="color:var(--giz)">${Math.round(s.entrosamento[t.formacao] ?? 40)}%</b>. Contorno vermelho: improvisado, lesionado ou suspenso.</p>
-    ${s.aoVivo ? `<p class="aviso-t ok" style="margin-top:8px">Intervalo · ${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}. As mudanças valem para o 2º tempo. Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}.</p><button class="botao grande" data-avancar-tatica style="margin-top:8px">Jogar o 2º tempo</button>` : `<div class="botoes"><button class="botao peq" data-melhor>Melhor escalação</button></div>`}
+    ${s.aoVivo ? `<p class="aviso-t ok" style="margin-top:8px">Jogo parado no ${s.aoVivo.minuto ?? 0}' · ${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}. As mudanças valem quando o jogo voltar. Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}.</p><button class="botao grande" data-vivo style="margin-top:8px">▶ Voltar para o jogo</button>` : `<div class="botoes"><button class="botao peq" data-melhor>Melhor escalação</button></div>`}
     <p class="rotulo" style="margin-top:14px">Funções</p><div class="lista">${vagas.map((v, i) => { const a = por.get(s.esc.titulares[i] ?? ""); if (!a) return ""; const atual = funcaoNaVaga(s.esc, a, v.pos);
       return `<div class="lin" style="cursor:default;grid-template-columns:34px 1fr"><span class="num" style="font-size:12px">${v.rot}</span><span class="nm"><b>${esc(a.nome)}</b><select class="campo-sel sel-funcao" data-funcao="${esc(a.id)}" aria-label="Função de ${esc(a.nome)}">${funcoesDa(v.pos).map((f) => `<option value="${f.id}" ${f.id === atual?.id ? "selected" : ""}>${"★".repeat(estrelasEncaixe(encaixe(a.at, exDe(a), f), ovrPos(a.at, v.pos)))} ${esc(f.nome)}</option>`).join("")}</select><small>${esc(atual?.desc ?? "")}</small></span></div>`; }).join("")}</div>
     <p class="rotulo" style="margin-top:14px">Banco</p><p class="sub">${reservas.map((a) => `${esc(a.nome)} (${a.pos} ${ovrDe(a)})`).join(" · ") || "Sem reservas disponíveis."}</p>
-    <p class="sub" style="font-size:12.5px;margin-top:4px">Até 3 trocas automáticas a partir dos 60', saindo quem estiver mais cansado.</p>
+    <p class="sub" style="font-size:12.5px;margin-top:4px">Se você não mexer durante o jogo, o auxiliar faz até 3 trocas a partir dos 60', tirando quem estiver mais cansado.</p>
     <div class="grade-tat" style="margin-top:14px"><p class="rotulo">Instruções</p>
       <div><div class="lbl">Mentalidade</div>${chips("mentalidade", NOME_MENTALIDADE, t.mentalidade)}</div>
       <div><div class="lbl">Marcação</div>${chips("pressao", NOME_NIVEL3.pressao, t.pressao)}</div>
@@ -281,7 +289,7 @@ function abaTatica(s: SaveTecnico): string {
 }
 function escolherVaga(s: SaveTecnico, i: number): string {
   const v = FORMACOES[s.tatica.formacao][i], atual = s.esc.titulares[i];
-  const av = s.aoVivo, podeVoltar = (a: Atleta) => !av || (!av.fora.includes(a.id) && (av.emCampo1.includes(a.id) || !av.stats[a.id]));
+  const av = s.aoVivo, podeVoltar = (a: Atleta) => !av || (!av.fora.includes(a.id) && ((av.emCampo ?? []).includes(a.id) || !av.stats[a.id]));
   const lista = [...s.elenco].filter((a) => !av || podeVoltar(a)).sort((a, b) => Number(disponivel(b)) - Number(disponivel(a)) || ovrNaVaga(b, v.pos) - ovrNaVaga(a, v.pos));
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button><div><p class="rotulo">Vaga</p><h2>${v.rot} · ${NOME_POS_T[v.pos]}</h2></div>
     <div class="lista">${lista.map((a) => {
@@ -400,18 +408,53 @@ function relatorioHtml(p: Relatorio): string {
     <div><p class="rotulo">Notas</p><div class="lista">${[...p.notas].sort((a, b) => b.nota - a.nota).map((n) => `<div class="lin" style="cursor:default;grid-template-columns:40px 1fr auto"><span class="num" style="font-size:13px">${n.pos}</span><span class="nm"><b>${esc(n.nome)}</b><small>${n.min}'${n.gols ? ` · ${n.gols} gol${n.gols > 1 ? "s" : ""}` : ""}${n.assist ? ` · ${n.assist} assist.` : ""}</small></span><span class="ov"><strong style="font-size:20px;color:${n.nota >= 7 ? "var(--pos)" : n.nota < 6 ? "var(--neg)" : "var(--ouro-claro)"}">${n.nota.toFixed(1).replace(".", ",")}</strong></span></div>`).join("")}</div></div>`;
 }
 
-function intervaloHtml(s: SaveTecnico, avisos: string[]): string {
-  const av = s.aoVivo;
-  if (!av) return "";
-  const casa = av.souCasa ? s.clubeId : av.adv, fora = av.souCasa ? av.adv : s.clubeId, gc = av.souCasa ? av.gMe : av.gAdv, gf = av.souCasa ? av.gAdv : av.gMe;
+// ------------------------------------------------------------------ partida ao vivo
+/** Estado da tela do jogo: minuto mostrado, velocidade (ms por minuto), pausa pedida e se parou no intervalo. */
+const vivo = { mostrado: 0, vel: 260, pausado: true, pedirPausa: false, intervalo: false, passouIntervalo: false, timer: 0 as number, avisos: [] as string[] };
+const ICO_EV: Record<string, string> = { gol: "⚽", amarelo: "🟨", vermelho: "🟥", lesao: "✚", sub: "⇄" };
+function abrirVivo(s: SaveTecnico, avisos: string[]) {
+  const av = s.aoVivo; if (!av) return;
+  vivo.mostrado = av.minuto ?? 0; vivo.avisos = avisos; vivo.pausado = true; clearTimeout(vivo.timer); vivo.pedirPausa = false; vivo.intervalo = false; vivo.passouIntervalo = vivo.mostrado >= 45;
+  abrir(`<div id="vivo"></div>`);
+  atualizarVivo(s);
+}
+function atualizarVivo(s: SaveTecnico) {
+  const el = document.getElementById("vivo"), av = s.aoVivo;
+  if (!el || !av) return;
+  const m = vivo.mostrado, evs = av.eventos.filter((e) => e.min <= m);
+  const gMe = evs.filter((e) => e.tipo === "gol" && e.meu).length, gAdv = evs.filter((e) => e.tipo === "gol" && !e.meu).length;
+  const casa = av.souCasa ? s.clubeId : av.adv, fora = av.souCasa ? av.adv : s.clubeId, gc = av.souCasa ? gMe : gAdv, gf = av.souCasa ? gAdv : gMe;
+  const fim = m >= 90, parado = vivo.pausado || fim;
+  const vel = [[260, "1×"], [120, "2×"], [45, "4×"]].map(([v, t]) => `<button class="chip${vivo.vel === v ? " ativo" : ""}" data-vivo-vel="${v}">${t}</button>`).join("");
   const cansados = Object.entries(av.cond).filter(([id, c]) => c < 62 && s.esc.titulares.includes(id)).map(([id]) => s.elenco.find((a) => a.id === id)?.nome).filter(Boolean);
-  return `<button class="fechar" data-fechar aria-label="Fechar">×</button><p class="rotulo">Intervalo · rodada ${av.rodada + 1}</p>
+  el.innerHTML = `<button class="fechar" data-fechar aria-label="Fechar">×</button>
+    <p class="rotulo">Rodada ${av.rodada + 1} · ao vivo</p>
+    <div class="relogio-vivo${parado ? "" : " correndo"}">${fim ? "Fim de jogo" : vivo.intervalo ? "Intervalo" : `${m}'`}</div>
     <div class="prox"><div class="lado">${escudo(casa)}<span>${esc(nomeClube(casa))}</span></div><span class="placar">${gc} × ${gf}</span><div class="lado">${escudo(fora)}<span>${esc(nomeClube(fora))}</span></div></div>
-    ${avisos.map((x) => `<p class="sub">${esc(x)}</p>`).join("")}
-    <div><p class="rotulo">1º tempo</p>${av.eventos.length ? av.eventos.map((e) => `<div class="evento${e.meu ? "" : " adv"}"><span class="m">${e.min}'</span><span>${e.tipo === "gol" ? "⚽" : e.tipo === "amarelo" ? "🟨" : e.tipo === "vermelho" ? "🟥" : e.tipo === "lesao" ? "✚" : "⇄"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">Primeiro tempo sem gols nem grandes lances.</p>`}</div>
-    ${cansados.length ? `<p class="sub">Cansados: ${cansados.map((n) => esc(n!)).join(", ")}.</p>` : ""}${av.fora.length ? `<p class="sub">Não voltam: ${av.fora.map((id) => esc(s.elenco.find((a) => a.id === id)?.nome ?? "")).join(", ")}.</p>` : ""}
-    <div class="botoes"><button class="botao sec" data-aba="tatica" data-fechar-tambem>Mexer no time e na tática</button><button class="botao" data-avancar>Jogar o 2º tempo</button></div>
-    <p class="sub">Você pode fazer até ${MAX_TROCAS} trocas, mudar a formação, as funções e as instruções. Quem saiu não volta.</p>`;
+    <div class="barra-tempo"><i style="width:${(m / 90) * 100}%"></i><b style="left:50%"></b></div>
+    ${vivo.avisos.map((x) => `<p class="sub">${esc(x)}</p>`).join("")}
+    <div class="feed-vivo">${evs.length ? [...evs].reverse().map((e) => `<div class="evento${e.meu ? "" : " adv"}${e.tipo === "gol" ? " gol" : ""}"><span class="m">${e.min}'</span><span>${ICO_EV[e.tipo] ?? "•"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">${m ? "Jogo truncado, sem grandes lances." : "A bola vai rolar."}</p>`}</div>
+    ${parado && !fim && cansados.length ? `<p class="sub">Cansados: ${cansados.map((n) => esc(n!)).join(", ")}.</p>` : ""}
+    ${fim ? `<button class="botao grande" data-avancar>Ver o resultado</button>`
+      : parado ? `<div class="botoes"><button class="botao" data-vivo-seguir>▶ ${m === 0 ? "Começar" : vivo.intervalo ? "Começar o 2º tempo" : "Continuar"}</button><button class="botao sec" data-vivo-mexer>Mexer no time e na tática</button></div>
+        <p class="sub">Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}. <button class="link-inline" data-avancar>Pular para o fim</button></p>`
+      : `<div class="botoes"><button class="botao" data-vivo-pausa>${vivo.pedirPausa ? "Parando…" : "⏸ Pausar"}</button><div class="chips">${vel}</div></div>`}`;
+}
+/** Um minuto da tela: anda o relógio; quando chega no que o motor já jogou, joga mais 5 (ou para na pausa, no intervalo e no fim). */
+function passoVivo(s: SaveTecnico) {
+  clearTimeout(vivo.timer);
+  const av = s.aoVivo, d = $("dlg") as HTMLDialogElement;
+  if (!av || vivo.pausado || !d.open || !document.getElementById("vivo")) { vivo.pausado = true; return; }
+  if (vivo.mostrado >= (av.minuto ?? 0)) {
+    if (vivo.mostrado >= 90) { vivo.pausado = true; salvar(); atualizarVivo(s); return; }
+    const noIntervalo = vivo.mostrado === 45 && !vivo.passouIntervalo;
+    if (vivo.pedirPausa || noIntervalo) { vivo.pausado = true; vivo.intervalo = noIntervalo; if (noIntervalo) vivo.passouIntervalo = true; vivo.pedirPausa = false; salvar(); render(); atualizarVivo(s); return; }
+    jogarAte(pacote, s, (av.minuto ?? 0) + 5); salvar();
+  }
+  vivo.mostrado++;
+  atualizarVivo(s);
+  const novo = av.eventos.some((e) => e.min === vivo.mostrado && (e.tipo === "gol" || e.tipo === "vermelho"));
+  vivo.timer = window.setTimeout(() => passoVivo(s), novo ? Math.max(900, vivo.vel * 4) : vivo.vel);
 }
 // ------------------------------------------------------------------ render
 function abrir(html: string) { $("tela").innerHTML = html; const d = $("dlg") as HTMLDialogElement; if (!d.open) d.showModal(); }
@@ -453,6 +496,7 @@ document.addEventListener("click", (ev) => {
   const s = save;
   if (d.aba) { aba = d.aba as typeof aba; msg = undefined; fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
+  if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
   if (d.filtro) { filtro = d.filtro; render(); return; }
   if (d.patro) { const [cota, marca] = d.patro.split("|"), nome = (document.getElementById(`pn-${marca}`) as HTMLSelectElement | null)?.value; const r = assinarPatro(pacote, s, cota as Cota, marca, lerValor(`pv-${cota}-${marca}`), nome ? { nome } : undefined); msg = { texto: r.msg, ok: r.ok }; salvar(); render(); return; }
   if (d.patroCor) { const [cota, cor] = d.patroCor.split("|"); corDoPatro(pacote, s, cota as Cota, cor); salvar(); render(); return; }
@@ -463,8 +507,11 @@ document.addEventListener("click", (ev) => {
     return;
   }
   if (d.verPartida !== undefined && s.ultima) { abrir(relatorioHtml(s.ultima)); return; }
-  if (d.primeiroTempo !== undefined) { const r = iniciarPartida(pacote, s); salvar(); render(); window.scrollTo(0, 0); if (r) abrir(intervaloHtml(s, r.avisos)); return; }
-  if (d.verIntervalo !== undefined && s.aoVivo) { abrir(intervaloHtml(s, [])); return; }
+  if (d.vivo !== undefined) { const r = s.aoVivo ? { avisos: [] } : iniciarPartida(pacote, s); salvar(); render(); if (r) abrirVivo(s, r.avisos); return; }
+  if (d.vivoPausa !== undefined) { vivo.pedirPausa = true; atualizarVivo(s); return; }
+  if (d.vivoSeguir !== undefined) { vivo.pausado = false; vivo.pedirPausa = false; vivo.intervalo = false; atualizarVivo(s); passoVivo(s); return; }
+  if (d.vivoVel) { vivo.vel = +d.vivoVel; atualizarVivo(s); return; }
+  if (d.vivoMexer !== undefined) { vivo.pausado = true; fechar(); aba = "tatica"; render(); window.scrollTo(0, 0); return; }
   if (d.avancarTatica !== undefined) { aba = "inicio"; fechar(); }
   if (d.licenca !== undefined) { const r = estudarLicenca(s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.aulas) { const r = pagarAulas(s, d.aulas); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.aulas)); render(); return; }
@@ -475,7 +522,7 @@ document.addEventListener("click", (ev) => {
   if (d.dispensar !== undefined && d.id) { const r = dispensar(s, d.id); msg = { texto: r.msg, ok: r.ok }; if (r.ok) { fechar(); prepararMundo(pacote, s); redesenhar(); } else abrir(fichaJogador(s, d.id)); return; }
   if (d.vaga !== undefined) { abrir(escolherVaga(s, +d.vaga)); return; }
   if (d.escolher !== undefined && d.i !== undefined) {
-    if (s.aoVivo && d.escolher && !s.aoVivo.emCampo1.includes(d.escolher) && !s.esc.titulares.includes(d.escolher) && trocasNoIntervalo(s) >= MAX_TROCAS) { msg = { texto: `Já foram as ${MAX_TROCAS} trocas.`, ok: false }; fechar(); redesenhar(); return; }
+    if (s.aoVivo && d.escolher && !(s.aoVivo.emCampo ?? []).includes(d.escolher) && !s.esc.titulares.includes(d.escolher) && trocasNoIntervalo(s) >= MAX_TROCAS) { msg = { texto: `Já foram as ${MAX_TROCAS} trocas.`, ok: false }; fechar(); redesenhar(); return; }
     trocarNaVaga(s, +d.i, d.escolher || null); fechar(); redesenhar(false); return;
   }
   if (d.form) { if (s.aoVivo) reorganizarNoIntervalo(s, d.form); else mudarFormacao(s, d.form); redesenhar(false); return; }

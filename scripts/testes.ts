@@ -1722,6 +1722,20 @@ teste("Técnico: intervalo com trocas, funções por posição e detalhes (falta
   assert.ok(s.elenco.every((a) => Object.values(M.exDe(a)).every(Number.isFinite)));
 });
 
+teste("Técnico: partida ao vivo anda de 5 em 5, para onde o técnico quiser, e não conta expulso como troca", () => {
+  for (const sem of ["vivo-a", "vivo-b", "vivo-c"]) {
+    const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", sem);
+    while (T.semanaAbs(s) < 2) T.avancarSemana(pacote, s);
+    assert.ok(T.iniciarPartida(pacote, s));
+    T.jogarAte(pacote, s, 20);
+    assert.equal(s.aoVivo!.minuto, 20);
+    T.jogarAte(pacote, s, 90);
+    assert.ok(s.aoVivo!.trocas <= T.MAX_TROCAS, `trocas: ${s.aoVivo!.trocas}`);
+    const r = T.avancarSemana(pacote, s);
+    assert.ok(r.partida && !s.aoVivo, "fecha a partida");
+  }
+});
+
 teste("Técnico: patrocínios do clube (master, fornecedor, manga, arena) com valor livre e receita no mês", () => {
   const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "FLA", "teste-patro");
   const p = P.patrociniosDe(pacote, s);
