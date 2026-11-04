@@ -15,6 +15,7 @@ import { LICENCAS, CURSO_LICENCA, licencaExigida, semanaCurso, type CursoTecnico
 import { valorMercado, CAMBIO } from "../mercado.js";
 import { curtoBrl } from "../moeda.js";
 import { tipoDoGol, narrarGolMeu, narrarGolAdv, narrarChanceMeu, narrarChanceAdv, narrarCartao, narrarLesao } from "./narracao.js";
+import { premiosDoMes, premiosDoAno, sortearEvento, forcaDoContato, type Premio, type EventoT, type Contato, type BioJogador, type FamiliarJogador } from "./vida.js";
 import { patrociniosDe, receitaPatro, viradaPatro, type PatrociniosClube } from "./patrocinio.js";
 /** Dinheiro nas mensagens: na moeda que a tela está usando. */
 const dinheiroT = (v: number) => curtoBrl(v);
@@ -63,6 +64,8 @@ export interface SaveTecnico {
   /** mercado: jogadores à venda, propostas recebidas, negociações em andamento e o histórico */
   aoVivo?: AoVivo;
   /** patrocínios do clube: master, fornecedor, manga e naming rights da arena */ patro?: PatrociniosClube;
+  /** prêmios, evento da semana esperando resposta, contatos e bio da época de jogador, família que joga */
+  premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
 
@@ -107,18 +110,23 @@ export function clubesDaLiga(pacote: PacoteDados, ligaId: string) {
   const w = mundo(pacote);
   return [...(w.liga[ligaId]?.clubes ?? [])].sort((a, b) => b.forca - a.forca).map((c) => ({ id: c.id, nome: w.info[c.id]?.nome ?? c.nome, forca: Math.round(c.forca), exige: reputacaoExigida(c.forca), licenca: licencaExigida(c.forca) }));
 }
-export interface DadosTecnico { nome: string; nac: string; idade: number; exJogador?: { apelido: string; fama: number }; licenca?: number; idiomas?: Idiomas }
+export interface DadosTecnico { nome: string; nac: string; idade: number; exJogador?: { apelido: string; fama: number }; licenca?: number; idiomas?: Idiomas;
+  /** continuação da carreira de jogador: o mesmo mundo (semente), a temporada em que parou, a pausa antes de treinar, a bio, os contatos e a família que joga */
+  vindoDe?: { semente: string; temporada: number; pausa: number; bio: BioJogador; contatos: Contato[]; familia: FamiliarJogador[] } }
 /** Licença do técnico (quem começa direto já tem a B). */
 export const licencaT = (s: SaveTecnico) => s.tecnico.curso?.licenca ?? 2;
 export const idiomasT = (s: SaveTecnico) => (s.tecnico.idiomas ??= idiomasIniciais(s.tecnico.nome, s.tecnico.nac, s.tecnico.idade));
 export const reputacaoInicial = (d: DadosTecnico) => Math.round(d.exJogador ? clamp(22 + d.exJogador.fama * 0.55, 22, 75) : 20);
 
 export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeId: string, semente = `tec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`): SaveTecnico {
-  sincronizarMundo(pacote, semente, 0, 0, {}, 0);
+  // vindo da carreira de jogador: o mesmo mundo, no ano seguinte ao fim da carreira (mais a pausa)
+  const inicio = d.vindoDe ? d.vindoDe.temporada + 1 + d.vindoDe.pausa : 0;
+  if (d.vindoDe) semente = d.vindoDe.semente;
+  sincronizarMundo(pacote, semente, inicio, 0, {}, 0);
   const w = mundo(pacote), c = w.clube[idClube(clubeId)], info = infoClube(pacote, c.id), ligaId = info.ligaId, l = w.liga[ligaId], li = infoLiga(ligaId);
   const s: SaveTecnico = {
     versao: 1, modo: "tecnico", semente, tecnico: { nome: d.nome, nac: d.nac, idade: d.idade, reputacao: reputacaoInicial(d), ...(d.exJogador ? { exJogador: d.exJogador } : {}), idiomas: d.idiomas ? { ...d.idiomas } : idiomasIniciais(d.nome, d.nac, d.idade), curso: { licenca: Math.max(1, d.licenca ?? 2) } },
-    clubeId: c.id, ligaId, temporada: 0, semana: 0, ordem: l.clubes.map((x) => x.id), tabela: novaTabela(l), rodadas: {},
+    clubeId: c.id, ligaId, temporada: inicio, semana: 0, ordem: l.clubes.map((x) => x.id), tabela: novaTabela(l), rodadas: {},
     elenco: [], esc: { titulares: [], reservas: [] }, tatica: taticaPadrao(), entrosamento: { "4-3-3": 55 }, treino: { foco: "tecnico", intensidade: "normal" },
     staff: {}, clube: { saldo: 0, tv: 0, patrocinio: 0, capacidade: Math.max(4000, info.capacidade || 12000), ctNivel: 0, baseNivel: 0, tetoFolha: 0, torcida: 60 },
     mes: { receitas: {}, despesas: {} }, financas: [], diretoria: { confianca: 60, expectativa: { pos: 0, texto: "" }, obras: [] },
@@ -133,6 +141,13 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   for (const f of FUNCOES) s.staff[f] = candidatos(s, f, `inicio`, clamp(nivelClube - 1 + rng.int(0, 1), 1, 4))[0];
   s.esc = melhorEscalacao(s.elenco, s.tatica.formacao);
   definirExpectativa(pacote, s);
+  if (d.vindoDe) {
+    const v = d.vindoDe, anos = v.pausa + 1;
+    s.bio = v.bio; s.contatos = v.contatos; s.pausa = v.pausa;
+    // a família que joga envelhece e evolui no tempo em que você ficou fora
+    s.familiaJog = v.familia.map((f) => { let ovr = f.ovr; for (let k = 0; k < anos; k++) ovr = Math.min(f.pot, ovr + (f.idade + k < 24 ? 4 : f.idade + k < 30 ? 1 : -1)); return { ...f, idade: f.idade + anos, ovr }; }).filter((f) => f.idade <= 38);
+    noticia(s, "clube", v.pausa ? `Depois de ${v.pausa === 1 ? "um ano" : `${v.pausa} anos`} longe do campo, entre cursos e viagens para estudar o jogo, ${v.bio.apelido} volta ao futebol como técnico.` : `Nem bem pendurou as chuteiras e ${v.bio.apelido} já está de prancheta na mão.`);
+  }
   noticia(s, "clube", `${d.nome} é o novo técnico do ${info.nome}. A diretoria espera: ${s.diretoria.expectativa.texto.toLowerCase()}.`);
   prepararMundo(pacote, s);
   return s;
@@ -340,6 +355,21 @@ export function trocarNaVaga(s: SaveTecnico, vaga: number, id: string | null) {
 }
 /** Onde está cada um: vaga do campo ("v:3"), um jogador ("j:id"). Troca os dois de lugar (campo, banco ou fora do jogo).
  *  Com o jogo rolando, só entra em campo quem está no banco, não volta quem saiu, e o limite de trocas vale. */
+/** Trazer o filho ou o irmão para o seu elenco: de graça se ele não tem clube ou está na base; quem é profissional sai por 80% do valor. */
+export function trazerFamiliar(pacote: PacoteDados, s: SaveTecnico, nome: string): { ok: boolean; msg: string } {
+  const f = (s.familiaJog ?? []).find((x) => x.nome === nome);
+  if (!f || f.noClube) return { ok: false, msg: "Ele já está no seu elenco." };
+  if (s.elenco.length >= 36) return { ok: false, msg: "O elenco está cheio (36)." };
+  const li = infoLiga(s.ligaId), meu = mundo(pacote).clube[s.clubeId];
+  const a = atletaDoMundo({ nome: f.nome, posicao: f.pos, ovr: f.ovr, idade: f.idade, nacionalidade: s.tecnico.nac, numero: 0, pot: f.pot } as unknown as JogadorNPC, s.semente, s.clubeId, s.temporada, (o, i) => salarioJusto(o, i, li.fLiga, li.fSalario, meu?.fClube ?? 1));
+  const custo = f.fase === "pro" && f.clubeId ? Math.round(valorMercado(f.ovr, f.idade, 2, li.fLiga) * CAMBIO * 0.8 / 1000) * 1000 : 0;
+  if (custo > s.clube.saldo) return { ok: false, msg: `O clube dele pede ${curtoBrl(custo)} e o caixa não tem.` };
+  if (custo) { s.clube.saldo -= custo; gastar(s, "Contratações", custo); }
+  a.moral = 85; a.relacao = 90; a.contratoAte = s.temporada + 2;
+  s.elenco.push(a); f.noClube = true;
+  noticia(s, "elenco", `${f.nome} chega ao clube para jogar sob o comando ${f.parentesco.startsWith("filh") ? "do pai" : "do irmão"}${custo ? ` (${curtoBrl(custo)})` : ""}.`);
+  return { ok: true, msg: `${f.nome} agora joga no seu time${custo ? ` (custou ${curtoBrl(custo)})` : ""}.` };
+}
 export function moverEscalacao(s: SaveTecnico, x: string, y: string): { ok: boolean; msg?: string } {
   const t = s.esc.titulares, R = s.esc.reservas, av = s.aoVivo;
   while (t.length < FORMACOES[s.tatica.formacao].length) t.push(null);
@@ -738,6 +768,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   // fim do mês
   if (s.semana % 4 === 3) {
     fecharMes(pacote, s);
+    if (r >= 0) eventos.push(...premiosDoMes(pacote, s));
     const pos = ordenar(s.tabela).findIndex((t) => t.clube === s.clubeId) + 1;
     if (r > 4) s.diretoria.confianca = clamp(s.diretoria.confianca + (pos <= s.diretoria.expectativa.pos ? 2 : pos > s.diretoria.expectativa.pos + 4 ? -3 : 0), 0, 100);
   }
@@ -751,6 +782,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   let fim: string | undefined;
   if (s.semana >= semanasDaTemporada(s)) fim = virarTemporada(pacote, s);
   else prepararMundo(pacote, s);
+  sortearEvento(pacote, s, rngT(s, "evento"));
   return { eventos, partida, fimDeTemporada: fim };
 }
 const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -769,6 +801,9 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   s.tabelasReais[t] = { ligaId: s.ligaId, ordem: final.map((x) => x.clube) };
   const resumo = `${ANO_INICIAL_T + t}: ${pos}º lugar na ${li.curto}${campeao ? " — CAMPEÃO!" : ""} (a diretoria esperava ${esperado}º).`;
   noticia(s, "clube", resumo);
+  const premiosAno = premiosDoAno(pacote, s, pos, esperado);
+  // a família que joga cresce um ano (quem está no seu elenco evolui no treino, como os outros)
+  for (const f of s.familiaJog ?? []) if (!f.noClube) { f.idade++; f.ovr = Math.min(f.pot, f.ovr + (f.idade < 24 ? 4 : f.idade < 30 ? 1 : -1)); }
   if (s.diretoria.confianca < 15) { s.demitido = `Demitido no fim de ${ANO_INICIAL_T + t}: a campanha ficou longe do que a diretoria esperava.`; noticia(s, "diretoria", s.demitido); return resumo; }
   // contratos que acabam e aposentadorias
   const rng = new RNG(`${s.semente}|virada|${t}`);
@@ -863,8 +898,9 @@ export function interesseDo(pacote: PacoteDados, s: SaveTecnico, a: Alvo): { top
   const w = mundo(pacote), meu = w.clube[s.clubeId], dele = w.clube[a.clubeId], li = infoLiga(s.ligaId), liDele = infoLiga(a.ligaId);
   const fMeu = meu?.forca ?? 60, fDele = dele?.forca ?? 60;
   const salario = Math.round(salarioJusto(a.ovr, a.idade, li.fLiga, li.fSalario, meu?.fClube ?? 1) * (fDele > fMeu ? 1.25 : 1.1) / 100) * 100;
-  const limite = fMeu + 6 + s.tecnico.reputacao / 12;
+  const amigo = forcaDoContato(s, a.nome), limite = fMeu + 6 + s.tecnico.reputacao / 12 + 8 * amigo;
   if (a.ovr > limite) return { topa: false, motivo: `${a.nome} acha o seu clube pequeno para ele.`, salario };
+  if (amigo >= 0.5) return { topa: true, motivo: `${a.nome} é seu amigo dos tempos de jogador: topa conversar e não vai pedir a mais.`, salario: Math.round(salario * 0.92 / 100) * 100 };
   if (liDele.nivel < li.nivel && fDele > fMeu + 3 && a.idade < 31) return { topa: false, motivo: `${a.nome} não quer trocar a ${liDele.curto} por uma liga menor agora.`, salario };
   return { topa: true, motivo: fDele > fMeu ? `${a.nome} aceita conversar, mas quer ganhar bem para descer de nível.` : `${a.nome} topa conversar: seria um passo à frente na carreira.`, salario };
 }
