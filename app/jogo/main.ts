@@ -40,7 +40,7 @@ import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
 import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
 import { svgEscudo } from "../visual/escudos";
-import { fotoDoPerfil } from "../visual/mulheres";
+import { fotoDoPerfil, svgMulher, PACOTE_MULHERES, roupaDaProfissao } from "../visual/mulheres";
 import { rostoParente, rostoAgente } from "../visual/rostos";
 /** Arte do casal: o jogador e a parceira lado a lado, com os mesmos retratos do app. */
 const casalArte = (s: Save, casal?: { id: string; profissao: string }) => `<div class="casal-arte">${casal ? `<div class="ca-x">${foto(s)}</div><div class="ca-y">${fotoDoPerfil(casal)}</div>` : `<div class="ca-x">${foto(s)}</div>`}</div>`;
@@ -1011,13 +1011,36 @@ function rostoDoAgente(s: Save, id: string): string | undefined {
   const a = BANCO.find((x) => x.id === id);
   return a ? rostoAgente(a.id, a.nome, a.pais) : undefined;
 }
+const hashTxt = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
+/** Irmão e irmã desenhados com as peças da criação de personagem: mesma pele, cor de cabelo e olhos do jogador; o resto varia. */
+function rostoIrmao(s: Save, m: Familiar): string | undefined {
+  if (m.parentesco !== "irmao" && m.parentesco !== "irma") return undefined;
+  const meu = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) }, h = (k: string) => hashTxt(`${m.id}|${k}`);
+  const idade = ANO_INICIAL + s.carreira.temporada - m.nasc;
+  if (m.parentesco === "irma") {
+    const l = PACOTE_MULHERES.filter((x) => Math.abs(x.pele - meu.pele) <= 0), base = (l.length ? l : PACOTE_MULHERES)[h("mulher") % (l.length || PACOTE_MULHERES.length)];
+    return svgMulher({ ...base, pele: meu.pele, batom: idade < 16 ? 0 : base.batom, delineado: idade >= 16 && base.delineado }, roupaDaProfissao(m.id, ""));
+  }
+  const curtos = ["raspado", "curto", "degrade", "topete", "ondulado", "cacheado", "crespo", "risco", "baguncado", "undercut"] as const;
+  const crespos = ["crespo", "blackpower", "cacheado", "trancas", "degrade", "raspado"] as const;
+  const lista: readonly string[] = ["crespo", "blackpower", "cacheado", "trancas", "dreads"].includes(meu.cabelo) ? crespos : curtos;
+  const barbas = ["nenhuma", "sombra", "rala", "cavanhaque", "curta", "bigode"] as const;
+  const ap: Aparencia = {
+    ...APARENCIA_PADRAO, pele: meu.pele, corCabelo: meu.corCabelo, olhos: meu.olhos, nariz: meu.nariz, sobrancelha: meu.sobrancelha,
+    rosto: ROSTOS[h("rosto") % ROSTOS.length].id, cabelo: lista[h("cabelo") % lista.length] as Aparencia["cabelo"],
+    formatoOlho: OLHOS[h("olho") % OLHOS.length].id, boca: BOCAS[h("boca") % BOCAS.length].id,
+    barba: idade < 17 ? "nenhuma" : barbas[h("barba") % barbas.length], sardas: meu.sardas && h("sardas") % 2 === 0,
+    roupaSocial: APARENCIA_PADRAO.roupaSocial, corSocial: h("roupa") % 6, corrente: false, brinco: false, pinta: false,
+  };
+  return svgFoto({ aparencia: ap, traje: "social" });
+}
 const avatarAgente = (s: Save, id: string, cls = "ag-rosto") => { const r = rostoDoAgente(s, id); return r ? `<span class="${cls}">${r}</span>` : ""; };
 const corRelFam = (n: number) => (n >= 80 ? "#E3B341" : n >= 60 ? "#74D394" : n >= 40 ? "#6FB7E0" : n >= 20 ? "#C9A24D" : "#EC7D69");
 function linhaFam(s: Save, m: Familiar): string {
   if (m.falecido) return `<div class="rel-linha em-memoria"><div class="rel-topo"><span class="avatar-fam" style="--c:#8A968E">🕊️</span><div class="rel-nome"><b>${esc(m.nome)}</b><small>${NOME_PARENTESCO[m.parentesco]} · ${m.nasc}–${m.falecido} · em memória</small></div></div></div>`;
   const ctx = ctxFamilia(pacote, s), ano = ANO_INICIAL + s.carreira.temporada, fb = m.futebol, cor = corRelFam(m.relacao);
   const fut = fb ? ` · ${fb.fase === "pro" || fb.fase === "base" ? `${NOME_FASE_IRMAO[fb.fase]}${fb.clubeId ? ` no ${linkClube(fb.clubeId)}` : ""} · OVR ${fb.ovr}` : NOME_FASE_IRMAO[fb.fase]}${fb.clubeId === s.carreira.clubeId && fb.fase === "pro" ? " · joga com você" : ""}` : "";
-  return `<div class="rel-linha"><div class="rel-topo">${(() => { const r = rostoParente(m.parentesco, m.id, peleDoJogador(s)); return r ? `<span class="avatar-fam foto" style="--c:${cor}">${r}</span>` : `<span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span>`; })()}<div class="rel-nome">${fb ? `<button class="nome-hist" data-irmao="${m.id}">${esc(m.nome)}</button>` : `<button class="nome-hist" data-parente="${m.id}">${esc(m.nome)}</button>`}${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
+  return `<div class="rel-linha"><div class="rel-topo">${(() => { const rp = rostoParente(m.parentesco, m.id, peleDoJogador(s)), r = rp ?? rostoIrmao(s, m); return r ? `<span class="avatar-fam foto${rp ? "" : m.parentesco === "irma" ? " desenho-f" : " desenho"}" style="--c:${cor}">${r}</span>` : `<span class="avatar-fam" style="--c:${cor}">${esc(iniciais(m.nome))}</span>`; })()}<div class="rel-nome">${fb ? `<button class="nome-hist" data-irmao="${m.id}">${esc(m.nome)}</button>` : `<button class="nome-hist" data-parente="${m.id}">${esc(m.nome)}</button>`}${m.saude === "doente" ? ` <span class="selo alerta">${m.parentesco === "pai" || m.parentesco === "irmao" ? "Internado" : "Internada"}</span>` : ""}${m.traco ? ` <span class="selo estrela">${NOME_TRACO[m.traco]}</span>` : ""}<small>${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}${fut}</small></div>
     <div class="rel-nivel"><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span><span class="rel-barra"><i style="width:${m.relacao}%;background:${cor}"></i></span></div></div>
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
