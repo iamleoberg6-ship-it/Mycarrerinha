@@ -64,7 +64,7 @@ import { ligacoesDoElenco } from "./relacoes-npc.js";
 import { reliquiasDaPartida, premiosDaTemporada, UNIFORME_SELECAO, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, acoesDe, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
 import { agirFilho, programaPreferido, acoesFilho, type AcaoFilho } from "./namoro.js";
-import { gostosDe, MAX_ACOES_NAMORO, gravidasDe, estaGravida, marcosDoAno, type Par } from "./namoro.js";
+import { gostosDe, MAX_ACOES_NAMORO, gravidasDe, estaGravida, marcosDoAno, virarEx, agirEx, type AcaoEx, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 import { valorBrl, curtoBrl } from "./moeda.js";
@@ -1917,7 +1917,7 @@ function gatilhoVida(pacote: PacoteDados, s: Save, g: string) {
 }
 function gatilhoAmor(pacote: PacoteDados, s: Save, k: string, a?: string) {
   const c = s.carreira, n = namoroDe(c), p = n.par, ab = semanaAbsJogo(c);
-  if (k === "par-fim" && p) { n.ex.push(p.nome); n.par = undefined; n.mudancaDecidida = n.mudanca; }
+  if (k === "par-fim" && p) { virarEx(n, p, ab, "ela"); n.par = undefined; n.mudancaDecidida = n.mudanca; }
   else if (k === "par-vem" && p && n.mudanca) { p.cidadeClube = n.mudanca; p.cidade = n.mudanca; n.mudancaDecidida = n.mudanca; }
   else if (k === "par-distancia") n.mudancaDecidida = n.mudanca;
   else if (k === "par-longe" && p) { p.cidadeClube = "outra cidade"; n.mudanca = n.mudancaDecidida = infoClube(pacote, c.clubeId)?.cidade; }
@@ -1927,6 +1927,8 @@ function gatilhoAmor(pacote: PacoteDados, s: Save, k: string, a?: string) {
     const r = rngDe(s, "ex-reatar", a), cidade = infoClube(pacote, c.clubeId)?.cidade ?? "";
     const profs = ["influencer", "psicologa", "modelo", "medica", "jornalista", "personal", "advogada", "professora", "arquiteta"] as const;
     n.ex = n.ex.filter((x) => x !== a);
+    const rec = (n.exes ?? []).find((x) => x.par.nome === a);
+    if (rec) { n.exes = n.exes!.filter((x) => x !== rec); n.par = { ...rec.par, etapa: "namorando", relacao: 58, desde: ab, cidade, cidadeClube: cidade }; noticia(s, "vida", `${s.jogador.apelido} e ${a.split(" ")[0]} reatam`, "O casal foi visto junto de novo num restaurante."); return; }
     n.par = { id: `ex-${ab}`, nome: a, idade: s.jogador.idade + r.int(-2, 2), cidade, profissao: r.pick(profs), jeito: r.pick(["romântica", "tranquila", "ciumenta", "independente", "caseira"]), bio: "", interesse: 60, etapa: "namorando", relacao: 58, desde: ab, conversas: 5, cidadeClube: cidade };
     noticia(s, "vida", `${s.jogador.apelido} e ${a.split(" ")[0]} reatam`, "O casal foi visto junto de novo num restaurante.");
   }
@@ -2286,6 +2288,14 @@ export function agirFilhoJogo(pacote: PacoteDados, s: Save, i: number, acao: Aca
   if (r.moral) c.moral = clamp(c.moral + r.moral, 0, 100);
   if (r.cansaco) c.cansaco = clamp(c.cansaco + r.cansaco, 0, 100);
   if (r.fama) c.fama = clamp(c.fama + r.fama, 0, 100);
+  return { ok: true, msg: r.msg };
+}
+export function agirExJogo(pacote: PacoteDados, s: Save, id: string, acao: AcaoEx): { ok: boolean; msg: string } {
+  const c = s.carreira, r = agirEx(namoroDe(c), id, acao, ctxNamoro(pacote, s));
+  if (!r.ok) return r;
+  if (r.custo) s.casa.saldo -= r.custo;
+  if (r.moral) c.moral = clamp(c.moral + r.moral, 0, 100);
+  if (r.noticia) noticia(s, "vida", r.noticia, "O casal foi visto junto de novo.");
   return { ok: true, msg: r.msg };
 }
 export function agirNamoroJogo(pacote: PacoteDados, s: Save, id: string, acao: AcaoNamoro, extra?: string): { ok: boolean; msg: string } {

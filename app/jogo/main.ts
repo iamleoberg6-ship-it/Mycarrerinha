@@ -22,13 +22,13 @@ import {
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
   migrarSave, tatuar, removerTatuagem, eventoPendente, resolverEvento, padraoDe, alvoDeSeguidores, aceitarPatrocinio, recusarPatrocinio, receitaPatrocinios,
-  familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo, agirFilhoJogo,
+  familiaDe, namoroDe, ctxFamilia, agirFamiliaJogo, perfisDaSemana, curtirPerfil, agirNamoroJogo, agirFilhoJogo, agirExJogo,
   carrosDe, copasDe, jogoCopaDaSemana, diasTravados, escalacaoSelecao, recordesDoJogador, comparativoSelecao, anunciarAposentadoria, desistirAposentadoria, numerosNoClube, type ListaRecorde, concluirJogoDaCopa, chatDe, responderChatJogo, responderCenaJogo, agendaDe, parcasDe, luxoDe, hobbiesDe, estudosDe, responderOcasiaoJogo, churrascoJogo, funcaoParcaJogo, afastarParcaJogo, comprarLuxoJogo, venderLuxoJogo, hobbyJogo, matricularJogo, criarFundacaoJogo, nivelFundacaoJogo, negociosDe, saudeDe, midiaDe, ctxMidia, postarJogo, responderEntrevistaJogo, abrirEmpresaJogo, agirEmpresaJogo, aplicarJogo, responderPropostaNegocio, assessorJogo, equipeJogo, tratarJogo, operarJogo, disputaDePenaltis, decisaoDisputa, placarDisputa, type Disputa, type TipoMarco, reservaNaBase, type ResumoPartida,
 } from "../../src/jogo";
 import { RNG } from "../../src/rng";
 import { vidaDe } from "../../src/vida-npc";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, falaSobreVoce, jeitoDe, type AcaoFamilia, type Familiar } from "../../src/familia";
-import { NOME_ACAO_FILHO, nomearFilho, acoesFilho, type AcaoFilho, type Filho } from "../../src/namoro";
+import { NOME_ACAO_FILHO, nomearFilho, acoesFilho, exesDe, acoesEx, NOME_ACAO_EX, TEXTO_FIM, type AcaoFilho, type Filho, type Ex, type AcaoEx } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, DESIGN_PADRAO, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
 import { salvarMarcaNegocio, convidarEmbaixador as convidarEmbaixadorJogo } from "../../src/jogo";
@@ -984,7 +984,8 @@ function abrirMulher(id: string) {
   const achou: [Par, string] | undefined = par?.id === id ? [par, par.etapa === "casados" ? "Sua esposa" : par.etapa === "noivos" ? "Sua noiva" : par.etapa === "morando" ? "Mora com você" : "Sua namorada"]
     : (n.ficantes ?? []).find((x) => x.id === id) ? [(n.ficantes ?? []).find((x) => x.id === id)!, "Casinho"]
     : (n.casos ?? []).find((x) => x.id === id) ? [(n.casos ?? []).find((x) => x.id === id)!, "Caso escondido"]
-    : n.matches.find((x) => x.id === id) ? [n.matches.find((x) => x.id === id)!, "Match"] : undefined;
+    : n.matches.find((x) => x.id === id) ? [n.matches.find((x) => x.id === id)!, "Match"]
+    : (() => { const e = exesDe(n, save.jogador.idade).find((x) => x.par.id === id); return e ? [e.par, `${e.como === "divorcio" ? "Ex-esposa" : "Ex-namorada"} · ${TEXTO_FIM[e.como]}`] as [Par, string] : undefined; })();
   if (!achou) return;
   $("telaHist").innerHTML = mulherHtml(save, achou[0], achou[1]);
   const d = $("dlgHist") as HTMLDialogElement;
@@ -1038,7 +1039,7 @@ function abrirHistorico(nome: string) {
 }
 
 // ------------------------------------------------------------------ celular: contatos, busca e app de namoro
-let telaCel: "contatos" | "busca" | "match" | "agente" | "parcas" = "contatos", subImprensa: "noticias" | "redes" = "noticias", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
+let telaCel: "contatos" | "busca" | "match" | "ex" | "agente" | "parcas" = "contatos", subImprensa: "noticias" | "redes" = "noticias", buscaLiga: string | undefined, buscaClube: string | undefined, buscaBase = false;
 const iniciais = (nome: string) => nome.split(" ").slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 const peleDoJogador = (s: Save) => (s.jogador.aparencia as { pele?: number } | undefined)?.pele;
 /** Rosto do agente: do banco pela região; a família (o pai cuidando da carreira) usa o rosto do pai. */
@@ -1081,7 +1082,7 @@ function linhaFam(s: Save, m: Familiar): string {
     <div class="rel-acoes">${acoesDe(m, ctx).map((a) => `<button class="chip" data-fam="${m.id}" data-op="${a}">${NOME_ACAO_FAM[a]}</button>`).join("")}</div></div>`;
 }
 function abaPessoas(s: Save): string {
-  const abas = `<div class="sub-abas rolar" role="tablist">${([["contatos", "Família"], ["busca", "Buscar"], ["match", "Match"], ["agente", "Agente"], ["parcas", "Parças"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
+  const abas = `<div class="sub-abas rolar" role="tablist">${([["contatos", "Família"], ["busca", "Buscar"], ["match", "Match"], ["ex", "Ex"], ["agente", "Agente"], ["parcas", "Parças"]] as const).map(([k, n]) => `<button class="${telaCel === k ? "ativo" : ""}" data-cel="${k}" role="tab" aria-selected="${telaCel === k}">${n}</button>`).join("")}</div>`;
   let msg = msgRel ? `<p class="msg-mercado ${msgRel.ok ? "ok" : "nao"}">${esc(msgRel.texto)}</p>` : "";
   msgRel = undefined;
   let corpo: string;
@@ -1093,7 +1094,7 @@ function abaPessoas(s: Save): string {
     msg = msgVida ? `<p class="msg-mercado ${msgVida.ok ? "ok" : "nao"}">${esc(msgVida.texto)}</p>` : "";
     msgVida = undefined;
     corpo = vidaParcas(s);
-  } else corpo = telaCel === "busca" ? celBusca(s) : telaCel === "match" ? celMatch(s) : celContatos(s);
+  } else corpo = telaCel === "busca" ? celBusca(s) : telaCel === "match" ? celMatch(s) : telaCel === "ex" ? celEx(s) : celContatos(s);
   return `<div class="celular">${abas}${msg}${corpo}</div>`;
 }
 function abaImprensa(s: Save): string {
@@ -1131,6 +1132,25 @@ function celContatos(s: Save): string {
     <p class="sub">Família perto e bem cuidada dá moral. A ajuda mensal (em Jogador › Padrão de vida) aproxima os pais; morar longe e sumir afasta.</p>
     ${fam.membros.map((m) => linhaFam(s, m)).join("")}
     <p class="rotulo" style="margin-top:14px">Amigos do futebol</p>${abaAmigos(s)}`;
+}
+/** As ex: quem foi, como acabou, como ela te vê hoje, os filhos com ela; dá para conversar, falar dos filhos ou tentar voltar. */
+function celEx(s: Save): string {
+  const c = s.carreira, n = namoroDe(c), l = exesDe(n, s.jogador.idade), ab = semanaAbsJogo(c);
+  if (!l.length) return `<p class="sub">Nenhuma ex por enquanto. Quando um namoro, casamento ou casinho acabar, ela aparece aqui.</p>`;
+  const feitas = n.semana === ab ? n.feitas : 0;
+  const quando = (e: Ex) => e.fim < 0 ? "" : ` em ${ANO_INICIAL + Math.floor(e.fim / SEMANAS_TEMPORADA)}`;
+  const foi = (e: Ex) => e.como === "divorcio" ? "Ex-esposa" : e.como === "esfriou" ? "Ex-casinho" : e.como === "caso" ? "Ex-caso" : "Ex-namorada";
+  const humor = (r: number) => r >= 60 ? "Vocês se dão bem" : r >= 40 ? "Educada, sem mágoa" : r >= 20 ? "Ainda magoada" : "Não quer saber de você";
+  return `<p class="sub">${MAX_ACOES_NAMORO - feitas} ${MAX_ACOES_NAMORO - feitas === 1 ? "programa livre" : "programas livres"} nesta semana (os mesmos do namoro). Com quem ainda gosta de você dá para tentar voltar.</p>
+    ${l.map((e) => {
+      const filhos = (n.filhos ?? []).map((f, i) => [f, i] as const).filter(([f]) => f.mae === e.par.nome), cor = corRelFam(e.relacao);
+      return `<div class="perfil-app"><span class="avatar-app foto">${fotoDoPerfil(e.par)}</span><div class="perfil-app-txt">
+        <button class="nome-hist nome-par" data-mulher="${e.par.id}">${esc(e.par.nome)}</button>
+        <small>${foi(e)} · ${esc(TEXTO_FIM[e.como])}${quando(e)}</small>
+        ${filhos.length ? `<small>Filhos com ela: ${filhos.map(([f, i]) => `<button class="nome-hist" data-filhoperf="${i}">${esc(f.nome)}</button>`).join(", ")}</small>` : ""}
+        <div class="rel-nivel" style="margin-top:6px"><span style="color:${cor}">${humor(e.relacao)} · ${Math.round(e.relacao)}</span><span class="rel-barra"><i style="width:${e.relacao}%;background:${cor}"></i></span></div></div>
+        <div class="rel-acoes" style="margin-left:0">${acoesEx(n, e).map((a) => `<button class="chip${a === "voltar" ? " destaque" : a === "apagar" ? " perigo" : ""}" data-ex="${e.par.id}" data-op="${a}">${NOME_ACAO_EX[a]}</button>`).join("")}</div></div>`;
+    }).join("")}`;
 }
 function celBusca(s: Save): string {
   const w = mundo(pacote), rr = relacoesDe(s.carreira);
@@ -3015,7 +3035,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-pedir-funcao],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-mulher],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-pedir-funcao],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-mulher],[data-ex],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -3121,6 +3141,7 @@ document.addEventListener("click", (ev) => {
   else if (d.irmao) abrirIrmao(d.irmao);
   else if (d.parente) abrirParente(d.parente);
   else if (d.mulher) abrirMulher(d.mulher);
+  else if (d.ex && save) { const r = agirExJogo(pacote, save, d.ex, d.op as AcaoEx); msgRel = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.filhoperf !== undefined) abrirFilhoPerfil(Number(d.filhoperf));
   else if (d.hist) abrirHistorico(d.hist);
   else if (d.vsel) { vistaSelecao = d.vsel as typeof vistaSelecao; const y = window.scrollY; render(); window.scrollTo(0, y); }

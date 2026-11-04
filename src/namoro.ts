@@ -119,6 +119,8 @@ export interface EstadoNamoro {
   /** perfis do dia no app (renovam toda semana) e a semana em que foram gerados */
   baralho: Perfil[]; geradoEm: number; vistos: number;
   matches: Par[]; par?: Par; semana: number; feitas: number; ex: string[];
+  /** as ex com o perfil completo, como acabou e a relação de vocês hoje (as mais recentes primeiro) */
+  exes?: Ex[];
   /** casinhos: gente com quem está saindo, sem compromisso (pode ser mais de uma, nada escondido) */
   ficantes?: Par[];
   /** relacionamentos paralelos escondidos (só existe traição quando há namoro sério), filhos e escândalos na mídia */
@@ -148,6 +150,74 @@ export function arrumarNamoro(n: EstadoNamoro) {
 export const acharPar = (n: EstadoNamoro, id: string): Par | undefined => n.par?.id === id ? n.par : n.ficantes?.find((x) => x.id === id) ?? n.casos?.find((x) => x.id === id) ?? n.matches.find((x) => x.id === id);
 export const MAX_ACOES_NAMORO = 20;
 
+export type ComoAcabou = "voce" | "ela" | "divorcio" | "esfriou" | "caso" | "namoroSerio";
+export const TEXTO_FIM: Record<ComoAcabou, string> = { voce: "você terminou", ela: "ela terminou com você", divorcio: "divórcio", esfriou: "o casinho esfriou", caso: "você encerrou o caso", namoroSerio: "você começou a namorar sério com outra" };
+export interface Ex { par: Par; fim: number; como: ComoAcabou; /** como ela te vê hoje (0–100) */ relacao: number; contato?: number; tentativas?: number }
+/** Guarda a ex com o perfil completo (e o nome na lista antiga, para os eventos que já usam). */
+export function virarEx(n: EstadoNamoro, p: Par, fim: number, como: ComoAcabou): void {
+  n.ex.push(p.nome);
+  const l = (n.exes ??= []).filter((x) => x.par.id !== p.id);
+  const ressentimento = como === "voce" || como === "caso" || como === "namoroSerio" ? 0.45 : como === "divorcio" ? 0.35 : 0.6;
+  l.unshift({ par: { ...p, cena: undefined, chat: undefined, conversa: undefined, vezes: undefined, escondidos: undefined }, fim, como, relacao: Math.round(clamp(p.relacao * ressentimento + 10, 5, 60)) });
+  n.exes = l.slice(0, 30);
+}
+const PROFS_EX: Profissao[] = ["estudante", "professora", "modelo", "jornalista", "advogada", "medica", "psicologa", "influencer"];
+/** As ex (saves antigos tinham só o nome: vira um perfil simples). */
+export function exesDe(n: EstadoNamoro, idadeJogador: number): Ex[] {
+  const l = (n.exes ??= []);
+  for (const nome of n.ex) if (!l.some((x) => x.par.nome === nome)) {
+    let h = 0; for (const ch of nome) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    l.push({ par: { id: `ex-${h}`, nome, idade: idadeJogador, cidade: "", profissao: PROFS_EX[h % PROFS_EX.length], jeito: ["tranquila", "romântica", "independente", "caseira"][h % 4], bio: "Já foi sua.", interesse: 50, etapa: "namorando", relacao: 30, desde: 0, conversas: 3, cidadeClube: "" }, fim: -1, como: "esfriou", relacao: 30 });
+  }
+  return l;
+}
+export type AcaoEx = "mensagem" | "cafe" | "filhos" | "pensao" | "voltar" | "apagar";
+export const NOME_ACAO_EX: Record<AcaoEx, string> = { mensagem: "Mandar mensagem", cafe: "Tomar um café", filhos: "Conversar sobre os filhos", pensao: "Aumentar a pensão", voltar: "Tentar voltar", apagar: "Apagar o contato" };
+export function acoesEx(n: EstadoNamoro, e: Ex): AcaoEx[] {
+  const filhos = (n.filhos ?? []).filter((f) => f.mae === e.par.nome);
+  return ["mensagem", ...(e.relacao >= 25 ? ["cafe"] as AcaoEx[] : []), ...(filhos.length ? ["filhos"] as AcaoEx[] : []), ...(filhos.some((f) => f.pensao) ? ["pensao"] as AcaoEx[] : []),
+    ...(e.relacao >= 45 ? ["voltar"] as AcaoEx[] : []), ...(filhos.length ? [] : ["apagar"] as AcaoEx[])];
+}
+/** Uma conversa com uma ex (conta nos programas da semana). Voltar só dá certo se ela ainda gostar de você. */
+export function agirEx(n: EstadoNamoro, id: string, acao: AcaoEx, ctx: CtxNamoro): ResultadoNamoro {
+  if (n.semana !== ctx.semanaAbs) { n.semana = ctx.semanaAbs; n.feitas = 0; }
+  const l = exesDe(n, ctx.idadeJogador), e = l.find((x) => x.par.id === id);
+  if (!e) return { ok: false, msg: "Contato não encontrado." };
+  if (!acoesEx(n, e).includes(acao)) return { ok: false, msg: "Agora não dá." };
+  if (acao !== "apagar" && n.feitas >= MAX_ACOES_NAMORO) return { ok: false, msg: `Já foram ${MAX_ACOES_NAMORO} programas nesta semana.` };
+  const nome = e.par.nome.split(" ")[0], rng = new RNG(`${ctx.semente}|ex|${id}|${ctx.semanaAbs}|${acao}`);
+  const sobe = (v: number) => { e.relacao = clamp(e.relacao + (e.contato === ctx.semanaAbs ? v * 0.5 : v), 0, 100); e.contato = ctx.semanaAbs; n.feitas++; };
+  const filhos = (n.filhos ?? []).filter((f) => f.mae === e.par.nome);
+  switch (acao) {
+    case "mensagem": {
+      const bem = e.relacao >= 40;
+      sobe(rng.int(2, 5));
+      return { ok: true, msg: bem ? `${nome} respondeu rápido: "Oi! Quanto tempo. Tudo bem com você?"` : `${nome} demorou dois dias para responder: "Oi."`, moral: bem ? 1 : 0 };
+    }
+    case "cafe": sobe(rng.int(5, 8)); return { ok: true, msg: `Café com ${nome}. Riram das histórias antigas${e.como === "ela" || e.como === "divorcio" ? " e falaram do que deu errado sem brigar" : ""}.`, moral: 2, custo: 60 };
+    case "filhos": {
+      sobe(6); for (const f of filhos) f.relacao = clamp((f.relacao ?? 70) + 4, 0, 100);
+      return { ok: true, msg: `Você e ${nome} conversaram sobre ${filhos.map((f) => f.nome).join(" e ")}: escola, saúde, as férias. Combinaram tudo direitinho.`, moral: 2 };
+    }
+    case "pensao": {
+      const c = Math.round(Math.max(800, ctx.salario * 0.03) / 10) * 10;
+      if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto agora." };
+      sobe(9); for (const f of filhos) f.relacao = clamp((f.relacao ?? 70) + 3, 0, 100);
+      return { ok: true, msg: `Você mandou ${valorBrl(c)} a mais para as despesas das crianças. ${nome} agradeceu.`, custo: c, moral: 1 };
+    }
+    case "voltar": {
+      n.feitas++; e.tentativas = (e.tentativas ?? 0) + 1;
+      const chance = clamp((e.relacao - 40) / 60 - 0.1 * (e.tentativas - 1) + (e.como === "ela" ? -0.1 : 0), 0.05, 0.8);
+      if (!rng.chance(chance)) { e.relacao = clamp(e.relacao - 8, 0, 100); return { ok: true, msg: `${nome} pensou e disse: "Melhor não. A gente já tentou."`, moral: -3 }; }
+      n.exes = l.filter((x) => x !== e); n.ex = n.ex.filter((x) => x !== e.par.nome);
+      const volta: Par = { ...e.par, etapa: "namorando", relacao: clamp(e.relacao + 15, 40, 80), desde: ctx.semanaAbs, cidade: ctx.cidade, cidadeClube: ctx.cidade };
+      if (n.par) { (n.casos ??= []).push(volta); return { ok: true, msg: `${nome} topou. Mas você está com outra: vira caso escondido.`, moral: 3 }; }
+      n.par = volta; n.ficantes = [];
+      return { ok: true, msg: `${nome} disse sim. Vocês voltaram!`, moral: 8, noticia: `${nome} e o jogador reatam` };
+    }
+    case "apagar": n.exes = l.filter((x) => x !== e); n.ex = n.ex.filter((x) => x !== e.par.nome); return { ok: true, msg: `Contato da ${nome} apagado.` };
+  }
+}
 export interface CtxNamoro { ano?: number; semente: string; semanaAbs: number; idadeJogador: number; fama: number; cidade: string; salario: number; saldo: number; vidaNoturna: number;
   /** país onde o jogador mora (nomes das pessoas do app) e onde ele nasceu */ pais?: string; paisJogador?: string }
 
@@ -343,7 +413,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       if (p.etapa === "saindo" && p.relacao >= 55) p.etapa = "namorando";
       p.exposto = true; n.par = p; p.desde = ctx.semanaAbs;
       if (antiga) {
-        n.ex.push(antiga.nome);
+        virarEx(n, antiga, ctx.semanaAbs, antiga.etapa === "casados" ? "divorcio" : "voce");
         const div = antiga.etapa === "casados" ? Math.round(ctx.saldo * 0.3) : 0;
         n.escandalos = (n.escandalos ?? 0) + 1;
         return { ok: true, msg: `Você terminou com ${antiga.nome.split(" ")[0]} e assumiu ${nome}.${div ? ` O divórcio custou ${valorBrl(div)}.` : ""}`, custo: div, moral: -3, fama: 0.8, torcida: -2, escandalo: true,
@@ -359,7 +429,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       // namoro sério é um só: os outros casinhos acabam
       const outros = n.ficantes.filter((x) => x.id !== p.id);
       n.ficantes = []; n.par = p;
-      for (const x of outros) n.ex.push(x.nome);
+      for (const x of outros) virarEx(n, x, ctx.semanaAbs, "namoroSerio");
       return { ok: true, msg: `${nome} disse sim. Agora é namoro!${outros.length ? ` Você avisou ${outros.map((x) => x.nome.split(" ")[0]).join(" e ")} que agora namora sério.` : ""}`, moral: 6, noticia: `${nome} é a namorada nova do jogador` };
     }
     case "jantar": { const c = custo(0.015, 250); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para jantar fora." }; sobe(6); return { ok: true, msg: `Jantar com ${nome}: ${valorBrl(c)}.${gc}`, custo: c, moral: 2 }; }
@@ -385,7 +455,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
       return { ok: true, msg: `Ela disse SIM! Aliança de ${valorBrl(c)}. O casamento é no fim da temporada.`, custo: c, moral: 10, noticia: `${nome} e o jogador estão noivos` };
     }
     case "terminar": {
-      n.ex.push(p.nome);
+      virarEx(n, p, ctx.semanaAbs, caso ? "caso" : p.etapa === "casados" ? "divorcio" : "voce");
       if (caso) { n.casos = n.casos.filter((x) => x.id !== p.id); return { ok: true, msg: `Você encerrou o caso com ${nome}.`, moral: -1 }; }
       if (n.ficantes.some((x) => x.id === p.id)) { n.ficantes = n.ficantes.filter((x) => x.id !== p.id); return { ok: true, msg: `Você parou de sair com ${nome}.`, moral: -1 }; }
       n.par = undefined;
@@ -533,6 +603,8 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
     noticiaFilho = noticiaFilho ? `${noticiaFilho}; e mais um bebê, com ${mae}` : g.caso ? `Filho fora do casamento: nasce ${quem}, filho do jogador com ${mae}` : `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${mae}`;
     if (g.caso) { escFilho = true; n.escandalos = (n.escandalos ?? 0) + 1; const c = n.casos?.find((x) => x.nome === g.mae); if (c) c.exposto = true; if (p) p.relacao = clamp(p.relacao - 35, 0, 100); }
   }
+  // as ex: com o tempo a mágoa passa (e o carinho também), tudo vai para o meio
+  for (const e of n.exes ?? []) if (ctx.semanaAbs - (e.contato ?? e.fim) > 8) e.relacao = clamp(e.relacao + (35 - e.relacao) * 0.01, 0, 100);
   // filhos: sem atenção a relação esfria (mais rápido quando moram longe)
   for (const f of n.filhos ?? []) { f.relacao ??= 70; f.relacao = clamp(f.relacao - (f.pensao ? 1.2 : 0.5), 0, 100); if (f.relacao < 30) moral -= 0.5; }
   if (noticiaFilho && !p) return { avisos, moral, noticia: noticiaFilho, escandalo: escFilho };
@@ -540,7 +612,7 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   for (const x of [...(n.ficantes ?? [])]) {
     x.relacao = clamp(x.relacao - 1.5, 0, 100);
     const nm = x.nome.split(" ")[0];
-    if (x.relacao < 20) { n.ficantes = n.ficantes!.filter((y) => y.id !== x.id); n.ex.push(x.nome); avisos.push(`${nm} parou de responder. O casinho acabou.`); continue; }
+    if (x.relacao < 20) { n.ficantes = n.ficantes!.filter((y) => y.id !== x.id); virarEx(n, x, ctx.semanaAbs, "esfriou"); avisos.push(`${nm} parou de responder. O casinho acabou.`); continue; }
     if ((n.ficantes?.length ?? 0) >= 2 && x.jeito === "ciumenta" && new RNG(`${ctx.semente}|ciume-fic|${x.id}|${ctx.semanaAbs}`).chance(0.08)) {
       x.relacao = clamp(x.relacao - 8, 0, 100);
       avisos.push(`${nm} viu você com outra e ficou chateada: quer saber se é só ela.`);
@@ -579,7 +651,7 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   const queda = ((p.etapa === "casados" ? 0.5 : p.etapa === "saindo" ? 2 : 1.1) + (longe ? 1.2 : 0)) * jeito * (1.2 - quimica(p, ctx.vidaNoturna) / 250) + noite;
   p.relacao = clamp(p.relacao - queda, 0, 100);
   if (p.relacao < (p.etapa === "saindo" ? 25 : 15)) {
-    n.ex.push(p.nome); n.par = undefined; moral -= p.etapa === "casados" ? 12 : 7;
+    virarEx(n, p, ctx.semanaAbs, p.etapa === "casados" ? "divorcio" : "ela"); n.par = undefined; moral -= p.etapa === "casados" ? 12 : 7;
     const custo = p.etapa === "casados" ? Math.round(ctx.saldo * 0.3) : 0;
     avisos.push(p.etapa === "casados" ? `${nome} pediu o divórcio${custo ? `: ${valorBrl(custo)} na partilha` : ""}.` : `${nome} terminou com você.`);
     return { avisos, moral, custo, escandalo, noticia: noticiaCaso ? `${noticiaCaso}. ${nome} termina com ele` : p.etapa === "casados" ? `Fim do casamento: ${nome} pede o divórcio` : undefined };

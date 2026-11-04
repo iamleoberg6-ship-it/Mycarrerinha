@@ -40,7 +40,7 @@ import { pedirEmprestimo } from "../src/transferencias.js";
 import { figurinhaDeMomento, type Figurinha } from "../src/figurinhas.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
 import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
-import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, gravidasDe, acoesFilho as acoesFilhoT, type Par } from "../src/namoro.js";
+import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, gravidasDe, acoesFilho as acoesFilhoT, agirEx, type Par } from "../src/namoro.js";
 import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
@@ -1195,6 +1195,14 @@ teste("Vida amorosa: caso escondido vira escândalo, divórcio custa caro, filho
   n.par = par("Ana", "casados", 80);
   const div = agirNamoro(n, "Ana", "terminar", { ...ctx, semanaAbs: 300 });
   assert.ok(div.ok && div.custo === 300000 && !n.par, "divórcio: 30% do saldo");
+  // a ex fica guardada com o perfil completo, e dá para conversar e tentar voltar
+  const exAna = (n.exes ?? []).find((x) => x.par.nome.startsWith("Ana"));
+  assert.ok(exAna && exAna.como === "divorcio" && exAna.par.profissao, "ex guardada com o perfil");
+  assert.ok(agirEx(n, exAna!.par.id, "mensagem", { ...ctx, semanaAbs: 301 }).ok);
+  exAna!.relacao = 95;
+  let voltou = false; for (let w = 302; w < 340 && !voltou; w++) { const r = agirEx(n, exAna!.par.id, "voltar", { ...ctx, semanaAbs: w }); voltou = r.ok && !!n.par; exAna!.relacao = 95; }
+  assert.ok(voltou && (n.par as Par | undefined)!.nome.startsWith("Ana") && !(n.exes ?? []).some((x) => x.par.nome.startsWith("Ana")), "voltou com a ex");
+  n.par = undefined;
   // filho planejado: tentar, gravidez, parto 36 semanas depois, programas com a criança
   n.par = par("Duda", "casados", 90); n.filhos = [];
   for (let w = 400; w < 440 && !gravidasDe(n).length; w++) agirNamoro(n, "Duda", "tentarFilho", { ...ctx, semanaAbs: w });
