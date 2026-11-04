@@ -51,8 +51,8 @@ export const MARCAS: Marca[] = [
   { id: "redboi", nome: "Red Boi", categoria: "energetico", cores: ["#1E2B5F", "#E1001A", "#F2C200"], simbolo: "chifre", slogan: "Te dá asas na pequena área.", peso: 1.4, famaMin: 45, letra: "pesada" },
   { id: "monstrao", nome: "Monstrão", categoria: "energetico", cores: ["#111111", "#7AC943", "#FFFFFF"], simbolo: "garra", slogan: "Libere a fera dos 90 minutos.", peso: 1.1, famaMin: 30, letra: "pesada" },
   // carros
-  { id: "fordi", nome: "Fordi", categoria: "carro", cores: ["#003478", "#FFFFFF", "#9BB7D4"], simbolo: "oval", slogan: "Força para ir até o fim.", peso: 1.1, famaMin: 35, letra: "italica" },
-  { id: "teslo", nome: "Teslo", categoria: "carro", cores: ["#111111", "#E82127", "#FFFFFF"], simbolo: "raio", slogan: "Aceleração de contra-ataque. Zero emissão.", peso: 1.7, famaMin: 65, letra: "fina" },
+  { id: "fordi", nome: "Fordi", categoria: "carro", cores: ["#003478", "#FFFFFF", "#9BB7D4"], simbolo: "oval", slogan: "Força para ir até o fim.", peso: 1.1, famaMin: 35, regioes: ["EUA", "ING", "EUR"], letra: "italica" },
+  { id: "teslo", nome: "Teslo", categoria: "carro", cores: ["#111111", "#E82127", "#FFFFFF"], simbolo: "raio", slogan: "Aceleração de contra-ataque. Zero emissão.", peso: 1.7, famaMin: 65, regioes: ["EUA", "EUR"], letra: "fina" },
   { id: "toiota", nome: "Toiota", categoria: "carro", cores: ["#EB0A1E", "#FFFFFF", "#5A5A5A"], simbolo: "oval", slogan: "Resistência de volante.", peso: 1.3, famaMin: 45, letra: "fina" },
   { id: "fiato", nome: "Fiato", categoria: "carro", cores: ["#8E1B2E", "#FFFFFF", "#C0C0C0"], simbolo: "escudo", slogan: "O carro de quem começou de baixo.", peso: 0.7, famaMin: 15, regioes: ["BR", "LATAM"], letra: "pesada" },
   // celulares
@@ -83,7 +83,7 @@ export const MARCAS: Marca[] = [
   { id: "habibao", nome: "Habibão", categoria: "comida", cores: ["#E30613", "#FFD200", "#FFFFFF"], simbolo: "engrenagem", slogan: "Esfiha de campeão.", peso: 0.7, famaMin: 15, regioes: ["BR"], letra: "pesada" },
 
   // ------------------------------------------------ marcas do mundo (pesam mais na região do clube)
-  { id: "santandeiro", nome: "Santandeiro", categoria: "banco", cores: ["#EC0000", "#FFFFFF", "#7A0000"], simbolo: "chama", slogan: "Um banco que joga em casa e fora.", peso: 1.5, famaMin: 40, letra: "pesada", regioes: ["ESP", "ING", "BR", "LATAM"] },
+  { id: "santandeiro", nome: "Santandeiro", categoria: "banco", cores: ["#EC0000", "#FFFFFF", "#7A0000"], simbolo: "chama", slogan: "Um banco que joga em casa e fora.", peso: 1.5, famaMin: 40, letra: "pesada", regioes: ["ESP", "ING", "LATAM"] },
   { id: "barcleis", nome: "Barcleis", categoria: "banco", cores: ["#00AEEF", "#FFFFFF", "#00395D"], simbolo: "asa", slogan: "A Premier do seu dinheiro.", peso: 1.6, famaMin: 45, letra: "fina", regioes: ["ING"] },
   { id: "bnpbola", nome: "BNP Paribola", categoria: "banco", cores: ["#00915A", "#FFFFFF", "#003D24"], simbolo: "estrela", slogan: "La banque du beau jeu.", peso: 1.4, famaMin: 40, letra: "fina", regioes: ["FRA"] },
   { id: "deutschebanco", nome: "Deutsche Banco", categoria: "banco", cores: ["#0018A8", "#FFFFFF", "#7A8CE0"], simbolo: "quadrado", slogan: "Disciplina tática também no extrato.", peso: 1.5, famaMin: 45, letra: "fina", regioes: ["ALE"] },
@@ -117,15 +117,15 @@ export const MARCAS: Marca[] = [
   { id: "celsiuz", nome: "Celsiuz", categoria: "energetico", cores: ["#111111", "#FF4F00", "#FFFFFF"], simbolo: "chama", slogan: "Queima tudo até o apito final.", peso: 1.1, famaMin: 30, letra: "italica", regioes: ["EUA"] },
   { id: "barn", nome: "Bärn", categoria: "energetico", cores: ["#111111", "#FF6A00", "#F2C200"], simbolo: "chama", slogan: "Combustível de prorrogação.", peso: 0.9, famaMin: 20, letra: "pesada", regioes: ["EUR", "ASIA"] },
 
-  { id: "volksvagao", nome: "Volksvagão", categoria: "carro", cores: ["#001E50", "#FFFFFF", "#7A8CE0"], simbolo: "circulo", slogan: "O carro do povo, e da torcida.", peso: 1.3, famaMin: 35, letra: "fina", regioes: ["ALE", "EUR", "BR"] },
+  { id: "volksvagao", nome: "Volksvagão", categoria: "carro", cores: ["#001E50", "#FFFFFF", "#7A8CE0"], simbolo: "circulo", slogan: "O carro do povo, e da torcida.", peso: 1.3, famaMin: 35, letra: "fina", regioes: ["ALE", "EUR"] },
   { id: "bmv", nome: "BMV", categoria: "carro", cores: ["#0066B1", "#FFFFFF", "#111111"], simbolo: "circulo", slogan: "Prazer de dirigir, prazer de golear.", peso: 1.7, famaMin: 55, letra: "fina", regioes: ["ALE", "EUR", "GOLFO"] },
   { id: "mercedez", nome: "Mercedez", categoria: "carro", cores: ["#111111", "#C0C0C0", "#FFFFFF"], simbolo: "estrela", slogan: "O melhor, ou nada. Como você no clássico.", peso: 1.8, famaMin: 60, letra: "fina", regioes: ["ALE", "EUR", "GOLFO", "EUA"] },
   { id: "audy", nome: "Audy", categoria: "carro", cores: ["#111111", "#C0C0C0", "#BB0A30"], simbolo: "pontos", slogan: "Vorsprung no contra-ataque.", peso: 1.6, famaMin: 50, letra: "fina", regioes: ["ALE", "ESP", "EUR"] },
   { id: "peujo", nome: "Peujô", categoria: "carro", cores: ["#00205B", "#FFFFFF", "#9BB7D4"], simbolo: "garra", slogan: "Motion & émotion na Ligue 1.", peso: 1.2, famaMin: 30, letra: "pesada", regioes: ["FRA"] },
-  { id: "reno", nome: "Renô", categoria: "carro", cores: ["#FFCC33", "#111111", "#FFFFFF"], simbolo: "quadrado", slogan: "Passion pour le football.", peso: 1.1, famaMin: 25, letra: "pesada", regioes: ["FRA", "BR"] },
+  { id: "reno", nome: "Renô", categoria: "carro", cores: ["#FFCC33", "#111111", "#FFFFFF"], simbolo: "quadrado", slogan: "Passion pour le football.", peso: 1.1, famaMin: 25, letra: "pesada", regioes: ["FRA"] },
   { id: "ferrari", nome: "Ferrarri", categoria: "carro", cores: ["#DC0000", "#FFF200", "#111111"], simbolo: "escudo", slogan: "Para quem chega antes da zaga.", peso: 2.0, famaMin: 80, letra: "italica", regioes: ["ITA", "GOLFO"] },
   { id: "cupra", nome: "Cuprá", categoria: "carro", cores: ["#1D1D1B", "#C68C5C", "#FFFFFF"], simbolo: "chifre", slogan: "Rebelde como um drible de letra.", peso: 1.2, famaMin: 35, letra: "fina", regioes: ["ESP"] },
-  { id: "chevrole", nome: "Chevrolé", categoria: "carro", cores: ["#C9A24D", "#111111", "#FFFFFF"], simbolo: "escudo", slogan: "Força que acompanha a torcida.", peso: 1.2, famaMin: 30, letra: "pesada", regioes: ["EUA", "BR", "LATAM"] },
+  { id: "chevrole", nome: "Chevrolé", categoria: "carro", cores: ["#C9A24D", "#111111", "#FFFFFF"], simbolo: "escudo", slogan: "Força que acompanha a torcida.", peso: 1.2, famaMin: 30, letra: "pesada", regioes: ["EUA", "LATAM"] },
   { id: "hyundai", nome: "Hiundái", categoria: "carro", cores: ["#002C5F", "#FFFFFF", "#AACAE6"], simbolo: "oval", slogan: "Novo pensamento, novo artilheiro.", peso: 1.3, famaMin: 35, letra: "italica", regioes: ["ASIA"] },
 
   { id: "huawey", nome: "Huawey", categoria: "celular", cores: ["#CF0A2C", "#FFFFFF", "#1A1A1A"], simbolo: "folha", slogan: "Lente de Leica, olho de artilheiro.", peso: 1.2, famaMin: 35, letra: "fina", regioes: ["ASIA", "GOLFO", "EUR"] },
@@ -156,7 +156,7 @@ export const MARCAS: Marca[] = [
   { id: "iberica", nome: "Ibérica Air", categoria: "aerea", cores: ["#D7192D", "#FFCC00", "#FFFFFF"], simbolo: "aviao", slogan: "Da Espanha para o mundo, en primera.", peso: 1.3, famaMin: 35, letra: "italica", regioes: ["ESP", "LATAM"] },
   { id: "airfranca", nome: "Air Françá", categoria: "aerea", cores: ["#002157", "#FFFFFF", "#E1001A"], simbolo: "aviao", slogan: "Faire du ciel le plus bel endroit.", peso: 1.4, famaMin: 35, letra: "fina", regioes: ["FRA"] },
   { id: "britair", nome: "Brit Airways", categoria: "aerea", cores: ["#075AAA", "#FFFFFF", "#EB2226"], simbolo: "aviao", slogan: "To fly, to serve, to score.", peso: 1.5, famaMin: 40, letra: "fina", regioes: ["ING"] },
-  { id: "tapa", nome: "TAPa", categoria: "aerea", cores: ["#00A651", "#E30613", "#FFFFFF"], simbolo: "aviao", slogan: "Lisboa, Brasil e o mundo, ó pá.", peso: 1.1, famaMin: 25, letra: "pesada", regioes: ["POR", "BR"] },
+  { id: "tapa", nome: "TAPa", categoria: "aerea", cores: ["#00A651", "#E30613", "#FFFFFF"], simbolo: "aviao", slogan: "Lisboa, Brasil e o mundo, ó pá.", peso: 1.1, famaMin: 25, letra: "pesada", regioes: ["POR"] },
   { id: "latao", nome: "Latão", categoria: "aerea", cores: ["#1B0088", "#E8114B", "#FFFFFF"], simbolo: "aviao", slogan: "Voa com a seleção desde sempre.", peso: 1.2, famaMin: 30, letra: "pesada", regioes: ["BR", "LATAM"] },
   { id: "azulzinha", nome: "Azulzinha", categoria: "aerea", cores: ["#00205B", "#4FC3F7", "#FFFFFF"], simbolo: "aviao", slogan: "Voa pro interior, voa pro gol.", peso: 1.0, famaMin: 20, letra: "redonda", regioes: ["BR"] },
   { id: "deltta", nome: "Deltta", categoria: "aerea", cores: ["#003366", "#C8102E", "#FFFFFF"], simbolo: "aviao", slogan: "Keep climbing, keep scoring.", peso: 1.5, famaMin: 40, letra: "fina", regioes: ["EUA"] },
@@ -164,11 +164,11 @@ export const MARCAS: Marca[] = [
   { id: "rdutch", nome: "KLMm", categoria: "aerea", cores: ["#00A1DE", "#FFFFFF", "#003145"], simbolo: "aviao", slogan: "Real, holandesa e no horário.", peso: 1.3, famaMin: 35, letra: "fina", regioes: ["HOL"] },
   // marcas que patrocinam clubes (camisa, manga e estádio): apostas, seguradoras, tecnologia e cripto
   { id: "betona", nome: "Betona", categoria: "aposta", cores: ["#FF6A13", "#FFFFFF", "#1B1B1B"], simbolo: "circulo", slogan: "Aposta na torcida.", peso: 1.4, famaMin: 20, regioes: ["BR", "LATAM", "POR"], letra: "pesada", soClube: true },
-  { id: "bet366", nome: "Bet366", categoria: "aposta", cores: ["#126E51", "#FFDF1B", "#FFFFFF"], simbolo: "quadrado", slogan: "Um dia a mais de jogo.", peso: 1.5, famaMin: 30, regioes: ["ING", "EUR", "BR"], letra: "pesada", soClube: true },
-  { id: "superbete", nome: "Superbete", categoria: "aposta", cores: ["#E3001B", "#FFFFFF", "#1A1A1A"], simbolo: "raio", slogan: "Super odds, super gols.", peso: 1.2, famaMin: 15, regioes: ["BR", "EUR"], letra: "italica", soClube: true },
+  { id: "bet366", nome: "Bet366", categoria: "aposta", cores: ["#126E51", "#FFDF1B", "#FFFFFF"], simbolo: "quadrado", slogan: "Um dia a mais de jogo.", peso: 1.5, famaMin: 30, regioes: ["ING", "EUR"], letra: "pesada", soClube: true },
+  { id: "superbete", nome: "Superbete", categoria: "aposta", cores: ["#E3001B", "#FFFFFF", "#1A1A1A"], simbolo: "raio", slogan: "Super odds, super gols.", peso: 1.2, famaMin: 15, regioes: ["EUR"], letra: "italica", soClube: true },
   { id: "esportebet", nome: "EsporteBet", categoria: "aposta", cores: ["#0A2D6E", "#2BD86F", "#FFFFFF"], simbolo: "estrela", slogan: "O palpite certo.", peso: 1.0, famaMin: 5, regioes: ["BR", "LATAM"], letra: "pesada", soClube: true },
-  { id: "alianca", nome: "Aliança Seguros", categoria: "seguro", cores: ["#003781", "#FFFFFF", "#7AB4E6"], simbolo: "circulo", slogan: "Seguro como zagueiro.", peso: 1.8, famaMin: 45, letra: "fina", soClube: true },
-  { id: "mapfra", nome: "Mapfra", categoria: "seguro", cores: ["#D81E05", "#FFFFFF", "#1A1A1A"], simbolo: "escudo", slogan: "Proteção do primeiro ao último minuto.", peso: 1.1, famaMin: 20, regioes: ["ESP", "BR", "LATAM"], letra: "pesada", soClube: true },
+  { id: "alianca", nome: "Aliança Seguros", categoria: "seguro", cores: ["#003781", "#FFFFFF", "#7AB4E6"], simbolo: "circulo", slogan: "Seguro como zagueiro.", peso: 1.8, famaMin: 45, regioes: ["ALE", "EUR"], letra: "fina", soClube: true },
+  { id: "mapfra", nome: "Mapfra", categoria: "seguro", cores: ["#D81E05", "#FFFFFF", "#1A1A1A"], simbolo: "escudo", slogan: "Proteção do primeiro ao último minuto.", peso: 1.1, famaMin: 20, regioes: ["ESP", "LATAM"], letra: "pesada", soClube: true },
   { id: "generalli", nome: "Generalli", categoria: "seguro", cores: ["#C21B17", "#FFFFFF", "#F2C200"], simbolo: "asa", slogan: "Parceiro para a vida toda.", peso: 1.2, famaMin: 25, regioes: ["ITA", "EUR"], letra: "fina", soClube: true },
   { id: "rakutem", nome: "Rakutem", categoria: "tecnologia", cores: ["#BF0000", "#FFFFFF", "#1A1A1A"], simbolo: "oval", slogan: "Tudo num clique, até o título.", peso: 1.6, famaMin: 45, regioes: ["ASIA", "ESP", "EUR"], letra: "redonda", soClube: true },
   { id: "timviewer", nome: "TimViewer", categoria: "tecnologia", cores: ["#0E8EE9", "#FFFFFF", "#0A2342"], simbolo: "onda", slogan: "Conectado com o vestiário.", peso: 1.3, famaMin: 35, regioes: ["ALE", "ING", "EUR"], letra: "redonda", soClube: true },
@@ -225,11 +225,12 @@ export function forteEm(m: Marca, r: Regiao): boolean {
  *  pesam muito mais; as do país do jogador aparecem quando ele já é conhecido; as de outro canto do mundo, quase nunca. */
 export function marcaInteressada(rng: RNG, fama: number, idade: number, ativos: ContratoPatrocinio[], recusadas: string[], seguidores = 0, paisClube?: string, paisJogador?: string): Marca | undefined {
   const ocupadas = new Set(ativos.map((c) => MARCA[c.marca]?.categoria));
-  const regiao = regiaoDoPais(paisClube ?? "BRA"), casa = paisJogador ? regiaoDoPais(paisJogador) : regiao;
+  const regiao = regiaoDoPais(paisClube ?? "BRA");
   const pool = MARCAS.filter((m) => !m.soClube && !ocupadas.has(m.categoria) && fama >= m.famaMin && seguidores >= (m.seguidoresMin ?? 0) && (m.categoria !== "cerveja" || (idade >= 18 && regiao !== "GOLFO")) && !recusadas.includes(m.id));
   if (!pool.length) return undefined;
   // marca grande tem preferência quando o jogador já é grande; a região decide quem bate na porta
-  const fatorRegiao = (m: Marca) => !m.regioes ? 1 : forteEm(m, regiao) ? 4 : forteEm(m, casa) && fama >= 45 ? 1.2 : 0.04;
+  // marca regional só patrocina quem joga na região dela (Gororó Antártica só no Brasil); as globais aparecem em todo lugar
+  const fatorRegiao = (m: Marca) => !m.regioes ? 1 : forteEm(m, regiao) ? 4 : 0;
   const pesos = pool.map((m) => (1 + (fama - m.famaMin) / 40 + m.peso) * fatorRegiao(m));
   let x = rng.next() * pesos.reduce((a, b) => a + b, 0);
   for (let i = 0; i < pool.length; i++) { x -= pesos[i]; if (x <= 0) return pool[i]; }

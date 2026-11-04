@@ -175,6 +175,8 @@ function padraoKit(k: Kit, g: Geo): string {
     // faixa vertical no meio, do colarinho à barra (Paris: azul com a faixa vermelha)
     // duas faixas verticais no meio, lado a lado (Leão do Pici: vermelha e azul sobre o branco)
     case "duasFaixasV": { const [fa, fb] = k.faixas ?? [c2, c2]; return `<rect x="128" y="220" width="22" height="280" fill="${fa}"/><rect x="150" y="220" width="22" height="280" fill="${fb}"/>`; }
+    // cruz branca no peito: faixa vertical no meio e faixa horizontal atravessando (Cruz Azulada)
+    case "cruz": return `<rect x="139" y="220" width="22" height="280" fill="${c2}"/><rect x="${x0}" y="292" width="${x1 - x0}" height="22" fill="${c2}"/>`;
     case "faixaV": return `<rect x="138" y="220" width="24" height="280" fill="${c2}"/>`;
     default: return "";
   }

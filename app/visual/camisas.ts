@@ -26,6 +26,8 @@ function padrao(modelo: string, c2: string, c3: string, faixas?: string[]): stri
     case "faixaH": return `<rect x="0" y="44" width="80" height="14" fill="${c2}"/>`;
     /** duas faixas verticais no meio (Leão do Pici) */
     case "duasFaixasV": { const [f1, f2] = faixas ?? [c2, c3]; return `<rect x="29" y="0" width="11" height="104" fill="${f1}"/><rect x="40" y="0" width="11" height="104" fill="${f2}"/>`; }
+    /** cruz no peito (Cruz Azulada) */
+    case "cruz": return `<rect x="35" y="0" width="10" height="104" fill="${c2}"/><rect x="0" y="33" width="80" height="10" fill="${c2}"/>`;
     /** faixa vertical no meio (Paris) */
     case "faixaV": return `<rect x="34" y="0" width="12" height="104" fill="${c2}"/>`;
     /** duas faixas cruzando o meio: a de cima na cor 2, a de baixo na cor 3 (ex.: vermelha e preta sobre o branco) */
