@@ -162,7 +162,9 @@ function patrocinioDoClube(clubeId: string): string | undefined {
   if (m.id === "redboi") return emblemaTouros(m.cores[1], m.cores[2]);
   // nome da marca escrito no peito (Fly Emiratez): "Fly" pequeno em cima, o resto grande, em itálico
   const cor = COR_PATROCINIO[id] ?? "#FFFFFF", [a, ...b] = m.nome.split(" ");
-  const fonte = `font-family="Barlow, 'Arial Narrow', sans-serif" font-style="italic" font-weight="800" text-anchor="middle" fill="${cor}"`;
+  // letra escura ganha um filete branco (aparece por cima de faixas e listras da camisa)
+  const filete = cor.toUpperCase() !== "#FFFFFF" ? ` stroke="#FFFFFF" stroke-width="1.6" paint-order="stroke" stroke-linejoin="round"` : "";
+  const fonte = `font-family="Barlow, 'Arial Narrow', sans-serif" font-style="italic" font-weight="800" text-anchor="middle" fill="${cor}"${filete}`;
   return b.length ? `<text x="50" y="13" font-size="15" ${fonte}>${esc(a)}</text><text x="50" y="38" font-size="27" letter-spacing="-.5" ${fonte}>${esc(b.join(" "))}</text>` : `<text x="50" y="30" font-size="27" ${fonte}>${esc(a)}</text>`;
 }
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
