@@ -41,7 +41,7 @@ function aneis(cap: number): { largura: number; altura: number }[] {
 }
 
 export function svgEstadio(d: DadosEstadio, largura = 400): string {
-  const W = 400, H = 300, cx = 200, cy = 178, k = 0.5;
+  const W = 400, H = 300, cx = 200, cy = 160, k = 0.62, hz = 0.6;
   const c1 = d.cores[0] ?? "#2E7D4F", c2 = d.cores[1] ?? "#FFFFFF";
   // cadeira escura demais some no desenho: clareia um pouco; branca demais vira cinza claro
   const assento = luz(c1) < 0.18 ? mistura(c1, "#FFFFFF", 0.22) : luz(c1) > 0.92 ? mistura(c1, "#9AA3AD", 0.35) : c1;
@@ -51,7 +51,7 @@ export function svgEstadio(d: DadosEstadio, largura = 400): string {
   const formato = d.formato ?? "oval", expo = formato === "quadrado" ? 7 : formato === "retangular" ? 3.4 : 2;
   const ponto = (A: number, B: number, z: number, t: number): [number, number] => {
     const c = Math.cos(t), sn = Math.sin(t), e = 2 / expo;
-    return [cx + A * Math.sign(c) * Math.pow(Math.abs(c), e), cy + B * k * Math.sign(sn) * Math.pow(Math.abs(sn), e) - z];
+    return [cx + A * Math.sign(c) * Math.pow(Math.abs(c), e), cy + B * k * Math.sign(sn) * Math.pow(Math.abs(sn), e) - z * hz];
   };
   const N = 120, angs = (a: number, b: number) => Array.from({ length: N / 2 + 1 }, (_, i) => a + ((b - a) * i) / (N / 2));
   const linha = (pts: [number, number][]) => pts.map(([x, y], i) => `${i ? "L" : "M"}${f(x)} ${f(y)}`).join("");
@@ -72,9 +72,12 @@ export function svgEstadio(d: DadosEstadio, largura = 400): string {
   partes.push(`<ellipse cx="${cx}" cy="${f(cy + 6)}" rx="${f(ext.Ao + 30)}" ry="${f((ext.Bo + 30) * k + 6)}" fill="#1B3A2C"/><path d="${elipse(ext.Ao + 4, ext.Bo + 4, -4)}" transform="translate(6 0)" fill="#000" opacity=".28"/>`);
   // refletores de trás (atrás do estádio)
   const refletor = (x: number, yBase: number, alto: number) => `<path d="M${f(x)} ${f(yBase)} V${f(yBase - alto)}" stroke="#5B636B" stroke-width="2.4"/><rect x="${f(x - 7)}" y="${f(yBase - alto - 6)}" width="14" height="7" rx="1.5" fill="#E9EEF2" stroke="#5B636B" stroke-width="1"/><ellipse cx="${f(x)}" cy="${f(yBase - alto - 2)}" rx="14" ry="6" fill="#FFF6C8" opacity=".25"/>`;
-  const posRef = [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const, alturaRef = topo + 24;
+  const posRef = [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const, alturaRef = topo * hz + 22;
   const canto = (sx: number, sy: number) => { const [x, y] = ponto(ext.Ao * 1.02, ext.Bo * 1.02, 0, Math.atan2(sy, sx)); return [x, y] as const; };
   for (const [sx, sy] of posRef.filter(([, y]) => y < 0)) { const [x, y] = canto(sx, sy); partes.push(refletor(x, y - 2, alturaRef)); }
+  // campo: o chão de dentro do estádio e o gramado, desenhados antes da arquibancada (ela cobre a borda, como de verdade)
+  partes.push(`<path d="${elipse(A0, B0, 0)}" fill="#245E37"/><g transform="translate(${cx} ${cy}) scale(1 ${k})"><rect x="-64" y="-42" width="128" height="84" fill="url(#estGrama)"/>
+    <g fill="none" stroke="#fff" stroke-width="2" opacity=".85"><rect x="-64" y="-42" width="128" height="84"/><path d="M0 -42 V42"/><circle r="10"/><rect x="-64" y="-17" width="18" height="34"/><rect x="46" y="-17" width="18" height="34"/></g></g>`);
   // muro externo (só a frente aparece)
   partes.push(`<path d="${metadeFrente(ext.Ao, ext.Bo, topo, 0)}" fill="url(#estMuro)" stroke="#5E656C" stroke-width="1"/>`);
   for (let i = 1; i <= 9; i++) { const [x, y] = ponto(ext.Ao, ext.Bo, 0, Math.PI * (1 - i / 10)); partes.push(`<path d="M${f(x)} ${f(y - topo + 2)} V${f(y - 1)}" stroke="#6F767D" stroke-width="1.2" opacity=".55"/>`); }
@@ -87,9 +90,6 @@ export function svgEstadio(d: DadosEstadio, largura = 400): string {
   });
   // cobertura dos grandes: um anel claro por cima da parte de fora
   if (grande) partes.push(`<path d="${elipse(ext.Ao + 3, ext.Bo + 3, topo)} ${elipse(ext.Ao - 18, ext.Bo - 18, topo - 1)}" fill="#EEF1F4" fill-rule="evenodd" stroke="#A9B0B7" stroke-width="1" opacity=".93"/>`);
-  // campo
-  partes.push(`<g transform="translate(${cx} ${f(cy - 1)}) scale(1 ${k})"><rect x="-80" y="-56" width="160" height="112" rx="6" fill="#245E37"/><rect x="-66" y="-44" width="132" height="88" fill="url(#estGrama)"/>
-    <g fill="none" stroke="#fff" stroke-width="2" opacity=".85"><rect x="-66" y="-44" width="132" height="88"/><path d="M0 -44 V44"/><circle r="11"/><rect x="-66" y="-19" width="19" height="38"/><rect x="47" y="-19" width="19" height="38"/></g></g>`);
   // refletores da frente e guindaste da obra
   for (const [sx, sy] of posRef.filter(([, y]) => y > 0)) { const [x, y] = canto(sx, sy); partes.push(refletor(x, y + 2, alturaRef + 6)); }
   if (d.obra) {
