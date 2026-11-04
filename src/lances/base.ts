@@ -15,7 +15,7 @@ export interface Efeito {
   relPar?: number;
 }
 export interface EfeitoDef extends Omit<Efeito, "texto" | "noticia"> { texto: Txt; noticia?: Txt }
-export type Teste = Partial<Record<Atributo | "CALMA" | "CARISMA" | "PROF", number>>;
+export type Teste = Partial<Record<Atributo | "CALMA" | "CARISMA" | "PROF" | "FAL" | "PEN" | "LID" | "DET" | "DEC" | "CON" | "EQU" | "AGR", number>>;
 export type Momento = "jogo" | "comemoracao" | "pos";
 
 /** Tudo o que pesa na escolha do lance. */

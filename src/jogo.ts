@@ -19,13 +19,16 @@ import { novaAgenda, resolverOcasiao, vencidas, agendar, type EstadoAgenda, type
 import { CADEIAS } from "./cadeias-dados.js";
 import { novaCadeia, registrarMarca, semanaCadeia, passoDaAgenda, lerGatilho, pessoaDaCadeia, preencherPessoa, efeitosDaOpcao, type EstadoCadeia, type Cadeia } from "./cadeias.js";
 import { parcasIniciais, novoParca, efeitosParcas, semanaSocial, agendarFerias, temFuncao, FUNCOES, type Parca, type PerfilParca, type FuncaoParca, type CtxSocial } from "./vida-social.js";
-import { LUXO, MAX_LUXO, mesLuxo, statusLuxo, valoresEmCasa, temEsportivo, HOBBIES, MAX_HOBBIES, semanaHobbies, semanaEstudos, infoCurso, novaAdaptacao, semanaAdaptacao, moralAdaptacao, fatorAdaptacao, ocasioesExterior, linguaNativa, mesFundacao, ocasioesFundacao, ganhouCoracaoDeOuro, CUSTO_FUNDACAO, type ItemLuxo, type TipoLuxo, type EstadoHobbies, type Hobby, type EstadoEstudos, type Curso, type Adaptacao, type Fundacao } from "./estilo.js";
+import { LUXO, MAX_LUXO, mesLuxo, statusLuxo, valoresEmCasa, temEsportivo, HOBBIES, MAX_HOBBIES, semanaHobbies, semanaEstudos, infoCurso, novaAdaptacao, semanaAdaptacao, moralAdaptacao, fatorAdaptacao, ocasioesExterior, linguaNativa, NOME_LINGUA as NOME_LINGUA_ES, NIVEL_LINGUA as NIVEL_LINGUA_ES, type Lingua, mesFundacao, ocasioesFundacao, ganhouCoracaoDeOuro, CUSTO_FUNDACAO, type ItemLuxo, type TipoLuxo, type EstadoHobbies, type Hobby, type EstadoEstudos, type Curso, type Adaptacao, type Fundacao } from "./estilo.js";
 import { patrimonioInvestido } from "./negocios.js";
 import { novaMidia, feedDaSemana, sortearPauta, postar, responderPauta, type EstadoMidia, type CtxMidia, type EfeitoPost, type TipoPost } from "./midia.js";
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, DISPUTA, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
 import { bonusDoTecnico, chanceDeDemissao, NOME_ESTILO, formacaoDoTecnico, vagasNaFormacao, type Tecnico } from "./tecnicos.js";
+import { extrasIniciais, evoluirExtras, type Extras } from "./detalhes.js";
+import { FUNCAO, funcoesDa, encaixe, type Funcao } from "./funcoes.js";
+import { linguaDe } from "./idiomas.js";
 import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, lesoesQueComecam, encaixarNoMundo } from "./mundo.js";
 import { noticiasDaVidaDoMundo as sortearNoticiasDaVida, type JogadorDoMundo } from "./vida-mundo.js";
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
@@ -75,6 +78,8 @@ export interface Jogador {
   visual?: Visual; alturaCm?: number; pe?: string;
   /** quanto domina cada posição (0–100; a natural começa em 100) */
   familiaridade?: Familiaridade;
+  /** atributos detalhados (bola parada e mentais): ganham na primeira leitura */
+  ex?: Extras;
 }
 export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number; baseNotas?: number[];
   /** melhor em campo, seleção da rodada e do mês (na temporada) */
@@ -202,6 +207,8 @@ export interface Carreira {
   escolhaNumero?: "temporada" | "chegada"; saidas?: { clubeId: string; temporada: number; nomes: string[] };
   /** treino de posição em andamento e sugestão do técnico */
   treinoPosicao?: Posicao; sugestaoPos?: { pos: Posicao; aceita?: boolean };
+  /** função que o técnico definiu (e de quem foi a decisão) e quando pediu outra por último */
+  funcao?: string; funcaoTecnico?: string; funcaoPedida?: number;
   /** maior reputação que teve com a torcida de cada clube */
   torcidaMax?: Record<string, number>;
   /** melhor posição já anunciada em cada lista de recordes (chave: clube-gols-FLA, sel-jogos, liga-BRA1-3...) */
@@ -593,6 +600,13 @@ export type Escalacao = "titular" | "banco" | "base" | "fora" | "lesionado" | "s
 export const NOME_ESCALACAO: Record<Escalacao, string> = {
   titular: "Titular", banco: "No banco", base: "Jogo da base", fora: "Fora dos relacionados", lesionado: "Lesionado", semJogo: "Sem jogo", suspenso: "Suspenso",
 };
+/** Média dos 11 melhores do elenco (o nível de titular do clube). */
+const mediaTitulares = (el: { ovr: number }[]) => { const t = el.map((x) => x.ovr).sort((a, b) => b - a).slice(0, 11); return t.length ? t.reduce((a, b) => a + b, 0) / t.length : 65; };
+/** Confiança que o técnico tem só pelo nível: quem está acima da média dos titulares começa com crédito. */
+export function confiancaPeloNivel(pacote: PacoteDados, s: Save): number {
+  if (s.carreira.mercado?.semClube) return 0;
+  return clamp(50 + (ovr(s.jogador) - mediaTitulares(elencoDisponivel(pacote, s))) * 4, 0, 90);
+}
 export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carreira.cansaco, copa = false, estadual = false): Escalacao {
   const c = s.carreira, j = s.jogador;
   if (c.mercado?.semClube) return "semJogo"; // sem clube: treina sozinho, não joga
@@ -602,12 +616,23 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   if (c.vestiario?.geladeira && c.vestiario.clubeId === c.clubeId && !c.formacao) return "fora"; // geladeira do técnico
   if (copa) { const e = escalacao(pacote, { ...s, carreira: { ...c, suspensao: 0, semana: Math.max(c.semana, SEMANAS_PRE) } }, cansacoPrevisto); return e === "base" ? "fora" : e; }
   const elenco = elencoDisponivel(pacote, s), tec = c.tecnico;
-  const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade) + bonusDoTecnico(tec, j.posicao, j.idade);
-  const rank = elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) + bonusDoTecnico(tec, x.posicao, x.idade) > meu).length;
-  // a formação do técnico decide quantas vagas a posição tem (sem vaga: no máximo banco)
-  const vagas = vagasNaFormacao(tec, j.posicao);
+  const fn = funcaoDoJogador(s);
+  const ajusteFuncao = fn ? clamp((encaixe(j.at, extrasDe(j), fn) - ovr(j)) * 0.2, -3, 3) : 0;
+  // técnico que fala a sua língua conversa melhor com você (a adaptação ao país já pesa em campo)
+  const comunicacao = tec && linguaDe(tec.nacionalidade) === linguaDe(j.nacionalidade) ? 0.5 : 0;
+  // o técnico confia em quem é bom: a confiança nunca fica abaixo do que o nível dele merece no elenco
+  const confia = Math.max(c.relTecnico, confiancaPeloNivel(pacote, s));
+  // cansaço só pesa quando é alto (os rivais também rodam); um pouco cansado ainda joga
+  const cansacoPesa = Math.max(0, cansacoPrevisto - 40) * 0.75;
+  const meu = pontuacaoTitular(ovr(j), forma(c), confia, cansacoPesa) + bonusJovem(c.clubeId, j.idade) + bonusDoTecnico(tec, j.posicao, j.idade) + ajusteFuncao + comunicacao;
+  const rivais = elenco.filter((x) => x.posicao === j.posicao);
+  const rank = rivais.filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) + bonusDoTecnico(tec, x.posicao, x.idade) > meu).length;
+  // a formação do técnico decide quantas vagas a posição tem; craque sem vaga no esquema joga adaptado em outra
+  let vagas = vagasNaFormacao(tec, j.posicao);
+  if (vagas === 0 && rivais.every((x) => x.ovr <= ovr(j) - 2) && ovr(j) >= mediaTitulares(elenco) + 2) vagas = 1;
   if (rank < vagas) return "titular";
-  if (rank <= vagas + 1) return "banco";
+  // relacionados: 11 titulares e uns 12 no banco, cerca de dois por posição
+  if (rank <= vagas + 2 || ovr(j) >= mediaTitulares(elenco) - 2) return "banco";
   if (j.idade <= 19) {
     // garoto da base em grande fase ganha chance de ficar no banco do profissional
     const sub = chanceSubir(c.clubeId);
@@ -1103,7 +1128,7 @@ const nivelAdversario = (p: Partida) => (p.tipo === "base" ? p.fAdv - 2 : p.fAdv
 
 export function resolverDecisao(s: Save, p: Partida, d: Decisao, opcaoId: string): ResultadoDecisao {
   const op = SITUACAO[d.situacao].opcoes.find((o) => o.id === opcaoId)!;
-  const hab = habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op);
+  const hab = habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op, extrasDe(s.jogador));
   const rng = rngDe(s, "decisao", d.situacao, d.min, opcaoId);
   const nivel = sortearNivel(rng, hab, nivelAdversario(p), op);
   const r: ResultadoDecisao = { ...resolverEfeito(rng, op, nivel, { ...p.nomes, marco: String((p.ctx?.jogosPro ?? 0) + 1) }), min: d.min, nivel, situacao: d.situacao, opcao: opcaoId };
@@ -1114,7 +1139,7 @@ export function resolverDecisao(s: Save, p: Partida, d: Decisao, opcaoId: string
 /** Melhor opção pela nota esperada (só para a política automática; a tela não mostra nada disso). */
 export function melhorOpcao(s: Save, p: Partida, d: Decisao): string {
   const ops = SITUACAO[d.situacao].opcoes.filter((o) => d.opcoes.some((x) => x.id === o.id));
-  return ops.map((op) => ({ id: op.id, v: notaEsperada(habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op), nivelAdversario(p), op) })).sort((a, b) => b.v - a.v)[0].id;
+  return ops.map((op) => ({ id: op.id, v: notaEsperada(habilidade(s.jogador.at, s.jogador.personalidade, s.jogador.tracos, op, extrasDe(s.jogador)), nivelAdversario(p), op) })).sort((a, b) => b.v - a.v)[0].id;
 }
 
 // ------------------------------------------------------------------ fim da semana
@@ -1370,6 +1395,8 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const prev = previaPlano(s, plano);
   c.cansaco = prev.cansaco; c.moral = prev.moral;
   c.relTecnico = clamp(c.relTecnico + cont("video") + (cont("treino") >= 2 ? 1 : 0), 0, 100);
+  // quem é melhor que o elenco ganha a confiança do técnico aos poucos (sobe até o que o nível merece)
+  { const alvo = confiancaPeloNivel(pacote, s); if (c.relTecnico < alvo) c.relTecnico = clamp(c.relTecnico + Math.min(3, (alvo - c.relTecnico) / 4), 0, 100); }
   if (c.tecnico?.estilo === "motivador" && !c.fase && !c.mercado?.semClube) c.moral = clamp(c.moral + 1, 0, 100);
   if (cont("redes")) {
     c.engajamento = clamp((c.engajamento ?? 40) + 9 * cont("redes"), 0, 100);
@@ -1466,6 +1493,12 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const en = efeitosNamoro(nam);
   const mult = 1 + cont("treino") * 0.1 + (casa.evolucao + vida.evolucao + en.evolucao) / 100 + c.bonusEvolucao - (c.treinoPosicao ? 0.1 : 0) + (paiTreinador(fam) ? 0.05 : 0);
   for (const k of ATRIBUTOS) j.at[k] = clamp(j.at[k] + (evoluido[k] - j.at[k]) * (evoluido[k] > j.at[k] ? mult : 1), 1, 99);
+  // a função puxa o treino para o que ela pede; os detalhados amadurecem (determinação acelera)
+  {
+    const fn = funcaoDoJogador(s), jogou = participacao === "titular" || participacao === "entrou";
+    if (fn && jogou) for (const [k, p] of Object.entries(fn.pesos)) if ((ATRIBUTOS as readonly string[]).includes(k) && j.at[k as Atributo] < j.pot) j.at[k as Atributo] = clamp(j.at[k as Atributo] + 0.012 * (p ?? 0), 1, 99);
+    j.ex = evoluirExtras(extrasDe(j), j.idade, jogou, plano.foco === "tecnico", extrasDe(j).DET);
+  }
   // saúde: desgaste do corpo, lesão grave que vira crônica, crises de dor, equipe particular
   {
     const sd = saudeDe(c), minutos = (resumoPartida?.minutos ?? 0) + (quarta?.resumo?.minutos ?? 0);
@@ -1734,6 +1767,29 @@ export function ganharCapa(s: Save, regional: boolean) {
   noticia(s, "vida", `${s.jogador.apelido} é a capa do IAFC ${ed}`, regional ? `A edição do país do novo IAFC ${ed} sai com ${s.jogador.apelido} na capa.` : `O melhor do mundo estampa a capa mundial do IAFC ${ed}. Lançamento em todas as lojas.`, { k: "capa", edicao, clube: c.clubeId, ...(regional ? { regional: true } : {}) });
 }
 export const semanaAbsJogo = (c: Carreira) => c.temporada * SEMANAS_TEMPORADA + c.semana;
+// ------------------------------------------------------------------ detalhados, função, idiomas e curso de técnico
+export const extrasDe = (j: Jogador): Extras => (j.ex ??= extrasIniciais(j.nome, j.at, j.personalidade, j.idade));
+/** A função que o técnico definiu (escolhe pelo estilo dele e pelo que o jogador faz melhor; muda quando muda o técnico ou a posição). */
+export function funcaoDoJogador(s: Save): Funcao | undefined {
+  const c = s.carreira, j = s.jogador, tec = c.tecnico, atual = FUNCAO[c.funcao ?? ""];
+  if (atual && atual.pos === j.posicao && c.funcaoTecnico === (tec?.nome ?? "")) return atual;
+  const gosto = (f: Funcao) => !tec ? 0 : tec.estilo === "ofensivo" ? ((f.gol ?? 1) > 1 || (f.efeito.ataque ?? 0) > 0.008 ? 3 : 0) : tec.estilo === "defensivo" ? ((f.efeito.defesa ?? 0) > 0 ? 3 : 0) : tec.estilo === "posse" ? ((f.assist ?? 1) > 1 || (f.efeito.meio ?? 0) > 0.008 ? 3 : 0) : 0;
+  const f = funcoesDa(j.posicao).sort((a, b) => encaixe(j.at, extrasDe(j), b) + gosto(b) - (encaixe(j.at, extrasDe(j), a) + gosto(a)))[0];
+  c.funcao = f?.id; c.funcaoTecnico = tec?.nome ?? "";
+  return f;
+}
+/** Pedir ao técnico para jogar de outro jeito (uma vez por mês): ele aceita se você rende ali e a relação deixa. */
+export function pedirFuncao(s: Save, id: string): { ok: boolean; msg: string } {
+  const c = s.carreira, j = s.jogador, f = FUNCAO[id], atual = funcaoDoJogador(s), ab = semanaAbsJogo(c);
+  if (!f || f.pos !== j.posicao) return { ok: false, msg: "Essa função não é da sua posição." };
+  if (atual?.id === id) return { ok: false, msg: "Você já joga assim." };
+  if (c.funcaoPedida !== undefined && ab - c.funcaoPedida < 4) return { ok: false, msg: "Você pediu há pouco. Espere umas semanas." };
+  c.funcaoPedida = ab;
+  const ganho = encaixe(j.at, extrasDe(j), f) - (atual ? encaixe(j.at, extrasDe(j), atual) : 0);
+  if (c.relTecnico >= 45 && ganho >= -4) { c.funcao = id; c.relTecnico = clamp(c.relTecnico + 1, 0, 100); return { ok: true, msg: `O técnico topou: você passa a jogar como ${f.nome.toLowerCase()}.` }; }
+  c.relTecnico = clamp(c.relTecnico - 2, 0, 100);
+  return { ok: false, msg: c.relTecnico < 45 ? "O técnico não gostou do pedido: a relação com ele ainda não permite." : `O técnico acha que você rende mais como ${atual?.nome.toLowerCase() ?? "está"}.` };
+}
 
 // ------------------------------------------------------------------ família e namoro
 /** A família da carreira (sorteada na primeira vez; saves antigos ganham a sua). */
@@ -1887,6 +1943,15 @@ function semanaVidaFora(pacote: PacoteDados, s: Save, eventos: string[], temJogo
     const par = namoroDe(c).par;
     semanaAdaptacao(c.adaptacao, es.idiomas, !!par && ["morando", "noivos", "casados"].includes(par.etapa), ps.some((p) => p.funcao));
     c.moral = clamp(c.moral + moralAdaptacao(c.adaptacao), 0, 100);
+    // morando no país, a língua dele vem com o tempo: um nível a cada ~6 meses (mais rápido bem adaptado)
+    {
+      const l = linguaNativa(paisLiga) as Lingua, nivel = es.idiomas[l] ?? 0;
+      if (nivel < 3) {
+        const im = (es.imersao ??= {});
+        im[l] = (im[l] ?? 0) + 0.6 + c.adaptacao.valor / 200;
+        if (im[l]! >= 26) { im[l] = 0; es.idiomas[l] = nivel + 1; eventos.push(`Morando fora, você já fala ${NOME_LINGUA_ES[l].toLowerCase()}: nível ${NIVEL_LINGUA_ES[nivel + 1].toLowerCase()}.`); noticia(s, "clube", "Língua nova", `${s.jogador.apelido} já se vira em ${NOME_LINGUA_ES[l].toLowerCase()} (${NIVEL_LINGUA_ES[nivel + 1].toLowerCase()}).`); }
+      }
+    }
     ocasioesExterior(a, rng, c.adaptacao, ab, par?.etapa === "casados", par?.nome.split(" ")[0]);
   }
   // fundação

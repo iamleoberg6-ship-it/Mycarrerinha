@@ -8,12 +8,16 @@ import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres
 import { infoLiga } from "../ligas.js";
 import { gerarNome } from "../nomes.js";
 import { onzeProvavel } from "../relacoes.js";
+import { encaixe } from "../funcoes.js";
+import { linguaDe, idiomasIniciais, semanaIdiomas, nivelEm, NOME_LINGUA, type Idiomas } from "../idiomas.js";
+import { evoluirExtras } from "../detalhes.js";
+import { LICENCAS, CURSO_LICENCA, licencaExigida, semanaCurso, type CursoTecnico } from "../licencas.js";
 import { valorMercado, CAMBIO } from "../mercado.js";
 import { curtoBrl } from "../moeda.js";
 /** Dinheiro nas mensagens: na moeda que a tela está usando. */
 const dinheiroT = (v: number) => curtoBrl(v);
 import {
-  FORMACOES, FUNCOES, NOME_FUNCAO, atletaDoMundo, custoObra, disponivel, forcaDoTime, formaDe, gerarAtributos, melhorEscalacao, ovrDe, ovrNaVaga, precoIngresso,
+  FORMACOES, FUNCOES, NOME_FUNCAO, atletaDoMundo, exDe, idiomasDe, funcaoNaVaga, ovrPos, custoObra, disponivel, forcaDoTime, formaDe, gerarAtributos, melhorEscalacao, ovrDe, ovrNaVaga, precoIngresso,
   salarioJusto, salarioStaff, taticaPadrao, valorAtleta, type Atleta, type Escalacao, type Funcao, type Membro, type PosT, type Tatica,
 } from "./modelo.js";
 
@@ -36,7 +40,9 @@ export interface Clube {
 }
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
-  tecnico: { nome: string; nac: string; idade: number; reputacao: number; exJogador?: { apelido: string; fama: number } };
+  tecnico: { nome: string; nac: string; idade: number; reputacao: number; exJogador?: { apelido: string; fama: number }; idiomas?: Idiomas; curso?: CursoTecnico };
+  /** ex-atletas do clube que se aposentaram com licença de técnico: podem virar comissão */
+  exAtletas?: { nome: string; nac: string; idade: number; licenca: number; lid: number; pos: PosT }[];
   clubeId: string; ligaId: string; temporada: number; semana: number;
   ordem: string[]; tabela: LinhaTabela[]; rodadas: Record<number, [string, string, number, number][]>;
   elenco: Atleta[]; esc: Escalacao; tatica: Tatica; entrosamento: Record<string, number>;
@@ -53,6 +59,7 @@ export interface SaveTecnico {
   demitido?: string;
   /** contratados nesta temporada (agentes livres não voltam a aparecer) */ recusas: string[];
   /** mercado: jogadores à venda, propostas recebidas, negociações em andamento e o histórico */
+  aoVivo?: AoVivo;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
 
@@ -95,16 +102,19 @@ export function ligasParaComecar(pacote: PacoteDados): { id: string; nome: strin
 }
 export function clubesDaLiga(pacote: PacoteDados, ligaId: string) {
   const w = mundo(pacote);
-  return [...(w.liga[ligaId]?.clubes ?? [])].sort((a, b) => b.forca - a.forca).map((c) => ({ id: c.id, nome: w.info[c.id]?.nome ?? c.nome, forca: Math.round(c.forca), exige: reputacaoExigida(c.forca) }));
+  return [...(w.liga[ligaId]?.clubes ?? [])].sort((a, b) => b.forca - a.forca).map((c) => ({ id: c.id, nome: w.info[c.id]?.nome ?? c.nome, forca: Math.round(c.forca), exige: reputacaoExigida(c.forca), licenca: licencaExigida(c.forca) }));
 }
-export interface DadosTecnico { nome: string; nac: string; idade: number; exJogador?: { apelido: string; fama: number } }
+export interface DadosTecnico { nome: string; nac: string; idade: number; exJogador?: { apelido: string; fama: number }; licenca?: number; idiomas?: Idiomas }
+/** Licença do técnico (quem começa direto já tem a B). */
+export const licencaT = (s: SaveTecnico) => s.tecnico.curso?.licenca ?? 2;
+export const idiomasT = (s: SaveTecnico) => (s.tecnico.idiomas ??= idiomasIniciais(s.tecnico.nome, s.tecnico.nac, s.tecnico.idade));
 export const reputacaoInicial = (d: DadosTecnico) => Math.round(d.exJogador ? clamp(22 + d.exJogador.fama * 0.55, 22, 75) : 20);
 
 export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeId: string, semente = `tec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`): SaveTecnico {
   sincronizarMundo(pacote, semente, 0, 0, {}, 0);
   const w = mundo(pacote), c = w.clube[idClube(clubeId)], info = infoClube(pacote, c.id), ligaId = info.ligaId, l = w.liga[ligaId], li = infoLiga(ligaId);
   const s: SaveTecnico = {
-    versao: 1, modo: "tecnico", semente, tecnico: { nome: d.nome, nac: d.nac, idade: d.idade, reputacao: reputacaoInicial(d), ...(d.exJogador ? { exJogador: d.exJogador } : {}) },
+    versao: 1, modo: "tecnico", semente, tecnico: { nome: d.nome, nac: d.nac, idade: d.idade, reputacao: reputacaoInicial(d), ...(d.exJogador ? { exJogador: d.exJogador } : {}), idiomas: d.idiomas ? { ...d.idiomas } : idiomasIniciais(d.nome, d.nac, d.idade), curso: { licenca: Math.max(1, d.licenca ?? 2) } },
     clubeId: c.id, ligaId, temporada: 0, semana: 0, ordem: l.clubes.map((x) => x.id), tabela: novaTabela(l), rodadas: {},
     elenco: [], esc: { titulares: [], reservas: [] }, tatica: taticaPadrao(), entrosamento: { "4-3-3": 55 }, treino: { foco: "tecnico", intensidade: "normal" },
     staff: {}, clube: { saldo: 0, tv: 0, patrocinio: 0, capacidade: Math.max(4000, info.capacidade || 12000), ctNivel: 0, baseNivel: 0, tetoFolha: 0, torcida: 60 },
@@ -143,10 +153,13 @@ export function candidatos(s: SaveTecnico, f: Funcao, chave = `${s.temporada}-${
   const rng = new RNG(`${s.semente}|staff|${f}|${chave}`), pais = infoLiga(s.ligaId).pais, usados = new Set(Object.values(s.staff).map((m) => m!.nome));
   const centro = nivelBase ?? clamp(1.6 + s.tecnico.reputacao / 30 + s.clube.ctNivel * 0.25, 1, 5);
   const fL = fLigaDe(s);
-  return Array.from({ length: 4 }, (_, i) => {
+  // ex-atletas do clube com licença entram na frente (auxiliar, base; ex-goleiro também para treinar goleiros)
+  const ex: Membro[] = (s.exAtletas ?? []).filter((x) => (f === "auxiliar" || f === "base" || (f === "goleiros" && x.pos === "GOL")) && !usados.has(x.nome))
+    .map((x) => { const nivel = clamp(x.licenca + (x.lid >= 70 ? 1 : 0), 1, 5); return { nome: x.nome, nac: x.nac, idade: x.idade, nivel, salario: Math.round(salarioStaff(nivel, fL) * 0.85 / 100) * 100, ex: true }; });
+  return [...ex, ...Array.from({ length: 4 }, (_, i) => {
     const nivel = clamp(Math.round(centro + (i === 0 ? 0 : rng.normal(0, 1))), 1, 5), nac = rng.chance(0.7) ? pais : rng.pick(["BRA", "ARG", "POR", "ESP", "ITA", "ENG", "GER", "FRA", "NED", "URU"]);
     return { nome: gerarNome(rng, nac.length === 3 ? nac : "BRA", usados), nac, idade: rng.int(31, 64), nivel, salario: salarioStaff(nivel, fL) };
-  }).sort((a, b) => b.nivel - a.nivel);
+  }).sort((a, b) => b.nivel - a.nivel)];
 }
 export function contratarStaff(s: SaveTecnico, f: Funcao, nome: string): { ok: boolean; msg: string } {
   const m = candidatos(s, f).find((x) => x.nome === nome);
@@ -155,6 +168,7 @@ export function contratarStaff(s: SaveTecnico, f: Funcao, nome: string): { ok: b
   if (s.clube.saldo < multa + m.salario * 3) return { ok: false, msg: "O clube não tem caixa para essa troca agora." };
   if (atual) { s.clube.saldo -= multa; gastar(s, "rescisões", multa); }
   s.staff[f] = m;
+  if (m.ex) s.exAtletas = (s.exAtletas ?? []).filter((x) => x.nome !== m.nome);
   noticia(s, "clube", `${m.nome} é o novo ${NOME_FUNCAO[f].toLowerCase()}${atual ? ` no lugar de ${atual.nome}` : ""}.`);
   return { ok: true, msg: `${m.nome} contratado${atual ? `. A rescisão de ${atual.nome} custou 3 salários.` : "."}` };
 }
@@ -222,7 +236,7 @@ export function conversar(s: SaveTecnico, id: string, tipo: Conversa): { ok: boo
   if (!a) return { ok: false, msg: "Jogador não encontrado." };
   if (a.conversa === ab) return { ok: false, msg: "Você já conversou com ele nesta semana." };
   a.conversa = ab;
-  const forma = formaDe(a), aux = nivelStaff(s, "auxiliar"), rng = rngT(s, "conversa", a.id), sorte = rng.next() + aux * 0.04 + (a.relacao - 50) / 200;
+  const forma = formaDe(a), aux = nivelStaff(s, "auxiliar"), rng = rngT(s, "conversa", a.id), sorte = rng.next() + aux * 0.04 + (a.relacao - 50) / 200 + (nivelEm(idiomasT(s), linguaDe(a.nac)) >= 60 || nivelEm(idiomasDe(a), linguaDe(s.tecnico.nac)) >= 60 ? 0.06 : -0.06);
   const mudar = (moral: number, rel: number) => { a.moral = clamp(a.moral + moral, 0, 100); a.relacao = clamp(a.relacao + rel, 0, 100); };
   switch (tipo) {
     case "elogiar":
@@ -344,101 +358,182 @@ function conferirEscalacao(s: SaveTecnico): string[] {
 }
 
 // ------------------------------------------------------------------ partida
-function jogarPartida(pacote: PacoteDados, s: SaveTecnico, adv: string, souCasa: boolean, rodada: number, rng: RNG): Relatorio {
-  const w = mundo(pacote), cAdv = w.clube[adv], fAdv = cAdv?.forca ?? 65, por = new Map(s.elenco.map((a) => [a.id, a]));
-  const vagas = FORMACOES[s.tatica.formacao], tat = s.tatica, ent = s.entrosamento[tat.formacao] ?? 40;
-  const f = forcaDoTime(s.elenco, s.esc, tat, ent);
-  const atk = 0.65 * f.ataque + 0.35 * f.meio, def = 0.7 * f.defesa + 0.3 * f.meio, m = tat.mentalidade - 2, aberto = 1 + 0.03 * (tat.ritmo - 1);
-  const lMe = ((souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto;
-  const lAdv = ((souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto;
-  const eventos: EventoPartida[] = [];
-  // quem está em campo em cada minuto: titulares e as trocas (automáticas, pelo cansaço, a partir dos 60')
+/** Partida em andamento (parou no intervalo): placar, lances e o que cada um fez no primeiro tempo. */
+export interface AoVivo {
+  rodada: number; adv: string; souCasa: boolean; gMe: number; gAdv: number; eventos: EventoPartida[];
+  stats: Record<string, { gols: number; assist: number; amarelo: number; vermelho: boolean; min: number; pos: PosT }>;
+  /** expulsos e machucados não voltam; quem estava em campo no fim do 1º tempo (para contar as trocas) */
+  fora: string[]; lesoes: { id: string; semanas: number; tipo: string }[]; emCampo1: string[]; trocas: number;
+  /** cansaço durante o jogo (a condição só é gravada no fim) */ cond: Record<string, number>;
+  lambdas: [number, number][];
+}
+export const MAX_TROCAS = 5;
+const DRENO = (tat: Tatica) => 24 + 5 * tat.pressao + 3 * tat.ritmo;
+/** Joga um tempo (45 minutos) com o time e a tática que estão valendo agora. */
+function jogarTempo(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, tempo: 1 | 2, rng: RNG) {
+  const w = mundo(pacote), cAdv = w.clube[av.adv], fAdv = cAdv?.forca ?? 65, por = new Map(s.elenco.map((a) => [a.id, a]));
+  const vagas = FORMACOES[s.tatica.formacao], tat = s.tatica, ent = s.entrosamento[tat.formacao] ?? 40, ini = tempo === 1 ? 0 : 45;
+  const lingua = linguaDe(infoLiga(s.ligaId).pais), prep = nivelStaff(s, "preparador");
+  // em campo: os escalados nas vagas, menos expulsos e machucados (a vaga fica vazia: um a menos)
   type EmCampo = { a: Atleta; pos: PosT; ent: number; sai: number };
-  const campo: EmCampo[] = vagas.map((v, i) => ({ a: por.get(s.esc.titulares[i] ?? "")!, pos: v.pos, ent: 0, sai: 90 })).filter((x) => x.a);
-  const banco = s.esc.reservas.map((id) => por.get(id)!).filter((a) => a && disponivel(a));
-  let trocas = 0;
-  for (const x of [...campo].sort((p, q) => p.a.condicao - q.a.condicao)) {
-    if (trocas >= 3 || x.a.condicao >= 72 || x.pos === "GOL") continue;
-    const sub = banco.filter((b) => !campo.some((c) => c.a.id === b.id)).sort((p, q) => ovrNaVaga(q, x.pos) - ovrNaVaga(p, x.pos))[0];
-    if (!sub || ovrNaVaga(sub, x.pos) < ovrNaVaga(x.a, x.pos) - 8) continue;
-    const min = rng.int(58, 80);
-    x.sai = min; campo.push({ a: sub, pos: x.pos, ent: min, sai: 90 }); trocas++;
-    eventos.push({ min, tipo: "sub", meu: true, texto: `Sai ${x.a.nome}, entra ${sub.nome}` });
-  }
-  const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai > min);
-  const peso = <T>(lista: T[], w: (x: T) => number) => { const t = lista.reduce((a, x) => a + w(x), 0); let r = rng.next() * t; for (const x of lista) { r -= w(x); if (r <= 0) return x; } return lista[lista.length - 1]; };
-  const stats = new Map<string, { gols: number; assist: number; amarelo: number; vermelho: boolean }>();
-  const st = (id: string) => { let x = stats.get(id); if (!x) { x = { gols: 0, assist: 0, amarelo: 0, vermelho: false }; stats.set(id, x); } return x; };
-  // cartões e expulsões (o vermelho tira o jogador e pesa no resto do jogo)
-  let expulsoMin = 99;
-  for (const x of campo) {
-    const pAm = 0.075 * (0.6 + x.a.temp / 20) * (1 + 0.25 * (tat.pressao - 1)) * ((x.sai - x.ent) / 90);
-    if (rng.chance(pAm)) { const min = rng.int(x.ent + 1, Math.max(x.ent + 1, x.sai - 1)); st(x.a.id).amarelo++; eventos.push({ min, tipo: "amarelo", meu: true, texto: `Amarelo para ${x.a.nome}` }); }
-    if (rng.chance(0.005 * (0.5 + x.a.temp / 20)) && expulsoMin === 99) { const min = rng.int(Math.max(10, x.ent + 1), 88); st(x.a.id).vermelho = true; x.sai = Math.min(x.sai, min); expulsoMin = min; eventos.push({ min, tipo: "vermelho", meu: true, texto: `Expulso: ${x.a.nome}` }); }
-  }
-  const fatorExpulsao = expulsoMin < 99 ? (90 - expulsoMin) / 90 : 0;
-  const gMe = rng.poisson(lMe * (1 - 0.3 * fatorExpulsao)), gAdv = rng.poisson(lAdv * (1 + 0.35 * fatorExpulsao));
-  // gols do time do técnico: quem marca e quem dá o passe
-  for (let g = 0; g < gMe; g++) {
-    const min = rng.int(1, 90), ali = noCampo(min);
-    if (!ali.length) continue;
-    const autor = peso(ali, (x) => x.pos === "GOL" ? 0.001 : SHARE_GOL[x.pos as keyof typeof SHARE_GOL] * Math.pow(x.a.at.FIN / 70, 1.5));
-    st(autor.a.id).gols++;
-    let txt = `Gol de ${autor.a.nome}`;
-    if (rng.chance(0.74)) {
-      const outros = ali.filter((x) => x !== autor);
-      if (outros.length) { const p = peso(outros, (x) => x.pos === "GOL" ? 0.01 : SHARE_ASSIST[x.pos as keyof typeof SHARE_ASSIST] * Math.pow(Math.max(x.a.at.PAS, x.a.at.CRU) / 70, 1.5)); st(p.a.id).assist++; txt += ` (passe de ${p.a.nome})`; }
+  const campo: EmCampo[] = vagas.map((v, i) => ({ a: por.get(s.esc.titulares[i] ?? "")!, pos: v.pos, ent: ini, sai: ini + 45 })).filter((x) => x.a && !av.fora.includes(x.a.id));
+  // trocas automáticas pelo cansaço no 2º tempo, até o limite
+  if (tempo === 2) {
+    const banco = s.esc.reservas.map((id) => por.get(id)!).filter((a) => a && disponivel(a) && !av.fora.includes(a.id) && !av.stats[a.id]);
+    for (const x of [...campo].sort((p, q) => (av.cond[p.a.id] ?? p.a.condicao) - (av.cond[q.a.id] ?? q.a.condicao))) {
+      const c = (av.cond[x.a.id] ?? x.a.condicao) - DRENO(tat) * 0.3;
+      if (av.trocas >= MAX_TROCAS || c >= 66 || x.pos === "GOL") continue;
+      const sub = banco.filter((b) => !campo.some((y) => y.a.id === b.id)).sort((p, q) => ovrNaVaga(q, x.pos) - ovrNaVaga(p, x.pos))[0];
+      if (!sub || ovrNaVaga(sub, x.pos) < ovrNaVaga(x.a, x.pos) - 8) continue;
+      const min = rng.int(58, 80);
+      x.sai = min; campo.push({ a: sub, pos: x.pos, ent: min, sai: 90 }); av.trocas++;
+      av.eventos.push({ min, tipo: "sub", meu: true, texto: `Sai ${x.a.nome}, entra ${sub.nome}` });
     }
-    eventos.push({ min, tipo: "gol", meu: true, texto: txt });
   }
-  // gols do adversário: os titulares prováveis dele
+  // força do momento: cansaço do jogo e quem saiu (vaga vazia)
+  const elencoAgora = s.elenco.map((a) => (av.cond[a.id] !== undefined ? { ...a, condicao: av.cond[a.id] } : a));
+  const escAgora: Escalacao = { ...s.esc, titulares: s.esc.titulares.map((id) => (id && !av.fora.includes(id) ? id : null)) };
+  const f = forcaDoTime(elencoAgora, escAgora, tat, ent, lingua);
+  const atk = 0.65 * f.ataque + 0.35 * f.meio, def = 0.7 * f.defesa + 0.3 * f.meio, m = tat.mentalidade - 2, aberto = 1 + 0.03 * (tat.ritmo - 1);
+  // bola parada: o melhor cobrador de falta e de pênalti em campo
+  const melhor = (k: "FAL" | "PEN") => [...campo].sort((p, q) => exDe(q.a)[k] - exDe(p.a)[k])[0];
+  const bFal = melhor("FAL"), bPen = melhor("PEN");
+  const bola = 1 + ((bFal ? exDe(bFal.a).FAL : 60) - 60) / 900 + ((bPen ? exDe(bPen.a).PEN : 60) - 60) / 1400;
+  const lMe = ((av.souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto * bola;
+  const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto;
+  av.lambdas.push([lMe, lAdv]);
+  const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai > min && !av.fora.includes(x.a.id));
+  const peso = <T>(lista: T[], fw: (x: T) => number) => { const t = lista.reduce((a, x) => a + fw(x), 0); let r = rng.next() * t; for (const x of lista) { r -= fw(x); if (r <= 0) return x; } return lista[lista.length - 1]; };
+  const st = (x: EmCampo) => (av.stats[x.a.id] ??= { gols: 0, assist: 0, amarelo: 0, vermelho: false, min: 0, pos: x.pos });
+  // cartões (agressividade e marcação alta pesam); segundo amarelo é vermelho
+  let saiuAntes = 99;
+  for (const x of campo) {
+    const dur = (x.sai - x.ent) / 90, e = st(x);
+    if (rng.chance(0.075 * (0.45 + exDe(x.a).AGR / 90) * (1 + 0.25 * (tat.pressao - 1)) * dur)) {
+      const min = rng.int(x.ent + 1, Math.max(x.ent + 1, x.sai - 1));
+      e.amarelo++;
+      if (e.amarelo >= 2) { e.vermelho = true; x.sai = min; av.fora.push(x.a.id); saiuAntes = Math.min(saiuAntes, min); av.eventos.push({ min, tipo: "vermelho", meu: true, texto: `Segundo amarelo: ${x.a.nome} expulso` }); }
+      else av.eventos.push({ min, tipo: "amarelo", meu: true, texto: `Amarelo para ${x.a.nome}` });
+    }
+    if (!e.vermelho && rng.chance(0.0025 * (0.5 + exDe(x.a).AGR / 60))) { const min = rng.int(x.ent + 1, Math.max(x.ent + 1, x.sai - 1)); e.vermelho = true; x.sai = min; av.fora.push(x.a.id); saiuAntes = Math.min(saiuAntes, min); av.eventos.push({ min, tipo: "vermelho", meu: true, texto: `Expulso: ${x.a.nome}` }); }
+  }
+  const umAMenos = saiuAntes < 99 ? (ini + 45 - saiuAntes) / 45 : 0;
+  const gMe = rng.poisson((lMe / 2) * (1 - 0.3 * umAMenos)), gAdv = rng.poisson((lAdv / 2) * (1 + 0.35 * umAMenos));
+  // gols: a função muda quem faz e quem passa; parte sai de falta e de pênalti
+  for (let g = 0; g < gMe; g++) {
+    const min = rng.int(ini + 1, ini + 45), ali = noCampo(min);
+    if (!ali.length) continue;
+    const r = rng.next(), ehFalta = r < 0.1 && bFal && ali.includes(bFal), ehPen = !ehFalta && r < 0.17 && bPen && ali.includes(bPen);
+    const autor = ehFalta ? bFal! : ehPen ? bPen! : peso(ali, (x) => (x.pos === "GOL" ? 0.001 : SHARE_GOL[x.pos as keyof typeof SHARE_GOL] * Math.pow(x.a.at.FIN / 70, 1.5) * (funcaoNaVaga(s.esc, x.a, x.pos)?.gol ?? 1)));
+    st(autor).gols++;
+    let txt = ehFalta ? `Gol de falta de ${autor.a.nome}` : ehPen ? `Gol de pênalti de ${autor.a.nome}` : `Gol de ${autor.a.nome}`;
+    if (!ehFalta && !ehPen && rng.chance(0.74)) {
+      const outros = ali.filter((x) => x !== autor);
+      if (outros.length) { const p = peso(outros, (x) => (x.pos === "GOL" ? 0.01 : SHARE_ASSIST[x.pos as keyof typeof SHARE_ASSIST] * Math.pow(Math.max(x.a.at.PAS, x.a.at.CRU) / 70, 1.5) * (funcaoNaVaga(s.esc, x.a, x.pos)?.assist ?? 1))); st(p).assist++; txt += ` (passe de ${p.a.nome})`; }
+    }
+    av.eventos.push({ min, tipo: "gol", meu: true, texto: txt });
+  }
   const onzeAdv = cAdv ? onzeProvavel(cAdv.elenco) : [];
   for (let g = 0; g < gAdv; g++) {
-    const min = rng.int(1, 90);
-    const autor = onzeAdv.length ? peso(onzeAdv, (j) => j.posicao === "GOL" ? 0.001 : SHARE_GOL[j.posicao as keyof typeof SHARE_GOL] * Math.pow(j.ovr / 70, 1.5)) : undefined;
-    eventos.push({ min, tipo: "gol", meu: false, texto: `Gol ${autor ? `de ${autor.nome}` : "do adversário"}` });
+    const min = rng.int(ini + 1, ini + 45);
+    const autor = onzeAdv.length ? peso(onzeAdv, (j) => (j.posicao === "GOL" ? 0.001 : SHARE_GOL[j.posicao as keyof typeof SHARE_GOL] * Math.pow(j.ovr / 70, 1.5))) : undefined;
+    av.eventos.push({ min, tipo: "gol", meu: false, texto: `Gol ${autor ? `de ${autor.nome}` : "do adversário"}` });
   }
-  // lesões (o preparador físico reduz o risco; o médico encurta)
-  const prep = nivelStaff(s, "preparador"), med = nivelStaff(s, "medico"), lesoes: { a: Atleta; semanas: number; tipo: string }[] = [];
+  av.gMe += gMe; av.gAdv += gAdv;
+  // lesões no tempo
+  const med = nivelStaff(s, "medico");
   for (const x of campo) {
-    const p = 0.016 * (1 + (100 - x.a.condicao) / 70) * (1 - 0.06 * prep) * (tat.ritmo === 2 ? 1.2 : 1) * (x.a.idade >= 31 ? 1.2 : 1) * ((x.sai - x.ent) / 90);
-    if (!rng.chance(p)) continue;
+    if (av.fora.includes(x.a.id) && !st(x).vermelho) continue;
+    const c = av.cond[x.a.id] ?? x.a.condicao;
+    if (!rng.chance(0.008 * (1 + (100 - c) / 70) * (1 - 0.06 * prep) * (tat.ritmo === 2 ? 1.2 : 1) * (x.a.idade >= 31 ? 1.2 : 1) * ((x.sai - x.ent) / 45))) continue;
     const r = rng.next(), base = r < 0.65 ? rng.int(1, 2) : r < 0.93 ? rng.int(3, 6) : rng.int(10, 24), semanas = Math.max(1, Math.round(base * (1 - 0.08 * med)));
     const tipo = semanas <= 2 ? "Lesão muscular leve" : semanas <= 6 ? "Estiramento" : rng.pick(["Lesão no joelho", "Fratura no pé", "Ruptura no tornozelo"]);
-    lesoes.push({ a: x.a, semanas, tipo });
-    eventos.push({ min: rng.int(Math.max(x.ent + 1, 5), Math.max(x.ent + 2, x.sai - 1)), tipo: "lesao", meu: true, texto: `${x.a.nome} se machucou (${tipo.toLowerCase()})` });
+    const min = rng.int(Math.max(x.ent + 1, ini + 2), Math.max(x.ent + 2, x.sai - 1));
+    av.lesoes.push({ id: x.a.id, semanas, tipo }); av.fora.push(x.a.id); x.sai = Math.min(x.sai, min);
+    av.eventos.push({ min, tipo: "lesao", meu: true, texto: `${x.a.nome} se machucou (${tipo.toLowerCase()})` });
   }
-  eventos.sort((a, b) => a.min - b.min);
-  // notas
-  const meus = souCasa ? gMe : gAdv, golsMeus = gMe, golsDeles = gAdv, res = golsMeus > golsDeles ? 0.4 : golsMeus < golsDeles ? -0.4 : 0;
-  const notas: NotaPartida[] = campo.map((x) => {
-    const minutos = x.sai - x.ent, e = st(x.a.id), ef = ovrNaVaga(x.a, x.pos) * (0.85 + 0.15 * x.a.condicao / 100);
-    let n = 6.0 + 0.035 * (ef - fAdv) + 1.0 * e.gols + 0.6 * e.assist + res + rng.normal(0, 0.5);
-    if ((x.pos === "GOL" || x.pos === "ZAG" || x.pos === "LAT") && golsDeles === 0) n += x.pos === "GOL" ? 0.7 : 0.4;
-    if (x.pos === "GOL" && golsDeles >= 2) n -= 0.3 * (golsDeles - 1);
-    if (e.vermelho) n -= 1.2;
-    if (minutos < 30) n = 6 + (n - 6) * 0.5;
-    return { id: x.a.id, nome: x.a.nome, pos: x.pos, nota: Math.round(clamp(n, 3, 10) * 10) / 10, min: minutos, gols: e.gols, assist: e.assist };
-  });
-  void meus;
-  const melhor = [...notas].sort((a, b) => b.nota - a.nota)[0];
-  // aplica no elenco: jogos, gols, notas, cartões, suspensões, lesões, cansaço
+  // minutos e cansaço do tempo
   for (const x of campo) {
-    const a = x.a, e = st(a.id), n = notas.find((y) => y.id === a.id)!;
-    a.jogos++; a.gols += e.gols; a.assist += e.assist; a.notas = [...a.notas, n.nota].slice(-10); a.semJogar = 0;
-    if (e.amarelo) { a.amarelos += e.amarelo; a.amarelosT += e.amarelo; if (a.amarelos >= 3) { a.amarelos = 0; a.suspenso = 1; } }
-    if (e.vermelho) { a.vermelhosT++; a.suspenso = rng.int(1, 2); }
-    a.condicao = clamp(a.condicao - ((x.sai - x.ent) / 90) * (24 + 5 * tat.pressao + 3 * tat.ritmo) * (1 - 0.04 * prep), 15, 100);
-    const resultado = golsMeus > golsDeles ? 4 : golsMeus === golsDeles ? 0.5 : -2.5;
-    a.moral = clamp(a.moral + resultado + (n.nota - 6.5) * 1.5, 0, 100);
+    const e = st(x), dur = Math.max(0, x.sai - x.ent);
+    e.min += dur;
+    av.cond[x.a.id] = clamp((av.cond[x.a.id] ?? x.a.condicao) - (dur / 90) * DRENO(tat) * (1 - 0.04 * prep), 15, 100);
   }
-  for (const l of lesoes) { l.a.lesao = l.semanas; l.a.lesaoTipo = l.tipo; }
-  const posse = Math.round(clamp(50 + (f.meio - fAdv) * 1.1 + m * 2 + (tat.pressao - 1) * 2, 28, 72));
-  const chutes: [number, number] = [gMe + rng.poisson(2.5 + lMe * 2.8), gAdv + rng.poisson(2.5 + lAdv * 2.8)];
-  return {
-    rodada, casa: souCasa ? s.clubeId : adv, fora: souCasa ? adv : s.clubeId, gc: souCasa ? gMe : gAdv, gf: souCasa ? gAdv : gMe, souCasa,
-    eventos, notas, posse, chutes, melhor: melhor?.nome,
-  };
+  av.eventos.sort((a, b) => a.min - b.min);
+  if (tempo === 1) av.emCampo1 = campo.filter((x) => x.sai >= 45 && !av.fora.includes(x.a.id)).map((x) => x.a.id);
+}
+/** Primeiro tempo: joga e para no intervalo (o técnico mexe no time e na tática antes do segundo). */
+export function iniciarPartida(pacote: PacoteDados, s: SaveTecnico): { avisos: string[] } | undefined {
+  const pj = proximoJogo(s);
+  if (!pj || s.aoVivo || s.demitido) return undefined;
+  prepararMundo(pacote, s);
+  const avisos = conferirEscalacao(s);
+  s.aoVivo = { rodada: pj.rodada, adv: pj.adv, souCasa: pj.souCasa, gMe: 0, gAdv: 0, eventos: [], stats: {}, fora: [], lesoes: [], emCampo1: [], trocas: 0, cond: {}, lambdas: [] };
+  jogarTempo(pacote, s, s.aoVivo, 1, rngT(s, "partida", 1));
+  return { avisos };
+}
+/** Trocas feitas no intervalo (quem entrou no lugar de quem estava em campo). */
+export const trocasNoIntervalo = (s: SaveTecnico) => (s.aoVivo ? s.esc.titulares.filter((id) => id && !s.aoVivo!.emCampo1.includes(id)).length : 0);
+/** Segundo tempo e o apito final: notas, cartões, suspensões, lesões, cansaço e moral. */
+function terminarPartida(pacote: PacoteDados, s: SaveTecnico, adv: string, souCasa: boolean, rodada: number): Relatorio {
+  let av = s.aoVivo && s.aoVivo.rodada === rodada && s.aoVivo.adv === adv ? s.aoVivo : undefined;
+  if (!av) { av = { rodada, adv, souCasa, gMe: 0, gAdv: 0, eventos: [], stats: {}, fora: [], lesoes: [], emCampo1: [], trocas: 0, cond: {}, lambdas: [] }; jogarTempo(pacote, s, av, 1, rngT(s, "partida", 1)); }
+  // quem não pode voltar (machucado) sai; expulso deixa a vaga vazia. As trocas do intervalo contam.
+  for (const [i, id] of s.esc.titulares.entries()) {
+    if (!id || !av.lesoes.some((l) => l.id === id) || trocasNoIntervaloDe(s, av) >= MAX_TROCAS) continue;
+    const v = FORMACOES[s.tatica.formacao][i], usados = new Set(s.esc.titulares);
+    const sub = s.esc.reservas.map((x) => s.elenco.find((a) => a.id === x)!).filter((a) => a && disponivel(a) && !av!.fora.includes(a.id) && !av!.stats[a.id] && !usados.has(a.id)).sort((p, q) => ovrNaVaga(q, v.pos) - ovrNaVaga(p, v.pos))[0];
+    if (sub) s.esc.titulares[i] = sub.id;
+  }
+  const sairam = av.emCampo1.filter((x) => !s.esc.titulares.includes(x)), entraram = s.esc.titulares.filter((id): id is string => !!id && !av!.emCampo1.includes(id));
+  entraram.forEach((id, k) => {
+    const a = s.elenco.find((x) => x.id === id), b = s.elenco.find((x) => x.id === sairam[k]);
+    if (a) av!.eventos.push({ min: 46, tipo: "sub", meu: true, texto: b ? `Sai ${b.nome}, entra ${a.nome}` : `Entra ${a.nome}` });
+  });
+  av.trocas += entraram.length;
+  jogarTempo(pacote, s, av, 2, rngT(s, "partida", 2));
+  // notas e o que fica no elenco
+  const w = mundo(pacote), fAdv = w.clube[adv]?.forca ?? 65, gm = av.gMe, gd = av.gAdv, res = gm > gd ? 0.4 : gm < gd ? -0.4 : 0;
+  const rng = rngT(s, "notas"), notas: NotaPartida[] = [];
+  for (const [id, e] of Object.entries(av.stats)) {
+    const a = s.elenco.find((x) => x.id === id);
+    if (!a || e.min <= 0) continue;
+    const fn = funcaoNaVaga(s.esc, a, e.pos), enc = fn ? encaixe(a.at, exDe(a), fn) : ovrPos(a.at, e.pos);
+    const ef = (ovrNaVaga(a, e.pos) + clamp((enc - ovrPos(a.at, e.pos)) * 0.25, -5, 5)) * (0.85 + 0.15 * a.condicao / 100);
+    let n = 6.0 + 0.035 * (ef - fAdv) + 1.0 * e.gols + 0.6 * e.assist + res + rng.normal(0, 0.5) + (exDe(a).CON - 60) / 200;
+    if ((e.pos === "GOL" || e.pos === "ZAG" || e.pos === "LAT") && gd === 0) n += e.pos === "GOL" ? 0.7 : 0.4;
+    if (e.pos === "GOL" && gd >= 2) n -= 0.3 * (gd - 1);
+    if (e.vermelho) n -= 1.2;
+    if (e.min < 30) n = 6 + (n - 6) * 0.5;
+    const nota = Math.round(clamp(n, 3, 10) * 10) / 10;
+    notas.push({ id, nome: a.nome, pos: e.pos, nota, min: e.min, gols: e.gols, assist: e.assist });
+    a.jogos++; a.gols += e.gols; a.assist += e.assist; a.notas = [...a.notas, nota].slice(-10); a.semJogar = 0;
+    const am = e.vermelho ? Math.max(0, e.amarelo - 1) : e.amarelo;
+    if (am) { a.amarelos += am; a.amarelosT += am; if (a.amarelos >= 3) { a.amarelos = 0; a.suspenso = 1; } }
+    if (e.vermelho) { a.vermelhosT++; a.suspenso = rng.int(1, 2); }
+    a.condicao = av.cond[id] ?? a.condicao;
+    a.moral = clamp(a.moral + (gm > gd ? 4 : gm === gd ? 0.5 : -2.5) + (nota - 6.5) * 1.5, 0, 100);
+  }
+  for (const l of av.lesoes) { const a = s.elenco.find((x) => x.id === l.id); if (a) { a.lesao = l.semanas; a.lesaoTipo = l.tipo; } }
+  const lm = av.lambdas.reduce((x, y) => x + y[0], 0) / Math.max(1, av.lambdas.length), la = av.lambdas.reduce((x, y) => x + y[1], 0) / Math.max(1, av.lambdas.length);
+  const f = forcaDoTime(s.elenco, s.esc, s.tatica, s.entrosamento[s.tatica.formacao] ?? 40);
+  const posse = Math.round(clamp(50 + (f.meio - fAdv) * 1.1 + (s.tatica.mentalidade - 2) * 2 + (s.tatica.pressao - 1) * 2, 28, 72));
+  const chutes: [number, number] = [gm + rng.poisson(2.5 + lm * 2.8), gd + rng.poisson(2.5 + la * 2.8)];
+  const melhor = [...notas].sort((a, b) => b.nota - a.nota)[0];
+  s.aoVivo = undefined;
+  return { rodada, casa: souCasa ? s.clubeId : adv, fora: souCasa ? adv : s.clubeId, gc: souCasa ? gm : gd, gf: souCasa ? gd : gm, souCasa, eventos: av.eventos.sort((a, b) => a.min - b.min), notas, posse, chutes, melhor: melhor?.nome };
+}
+const trocasNoIntervaloDe = (s: SaveTecnico, av: AoVivo) => s.esc.titulares.filter((id) => id && av.emCampo1.length && !av.emCampo1.includes(id)).length;
+/** Mudar a formação no intervalo: os mesmos jogadores, redistribuídos nas vagas novas (sem trocar ninguém). */
+export function reorganizarNoIntervalo(s: SaveTecnico, f: string) {
+  if (!FORMACOES[f]) return;
+  const ids = s.esc.titulares.filter((x): x is string => !!x), por = new Map(s.elenco.map((a) => [a.id, a]));
+  s.tatica.formacao = f; s.entrosamento[f] ??= 40;
+  const tit: (string | null)[] = FORMACOES[f].map(() => null), livres = new Set(ids);
+  FORMACOES[f].map((v, i) => ({ v, i })).sort((a, b) => (a.v.pos === "GOL" ? -1 : b.v.pos === "GOL" ? 1 : 0)).forEach(({ v, i }) => {
+    const m = [...livres].map((id) => por.get(id)!).sort((a, b) => ovrNaVaga(b, v.pos) - ovrNaVaga(a, v.pos))[0];
+    if (m) { tit[i] = m.id; livres.delete(m.id); }
+  });
+  s.esc.titulares = tit;
 }
 
 // ------------------------------------------------------------------ a semana
@@ -451,7 +546,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   const r = s.semana - SEMANAS_PRE_T, rodadas = rodadasDaLiga(s.ordem.length);
   const titularesIds = new Set<string>(), entraram = new Set<string>();
   if (r >= 0 && r < rodadas.length) {
-    eventos.push(...conferirEscalacao(s));
+    if (!s.aoVivo) eventos.push(...conferirEscalacao(s));
     // quem estava suspenso cumpre agora
     const cumpriram = s.elenco.filter((a) => a.suspenso > 0);
     const rng = rngT(s, "rodada");
@@ -460,7 +555,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
       const casa = s.ordem[ia], fora = s.ordem[ib];
       if (casa === s.clubeId || fora === s.clubeId) {
         const souCasa = casa === s.clubeId;
-        partida = jogarPartida(pacote, s, souCasa ? fora : casa, souCasa, r, rngT(s, "partida"));
+        partida = terminarPartida(pacote, s, souCasa ? fora : casa, souCasa, r);
         jogos.push([casa, fora, partida.gc, partida.gf]);
       } else {
         const [gc, gf] = simularPlacar(rng, w.clube[casa]?.forca ?? 60, w.clube[fora]?.forca ?? 60);
@@ -508,20 +603,36 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
     }
   }
   // treino e evolução
+  const lingua = linguaDe(li.pais), cap = s.elenco.find((a) => a.id === s.esc.capitao), liderCapitao = cap ? clamp((exDe(cap).LID - 60) / 6, -3, 4) : 0;
+  const titularesAgora = s.esc.titulares.map((id) => s.elenco.find((a) => a.id === id)).filter((a): a is Atleta => !!a);
+  const equipe = titularesAgora.length ? titularesAgora.reduce((x, a) => x + exDe(a).EQU, 0) / titularesAgora.length : 60;
   const ct = s.clube.ctNivel, gol = nivelStaff(s, "goleiros"), prep = nivelStaff(s, "preparador");
   for (const a of s.elenco) {
     const participacao: Participacao = a.lesao > 0 ? "ferias" : titularesIds.has(a.id) ? "titular" : entraram.has(a.id) ? "entrou" : "naoJogou";
-    a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.88 + 0.05 * ct) * (a.pos === "GOL" ? 1 + 0.08 * gol : 1) });
+    a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.94 + exDe(a).DET / 800) * (0.88 + 0.05 * ct) * (a.pos === "GOL" ? 1 + 0.08 * gol : 1) });
     const rec = s.treino.intensidade === "alta" ? 18 : s.treino.intensidade === "leve" ? 34 : 26;
     a.condicao = a.lesao > 0 ? clamp(a.condicao, 0, 75) : clamp(a.condicao + rec + 2 * prep, 0, 100);
     if (a.lesao > 0) { a.lesao--; if (a.lesao === 0) { eventos.push(`${a.nome} está recuperado.`); a.lesaoTipo = undefined; } }
-    a.moral = clamp(a.moral + (62 - a.moral) * 0.08, 0, 100);
+    a.ex = evoluirExtras(exDe(a), a.idade, participacao === "titular" || participacao === "entrou", s.treino.foco === "tecnico", exDe(a).DET);
+    // idiomas: aprende a língua do país morando nele; as aulas pagas pelo clube aceleram
+    const aula = a.aulas && a.aulas.ate > ab ? a.aulas.lingua : undefined;
+    if (aula) gastar(s, "Aulas de idioma", Math.round(1200 * Math.max(0.5, li.fLiga)));
+    else if (a.aulas) a.aulas = undefined;
+    for (const x of semanaIdiomas(idiomasDe(a), lingua, aula)) if (x.startsWith(NOME_LINGUA[lingua] ?? "§")) noticia(s, "elenco", `${a.nome} já fala ${x.toLowerCase()}.`);
+    // moral: quem não se comunica sente (menos se o técnico fala a língua dele); o capitão puxa o grupo
+    const semLingua = nivelEm(idiomasDe(a), lingua) < 40 && nivelEm(idiomasT(s), linguaDe(a.nac)) < 50;
+    a.moral = clamp(a.moral + (62 - (semLingua ? 7 : 0) + liderCapitao - a.moral) * 0.08, 0, 100);
+    // curso de técnico recomendado: estuda devagar, junto com os treinos
+    if (a.curso?.estudando) { const feita = semanaCurso(a.curso, 0.6); if (feita) { noticia(s, "elenco", `${a.nome} concluiu a ${LICENCAS[feita]}.`); if (feita < 2) a.curso.estudando = feita + 1; } }
     if (a.moral < 20 && !a.querSair) { a.querSair = true; noticia(s, "elenco", `${a.nome} está insatisfeito e pediu para sair do clube.`); }
     if (a.querSair && a.moral >= 45) a.querSair = false;
   }
-  for (const [f, v] of Object.entries(s.entrosamento)) s.entrosamento[f] = f === s.tatica.formacao ? clamp(v + (s.treino.foco === "tatico" ? 3 : 1) + 0.3 * nivelStaff(s, "auxiliar"), 0, 100) : clamp(v - 0.4, 30, 100);
+  for (const [f, v] of Object.entries(s.entrosamento)) s.entrosamento[f] = f === s.tatica.formacao ? clamp(v + (s.treino.foco === "tatico" ? 3 : 1) + 0.3 * nivelStaff(s, "auxiliar") + (equipe - 60) / 40, 0, 100) : clamp(v - 0.4, 30, 100);
   // reta final: aviso de contrato acabando (uma vez)
   if (r === nRodadasT(s) - 8) for (const a of s.elenco.filter((x) => x.contratoAte <= s.temporada)) { noticia(s, "elenco", `O contrato de ${a.nome} termina no fim da temporada. Renove no Elenco ou ele vai embora.`); eventos.push(`Contrato de ${a.nome} acaba no fim da temporada.`); }
+  // o técnico: língua do país e curso de licença
+  for (const x of semanaIdiomas(idiomasT(s), lingua)) noticia(s, "clube", `Você já fala ${x.toLowerCase()}.`);
+  if (s.tecnico.curso?.estudando) { const feita = semanaCurso(s.tecnico.curso, 1); if (feita) { s.tecnico.reputacao = clamp(s.tecnico.reputacao + 2, 0, 100); noticia(s, "clube", `Você concluiu a ${LICENCAS[feita]}.`); eventos.push(`Você concluiu a ${LICENCAS[feita]}.`); } }
   // obras que terminam
   for (const o of s.diretoria.obras.filter((x) => x.fim <= ab)) {
     if (o.tipo === "estadio") { s.clube.capacidade += o.lugares ?? 0; noticia(s, "clube", `Estádio ampliado: agora cabem ${s.clube.capacidade.toLocaleString("pt-BR")} torcedores.`); }
@@ -569,7 +680,9 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   const rng = new RNG(`${s.semente}|virada|${t}`);
   for (const a of [...s.elenco]) {
     if (a.contratoAte <= t) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} deixa o clube: o contrato acabou.`); continue; }
-    if (a.idade >= 34 && rng.chance((a.idade - 33) * 0.2)) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
+    const aposenta = a.idade >= 34 && rng.chance((a.idade - 33) * 0.2);
+    if (aposenta && (a.curso?.licenca ?? 0) >= 1) { (s.exAtletas ??= []).push({ nome: a.nome, nac: a.nac, idade: a.idade, licenca: a.curso!.licenca, lid: exDe(a).LID, pos: a.pos }); noticia(s, "clube", `${a.nome} se aposenta com a ${LICENCAS[a.curso!.licenca]}: pode entrar na sua comissão técnica.`); }
+    if (aposenta) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
   }
   for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
@@ -754,4 +867,37 @@ export function responderPropostaT(pacote: PacoteDados, s: SaveTecnico, id: stri
   versaoAplicada = -1; prepararMundo(pacote, s);
   noticia(s, "elenco", `${a.nome} é vendido ao ${nomeC} por ${dinheiroT(p.valor)}.`);
   return { ok: true, msg: `${a.nome} vendido ao ${nomeC}.` };
+}
+
+// ------------------------------------------------------------------ curso de técnico e idiomas
+/** Recomendar o curso de técnico a um atleta: os mais velhos, líderes ou profissionais topam. */
+export function recomendarCurso(s: SaveTecnico, id: string): { ok: boolean; msg: string } {
+  const a = s.elenco.find((x) => x.id === id);
+  if (!a) return { ok: false, msg: "Jogador não encontrado." };
+  if (a.curso?.estudando || (a.curso?.licenca ?? 0) >= 2) return { ok: false, msg: `${a.nome} já está nesse caminho.` };
+  if (a.idade < 26) return { ok: false, msg: `${a.nome} ainda é novo e só pensa em jogar.` };
+  if (exDe(a).LID < 50 && a.prof < 12) { a.relacao = clamp(a.relacao - 1, 0, 100); return { ok: false, msg: `${a.nome} agradeceu, mas não se vê como técnico.` }; }
+  a.curso = { licenca: a.curso?.licenca ?? 0, estudando: (a.curso?.licenca ?? 0) + 1, progresso: 0 };
+  a.relacao = clamp(a.relacao + 3, 0, 100); a.moral = clamp(a.moral + 2, 0, 100);
+  return { ok: true, msg: `${a.nome} começou a ${LICENCAS[a.curso.estudando!]}. Quando se aposentar, pode entrar na sua comissão.` };
+}
+/** Aulas da língua do país pagas pelo clube (12 semanas). */
+export function pagarAulas(s: SaveTecnico, id: string): { ok: boolean; msg: string } {
+  const a = s.elenco.find((x) => x.id === id), lingua = linguaDe(infoLiga(s.ligaId).pais), ab = semanaAbs(s);
+  if (!a) return { ok: false, msg: "Jogador não encontrado." };
+  if (nivelEm(idiomasDe(a), lingua) >= 90) return { ok: false, msg: `${a.nome} já é fluente em ${(NOME_LINGUA[lingua] ?? lingua).toLowerCase()}.` };
+  if (a.aulas && a.aulas.ate > ab) return { ok: false, msg: "Ele já está fazendo aulas." };
+  a.aulas = { lingua, ate: ab + 12 }; a.relacao = clamp(a.relacao + 2, 0, 100);
+  return { ok: true, msg: `${a.nome} começa aulas de ${(NOME_LINGUA[lingua] ?? lingua).toLowerCase()} por 12 semanas, pagas pelo clube.` };
+}
+/** O técnico estuda a próxima licença (o clube paga o curso). */
+export function estudarLicenca(s: SaveTecnico): { ok: boolean; msg: string } {
+  const c = (s.tecnico.curso ??= { licenca: 2 }), prox = c.licenca + 1;
+  if (c.estudando) return { ok: false, msg: `Você já está estudando a ${LICENCAS[c.estudando]}.` };
+  if (prox > 4) return { ok: false, msg: "Você já tem a licença máxima." };
+  const custo = Math.round(CURSO_LICENCA[prox].custo * Math.max(0.5, fLigaDe(s)));
+  if (s.clube.saldo < custo) return { ok: false, msg: "O clube não tem caixa para pagar o curso agora." };
+  s.clube.saldo -= custo; gastar(s, "Cursos", custo);
+  c.estudando = prox; c.progresso = 0;
+  return { ok: true, msg: `Você começou a ${LICENCAS[prox]}: ${CURSO_LICENCA[prox].semanas} semanas de estudo.` };
 }

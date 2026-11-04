@@ -98,16 +98,16 @@ export const DISPUTA: Situacao = {
   id: "disputaPenaltis", momento: "comemoracao", titulo: ["Sua cobrança", "A bola é sua"],
   texto: ["Você pega a bola no meio de campo, caminha sozinho até a marca. O {gol} pula e abre os braços.", "O estádio em silêncio. Você ajeita a bola na marca. O {gol} tenta te encarar."],
   peso: () => 0, opcoes: [
-    { id: "canto", rotulo: "No canto, rasteiro", teste: { FIN: 0.5, COM: 0.3, CALMA: 0.2 }, dif: -4, tracos: { frieza: 8 }, niveis: [
+    { id: "canto", rotulo: "No canto, rasteiro", teste: { PEN: 0.6, COM: 0.2, CALMA: 0.2 }, dif: -4, tracos: { frieza: 8 }, niveis: [
       e("Bola de um lado, {gol} do outro. GOL!", 0), e("O {gol} tocou, mas não segurou. GOL!", 0),
       e("O {gol} adivinhou o canto e defendeu.", 0), e("Na trave!", 0), e("Para fora. Você pôs as mãos no rosto.", 0)] },
-    { id: "forte", rotulo: "Forte, no alto", teste: { FIN: 0.4, FOR: 0.4, CALMA: 0.2 }, dif: 0, niveis: [
+    { id: "forte", rotulo: "Forte, no alto", teste: { PEN: 0.5, FOR: 0.3, CALMA: 0.2 }, dif: 0, niveis: [
       e("Na gaveta, sem chance. GOL!", 0), e("Forte, no meio, com o {gol} já caído. GOL!", 0),
       e("Forte demais, o {gol} espalmou para cima.", 0), e("No travessão!", 0), e("Por cima do gol. A torcida deles fez a festa.", 0)] },
-    { id: "paradinha", rotulo: "Paradinha, esperando o goleiro", teste: { COM: 0.6, CALMA: 0.4 }, dif: 6, tracos: { frieza: 10 }, niveis: [
+    { id: "paradinha", rotulo: "Paradinha, esperando o goleiro", teste: { PEN: 0.4, COM: 0.35, CALMA: 0.25 }, dif: 6, tracos: { frieza: 10 }, niveis: [
       e("Paradinha, o {gol} caiu antes e você tocou no outro canto. GOL!", 0), e("Esperou, o {gol} se mexeu e você colocou. GOL!", 0),
       e("O {gol} não caiu na paradinha e defendeu.", 0), e("Travou na paradinha e bateu fraco. Defendeu.", 0), e("Perdeu o tempo da corrida e chutou para fora.", 0)] },
-    { id: "cavadinha", rotulo: "Cavadinha", teste: { COM: 0.7, CALMA: 0.3 }, dif: 12, tracos: { frieza: 12 }, niveis: [
+    { id: "cavadinha", rotulo: "Cavadinha", teste: { PEN: 0.3, COM: 0.5, CALMA: 0.2 }, dif: 12, tracos: { frieza: 12 }, niveis: [
       e("Cavadinha com o {gol} já no chão. Que coragem! GOL!", 0), e("Cavadinha devagar, entrou rente ao travessão. GOL!", 0),
       e("O {gol} ficou parado e segurou a cavadinha.", 0), e("Saiu fraca e o {gol} pegou fácil.", 0), e("Por cima do travessão. Uma cavadinha que vai ser lembrada para sempre, do jeito errado.", 0)] },
   ],

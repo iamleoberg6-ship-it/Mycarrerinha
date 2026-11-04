@@ -5,6 +5,10 @@ import { RNG, clamp } from "../rng.js";
 import { ATRIBUTOS, ovr as ovrAtributos, peso, type Atributo, type Atributos, type Posicao } from "../atributos.js";
 import { valorMercado, CAMBIO } from "../mercado.js";
 import type { JogadorNPC } from "../liga.js";
+import { extrasIniciais, type Extras } from "../detalhes.js";
+import { idiomasIniciais, nivelEm, fatorComunicacao, type Idiomas } from "../idiomas.js";
+import { FUNCAO, encaixe, melhorFuncao, type Funcao as FuncaoJogo } from "../funcoes.js";
+import type { CursoTecnico } from "../licencas.js";
 
 export type PosT = Posicao | "GOL";
 export const POS_T: PosT[] = ["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"];
@@ -51,7 +55,12 @@ export interface Atleta {
   /** subiu da base do clube */ base?: boolean;
   /** pediu para sair (moral no chão) */ querSair?: boolean;
   /** temporada em que chegou */ desde: number;
+  /** atributos detalhados (bola parada e mentais), idiomas, aulas pagas pelo clube e o curso de técnico recomendado */
+  ex?: Extras; idiomas?: Idiomas; aulas?: { lingua: string; ate: number }; curso?: CursoTecnico;
 }
+/** Detalhados e idiomas: quem ainda não tem ganha na primeira leitura (sempre os mesmos para o mesmo jogador). */
+export const exDe = (a: Atleta): Extras => (a.ex ??= extrasIniciais(a.id, a.at, { profissionalismo: a.prof, temperamento: a.temp }, a.idade));
+export const idiomasDe = (a: Atleta): Idiomas => (a.idiomas ??= idiomasIniciais(a.id, a.nac, a.idade));
 export const ovrDe = (a: Atleta) => Math.round(ovrPos(a.at, a.pos));
 export const formaDe = (a: Atleta) => (a.notas.length ? a.notas.slice(-5).reduce((x, y) => x + y, 0) / Math.min(5, a.notas.length) : 6.5);
 export const disponivel = (a: Atleta) => a.lesao <= 0 && a.suspenso <= 0;
@@ -125,7 +134,14 @@ export const taticaPadrao = (): Tatica => ({ formacao: "4-3-3", mentalidade: 2, 
 export const NOME_MENTALIDADE = ["Muito defensiva", "Defensiva", "Equilibrada", "Ofensiva", "Muito ofensiva"];
 export const NOME_NIVEL3 = { pressao: ["Recuada", "Média", "Alta"], ritmo: ["Cadenciado", "Normal", "Acelerado"], linha: ["Baixa", "Média", "Alta"], largura: ["Fechado", "Normal", "Aberto"] };
 
-export interface Escalacao { titulares: (string | null)[]; reservas: string[]; capitao?: string; batedor?: string }
+export interface Escalacao { titulares: (string | null)[]; reservas: string[]; capitao?: string; batedor?: string;
+  /** função de cada jogador (id do atleta → id da função); sem escolha, vale a que ele rende mais na vaga */
+  funcoes?: Record<string, string> }
+/** A função do atleta na vaga: a escolhida (se for da posição da vaga) ou a que ele encaixa melhor. */
+export function funcaoNaVaga(esc: Escalacao, a: Atleta, pos: PosT): FuncaoJogo | undefined {
+  const f = FUNCAO[esc.funcoes?.[a.id] ?? ""];
+  return f && f.pos === pos ? f : melhorFuncao(a.at, exDe(a), pos);
+}
 
 /** Melhor escalação para uma formação: preenche primeiro as vagas mais difíceis, com quem está disponível. */
 export function melhorEscalacao(elenco: Atleta[], formacao: string, nReservas = 9): Escalacao {
@@ -145,20 +161,34 @@ export function melhorEscalacao(elenco: Atleta[], formacao: string, nReservas = 
   for (const a of resto) if (reservas.length < nReservas && !reservas.includes(a.id)) reservas.push(a.id);
   const lider = tit.map((id) => elenco.find((a) => a.id === id)).filter(Boolean).sort((a, b) => b!.idade + b!.prof - (a!.idade + a!.prof))[0];
   const batedor = tit.map((id) => elenco.find((a) => a.id === id)).filter(Boolean).sort((a, b) => b!.at.FIN + b!.at.COM - (a!.at.FIN + a!.at.COM))[0];
-  return { titulares: tit, reservas, capitao: lider?.id, batedor: batedor?.id };
+  const funcoes: Record<string, string> = {};
+  vagas.forEach((v, i) => { const a = elenco.find((x) => x.id === tit[i]); const f = a && melhorFuncao(a.at, exDe(a), v.pos); if (a && f) funcoes[a.id] = f.id; });
+  return { titulares: tit, reservas, capitao: lider?.id, batedor: batedor?.id, funcoes };
 }
 
 export interface ForcaTime { defesa: number; meio: number; ataque: number; geral: number }
 /** Força do time em campo: o OVR de cada um na vaga, a condição, a moral, o entrosamento e a tática. */
-export function forcaDoTime(elenco: Atleta[], esc: Escalacao, tat: Tatica, entrosamento: number): ForcaTime {
+export function forcaDoTime(elenco: Atleta[], esc: Escalacao, tat: Tatica, entrosamento: number, lingua?: string): ForcaTime {
   const vagas = FORMACOES[tat.formacao] ?? FORMACOES["4-3-3"], por = new Map(elenco.map((a) => [a.id, a]));
-  const grupo = { defesa: [0, 0], meio: [0, 0], ataque: [0, 0] };
+  const grupo = { defesa: [0, 0], meio: [0, 0], ataque: [0, 0] }, papel = { ataque: 0, meio: 0, defesa: 0 };
   const somar = (g: keyof typeof grupo, v: number, w: number) => { grupo[g][0] += v * w; grupo[g][1] += w; };
   const media = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
   const naVaga: { a: Atleta; v: Vaga }[] = [];
   vagas.forEach((v, i) => {
     const a = por.get(esc.titulares[i] ?? "");
-    const ef = a && disponivel(a) ? ovrNaVaga(a, v.pos) * (0.8 + 0.2 * a.condicao / 100) * (0.94 + 0.12 * a.moral / 100) : 32;
+    let ef = a && disponivel(a) ? ovrNaVaga(a, v.pos) * (0.8 + 0.2 * a.condicao / 100) * (0.94 + 0.12 * a.moral / 100) : 32;
+    if (a && disponivel(a)) {
+      // a função: quem encaixa bem rende acima do OVR, quem não encaixa rende abaixo; e ela puxa o time para um lado
+      const fn = funcaoNaVaga(esc, a, v.pos), base = ovrPos(a.at, v.pos);
+      if (fn) {
+        const enc = encaixe(a.at, exDe(a), fn), forca = clamp(enc / Math.max(40, base), 0.6, 1.3);
+        ef += clamp((enc - base) * 0.25, -5, 5);
+        papel.ataque += (fn.efeito.ataque ?? 0) * forca; papel.meio += (fn.efeito.meio ?? 0) * forca; papel.defesa += (fn.efeito.defesa ?? 0) * forca;
+        if (fn.contra && tat.contraAtaque) papel.ataque += 0.006;
+      }
+      // quem não fala a língua do clube se comunica pior em campo
+      if (lingua) ef *= 0.975 + 0.025 * fatorComunicacao(nivelEm(idiomasDe(a), lingua));
+    }
     if (a) naVaga.push({ a, v });
     switch (v.pos) {
       case "GOL": somar("defesa", ef, 2.2); break;
@@ -172,6 +202,10 @@ export function forcaDoTime(elenco: Atleta[], esc: Escalacao, tat: Tatica, entro
   });
   let defesa = grupo.defesa[0] / Math.max(1, grupo.defesa[1]), meio = grupo.meio[0] / Math.max(1, grupo.meio[1]), ataque = grupo.ataque[0] / Math.max(1, grupo.ataque[1]);
   const ent = 0.95 + 0.05 * entrosamento / 100;
+  defesa *= 1 + papel.defesa; meio *= 1 + papel.meio; ataque *= 1 + papel.ataque;
+  // concentração da defesa: menos erros
+  const conc = naVaga.filter((x) => x.v.pos === "GOL" || x.v.pos === "ZAG" || x.v.pos === "LAT").map((x) => exDe(x.a).CON);
+  if (conc.length) defesa *= 1 + clamp((media(conc) - 60) / 1500, -0.015, 0.015);
   defesa *= ent; meio *= ent; ataque *= ent;
   const m = tat.mentalidade - 2;
   ataque *= 1 + 0.022 * m; defesa *= 1 - 0.018 * m;
@@ -199,7 +233,7 @@ export const EFEITO_FUNCAO: Record<Funcao, string> = {
   base: "Garotos melhores na base todo começo de temporada.",
   olheiro: "Mostra o potencial dos agentes livres e acha nomes melhores.",
 };
-export interface Membro { nome: string; nac: string; idade: number; nivel: number; salario: number }
+export interface Membro { nome: string; nac: string; idade: number; nivel: number; salario: number; /** ex-atleta do clube, formado técnico */ ex?: boolean }
 export const salarioStaff = (nivel: number, fLiga: number) => Math.round((14_000 * Math.pow(nivel, 1.7) * Math.max(0.25, fLiga * fLiga)) / 100) * 100;
 
 // ------------------------------------------------------------------ dinheiro

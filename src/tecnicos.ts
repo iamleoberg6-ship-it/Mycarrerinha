@@ -15,7 +15,7 @@ export const NOME_ESTILO: Record<EstiloTecnico, [string, string]> = {
   "linha-dura": ["Linha-dura", "Cobra muito: a relação com ele sobe e cai mais rápido."],
   motivador: ["Motivador", "O vestiário anda feliz: a moral sobe um pouco toda semana."],
 };
-export interface Tecnico { nome: string; nacionalidade: string; idade: number; rep: number; estilo: EstiloTecnico; desde: number; /** último clube (não volta para quem o demitiu) */ ultimo?: string }
+export interface Tecnico { /** ex-jogador do mundo que virou técnico */ exJogador?: boolean; nome: string; nacionalidade: string; idade: number; rep: number; estilo: EstiloTecnico; desde: number; /** último clube (não volta para quem o demitiu) */ ultimo?: string }
 export interface TrocaTecnico { clubeId: string; saiu?: string; entrou: string; motivo: "demitido" | "aposentou" | "levado"; de?: string; t: number }
 
 const ESTRANGEIROS = ["POR", "ARG", "ESP", "ITA", "GER", "FRA", "NED", "URU", "BRA", "ENG"];

@@ -88,7 +88,7 @@ export const CURSOS: Record<string, { nome: string; semanas: number; custo: numb
 };
 export const cursoIdioma = (l: Lingua) => ({ nome: `Curso de ${NOME_LINGUA[l].toLowerCase()}`, semanas: 16, custo: 2_500, desc: "Cada nível: umas 16 semanas de aula." });
 export const infoCurso = (c: Curso) => (c.startsWith("idioma-") ? cursoIdioma(c.slice(7) as Lingua) : CURSOS[c]);
-export interface EstadoEstudos { atual?: { curso: Curso; progresso: number }; idiomas: Partial<Record<Lingua, number>>; formacoes: string[] }
+export interface EstadoEstudos { atual?: { curso: Curso; progresso: number }; idiomas: Partial<Record<Lingua, number>>; formacoes: string[]; /** semanas morando onde se fala cada língua (vira nível com o tempo) */ imersao?: Partial<Record<Lingua, number>> }
 export function cursosDisponiveis(e: EstadoEstudos, nativa: Lingua): Curso[] {
   const l: Curso[] = (["en", "es", "it", "de", "fr", "ar"] as Lingua[]).filter((x) => x !== nativa && (e.idiomas[x] ?? 0) < 3).map((x) => `idioma-${x}` as Curso);
   const lic = ["licenca-c", "licenca-b", "licenca-a", "licenca-pro"] as Curso[];

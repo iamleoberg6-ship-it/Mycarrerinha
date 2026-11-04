@@ -141,7 +141,7 @@ export const todasSelecoes = (pacote: PacoteDados) => SELECOES.map((x) => mundo(
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let ligasOriginais = new Map<Liga, Clube[]>();
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
-let estado: { semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; campeoes: { t: number; liga: string; clube: string }[]; saiu: Map<string, { t: number; motivo: string }>;
+let estado: { exJogadores?: { nome: string; pais: string; ovr: number; idade: number; t: number }[]; semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; campeoes: { t: number; liga: string; clube: string }[]; saiu: Map<string, { t: number; motivo: string }>;
   /** técnico de cada clube profissional, técnicos sem clube e as trocas de cada virada */
   tecnicos: Record<string, Tecnico>; tecLivres: Tecnico[]; trocas: Record<number, TrocaTecnico[]>; nomesTec: Set<string>;
   /** lesões graves da temporada (rodadas da liga em que o jogador fica fora) */
@@ -179,7 +179,12 @@ function registrarTemporada(m: Mundo) {
       });
     }
   }
-  for (const lista of Object.values(e.virada?.saidas ?? {})) for (const x of lista) if (x.motivo === "aposentou") e.saiu.set(x.nome, { t: e.temporada, motivo: "aposentou" });
+  for (const [cid, lista] of Object.entries(e.virada?.saidas ?? {})) for (const x of lista) if (x.motivo === "aposentou") {
+    e.saiu.set(x.nome, { t: e.temporada, motivo: "aposentou" });
+    // quem foi bom jogador e se aposentou pode fazer o curso e voltar como técnico
+    const pais = m.ligas.flatMap((l) => l.clubes).find((c) => c.id === cid)?.pais;
+    if (x.ovr >= 70 && pais) (e.exJogadores ??= []).push({ nome: x.nome, pais, ovr: x.ovr, idade: x.idade, t: e.temporada });
+  }
   sortearLesoes(m);
 }
 const TIPOS_LESAO: [string, number, number][] = [["lesão muscular grave", 5, 9], ["fratura", 8, 14], ["lesão no tornozelo", 6, 11], ["ruptura do ligamento do joelho", 18, 28]];
@@ -268,7 +273,16 @@ function virarTecnicos(m: Mundo, semente: string) {
     else {
       const cand = e.tecLivres.filter((x) => x.rep >= alvo - 7 && x.rep <= alvo + 5 && x.idade < 68 && x.ultimo !== v.c.id).sort((a, b) => b.rep - a.rep).slice(0, 4);
       if (cand.length) { novo = r.pick(cand); e.tecLivres.splice(e.tecLivres.indexOf(novo), 1); }
-      else novo = gerarTecnico(r, alvo - 3 + r.normal(0, 2), v.c.pais, e.nomesTec, t + 1);
+      else {
+        novo = gerarTecnico(r, alvo - 3 + r.normal(0, 2), v.c.pais, e.nomesTec, t + 1);
+        // às vezes é um ex-jogador do próprio mundo que tirou a licença (2+ temporadas depois de parar)
+        const ex = (e.exJogadores ?? []).filter((x) => t - x.t >= 2 && x.pais === v.c.pais && x.ovr >= alvo - 6);
+        if (ex.length && r.chance(0.4)) {
+          const x = r.pick(ex);
+          e.exJogadores!.splice(e.exJogadores!.indexOf(x), 1);
+          novo = { ...novo, nome: x.nome, nacionalidade: x.pais, idade: x.idade + (t - x.t), exJogador: true };
+        }
+      }
     }
     novo.desde = t + 1;
     e.tecnicos[v.c.id] = novo;

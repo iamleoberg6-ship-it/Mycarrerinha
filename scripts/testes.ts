@@ -1662,6 +1662,29 @@ teste("Técnico: temporada completa com tabela fechada, dinheiro, escalação e 
   assert.deepEqual(b.tabela, c.tabela);
 });
 
+teste("Técnico: intervalo com trocas, funções por posição e detalhes (falta, liderança, idiomas)", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-intervalo");
+  // toda vaga titular recebe uma função da posição dela
+  assert.ok(Object.keys(s.esc.funcoes ?? {}).length >= 11);
+  assert.ok(s.elenco.every((a) => M.exDe(a).FAL >= 1 && M.exDe(a).LID >= 1));
+  let jogos = 0;
+  for (let k = 0; k < 12 && !s.demitido; k++) {
+    const ini = T.iniciarPartida(pacote, s);
+    if (ini) {
+      jogos++;
+      assert.ok(s.aoVivo);
+      // troca no intervalo: um reserva entra no lugar do camisa 9
+      const vaga = s.esc.titulares.findIndex((x, i) => i > 6 && x);
+      const res = s.esc.reservas.find((id) => !s.aoVivo!.stats[id]);
+      if (res) { T.trocarNaVaga(s, vaga, res); assert.ok(T.trocasNoIntervalo(s) >= 1); }
+    }
+    T.avancarSemana(pacote, s);
+    assert.equal(s.aoVivo, undefined);
+  }
+  assert.ok(jogos >= 5);
+  assert.ok(s.elenco.every((a) => Object.values(M.exDe(a)).every(Number.isFinite)));
+});
+
 teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e vende por proposta", () => {
   const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-mercado");
   assert.ok(T.janelaT(s).aberta);

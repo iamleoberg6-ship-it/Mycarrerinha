@@ -62,8 +62,8 @@ export function resolverEfeito(rng: RNG, op: OpcaoLance, nivel: Nivel, nomes: Re
 }
 
 /** Habilidade numa opção: média ponderada de atributos e da personalidade (em escala de atributo). */
-export function habilidade(at: Atributos, pers: PersonalidadeDNA, tracos: TracoId[], op: OpcaoLance): number {
-  const valor = (k: string) => k === "CALMA" ? 95 - 4 * pers.temperamento : k === "CARISMA" ? 15 + 4 * pers.carisma : k === "PROF" ? 15 + 4 * pers.profissionalismo : at[k as Atributo];
+export function habilidade(at: Atributos, pers: PersonalidadeDNA, tracos: TracoId[], op: OpcaoLance, ex?: Record<string, number>): number {
+  const valor = (k: string) => k === "CALMA" ? 95 - 4 * pers.temperamento : k === "CARISMA" ? 15 + 4 * pers.carisma : k === "PROF" ? 15 + 4 * pers.profissionalismo : at[k as Atributo] ?? ex?.[k] ?? 55;
   const peso = Object.values(op.teste).reduce((a, b) => a + (b ?? 0), 0) || 1;
   const base = Object.entries(op.teste).reduce((s, [k, w]) => s + valor(k) * (w ?? 0), 0) / peso;
   return base + Object.entries(op.tracos ?? {}).reduce((s, [t, v]) => s + (tracos.includes(t as TracoId) ? (v ?? 0) : 0), 0);

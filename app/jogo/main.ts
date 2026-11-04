@@ -17,7 +17,7 @@ import { ATRIBUTOS, GRUPO, type Atributo, type Grupo, type Intensidade } from ".
 import { criarJogador, type EscolhasCriacao } from "../../src/dna";
 import { conforto, efeitosDaCasa, imovelAtual, nomeImovel, dinheiro, registrarReliquias, manutencaoMensal, ehDono, vagasGaragem, veiculosDaCasa, podeTerCarro } from "../../src/casa";
 import {
-  trocaDeCamisa, type LinhaTroca, ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, adversarioDaSemana, liga, novoJogo,
+  trocaDeCamisa, type LinhaTroca, extrasDe, funcaoDoJogador, pedirFuncao, ACOES, NOME_ESCALACAO, SEMANAS_PRE, SEMANAS_TEMPORADA, clubeCasa, decisaoComemoracao, decisaoPosJogo, clubeDe, concluirSemana, escalacao, forma, jogoDaSemana, adversarioDaSemana, liga, novoJogo,
   ofertasDeBase, ovr, planoPadrao, nRodadas, jogosDaRodada, ehClassico, ligaAtual, semanaAutomatica, categoriaBase, prepararPartida, previaPlano, resolverDecisao, rotuloSemana, campanhasAtuais, salarioLiquido,
   ANO_INICIAL, type ResumoTemporada, type Noticia, type ImgNoticia, type Acao, type DadosCriacao, type Decisao, type Partida, type Plano, type ResultadoDecisao, type ResumoSemana, type Save,
   ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, agirRelacao, responderSugestao, treinarPosicao, mudarPosicao, familiaridadeDe, melhoresAmigos, semanaAbsJogo, ovrEm,
@@ -37,6 +37,8 @@ import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia, capaVideogame, capaDocumentario } from "../visual/cartazes";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
+import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
+import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
 import { svgEscudo } from "../visual/escudos";
 import { fotoDoPerfil } from "../visual/mulheres";
 /** Arte do casal: o jogador e a parceira lado a lado, com os mesmos retratos do app. */
@@ -830,6 +832,16 @@ function blocoTreinoPosicao(s: Save): string {
     <div class="chips" style="flex-wrap:wrap"><button class="chip${!alvo ? " ativo" : ""}" data-tpos="">Nenhum</button>${POSICOES.filter((p) => p !== j.posicao).map((p) => `<button class="chip pos-chip${alvo === p ? " ativo" : ""}" data-tpos="${p}" title="${NOME_POS[p]}">${ICONE_POS[p]} ${NOME_POS[p]} <small>${Math.round(fam[p] ?? 0)}%</small></button>`).join("")}</div>${info}
     ${msgPos ? `<p class="msg-mercado ${msgPos.ok ? "ok" : "nao"}" style="margin:8px 0 0">${esc(msgPos.texto)}</p>` : ""}</details>`;
 }
+/** Mental e bola parada, a função que o técnico definiu, idiomas e curso de técnico. */
+let msgExtra: { texto: string; ok: boolean } | undefined;
+function blocoDetalhados(s: Save): string {
+  const j = s.jogador, c = s.carreira, ex = extrasDe(j), fn = c.fase || c.formacao ? undefined : funcaoDoJogador(s), o = ovr(j);
+  const det = `<p class="rotulo" style="margin-top:16px">Mental e bola parada</p><div class="atrs">${EXTRAS.map((k) => `<div title="${esc(DICA_EXTRA[k])}">${barra(NOME_EXTRA[k], ex[k], 99, ex[k] >= 75 ? "#74D394" : "#E3B341")}</div>`).join("")}</div>`;
+  const funcoes = `<p class="rotulo" style="margin-top:16px">Sua função</p>${fn ? `<p class="sub" style="margin:4px 0 8px">O técnico escalou você como <b style="color:var(--giz)">${esc(fn.nome.toLowerCase())}</b>: ${esc(fn.desc.toLowerCase())}</p>` : `<p class="sub" style="margin:4px 0 8px">Na base e na várzea ninguém define função ainda.</p>`}
+    ${funcoesDa(j.posicao).map((f) => { const est = estrelasEncaixe(encaixe(j.at, ex, f), o); return `<div class="kv" style="grid-template-columns:1fr auto;align-items:center;margin-bottom:6px"><span><b style="color:var(--giz)">${esc(f.nome)}</b> <span style="color:var(--ouro)">${"★".repeat(est)}${"☆".repeat(5 - est)}</span><br><small>${esc(f.desc)}</small></span>${fn && fn.id !== f.id ? `<button class="botao sec peq" data-pedir-funcao="${f.id}">Pedir</button>` : fn?.id === f.id ? `<span class="tag titular">Atual</span>` : ""}</div>`; }).join("")}
+    <p class="sub" style="font-size:12.5px">Quanto mais estrelas, melhor você rende jogando assim. A função pesa na briga por posição e puxa o treino para o que ela pede.</p>`;
+  return `${msgExtra ? `<p class="aviso-t ${msgExtra.ok ? "ok" : "erro"}" role="status" style="margin-top:12px">${esc(msgExtra.texto)}</p>` : ""}${det}${funcoes}<p class="sub" style="margin-top:12px">Idiomas e licença de técnico ficam em Vida › Rotina, na parte de Estudos. Morando fora, você também aprende a língua do país com o tempo.</p>`;
+}
 function blocoPosicoes(s: Save): string {
   const j = s.jogador, fam = familiaridadeDe(j);
   const linhas = [...POSICOES].sort((a, b) => (fam[b] ?? 0) - (fam[a] ?? 0)).map((p) => {
@@ -1285,7 +1297,7 @@ function blocoClubeCorpo(s: Save): string {
   const c = s.carreira, j = s.jogador, info = infoClube(pacote, c.clubeId), sub = (t: string) => `<p class="rotulo" style="margin-top:18px">${t}</p>`;
   if (c.fase || c.formacao || c.mercado?.semClube) return `<p class="sub">${c.mercado?.semClube ? "Sem clube, sem vestiário. Assine um contrato e esta tela ganha vida." : "Na base, o vestiário é outro: técnico, capitania, rival e torcida chegam com o contrato profissional."}</p>${blocoCidade(s, true)}`;
   const v = vestiarioDe(pacote, s), t = c.tecnico;
-  const tecnico = t ? `<div class="card-clube"><div class="linha-ico"><span class="ico">📋</span><div><b>${esc(t.nome)}</b><small>${esc(NOME_ESTILO[t.estilo][0])} · ${t.idade} anos · desde ${ANO_INICIAL + t.desde}</small></div></div>
+  const tecnico = t ? `<div class="card-clube"><div class="linha-ico"><span class="ico">📋</span><div><b>${esc(t.nome)}</b><small>${esc(NOME_ESTILO[t.estilo][0])}${t.exJogador ? " · ex-jogador" : ""} · ${t.idade} anos · desde ${ANO_INICIAL + t.desde}</small></div></div>
     <p class="sub">${esc(NOME_ESTILO[t.estilo][1])}</p>
     <p class="sub" style="margin-top:6px"><b style="color:var(--giz)">Joga no ${formacaoDoTecnico(t)}.</b> ${esc(DESC_FORMACAO[formacaoDoTecnico(t)] ?? "")} ${(() => { const n = vagasNaFormacao(t, j.posicao); return n === 0 ? `<b style="color:var(--neg)">Não tem vaga para ${esc((NOME_POS[j.posicao] ?? j.posicao).toLowerCase())}: no máximo banco, até você se adaptar a outra posição.</b>` : `Para ${esc((NOME_POS[j.posicao] ?? j.posicao).toLowerCase())}: ${n} ${n === 1 ? "vaga" : "vagas"} de titular.`; })()}</p>${barra("Relação", c.relTecnico, 100, c.relTecnico < 30 ? "#E5534B" : "#E3B341")}
     ${v.geladeira ? `<p class="aviso-geladeira">🧊 Na geladeira: mais ${v.geladeira} ${v.geladeira === 1 ? "semana" : "semanas"} fora dos relacionados.</p>` : c.relTecnico < 25 ? `<p class="sub" style="color:var(--neg)">Relação ruim: o técnico pode te tirar dos relacionados.</p>` : ""}
@@ -1565,6 +1577,7 @@ function abaJogador(s: Save): string {
   if (subJogador === "imprensa") return sub + abaImprensa(s);
   return `${sub}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
+    ${blocoDetalhados(s)}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>
     ${c.historico.length ? `<p class="rotulo" style="margin-top:16px">Carreira</p><table><thead><tr><th>Ano</th><th>Clube</th><th class="n">OVR</th><th class="n">J</th><th class="n">G</th><th class="n">Nota</th></tr></thead><tbody>${c.historico.map((h) => `<tr><td>${h.ano}</td><td>${esc(h.clube)}</td><td class="n">${h.ovr}</td><td class="n">${comCampanhas(h).jogos}</td><td class="n">${comCampanhas(h).gols}</td><td class="n">${h.nota || "–"}</td></tr>`).join("")}</tbody></table>` : ""}`;
@@ -2926,7 +2939,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-pedir-funcao],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -3075,6 +3088,7 @@ document.addEventListener("click", (ev) => {
     if (d.op === "camisa" && aba !== "pessoas") msgRel = undefined;
     salvar(); const y = window.scrollY; render(); window.scrollTo(0, y);
   }
+  else if (d.pedirFuncao && save) { const r = pedirFuncao(save, d.pedirFuncao); msgExtra = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.tpos !== undefined && save) { msgPos = { texto: treinarPosicao(save, (d.tpos || undefined) as never), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.mudapos && save) { const r = mudarPosicao(save, d.mudapos as never); msgPos = { texto: r.msg, ok: r.ok }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.sug && save) { msgPos = { texto: responderSugestao(save, d.sug === "sim"), ok: true }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }

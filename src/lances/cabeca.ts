@@ -5,13 +5,13 @@ export const CABECA: Situacao[] = [
   { id: "faltaPerigosa", titulo: ["Falta na entrada da área", "Falta perigosa"],
     texto: ["Falta frontal, a 22 metros. O {batedor} olha para você.", "Falta na meia-lua. A barreira do {adv} se arma e o {batedor} faz sinal para você."],
     peso: (c) => (c.pos === "ZAG" || c.pos === "LAT" ? 0.2 : c.pos === "VOL" ? 0.4 : 0.7), opcoes: [
-      { id: "barreira", rotulo: "Pedir a bola e bater por cima da barreira", teste: { FIN: 0.5, COM: 0.3, PAS: 0.2 }, dif: 22, tracos: { chute_longe: 8, frieza: 4 }, niveis: [
+      { id: "barreira", rotulo: "Pedir a bola e bater por cima da barreira", teste: { FAL: 0.55, FIN: 0.2, COM: 0.25 }, dif: 22, tracos: { chute_longe: 8, frieza: 4 }, niveis: [
         e(["Por cima da barreira, no ângulo. Golaço de falta!", "A bola subiu, passou a barreira e caiu na gaveta. Golaço de falta!"], 1.0, { golPro: true, meu: "gol", fama: 1, seguidores: 0.04 }),
         e("No canto, o {gol} espalmou.", 0.15),
         e("Na barreira.", -0.1),
         e("Por cima do gol, longe.", -0.3),
         e("Isolou. O {batedor} balançou a cabeça.", -0.5, { relTecnico: -2 })] },
-      { id: "rasteiro", rotulo: "Bater forte e rasteiro", teste: { FIN: 0.5, FOR: 0.5 }, dif: 20, tracos: { chute_longe: 6 }, niveis: [
+      { id: "rasteiro", rotulo: "Bater forte e rasteiro", teste: { FAL: 0.4, FIN: 0.3, FOR: 0.3 }, dif: 20, tracos: { chute_longe: 6 }, niveis: [
         e("Por baixo da barreira que pulou. GOL!", 0.8, { golPro: true, meu: "gol", fama: 0.6 }),
         e("O {gol} soltou e quase saiu o rebote.", 0.15),
         e("Bateu na barreira.", -0.1),
@@ -31,13 +31,13 @@ export const CABECA: Situacao[] = [
   { id: "penalti", titulo: ["Pênalti!", "Pênalti a favor"],
     texto: ["Derrubaram você na área. O capitão te entrega a bola.", "O {zag} pôs a mão na bola dentro da área. O {capitao} te dá a bola."],
     peso: (c) => (c.pos === "ZAG" || c.pos === "VOL" ? 0.08 : 0.25), opcoes: [
-      { id: "canto", rotulo: "Bater no canto", teste: { FIN: 0.5, COM: 0.5 }, dif: -2, tracos: { frieza: 8 }, niveis: [
+      { id: "canto", rotulo: "Bater no canto", teste: { PEN: 0.6, COM: 0.4 }, dif: -2, tracos: { frieza: 8 }, niveis: [
         e(["Bola de um lado, {gol} do outro. GOL!", "Deslocou o {gol}. GOL!"], 0.6, { golPro: true, meu: "gol" }),
         e("O {gol} tocou, mas entrou. GOL!", 0.5, { golPro: true, meu: "gol" }),
         e("O {gol} foi no canto certo e defendeu.", -0.4),
         e("Na trave!", -0.5, { moral: -3 }),
         e("Para fora. O estádio inteiro botou a mão na cabeça.", -0.8, { moral: -6 })] },
-      { id: "forte", rotulo: "Encher o pé no meio", teste: { FIN: 0.4, FOR: 0.4, COM: 0.2 }, dif: 0, niveis: [
+      { id: "forte", rotulo: "Encher o pé no meio", teste: { PEN: 0.5, FOR: 0.3, COM: 0.2 }, dif: 0, niveis: [
         e("Chute no meio enquanto o {gol} pulava. GOL!", 0.6, { golPro: true, meu: "gol" }),
         e("Forte, no alto. GOL!", 0.5, { golPro: true, meu: "gol" }),
         e("O {gol} ficou parado e a bola bateu nele.", -0.45),

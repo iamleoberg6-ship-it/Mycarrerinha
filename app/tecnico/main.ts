@@ -8,17 +8,30 @@ import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
 import { svgEscudo } from "../visual/escudos";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
+import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
+import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
+import { NOME_LINGUA, rotuloNivel, linguaDe, nivelEm, idiomasIniciais } from "../../src/idiomas";
+/** Do save do jogador aposentado: licença (dos Estudos) e idiomas (nível de 0 a 3 vira 0 a 95). */
+type SaveJogador = { jogador: { nome: string; apelido: string; nacionalidade: string; idade: number }; carreira: { encerrada?: unknown; fama: number; estudos?: { idiomas: Record<string, number>; formacoes: string[] } } };
+function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, number> } {
+  const f = jog.carreira.estudos?.formacoes ?? [], licenca = f.includes("Licença Pro de técnico") ? 4 : f.includes("Licença A de técnico") ? 3 : f.includes("Licença B de técnico") ? 2 : f.includes("Licença C de técnico") ? 1 : 0;
+  const idiomas = idiomasIniciais(jog.jogador.nome, jog.jogador.nacionalidade, jog.jogador.idade);
+  for (const [l, n] of Object.entries(jog.carreira.estudos?.idiomas ?? {})) idiomas[l] = Math.max(idiomas[l] ?? 0, [0, 35, 65, 95][n] ?? 0);
+  return { licenca, idiomas };
+}
+import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
   proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
+  iniciarPartida, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import {
   FORMACOES, NOMES_FORMACAO, NOME_MENTALIDADE, NOME_NIVEL3, NOME_AT, NOME_AT_GOL, NOME_POS_T, FUNCOES, NOME_FUNCAO, EFEITO_FUNCAO,
-  forcaDoTime, melhorEscalacao, ovrDe, ovrNaVaga, formaDe, disponivel, rotuloEncaixe, valorAtleta, precoIngresso, type Atleta, type PosT, type Funcao,
+  forcaDoTime, melhorEscalacao, ovrDe, ovrNaVaga, formaDe, disponivel, rotuloEncaixe, valorAtleta, precoIngresso, exDe, idiomasDe, funcaoNaVaga, ovrPos, type Atleta, type PosT, type Funcao,
 } from "../../src/tecnico/modelo";
 
 const pacote = pacoteJson as unknown as PacoteDados;
@@ -57,9 +70,10 @@ const corPos = (p: PosT) => (p === "GOL" ? "#F2B705" : p === "ZAG" || p === "LAT
 
 // ------------------------------------------------------------------ início de carreira
 function telaInicio(): string {
-  const jog = ler<{ jogador: { nome: string; apelido: string; nacionalidade: string; idade: number }; carreira: { encerrada?: unknown; fama: number } }>("mycarrerinha:save");
+  const jog = ler<SaveJogador>("mycarrerinha:save");
   const ex = jog?.carreira?.encerrada ? jog : null;
-  const d: DadosTecnico = ex ? { nome: ex.jogador.apelido, nac: ex.jogador.nacionalidade, idade: ex.jogador.idade + 1, exJogador: { apelido: ex.jogador.apelido, fama: ex.carreira.fama } } : { nome: "", nac: "BRA", idade: 38 };
+  const d: DadosTecnico = ex ? { nome: ex.jogador.apelido, nac: ex.jogador.nacionalidade, idade: ex.jogador.idade + 1, exJogador: { apelido: ex.jogador.apelido, fama: ex.carreira.fama }, ...heranca(ex) } : { nome: "", nac: "BRA", idade: 38 };
+  const lic = anterior ? licencaT(anterior) : Math.max(1, d.licenca ?? 2);
   if (anterior) { d.nome = anterior.tecnico.nome; d.nac = anterior.tecnico.nac; d.idade = anterior.tecnico.idade; }
   const rep = anterior ? anterior.tecnico.reputacao : reputacaoInicial(d), ligas = ligasParaComecar(pacote);
   if (!ligas.some((l) => l.id === ligaEscolhida)) ligaEscolhida = ligas[0]?.id ?? "BRA1";
@@ -72,11 +86,11 @@ function telaInicio(): string {
       <label>Nome do técnico<input id="iNome" value="${esc(d.nome)}" maxlength="28" autocomplete="off" placeholder="Seu nome"></label>
       <label>Nacionalidade<select id="iNac">${["BRA", "ARG", "POR", "ESP", "ITA", "ENG", "GER", "FRA", "NED", "URU", "COL", "MEX", "USA", "JPN"].map((p) => `<option ${p === d.nac ? "selected" : ""}>${p}</option>`).join("")}</select></label>
       <label>Liga<select id="iLiga">${ligas.map((l) => `<option value="${l.id}" ${l.id === ligaEscolhida ? "selected" : ""}>${esc(l.nome)}</option>`).join("")}</select></label>
-      <p class="sub">Sua reputação: <b style="color:var(--giz)">${rep}</b>. Clubes grandes só aceitam técnico com nome; comece por baixo e suba.</p>
+      <p class="sub">Sua reputação: <b style="color:var(--giz)">${rep}</b> · ${LICENCAS[lic]}. Clubes grandes só aceitam técnico com nome e licença alta; comece por baixo e suba.</p>
     </section>
     <section class="painel"><p class="rotulo">Escolha o clube</p>${clubes.map((c) => {
-      const ok = c.exige <= rep;
-      return `<div class="clube-op${ok ? "" : " trancado"}">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">Força ${c.forca}${ok ? "" : ` · exige reputação ${c.exige}`}</small></div>${ok ? `<button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Assumir</button>` : `<span class="pill">Fechado</span>`}</div>`;
+      const ok = c.exige <= rep && c.licenca <= lic;
+      return `<div class="clube-op${ok ? "" : " trancado"}">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">Força ${c.forca}${c.exige > rep ? ` · exige reputação ${c.exige}` : ""}${c.licenca > lic ? ` · exige ${LICENCAS[c.licenca]}` : ""}</small></div>${ok ? `<button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Assumir</button>` : `<span class="pill">Fechado</span>`}</div>`;
     }).join("")}</section>
     <a class="botao sec" href="index.html">Voltar para a carreira de jogador</a>`;
 }
@@ -108,7 +122,7 @@ function abaInicio(s: SaveTecnico): string {
   const jogo = pj ? `<section class="painel"><p class="rotulo">Rodada ${pj.rodada + 1} de ${nRodadasT(s)} · ${pj.souCasa ? "em casa" : "fora"}</p>
       <div class="prox"><div class="lado">${escudo(pj.souCasa ? s.clubeId : pj.adv)}<span>${esc(nomeClube(pj.souCasa ? s.clubeId : pj.adv))}</span></div><span class="x">×</span><div class="lado">${escudo(pj.souCasa ? pj.adv : s.clubeId)}<span>${esc(nomeClube(pj.souCasa ? pj.adv : s.clubeId))}</span></div></div>
       <p class="sub" style="text-align:center">Seu time em campo: <b style="color:var(--giz)">${Math.round(f.geral)}</b> · adversário: <b style="color:var(--giz)">${Math.round(w.clube[pj.adv]?.forca ?? 0)}</b></p>
-      <button class="botao grande" data-avancar style="margin-top:10px">Jogar a rodada</button></section>`
+      ${s.aoVivo ? `<p class="placar-vivo">Intervalo: <b>${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}</b></p><div class="botoes" style="justify-content:center"><button class="botao sec" data-ver-intervalo>Ver o 1º tempo</button><button class="botao sec" data-aba="tatica">Mexer no time</button></div><button class="botao grande" data-avancar style="margin-top:10px">Jogar o 2º tempo</button>` : `<button class="botao grande" data-primeiro-tempo style="margin-top:10px">Jogar o 1º tempo</button>`}</section>`
     : `<section class="painel"><p class="rotulo">${s.semana < SEMANAS_PRE_T ? "Pré-temporada" : "Fim de temporada"}</p><h2>${s.semana < SEMANAS_PRE_T ? "Treinos e ajustes antes da estreia" : "Última semana do ano"}</h2>
       <p class="sub">${s.semana < SEMANAS_PRE_T ? "Defina a tática e o treino. O entrosamento sobe com o foco tático." : "A temporada fecha: premiação, balanço da diretoria e contratos que acabam."}</p>
       <button class="botao grande" data-avancar style="margin-top:10px">Avançar semana</button></section>`;
@@ -125,9 +139,10 @@ function abaInicio(s: SaveTecnico): string {
       <p class="sub">Confiança ${Math.round(d.confianca)}/100 · meta: ${d.expectativa.pos}º lugar${s.semana >= SEMANAS_PRE_T ? ` · hoje: ${pos}º` : ""} · torcida ${Math.round(s.clube.torcida)}/100</p></section>
     ${alertas.length ? `<section class="painel"><p class="rotulo">Atenção</p><div class="botoes" style="margin-top:6px">${alertas.join("")}</div></section>` : ""}
     <section class="painel"><p class="rotulo">Notícias</p>${s.noticias.slice(0, 12).map((n) => `<div class="not"><small>${esc(n.quando)}</small>${esc(n.texto)}</div>`).join("")}</section>
-    <section class="painel"><p class="rotulo">Carreira</p><div class="dl"><span>Reputação</span><b>${s.tecnico.reputacao}/100</b><span>Temporadas</span><b>${s.historico.length}</b><span>Títulos</span><b>${s.historico.filter((h) => h.campeao).length}</b></div>
+    <section class="painel"><p class="rotulo">Carreira</p><div class="dl"><span>Reputação</span><b>${s.tecnico.reputacao}/100</b><span>Licença</span><b>${LICENCAS[licencaT(s)]}${s.tecnico.curso?.estudando ? ` · estudando a ${LICENCAS[s.tecnico.curso.estudando].replace("Licença ", "")} (${Math.round(100 * (s.tecnico.curso.progresso ?? 0) / CURSO_LICENCA[s.tecnico.curso.estudando].semanas)}%)` : ""}</b>
+      <span>Idiomas</span><b>${Object.entries(idiomasT(s)).filter(([, n]) => n >= 15).sort((a, b) => b[1] - a[1]).map(([l, n]) => `${NOME_LINGUA[l] ?? l} (${rotuloNivel(n).toLowerCase()})`).join(", ")}</b><span>Temporadas</span><b>${s.historico.length}</b><span>Títulos</span><b>${s.historico.filter((h) => h.campeao).length}</b></div>
       ${s.historico.length ? `<div class="lista" style="margin-top:8px">${s.historico.slice().reverse().map((h) => `<div class="not"><small>${ANO_INICIAL_T + h.t} · ${esc(infoLiga(h.ligaId).curto)}</small>${h.pos}º de ${h.n} (meta ${h.esperado}º)${h.campeao ? " · 🏆 campeão" : ""}</div>`).join("")}</div>` : ""}
-      <div class="botoes" style="margin-top:10px"><button class="botao sec peq" data-apagar>Apagar carreira</button><a class="botao sec peq" href="index.html">Modo jogador</a></div></section>`;
+      <div class="botoes" style="margin-top:10px">${licencaT(s) < 4 && !s.tecnico.curso?.estudando ? `<button class="botao sec peq" data-licenca>Estudar a ${LICENCAS[licencaT(s) + 1]} (${curtoBrl(CURSO_LICENCA[licencaT(s) + 1].custo * Math.max(0.5, infoLiga(s.ligaId).fLiga))})</button>` : ""}<button class="botao sec peq" data-apagar>Apagar carreira</button><a class="botao sec peq" href="index.html">Modo jogador</a></div></section>`;
 }
 
 // ------------------------------------------------------------------ Elenco
@@ -164,10 +179,16 @@ function fichaJogador(s: SaveTecnico, id: string): string {
     <div><p class="rotulo">${NOME_POS_T[a.pos]} · ${a.idade} anos · ${a.nac} · camisa ${a.numero}</p><h2>${esc(a.nome)}</h2></div>
     <div class="forca3"><div><strong>${ovrDe(a)}</strong><span>OVR</span></div><div><strong>${formaDe(a).toFixed(1).replace(".", ",")}</strong><span>Forma</span></div><div><strong>${a.jogos}</strong><span>Jogos · ${a.gols}g ${a.assist}a</span></div></div>
     <div class="atr">${ATRIBUTOS.map((k) => `<div class="barra"><span>${nomeAt(k)}</span><b>${Math.round(a.at[k])}</b><i style="--v:${Math.round(a.at[k])}%;--c:${a.at[k] >= 75 ? "var(--pos)" : a.at[k] >= 55 ? "var(--ouro)" : "var(--giz-2)"}"></i></div>`).join("")}</div>
+    <p class="rotulo">Mental e bola parada</p>
+    <div class="atr">${EXTRAS.map((k) => `<div class="barra" title="${esc(DICA_EXTRA[k])}"><span>${NOME_EXTRA[k]}</span><b>${Math.round(exDe(a)[k])}</b><i style="--v:${Math.round(exDe(a)[k])}%;--c:${exDe(a)[k] >= 75 ? "var(--pos)" : exDe(a)[k] >= 55 ? "var(--ouro)" : "var(--giz-2)"}"></i></div>`).join("")}</div>
+    <p class="rotulo">Funções na posição</p><div class="lista">${funcoesDa(a.pos).map((f) => `<div class="not" style="padding:5px 0"><span class="estrelas">${"★".repeat(estrelasEncaixe(encaixe(a.at, exDe(a), f), ovrDe(a)))}${"☆".repeat(5 - estrelasEncaixe(encaixe(a.at, exDe(a), f), ovrDe(a)))}</span> <b>${esc(f.nome)}</b><small>${esc(f.desc)}</small></div>`).join("")}</div>
     <div class="dl"><span>Potencial</span><b>${potTexto(s, a)}</b><span>Moral</span><b>${Math.round(a.moral)}/100</b><span>Condição física</span><b>${Math.round(a.condicao)}%</b><span>Relação com você</span><b>${Math.round(a.relacao)}/100</b>
       <span>Profissionalismo · temperamento</span><b>${a.prof} · ${a.temp}</b><span>Salário</span><b>${valorBrl(a.salario)}/mês</b><span>Contrato até</span><b>${ANO_INICIAL_T + a.contratoAte}</b>
       <span>Valor de mercado</span><b>${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</b>${a.lesao > 0 ? `<span>Lesão</span><b class="neg">${esc(a.lesaoTipo ?? "")} · ${a.lesao} sem.</b>` : ""}</div>
     ${aviso()}
+    <div><p class="rotulo">Idiomas</p><p class="sub">${Object.entries(idiomasDe(a)).filter(([, n]) => n >= 10).sort((x, y) => y[1] - x[1]).map(([l, n]) => `${NOME_LINGUA[l] ?? l}: ${rotuloNivel(n).toLowerCase()}`).join(" · ")}</p>
+      ${(() => { const lg = linguaDe(infoLiga(s.ligaId).pais), n = nivelEm(idiomasDe(a), lg); return n < 90 ? `<div class="botoes" style="margin-top:6px">${a.aulas && a.aulas.ate > semanaAbs(s) ? `<span class="pill">Em aulas de ${esc((NOME_LINGUA[lg] ?? lg).toLowerCase())}</span>` : `<button class="botao sec peq" data-aulas="${esc(a.id)}">Pagar aulas de ${esc((NOME_LINGUA[lg] ?? lg).toLowerCase())}</button>`}</div>` : ""; })()}</div>
+    <div><p class="rotulo">Curso de técnico</p><p class="sub">${a.curso?.estudando ? `Estudando a ${LICENCAS[a.curso.estudando]} (${Math.round(100 * (a.curso.progresso ?? 0) / CURSO_LICENCA[a.curso.estudando].semanas)}%).` : (a.curso?.licenca ?? 0) > 0 ? `Tem a ${LICENCAS[a.curso!.licenca]}.` : "Ainda não começou."} Quem se aposenta com licença pode entrar na sua comissão.</p>${!a.curso?.estudando && (a.curso?.licenca ?? 0) < 2 ? `<div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-curso="${esc(a.id)}">Recomendar o curso</button></div>` : ""}</div>
     <div><p class="rotulo">Conversar${conv ? " · já conversou nesta semana" : ""}</p><div class="botoes" style="margin-top:6px">${(Object.keys(NOME_CONVERSA) as Conversa[]).map((k) => `<button class="botao sec peq" data-conv="${k}" data-id="${esc(a.id)}" ${conv ? "disabled" : ""}>${NOME_CONVERSA[k]}</button>`).join("")}</div></div>
     <div><p class="rotulo">Renovar · pede ${valorBrl(pedido)}/mês</p><div class="botoes" style="margin-top:6px">${[1, 2, 3, 4].map((n) => `<button class="botao sec peq" data-renovar="${n}" data-id="${esc(a.id)}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
     <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button></div></div>
@@ -234,7 +255,9 @@ function abaTatica(s: SaveTecnico): string {
     <div class="forca3" style="margin-bottom:10px"><div><strong>${Math.round(f.defesa)}</strong><span>Defesa</span></div><div><strong>${Math.round(f.meio)}</strong><span>Meio</span></div><div><strong>${Math.round(f.ataque)}</strong><span>Ataque</span></div></div>
     ${campo}
     <p class="sub" style="margin:8px 0">Toque num jogador para trocar. Entrosamento no ${t.formacao}: <b style="color:var(--giz)">${Math.round(s.entrosamento[t.formacao] ?? 40)}%</b>. Contorno vermelho: improvisado, lesionado ou suspenso.</p>
-    <div class="botoes"><button class="botao peq" data-melhor>Melhor escalação</button></div>
+    ${s.aoVivo ? `<p class="aviso-t ok" style="margin-top:8px">Intervalo · ${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}. As mudanças valem para o 2º tempo. Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}.</p><button class="botao grande" data-avancar-tatica style="margin-top:8px">Jogar o 2º tempo</button>` : `<div class="botoes"><button class="botao peq" data-melhor>Melhor escalação</button></div>`}
+    <p class="rotulo" style="margin-top:14px">Funções</p><div class="lista">${vagas.map((v, i) => { const a = por.get(s.esc.titulares[i] ?? ""); if (!a) return ""; const atual = funcaoNaVaga(s.esc, a, v.pos);
+      return `<div class="lin" style="cursor:default;grid-template-columns:34px 1fr"><span class="num" style="font-size:12px">${v.rot}</span><span class="nm"><b>${esc(a.nome)}</b><select class="campo-sel sel-funcao" data-funcao="${esc(a.id)}" aria-label="Função de ${esc(a.nome)}">${funcoesDa(v.pos).map((f) => `<option value="${f.id}" ${f.id === atual?.id ? "selected" : ""}>${"★".repeat(estrelasEncaixe(encaixe(a.at, exDe(a), f), ovrPos(a.at, v.pos)))} ${esc(f.nome)}</option>`).join("")}</select><small>${esc(atual?.desc ?? "")}</small></span></div>`; }).join("")}</div>
     <p class="rotulo" style="margin-top:14px">Banco</p><p class="sub">${reservas.map((a) => `${esc(a.nome)} (${a.pos} ${ovrDe(a)})`).join(" · ") || "Sem reservas disponíveis."}</p>
     <p class="sub" style="font-size:12.5px;margin-top:4px">Até 3 trocas automáticas a partir dos 60', saindo quem estiver mais cansado.</p>
     <div class="grade-tat" style="margin-top:14px"><p class="rotulo">Instruções</p>
@@ -252,7 +275,8 @@ function abaTatica(s: SaveTecnico): string {
 }
 function escolherVaga(s: SaveTecnico, i: number): string {
   const v = FORMACOES[s.tatica.formacao][i], atual = s.esc.titulares[i];
-  const lista = [...s.elenco].sort((a, b) => Number(disponivel(b)) - Number(disponivel(a)) || ovrNaVaga(b, v.pos) - ovrNaVaga(a, v.pos));
+  const av = s.aoVivo, podeVoltar = (a: Atleta) => !av || (!av.fora.includes(a.id) && (av.emCampo1.includes(a.id) || !av.stats[a.id]));
+  const lista = [...s.elenco].filter((a) => !av || podeVoltar(a)).sort((a, b) => Number(disponivel(b)) - Number(disponivel(a)) || ovrNaVaga(b, v.pos) - ovrNaVaga(a, v.pos));
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button><div><p class="rotulo">Vaga</p><h2>${v.rot} · ${NOME_POS_T[v.pos]}</h2></div>
     <div class="lista">${lista.map((a) => {
       const enc = rotuloEncaixe(a, v.pos), onde = s.esc.titulares.indexOf(a.id);
@@ -315,7 +339,7 @@ function abaComissao(s: SaveTecnico): string {
     return `<details class="painel" style="margin-bottom:8px"${m ? "" : " open"}><summary style="cursor:pointer"><b>${NOME_FUNCAO[f]}</b> · ${m ? `${esc(m.nome)} ${estrelas(m.nivel)}` : `<span class="pill ruim">vaga aberta</span>`}</summary>
       <p class="sub" style="margin:6px 0">${EFEITO_FUNCAO[f]}${m ? ` Salário ${curtoBrl(m.salario)}/mês.` : ""}</p>
       ${m ? `<button class="botao sec peq" data-staff-d="${f}">Demitir (3 salários)</button>` : ""}
-      <p class="rotulo" style="margin-top:10px">Disponíveis</p>${cs.map((c) => `<div class="clube-op" style="grid-template-columns:1fr auto"><div><b>${esc(c.nome)}</b> ${estrelas(c.nivel)}<br><small class="sub">${c.nac} · ${c.idade} anos · ${curtoBrl(c.salario)}/mês</small></div><button class="botao peq" data-staff-c="${f}" data-nome="${esc(c.nome)}">Contratar</button></div>`).join("")}
+      <p class="rotulo" style="margin-top:10px">Disponíveis</p>${cs.map((c) => `<div class="clube-op" style="grid-template-columns:1fr auto"><div><b>${esc(c.nome)}</b> ${estrelas(c.nivel)}${c.ex ? ` <span class="pill bom">Ex-atleta do clube</span>` : ""}<br><small class="sub">${c.nac} · ${c.idade} anos · ${curtoBrl(c.salario)}/mês</small></div><button class="botao peq" data-staff-c="${f}" data-nome="${esc(c.nome)}">Contratar</button></div>`).join("")}
     </details>`;
   }).join("") + `<p class="sub">A lista de disponíveis muda a cada dois meses.</p>`;
 }
@@ -331,6 +355,19 @@ function relatorioHtml(p: Relatorio): string {
     <div><p class="rotulo">Notas</p><div class="lista">${[...p.notas].sort((a, b) => b.nota - a.nota).map((n) => `<div class="lin" style="cursor:default;grid-template-columns:40px 1fr auto"><span class="num" style="font-size:13px">${n.pos}</span><span class="nm"><b>${esc(n.nome)}</b><small>${n.min}'${n.gols ? ` · ${n.gols} gol${n.gols > 1 ? "s" : ""}` : ""}${n.assist ? ` · ${n.assist} assist.` : ""}</small></span><span class="ov"><strong style="font-size:20px;color:${n.nota >= 7 ? "var(--pos)" : n.nota < 6 ? "var(--neg)" : "var(--ouro-claro)"}">${n.nota.toFixed(1).replace(".", ",")}</strong></span></div>`).join("")}</div></div>`;
 }
 
+function intervaloHtml(s: SaveTecnico, avisos: string[]): string {
+  const av = s.aoVivo;
+  if (!av) return "";
+  const casa = av.souCasa ? s.clubeId : av.adv, fora = av.souCasa ? av.adv : s.clubeId, gc = av.souCasa ? av.gMe : av.gAdv, gf = av.souCasa ? av.gAdv : av.gMe;
+  const cansados = Object.entries(av.cond).filter(([id, c]) => c < 62 && s.esc.titulares.includes(id)).map(([id]) => s.elenco.find((a) => a.id === id)?.nome).filter(Boolean);
+  return `<button class="fechar" data-fechar aria-label="Fechar">×</button><p class="rotulo">Intervalo · rodada ${av.rodada + 1}</p>
+    <div class="prox"><div class="lado">${escudo(casa)}<span>${esc(nomeClube(casa))}</span></div><span class="placar">${gc} × ${gf}</span><div class="lado">${escudo(fora)}<span>${esc(nomeClube(fora))}</span></div></div>
+    ${avisos.map((x) => `<p class="sub">${esc(x)}</p>`).join("")}
+    <div><p class="rotulo">1º tempo</p>${av.eventos.length ? av.eventos.map((e) => `<div class="evento${e.meu ? "" : " adv"}"><span class="m">${e.min}'</span><span>${e.tipo === "gol" ? "⚽" : e.tipo === "amarelo" ? "🟨" : e.tipo === "vermelho" ? "🟥" : e.tipo === "lesao" ? "✚" : "⇄"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">Primeiro tempo sem gols nem grandes lances.</p>`}</div>
+    ${cansados.length ? `<p class="sub">Cansados: ${cansados.map((n) => esc(n!)).join(", ")}.</p>` : ""}${av.fora.length ? `<p class="sub">Não voltam: ${av.fora.map((id) => esc(s.elenco.find((a) => a.id === id)?.nome ?? "")).join(", ")}.</p>` : ""}
+    <div class="botoes"><button class="botao sec" data-aba="tatica" data-fechar-tambem>Mexer no time e na tática</button><button class="botao" data-avancar>Jogar o 2º tempo</button></div>
+    <p class="sub">Você pode fazer até ${MAX_TROCAS} trocas, mudar a formação, as funções e as instruções. Quem saiu não volta.</p>`;
+}
 // ------------------------------------------------------------------ render
 function abrir(html: string) { $("tela").innerHTML = html; const d = $("dlg") as HTMLDialogElement; if (!d.open) d.showModal(); }
 function fechar() { const d = $("dlg") as HTMLDialogElement; if (d.open) d.close(); }
@@ -350,6 +387,7 @@ function render() {
 
 document.addEventListener("change", (ev) => {
   const t = ev.target as HTMLElement;
+  if (t.dataset.funcao && save) { (save.esc.funcoes ??= {})[t.dataset.funcao] = (t as HTMLSelectElement).value; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (t.id === "iLiga") { ligaEscolhida = (t as HTMLSelectElement).value; const nome = ($("iNome") as HTMLInputElement).value, nac = ($("iNac") as HTMLSelectElement).value; render(); ($("iNome") as HTMLInputElement).value = nome; ($("iNac") as HTMLSelectElement).value = nac; }
 });
 document.addEventListener("click", (ev) => {
@@ -360,32 +398,41 @@ document.addEventListener("click", (ev) => {
   if (d.fechar !== undefined) { fechar(); return; }
   if (d.assumir) {
     const nome = ($("iNome") as HTMLInputElement).value.trim() || "Técnico", nac = ($("iNac") as HTMLSelectElement).value;
-    const jog = ler<{ jogador: { apelido: string; idade: number }; carreira: { encerrada?: unknown; fama: number } }>("mycarrerinha:save");
+    const jog = ler<SaveJogador>("mycarrerinha:save");
     const ex = d.ex === "1" && jog?.carreira?.encerrada ? { apelido: jog.jogador.apelido, fama: jog.carreira.fama } : undefined;
-    save = novaCarreiraTecnico(pacote, { nome, nac, idade: ex ? jog!.jogador.idade + 1 : 38, ...(ex ? { exJogador: ex } : {}) }, d.assumir);
-    if (anterior) { save.tecnico.reputacao = anterior.tecnico.reputacao; save.historico = anterior.historico; anterior = null; }
+    save = novaCarreiraTecnico(pacote, { nome, nac, idade: ex ? jog!.jogador.idade + 1 : 38, ...(ex ? { exJogador: ex, ...heranca(jog!) } : {}) }, d.assumir);
+    if (anterior) { save.tecnico.reputacao = anterior.tecnico.reputacao; save.historico = anterior.historico; save.tecnico.curso = anterior.tecnico.curso; save.tecnico.idiomas = anterior.tecnico.idiomas; anterior = null; }
     aba = "inicio"; msg = undefined; salvar(); nuvem.agora(); render(); window.scrollTo(0, 0); return;
   }
   if (!save) return;
   const s = save;
-  if (d.aba) { aba = d.aba as typeof aba; msg = undefined; salvar(); render(); window.scrollTo(0, 0); return; }
+  if (d.aba) { aba = d.aba as typeof aba; msg = undefined; fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
   if (d.filtro) { filtro = d.filtro; render(); return; }
-  if (d.avancar !== undefined) {
+  if (d.avancar !== undefined || d.avancarTatica !== undefined) {
     const r = avancarSemana(pacote, s); msg = undefined; salvar(); render(); window.scrollTo(0, 0);
     if (r.partida) abrir(relatorioHtml(r.partida) + (r.eventos.length > 1 ? `<div><p class="rotulo">Na semana</p>${r.eventos.slice(1).map((e) => `<div class="not">${esc(e)}</div>`).join("")}</div>` : "") + (r.fimDeTemporada ? `<div class="aviso-t ok">${esc(r.fimDeTemporada)}</div>` : ""));
     else if (r.fimDeTemporada || r.eventos.length) msg = { texto: [r.fimDeTemporada, ...r.eventos].filter(Boolean).join(" "), ok: true }, render();
     return;
   }
   if (d.verPartida !== undefined && s.ultima) { abrir(relatorioHtml(s.ultima)); return; }
+  if (d.primeiroTempo !== undefined) { const r = iniciarPartida(pacote, s); salvar(); render(); window.scrollTo(0, 0); if (r) abrir(intervaloHtml(s, r.avisos)); return; }
+  if (d.verIntervalo !== undefined && s.aoVivo) { abrir(intervaloHtml(s, [])); return; }
+  if (d.avancarTatica !== undefined) { aba = "inicio"; fechar(); }
+  if (d.licenca !== undefined) { const r = estudarLicenca(s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.aulas) { const r = pagarAulas(s, d.aulas); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.aulas)); render(); return; }
+  if (d.curso) { const r = recomendarCurso(s, d.curso); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.curso)); render(); return; }
   if (d.jog) { msg = undefined; abrir(fichaJogador(s, d.jog)); return; }
   if (d.conv && d.id) { const r = conversar(s, d.id, d.conv as Conversa); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.id)); render(); return; }
   if (d.renovar && d.id) { const r = renovar(pacote, s, d.id, +d.renovar); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.id)); render(); return; }
   if (d.dispensar !== undefined && d.id) { const r = dispensar(s, d.id); msg = { texto: r.msg, ok: r.ok }; if (r.ok) { fechar(); prepararMundo(pacote, s); redesenhar(); } else abrir(fichaJogador(s, d.id)); return; }
   if (d.vaga !== undefined) { abrir(escolherVaga(s, +d.vaga)); return; }
-  if (d.escolher !== undefined && d.i !== undefined) { trocarNaVaga(s, +d.i, d.escolher || null); fechar(); redesenhar(false); return; }
-  if (d.form) { mudarFormacao(s, d.form); redesenhar(false); return; }
-  if (d.melhor !== undefined) { s.esc = melhorEscalacao(s.elenco, s.tatica.formacao); redesenhar(false); return; }
+  if (d.escolher !== undefined && d.i !== undefined) {
+    if (s.aoVivo && d.escolher && !s.aoVivo.emCampo1.includes(d.escolher) && !s.esc.titulares.includes(d.escolher) && trocasNoIntervalo(s) >= MAX_TROCAS) { msg = { texto: `Já foram as ${MAX_TROCAS} trocas.`, ok: false }; fechar(); redesenhar(); return; }
+    trocarNaVaga(s, +d.i, d.escolher || null); fechar(); redesenhar(false); return;
+  }
+  if (d.form) { if (s.aoVivo) reorganizarNoIntervalo(s, d.form); else mudarFormacao(s, d.form); redesenhar(false); return; }
+  if (d.melhor !== undefined && !s.aoVivo) { s.esc = melhorEscalacao(s.elenco, s.tatica.formacao); redesenhar(false); return; }
   if (d.tat && d.v !== undefined) { const k = d.tat as keyof typeof s.tatica; (s.tatica as unknown as Record<string, number | boolean>)[k] = k === "contraAtaque" ? d.v === "1" : +d.v; redesenhar(false); return; }
   if (d.treino && d.v) { (s.treino as unknown as Record<string, string>)[d.treino] = d.v; redesenhar(false); return; }
   if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
