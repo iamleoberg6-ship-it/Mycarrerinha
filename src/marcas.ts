@@ -163,7 +163,9 @@ export const MARCAS: Marca[] = [
 ];
 export const MARCA: Record<string, Marca> = Object.fromEntries(MARCAS.map((m) => [m.id, m]));
 /** Clubes que pertencem a uma marca: o logo vai no peito da camisa e o perfil do clube mostra a dona. */
-export const CLUBE_DA_MARCA: Record<string, string> = { RBB: "redboi", "DE-RBL": "redboi", "US-NYR": "redboi", "AT-SAL": "redboi" };
+export const CLUBE_DA_MARCA: Record<string, string> = { RBB: "redboi", "DE-RBL": "redboi", "US-NYR": "redboi", "AT-SAL": "redboi", "EN-ARS": "emiratez", "ES-RMA": "emiratez", "FR-PSG": "emiratez" };
+/** Cor do nome do patrocinador master no peito (o que contrasta com a camisa de cada clube). */
+export const COR_PATROCINIO: Record<string, string> = { "EN-ARS": "#FFFFFF", "ES-RMA": "#111111", "FR-PSG": "#FFFFFF" };
 
 // ------------------------------------------------------------------ contratos
 export type TipoContrato = "fixo" | "desempenho" | "longo";

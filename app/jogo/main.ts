@@ -32,7 +32,7 @@ import { NOME_ACAO_FILHO, nomearFilho, acoesFilho, exesDe, acoesEx, NOME_ACAO_EX
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, DESIGN_PADRAO, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
 import { salvarMarcaNegocio, convidarEmbaixador as convidarEmbaixadorJogo } from "../../src/jogo";
-import { MARCA, CLUBE_DA_MARCA, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
+import { MARCA, CLUBE_DA_MARCA, COR_PATROCINIO, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
 import { anuncioTransferencia, miniNoticia, capaVideogame, capaDocumentario } from "../visual/cartazes";
@@ -157,8 +157,13 @@ function emblemaTouros(vermelho: string, sol: string): string {
 }
 /** Ícone da marca dona do clube, grande no meio do peito (sem o nome, como nas camisas de verdade). */
 function patrocinioDoClube(clubeId: string): string | undefined {
-  const m = MARCA[CLUBE_DA_MARCA[idClube(clubeId)] ?? ""];
-  return m ? emblemaTouros(m.cores[1], m.cores[2]) : undefined;
+  const id = idClube(clubeId), m = MARCA[CLUBE_DA_MARCA[id] ?? ""];
+  if (!m) return undefined;
+  if (m.id === "redboi") return emblemaTouros(m.cores[1], m.cores[2]);
+  // nome da marca escrito no peito (Fly Emiratez): "Fly" pequeno em cima, o resto grande, em itálico
+  const cor = COR_PATROCINIO[id] ?? "#FFFFFF", [a, ...b] = m.nome.split(" ");
+  const fonte = `font-family="Barlow, 'Arial Narrow', sans-serif" font-style="italic" font-weight="800" text-anchor="middle" fill="${cor}"`;
+  return b.length ? `<text x="50" y="13" font-size="15" ${fonte}>${esc(a)}</text><text x="50" y="38" font-size="27" letter-spacing="-.5" ${fonte}>${esc(b.join(" "))}</text>` : `<text x="50" y="30" font-size="27" ${fonte}>${esc(a)}</text>`;
 }
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const us = UNIFORME_SELECAO[clubeId];

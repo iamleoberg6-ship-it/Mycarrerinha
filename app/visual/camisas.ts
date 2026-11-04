@@ -24,6 +24,8 @@ function padrao(modelo: string, c2: string, c3: string, faixas?: string[]): stri
     case "listrasHG": return Array.from({ length: 5 }, (_, i) => `<rect x="0" y="${9.8 + i * 20.4}" width="80" height="10.2" fill="${c2}"/>`).join("");
     case "faixa": return `<path d="M10 12 L24 8 L70 92 L56 96 Z" fill="${c2}"/>`;
     case "faixaH": return `<rect x="0" y="44" width="80" height="14" fill="${c2}"/>`;
+    /** faixa vertical no meio (Paris) */
+    case "faixaV": return `<rect x="34" y="0" width="12" height="104" fill="${c2}"/>`;
     /** duas faixas cruzando o meio: a de cima na cor 2, a de baixo na cor 3 (ex.: vermelha e preta sobre o branco) */
     case "duasFaixasH": { const [f1, f2] = faixas ?? [c2, c3]; return `<rect x="0" y="42.6" width="80" height="5.1" fill="${f1}"/><rect x="0" y="51.3" width="80" height="5.1" fill="${f2}"/>`; }
     case "metade": return `<rect x="40" y="0" width="40" height="100" fill="${c2}"/>`;
