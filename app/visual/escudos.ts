@@ -70,9 +70,9 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   }
   // Paris São Germano: redondo azul-marinho, com a torre Eiffel dourada no meio e o anel branco
   if (chave === "FR-PSG") {
-    const torre = `<g fill="${OURO}" stroke="${OURO_ESC}" stroke-width=".3" stroke-linejoin="round"><path d="M13 3.6 L13.7 8 L14.6 12.5 L16.4 19 L19.4 25.6 H16.6 Q15.6 22.4 13 22.4 Q10.4 22.4 9.4 25.6 H6.6 L9.6 19 L11.4 12.5 L12.3 8 Z"/></g>`
-      + `<rect x="10.8" y="12.2" width="4.4" height="1.1" fill="${OURO_ESC}"/><rect x="9.2" y="18.6" width="7.6" height="1.2" fill="${OURO_ESC}"/>`;
-    return `<circle cx="13" cy="15" r="12.6" fill="${MARINHO}"/><circle cx="13" cy="15" r="11" fill="none" stroke="#FFFFFF" stroke-width=".9"/><rect x="11.4" y="4.2" width="3.2" height="21.6" fill="#DA291C" opacity=".9"/>${torre}<circle cx="13" cy="15" r="12.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+    const torre = `<g fill="#DA291C" stroke="#8E1A12" stroke-width=".3" stroke-linejoin="round"><path d="M13 3.6 L13.7 8 L14.6 12.5 L16.4 19 L19.4 25.6 H16.6 Q15.6 22.4 13 22.4 Q10.4 22.4 9.4 25.6 H6.6 L9.6 19 L11.4 12.5 L12.3 8 Z"/></g>`
+      + `<rect x="10.8" y="12.2" width="4.4" height="1.1" fill="#8E1A12"/><rect x="9.2" y="18.6" width="7.6" height="1.2" fill="#8E1A12"/>`;
+    return `<circle cx="13" cy="15" r="12.6" fill="${MARINHO}"/><circle cx="13" cy="15" r="11" fill="none" stroke="#FFFFFF" stroke-width=".9"/>${torre}<circle cx="13" cy="15" r="12.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
   const c2 = c2r && c2r.toLowerCase() !== c1.toLowerCase() ? c2r : c1.toLowerCase() === "#ffffff" ? "#0A0A0A" : "#FFFFFF";
   const { forma, desenho } = modeloEscudo(chave), d = FORMAS[forma], id = `escR${forma}`;
