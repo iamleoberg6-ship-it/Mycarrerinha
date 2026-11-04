@@ -1,7 +1,39 @@
 // Estádio desenhado a partir dos dados do clube: a capacidade decide o tamanho e quantos anéis de arquibancada ele tem,
 // as cores do clube pintam as cadeiras, os grandes ganham cobertura, e o nome vai no muro. Visto de cima, em ângulo.
 export type FormatoEstadio = "oval" | "redondo" | "quadrado" | "retangular";
-export interface DadosEstadio { nome: string; capacidade: number; cores: string[]; /** obra de ampliação em andamento: aparece um guindaste */ obra?: boolean; formato?: FormatoEstadio }
+export interface DadosEstadio { nome: string; capacidade: number; cores: string[]; /** obra de ampliação em andamento: aparece um guindaste */ obra?: boolean; formato?: FormatoEstadio;
+  /** cores das cadeiras de cada anel, de dentro para fora (estádio com cor própria, de nenhum clube) */ coresAneis?: string[] }
+
+// ------------------------------------------------------------------ estádios divididos por mais de um clube
+/** Estádio dividido: as cadeiras têm a cor do próprio estádio (nunca a de um dos clubes) e o formato é um só. */
+const ESTADIO_PROPRIO: Record<string, { coresAneis: string[]; formato: FormatoEstadio }> = {
+  "Estádio Maracajá": { coresAneis: ["#F2C200", "#1E8A45"], formato: "oval" },
+  "San Ciro": { coresAneis: ["#B5282F", "#1C4C9C"], formato: "retangular" },
+  "Olímpico de Roma": { coresAneis: ["#2C6FB7", "#8FB8E0"], formato: "oval" },
+  "Olímpico Universitário": { coresAneis: ["#9A8F7E", "#C8BFAE"], formato: "oval" },
+  "Atanasio": { coresAneis: ["#8E949B", "#B9BEC4"], formato: "oval" },
+  "El Campín": { coresAneis: ["#8E949B", "#B9BEC4"], formato: "retangular" },
+  "Azadi": { coresAneis: ["#8E949B", "#B9BEC4"], formato: "oval" },
+};
+const NEUTRO = ["#8E949B", "#B9BEC4"];
+interface InfoEstadio { id: string; nome: string; estadio: string; capacidade: number; cores: string[]; pais: string; cidade: string }
+let cacheDivididos: { fonte: unknown; mapa: Map<string, InfoEstadio[]> } | undefined;
+const chaveEst = (i: InfoEstadio) => `${i.estadio}|${i.cidade}`;
+/** O estádio de um clube como deve ser desenhado: se é dividido, o mesmo para todos os donos, com cor própria. */
+export function aparenciaDoEstadio(info: InfoEstadio, todos: Record<string, InfoEstadio>): { dados: Omit<DadosEstadio, "obra">; divideCom: string[] } {
+  if (!cacheDivididos || cacheDivididos.fonte !== todos) {
+    const mapa = new Map<string, InfoEstadio[]>();
+    for (const i of Object.values(todos)) if (i.estadio && !i.id.startsWith("NAT-")) mapa.set(chaveEst(i), [...(mapa.get(chaveEst(i)) ?? []), i]);
+    cacheDivididos = { fonte: todos, mapa };
+  }
+  const donos = (info.estadio ? cacheDivididos.mapa.get(chaveEst(info)) : undefined) ?? [info];
+  if (donos.length < 2) return { dados: { nome: info.estadio || `Estádio do ${info.nome}`, capacidade: info.capacidade, cores: info.cores, formato: formatoDoEstadio(info.id, info.pais, info.capacidade) }, divideCom: [] };
+  const base = [...donos].sort((a, b) => b.capacidade - a.capacidade || a.id.localeCompare(b.id))[0], proprio = ESTADIO_PROPRIO[info.estadio];
+  return {
+    dados: { nome: info.estadio, capacidade: base.capacidade, cores: proprio?.coresAneis ?? NEUTRO, coresAneis: proprio?.coresAneis ?? NEUTRO, formato: proprio?.formato ?? formatoDoEstadio(base.id, base.pais, base.capacidade) },
+    divideCom: donos.filter((x) => x.id !== info.id).map((x) => x.nome),
+  };
+}
 /** Os estádios conhecidos têm o formato de verdade. */
 const FORMATO_CLUBE: Record<string, FormatoEstadio> = {
   SAN: "quadrado", "EN-MUN": "quadrado", "EN-LIV": "quadrado", "DE-BVB": "quadrado", "EN-CHE": "quadrado", "EN-NEW": "quadrado", "SC-CEL": "quadrado", "SC-RAN": "quadrado",
@@ -45,7 +77,7 @@ export function svgEstadio(d: DadosEstadio, largura = 400): string {
   const c1 = d.cores[0] ?? "#2E7D4F", c2 = d.cores[1] ?? "#FFFFFF";
   // cadeira escura demais some no desenho: clareia um pouco; branca demais vira cinza claro
   const assento = luz(c1) < 0.18 ? mistura(c1, "#FFFFFF", 0.22) : luz(c1) > 0.92 ? mistura(c1, "#9AA3AD", 0.35) : c1;
-  const faixa = luz(c2) > 0.92 ? "#FFFFFF" : c2;
+  const faixa = d.coresAneis ? "#E9EDF1" : luz(c2) > 0.92 ? "#FFFFFF" : c2;
   const tiers = aneis(d.capacidade), grande = d.capacidade >= 40000;
   // formato: uma superelipse (expoente 2 = oval/redondo; maior = mais quadrado), vista de cima com a altura z subindo na tela
   const formato = d.formato ?? "oval", expo = formato === "quadrado" ? 7 : formato === "retangular" ? 3.4 : 2;
@@ -83,7 +115,7 @@ export function svgEstadio(d: DadosEstadio, largura = 400): string {
   for (let i = 1; i <= 9; i++) { const [x, y] = ponto(ext.Ao, ext.Bo, 0, Math.PI * (1 - i / 10)); partes.push(`<path d="M${f(x)} ${f(y - topo + 2)} V${f(y - 1)}" stroke="#6F767D" stroke-width="1.2" opacity=".55"/>`); }
   // arquibancadas: de fora para dentro, cada anel com fileiras e uma faixa com a segunda cor
   [...camadas].reverse().forEach((c, idx) => {
-    const tom = mistura(assento, "#000000", idx * 0.08);
+    const tom = d.coresAneis ? mistura(d.coresAneis[(camadas.length - 1 - idx) % d.coresAneis.length], "#000000", idx * 0.06) : mistura(assento, "#000000", idx * 0.08);
     partes.push(`<path d="${elipse(c.Ao, c.Bo, c.zo)} ${elipse(c.Ai, c.Bi, c.zi)}" fill="${tom}" fill-rule="evenodd" stroke="#20262B" stroke-width="1"/>`);
     for (let r = 1; r <= 3; r++) { const t = r / 4, A = c.Ai + (c.Ao - c.Ai) * t, B = c.Bi + (c.Bo - c.Bi) * t, z = c.zi + (c.zo - c.zi) * t; partes.push(`<path d="${elipse(A, B, z)}" fill="none" stroke="${r === 2 ? faixa : "#000"}" stroke-width="${r === 2 ? 2.4 : 0.8}" opacity="${r === 2 ? 0.75 : 0.25}"/>`); }
     partes.push(`<path d="${elipse(c.Ao, c.Bo, c.zo)} ${elipse(c.Ai, c.Bi, c.zi)}" fill="url(#estSombra)" fill-rule="evenodd"/>`);
