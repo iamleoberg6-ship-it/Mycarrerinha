@@ -504,20 +504,25 @@ function premiosMundoHtml(s: Save): string {
 const nomeCurtoSel = (n: string) => { const p = n.split(" "); return p.length > 2 ? `${p[0]} ${p[p.length - 1]}` : n; };
 /** Rodadas já jogadas na temporada em curso (999 = temporada inteira, quando não há jogo em andamento). */
 const rodadasFeitas = (s?: Save | null) => (s ? Math.max(0, s.carreira.semana - SEMANAS_PRE) : 999);
-/** Artilharia e assistências da liga até a rodada atual (os outros imaginados; você com os seus números de verdade). */
-function rankingsHtml(s: Save): string {
+/** Artilharia ou assistências da liga até a rodada atual, com você dentro (os outros imaginados; você com os seus
+ *  números de verdade). O top N e, se você ficou fora dele, a sua posição real depois de um corte. A mesma lista vale
+ *  para a aba Tabela e para a tela depois do jogo. */
+function rankingComVoce(s: Save, tipo: "g" | "a", n: number): { x: { nome: string; clubeId: string; valor: number; jogos: number; eu: boolean }; pos: number }[] {
   const c = s.carreira;
-  if (c.fase || c.semana <= SEMANAS_PRE) return "";
+  if (c.fase || c.semana <= SEMANAS_PRE) return [];
   const feitas = c.semana - SEMANAS_PRE, lid = infoLiga(c.ligaId).id;
+  const meu = tipo === "g" ? c.stats.gols : c.stats.assist; // conta os gols no profissional mesmo para quem ainda é da base
+  const l = rankingDaLiga(pacote, lid, feitas, tipo, Math.max(10, n)).map((x) => ({ ...x, eu: false }));
+  if (meu > 0) l.push({ nome: s.jogador.apelido, clubeId: c.clubeId, valor: meu, jogos: c.stats.jogos, eu: true });
+  const ord = l.sort((a, b) => b.valor - a.valor || Number(b.eu) - Number(a.eu));
+  const top = ord.slice(0, n).map((x) => ({ x, pos: ord.indexOf(x) + 1 }));
+  const eu = ord.find((x) => x.eu);
+  if (eu && ord.indexOf(eu) >= n) top.push({ x: eu, pos: ord.indexOf(eu) + 1 });
+  return top;
+}
+function rankingsHtml(s: Save): string {
   const lista = (tipo: "g" | "a", rot: string) => {
-    const meu = tipo === "g" ? c.stats.gols : c.stats.assist; // conta os gols no profissional mesmo para quem ainda é da base
-    const l = rankingDaLiga(pacote, lid, feitas, tipo, 10).map((x) => ({ ...x, eu: false }));
-    if (meu > 0) l.push({ nome: s.jogador.apelido, clubeId: c.clubeId, valor: meu, jogos: c.stats.jogos, eu: true });
-    // o top 10, e você sempre na lista: se ficou fora dele, entra na sua posição real, depois de um corte
-    const ord = l.sort((a, b) => b.valor - a.valor || Number(b.eu) - Number(a.eu));
-    const top = ord.slice(0, 10).map((x) => ({ x, pos: ord.indexOf(x) + 1 }));
-    const eu = ord.find((x) => x.eu);
-    if (eu && ord.indexOf(eu) >= 10) top.push({ x: eu, pos: ord.indexOf(eu) + 1 });
+    const top = rankingComVoce(s, tipo, 10);
     if (!top.length) return "";
     return `<p class="rotulo" style="margin:14px 0 6px">${rot}</p><table><tbody>${top.map(({ x, pos }, i) => `${i > 0 && pos > top[i - 1].pos + 1 ? `<tr class="corte"><td colspan="3" class="sub">…</td></tr>` : ""}<tr class="${x.eu ? "meu" : ""}"><td>${pos}</td><td>${x.eu ? `<b>${esc(x.nome)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`}<br><small class="sub">${linkClube(x.clubeId)} · ${x.jogos} j</small></td><td class="n"><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>`;
   };
@@ -2989,7 +2994,8 @@ function mostrarRodada(r: ResumoSemana) {
       }
     }
   }
-  const artilharia = (tipo: "g" | "a") => rankingDaLiga(pacote, ligaId, rodadasFeitas(save), tipo, 5).map((x, i) => `<div><span>${i + 1}. ${esc(x.nome)} · ${esc(nomeC(x.clubeId))}</span><b>${x.valor}</b></div>`).join("");
+  // a mesma artilharia da aba Tabela, com você dentro (em destaque) mesmo fora do top 5
+  const artilharia = (tipo: "g" | "a") => rankingComVoce(save!, tipo, 5).map(({ x, pos }) => `<div${x.eu ? ' class="meu"' : ""}><span>${pos}. ${x.eu ? `<b>${esc(x.nome)}</b>` : esc(x.nome)} · ${esc(nomeC(x.clubeId))}</span><b>${x.valor}</b></div>`).join("");
   blocos.push(`<section class="painel"><p class="rotulo">Artilheiros</p><div class="rr-lista">${artilharia("g")}</div></section>`);
   blocos.push(`<section class="painel"><p class="rotulo">Assistências</p><div class="rr-lista">${artilharia("a")}</div></section>`);
   if (r.partida) blocos.push(`<section class="painel"><p class="rotulo">Sua atuação</p><div class="rr-lista"><div><span>Nota</span><b>${r.partida.nota.toFixed(1)}</b></div>${r.partida.melhorEmCampo ? `<div><span>Destaque</span><b>★ Melhor em campo</b></div>` : ""}</div></section>`);
