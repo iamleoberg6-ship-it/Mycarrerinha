@@ -14,6 +14,7 @@ import { evoluirExtras } from "../detalhes.js";
 import { LICENCAS, CURSO_LICENCA, licencaExigida, semanaCurso, type CursoTecnico } from "../licencas.js";
 import { valorMercado, CAMBIO } from "../mercado.js";
 import { curtoBrl } from "../moeda.js";
+import { tipoDoGol, narrarGolMeu, narrarGolAdv, narrarChanceMeu, narrarChanceAdv, narrarCartao, narrarLesao } from "./narracao.js";
 import { patrociniosDe, receitaPatro, viradaPatro, type PatrociniosClube } from "./patrocinio.js";
 /** Dinheiro nas mensagens: na moeda que a tela está usando. */
 const dinheiroT = (v: number) => curtoBrl(v);
@@ -27,7 +28,7 @@ export const SEMANAS_PRE_T = 2;
 export const CHAVE_TECNICO = "mycarrerinha:tecnico";
 
 export interface Noticia { quando: string; texto: string; tipo: "jogo" | "clube" | "elenco" | "diretoria" | "dinheiro" }
-export interface EventoPartida { min: number; tipo: "gol" | "amarelo" | "vermelho" | "lesao" | "sub"; meu: boolean; texto: string }
+export interface EventoPartida { min: number; tipo: "gol" | "amarelo" | "vermelho" | "lesao" | "sub" | "lance"; meu: boolean; texto: string; /** o lance contado (jogo ao vivo) */ narra?: string }
 export interface NotaPartida { id: string; nome: string; pos: PosT; nota: number; min: number; gols: number; assist: number }
 export interface Relatorio {
   rodada: number; casa: string; fora: string; gc: number; gf: number; souCasa: boolean; publico?: number;
@@ -376,7 +377,7 @@ export interface AoVivo {
 export const MAX_TROCAS = 5;
 const DRENO = (tat: Tatica) => 24 + 5 * tat.pressao + 3 * tat.ritmo;
 /** Joga um trecho da partida (de `ini` a `fim`, em minutos) com o time e a tática que estão valendo agora. */
-function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: number, fim: number, rng: RNG) {
+function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: number, fim: number, rng: RNG, rn: RNG = rng) {
   const w = mundo(pacote), cAdv = w.clube[av.adv], fAdv = cAdv?.forca ?? 65, por = new Map(s.elenco.map((a) => [a.id, a]));
   const vagas = FORMACOES[s.tatica.formacao], tat = s.tatica, ent = s.entrosamento[tat.formacao] ?? 40, dur = fim - ini;
   const lingua = linguaDe(infoLiga(s.ligaId).pais), prep = nivelStaff(s, "preparador");
@@ -412,6 +413,11 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai > min && !av.fora.includes(x.a.id));
   const peso = <T>(lista: T[], fw: (x: T) => number) => { const t = lista.reduce((a, x) => a + fw(x), 0); let r = rng.next() * t; for (const x of lista) { r -= fw(x); if (r <= 0) return x; } return lista[lista.length - 1]; };
   const st = (x: EmCampo) => (av.stats[x.a.id] ??= { gols: 0, assist: 0, amarelo: 0, vermelho: false, min: 0, pos: x.pos });
+  // nomes para a narração: o goleiro e um zagueiro de cada lado
+  const onzeAdv = cAdv ? onzeProvavel(cAdv.elenco) : [];
+  const golAdv = onzeAdv.find((j) => j.posicao === "GOL")?.nome ?? "goleiro", zagsAdv = onzeAdv.filter((j) => j.posicao === "ZAG").map((j) => j.nome);
+  const meuGol = campo.find((x) => x.pos === "GOL")?.a.nome ?? "goleiro", meusZag = campo.filter((x) => x.pos === "ZAG").map((x) => x.a.nome);
+  const zag = () => (zagsAdv.length ? rn.pick(zagsAdv) : "zagueiro"), meuZag = () => (meusZag.length ? rn.pick(meusZag) : "zagueiro");
   // cartões (agressividade e marcação alta pesam); segundo amarelo é vermelho
   let saiuAntes = 99;
   for (const x of campo) {
@@ -419,10 +425,10 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
     if (rng.chance(0.075 * (0.45 + exDe(x.a).AGR / 90) * (1 + 0.25 * (tat.pressao - 1)) * dur)) {
       const min = rng.int(x.ent + 1, Math.max(x.ent + 1, x.sai - 1));
       e.amarelo++;
-      if (e.amarelo >= 2) { e.vermelho = true; x.sai = min; av.fora.push(x.a.id); saiuAntes = Math.min(saiuAntes, min); av.eventos.push({ min, tipo: "vermelho", meu: true, texto: `Segundo amarelo: ${x.a.nome} expulso` }); }
-      else av.eventos.push({ min, tipo: "amarelo", meu: true, texto: `Amarelo para ${x.a.nome}` });
+      if (e.amarelo >= 2) { e.vermelho = true; x.sai = min; av.fora.push(x.a.id); saiuAntes = Math.min(saiuAntes, min); av.eventos.push({ min, tipo: "vermelho", meu: true, texto: `Segundo amarelo: ${x.a.nome} expulso`, narra: narrarCartao(rn, x.a.nome, "segundo") }); }
+      else av.eventos.push({ min, tipo: "amarelo", meu: true, texto: `Amarelo para ${x.a.nome}`, narra: narrarCartao(rn, x.a.nome, "amarelo") });
     }
-    if (!e.vermelho && rng.chance(0.0025 * (0.5 + exDe(x.a).AGR / 60) * ((x.sai - x.ent) / 45))) { const min = rng.int(x.ent + 1, Math.max(x.ent + 1, x.sai - 1)); e.vermelho = true; x.sai = min; av.fora.push(x.a.id); saiuAntes = Math.min(saiuAntes, min); av.eventos.push({ min, tipo: "vermelho", meu: true, texto: `Expulso: ${x.a.nome}` }); }
+    if (!e.vermelho && rng.chance(0.0025 * (0.5 + exDe(x.a).AGR / 60) * ((x.sai - x.ent) / 45))) { const min = rng.int(x.ent + 1, Math.max(x.ent + 1, x.sai - 1)); e.vermelho = true; x.sai = min; av.fora.push(x.a.id); saiuAntes = Math.min(saiuAntes, min); av.eventos.push({ min, tipo: "vermelho", meu: true, texto: `Expulso: ${x.a.nome}`, narra: narrarCartao(rn, x.a.nome, "direto") }); }
   }
   const umAMenos = saiuAntes < 99 ? (fim - saiuAntes) / dur : 0;
   const gMe = rng.poisson(lMe * (dur / 90) * (1 - 0.3 * umAMenos)), gAdv = rng.poisson(lAdv * (dur / 90) * (1 + 0.35 * umAMenos));
@@ -433,20 +439,32 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
     const r = rng.next(), ehFalta = r < 0.1 && bFal && ali.includes(bFal), ehPen = !ehFalta && r < 0.17 && bPen && ali.includes(bPen);
     const autor = ehFalta ? bFal! : ehPen ? bPen! : peso(ali, (x) => (x.pos === "GOL" ? 0.001 : SHARE_GOL[x.pos as keyof typeof SHARE_GOL] * Math.pow(x.a.at.FIN / 70, 1.5) * (funcaoNaVaga(s.esc, x.a, x.pos)?.gol ?? 1)));
     st(autor).gols++;
-    let txt = ehFalta ? `Gol de falta de ${autor.a.nome}` : ehPen ? `Gol de pênalti de ${autor.a.nome}` : `Gol de ${autor.a.nome}`;
+    let txt = ehFalta ? `Gol de falta de ${autor.a.nome}` : ehPen ? `Gol de pênalti de ${autor.a.nome}` : `Gol de ${autor.a.nome}`, passe: string | undefined;
     if (!ehFalta && !ehPen && rng.chance(0.74)) {
       const outros = ali.filter((x) => x !== autor);
-      if (outros.length) { const p = peso(outros, (x) => (x.pos === "GOL" ? 0.01 : SHARE_ASSIST[x.pos as keyof typeof SHARE_ASSIST] * Math.pow(Math.max(x.a.at.PAS, x.a.at.CRU) / 70, 1.5) * (funcaoNaVaga(s.esc, x.a, x.pos)?.assist ?? 1))); st(p).assist++; txt += ` (passe de ${p.a.nome})`; }
+      if (outros.length) { const p = peso(outros, (x) => (x.pos === "GOL" ? 0.01 : SHARE_ASSIST[x.pos as keyof typeof SHARE_ASSIST] * Math.pow(Math.max(x.a.at.PAS, x.a.at.CRU) / 70, 1.5) * (funcaoNaVaga(s.esc, x.a, x.pos)?.assist ?? 1))); st(p).assist++; txt += ` (passe de ${p.a.nome})`; passe = p.a.nome; }
     }
-    av.eventos.push({ min, tipo: "gol", meu: true, texto: txt });
+    const tipo = ehFalta ? "falta" : ehPen ? "penalti" : tipoDoGol(rn, !!passe, autor.a.at.CAB, !!tat.contraAtaque);
+    av.eventos.push({ min, tipo: "gol", meu: true, texto: txt, narra: narrarGolMeu(rn, tipo, { autor: autor.a.nome, passe, gol: golAdv, zag: zag() }) });
   }
-  const onzeAdv = cAdv ? onzeProvavel(cAdv.elenco) : [];
   for (let g = 0; g < gAdv; g++) {
     const min = rng.int(ini + 1, fim);
     const autor = onzeAdv.length ? peso(onzeAdv, (j) => (j.posicao === "GOL" ? 0.001 : SHARE_GOL[j.posicao as keyof typeof SHARE_GOL] * Math.pow(j.ovr / 70, 1.5))) : undefined;
-    av.eventos.push({ min, tipo: "gol", meu: false, texto: `Gol ${autor ? `de ${autor.nome}` : "do adversário"}` });
+    av.eventos.push({ min, tipo: "gol", meu: false, texto: `Gol ${autor ? `de ${autor.nome}` : "do adversário"}`, narra: narrarGolAdv(rn, { autor: autor?.nome ?? "o atacante deles", meuGol, meuZag: meuZag() }) });
   }
   av.gMe += gMe; av.gAdv += gAdv;
+  // chances que não viraram gol, dos dois lados (só narração: não mexem no placar)
+  const atacantes = (min: number) => noCampo(min).filter((x) => x.pos !== "GOL");
+  for (let k = rn.poisson(lMe * (dur / 90) * 1.7); k > 0; k--) {
+    const min = rn.int(ini + 1, fim), ali = atacantes(min);
+    if (!ali.length) continue;
+    const quem = peso(ali, (x) => SHARE_GOL[x.pos as keyof typeof SHARE_GOL] * Math.pow(x.a.at.FIN / 70, 1.2));
+    av.eventos.push({ min, tipo: "lance", meu: true, texto: `Chance de ${quem.a.nome}`, narra: narrarChanceMeu(rn, { quem: quem.a.nome, gol: golAdv }) });
+  }
+  for (let k = rn.poisson(lAdv * (dur / 90) * 1.7); k > 0; k--) {
+    const min = rn.int(ini + 1, fim), quem = onzeAdv.length ? peso(onzeAdv, (j) => (j.posicao === "GOL" ? 0.001 : SHARE_GOL[j.posicao as keyof typeof SHARE_GOL])) : undefined;
+    av.eventos.push({ min, tipo: "lance", meu: false, texto: `Chance deles`, narra: narrarChanceAdv(rn, { autor: quem?.nome ?? "o atacante deles", meuGol, meuZag: meuZag() }) });
+  }
   // lesões no tempo
   const med = nivelStaff(s, "medico");
   for (const x of campo) {
@@ -457,7 +475,7 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
     const tipo = semanas <= 2 ? "Lesão muscular leve" : semanas <= 6 ? "Estiramento" : rng.pick(["Lesão no joelho", "Fratura no pé", "Ruptura no tornozelo"]);
     const min = rng.int(Math.max(x.ent + 1, ini + 1), Math.max(x.ent + 1, x.sai - 1));
     av.lesoes.push({ id: x.a.id, semanas, tipo }); av.fora.push(x.a.id); x.sai = Math.min(x.sai, min);
-    av.eventos.push({ min, tipo: "lesao", meu: true, texto: `${x.a.nome} se machucou (${tipo.toLowerCase()})` });
+    av.eventos.push({ min, tipo: "lesao", meu: true, texto: `${x.a.nome} se machucou (${tipo.toLowerCase()})`, narra: `${narrarLesao(rn, x.a.nome)} Diagnóstico: ${tipo.toLowerCase()}.` });
   }
   // minutos e cansaço do tempo
   for (const x of campo) {
@@ -515,7 +533,7 @@ export function jogarAte(pacote: PacoteDados, s: SaveTecnico, ate: number): Even
   while ((av.minuto ?? 0) < Math.min(90, ate)) {
     const ini = av.minuto ?? 0, fim = Math.min(90, ini + 5);
     aplicarTrocas(s, av, ini + 1);
-    jogarTrecho(pacote, s, av, ini, fim, rngT(s, "partida", ini));
+    jogarTrecho(pacote, s, av, ini, fim, rngT(s, "partida", ini), rngT(s, "narra", ini));
   }
   return av.eventos.slice(antes);
 }

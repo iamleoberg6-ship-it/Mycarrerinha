@@ -111,7 +111,7 @@ dialog .tela { padding: 18px 16px; display: flex; flex-direction: column; gap: 1
 .relogio-vivo.correndo::after { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #EC4D3F; margin-left: 8px; vertical-align: middle; animation: piscar 1s infinite; }
 @keyframes piscar { 50% { opacity: .2; } }
 .barra-tempo { position: relative; height: 6px; border-radius: 3px; background: var(--linha); margin: 2px 0 6px; } .barra-tempo i { display: block; height: 100%; border-radius: 3px; background: var(--ouro); transition: width .2s linear; } .barra-tempo b { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--giz-2); }
-.feed-vivo { max-height: 38vh; overflow-y: auto; } .feed-vivo .evento.gol { font-weight: 700; color: var(--ouro-claro); } .feed-vivo .evento.adv.gol { color: #F6A89C; }
+.feed-vivo { max-height: 38vh; overflow-y: auto; } .feed-vivo .evento.lance { color: var(--giz-2); font-size: 13.5px; } .feed-vivo .evento.gol { font-weight: 700; color: var(--ouro-claro); } .feed-vivo .evento.adv.gol { color: #F6A89C; }
 .link-inline { background: none; border: 0; padding: 0; color: var(--ouro-claro); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 .passos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
 .passo { display: grid; grid-template-rows: auto auto auto; gap: 2px; text-align: center; background: var(--campo-3); border: 1px solid var(--linha); border-radius: 10px; padding: 4px; }

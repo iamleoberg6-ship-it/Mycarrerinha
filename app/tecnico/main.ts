@@ -404,14 +404,15 @@ function relatorioHtml(p: Relatorio): string {
     <p class="rotulo">Rodada ${p.rodada + 1}${p.publico ? ` · público ${p.publico.toLocaleString("pt-BR")}` : ""}</p>
     <div class="prox"><div class="lado">${escudo(p.casa)}<span>${esc(nomeClube(p.casa))}</span></div><span class="placar">${p.gc} × ${p.gf}</span><div class="lado">${escudo(p.fora)}<span>${esc(nomeClube(p.fora))}</span></div></div>
     <div class="dl"><span>Posse de bola (seu time)</span><b>${p.posse}%</b><span>Finalizações</span><b>${p.chutes[0]} × ${p.chutes[1]}</b>${p.melhor ? `<span>Melhor em campo</span><b>${esc(p.melhor)}</b>` : ""}</div>
-    <div><p class="rotulo">Lances</p>${p.eventos.length ? p.eventos.map((e) => `<div class="evento${minha(e) ? "" : " adv"}"><span class="m">${e.min}'</span><span>${e.tipo === "gol" ? "⚽" : e.tipo === "amarelo" ? "🟨" : e.tipo === "vermelho" ? "🟥" : e.tipo === "lesao" ? "✚" : "⇄"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">Jogo sem gols nem grandes lances.</p>`}</div>
+    <div><p class="rotulo">Lances</p>${p.eventos.some((e) => e.tipo !== "lance") ? p.eventos.filter((e) => e.tipo !== "lance").map((e) => `<div class="evento${minha(e) ? "" : " adv"}"><span class="m">${e.min}'</span><span>${e.tipo === "gol" ? "⚽" : e.tipo === "amarelo" ? "🟨" : e.tipo === "vermelho" ? "🟥" : e.tipo === "lesao" ? "✚" : "⇄"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">Jogo sem gols nem grandes lances.</p>`}</div>
+    ${p.eventos.some((e) => e.narra) ? `<details class="not"><summary>Narração do jogo</summary>${p.eventos.map((e) => `<div class="evento${minha(e) ? "" : " adv"}"><span class="m">${e.min}'</span><span>${ICO_EV[e.tipo] ?? "•"}</span><span>${esc(e.narra ?? e.texto)}</span></div>`).join("")}</details>` : ""}
     <div><p class="rotulo">Notas</p><div class="lista">${[...p.notas].sort((a, b) => b.nota - a.nota).map((n) => `<div class="lin" style="cursor:default;grid-template-columns:40px 1fr auto"><span class="num" style="font-size:13px">${n.pos}</span><span class="nm"><b>${esc(n.nome)}</b><small>${n.min}'${n.gols ? ` · ${n.gols} gol${n.gols > 1 ? "s" : ""}` : ""}${n.assist ? ` · ${n.assist} assist.` : ""}</small></span><span class="ov"><strong style="font-size:20px;color:${n.nota >= 7 ? "var(--pos)" : n.nota < 6 ? "var(--neg)" : "var(--ouro-claro)"}">${n.nota.toFixed(1).replace(".", ",")}</strong></span></div>`).join("")}</div></div>`;
 }
 
 // ------------------------------------------------------------------ partida ao vivo
 /** Estado da tela do jogo: minuto mostrado, velocidade (ms por minuto), pausa pedida e se parou no intervalo. */
 const vivo = { mostrado: 0, vel: 260, pausado: true, pedirPausa: false, intervalo: false, passouIntervalo: false, timer: 0 as number, avisos: [] as string[] };
-const ICO_EV: Record<string, string> = { gol: "⚽", amarelo: "🟨", vermelho: "🟥", lesao: "✚", sub: "⇄" };
+const ICO_EV: Record<string, string> = { gol: "⚽", amarelo: "🟨", vermelho: "🟥", lesao: "✚", sub: "⇄", lance: "▸" };
 function abrirVivo(s: SaveTecnico, avisos: string[]) {
   const av = s.aoVivo; if (!av) return;
   vivo.mostrado = av.minuto ?? 0; vivo.avisos = avisos; vivo.pausado = true; clearTimeout(vivo.timer); vivo.pedirPausa = false; vivo.intervalo = false; vivo.passouIntervalo = vivo.mostrado >= 45;
@@ -433,7 +434,7 @@ function atualizarVivo(s: SaveTecnico) {
     <div class="prox"><div class="lado">${escudo(casa)}<span>${esc(nomeClube(casa))}</span></div><span class="placar">${gc} × ${gf}</span><div class="lado">${escudo(fora)}<span>${esc(nomeClube(fora))}</span></div></div>
     <div class="barra-tempo"><i style="width:${(m / 90) * 100}%"></i><b style="left:50%"></b></div>
     ${vivo.avisos.map((x) => `<p class="sub">${esc(x)}</p>`).join("")}
-    <div class="feed-vivo">${evs.length ? [...evs].reverse().map((e) => `<div class="evento${e.meu ? "" : " adv"}${e.tipo === "gol" ? " gol" : ""}"><span class="m">${e.min}'</span><span>${ICO_EV[e.tipo] ?? "•"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">${m ? "Jogo truncado, sem grandes lances." : "A bola vai rolar."}</p>`}</div>
+    <div class="feed-vivo">${evs.length ? [...evs].reverse().map((e) => `<div class="evento${e.meu ? "" : " adv"}${e.tipo === "gol" ? " gol" : e.tipo === "lance" ? " lance" : ""}"><span class="m">${e.min}'</span><span>${ICO_EV[e.tipo] ?? "•"}</span><span>${esc(e.narra ?? e.texto)}</span></div>`).join("") : `<p class="sub">${m ? "Jogo truncado, sem grandes lances." : "A bola vai rolar."}</p>`}</div>
     ${parado && !fim && cansados.length ? `<p class="sub">Cansados: ${cansados.map((n) => esc(n!)).join(", ")}.</p>` : ""}
     ${fim ? `<button class="botao grande" data-avancar>Ver o resultado</button>`
       : parado ? `<div class="botoes"><button class="botao" data-vivo-seguir>▶ ${m === 0 ? "Começar" : vivo.intervalo ? "Começar o 2º tempo" : "Continuar"}</button><button class="botao sec" data-vivo-mexer>Mexer no time e na tática</button></div>
