@@ -28,7 +28,7 @@ import {
 import { RNG } from "../../src/rng";
 import { vidaDe } from "../../src/vida-npc";
 import { acoesDe, parentescoCompleto, idadeDe, rotuloRelacaoFam, NOME_ACAO_FAM, NOME_TRACO, NOME_FASE_IRMAO, NOME_PARENTESCO, MAX_ACOES_FAMILIA, falaSobreVoce, jeitoDe, type AcaoFamilia, type Familiar } from "../../src/familia";
-import { NOME_ACAO_FILHO, nomearFilho, type AcaoFilho, type Filho } from "../../src/namoro";
+import { NOME_ACAO_FILHO, nomearFilho, acoesFilho, type AcaoFilho, type Filho } from "../../src/namoro";
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, DESIGN_PADRAO, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
 import { salvarMarcaNegocio, convidarEmbaixador as convidarEmbaixadorJogo } from "../../src/jogo";
@@ -1008,6 +1008,7 @@ function filhoHtml(s: Save, f: Filho, i: number): string {
   return `${topoFicha(retratoFilho(s, f, i), f.nome, `${f.menina ? "Filha" : "Filho"} · ${idade === 0 ? "recém-nascid" + (f.menina ? "a" : "o") : `${idade} ${idade === 1 ? "ano" : "anos"}`} · mãe: ${esc(f.mae)}${f.pensao ? " · mora com a mãe" : " · mora com você"}`)}
     <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação com você · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
     <p>“${esc(falaSobreVoce(r))}”</p>
+    ${f.parto ? `<p class="sub">${f.parto === "ausente" ? "Você não estava no parto: ficou concentrado com o time." : f.parto === "licenca" ? "Você tirou licença-paternidade e estava lá quando nasceu." : "Você correu para a maternidade e viu nascer."}</p>` : ""}
     ${fase && f.futebol ? `<p class="sub">${fase} · OVR ${f.futebol.ovr} (potencial ${f.futebol.pot})</p>` : ""}
     ${idade >= 3 ? `<p class="rotulo" style="margin-top:12px">Habilidades</p>${habs.map(([n, v]) => barra(n, v)).join("")}` : `<p class="sub" style="margin-top:12px">Ainda é bebê: as habilidades aparecem a partir dos 3 anos.</p>`}
     ${bloco("Jeito", jeitoDe({ id: `filho${i}-${f.ano}`, nome: f.nome }, s.semente, true, meninaDe(f)))}
@@ -1206,7 +1207,7 @@ function celMatch(s: Save, parte: "app" | "familia" = "app"): string {
       ${f.nomear ? `<div class="nomear-filho"><p>👶 <b>${f.menina ? "Ela" : "Ele"} ainda não tem nome.</b> Por enquanto, todo mundo chama de ${esc(f.nome)}. Escolha:</p>
         <div class="chips" style="flex-wrap:wrap">${f.nomear.map((x) => `<button class="chip" data-nomefilho="${i}" data-nome="${esc(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="nomear-livre"><input id="nomeFilho${i}" maxlength="30" placeholder="Ou digite outro nome" aria-label="Nome do bebê"><button class="botao peq" data-nomefilho="${i}" data-livre="1">Dar este nome</button></div></div>` : ""}
-      <div class="rel-acoes" style="margin-left:0">${(Object.keys(NOME_ACAO_FILHO) as AcaoFilho[]).map((a) => `<button class="chip" data-filho="${i}" data-op="${a}">${NOME_ACAO_FILHO[a]}</button>`).join("")}</div></div>`; }).join("")}` : "";
+      <div class="rel-acoes" style="margin-left:0">${acoesFilho(f, Math.max(0, ano - f.ano)).map((a) => `<button class="chip${a === "gol" ? " destaque" : ""}${a === "gol" && f.promessa === ab ? " ativo" : ""}" data-filho="${i}" data-op="${a}">${a === "gol" ? "⚽ " : ""}${NOME_ACAO_FILHO[a]}</button>`).join("")}</div></div>`; }).join("")}` : "";
   const livres = `<p class="sub" style="margin-top:8px">${MAX_ACOES_NAMORO - feitas} ${MAX_ACOES_NAMORO - feitas === 1 ? "programa livre" : "programas livres"} nesta semana. Com a mesma pessoa, cada programa rende um pouco menos. Sem atenção a relação esfria; vida noturna demais incomoda.</p>`;
   const perfis = perfisDaSemana(pacote, s);
   const deck = perfis.length ? perfis.map((p) => cartaoPar(p, `<button class="botao sec peq" data-curtir="${p.id}" data-sim="0">Passar</button><button class="botao peq" data-curtir="${p.id}" data-sim="1">Curtir</button>`, `<small class="sub">Chance de match: ${Math.round(100 * chanceMatch(p, c.fama))}%</small>`)).join("") : `<p class="sub">Acabaram os perfis desta semana. Novos chegam na próxima.</p>`;

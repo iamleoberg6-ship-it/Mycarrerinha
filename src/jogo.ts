@@ -63,8 +63,8 @@ import { estatisticaBase, type EstatBase } from "./estatisticas-partida.js";
 import { ligacoesDoElenco } from "./relacoes-npc.js";
 import { reliquiasDaPartida, premiosDaTemporada, UNIFORME_SELECAO, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, acoesDe, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
-import { agirFilho, programaPreferido, type AcaoFilho } from "./namoro.js";
-import { gostosDe, MAX_ACOES_NAMORO, gravidasDe, estaGravida, type Par } from "./namoro.js";
+import { agirFilho, programaPreferido, acoesFilho, type AcaoFilho } from "./namoro.js";
+import { gostosDe, MAX_ACOES_NAMORO, gravidasDe, estaGravida, marcosDoAno, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 import { valorBrl, curtoBrl } from "./moeda.js";
@@ -104,7 +104,7 @@ export function registrarMarco(s: Save, m: Omit<Marco, "ano">) {
 function marcoDaNoticia(tipo: Noticia["tipo"], titulo: string, texto: string, img?: ImgNoticia): Omit<Marco, "ano"> | undefined {
   if (img?.k === "transferencia" || /^Primeiro contrato profissional|^Contrato homegrown/.test(titulo)) return { tipo: "clube", texto: titulo };
   if (/grávida|namorada nova|noivos|se casaram|Divórcio|Fim do casamento|Noivado desfeito|Troca de namorada|termina com ele/i.test(titulo)) return { tipo: "amor", texto: titulo };
-  if (/^Filho fora do casamento/.test(titulo)) return { tipo: "filho", texto: titulo };
+  if (/^Filho fora do casamento|^Nasceu (um|uma)|dedica o gol a/.test(titulo)) return { tipo: "filho", texto: titulo };
   if (/^Recorde na|recordista/.test(titulo)) return { tipo: "recorde", texto: titulo };
   if (tipo === "lesao") { const sem = +(texto.match(/(\d+) semanas/)?.[1] ?? 0); if (sem >= 6) return { tipo: "lesao", texto: `Lesão grave: ${sem} semanas fora` }; }
   if (tipo === "polemica" && /flagra|amante|caso|escândalo|fofoca/i.test(titulo + " " + texto)) return { tipo: "escandalo", texto: titulo };
@@ -130,6 +130,7 @@ export interface Noticia { semana: string; titulo: string; texto: string; tipo: 
 export interface Carreira {
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
+  /** jogos seguidos como titular (o técnico não mexe em quem vem jogando) */ seqTitular?: number;
   suspensao?: number;
   /** temporadas (ano) cujo pacote de figurinhas já foi aberto e colado no álbum */
   pacotesAbertos?: number[];
@@ -624,7 +625,9 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   const confia = Math.max(c.relTecnico, confiancaPeloNivel(pacote, s));
   // cansaço só pesa quando é alto (os rivais também rodam); um pouco cansado ainda joga
   const cansacoPesa = Math.max(0, cansacoPrevisto - 40) * 0.75;
-  const meu = pontuacaoTitular(ovr(j), forma(c), confia, cansacoPesa) + bonusJovem(c.clubeId, j.idade) + bonusDoTecnico(tec, j.posicao, j.idade) + ajusteFuncao + comunicacao;
+  // uma nota ruim isolada pesa pouco; quem vem sendo titular ganha crédito (até +3)
+  const formaEf = 6.5 + (forma(c) - 6.5) * 0.6, sequencia = Math.min(3, c.seqTitular ?? 0);
+  const meu = sequencia + pontuacaoTitular(ovr(j), formaEf, confia, cansacoPesa) + bonusJovem(c.clubeId, j.idade) + bonusDoTecnico(tec, j.posicao, j.idade) + ajusteFuncao + comunicacao;
   const rivais = elenco.filter((x) => x.posicao === j.posicao);
   const rank = rivais.filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) + bonusDoTecnico(tec, x.posicao, x.idade) > meu).length;
   // a formação do técnico decide quantas vagas a posição tem; craque sem vaga no esquema joga adaptado em outra
@@ -1278,6 +1281,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
     }
   } else if (copa) { const vazio = () => ({ jogos: 0, gols: 0, assist: 0, notas: [] as number[] }); const sc = ehEstadual(copa.id) ? (c.statsEstadual ??= vazio()) : copa.id === "INT" || copa.id === "MUN" ? ((c.statsExtra ??= {})[copa.id] ??= vazio()) : (c.statsCopa ??= vazio()); sc.jogos++; sc.gols += gols; sc.assist += assist; sc.notas.push(nota); }
   else if (pro) {
+    c.seqTitular = partida.escalacao === "titular" ? (c.seqTitular ?? 0) + 1 : 0;
     c.stats.jogos++; if (partida.escalacao === "titular") c.stats.titular++; c.stats.gols += gols; c.stats.assist += assist; c.stats.notas.push(nota);
     const t = (c.clubesTemp ??= {})[c.clubeId] ??= { jogos: 0, gols: 0, assist: 0, notas: [] };
     t.jogos++; t.gols += gols; t.assist += assist; t.notas.push(nota);
@@ -1303,6 +1307,17 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
     for (const g of ganhos) if (g.reliquia.id.startsWith("bola-")) figurinhaDeGolaco(pacote, s, g.reliquia.id, `${g.reliquia.nome ?? "Golaço"} · ${meusGols} × ${golsAdv} contra o ${clubeCasa(pacote, adversario).apelido}`);
   }
   c.formaUlt = [...c.formaUlt.slice(-4), nota];
+  // gol prometido a um filho: se marcou, a comemoração é para ele (e vira notícia); se não, fica devendo
+  { const nf = namoroDe(c), abP = semanaAbsJogo(c);
+    for (const fi of nf.filhos ?? []) if (fi.promessa === abP && minutos > 0) {
+      fi.promessa = undefined;
+      if (gols > 0) {
+        fi.relacao = clamp((fi.relacao ?? 70) + 12, 0, 100); c.moral = clamp(c.moral + 3, 0, 100); c.fama = clamp(c.fama + 0.2, 0, 100);
+        const gesto = ANO_INICIAL + c.temporada - fi.ano <= 2 ? "embalando o bebê" : "apontando para a arquibancada";
+        eventos.push(`⚽ Gol prometido cumprido: você comemorou ${gesto} para ${fi.nome}.`);
+        noticia(s, "vida", `${j.apelido} cumpre promessa e dedica o gol a ${fi.nome}`, `Na comemoração, ${gesto}. A foto rodou as redes.`);
+      } else { fi.relacao = clamp((fi.relacao ?? 70) - 2, 0, 100); eventos.push(`O gol prometido para ${fi.nome} não saiu. Fica para a próxima.`); }
+    } }
   const pesoJogo = partida.clima?.peso ?? 1;
   if (pro) c.torcida = clamp((c.torcida ?? 50) + ((nota - 6.5) * (copa ? 2 : 1.5) + gols) * pesoJogo, 0, 100);
   c.moral = clamp(c.moral + 3 * (nota - 6.5), 0, 100);
@@ -1487,6 +1502,13 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const nam = namoroDe(c), ctxN = ctxNamoro(pacote, s);
   const sn = semanaNamoro(nam, { ...ctxN, mudouDeCidade: nam.par && nam.par.cidadeClube !== cidadeAgora ? cidadeAgora : undefined });
   eventos.push(...sn.avisos);
+  // marcos da infância dos filhos (primeiros passos, primeira palavra, escola...), um por ano, no meio da temporada
+  if (c.semana === 14) for (const m of marcosDoAno(nam, ANO_INICIAL + c.temporada)) {
+    const fi = nam.filhos![m.filho], perto = semanaAbsJogo(c) - (fi.contato ?? -99) <= 6;
+    eventos.push(`👶 ${m.texto}${perto ? "" : " Você viu pelo vídeo que mandaram."}`);
+    c.moral = clamp(c.moral + (perto ? 3 : 1), 0, 100);
+    if (perto) fi.relacao = clamp((fi.relacao ?? 70) + 3, 0, 100);
+  }
   if (sn.custo) s.casa.saldo -= sn.custo;
   if (sn.escandalo) { c.fama = clamp(c.fama + 1.5, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); c.exposicao = clamp(c.exposicao + 10, 0, 100); }
   if (sn.noticia) noticiaDeRomance(s, sn.escandalo ? "polemica" : "vida", sn.noticia, sn.escandalo ? `As fotos rodaram as redes. Patrocinadores e torcida comentam a vida pessoal de ${s.jogador.apelido}.` : `${s.jogador.apelido} confirmou. A vida segue.`, nam.par);
@@ -1885,6 +1907,11 @@ function gatilhoVida(pacote: PacoteDados, s: Save, g: string) {
     c.luxo = l.filter((i) => !levar.includes(i));
   }
   else if (k.startsWith("par-") || k === "ex-reatar") gatilhoAmor(pacote, s, k, a);
+  else if (k.startsWith("filho-") && a) {
+    // a escolha do pai quando a bolsa estourou vale no parto
+    const g = gravidasDe(namoroDe(c)).find((x) => x.mae === decodeURIComponent(a));
+    if (g) g.presenca = k === "filho-licenca" ? "licenca" : k === "filho-presente" ? "presente" : "ausente";
+  }
   else if (k === "esports") hobbiesDe(c).esports = { valor: 400_000, titulos: 0 };
   else if (k === "musica") hobbiesDe(c).musica = ANO_INICIAL + c.temporada;
 }
@@ -2933,7 +2960,7 @@ export function vidaAutomatica(pacote: PacoteDados, s: Save): VidaAuto {
   if (novo) ok(agirFamiliaJogo(pacote, s, novo.id, "indicarBase"), "familia");
   // filhos
   const n = namoroDe(c);
-  (n.filhos ?? []).forEach((fi, i) => { if ((fi.relacao ?? 70) < 80) ok(agirFilhoJogo(pacote, s, i, ab % 4 === 0 ? "passear" : ab % 7 === 0 ? "levarJogo" : "brincar"), "filhos"); });
+  (n.filhos ?? []).forEach((fi, i) => { if ((fi.relacao ?? 70) < 80) { const l = acoesFilho(fi, Math.max(0, ANO_INICIAL + c.temporada - fi.ano)).filter((x) => !["viagem", "parque", "festa", "presente", "gol"].includes(x)); ok(agirFilhoJogo(pacote, s, i, l[ab % l.length]), "filhos"); } });
   // o relacionamento sério: conversa sempre que esfria e um programa que ela curte a cada duas semanas
   const p = n.par;
   if (p && p.etapa !== "match") {

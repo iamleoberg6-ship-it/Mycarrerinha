@@ -103,8 +103,10 @@ export interface Filho { nome: string; mae: string; ano: number; /** mãe não �
   /** relação com o pai (0–100) e a semana do último programa juntos */ relacao?: number; contato?: number; vezes?: { s: number; n: number };
   /** o filho que quer ser jogador: escolinha, base de um clube, profissional, ou largou */
   futebol?: { fase: "escolinha" | "base" | "pro" | "parou"; ovr: number; pot: number; clubeId?: string };
-  adulto?: boolean }
-export interface Gravidez { mae: string; parto: number; caso: boolean }
+  adulto?: boolean;
+  /** semana em que o pai prometeu um gol para ele; os marcos da infância já vividos (idades) */ promessa?: number; marcos?: number[];
+  /** o pai estava no parto? */ parto?: "presente" | "licenca" | "ausente" }
+export interface Gravidez { mae: string; parto: number; caso: boolean; /** escolha do pai quando a bolsa estourou */ presenca?: "presente" | "licenca" | "ausente" }
 /** As gravidezes em andamento (pode ser mais de uma, com mulheres diferentes). */
 export function gravidasDe(n: { gravidez?: Gravidez; gravidas?: Gravidez[] }): Gravidez[] {
   const l = (n.gravidas ??= []);
@@ -397,31 +399,76 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
   }
 }
 
-export type AcaoFilho = "brincar" | "passear" | "presente" | "levarJogo" | "historia" | "bola" | "festa";
-export const NOME_ACAO_FILHO: Record<AcaoFilho, string> = { brincar: "Brincar em casa", passear: "Passeio no parque", presente: "Dar um presente", levarJogo: "Levar ao jogo", historia: "Contar uma história", bola: "Treinar bola no quintal", festa: "Festa de aniversário" };
+export type AcaoFilho = "brincar" | "passear" | "presente" | "levarJogo" | "historia" | "bola" | "festa"
+  | "ninar" | "banho" | "escola" | "videogame" | "parque" | "viagem" | "conversa" | "dirigir" | "jantar" | "gol";
+export const NOME_ACAO_FILHO: Record<AcaoFilho, string> = {
+  brincar: "Brincar em casa", passear: "Passeio no parque", presente: "Dar um presente", levarJogo: "Levar ao jogo", historia: "Contar uma história",
+  bola: "Treinar bola no quintal", festa: "Festa de aniversário", ninar: "Ninar de madrugada", banho: "Dar banho", escola: "Levar à escola",
+  videogame: "Jogar videogame", parque: "Parque de diversões", viagem: "Viagem em família", conversa: "Conversa de pai para filho",
+  dirigir: "Ensinar a dirigir", jantar: "Jantar juntos", gol: "Prometer um gol para ele",
+};
+/** O que dá para fazer com o filho em cada idade (bebê, criança, adolescente, adulto). */
+export function acoesFilho(f: Filho, idade: number): AcaoFilho[] {
+  if (idade <= 2) return ["ninar", "banho", "passear", "historia", "gol", "presente", "levarJogo"];
+  const comuns: AcaoFilho[] = ["levarJogo", "gol", "presente", "viagem"];
+  if (idade <= 12) return (["brincar", "passear", "historia", "escola", ...(idade >= 4 ? ["bola"] as AcaoFilho[] : []), ...(idade >= 6 ? ["videogame"] as AcaoFilho[] : []), "parque", ...comuns, "festa"] as AcaoFilho[]).filter((a) => !(a === "historia" && idade > 9));
+  if (idade <= 17) return ["conversa", "videogame", "bola", ...(idade >= 16 ? ["dirigir"] as AcaoFilho[] : []), ...comuns, "festa"];
+  return ["jantar", "conversa", ...comuns];
+}
 /** Um programa com um filho (conta nos programas da semana; com a mesma criança, cada vez rende menos). */
 export function agirFilho(n: EstadoNamoro, i: number, acao: AcaoFilho, ctx: CtxNamoro): ResultadoNamoro {
   if (n.semana !== ctx.semanaAbs) { n.semana = ctx.semanaAbs; n.feitas = 0; }
   const f = n.filhos?.[i];
   if (!f) return { ok: false, msg: "Filho não encontrado." };
+  const idade = ctx.ano !== undefined ? Math.max(0, ctx.ano - f.ano) : 8;
+  if (!acoesFilho(f, idade).includes(acao)) return { ok: false, msg: "Não combina com a idade.", };
   if (n.feitas >= MAX_ACOES_NAMORO) return { ok: false, msg: `Já foram ${MAX_ACOES_NAMORO} programas nesta semana.` };
   if (!f.vezes || f.vezes.s !== ctx.semanaAbs) f.vezes = { s: ctx.semanaAbs, n: 0 };
   const rende = Math.max(0.2, 1 - 0.15 * f.vezes.n), sobe = (v: number) => { f.relacao = clamp((f.relacao ?? 70) + v * rende, 0, 100); f.contato = ctx.semanaAbs; f.vezes!.n++; n.feitas++; };
-  const longe = f.pensao ? " (foi buscar na casa da mãe)" : "";
+  const longe = f.pensao ? " (foi buscar na casa da mãe)" : "", ele = f.menina ? "ela" : "ele", o = f.menina ? "a" : "o";
+  const custa = (min: number, k: number) => Math.round(Math.max(min, ctx.salario * k) / 10) * 10;
   switch (acao) {
     case "brincar": sobe(5); return { ok: true, msg: `Tarde inteira brincando com ${f.nome}${longe}.`, moral: 2 };
-    case "passear": sobe(7); return { ok: true, msg: `Passeio no parque com ${f.nome}${longe}. Teve sorvete.`, moral: 3, cansaco: 2 };
-    case "presente": { const c = Math.round(Math.max(200, ctx.salario * 0.01)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(5); return { ok: true, msg: `Presente para ${f.nome}: ${valorBrl(c)}.`, custo: c, moral: 1 }; }
-    case "levarJogo": sobe(9); return { ok: true, msg: `${f.nome} foi ao estádio com a sua camisa.`, moral: 3, fama: 0.1 };
-    case "historia": sobe(5); return { ok: true, msg: `Histórias antes de dormir com ${f.nome}${longe}. Pediu a mesma três vezes.`, moral: 2 };
-    case "bola": {
-      // bola só depois dos 4 anos: antes disso a criança ainda não controla o pé
-      const idade = ctx.ano !== undefined ? ctx.ano - f.ano : 99;
-      if (idade < 4) return { ok: false, msg: `${f.nome} ainda é pequeno demais para bola.` };
-      sobe(6); return { ok: true, msg: `Treino de chute no quintal com ${f.nome}${longe}. Já chuta com as duas pernas, diz o pai orgulhoso.`, moral: 2 };
+    case "passear": sobe(7); return { ok: true, msg: idade <= 2 ? `Passeio de carrinho com ${f.nome}${longe}. Dormiu no caminho.` : `Passeio no parque com ${f.nome}${longe}. Teve sorvete.`, moral: 3, cansaco: 2 };
+    case "presente": { const c = custa(200, 0.01); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para presente." }; sobe(5); return { ok: true, msg: `Presente para ${f.nome}: ${valorBrl(c)}.`, custo: c, moral: 1 }; }
+    case "levarJogo": sobe(9); return { ok: true, msg: idade <= 2 ? `${f.nome} foi ao estádio no colo, de abafador no ouvido e com a sua camisa.` : `${f.nome} foi ao estádio com a sua camisa.`, moral: 3, fama: 0.1 };
+    case "historia": sobe(5); return { ok: true, msg: idade <= 2 ? `Você leu um livrinho para ${f.nome}${longe}. ${ele[0].toUpperCase() + ele.slice(1)} babou nas páginas.` : `Histórias antes de dormir com ${f.nome}${longe}. Pediu a mesma três vezes.`, moral: 2 };
+    case "bola": sobe(6); return { ok: true, msg: `Treino de chute no quintal com ${f.nome}${longe}. Já chuta com as duas pernas, diz o pai orgulhoso.`, moral: 2 };
+    case "festa": { const c = custa(400, 0.02); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a festa." }; sobe(8); return { ok: true, msg: `Festa de aniversário de ${f.nome}, com bolo e os primos. ${valorBrl(c)}.`, custo: c, moral: 3 }; }
+    case "ninar": sobe(8); return { ok: true, msg: `Três da manhã, ${f.nome} no colo, andando pela sala até dormir. Cansado, mas valeu.`, moral: 3, cansaco: 6 };
+    case "banho": sobe(6); return { ok: true, msg: `Banho de banheira com ${f.nome}: água no chão do banheiro inteiro.`, moral: 2 };
+    case "escola": sobe(5); return { ok: true, msg: `Você levou ${f.nome} à escola. Os colegas pediram autógrafo na porta.`, moral: 2, fama: 0.05 };
+    case "videogame": sobe(6); return { ok: true, msg: `Partida de videogame com ${f.nome}. ${ele[0].toUpperCase() + ele.slice(1)} escolheu o seu time e ganhou de você.`, moral: 2 };
+    case "parque": { const c = custa(300, 0.008); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para o parque." }; sobe(9); return { ok: true, msg: `Montanha-russa, algodão-doce e ${f.nome} rindo o dia inteiro. ${valorBrl(c)}.`, custo: c, moral: 4, cansaco: 3 }; }
+    case "viagem": { const c = custa(3000, 0.05); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a viagem." }; sobe(13); return { ok: true, msg: `Viagem em família com ${f.nome}: praia, fotos e lembranças para a vida toda. ${valorBrl(c)}.`, custo: c, moral: 6, cansaco: -8 }; }
+    case "conversa": sobe(8); return { ok: true, msg: idade >= 18 ? `Conversa longa com ${f.nome} sobre a vida e o futuro.` : `Conversa séria com ${f.nome} sobre escola, amigos e o que ${ele} quer da vida. ${ele[0].toUpperCase() + ele.slice(1)} se abriu com você.`, moral: 2 };
+    case "dirigir": sobe(9); return { ok: true, msg: `Aula de direção com ${f.nome} no estacionamento do CT. Sobreviveram os dois.`, moral: 2 };
+    case "jantar": sobe(6); return { ok: true, msg: `Jantar com ${f.nome}. Agora quem conta as novidades é ${ele}.`, moral: 2 };
+    case "gol": {
+      if (f.promessa === ctx.semanaAbs) return { ok: false, msg: "Você já prometeu um gol nesta semana." };
+      f.promessa = ctx.semanaAbs; f.vezes.n++; n.feitas++; f.contato = ctx.semanaAbs;
+      return { ok: true, msg: `Você prometeu: "O próximo gol é seu, filh${o}." Se marcar no jogo desta semana, a comemoração é para ${ele}.`, moral: 1 };
     }
-    case "festa": { const c = Math.round(Math.max(400, ctx.salario * 0.02)); if (ctx.saldo < c) return { ok: false, msg: "Dinheiro curto para a festa." }; sobe(8); return { ok: true, msg: `Festa de aniversário de ${f.nome}, com bolo e os primos. ${valorBrl(c)}.`, custo: c, moral: 3 }; }
   }
+}
+/** Marcos da infância (uma vez por filho): primeiros passos, primeira palavra, escola, a primeira chuteira... */
+const MARCOS: [number, (f: Filho) => string][] = [
+  [1, (f) => `${f.nome} deu os primeiros passos, direto para a bola de plástico da sala.`],
+  [2, (f) => `${f.nome} falou a primeira frase: "papai gol!".`],
+  [4, (f) => `Primeiro dia de escola de ${f.nome}. Foi de mochila com o escudo do seu time.`],
+  [6, (f) => `${f.nome} aprendeu a ler e leu o seu nome numa manchete de jornal.`],
+  [8, (f) => `${f.nome} ganhou a primeira chuteira e não quer tirar nem para dormir.`],
+  [12, (f) => `${f.nome} fez 12 anos e já tem opinião sobre a sua escalação.`],
+  [15, (f) => `${f.nome} fez 15 anos. ${f.menina ? "Festão" : "Festa"} com os amigos da escola.`],
+  [18, (f) => `${f.nome} fez 18 anos. Maior de idade, mas ainda pede a sua camisa autografada.`],
+];
+export function marcosDoAno(n: EstadoNamoro, ano: number): { texto: string; filho: number }[] {
+  const out: { texto: string; filho: number }[] = [];
+  (n.filhos ?? []).forEach((f, i) => {
+    const idade = ano - f.ano;
+    for (const [k, txt] of MARCOS) if (idade >= k && idade - k <= 1 && !(f.marcos ??= []).includes(k)) { f.marcos.push(k); out.push({ texto: txt(f), filho: i }); }
+  });
+  return out;
 }
 export interface EfeitosNamoro { moral: number; fama: number; engajamento: number; recuperacao: number; evolucao: number; torcida: number; pressao: number; noite: number; agente: number; luvas: number; conforto: number }
 const ZERO: EfeitosNamoro = { moral: 0, fama: 0, engajamento: 0, recuperacao: 0, evolucao: 0, torcida: 0, pressao: 0, noite: 0, agente: 0, luvas: 0, conforto: 0 };
@@ -474,9 +521,15 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   for (const g of gravidasDe(n).filter((x) => ctx.semanaAbs >= x.parto)) {
     const rng = new RNG(`${ctx.semente}|parto|${g.parto}`), mae = g.mae.split(" ")[0];
     const b = novoBebe(rng, g.mae, ctx.ano ?? 0, !p || p.nome !== g.mae, [ctx.pais ?? "BRA", ctx.paisJogador ?? ctx.pais ?? "BRA"], ctx.semanaAbs, [p, ...(n.casos ?? []), ...(n.ficantes ?? [])].find((x) => x?.nome === g.mae)?.id), quem = b.menina ? "uma menina" : "um menino";
+    // quem segurou o bebê no colo primeiro: estar no parto marca o começo da relação
+    const pres = g.presenca;
+    b.relacao = pres === "licenca" ? 92 : pres === "presente" ? 85 : pres === "ausente" ? 55 : 72;
+    if (pres) b.parto = pres;
+    const mulher = [p, ...(n.casos ?? []), ...(n.ficantes ?? [])].find((x) => x?.nome === g.mae);
+    if (mulher) mulher.relacao = clamp(mulher.relacao + (pres === "ausente" ? -12 : pres ? 10 : 4), 0, 100);
     (n.filhos ??= []).push(b);
-    n.gravidas = gravidasDe(n).filter((x) => x !== g); moral += 10;
-    avisos.push(`Nasceu ${quem}! Filho seu com ${mae}. Escolha o nome no Celular, na aba Match.`);
+    n.gravidas = gravidasDe(n).filter((x) => x !== g); moral += pres === "ausente" ? 8 : 15;
+    avisos.push(`👶 Nasceu ${quem}! ${b.menina ? "Filha sua" : "Filho seu"} com ${mae}. ${pres === "ausente" ? `Você chegou depois do jogo e ${mae} não esqueceu.` : pres ? "Você estava lá e foi o primeiro a segurar no colo." : ""} Escolha o nome no Celular, na aba Família.`);
     noticiaFilho = noticiaFilho ? `${noticiaFilho}; e mais um bebê, com ${mae}` : g.caso ? `Filho fora do casamento: nasce ${quem}, filho do jogador com ${mae}` : `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${mae}`;
     if (g.caso) { escFilho = true; n.escandalos = (n.escandalos ?? 0) + 1; const c = n.casos?.find((x) => x.nome === g.mae); if (c) c.exposto = true; if (p) p.relacao = clamp(p.relacao - 35, 0, 100); }
   }

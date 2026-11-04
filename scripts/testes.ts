@@ -40,7 +40,7 @@ import { pedirEmprestimo } from "../src/transferencias.js";
 import { figurinhaDeMomento, type Figurinha } from "../src/figurinhas.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
 import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
-import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, gravidasDe, type Par } from "../src/namoro.js";
+import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, gravidasDe, acoesFilho as acoesFilhoT, type Par } from "../src/namoro.js";
 import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
@@ -1210,7 +1210,11 @@ teste("Vida amorosa: caso escondido vira escândalo, divórcio custa caro, filho
   semanaNamoro(n, { ...ctx, semanaAbs: gravidasDe(n)[0].parto, ano: 2030 });
   assert.ok(!gravidasDe(n).length && (n.filhos!.length as number) === 2 && n.filhos![1].pensao, "o filho do caso nasce depois e mora com a mãe");
   n.casos = [];
-  assert.ok(agirFilho(n, 0, "passear", { ...ctx, semanaAbs: parto + 1 }).ok);
+  assert.ok(agirFilho(n, 0, "passear", { ...ctx, semanaAbs: parto + 1, ano: 2030 }).ok);
+  // ações por idade: bebê nina, não joga videogame; aos 16 aprende a dirigir
+  assert.ok(acoesFilhoT(n.filhos![0], 0).includes("ninar") && !acoesFilhoT(n.filhos![0], 0).includes("videogame"));
+  assert.ok(acoesFilhoT(n.filhos![0], 16).includes("dirigir") && !acoesFilhoT(n.filhos![0], 16).includes("ninar"));
+  assert.ok(!agirFilho(n, 0, "videogame", { ...ctx, semanaAbs: parto + 2, ano: 2030 }).ok, "bebê não joga videogame");
   n.par = par("Carla", "casados", 90);
   let filhos = 0; for (let a = 2030; a < 2045; a++) { temporadaNamoro(n, [], { semente: "amor", ano: a, salario: 100000 }); filhos = n.filhos!.length; }
   assert.ok(filhos >= 1);

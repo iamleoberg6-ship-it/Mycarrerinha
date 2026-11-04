@@ -4,7 +4,7 @@
 import { RNG, clamp } from "./rng.js";
 import { agendar, type EstadoAgenda, type OpcaoOcasiao, type EfeitoVida, type Ocasiao } from "./agenda.js";
 import type { EstadoNamoro, Par } from "./namoro.js";
-import { estaGravida } from "./namoro.js";
+import { estaGravida, gravidasDe } from "./namoro.js";
 import { valorBrl } from "./moeda.js";
 
 const op = (id: string, rotulo: string, texto: string, ef: EfeitoVida, risco?: OpcaoOcasiao["risco"]): OpcaoOcasiao => ({ id, rotulo, texto, ef, ...(risco ? { risco } : {}) });
@@ -47,6 +47,17 @@ export interface CtxAmor { semanaAbs: number; semana: number; ano: number; fama:
 export function semanaAmor(a: EstadoAgenda, rng: RNG, n: EstadoNamoro, x: CtxAmor): void {
   const p = n.par;
   const ag = (o: Omit<Ocasiao, "uid" | "expira"> & { prazo?: number }, intervalo?: number) => agendar(a, x.semanaAbs, o, intervalo);
+  // a bolsa estourou: uma semana antes do parto, a escolha de estar lá ou não
+  for (const g of gravidasDe(n)) if (g.parto - x.semanaAbs === 2 && !g.presenca) {
+    const m = g.mae.split(" ")[0], k = encodeURIComponent(g.mae);
+    ag({ origem: "amor", chave: `parto-${g.parto}`, titulo: `O bebê da ${m} vai nascer!`, texto: g.caso
+      ? `Mensagem da ${m}: "O médico marcou o parto para a semana que vem. Você vem?" Ninguém sabe que o filho é seu.`
+      : `${m} ligou do médico: "O parto é semana que vem, bem no dia do jogo!" O que você faz?`, prazo: 0, opcoes: [
+      op("licenca", "Pedir licença-paternidade", `Uma semana inteira com ${m} e o bebê. O técnico entendeu (mais ou menos).`, { moral: 6, relTecnico: -3, cansaco: -10, gatilho: `filho-licenca:${k}` }),
+      op("ausente", "Ficar concentrado com o time", `O grupo agradeceu o compromisso. ${m} vai ter o bebê sem você.`, { relTecnico: 3, moral: -3, gatilho: `filho-ausente:${k}` }),
+      op("presente", "Correr para a maternidade", `Você chegou a tempo de ver o bebê nascer. Voltou para o treino no dia seguinte, sem dormir.`, { moral: 5, cansaco: 8, relTecnico: -1, gatilho: `filho-presente:${k}` }),
+    ] });
+  }
   const v = (base: number, k: number) => Math.round(Math.max(base, x.salario * k) / 100) * 100;
   // a ex que volta (com ou sem namorada)
   if (n.ex.length && rng.chance(0.006)) {
