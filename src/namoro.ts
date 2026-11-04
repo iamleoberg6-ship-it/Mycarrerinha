@@ -96,6 +96,14 @@ export interface Filho { nome: string; mae: string; ano: number; /** mãe não �
   futebol?: { fase: "escolinha" | "base" | "pro" | "parou"; ovr: number; pot: number; clubeId?: string };
   adulto?: boolean }
 export interface Gravidez { mae: string; parto: number; caso: boolean }
+/** As gravidezes em andamento (pode ser mais de uma, com mulheres diferentes). */
+export function gravidasDe(n: { gravidez?: Gravidez; gravidas?: Gravidez[] }): Gravidez[] {
+  const l = (n.gravidas ??= []);
+  if (n.gravidez) { if (!l.some((g) => g.mae === n.gravidez!.mae)) l.push(n.gravidez); n.gravidez = undefined; }
+  return l;
+}
+/** Ela já está grávida (a mesma mulher não engravida de novo antes do parto). */
+export const estaGravida = (n: { gravidez?: Gravidez; gravidas?: Gravidez[] }, nome: string) => gravidasDe(n).some((g) => g.mae === nome);
 export interface EstadoNamoro {
   /** perfis do dia no app (renovam toda semana) e a semana em que foram gerados */
   baralho: Perfil[]; geradoEm: number; vistos: number;
@@ -103,7 +111,9 @@ export interface EstadoNamoro {
   /** casinhos: gente com quem está saindo, sem compromisso (pode ser mais de uma, nada escondido) */
   ficantes?: Par[];
   /** relacionamentos paralelos escondidos (só existe traição quando há namoro sério), filhos e escândalos na mídia */
-  casos?: Par[]; filhos?: Filho[]; escandalos?: number; gravidez?: Gravidez;
+  casos?: Par[]; filhos?: Filho[]; escandalos?: number;
+  /** antigo (uma gravidez só); os saves velhos passam para `gravidas` */
+  gravidez?: Gravidez; gravidas?: Gravidez[];
   /** mudança de cidade esperando a decisão do casal (e a cidade já decidida) */
   mudanca?: string; mudancaDecidida?: string;
   /** ano (da carreira) em que as idades das garotas foram atualizadas pela última vez */
@@ -255,7 +265,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
   if (!p) return { ok: false, msg: "Conversa não encontrada." };
   if (acao !== "terminar" && n.feitas >= MAX_ACOES_NAMORO) return { ok: false, msg: `Já foram ${MAX_ACOES_NAMORO} programas nesta semana.` };
   const caso = ehCaso(n, p);
-  if (!acoesNamoro(p, ctx.semanaAbs, caso, !!n.gravidez).includes(acao)) return { ok: false, msg: "Ainda não é hora." };
+  if (!acoesNamoro(p, ctx.semanaAbs, caso, estaGravida(n, p.nome)).includes(acao)) return { ok: false, msg: "Ainda não é hora." };
   const rng = new RNG(`${ctx.semente}|namoro|${id}|${acao}|${ctx.semanaAbs}|${n.feitas}`), nome = p.nome.split(" ")[0];
   // a mesma pessoa várias vezes na semana: cada programa rende menos
   if (!p.vezes || p.vezes.s !== ctx.semanaAbs) p.vezes = { s: ctx.semanaAbs, n: 0 };
@@ -289,7 +299,7 @@ export function agirNamoro(n: EstadoNamoro, id: string, acao: AcaoNamoro, ctx: C
     case "tentarFilho": {
       n.feitas++;
       if (!rng.chance(clamp(0.25 + (p.relacao - 60) / 100, 0.2, 0.55))) return { ok: true, msg: `Vocês estão tentando. Ainda não foi desta vez.`, moral: 1 };
-      n.gravidez = { mae: p.nome, parto: ctx.semanaAbs + 36, caso };
+      gravidasDe(n).push({ mae: p.nome, parto: ctx.semanaAbs + 36, caso });
       p.relacao = clamp(p.relacao + 8, 0, 100);
       return { ok: true, msg: `${nome} está grávida! O bebê chega em uns nove meses.`, moral: 8, ...(caso ? {} : { noticia: `${nome} está grávida: o jogador vai ser pai` }) };
     }
@@ -452,14 +462,13 @@ export function semanaNamoro(n: EstadoNamoro, ctx: CtxNamoro & { mudouDeCidade?:
   const p = n.par;
   // o parto (e a notícia; filho de caso vira escândalo)
   let noticiaFilho: string | undefined, escFilho = false;
-  const g = n.gravidez;
-  if (g && ctx.semanaAbs >= g.parto) {
+  for (const g of gravidasDe(n).filter((x) => ctx.semanaAbs >= x.parto)) {
     const rng = new RNG(`${ctx.semente}|parto|${g.parto}`), mae = g.mae.split(" ")[0];
     const b = novoBebe(rng, g.mae, ctx.ano ?? 0, !p || p.nome !== g.mae, [ctx.pais ?? "BRA", ctx.paisJogador ?? ctx.pais ?? "BRA"], ctx.semanaAbs, [p, ...(n.casos ?? []), ...(n.ficantes ?? [])].find((x) => x?.nome === g.mae)?.id), quem = b.menina ? "uma menina" : "um menino";
     (n.filhos ??= []).push(b);
-    n.gravidez = undefined; moral += 10;
+    n.gravidas = gravidasDe(n).filter((x) => x !== g); moral += 10;
     avisos.push(`Nasceu ${quem}! Filho seu com ${mae}. Escolha o nome no Celular, na aba Match.`);
-    noticiaFilho = g.caso ? `Filho fora do casamento: nasce ${quem}, filho do jogador com ${mae}` : `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${mae}`;
+    noticiaFilho = noticiaFilho ? `${noticiaFilho}; e mais um bebê, com ${mae}` : g.caso ? `Filho fora do casamento: nasce ${quem}, filho do jogador com ${mae}` : `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${mae}`;
     if (g.caso) { escFilho = true; n.escandalos = (n.escandalos ?? 0) + 1; const c = n.casos?.find((x) => x.nome === g.mae); if (c) c.exposto = true; if (p) p.relacao = clamp(p.relacao - 35, 0, 100); }
   }
   // filhos: sem atenção a relação esfria (mais rápido quando moram longe)
@@ -543,7 +552,7 @@ export function temporadaNamoro(n: EstadoNamoro, eventos: string[], ctx?: { seme
   const casou = p?.etapa === "casados" && noticia?.endsWith("se casaram") ? p.nome.split(" ")[0] : undefined;
   if (ctx) {
     const rng = new RNG(`${ctx.semente}|filhos|${ctx.ano}`);
-    if (p && !n.gravidez && (p.etapa === "casados" || p.etapa === "morando") && p.relacao >= 60 && rng.chance(0.08)) {
+    if (p && !estaGravida(n, p.nome) && (p.etapa === "casados" || p.etapa === "morando") && p.relacao >= 60 && rng.chance(0.08)) {
       const b = novoBebe(rng, p.nome, ctx.ano, false, ctx.paises ?? ["BRA"], undefined, p.id), quem = b.menina ? "uma menina" : "um menino"; filhos.push(b);
       eventos.push(`Nasceu ${quem}, filho com ${p.nome.split(" ")[0]}! Escolha o nome.`); noticia = `Nasceu ${quem}, ${b.menina ? "filha" : "filho"} do jogador com ${p.nome.split(" ")[0]}`;
     }

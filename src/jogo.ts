@@ -64,7 +64,7 @@ import { ligacoesDoElenco } from "./relacoes-npc.js";
 import { reliquiasDaPartida, premiosDaTemporada, UNIFORME_SELECAO, type Ganho } from "./reliquias.js";
 import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, acoesDe, paiTreinador, riscoLesaoFamilia, type EstadoFamilia, type AcaoFamilia, type CtxFamilia, type EscolhaFamilia } from "./familia.js";
 import { agirFilho, programaPreferido, type AcaoFilho } from "./namoro.js";
-import { gostosDe, MAX_ACOES_NAMORO, type Par } from "./namoro.js";
+import { gostosDe, MAX_ACOES_NAMORO, gravidasDe, estaGravida, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
 import { podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 import { valorBrl, curtoBrl } from "./moeda.js";
@@ -1895,7 +1895,7 @@ function gatilhoAmor(pacote: PacoteDados, s: Save, k: string, a?: string) {
   else if (k === "par-distancia") n.mudancaDecidida = n.mudanca;
   else if (k === "par-longe" && p) { p.cidadeClube = "outra cidade"; n.mudanca = n.mudancaDecidida = infoClube(pacote, c.clubeId)?.cidade; }
   else if (k === "par-famosa" && p) { p.famosa = true; registrarMarco(s, { tipo: "amor", texto: `${p.nome.split(" ")[0]} vira celebridade: casal do ano` }); }
-  else if (k === "par-filho" && p && !n.gravidez && rngDe(s, "par-filho").chance(0.55)) { n.gravidez = { mae: p.nome, parto: ab + 36, caso: false }; noticia(s, "vida", `${p.nome.split(" ")[0]} está grávida: o jogador vai ser pai`, `${s.jogador.apelido} confirmou a novidade nas redes.`); }
+  else if (k === "par-filho" && p && !estaGravida(n, p.nome) && rngDe(s, "par-filho").chance(0.55)) { gravidasDe(n).push({ mae: p.nome, parto: ab + 36, caso: false }); noticia(s, "vida", `${p.nome.split(" ")[0]} está grávida: o jogador vai ser pai`, `${s.jogador.apelido} confirmou a novidade nas redes.`); }
   else if (k === "ex-reatar" && a && !p) {
     const r = rngDe(s, "ex-reatar", a), cidade = infoClube(pacote, c.clubeId)?.cidade ?? "";
     const profs = ["influencer", "psicologa", "modelo", "medica", "jornalista", "personal", "advogada", "professora", "arquiteta"] as const;
@@ -2938,7 +2938,7 @@ export function vidaAutomatica(pacote: PacoteDados, s: Save): VidaAuto {
   const p = n.par;
   if (p && p.etapa !== "match") {
     if (p.relacao < 75) ok(agirNamoroJogo(pacote, s, p.id, "conversar"), "par");
-    if (ab % 3 === 0 || p.relacao < 55) { const a = programaPreferido(p, ab, !!n.gravidez, s.casa.saldo, c.salario); if (a) ok(agirNamoroJogo(pacote, s, p.id, a), "par"); }
+    if (ab % 3 === 0 || p.relacao < 55) { const a = programaPreferido(p, ab, estaGravida(n, p.nome), s.casa.saldo, c.salario); if (a) ok(agirNamoroJogo(pacote, s, p.id, a), "par"); }
   }
   // casinhos e matches: responde para não sumirem
   for (const x of [...(n.ficantes ?? [])]) if (x.relacao < 65) ok(agirNamoroJogo(pacote, s, x.id, "conversar"), "outros");

@@ -4,6 +4,7 @@
 import { RNG, clamp } from "./rng.js";
 import { agendar, type EstadoAgenda, type OpcaoOcasiao, type EfeitoVida, type Ocasiao } from "./agenda.js";
 import type { EstadoNamoro, Par } from "./namoro.js";
+import { estaGravida } from "./namoro.js";
 import { valorBrl } from "./moeda.js";
 
 const op = (id: string, rotulo: string, texto: string, ef: EfeitoVida, risco?: OpcaoOcasiao["risco"]): OpcaoOcasiao => ({ id, rotulo, texto, ef, ...(risco ? { risco } : {}) });
@@ -111,7 +112,7 @@ export function semanaAmor(a: EstadoAgenda, rng: RNG, n: EstadoNamoro, x: CtxAmo
     op("desviar", "Mudar de assunto", "Ela percebeu.", { gatilho: "par:-10" }),
   ] }, 40);
   // filho
-  if (p.etapa === "casados" && !n.gravidez && !x.temFilhoComEla && rng.chance(0.01)) ag({ origem: "amor", chave: "quer-filho", titulo: `${nome} quer ser mãe`, texto: `${nome}: "Acho que chegou a hora. Vamos ter um filho?"`, opcoes: [
+  if (p.etapa === "casados" && !estaGravida(n, p.nome) && !x.temFilhoComEla && rng.chance(0.01)) ag({ origem: "amor", chave: "quer-filho", titulo: `${nome} quer ser mãe`, texto: `${nome}: "Acho que chegou a hora. Vamos ter um filho?"`, opcoes: [
     op("sim", "Vamos tentar", "Vocês decidiram: agora é tentar.", { gatilho: "par-filho", moral: 3 }),
     op("esperar", "Esperar a carreira estabilizar", "Ela entendeu, mas ficou um pouco triste.", { gatilho: "par:-6" }),
   ] }, 60);

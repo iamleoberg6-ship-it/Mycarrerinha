@@ -39,7 +39,7 @@ import { pedirEmprestimo } from "../src/transferencias.js";
 import { figurinhaDeMomento, type Figurinha } from "../src/figurinhas.js";
 import { ofertasDoCaminho, gradeDoClube, escolherNumero, saidasAtuais, elencoAtual, janelasDeLance, familiaDe, namoroDe, agirFamiliaJogo, curtirPerfil, perfisDaSemana, agirNamoroJogo, agirRelacao as agirRel2 } from "../src/jogo.js";
 import { gerarFamilia, idadeDe, acoesDe, temporadaFamilia, semanaFamilia, riscoLesaoFamilia, membro as membroFam } from "../src/familia.js";
-import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, type Par } from "../src/namoro.js";
+import { efeitosNamoro, IDADE_MINIMA_APP, novoNamoro, agirNamoro, agirFilho, semanaNamoro, temporadaNamoro, gravidasDe, type Par } from "../src/namoro.js";
 import { RNG as RNG2 } from "../src/rng.js";
 import { numerosDoClube } from "../src/numeros.js";
 import { ganhoSemanal, semanasParaAprender } from "../src/posicoes.js";
@@ -1196,11 +1196,19 @@ teste("Vida amorosa: caso escondido vira escândalo, divórcio custa caro, filho
   assert.ok(div.ok && div.custo === 300000 && !n.par, "divórcio: 30% do saldo");
   // filho planejado: tentar, gravidez, parto 36 semanas depois, programas com a criança
   n.par = par("Duda", "casados", 90); n.filhos = [];
-  for (let w = 400; w < 440 && !n.gravidez; w++) agirNamoro(n, "Duda", "tentarFilho", { ...ctx, semanaAbs: w });
-  assert.ok(n.gravidez && n.gravidez.mae === "Duda Silva", "grávida");
-  const parto = n.gravidez!.parto;
+  for (let w = 400; w < 440 && !gravidasDe(n).length; w++) agirNamoro(n, "Duda", "tentarFilho", { ...ctx, semanaAbs: w });
+  assert.ok(gravidasDe(n)[0]?.mae === "Duda Silva", "grávida");
+  // a mesma não engravida de novo antes do parto; outra mulher (o caso) pode
+  assert.ok(!agirNamoro(n, "Duda", "tentarFilho", { ...ctx, semanaAbs: 441 }).ok, "mesma mulher: espera o parto");
+  n.casos = [{ ...par("Lia", "namorando", 90) }];
+  for (let w = 441; w < 480 && gravidasDe(n).length < 2; w++) agirNamoro(n, "Lia", "tentarFilho", { ...ctx, semanaAbs: w });
+  assert.equal(gravidasDe(n).length, 2, "duas gravidezes ao mesmo tempo, com mulheres diferentes");
+  const parto = gravidasDe(n)[0].parto;
   semanaNamoro(n, { ...ctx, semanaAbs: parto, ano: 2030 });
-  assert.ok(!n.gravidez && n.filhos!.length === 1 && !n.filhos![0].pensao && n.filhos![0].ano === 2030, "nasceu e mora com o pai");
+  assert.ok(gravidasDe(n).length === 1 && n.filhos!.length === 1 && !n.filhos![0].pensao && n.filhos![0].ano === 2030, "nasceu e mora com o pai");
+  semanaNamoro(n, { ...ctx, semanaAbs: gravidasDe(n)[0].parto, ano: 2030 });
+  assert.ok(!gravidasDe(n).length && (n.filhos!.length as number) === 2 && n.filhos![1].pensao, "o filho do caso nasce depois e mora com a mãe");
+  n.casos = [];
   assert.ok(agirFilho(n, 0, "passear", { ...ctx, semanaAbs: parto + 1 }).ok);
   n.par = par("Carla", "casados", 90);
   let filhos = 0; for (let a = 2030; a < 2045; a++) { temporadaNamoro(n, [], { semente: "amor", ano: a, salario: 100000 }); filhos = n.filhos!.length; }

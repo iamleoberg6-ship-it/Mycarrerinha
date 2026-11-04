@@ -53,7 +53,7 @@ import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa
 import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
 import { ICONE_ORIGEM, NOME_ORIGEM } from "../../src/agenda";
 import { NOME_TOM } from "../../src/conversas";
-import { gostosDe, conheceGostos, NOME_GOSTO, LUGARES, NOME_PEDIDO, quimica, pensamentoDela, acharPar, type Lugar } from "../../src/namoro";
+import { gostosDe, conheceGostos, gravidasDe, estaGravida, NOME_GOSTO, LUGARES, NOME_PEDIDO, quimica, pensamentoDela, acharPar, type Lugar } from "../../src/namoro";
 import { NOME_PERFIL, FUNCOES, type FuncaoParca } from "../../src/vida-social";
 import { LUXO, MAX_LUXO, HOBBIES, MAX_HOBBIES, CURSOS, NOME_LINGUA, NIVEL_LINGUA, cursosDisponiveis, infoCurso, linguaNativa, DOACAO, NOME_DOACAO, CUSTO_FUNDACAO, type TipoLuxo, type Hobby, type Curso, type Lingua } from "../../src/estilo";
 import { POSTS, MAX_POSTS, postsDisponiveis, respostasDaPauta, tituloDaPauta, type TipoPost } from "../../src/midia";
@@ -1149,7 +1149,7 @@ function celMatch(s: Save, parte: "app" | "familia" = "app"): string {
   const PRINCIPAIS = new Set(["conversar", "convidar", "encontro", "jantar", "presente", "viagem", "pedirNamoro", "morarJunto", "pedirCasamento", "conhecerFamilia", "tentarFilho", "encontroEscondido", "assumir", "terminar"]);
   const acoes = (p: Par, caso = false) => {
     const bt = (a: AcaoNamoro) => `<button class="chip${a === "terminar" ? " perigo" : ""}${escolhaNam?.id === p.id && escolhaNam.op === a ? " ativo" : ""}" data-nam="${p.id}" data-op="${a}">${a === "terminar" && !caso && p.etapa === "casados" ? "Pedir o divórcio" : NOME_ACAO_NAMORO[a]}</button>`;
-    const l = acoesNamoro(p, ab, caso, !!n.gravidez).filter((a) => !(p.etapa === "match" && a === "conversar")), mais = l.filter((a) => !PRINCIPAIS.has(a));
+    const l = acoesNamoro(p, ab, caso, estaGravida(n, p.nome)).filter((a) => !(p.etapa === "match" && a === "conversar")), mais = l.filter((a) => !PRINCIPAIS.has(a));
     return l.filter((a) => PRINCIPAIS.has(a)).map(bt).join("") + (mais.length ? `<details class="mais-programas"${mais.some((a) => escolhaNam?.id === p.id && escolhaNam.op === a) ? " open" : ""}><summary class="chip">Mais programas (${mais.length}) ▾</summary><div class="rel-acoes" style="margin:6px 0 0">${mais.map(bt).join("")}</div></details>` : "");
   };
   const sobreEla = (p: Par) => {
@@ -1164,8 +1164,8 @@ function celMatch(s: Save, parte: "app" | "familia" = "app"): string {
   const casos = n.casos ?? [];
   const casosHtml = casos.length ? `<p class="rotulo" style="margin-top:14px">Casos escondidos <small>(${casos.length})</small></p><p class="sub">Quanto mais casos, encontros e fama, maior o risco de a mídia descobrir.${par ? ` Se descobrir, ${esc(par.nome.split(" ")[0])} fica sabendo.` : ""}</p>${casos.map((x) => `${cartaoPar(x, "", barra(x, x.exposto ? "Caso (já saiu na mídia)" : x.etapa === "namorando" ? "Namoro escondido" : "Caso"))}${cena(x)}${chat(x)}<div class="rel-acoes" style="margin-left:0">${acoes(x, true)}</div>${escolha(x)}`).join("")}` : "";
   const filhos = n.filhos ?? [];
-  const ano = ANO_INICIAL + c.temporada, g = n.gravidez;
-  const gravidezHtml = g ? `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>` : "";
+  const ano = ANO_INICIAL + c.temporada;
+  const gravidezHtml = gravidasDe(n).map((g) => `<div class="aviso-gravidez">🍼 <b>${esc(g.mae.split(" ")[0])} está grávida.</b> O bebê chega em ${Math.max(1, g.parto - ab)} semanas.${g.caso ? " Ninguém sabe ainda..." : ""}</div>`).join("");
   const filhosHtml = filhos.length ? `<p class="rotulo" style="margin-top:14px">Filhos</p>${filhos.map((f, i) => { const r = Math.round(f.relacao ?? 70); return `<div class="filho"><div class="filho-cab"><span class="filho-foto">${retratoFilho(s, f, i)}</span><div class="filho-info"><p class="filho-puxou">${esc(quemPuxou(s, f, i))}</p></div></div><div class="filho-topo"><button class="nome-hist" data-filhoperf="${i}">${esc(f.nome)}</button><small class="sub">${Math.max(0, ano - f.ano)} ${ano - f.ano === 1 ? "ano" : "anos"} · ${["bebê", "criança", "adolescente", "adulto"][ano - f.ano < 3 ? 0 : ano - f.ano < 12 ? 1 : ano - f.ano < 18 ? 2 : 3]} · mãe: ${esc(f.mae.split(" ")[0])} · ${f.pensao ? "mora com a mãe (pensão)" : ano - f.ano >= 18 && f.adulto ? "mora sozinho" : "mora com você"}${f.futebol ? ` · ⚽ ${{ escolinha: "na escolinha", base: `na base${f.futebol.clubeId ? ` do ${linkClube(f.futebol.clubeId)}` : ""}`, pro: "jogador profissional", parou: "largou o futebol" }[f.futebol.fase]}${f.futebol.fase !== "parou" ? ` · OVR ${f.futebol.ovr}` : ""}` : ""}</small></div>
       <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
       ${f.nomear ? `<div class="nomear-filho"><p>👶 <b>${f.menina ? "Ela" : "Ele"} ainda não tem nome.</b> Por enquanto, todo mundo chama de ${esc(f.nome)}. Escolha:</p>
