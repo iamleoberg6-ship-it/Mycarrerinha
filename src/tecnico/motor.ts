@@ -8,6 +8,7 @@ import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres
 import { infoLiga } from "../ligas.js";
 import { gerarNome } from "../nomes.js";
 import { onzeProvavel } from "../relacoes.js";
+import { valorMercado, CAMBIO } from "../mercado.js";
 import {
   FORMACOES, FUNCOES, NOME_FUNCAO, atletaDoMundo, custoObra, disponivel, forcaDoTime, formaDe, gerarAtributos, melhorEscalacao, ovrDe, ovrNaVaga, precoIngresso,
   salarioJusto, salarioStaff, taticaPadrao, valorAtleta, type Atleta, type Escalacao, type Funcao, type Membro, type PosT, type Tatica,
@@ -48,6 +49,8 @@ export interface SaveTecnico {
   tabelasReais: TabelasReais;
   demitido?: string;
   /** contratados nesta temporada (agentes livres não voltam a aparecer) */ recusas: string[];
+  /** mercado: jogadores à venda, propostas recebidas, negociações em andamento e o histórico */
+  aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
 
 export const semanaAbs = (s: SaveTecnico) => s.temporada * 60 + s.semana;
@@ -109,7 +112,7 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   numerar(s);
   const folha = folhaDe(s), rng = new RNG(`${semente}|clube`);
   const nivelClube = clamp(Math.round(1 + c.fClube * 1.4 + (li.nivel <= 1 ? 1 : 0)), 1, 5);
-  s.clube = { ...s.clube, saldo: Math.round(folha * (3 + 4 * c.fClube)), tv: Math.round(folha * 0.62), patrocinio: Math.round(folha * 0.28 * c.fClube), ctNivel: nivelClube, baseNivel: clamp(nivelClube + rng.int(-1, 1), 1, 5), tetoFolha: Math.round(folha * 1.08) };
+  s.clube = { ...s.clube, saldo: Math.round(folha * (3 + 4 * c.fClube)), tv: Math.round(folha * 0.62), patrocinio: Math.round(folha * 0.28 * c.fClube), ctNivel: nivelClube, baseNivel: clamp(nivelClube + rng.int(-1, 1), 1, 5), tetoFolha: Math.round(folha * 1.2) };
   for (const f of FUNCOES) s.staff[f] = candidatos(s, f, `inicio`, clamp(nivelClube - 1 + rng.int(0, 1), 1, 4))[0];
   s.esc = melhorEscalacao(s.elenco, s.tatica.formacao);
   definirExpectativa(pacote, s);
@@ -535,6 +538,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
     noticia(s, "diretoria", s.demitido);
     return { eventos: [...eventos, s.demitido], partida };
   }
+  propostasDaSemana(pacote, s, eventos);
   s.semana++;
   let fim: string | undefined;
   if (s.semana >= semanasDaTemporada(s)) fim = virarTemporada(pacote, s);
@@ -565,7 +569,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
     if (a.idade >= 34 && rng.chance((a.idade - 33) * 0.2)) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
   }
   for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
-  s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = [];
+  s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
   // o mundo vira a temporada (com a tabela da liga do técnico valendo para o acesso e o rebaixamento)
   sincronizarMundo(pacote, s.semente, s.temporada, 0, s.tabelasReais, 0);
   const w = mundo(pacote), ligaNova = w.info[s.clubeId]?.ligaId ?? s.ligaId;
@@ -606,3 +610,139 @@ export function proximoJogo(s: SaveTecnico): { adv: string; souCasa: boolean; ro
   return { adv: s.ordem[souCasa ? j[1] : j[0]], souCasa, rodada: r };
 }
 export { valorAtleta, ovrDe, formaDe, disponivel };
+
+// ------------------------------------------------------------------ mercado de transferências
+export interface Alvo { nome: string; pos: PosT; idade: number; ovr: number; nac: string; clubeId: string; ligaId: string; valor: number; titular: boolean }
+export interface PropostaRecebida { id: string; atletaId: string; clubeId: string; valor: number; expira: number; contra?: boolean }
+export interface Transferencia { t: number; nome: string; de: string; para: string; valor: number; venda: boolean }
+const PRE_JANELA = SEMANAS_PRE_T + 4, MEIO_INI = SEMANAS_PRE_T + 17, MEIO_FIM = SEMANAS_PRE_T + 22;
+/** Janela aberta: pré-temporada até a 4ª rodada e no meio do ano, da 18ª à 22ª. */
+export function janelaT(s: SaveTecnico): { aberta: boolean; texto: string } {
+  if (s.semana < PRE_JANELA) return { aberta: true, texto: "Janela aberta até a 4ª rodada." };
+  if (s.semana >= MEIO_INI && s.semana < MEIO_FIM) return { aberta: true, texto: "Janela do meio do ano aberta até a 22ª rodada." };
+  return { aberta: false, texto: s.semana < MEIO_INI ? "Janela fechada. Reabre na 18ª rodada." : "Janela fechada. Reabre na pré-temporada." };
+}
+const chaveJanela = (s: SaveTecnico) => `${s.temporada}-${s.semana < MEIO_INI ? "pre" : "meio"}`;
+const valorNpc = (j: JogadorNPC, fLiga: number) => Math.round(valorMercado(j.ovr, j.idade, 2, fLiga) * CAMBIO / 1000) * 1000;
+
+/** Jogadores dos outros clubes, para a busca do mercado. */
+export function buscarJogadores(pacote: PacoteDados, s: SaveTecnico, f: { pos?: PosT; idadeMax?: number; minhaLiga?: boolean; ovrMin?: number; alcance?: boolean }): Alvo[] {
+  const w = mundo(pacote), meus = new Set(s.elenco.map((a) => a.nome)), lista: Alvo[] = [];
+  const fMeu = w.clube[s.clubeId]?.forca ?? 60, teto = fMeu + 6 + s.tecnico.reputacao / 12;
+  for (const l of w.ligas) {
+    if (f.minhaLiga && l.id !== s.ligaId) continue;
+    const li = infoLiga(l.id);
+    if (li.amador) continue;
+    for (const c of l.clubes) {
+      if (c.id === s.clubeId) continue;
+      const onze = new Set(onzeProvavel(c.elenco).map((j) => j.nome));
+      for (const j of c.elenco) {
+        if (meus.has(j.nome) || j.base || (f.pos && j.posicao !== f.pos) || (f.idadeMax && j.idade > f.idadeMax) || j.ovr < (f.ovrMin ?? 0)) continue;
+        const valor = valorNpc(j, li.fLiga);
+        if (f.alcance && (j.ovr > teto || valor > s.clube.saldo * 1.2 || (li.nivel < infoLiga(s.ligaId).nivel && c.forca > fMeu + 3 && j.idade < 31))) continue;
+        lista.push({ nome: j.nome, pos: j.posicao as PosT, idade: j.idade, ovr: j.ovr, nac: j.nacionalidade, clubeId: c.id, ligaId: l.id, valor, titular: onze.has(j.nome) });
+      }
+    }
+  }
+  return lista.sort((a, b) => b.ovr - a.ovr || a.valor - b.valor).slice(0, 60);
+}
+/** O que o jogador acha de vir: topa ou acha o clube pequeno; e quanto quer ganhar. */
+export function interesseDo(pacote: PacoteDados, s: SaveTecnico, a: Alvo): { topa: boolean; motivo: string; salario: number } {
+  const w = mundo(pacote), meu = w.clube[s.clubeId], dele = w.clube[a.clubeId], li = infoLiga(s.ligaId), liDele = infoLiga(a.ligaId);
+  const fMeu = meu?.forca ?? 60, fDele = dele?.forca ?? 60;
+  const salario = Math.round(salarioJusto(a.ovr, a.idade, li.fLiga, li.fSalario, meu?.fClube ?? 1) * (fDele > fMeu ? 1.25 : 1.1) / 100) * 100;
+  const limite = fMeu + 6 + s.tecnico.reputacao / 12;
+  if (a.ovr > limite) return { topa: false, motivo: `${a.nome} acha o seu clube pequeno para ele.`, salario };
+  if (liDele.nivel < li.nivel && fDele > fMeu + 3 && a.idade < 31) return { topa: false, motivo: `${a.nome} não quer trocar a ${liDele.curto} por uma liga menor agora.`, salario };
+  return { topa: true, motivo: fDele > fMeu ? `${a.nome} aceita conversar, mas quer ganhar bem para descer de nível.` : `${a.nome} topa conversar: seria um passo à frente na carreira.`, salario };
+}
+/** Quanto o clube dono pede no mínimo: titular, rival da mesma liga e garoto valem mais. */
+const minimoDoClube = (s: SaveTecnico, a: Alvo) => Math.round(a.valor * (1 + (a.titular ? 0.25 : 0) + (a.ligaId === s.ligaId ? 0.1 : 0) + (a.idade <= 21 ? 0.1 : 0)) / 1000) * 1000;
+
+export function fazerProposta(pacote: PacoteDados, s: SaveTecnico, nome: string, clubeId: string, valor: number, anos: number): { ok: boolean; status: "fechado" | "contra" | "recusado" | "erro"; msg: string; pedido?: number } {
+  const jan = janelaT(s);
+  if (!jan.aberta) return { ok: false, status: "erro", msg: jan.texto };
+  const a = buscarAlvo(pacote, s, nome, clubeId);
+  if (!a) return { ok: false, status: "erro", msg: "Esse jogador não está mais nesse clube." };
+  const neg = ((s.negociacoes ??= {})[`${clubeId}|${nome}`] ??= { tentativas: 0, janela: chaveJanela(s) });
+  if (neg.janela !== chaveJanela(s)) { neg.tentativas = 0; neg.janela = chaveJanela(s); neg.pedido = undefined; }
+  if (neg.tentativas >= 3) return { ok: false, status: "recusado", msg: `O ${infoClube(pacote, clubeId).nome} encerrou a conversa por ${nome} nesta janela.` };
+  const int = interesseDo(pacote, s, a);
+  if (!int.topa) return { ok: false, status: "recusado", msg: int.motivo };
+  if (s.elenco.length >= 32) return { ok: false, status: "erro", msg: "O elenco está cheio (32). Venda ou dispense alguém antes." };
+  if (s.clube.saldo < valor) return { ok: false, status: "erro", msg: "O clube não tem esse dinheiro em caixa." };
+  if (folhaDe(s) + int.salario > s.clube.tetoFolha) return { ok: false, status: "erro", msg: `A diretoria barrou: o salário dele (${int.salario.toLocaleString("pt-BR")}/mês) passa do teto da folha.` };
+  neg.tentativas++;
+  const minimo = neg.pedido ?? minimoDoClube(s, a), nomeC = infoClube(pacote, clubeId).nome;
+  if (valor < minimo) {
+    if (valor >= minimo * 0.8 && neg.tentativas < 3) { neg.pedido = Math.round(minimo * 1.03 / 1000) * 1000; return { ok: false, status: "contra", msg: `O ${nomeC} recusou, mas aceita vender por ${neg.pedido.toLocaleString("pt-BR")}.`, pedido: neg.pedido }; }
+    return { ok: false, status: "recusado", msg: `O ${nomeC} achou a oferta baixa demais.${neg.tentativas >= 3 ? " A conversa acabou nesta janela." : ""}` };
+  }
+  // fechado
+  const npc = mundo(pacote).clube[clubeId]?.elenco.find((j) => j.nome === nome);
+  if (!npc) return { ok: false, status: "erro", msg: "Esse jogador não está mais nesse clube." };
+  const at = atletaDoMundo(npc, s.semente, s.clubeId, s.temporada, () => int.salario);
+  at.contratoAte = s.temporada + anos - 1; at.moral = 75; at.condicao = 90; at.desde = s.temporada; at.numero = 0;
+  s.elenco.push(at); numerar(s);
+  s.clube.saldo -= valor; gastar(s, "Contratações", valor);
+  (s.transferencias ??= []).unshift({ t: s.temporada, nome, de: clubeId, para: s.clubeId, valor, venda: false });
+  delete s.negociacoes![`${clubeId}|${nome}`];
+  versaoAplicada = -1;
+  prepararMundo(pacote, s);
+  noticia(s, "elenco", `${nome} (${a.pos}, ${a.idade} anos) chega do ${nomeC} por ${valor.toLocaleString("pt-BR")}, com contrato até ${ANO_INICIAL_T + at.contratoAte}.`);
+  return { ok: true, status: "fechado", msg: `Fechado! ${nome} assinou até ${ANO_INICIAL_T + at.contratoAte}.` };
+}
+function buscarAlvo(pacote: PacoteDados, s: SaveTecnico, nome: string, clubeId: string): Alvo | undefined {
+  const c = mundo(pacote).clube[clubeId], j = c?.elenco.find((x) => x.nome === nome);
+  if (!c || !j) return undefined;
+  const li = infoLiga(c.ligaId);
+  return { nome, pos: j.posicao as PosT, idade: j.idade, ovr: j.ovr, nac: j.nacionalidade, clubeId, ligaId: c.ligaId, valor: valorNpc(j, li.fLiga), titular: onzeProvavel(c.elenco).some((x) => x.nome === nome) };
+}
+export const alvoPorNome = buscarAlvo;
+
+export function alternarVenda(s: SaveTecnico, id: string): string {
+  const l = (s.aVenda ??= []), i = l.indexOf(id), a = s.elenco.find((x) => x.id === id);
+  if (i >= 0) { l.splice(i, 1); return `${a?.nome ?? "Jogador"} saiu da lista de venda.`; }
+  l.push(id); if (a) a.moral = clamp(a.moral - 4, 0, 100);
+  return `${a?.nome ?? "Jogador"} está à venda: os clubes ficam sabendo e as propostas aparecem durante a janela.`;
+}
+/** Propostas dos outros clubes pelos jogadores do técnico (só com a janela aberta). */
+function propostasDaSemana(pacote: PacoteDados, s: SaveTecnico, eventos: string[]) {
+  const ab = semanaAbs(s);
+  s.propostas = (s.propostas ?? []).filter((p) => p.expira > ab && s.elenco.some((a) => a.id === p.atletaId));
+  if (!janelaT(s).aberta || s.propostas.length >= 3) return;
+  const w = mundo(pacote), rng = rngT(s, "propostas"), fL = fLigaDe(s), aVenda = new Set(s.aVenda ?? []), meuF = w.clube[s.clubeId]?.forca ?? 60;
+  const clubes = w.ligas.filter((l) => !infoLiga(l.id).amador).flatMap((l) => l.clubes).filter((c) => c.id !== s.clubeId);
+  for (const a of s.elenco) {
+    if (s.propostas.length >= 3 || s.propostas.some((p) => p.atletaId === a.id) || a.desde === s.temporada && !aVenda.has(a.id)) continue;
+    const o = ovrDe(a), p = 0.012 + (aVenda.has(a.id) ? 0.12 : 0) + (a.querSair ? 0.05 : 0) + (o >= meuF + 3 ? 0.02 : 0) + (a.idade <= 21 && a.pot >= o + 8 ? 0.015 : 0);
+    if (!rng.chance(p)) continue;
+    const cands = clubes.filter((c) => c.forca >= o - 5 && c.forca <= o + 9);
+    if (!cands.length) continue;
+    const c = rng.pick(cands), valor = Math.round(valorAtleta(a, Math.max(fL, infoLiga(c.ligaId).fLiga), s.temporada) * rng.range(0.75, 1.25) * (aVenda.has(a.id) ? 0.9 : 1) / 1000) * 1000;
+    s.propostas.push({ id: `${ab}-${a.id}`, atletaId: a.id, clubeId: c.id, valor, expira: ab + 2 });
+    eventos.push(`Proposta do ${w.info[c.id]?.nome ?? c.id} por ${a.nome}.`);
+  }
+}
+export function responderPropostaT(pacote: PacoteDados, s: SaveTecnico, id: string, r: "aceitar" | "recusar" | "contra"): { ok: boolean; msg: string } {
+  const p = (s.propostas ?? []).find((x) => x.id === id), a = p && s.elenco.find((x) => x.id === p.atletaId);
+  if (!p || !a) return { ok: false, msg: "Essa proposta não vale mais." };
+  const nomeC = infoClube(pacote, p.clubeId)?.nome ?? p.clubeId;
+  const tirar = () => { s.propostas = s.propostas!.filter((x) => x.id !== id); };
+  if (r === "recusar") { tirar(); if (a.querSair) a.moral = clamp(a.moral - 8, 0, 100); return { ok: true, msg: `Você recusou a proposta do ${nomeC}.${a.querSair ? ` ${a.nome} ficou chateado.` : ""}` }; }
+  if (r === "contra") {
+    if (p.contra) return { ok: false, msg: "Você já pediu mais uma vez." };
+    p.contra = true;
+    if (rngT(s, "contra", id).chance(0.45)) { p.valor = Math.round(p.valor * 1.2 / 1000) * 1000; return { ok: true, msg: `O ${nomeC} aceitou subir para ${p.valor.toLocaleString("pt-BR")}. Agora é com você.` }; }
+    tirar(); return { ok: false, msg: `O ${nomeC} não subiu a oferta e desistiu.` };
+  }
+  if (s.elenco.length <= 18) return { ok: false, msg: "O elenco ficaria curto demais (mínimo de 18)." };
+  tirar();
+  s.clube.saldo += p.valor; receber(s, "Vendas", p.valor);
+  tirarDoElenco(s, a.id); s.aVenda = (s.aVenda ?? []).filter((x) => x !== a.id);
+  (s.transferencias ??= []).unshift({ t: s.temporada, nome: a.nome, de: s.clubeId, para: p.clubeId, valor: p.valor, venda: true });
+  if (ovrDe(a) >= (mundo(pacote).clube[s.clubeId]?.forca ?? 60) + 2) s.clube.torcida = clamp(s.clube.torcida - 4, 0, 100);
+  versaoAplicada = -1; prepararMundo(pacote, s);
+  noticia(s, "elenco", `${a.nome} é vendido ao ${nomeC} por ${p.valor.toLocaleString("pt-BR")}.`);
+  return { ok: true, msg: `${a.nome} vendido ao ${nomeC}.` };
+}

@@ -64,7 +64,7 @@ import { SITUACAO } from "../../src/lances";
 import type { LinhaPremio, PremioMundo } from "../../src/premios-mundo";
 import { artilheirosDaSelecao } from "../../src/artilheiros";
 import { trocasDeTecnicoEm, lesoesDaTemporada } from "../../src/mundo";
-import { NOME_ESTILO } from "../../src/tecnicos";
+import { NOME_ESTILO, formacaoDoTecnico, vagasNaFormacao, DESC_FORMACAO } from "../../src/tecnicos";
 import { infoClube, idClube, idSelecao, mundo, nacionalidadeDe, baseDoClube, nivelDaBase, historicoDe, ondeJoga, rankingDaLiga, statsDaLinha, janelaDoMundo, janelasFeitas, agentesLivres, selecaoDaRodada, selecaoDoMes, type Negocio, type Selecionado } from "../../src/mundo";
 import { statsAte } from "../../src/estatisticas";
 import type { JogadorNPC } from "../../src/liga";
@@ -1285,7 +1285,8 @@ function blocoClubeCorpo(s: Save): string {
   if (c.fase || c.formacao || c.mercado?.semClube) return `<p class="sub">${c.mercado?.semClube ? "Sem clube, sem vestiário. Assine um contrato e esta tela ganha vida." : "Na base, o vestiário é outro: técnico, capitania, rival e torcida chegam com o contrato profissional."}</p>${blocoCidade(s, true)}`;
   const v = vestiarioDe(pacote, s), t = c.tecnico;
   const tecnico = t ? `<div class="card-clube"><div class="linha-ico"><span class="ico">📋</span><div><b>${esc(t.nome)}</b><small>${esc(NOME_ESTILO[t.estilo][0])} · ${t.idade} anos · desde ${ANO_INICIAL + t.desde}</small></div></div>
-    <p class="sub">${esc(NOME_ESTILO[t.estilo][1])}</p>${barra("Relação", c.relTecnico, 100, c.relTecnico < 30 ? "#E5534B" : "#E3B341")}
+    <p class="sub">${esc(NOME_ESTILO[t.estilo][1])}</p>
+    <p class="sub" style="margin-top:6px"><b style="color:var(--giz)">Joga no ${formacaoDoTecnico(t)}.</b> ${esc(DESC_FORMACAO[formacaoDoTecnico(t)] ?? "")} ${(() => { const n = vagasNaFormacao(t, j.posicao); return n === 0 ? `<b style="color:var(--neg)">Não tem vaga para ${esc((NOME_POS[j.posicao] ?? j.posicao).toLowerCase())}: no máximo banco, até você se adaptar a outra posição.</b>` : `Para ${esc((NOME_POS[j.posicao] ?? j.posicao).toLowerCase())}: ${n} ${n === 1 ? "vaga" : "vagas"} de titular.`; })()}</p>${barra("Relação", c.relTecnico, 100, c.relTecnico < 30 ? "#E5534B" : "#E3B341")}
     ${v.geladeira ? `<p class="aviso-geladeira">🧊 Na geladeira: mais ${v.geladeira} ${v.geladeira === 1 ? "semana" : "semanas"} fora dos relacionados.</p>` : c.relTecnico < 25 ? `<p class="sub" style="color:var(--neg)">Relação ruim: o técnico pode te tirar dos relacionados.</p>` : ""}
     ${(v.exTecnicos ?? []).length ? `<p class="sub" style="margin-top:6px">Ex-técnicos: ${v.exTecnicos!.map((x) => `${esc(x.nome)} <small>(${x.rel >= 65 ? "fã de você" : x.rel >= 40 ? "neutro" : "não gosta"})</small>`).join(" · ")}. Quem gosta de você pode te chamar quando assumir outro clube.</p>` : ""}</div>` : "";
   const prox = v.papel === "capitao" ? "Você usa a braçadeira. Discursa antes das decisões e responde pelo grupo." : v.papel === "vice" ? "Próximo passo: capitão (liderança 74, titular e 20 jogos no clube)." : v.papel === "novato" ? "Ainda é o novato: jogos, tempo de casa e as escolhas no vestiário mudam isso." : "Liderança sobe com tempo de casa, idade, carisma, fama e as escolhas nos momentos do vestiário.";

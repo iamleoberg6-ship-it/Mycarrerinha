@@ -25,7 +25,7 @@ import { novaMidia, feedDaSemana, sortearPauta, postar, responderPauta, type Est
 import type { PersonalidadeDNA, ResultadoCriacao, TracoId } from "./dna.js";
 import { definirPerfil, type Efeitos as EfeitosPerfil } from "./perfil.js";
 import { SITUACAO, COMEMORACAO, POS_JOGO, DISPUTA, MEMORIA_RECENTE, contextoPadrao, escolherSituacao, montarDecisao, resolverEfeito, habilidade, sortearNivel, notaEsperada, type Contexto, type Efeito, type Memoria, type Nivel } from "./lances.js";
-import { bonusDoTecnico, chanceDeDemissao, NOME_ESTILO, type Tecnico } from "./tecnicos.js";
+import { bonusDoTecnico, chanceDeDemissao, NOME_ESTILO, formacaoDoTecnico, vagasNaFormacao, type Tecnico } from "./tecnicos.js";
 import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, lesoesQueComecam, encaixarNoMundo } from "./mundo.js";
 import { noticiasDaVidaDoMundo as sortearNoticiasDaVida, type JogadorDoMundo } from "./vida-mundo.js";
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
@@ -37,7 +37,7 @@ import { LIGA_DA_BASE, type PaisId } from "./dna.js";
 import { ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type TorneioId } from "./copas.js";
 import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
-import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
+import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, sugestaoParaEsquema, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
 import { todasEstrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, famaPorOvr, onzeProvavel, numeroDe, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
 import { estatisticasEstimadas, totaisDaCarreira, type EstatEstimada } from "./perfil-jogador.js";
 import { TATUAGEM, custoRemocao, visualDe, NOME_AREA, noArea, VISUAL_PADRAO, type Visual, type AreaTatuagem, type Fisico } from "./visual.js";
@@ -310,6 +310,7 @@ export function sincronizar(pacote: PacoteDados, s: Save) {
   if (c.tecnicoClube !== c.clubeId && !c.fase) {
     const t = tecnicoDoClube(pacote, idClube(c.clubeId));
     c.tecnico = t ? { ...t } : tecnicoLivrePara(pacote, idClube(c.clubeId), `${c.temporada}-chegada`); c.tecnicoClube = c.clubeId; c.resultadosClube = [];
+    if (c.sugestaoPos && !c.sugestaoPos.aceita) c.sugestaoPos = undefined;
   }
   if (versaoMundo() === antes) return;
   // fechou a janela do meio do ano: as notícias saem uma vez
@@ -603,7 +604,8 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
   const elenco = elencoDisponivel(pacote, s), tec = c.tecnico;
   const meu = pontuacaoTitular(ovr(j), forma(c), c.relTecnico, cansacoPrevisto) + bonusJovem(c.clubeId, j.idade) + bonusDoTecnico(tec, j.posicao, j.idade);
   const rank = elenco.filter((x) => x.posicao === j.posicao).filter((x) => pontuacaoTitular(x.ovr, 6.5, 50, 0) + bonusDoTecnico(tec, x.posicao, x.idade) > meu).length;
-  const vagas = VAGAS_433[j.posicao];
+  // a formação do técnico decide quantas vagas a posição tem (sem vaga: no máximo banco)
+  const vagas = vagasNaFormacao(tec, j.posicao);
   if (rank < vagas) return "titular";
   if (rank <= vagas + 1) return "banco";
   if (j.idade <= 19) {
@@ -1579,6 +1581,11 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
       fam[p] = clamp(antes + ganhoSemanal(j.at, j.posicao, p, c.sugestaoPos?.pos === p && !!c.sugestaoPos.aceita, cont("treino")), 0, 100);
       if (antes < PODE_JOGAR && fam[p]! >= PODE_JOGAR) { eventos.push(`Já dá para jogar de ${NOME_POSICAO[p].toLowerCase()}.`); noticia(s, "clube", "Posição nova", `${j.apelido} já está pronto para jogar de ${NOME_POSICAO[p].toLowerCase()}. Ainda falta lapidar, mas o técnico pode contar com ele ali.`); }
       if (fam[p]! >= 100) { c.treinoPosicao = undefined; eventos.push(`Domina a posição de ${NOME_POSICAO[p].toLowerCase()}.`); }
+    } else if (!c.fase && !c.formacao && vagasNaFormacao(c.tecnico, j.posicao) === 0 && (!c.sugestaoPos || (c.sugestaoPos.aceita === false && rngDe(s, "sugestao-esquema").chance(0.08)))) {
+      // o esquema do técnico não tem a posição do jogador: ele pede que você se adapte a uma que ele usa
+      const f = formacaoDoTecnico(c.tecnico), usadas = (["ZAG", "LAT", "VOL", "MEI", "PON", "ATA"] as Posicao[]).filter((x) => vagasNaFormacao(c.tecnico, x) > 0);
+      const p = sugestaoParaEsquema(j.at, j.posicao, fam, usadas);
+      if (p) { c.sugestaoPos = { pos: p }; eventos.push(`O técnico joga no ${f}, sem ${NOME_POSICAO[j.posicao].toLowerCase()}: quer você como ${NOME_POSICAO[p].toLowerCase()}.`); noticia(s, "clube", "Conversa com o técnico", `"No meu ${f} não tem ${NOME_POSICAO[j.posicao].toLowerCase()}", disse o técnico a ${j.apelido}. "Te vejo de ${NOME_POSICAO[p].toLowerCase()}. Topa treinar?"`); }
     } else if (!c.sugestaoPos && c.semana > 2 && rngDe(s, "sugestao").chance(0.025)) {
       const p = sugestaoDoTecnico(j.at, j.posicao, fam);
       if (p) { c.sugestaoPos = { pos: p }; eventos.push(`O técnico quer testar você como ${NOME_POSICAO[p].toLowerCase()}.`); noticia(s, "clube", "Conversa com o técnico", `O técnico chamou ${j.apelido}: "Vejo você jogando de ${NOME_POSICAO[p].toLowerCase()}. Topa treinar?"`); }
@@ -2574,10 +2581,11 @@ function trocarTecnico(pacote: PacoteDados, s: Save, motivo: "demitido" | "apose
   const c = s.carreira, j = s.jogador, velho = c.tecnico, clube = infoClube(pacote, c.clubeId);
   const novo = tecnicoLivrePara(pacote, idClube(c.clubeId), `${c.temporada}-${c.semana}`);
   c.tecnico = novo; c.tecnicoClube = c.clubeId;
+  if (c.sugestaoPos && !c.sugestaoPos.aceita) c.sugestaoPos = undefined;
   const forcaClube = mundo(pacote).clube[idClube(c.clubeId)]?.forca ?? 70;
   c.relTecnico = Math.round(clamp(50 + (c.fama - 50) / 8 + (ovr(j) - forcaClube) / 2, 25, 75));
   const est = NOME_ESTILO[novo.estilo];
-  noticia(s, "clube", `${velho ? `${velho.nome} ${motivo === "aposentou" ? "se aposenta" : "é demitido"}` : "Técnico novo"} no ${clube.nome}`, `${novo.nome} (${NOME_PAIS_CURTO[novo.nacionalidade] ?? novo.nacionalidade}, ${novo.idade} anos) é o novo técnico. Estilo: ${est[0].toLowerCase()}. ${est[1]}`);
+  noticia(s, "clube", `${velho ? `${velho.nome} ${motivo === "aposentou" ? "se aposenta" : "é demitido"}` : "Técnico novo"} no ${clube.nome}`, `${novo.nome} (${NOME_PAIS_CURTO[novo.nacionalidade] ?? novo.nacionalidade}, ${novo.idade} anos) é o novo técnico. Estilo: ${est[0].toLowerCase()}. ${est[1]} Joga no ${formacaoDoTecnico(novo)}.`);
   eventos.push(`Técnico novo: ${novo.nome} (${est[0].toLowerCase()}).`);
 }
 const NOME_PAIS_CURTO: Record<string, string> = { BRA: "brasileiro", ARG: "argentino", POR: "português", ESP: "espanhol", ITA: "italiano", GER: "alemão", FRA: "francês", ENG: "inglês", NED: "holandês", URU: "uruguaio", MEX: "mexicano", TUR: "turco", USA: "americano", KSA: "saudita", COL: "colombiano", CHI: "chileno", PAR: "paraguaio", ECU: "equatoriano" };

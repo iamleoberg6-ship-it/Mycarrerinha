@@ -36,6 +36,10 @@ export const penalidade = (fam: number) => Math.max(0, (100 - fam) * 0.07);
 /** Pode ser escalado na posição a partir de 70%. */
 export const PODE_JOGAR = 70;
 
+/** Posição para o técnico pedir quando o esquema dele não tem vaga para a do jogador: a que mais combina, entre as que ele usa. */
+export function sugestaoParaEsquema(at: Atributos, atual: Posicao, fam: Familiaridade, usadas: Posicao[]): Posicao | undefined {
+  return usadas.filter((p) => p !== atual).sort((a, b) => (ovrPos(at, b) + 8 * afinidade(atual, b) + ((fam[b] ?? 0) >= PODE_JOGAR ? 3 : 0)) - (ovrPos(at, a) + 8 * afinidade(atual, a) + ((fam[a] ?? 0) >= PODE_JOGAR ? 3 : 0)))[0];
+}
 /** Melhor posição alternativa para o técnico sugerir (atributos combinam e a afinidade ajuda). */
 export function sugestaoDoTecnico(at: Atributos, atual: Posicao, fam: Familiaridade): Posicao | undefined {
   const base = ovrPos(at, atual);

@@ -12,6 +12,7 @@ import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
   proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
+  janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import {
@@ -29,6 +30,8 @@ let save: SaveTecnico | null = ler<SaveTecnico>(CHAVE_TECNICO);
 let aba: "inicio" | "elenco" | "tatica" | "liga" | "clube" = "inicio";
 let sub = { elenco: "jogadores", clube: "financas" } as Record<string, string>;
 let filtro = "todos";
+let filtroMercado: { pos?: PosT; idadeMax?: number; minhaLiga: boolean; alcance: boolean } = { minhaLiga: true, alcance: true };
+let anosProposta = 3, msgNeg: { texto: string; ok: boolean; pedido?: number } | undefined;
 let msg: { texto: string; ok: boolean } | undefined;
 let ligaEscolhida = "BRA1";
 /** Técnico demitido procurando clube: leva a reputação e o histórico. */
@@ -109,7 +112,7 @@ function abaInicio(s: SaveTecnico): string {
   const contratos = s.elenco.filter((a) => a.contratoAte <= s.temporada);
   const alertas = [
     ...lesionados.map((a) => `<span class="pill ruim">${esc(a.nome)} · ${a.lesao} sem.</span>`), ...susp.map((a) => `<span class="pill aviso">${esc(a.nome)} suspenso</span>`),
-    ...sair.map((a) => `<span class="pill ruim">${esc(a.nome)} quer sair</span>`), ...(contratos.length ? [`<span class="pill aviso">${contratos.length} contrato${contratos.length > 1 ? "s" : ""} acabando</span>`] : []),
+    ...sair.map((a) => `<span class="pill ruim">${esc(a.nome)} quer sair</span>`), ...((s.propostas ?? []).length ? [`<button class="pill aviso" data-ir-propostas style="cursor:pointer">${s.propostas!.length} proposta${s.propostas!.length > 1 ? "s" : ""} por jogadores seus ›</button>`] : []), ...(contratos.length ? [`<span class="pill aviso">${contratos.length} contrato${contratos.length > 1 ? "s" : ""} acabando</span>`] : []),
   ];
   return `${jogo}${ult}
     <section class="painel"><p class="rotulo">Diretoria</p><h2 style="font-size:19px">${esc(d.expectativa.texto)}</h2>
@@ -125,15 +128,18 @@ function abaInicio(s: SaveTecnico): string {
 // ------------------------------------------------------------------ Elenco
 const grupoPos = (p: PosT) => (p === "GOL" ? "gol" : p === "ZAG" || p === "LAT" ? "def" : p === "VOL" || p === "MEI" ? "mei" : "ata");
 function abaElenco(s: SaveTecnico): string {
-  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["livres", "Agentes livres"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
+  const nProp = (s.propostas ?? []).length;
+  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["mercado", "Mercado"], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["livres", "Agentes livres"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
   if (sub.elenco === "livres") return subs + abaLivres(s);
+  if (sub.elenco === "mercado") return subs + abaMercadoT(s);
+  if (sub.elenco === "propostas") return subs + abaPropostas(s);
   const filtros = `<div class="chips" style="margin-bottom:8px">${[["todos", "Todos"], ["gol", "Goleiros"], ["def", "Defesa"], ["mei", "Meio"], ["ata", "Ataque"]].map(([k, n]) => `<button class="chip${filtro === k ? " ativo" : ""}" data-filtro="${k}">${n}</button>`).join("")}</div>`;
   const ordemPos: Record<string, number> = { GOL: 0, ZAG: 1, LAT: 2, VOL: 3, MEI: 4, PON: 5, ATA: 6 };
   const lista = s.elenco.filter((a) => filtro === "todos" || grupoPos(a.pos) === filtro).sort((a, b) => ordemPos[a.pos] - ordemPos[b.pos] || ovrDe(b) - ovrDe(a));
   const tit = new Set(s.esc.titulares);
   return `${subs}${filtros}<p class="sub" style="margin-bottom:6px">Folha: <b style="color:var(--giz)">${curtoBrl(folhaDe(s))}</b>/mês · teto ${curtoBrl(s.clube.tetoFolha)}</p><div class="lista">${lista.map((a) => {
     const tags = [tit.has(a.id) ? `<span class="pill bom">Titular</span>` : "", a.lesao > 0 ? `<span class="pill ruim">Lesão ${a.lesao} sem.</span>` : "", a.suspenso > 0 ? `<span class="pill aviso">Suspenso</span>` : "",
-      a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined ? `<span class="pill">Promessa</span>` : "", a.base ? `<span class="pill">Base</span>` : ""].join("");
+      a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined ? `<span class="pill">Promessa</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : ""].join("");
     return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${a.pos} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong>${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
   }).join("")}</div>`;
 }
@@ -159,7 +165,41 @@ function fichaJogador(s: SaveTecnico, id: string): string {
     ${aviso()}
     <div><p class="rotulo">Conversar${conv ? " · já conversou nesta semana" : ""}</p><div class="botoes" style="margin-top:6px">${(Object.keys(NOME_CONVERSA) as Conversa[]).map((k) => `<button class="botao sec peq" data-conv="${k}" data-id="${esc(a.id)}" ${conv ? "disabled" : ""}>${NOME_CONVERSA[k]}</button>`).join("")}</div></div>
     <div><p class="rotulo">Renovar · pede ${valorBrl(pedido)}/mês</p><div class="botoes" style="margin-top:6px">${[1, 2, 3, 4].map((n) => `<button class="botao sec peq" data-renovar="${n}" data-id="${esc(a.id)}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
+    <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button></div></div>
     <div><p class="rotulo">Dispensar · rescisão de ${curtoBrl(multa)}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-dispensar data-id="${esc(a.id)}">Dispensar ${esc(a.nome)}</button></div></div>`;
+}
+function abaMercadoT(s: SaveTecnico): string {
+  const jan = janelaT(s), f = filtroMercado, lista = buscarJogadores(pacote, s, f);
+  const chip = (on: boolean, attrs: string, n: string) => `<button class="chip${on ? " ativo" : ""}" ${attrs}>${n}</button>`;
+  return `<p class="aviso-t ${jan.aberta ? "ok" : ""}" style="margin-bottom:10px">${esc(jan.texto)} Caixa: <b>${curtoBrl(s.clube.saldo)}</b> · folha ${curtoBrl(folhaDe(s))} de ${curtoBrl(s.clube.tetoFolha)}.</p>
+    <div class="chips" style="margin-bottom:6px">${chip(!f.pos, 'data-mpos=""', "Todas")}${(["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"] as PosT[]).map((p) => chip(f.pos === p, `data-mpos="${p}"`, p)).join("")}</div>
+    <div class="chips" style="margin-bottom:6px">${chip(!f.idadeMax, 'data-midade="0"', "Qualquer idade")}${chip(f.idadeMax === 23, 'data-midade="23"', "Até 23")}${chip(f.idadeMax === 28, 'data-midade="28"', "Até 28")}</div>
+    <div class="chips" style="margin-bottom:6px">${chip(f.minhaLiga, 'data-mliga="1"', `Só na ${esc(infoLiga(s.ligaId).curto)}`)}${chip(!f.minhaLiga, 'data-mliga="0"', "Todas as ligas")}</div>
+    <div class="chips" style="margin-bottom:10px">${chip(f.alcance, 'data-malc="1"', "Ao seu alcance")}${chip(!f.alcance, 'data-malc="0"', "Todos")}</div>
+    <div class="lista">${lista.map((x) => `<button class="lin" data-alvo="${esc(x.nome)}" data-clube="${x.clubeId}"><span class="num" style="font-size:13px">${x.pos}</span><span class="nm"><b>${esc(x.nome)}</b><small>${escudo(x.clubeId, "escudo esc-p")}${esc(nomeClube(x.clubeId))} · ${x.idade}a${x.titular ? ` <span class="pill">Titular</span>` : ""}</small><small>Valor ${curtoBrl(x.valor)}</small></span><span class="ov"><strong>${x.ovr}</strong><span>OVR</span></span></button>`).join("") || `<p class="sub">Ninguém com esse filtro.</p>`}</div>`;
+}
+function negociarHtml(s: SaveTecnico, nome: string, clubeId: string): string {
+  const a = alvoPorNome(pacote, s, nome, clubeId);
+  if (!a) return `<button class="fechar" data-fechar aria-label="Fechar">×</button><p class="sub">Esse jogador não está mais nesse clube.</p>`;
+  const int = interesseDo(pacote, s, a), jan = janelaT(s);
+  const ofertas = [0.8, 1, 1.2, 1.5].map((k) => Math.round(a.valor * k / 1000) * 1000);
+  return `<button class="fechar" data-fechar aria-label="Fechar">×</button>
+    <div><p class="rotulo">${NOME_POS_T[a.pos]} · ${a.idade} anos · ${a.nac}</p><h2>${esc(a.nome)}</h2></div>
+    <div class="clube-op" style="border:0">${escudo(a.clubeId)}<div><b>${esc(nomeClube(a.clubeId))}</b><br><small class="sub">${esc(infoLiga(a.ligaId).curto)}${a.titular ? " · titular" : ""}</small></div><span class="ov"><strong style="font-family:var(--display);font-size:30px;color:var(--ouro-claro)">${a.ovr}</strong></span></div>
+    <div class="dl"><span>Valor de mercado</span><b>${valorBrl(a.valor)}</b><span>Salário que ele pede</span><b>${valorBrl(int.salario)}/mês</b><span>Seu caixa</span><b>${valorBrl(s.clube.saldo)}</b></div>
+    <p class="aviso-t ${int.topa ? "ok" : "erro"}">${esc(int.motivo)}</p>
+    ${msgNeg ? `<p class="aviso-t ${msgNeg.ok ? "ok" : "erro"}" role="status">${esc(msgNeg.texto)}</p>` : ""}
+    ${!jan.aberta ? `<p class="sub">${esc(jan.texto)}</p>` : int.topa ? `<div><p class="rotulo">Contrato</p><div class="chips" style="margin-top:6px">${[1, 2, 3, 4, 5].map((n) => `<button class="chip${anosProposta === n ? " ativo" : ""}" data-anosprop="${n}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
+    <div><p class="rotulo">Oferta ao clube</p><div class="botoes" style="margin-top:6px">${msgNeg?.pedido ? `<button class="botao peq" data-oferta="${msgNeg.pedido}" data-alvo-n="${esc(a.nome)}" data-clube="${a.clubeId}">Pagar ${curtoBrl(msgNeg.pedido)}</button>` : ""}${ofertas.map((v, i) => `<button class="botao sec peq" data-oferta="${v}" data-alvo-n="${esc(a.nome)}" data-clube="${a.clubeId}">${["80%", "100%", "120%", "150%"][i]} · ${curtoBrl(v)}</button>`).join("")}</div>
+    <p class="sub" style="margin-top:6px">Titular, garoto e rival da mesma liga custam mais. Até 3 tentativas por janela.</p></div>` : ""}`;
+}
+function abaPropostas(s: SaveTecnico): string {
+  const ps = s.propostas ?? [], jan = janelaT(s), por = new Map(s.elenco.map((a) => [a.id, a]));
+  const hist = (s.transferencias ?? []).slice(0, 15);
+  return `${aviso()}<p class="sub" style="margin-bottom:8px">${esc(jan.texto)} Coloque jogadores à venda pela ficha deles para atrair propostas.</p>
+    ${ps.length ? ps.map((p) => { const a = por.get(p.atletaId)!; return `<div class="painel" style="margin-bottom:8px"><div class="clube-op" style="border:0;padding:0">${escudo(p.clubeId)}<div><b>${esc(a.nome)}</b> <small class="sub">(${a.pos}, ${ovrDe(a)})</small><br><small class="sub">${esc(nomeClube(p.clubeId))} oferece</small></div><b style="font-size:16px">${curtoBrl(p.valor)}</b></div>
+      <p class="sub" style="margin:6px 0">Vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))} · responde até a próxima semana</p><div class="botoes"><button class="botao peq" data-prop="${esc(p.id)}" data-r="aceitar">Vender</button>${p.contra ? "" : `<button class="botao sec peq" data-prop="${esc(p.id)}" data-r="contra">Pedir 20% a mais</button>`}<button class="botao sec peq" data-prop="${esc(p.id)}" data-r="recusar">Recusar</button></div></div>`; }).join("") : `<p class="sub">Nenhuma proposta agora.</p>`}
+    ${hist.length ? `<p class="rotulo" style="margin-top:14px">Transferências</p>${hist.map((t) => `<div class="not"><small>${ANO_INICIAL_T + t.t} · ${t.venda ? "venda" : "compra"}</small>${esc(t.nome)}: ${t.venda ? `para o ${esc(nomeClube(t.para))}` : `do ${esc(nomeClube(t.de))}`} · ${curtoBrl(t.valor)}</div>`).join("")}` : ""}`;
 }
 function abaLivres(s: SaveTecnico): string {
   const l = agentesLivresT(pacote, s), olheiro = nivelStaff(s, "olheiro");
@@ -339,6 +379,21 @@ document.addEventListener("click", (ev) => {
   if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Funcao, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffD) { const r = demitirStaff(s, d.staffD as Funcao); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.mpos !== undefined) { filtroMercado.pos = (d.mpos || undefined) as PosT | undefined; render(); return; }
+  if (d.midade !== undefined) { filtroMercado.idadeMax = +d.midade || undefined; render(); return; }
+  if (d.mliga !== undefined) { filtroMercado.minhaLiga = d.mliga === "1"; render(); return; }
+  if (d.malc !== undefined) { filtroMercado.alcance = d.malc === "1"; render(); return; }
+  if (d.alvo && d.clube) { msgNeg = undefined; abrir(negociarHtml(s, d.alvo, d.clube)); return; }
+  if (d.anosprop) { anosProposta = +d.anosprop; const n = $("tela").querySelector<HTMLElement>("[data-oferta]"); if (n) abrir(negociarHtml(s, n.dataset.alvoN!, n.dataset.clube!)); return; }
+  if (d.oferta && d.alvoN && d.clube) {
+    const r = fazerProposta(pacote, s, d.alvoN, d.clube, +d.oferta, anosProposta);
+    msgNeg = { texto: r.msg, ok: r.ok, ...(r.pedido ? { pedido: r.pedido } : {}) }; salvar();
+    if (r.status === "fechado") { fechar(); msg = { texto: r.msg, ok: true }; sub.elenco = "jogadores"; render(); return; }
+    abrir(negociarHtml(s, d.alvoN, d.clube)); render(); return;
+  }
+  if (d.venda) { msg = { texto: alternarVenda(s, d.venda), ok: true }; salvar(); abrir(fichaJogador(s, d.venda)); render(); return; }
+  if (d.prop && d.r) { const r = responderPropostaT(pacote, s, d.prop, d.r as "aceitar" | "recusar" | "contra"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.irPropostas !== undefined) { aba = "elenco"; sub.elenco = "propostas"; render(); window.scrollTo(0, 0); return; }
   if (d.livre && d.anos) { const r = contratarLivre(pacote, s, d.livre, +d.anos); msg = { texto: r.msg, ok: r.ok }; if (r.ok) prepararMundo(pacote, s); redesenhar(); return; }
   if (d.recomecar !== undefined) { anterior = s; save = null; render(); window.scrollTo(0, 0); return; }
   if (d.apagar !== undefined) {

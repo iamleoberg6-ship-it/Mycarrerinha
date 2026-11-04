@@ -1661,3 +1661,20 @@ teste("Técnico: temporada completa com tabela fechada, dinheiro, escalação e 
   for (let k = 0; k < 10; k++) T.avancarSemana(pacote, c);
   assert.deepEqual(b.tabela, c.tabela);
 });
+
+teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e vende por proposta", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-mercado");
+  assert.ok(T.janelaT(s).aberta);
+  const alvo = T.buscarJogadores(pacote, s, { alcance: true }).find((a) => a.valor * 1.6 < s.clube.saldo && T.interesseDo(pacote, s, a).topa)!;
+  assert.ok(alvo, "algum jogador ao alcance");
+  const caixa = s.clube.saldo, r = T.fazerProposta(pacote, s, alvo.nome, alvo.clubeId, Math.round(alvo.valor * 1.5), 3);
+  assert.equal(r.status, "fechado");
+  assert.ok(s.elenco.some((a) => a.nome === alvo.nome) && s.clube.saldo < caixa);
+  assert.ok(!T.buscarJogadores(pacote, s, {}).some((a) => a.nome === alvo.nome), "quem chegou some da busca");
+  const v = s.elenco.find((a) => a.nome !== alvo.nome)!;
+  s.propostas = [{ id: "x", atletaId: v.id, clubeId: alvo.clubeId, valor: 1_000_000, expira: T.semanaAbs(s) + 2 }];
+  assert.ok(T.responderPropostaT(pacote, s, "x", "aceitar").ok);
+  assert.ok(!s.elenco.some((a) => a.id === v.id));
+  s.semana = 10; assert.ok(!T.janelaT(s).aberta);
+  assert.equal(T.fazerProposta(pacote, s, "x", alvo.clubeId, 1, 1).status, "erro");
+});
