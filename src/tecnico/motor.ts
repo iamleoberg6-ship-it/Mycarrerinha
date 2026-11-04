@@ -338,6 +338,50 @@ export function trocarNaVaga(s: SaveTecnico, vaga: number, id: string | null) {
   t[vaga] = id;
   s.esc.reservas = s.esc.reservas.filter((x) => !t.includes(x)).slice(0, 9);
 }
+/** Onde está cada um: vaga do campo ("v:3"), um jogador ("j:id"). Troca os dois de lugar (campo, banco ou fora do jogo).
+ *  Com o jogo rolando, só entra em campo quem está no banco, não volta quem saiu, e o limite de trocas vale. */
+export function moverEscalacao(s: SaveTecnico, x: string, y: string): { ok: boolean; msg?: string } {
+  const t = s.esc.titulares, R = s.esc.reservas, av = s.aoVivo;
+  while (t.length < FORMACOES[s.tatica.formacao].length) t.push(null);
+  type Lugar = { onde: "campo"; i: number; id: string | null } | { onde: "banco"; i: number; id: string } | { onde: "fora"; id: string };
+  const achar = (k: string): Lugar | undefined => {
+    if (k.startsWith("v:")) { const i = +k.slice(2); return { onde: "campo", i, id: t[i] ?? null }; }
+    const id = k.slice(2), i = t.indexOf(id), b = R.indexOf(id);
+    return i >= 0 ? { onde: "campo", i, id } : b >= 0 ? { onde: "banco", i: b, id } : s.elenco.some((a) => a.id === id) ? { onde: "fora", id } : undefined;
+  };
+  const A = achar(x), B = achar(y);
+  if (!A || !B || (A.id && A.id === B.id) || (A.onde === "campo" && B.onde === "campo" && A.i === B.i)) return { ok: false };
+  const entra = (l: Lugar, outro: Lugar) => (l.onde !== "campo" && outro.onde === "campo" ? l.id : null);
+  for (const [l, o] of [[A, B], [B, A]] as const) {
+    const id = entra(l, o); if (!id) continue;
+    const a = s.elenco.find((z) => z.id === id)!;
+    if (!disponivel(a)) return { ok: false, msg: `${a.nome} não pode jogar (${a.lesao > 0 ? "lesionado" : "suspenso"}).` };
+    if (av) {
+      if (l.onde === "fora") return { ok: false, msg: "Com o jogo rolando, só entra quem está no banco." };
+      if (av.fora.includes(id) || (av.stats[id] && !(av.emCampo ?? []).includes(id))) return { ok: false, msg: `${a.nome} já saiu do jogo e não pode voltar.` };
+      if (!(av.emCampo ?? []).includes(id) && trocasNoIntervalo(s) >= MAX_TROCAS) return { ok: false, msg: `Já foram as ${MAX_TROCAS} trocas.` };
+    }
+  }
+  if (av && (A.onde === "fora" || B.onde === "fora") && (A.onde === "banco" || B.onde === "banco")) return { ok: false, msg: "O banco não muda com o jogo rolando." };
+  const por = (l: Lugar, id: string | null) => {
+    if (l.onde === "campo") t[l.i] = id;
+    else if (l.onde === "banco") { if (id) R[l.i] = id; else R.splice(l.i, 1); }
+  };
+  por(A, B.id); por(B, A.id);
+  s.esc.reservas = R.filter((z, i) => z && !t.includes(z) && R.indexOf(z) === i).slice(0, 9);
+  return { ok: true };
+}
+/** Põe no banco (até 9) ou tira do banco quem não está jogando. */
+export function alternarBanco(s: SaveTecnico, id: string): { ok: boolean; msg?: string } {
+  if (s.aoVivo) return { ok: false, msg: "O banco não muda com o jogo rolando." };
+  const R = s.esc.reservas;
+  if (R.includes(id)) { s.esc.reservas = R.filter((x) => x !== id); return { ok: true }; }
+  const a = s.elenco.find((x) => x.id === id);
+  if (!a || s.esc.titulares.includes(id)) return { ok: false };
+  if (!disponivel(a)) return { ok: false, msg: `${a.nome} não pode ser relacionado.` };
+  if (R.length >= 9) return { ok: false, msg: "O banco já tem 9. Tire alguém primeiro." };
+  R.push(id); return { ok: true };
+}
 export function mudarFormacao(s: SaveTecnico, f: string) {
   if (!FORMACOES[f]) return;
   s.tatica.formacao = f;

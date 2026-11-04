@@ -32,7 +32,7 @@ import {
   proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
-  iniciarPartida, jogarAte, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
+  iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import {
@@ -50,6 +50,8 @@ let save: SaveTecnico | null = ler<SaveTecnico>(CHAVE_TECNICO);
 let aba: "inicio" | "elenco" | "tatica" | "liga" | "clube" = "inicio";
 let sub = { elenco: "jogadores", clube: "financas" } as Record<string, string>;
 let filtro = "todos";
+/** escalação: quem está selecionado para trocar ("j:id" jogador, "v:3" vaga vazia) */
+let selEsc: string | undefined;
 let filtroMercado: { pos?: PosT; idadeMax?: number; minhaLiga: boolean; alcance: boolean } = { minhaLiga: true, alcance: true };
 /** Valor digitado (na moeda da tela) para reais, que é como o jogo guarda. */
 const lerValor = (id: string) => { const el = document.getElementById(id) as HTMLInputElement | null, n = +(el?.value ?? "").replace(/\D/g, ""); return n > 0 ? Math.round(n / MOEDAS[moedaAtual()].porBrl) : 0; };
@@ -254,25 +256,49 @@ function abaLivres(s: SaveTecnico): string {
 }
 
 // ------------------------------------------------------------------ Tática
+/** O elenco inteiro na tela da escalação: titulares (na vaga), banco e quem está fora, com condição, moral e alertas. */
+function elencoEscalacao(s: SaveTecnico, reservas: Atleta[]): string {
+  const vagas = FORMACOES[s.tatica.formacao], av = s.aoVivo, tit = s.esc.titulares;
+  const linha = (a: Atleta, rot: string, pos: PosT, onde: "tit" | "banco" | "fora") => {
+    const cond = Math.round(av?.cond[a.id] ?? a.condicao), enc = rotuloEncaixe(a, pos), ov = Math.round(onde === "tit" ? ovrNaVaga(a, pos) : ovrDe(a));
+    const saiu = av && (av.fora.includes(a.id) || (av.stats[a.id] && !(av.emCampo ?? []).includes(a.id)));
+    const alertas = [a.lesao > 0 ? `<span class="pill ruim">Lesão ${a.lesao} sem.</span>` : "", a.suspenso > 0 ? `<span class="pill ruim">Suspenso</span>` : "", onde === "tit" && enc ? `<span class="pill aviso">${esc(enc)}</span>` : "", saiu ? `<span class="pill">Saiu do jogo</span>` : "", a.querSair ? `<span class="pill aviso">Quer sair</span>` : ""].join("");
+    const corC = cond >= 80 ? "#74D394" : cond >= 62 ? "#E3B341" : "#EC7D69", humor = a.moral >= 75 ? "😄" : a.moral >= 55 ? "🙂" : a.moral >= 35 ? "😐" : "😠";
+    const banco = onde === "tit" || av ? "" : `<button class="chip mini" data-banco="${esc(a.id)}">${onde === "banco" ? "Tirar" : "+ Banco"}</button>`;
+    return `<div class="esc-lin${selEsc === `j:${a.id}` ? " sel" : ""}${!disponivel(a) || saiu ? " apagado" : ""}"><button class="esc-toque" data-sel="j:${esc(a.id)}"><span class="pos-chip" style="background:${corPos(onde === "tit" ? pos : a.pos)}">${esc(rot)}</span>
+      <span class="nm"><b>${esc(a.nome)}</b><small>${a.pos} · ${a.idade} anos · <span class="mini-barra" title="Condição"><i style="--v:${cond}%;--c:${corC}"></i></span> ${cond}% · ${humor}${alertas ? ` ${alertas}` : ""}</small></span>
+      <span class="ov"><strong>${ov}</strong></span></button>${banco}</div>`;
+  };
+  const titulares = vagas.map((v, i) => { const a = s.elenco.find((x) => x.id === tit[i]); return a ? linha(a, v.rot, v.pos, "tit") : `<div class="esc-lin${selEsc === `v:${i}` ? " sel" : ""}"><button class="esc-toque" data-sel="v:${i}"><span class="pos-chip vazio">${v.rot}</span><span class="nm"><b>Vaga vazia</b><small>Toque para escolher quem entra</small></span><span></span></button></div>`; }).join("");
+  const usados = new Set([...tit.filter(Boolean) as string[], ...s.esc.reservas]);
+  const fora = s.elenco.filter((a) => !usados.has(a.id)).sort((a, b) => Number(disponivel(b)) - Number(disponivel(a)) || ovrDe(b) - ovrDe(a));
+  const sel = selEsc ? (selEsc.startsWith("j:") ? s.elenco.find((a) => a.id === selEsc!.slice(2))?.nome : `a vaga ${vagas[+selEsc.slice(2)]?.rot ?? ""}`) : undefined;
+  const vagaSel = selEsc?.startsWith("v:") ? +selEsc.slice(2) : selEsc ? tit.indexOf(selEsc.slice(2)) : -1;
+  return `${sel ? `<div class="sel-barra"><span>Selecionado: <b>${esc(sel)}</b>. Toque em quem vai trocar de lugar.</span><span class="botoes">${vagaSel >= 0 ? `<button class="chip mini" data-vaga="${vagaSel}">Ver opções</button>` : ""}<button class="chip mini" data-sel-cancelar>Cancelar</button></span></div>` : ""}
+    <p class="rotulo" style="margin-top:14px">Titulares</p><div class="lista esc-lista">${titulares}</div>
+    <p class="rotulo" style="margin-top:14px">Banco <small>(${reservas.length} de 9)</small></p><div class="lista esc-lista">${reservas.map((a) => linha(a, a.pos, a.pos, "banco")).join("") || `<p class="sub">Ninguém no banco.</p>`}</div>
+    <p class="rotulo" style="margin-top:14px">Fora do jogo <small>(${fora.length})</small></p><div class="lista esc-lista">${fora.map((a) => linha(a, a.pos, a.pos, "fora")).join("") || `<p class="sub">Todo o elenco está relacionado.</p>`}</div>`;
+}
 function abaTatica(s: SaveTecnico): string {
   const vagas = FORMACOES[s.tatica.formacao], por = new Map(s.elenco.map((a) => [a.id, a])), t = s.tatica;
   const f = forcaDoTime(s.elenco, s.esc, t, s.entrosamento[t.formacao] ?? 40);
   const campo = `<div class="campo"><div class="area cima"></div><div class="area baixo"></div><div class="circ"></div>${vagas.map((v, i) => {
     const a = por.get(s.esc.titulares[i] ?? "");
-    if (!a) return `<button class="vaga vazia" data-vaga="${i}" style="left:${v.x}%;top:${v.y}%"><span class="bola">+</span><span class="nomev">${v.rot}</span></button>`;
+    if (!a) return `<button class="vaga vazia${selEsc === `v:${i}` ? " sel" : ""}" data-sel="v:${i}" style="left:${v.x}%;top:${v.y}%"><span class="bola">+</span><span class="nomev">${v.rot}</span></button>`;
     const ruim = !disponivel(a) || rotuloEncaixe(a, v.pos) !== "";
-    return `<button class="vaga${ruim ? " alerta" : ""}" data-vaga="${i}" style="left:${v.x}%;top:${v.y}%" aria-label="${v.rot}: ${esc(a.nome)}"><span class="bola" style="background:${corPos(v.pos)}">${a.numero}</span><span class="nomev">${esc(a.nome.split(" ").slice(-1)[0])}</span><span class="notav">${v.rot} · ${Math.round(ovrNaVaga(a, v.pos))}</span></button>`;
+    return `<button class="vaga${ruim ? " alerta" : ""}${selEsc === `j:${a.id}` ? " sel" : ""}" data-sel="j:${a.id}" style="left:${v.x}%;top:${v.y}%" aria-label="${v.rot}: ${esc(a.nome)}"><span class="bola" style="background:${corPos(v.pos)}">${a.numero}</span><span class="nomev">${esc(a.nome.split(" ").slice(-1)[0])}</span><span class="notav">${v.rot} · ${Math.round(ovrNaVaga(a, v.pos))}</span></button>`;
   }).join("")}</div>`;
   const chips = (campo: string, nomes: string[], atual: number) => `<div class="chips">${nomes.map((n, i) => `<button class="chip${i === atual ? " ativo" : ""}" data-tat="${campo}" data-v="${i}">${n}</button>`).join("")}</div>`;
   const reservas = s.esc.reservas.map((id) => por.get(id)).filter(Boolean) as Atleta[];
   return `<div class="chips" style="margin-bottom:10px">${NOMES_FORMACAO.map((n) => `<button class="chip${n === t.formacao ? " ativo" : ""}" data-form="${n}">${n}</button>`).join("")}</div>
     <div class="forca3" style="margin-bottom:10px"><div><strong>${Math.round(f.defesa)}</strong><span>Defesa</span></div><div><strong>${Math.round(f.meio)}</strong><span>Meio</span></div><div><strong>${Math.round(f.ataque)}</strong><span>Ataque</span></div></div>
     ${campo}
-    <p class="sub" style="margin:8px 0">Toque num jogador para trocar. Entrosamento no ${t.formacao}: <b style="color:var(--giz)">${Math.round(s.entrosamento[t.formacao] ?? 40)}%</b>. Contorno vermelho: improvisado, lesionado ou suspenso.</p>
+    <p class="sub" style="margin:8px 0">Toque num jogador e depois em outro (no campo ou na lista) para trocar os dois de lugar. Entrosamento no ${t.formacao}: <b style="color:var(--giz)">${Math.round(s.entrosamento[t.formacao] ?? 40)}%</b>. Contorno vermelho: improvisado, lesionado ou suspenso.</p>
     ${s.aoVivo ? `<p class="aviso-t ok" style="margin-top:8px">Jogo parado no ${s.aoVivo.minuto ?? 0}' · ${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}. As mudanças valem quando o jogo voltar. Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}.</p><button class="botao grande" data-vivo style="margin-top:8px">▶ Voltar para o jogo</button>` : `<div class="botoes"><button class="botao peq" data-melhor>Melhor escalação</button></div>`}
+    ${elencoEscalacao(s, reservas)}
     <p class="rotulo" style="margin-top:14px">Funções</p><div class="lista">${vagas.map((v, i) => { const a = por.get(s.esc.titulares[i] ?? ""); if (!a) return ""; const atual = funcaoNaVaga(s.esc, a, v.pos);
       return `<div class="lin" style="cursor:default;grid-template-columns:34px 1fr"><span class="num" style="font-size:12px">${v.rot}</span><span class="nm"><b>${esc(a.nome)}</b><select class="campo-sel sel-funcao" data-funcao="${esc(a.id)}" aria-label="Função de ${esc(a.nome)}">${funcoesDa(v.pos).map((f) => `<option value="${f.id}" ${f.id === atual?.id ? "selected" : ""}>${"★".repeat(estrelasEncaixe(encaixe(a.at, exDe(a), f), ovrPos(a.at, v.pos)))} ${esc(f.nome)}</option>`).join("")}</select><small>${esc(atual?.desc ?? "")}</small></span></div>`; }).join("")}</div>
-    <p class="rotulo" style="margin-top:14px">Banco</p><p class="sub">${reservas.map((a) => `${esc(a.nome)} (${a.pos} ${ovrDe(a)})`).join(" · ") || "Sem reservas disponíveis."}</p>
+
     <p class="sub" style="font-size:12.5px;margin-top:4px">Se você não mexer durante o jogo, o auxiliar faz até 3 trocas a partir dos 60', tirando quem estiver mais cansado.</p>
     <div class="grade-tat" style="margin-top:14px"><p class="rotulo">Instruções</p>
       <div><div class="lbl">Mentalidade</div>${chips("mentalidade", NOME_MENTALIDADE, t.mentalidade)}</div>
@@ -495,7 +521,7 @@ document.addEventListener("click", (ev) => {
   }
   if (!save) return;
   const s = save;
-  if (d.aba) { aba = d.aba as typeof aba; msg = undefined; fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
+  if (d.aba) { aba = d.aba as typeof aba; msg = undefined; selEsc = undefined; fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
   if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
   if (d.filtro) { filtro = d.filtro; render(); return; }
@@ -521,7 +547,15 @@ document.addEventListener("click", (ev) => {
   if (d.conv && d.id) { const r = conversar(s, d.id, d.conv as Conversa); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.id)); render(); return; }
   if (d.renovar && d.id) { const r = renovar(pacote, s, d.id, +d.renovar); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.id)); render(); return; }
   if (d.dispensar !== undefined && d.id) { const r = dispensar(s, d.id); msg = { texto: r.msg, ok: r.ok }; if (r.ok) { fechar(); prepararMundo(pacote, s); redesenhar(); } else abrir(fichaJogador(s, d.id)); return; }
-  if (d.vaga !== undefined) { abrir(escolherVaga(s, +d.vaga)); return; }
+  if (d.sel) {
+    if (!selEsc) selEsc = d.sel;
+    else if (selEsc === d.sel) selEsc = undefined;
+    else { const r = moverEscalacao(s, selEsc, d.sel); selEsc = undefined; msg = r.msg ? { texto: r.msg, ok: r.ok } : undefined; }
+    redesenhar(false); return;
+  }
+  if (d.selCancelar !== undefined) { selEsc = undefined; redesenhar(false); return; }
+  if (d.banco) { const r = alternarBanco(s, d.banco); msg = r.msg ? { texto: r.msg, ok: r.ok } : undefined; redesenhar(false); return; }
+  if (d.vaga !== undefined) { selEsc = undefined; abrir(escolherVaga(s, +d.vaga)); return; }
   if (d.escolher !== undefined && d.i !== undefined) {
     if (s.aoVivo && d.escolher && !(s.aoVivo.emCampo ?? []).includes(d.escolher) && !s.esc.titulares.includes(d.escolher) && trocasNoIntervalo(s) >= MAX_TROCAS) { msg = { texto: `Já foram as ${MAX_TROCAS} trocas.`, ok: false }; fechar(); redesenhar(); return; }
     trocarNaVaga(s, +d.i, d.escolher || null); fechar(); redesenhar(false); return;

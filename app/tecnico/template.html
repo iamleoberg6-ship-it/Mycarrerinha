@@ -118,6 +118,20 @@ dialog .tela { padding: 18px 16px; display: flex; flex-direction: column; gap: 1
 .passo button { background: none; border: 0; color: var(--giz); font: 800 20px var(--texto); line-height: 1; padding: 6px 0; cursor: pointer; border-radius: 8px; }
 .passo button:active { background: var(--ouro); color: var(--tinta); }
 .passo small { color: var(--giz-2); font-size: 11.5px; font-weight: 600; }
+.esc-lista { gap: 0; }
+.esc-lin { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px; border-bottom: 1px solid var(--linha); }
+.esc-lin:last-child { border-bottom: 0; }
+.esc-lin.sel { background: color-mix(in srgb, var(--ouro) 18%, transparent); border-radius: 10px; }
+.esc-lin.apagado { opacity: .55; }
+.esc-toque { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 8px 4px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; min-width: 0; }
+.esc-toque .nm { min-width: 0; } .esc-toque .nm b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.esc-toque .nm small { color: var(--giz-2); font-size: 12px; display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; }
+.esc-toque .ov strong { font-family: var(--display); font-weight: 900; font-size: 22px; color: var(--ouro-claro); }
+.pos-chip { display: grid; place-items: center; height: 26px; border-radius: 8px; font: 800 12px var(--texto); color: #0A0A0A; }
+.pos-chip.vazio { background: transparent; border: 1px dashed var(--giz-2); color: var(--giz-2); }
+.chip.mini { padding: 4px 9px; font-size: 12px; }
+.vaga.sel .bola { box-shadow: 0 0 0 3px var(--ouro), 0 0 14px var(--ouro); }
+.sel-barra { position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 30; max-width: 560px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; background: var(--campo-2); border: 1px solid var(--ouro); border-radius: 12px; padding: 8px 10px; margin-top: 10px; font-size: 13.5px; box-shadow: 0 6px 16px rgba(0,0,0,.4); }
 .atr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
 @media (max-width: 380px) { .atr { grid-template-columns: 1fr; } }
 </style>
