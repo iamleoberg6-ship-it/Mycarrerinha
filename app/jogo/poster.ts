@@ -74,6 +74,8 @@ function produto(m: Marca, apelido: string, numero: string): string {
       <text x="10" y="15" font-family="${TEXTO}" font-weight="800" font-size="10" fill="${b}">${esc(m.nome.toUpperCase())}</text><text x="10" y="44" font-family="${DISPLAY}" font-weight="900" font-size="22" fill="#1A1A1A">${HUB[m.id] ?? "GRU"} ✈ FINAL</text>
       <text x="10" y="62" font-family="${TEXTO}" font-weight="700" font-size="9" fill="#555">PASSAGEIRO ${esc(apelido.toUpperCase())} · ASSENTO ${esc(numero)}A</text><path d="M118 20 V70" stroke="#999" stroke-dasharray="3 3"/><g transform="translate(122 30) scale(.6)">${simbolo("aviao", a, b, "")}</g></g>`;
     case "comida": return `<g transform="translate(196 262)"><path d="M6 46 Q50 -6 94 46 Z" fill="#E0A34A"/><rect x="2" y="46" width="96" height="12" rx="5" fill="#5A9E3A"/><rect x="0" y="57" width="100" height="16" rx="6" fill="#6B3A1E"/><rect x="2" y="72" width="96" height="10" rx="4" fill="#F2C200"/><path d="M4 82 Q50 104 96 82 Z" fill="#E0A34A"/>${[18, 40, 62, 80].map((x) => `<ellipse cx="${x}" cy="${26 + (x % 3) * 4}" rx="2.4" ry="1.4" fill="#FFF4DA"/>`).join("")}</g><g transform="translate(150 268) scale(1.2)">${simbolo("batata", a, b, "")}</g>`;
+    // marcas só de clube não têm cartaz de jogador
+    default: return "";
   }
 }
 

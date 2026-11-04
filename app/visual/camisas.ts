@@ -74,3 +74,26 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
     ${c.numero ? `<text x="40" y="${f1(sobrenome ? 74 : 70)}" text-anchor="middle" ${attrFonte(fonte, c.numero.length > 2 ? 24 : 32)} fill="${c.numeroCor ?? tinta}" stroke="${borda}" stroke-width="1" paint-order="stroke">${c.numero}</text>` : ""}
   </svg>`;
 }
+
+/** Peças por cima da camisa de frente (SVG já pronto): escudo (quadro 26×30), nome do master (100×44), logos (40×40). */
+export interface PecasFrente { escudo?: string; master?: string; fornecedor?: string; manga?: string }
+/** SVG (viewBox 0 0 80 104) da camisa de frente, com escudo no peito esquerdo, fornecedor no direito, master no meio e o logo na manga. */
+export function camisaFrente(c: DadosCamisa, p: PecasFrente = {}): string {
+  const id = `cf${(seq++).toString(36)}`;
+  const [a, b0] = c.cores, b = b0 && b0.toLowerCase() !== a.toLowerCase() ? b0 : luz(a) > 0.6 ? "#1A1A1A" : "#FFFFFF";
+  return `<svg viewBox="0 0 80 104" aria-hidden="true"><defs>
+    <linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
+    <clipPath id="${id}c"><path d="${CORPO}"/></clipPath></defs>
+    <path d="${CORPO}" fill="${a}"/>
+    <g clip-path="url(#${id}c)">${padrao(c.modelo, b, c.terceira ?? (c.modelo === "duasFaixasH" ? b : "#111111"), c.faixas)}
+      <rect width="80" height="104" fill="url(#${id}g)"/>
+      <path d="M1.5 34 L12 41.5 M68 41.5 L78.5 34" stroke="${b}" stroke-width="3" fill="none" opacity=".9"/>
+      <path d="M30 8 L40 18 L50 8" stroke="${b}" stroke-width="3" fill="none" stroke-linejoin="round"/>
+      <path d="M30 8 L40 17 L50 8 Z" fill="${mistura(a, "#000000", 0.35)}"/>
+    </g>
+    ${p.escudo ? `<g transform="translate(45.5 18.5) scale(.3)">${p.escudo}</g>` : ""}
+    ${p.fornecedor ? `<g transform="translate(27.5 20) scale(.16)">${p.fornecedor}</g>` : ""}
+    ${p.master ? `<g transform="translate(22 40) scale(.36)">${p.master}</g>` : ""}
+    ${p.manga ? `<g transform="translate(67.5 22) rotate(32) scale(.15)">${p.manga}</g>` : ""}
+  </svg>`;
+}

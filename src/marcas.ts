@@ -3,7 +3,7 @@
 export const limitePatrocinios = (fama: number): number => 3 + Math.floor(Math.max(0, fama) / 12);
 import { RNG } from "./rng.js";
 
-export type Categoria = "banco" | "refrigerante" | "cerveja" | "energetico" | "carro" | "celular" | "material" | "comida" | "oculos" | "relogio" | "fone" | "aerea";
+export type Categoria = "banco" | "refrigerante" | "cerveja" | "energetico" | "carro" | "celular" | "material" | "comida" | "oculos" | "relogio" | "fone" | "aerea" | "aposta" | "seguro" | "tecnologia" | "cripto";
 /** Onde a marca é forte. Sem região: marca global, aparece em qualquer lugar. "EUR" vale para toda a Europa. */
 export type Regiao = "BR" | "LATAM" | "EUR" | "ING" | "ESP" | "ITA" | "ALE" | "FRA" | "POR" | "HOL" | "TUR" | "EUA" | "GOLFO" | "ASIA" | "AFR";
 /** O que a marca de acessório põe no jogador (aparece no visual enquanto o contrato durar). */
@@ -20,6 +20,8 @@ export interface Marca {
   letra: "redonda" | "pesada" | "fina" | "italica";
   /** marcas de acessório só procuram quem já é muito seguido */
   seguidoresMin?: number; acessorio?: AcessorioMarca;
+  /** só patrocina clube (camisa e estádio), não jogador */
+  soClube?: boolean;
   /** onde a marca é forte (sem isso, é global) */
   regioes?: Regiao[];
   /** material esportivo: a chuteira da marca (cor do cabedal, detalhe e a cor da marca na lateral) */
@@ -27,7 +29,7 @@ export interface Marca {
 }
 
 export const NOME_CATEGORIA: Record<Categoria, string> = {
-  banco: "Banco", refrigerante: "Refrigerante", cerveja: "Cerveja", energetico: "Energético", carro: "Carro", celular: "Celular", material: "Material esportivo", comida: "Lanchonete", oculos: "Óculos", relogio: "Relógio", fone: "Fone de ouvido", aerea: "Companhia aérea",
+  banco: "Banco", refrigerante: "Refrigerante", cerveja: "Cerveja", energetico: "Energético", carro: "Carro", celular: "Celular", material: "Material esportivo", comida: "Lanchonete", oculos: "Óculos", relogio: "Relógio", fone: "Fone de ouvido", aerea: "Companhia aérea", aposta: "Casa de apostas", seguro: "Seguradora", tecnologia: "Tecnologia", cripto: "Cripto",
 };
 
 export const MARCAS: Marca[] = [
@@ -160,6 +162,19 @@ export const MARCAS: Marca[] = [
   { id: "deltta", nome: "Deltta", categoria: "aerea", cores: ["#003366", "#C8102E", "#FFFFFF"], simbolo: "aviao", slogan: "Keep climbing, keep scoring.", peso: 1.5, famaMin: 40, letra: "fina", regioes: ["EUA"] },
   { id: "avianka", nome: "Avianka", categoria: "aerea", cores: ["#E30613", "#FFFFFF", "#1A1A1A"], simbolo: "aviao", slogan: "Las alas de la región.", peso: 1.0, famaMin: 20, letra: "redonda", regioes: ["LATAM"] },
   { id: "rdutch", nome: "KLMm", categoria: "aerea", cores: ["#00A1DE", "#FFFFFF", "#003145"], simbolo: "aviao", slogan: "Real, holandesa e no horário.", peso: 1.3, famaMin: 35, letra: "fina", regioes: ["HOL"] },
+  // marcas que patrocinam clubes (camisa, manga e estádio): apostas, seguradoras, tecnologia e cripto
+  { id: "betona", nome: "Betona", categoria: "aposta", cores: ["#FF6A13", "#FFFFFF", "#1B1B1B"], simbolo: "circulo", slogan: "Aposta na torcida.", peso: 1.4, famaMin: 20, regioes: ["BR", "LATAM", "POR"], letra: "pesada", soClube: true },
+  { id: "bet366", nome: "Bet366", categoria: "aposta", cores: ["#126E51", "#FFDF1B", "#FFFFFF"], simbolo: "quadrado", slogan: "Um dia a mais de jogo.", peso: 1.5, famaMin: 30, regioes: ["ING", "EUR", "BR"], letra: "pesada", soClube: true },
+  { id: "superbete", nome: "Superbete", categoria: "aposta", cores: ["#E3001B", "#FFFFFF", "#1A1A1A"], simbolo: "raio", slogan: "Super odds, super gols.", peso: 1.2, famaMin: 15, regioes: ["BR", "EUR"], letra: "italica", soClube: true },
+  { id: "esportebet", nome: "EsporteBet", categoria: "aposta", cores: ["#0A2D6E", "#2BD86F", "#FFFFFF"], simbolo: "estrela", slogan: "O palpite certo.", peso: 1.0, famaMin: 5, regioes: ["BR", "LATAM"], letra: "pesada", soClube: true },
+  { id: "alianca", nome: "Aliança Seguros", categoria: "seguro", cores: ["#003781", "#FFFFFF", "#7AB4E6"], simbolo: "circulo", slogan: "Seguro como zagueiro.", peso: 1.8, famaMin: 45, letra: "fina", soClube: true },
+  { id: "mapfra", nome: "Mapfra", categoria: "seguro", cores: ["#D81E05", "#FFFFFF", "#1A1A1A"], simbolo: "escudo", slogan: "Proteção do primeiro ao último minuto.", peso: 1.1, famaMin: 20, regioes: ["ESP", "BR", "LATAM"], letra: "pesada", soClube: true },
+  { id: "generalli", nome: "Generalli", categoria: "seguro", cores: ["#C21B17", "#FFFFFF", "#F2C200"], simbolo: "asa", slogan: "Parceiro para a vida toda.", peso: 1.2, famaMin: 25, regioes: ["ITA", "EUR"], letra: "fina", soClube: true },
+  { id: "rakutem", nome: "Rakutem", categoria: "tecnologia", cores: ["#BF0000", "#FFFFFF", "#1A1A1A"], simbolo: "oval", slogan: "Tudo num clique, até o título.", peso: 1.6, famaMin: 45, regioes: ["ASIA", "ESP", "EUR"], letra: "redonda", soClube: true },
+  { id: "timviewer", nome: "TimViewer", categoria: "tecnologia", cores: ["#0E8EE9", "#FFFFFF", "#0A2342"], simbolo: "onda", slogan: "Conectado com o vestiário.", peso: 1.3, famaMin: 35, regioes: ["ALE", "ING", "EUR"], letra: "redonda", soClube: true },
+  { id: "totvis", nome: "Totvis", categoria: "tecnologia", cores: ["#1D1D1B", "#00C2E0", "#FFFFFF"], simbolo: "pontos", slogan: "Tecnologia que joga junto.", peso: 0.9, famaMin: 10, regioes: ["BR"], letra: "pesada", soClube: true },
+  { id: "criptocom", nome: "Cripto.com", categoria: "cripto", cores: ["#002D74", "#FFFFFF", "#7AB4E6"], simbolo: "escudo", slogan: "O futuro do futebol é agora.", peso: 1.4, famaMin: 30, letra: "fina", soClube: true },
+  { id: "bibit", nome: "Bibit", categoria: "cripto", cores: ["#17181E", "#F7A600", "#FFFFFF"], simbolo: "chama", slogan: "Moeda forte, time forte.", peso: 1.1, famaMin: 20, letra: "pesada", soClube: true },
 ];
 export const MARCA: Record<string, Marca> = Object.fromEntries(MARCAS.map((m) => [m.id, m]));
 /** Clubes que pertencem a uma marca: o logo vai no peito da camisa e o perfil do clube mostra a dona. */
@@ -202,7 +217,7 @@ const EUROPA: Regiao[] = ["EUR", "ING", "ESP", "ITA", "ALE", "FRA", "POR", "HOL"
 /** Região de um país (código de 3 letras); fora da tabela, Europa genérica. */
 export const regiaoDoPais = (pais: string | undefined): Regiao => REGIAO_PAIS[pais ?? ""] ?? "EUR";
 /** A marca é forte nessa região? */
-function forteEm(m: Marca, r: Regiao): boolean {
+export function forteEm(m: Marca, r: Regiao): boolean {
   if (!m.regioes) return false;
   return m.regioes.includes(r) || (m.regioes.includes("EUR") && EUROPA.includes(r));
 }
@@ -211,7 +226,7 @@ function forteEm(m: Marca, r: Regiao): boolean {
 export function marcaInteressada(rng: RNG, fama: number, idade: number, ativos: ContratoPatrocinio[], recusadas: string[], seguidores = 0, paisClube?: string, paisJogador?: string): Marca | undefined {
   const ocupadas = new Set(ativos.map((c) => MARCA[c.marca]?.categoria));
   const regiao = regiaoDoPais(paisClube ?? "BRA"), casa = paisJogador ? regiaoDoPais(paisJogador) : regiao;
-  const pool = MARCAS.filter((m) => !ocupadas.has(m.categoria) && fama >= m.famaMin && seguidores >= (m.seguidoresMin ?? 0) && (m.categoria !== "cerveja" || (idade >= 18 && regiao !== "GOLFO")) && !recusadas.includes(m.id));
+  const pool = MARCAS.filter((m) => !m.soClube && !ocupadas.has(m.categoria) && fama >= m.famaMin && seguidores >= (m.seguidoresMin ?? 0) && (m.categoria !== "cerveja" || (idade >= 18 && regiao !== "GOLFO")) && !recusadas.includes(m.id));
   if (!pool.length) return undefined;
   // marca grande tem preferência quando o jogador já é grande; a região decide quem bate na porta
   const fatorRegiao = (m: Marca) => !m.regioes ? 1 : forteEm(m, regiao) ? 4 : forteEm(m, casa) && fama >= 45 ? 1.2 : 0.04;

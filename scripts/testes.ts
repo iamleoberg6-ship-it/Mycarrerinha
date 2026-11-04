@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { jeitoDe as jeitoDeFam } from "../src/familia.js";
 import * as T from "../src/tecnico/motor.js";
 import * as M from "../src/tecnico/modelo.js";
+import * as P from "../src/tecnico/patrocinio.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1719,6 +1720,23 @@ teste("Técnico: intervalo com trocas, funções por posição e detalhes (falta
   }
   assert.ok(jogos >= 5);
   assert.ok(s.elenco.every((a) => Object.values(M.exDe(a)).every(Number.isFinite)));
+});
+
+teste("Técnico: patrocínios do clube (master, fornecedor, manga, arena) com valor livre e receita no mês", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "FLA", "teste-patro");
+  const p = P.patrociniosDe(pacote, s);
+  assert.ok(p.master && p.fornecedor, "chega com master e fornecedor");
+  const ofs = P.ofertasPatro(pacote, s);
+  const manga = ofs.manga?.[0];
+  assert.ok(manga, "tem oferta de manga");
+  const caro = P.assinarPatro(pacote, s, "manga", manga!.marca, manga!.max * 3);
+  assert.ok(!caro.ok, "pedir demais: recusa");
+  const ok = P.assinarPatro(pacote, s, "manga", manga!.marca, Math.min(manga!.valor, manga!.max));
+  assert.ok(ok.ok && s.patro!.manga, ok.msg);
+  const antes = s.clube.saldo;
+  for (let k = 0; k < 4; k++) T.avancarSemana(pacote, s);
+  assert.ok(s.financas[0] && Object.keys(s.financas[0].receitas).some((k) => k.startsWith("Patrocínio de manga")), "receita da manga no mês");
+  assert.ok(Number.isFinite(s.clube.saldo) && s.clube.saldo !== antes);
 });
 
 teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e vende por proposta", () => {

@@ -6,7 +6,13 @@ import { mundo, infoClube, idClube } from "../../src/mundo";
 import { infoLiga } from "../../src/ligas";
 import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
-import { svgEscudo } from "../visual/escudos";
+import { svgEscudo, corpoEscudo } from "../visual/escudos";
+import { camisaFrente } from "../visual/camisas";
+import { nomeNoPeito } from "../visual/peito";
+import { simboloMarca, logoSvg } from "../jogo/poster";
+import { MARCA, NOME_CATEGORIA } from "../../src/marcas";
+import { UNIFORME_CLUBE } from "../../src/reliquias";
+import { patrociniosDe, ofertasPatro, assinarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
 import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
@@ -297,16 +303,55 @@ function abaLiga(s: SaveTecnico): string {
 
 // ------------------------------------------------------------------ Clube
 function abaClube(s: SaveTecnico): string {
-  const subs = `<div class="sub-abas">${[["financas", "Finanças"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
-  return subs + aviso() + (sub.clube === "diretoria" ? abaDiretoria(s) : sub.clube === "comissao" ? abaComissao(s) : abaFinancas(s));
+  const subs = `<div class="sub-abas">${[["financas", "Finanças"], ["patrocinios", "Patrocínios"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
+  return subs + aviso() + (sub.clube === "diretoria" ? abaDiretoria(s) : sub.clube === "comissao" ? abaComissao(s) : sub.clube === "patrocinios" ? abaPatrocinios(s) : abaFinancas(s));
+}
+// ------------------------------------------------------------------ patrocínios do clube
+const hexRgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) || 0);
+const claro = (c: string) => { const [r, g, b] = hexRgb(c); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6; };
+/** A camisa de frente com os patrocínios atuais (escudo, master, fornecedor e manga). */
+function camisaDoClube(s: SaveTecnico): string {
+  const info = infoClube(pacote, s.clubeId), u = UNIFORME_CLUBE[s.clubeId], [a, b] = u ? u.cores : [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
+  const p = patrociniosDe(pacote, s), contraste = claro(a) ? "#111111" : "#FFFFFF";
+  const m = p.master && MARCA[p.master.marca], f = p.fornecedor && MARCA[p.fornecedor.marca], g = p.manga && MARCA[p.manga.marca];
+  const ec = u?.escudo ?? [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
+  return camisaFrente({ cores: [a, b], modelo: u?.padrao ?? info?.padrao ?? "lisa", faixas: u?.faixas }, {
+    escudo: corpoEscudo(idClube(s.clubeId), ec[0], ec[1], info?.nome),
+    master: m ? nomeNoPeito(m.nome, p.master!.cor ?? contraste) : undefined,
+    fornecedor: f ? simboloMarca(f, p.fornecedor!.cor ?? contraste, a) : undefined,
+    manga: g ? simboloMarca(g, contraste, a) : undefined,
+  });
+}
+function abaPatrocinios(s: SaveTecnico): string {
+  const p = patrociniosDe(pacote, s), ofs = ofertasPatro(pacote, s), arena = arenaDoClube(pacote, s);
+  const info = infoClube(pacote, s.clubeId), corClube = (UNIFORME_CLUBE[s.clubeId]?.cores ?? info?.cores ?? ["#888", "#FFF"])[1];
+  const total = Object.values(receitaPatro(pacote, s)).reduce((x, y) => x + y, 0), ano = (t: number) => ANO_INICIAL_T + t;
+  const coresDe = (marca: string) => [["#FFFFFF", "Branco"], ["#111111", "Preto"], ["#D4AF37", "Dourado"], [corClube, "Cor do clube"], [MARCA[marca]?.cores[0] ?? "#888", "Cor da marca"]].filter((x, i, l) => l.findIndex((y) => y[0].toLowerCase() === x[0].toLowerCase()) === i);
+  const cartao = (cota: Cota) => {
+    const c = p[cota], m = c ? MARCA[c.marca] : undefined, l = ofs[cota] ?? [];
+    const atual = c && m ? `<div class="patro-atual">${logoSvg(m, 24)}<div><b>${curtoBrl(c.valor)}/mês</b><small class="sub">${esc(NOME_CATEGORIA[m.categoria])} · até ${ano(c.ate)}${c.ate <= s.temporada ? " · último ano" : ""}${c.nome ? ` · ${esc(c.nome)}` : ""}</small></div></div>
+      ${cota === "master" || cota === "fornecedor" ? `<div class="chips" style="flex-wrap:wrap;margin-top:6px">${coresDe(c.marca).map(([cor, nome]) => `<button class="chip cor-chip${(c.cor ?? "") === cor ? " ativo" : ""}" data-patro-cor="${cota}|${cor}"><i style="background:${cor}"></i>${nome}</button>`).join("")}</div>` : ""}` : "";
+    const travada = cota === "arena" && arena.travada ? `<p class="sub">${esc(arena.travada)}</p>` : "";
+    const ofertas = l.length ? `<p class="rotulo" style="margin-top:10px">${c ? "Ofertas para depois do contrato atual" : "Ofertas"}</p>${l.map((o) => {
+      const mo = MARCA[o.marca]; if (!mo) return "";
+      const nomes = [`${mo.nome} Arena`, `Arena ${mo.nome}`, `Estádio ${mo.nome}`, `${mo.nome} Park`];
+      return `<div class="patro-oferta">${logoSvg(mo, 22)}<small class="sub">${esc(NOME_CATEGORIA[mo.categoria])} · oferece <b>${curtoBrl(o.valor)}/mês</b> por ${o.anos} ${o.anos === 1 ? "temporada" : "temporadas"}${o.recusou ? " · última proposta" : ""}</small>
+        ${campoValor(`pv-${cota}-${o.marca}`, o.valor)}
+        ${cota === "arena" ? `<select class="campo-sel" id="pn-${o.marca}" aria-label="Nome da arena">${nomes.map((n) => `<option>${esc(n)}</option>`).join("")}</select>` : ""}
+        <button class="botao peq" data-patro="${cota}|${o.marca}">Pedir este valor</button></div>`;
+    }).join("")}` : !c && !travada ? `<p class="sub">Nenhuma marca na mesa agora. Novas propostas chegam a cada 8 semanas.</p>` : "";
+    return `<section class="painel patro-cota"><p class="rotulo">${esc(COTAS[cota].nome)}</p><p class="sub" style="margin-top:0">${esc(COTAS[cota].texto)}</p>${cota === "arena" ? `<p class="sub">Estádio: <b>${esc(arena.nome)}</b></p>` : ""}${atual}${travada}${ofertas}</section>`;
+  };
+  return `<div class="patro-topo"><div class="camisa-patro">${camisaDoClube(s)}</div><div><p class="rotulo">Patrocínios do clube</p><b class="patro-total">${curtoBrl(total)}/mês</b><p class="sub">Peça o valor que quiser: a marca aceita até o limite dela. Se passar, ela faz uma última proposta; passou de novo, desiste.</p></div></div>
+    ${ORDEM_COTAS.map(cartao).join("")}`;
 }
 function abaFinancas(s: SaveTecnico): string {
-  const li = infoLiga(s.ligaId), manut = Math.round(s.clube.capacidade * 10 * Math.max(0.4, li.fLiga)), mensal = s.clube.tv + s.clube.patrocinio - folhaDe(s) - folhaStaff(s) - manut;
+  const li = infoLiga(s.ligaId), manut = Math.round(s.clube.capacidade * 10 * Math.max(0.4, li.fLiga)), cotas = Object.values(receitaPatro(pacote, s)).reduce((x, y) => x + y, 0), mensal = s.clube.tv + s.clube.patrocinio + cotas - folhaDe(s) - folhaStaff(s) - manut;
   const linha = (o: Record<string, number>, sinal: string) => Object.entries(o).filter(([, v]) => v).map(([k, v]) => `<span>${esc(k)}</span><b class="${sinal}">${sinal === "neg" ? "−" : "+"}${curtoBrl(v)}</b>`).join("");
   return `<section class="painel" style="padding:0;border:0;background:none"><div class="dl">
       <span>Caixa</span><b class="${s.clube.saldo < 0 ? "neg" : ""}">${valorBrl(s.clube.saldo)}</b>
       <span>Salários do elenco</span><b>${curtoBrl(folhaDe(s))}/mês</b><span>Teto da folha</span><b>${curtoBrl(s.clube.tetoFolha)}/mês</b>
-      <span>Comissão técnica</span><b>${curtoBrl(folhaStaff(s))}/mês</b><span>TV</span><b>${curtoBrl(s.clube.tv)}/mês</b><span>Patrocínio</span><b>${curtoBrl(s.clube.patrocinio)}/mês</b>
+      <span>Comissão técnica</span><b>${curtoBrl(folhaStaff(s))}/mês</b><span>TV</span><b>${curtoBrl(s.clube.tv)}/mês</b><span>Patrocínios (camisa e arena)</span><b>${curtoBrl(cotas)}/mês</b><span>Outros patrocínios</span><b>${curtoBrl(s.clube.patrocinio)}/mês</b>
       <span>Manutenção do estádio</span><b>${curtoBrl(manut)}/mês</b><span>Fixo do mês (sem bilheteria)</span><b class="${mensal < 0 ? "neg" : "pos"}">${curtoBrl(mensal)}</b>
       <span>Estádio</span><b>${s.clube.capacidade.toLocaleString("pt-BR")} lugares</b><span>Ingresso médio</span><b>${valorBrl(precoIngresso(li.fLiga))}</b>
     </div></section>
@@ -323,7 +368,7 @@ function abaDiretoria(s: SaveTecnico): string {
   };
   const cE = custoPedido(s, "estadio"), info = infoClube(pacote, s.clubeId), obraEst = d.obras.find((o) => o.tipo === "estadio");
   const ap = info ? aparenciaDoEstadio(info, mundo(pacote).info) : undefined;
-  const est = `<div class="estadio-box">${svgEstadio({ ...(ap?.dados ?? { nome: "Estádio", cores: ["#2E7D4F", "#FFFFFF"] }), capacidade: s.clube.capacidade, obra: !!obraEst })}</div>${ap?.divideCom.length ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}
+  const est = `<div class="estadio-box">${svgEstadio({ ...(ap?.dados ?? { nome: "Estádio", cores: ["#2E7D4F", "#FFFFFF"] }), nome: arenaDoClube(pacote, s).nome, capacidade: s.clube.capacidade, obra: !!obraEst })}</div>${ap?.divideCom.length ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}
     ${obraEst ? `<p class="sub" style="text-align:center;margin:-4px 0 10px">Obra de ampliação: +${(obraEst.lugares ?? 0).toLocaleString("pt-BR")} lugares em ${obraEst.fim - ab} semanas.</p>` : ""}`;
   return `${est}<div class="dl"><span>Confiança</span><b>${Math.round(d.confianca)}/100</b><span>Meta da temporada</span><b>${esc(d.expectativa.texto)} (${d.expectativa.pos}º)</b><span>Centro de treinamento</span><b>${estrelas(s.clube.ctNivel)}</b><span>Categoria de base</span><b>${estrelas(s.clube.baseNivel)}</b></div>
     <p class="rotulo" style="margin-top:14px">Pedidos</p>
@@ -409,6 +454,8 @@ document.addEventListener("click", (ev) => {
   if (d.aba) { aba = d.aba as typeof aba; msg = undefined; fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
   if (d.filtro) { filtro = d.filtro; render(); return; }
+  if (d.patro) { const [cota, marca] = d.patro.split("|"), nome = (document.getElementById(`pn-${marca}`) as HTMLSelectElement | null)?.value; const r = assinarPatro(pacote, s, cota as Cota, marca, lerValor(`pv-${cota}-${marca}`), nome ? { nome } : undefined); msg = { texto: r.msg, ok: r.ok }; salvar(); render(); return; }
+  if (d.patroCor) { const [cota, cor] = d.patroCor.split("|"); corDoPatro(pacote, s, cota as Cota, cor); salvar(); render(); return; }
   if (d.avancar !== undefined || d.avancarTatica !== undefined) {
     const r = avancarSemana(pacote, s); msg = undefined; salvar(); render(); window.scrollTo(0, 0);
     if (r.partida) abrir(relatorioHtml(r.partida) + (r.eventos.length > 1 ? `<div><p class="rotulo">Na semana</p>${r.eventos.slice(1).map((e) => `<div class="not">${esc(e)}</div>`).join("")}</div>` : "") + (r.fimDeTemporada ? `<div class="aviso-t ok">${esc(r.fimDeTemporada)}</div>` : ""));

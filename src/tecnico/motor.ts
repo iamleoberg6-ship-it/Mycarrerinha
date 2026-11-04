@@ -14,6 +14,7 @@ import { evoluirExtras } from "../detalhes.js";
 import { LICENCAS, CURSO_LICENCA, licencaExigida, semanaCurso, type CursoTecnico } from "../licencas.js";
 import { valorMercado, CAMBIO } from "../mercado.js";
 import { curtoBrl } from "../moeda.js";
+import { patrociniosDe, receitaPatro, viradaPatro, type PatrociniosClube } from "./patrocinio.js";
 /** Dinheiro nas mensagens: na moeda que a tela está usando. */
 const dinheiroT = (v: number) => curtoBrl(v);
 import {
@@ -60,6 +61,7 @@ export interface SaveTecnico {
   /** contratados nesta temporada (agentes livres não voltam a aparecer) */ recusas: string[];
   /** mercado: jogadores à venda, propostas recebidas, negociações em andamento e o histórico */
   aoVivo?: AoVivo;
+  /** patrocínios do clube: master, fornecedor, manga e naming rights da arena */ patro?: PatrociniosClube;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
 
@@ -126,6 +128,7 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   const folha = folhaDe(s), rng = new RNG(`${semente}|clube`);
   const nivelClube = clamp(Math.round(1 + c.fClube * 1.4 + (li.nivel <= 1 ? 1 : 0)), 1, 5);
   s.clube = { ...s.clube, saldo: Math.round(folha * (3 + 4 * c.fClube)), tv: Math.round(folha * 0.62), patrocinio: Math.round(folha * 0.28 * c.fClube), ctNivel: nivelClube, baseNivel: clamp(nivelClube + rng.int(-1, 1), 1, 5), tetoFolha: Math.round(folha * 1.2) };
+  patrociniosDe(pacote, s);
   for (const f of FUNCOES) s.staff[f] = candidatos(s, f, `inicio`, clamp(nivelClube - 1 + rng.int(0, 1), 1, 4))[0];
   s.esc = melhorEscalacao(s.elenco, s.tatica.formacao);
   definirExpectativa(pacote, s);
@@ -183,13 +186,14 @@ export function demitirStaff(s: SaveTecnico, f: Funcao): { ok: boolean; msg: str
 // ------------------------------------------------------------------ dinheiro
 const receber = (s: SaveTecnico, k: string, v: number) => { s.mes.receitas[k] = (s.mes.receitas[k] ?? 0) + v; };
 const gastar = (s: SaveTecnico, k: string, v: number) => { s.mes.despesas[k] = (s.mes.despesas[k] ?? 0) + v; };
-function fecharMes(s: SaveTecnico) {
+function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
   const manut = Math.round(s.clube.capacidade * 10 * Math.max(0.4, fLigaDe(s)));
-  const rec = { ...s.mes.receitas, "TV": s.clube.tv, "Patrocínio": s.clube.patrocinio };
+  const patro = receitaPatro(pacote, s), somaPatro = Object.values(patro).reduce((x, y) => x + y, 0);
+  const rec = { ...s.mes.receitas, "TV": s.clube.tv, ...patro, "Outros patrocínios": s.clube.patrocinio };
   const des = { ...s.mes.despesas, "Salários do elenco": folhaDe(s), "Comissão técnica": folhaStaff(s), "Manutenção": manut };
   const saldoMes = Object.values(rec).reduce((a, b) => a + b, 0) - Object.values(des).reduce((a, b) => a + b, 0);
   // o que já entrou ou saiu ao longo do mês (bilheteria, rescisões, obras) já mexeu no saldo
-  s.clube.saldo += s.clube.tv + s.clube.patrocinio - folhaDe(s) - folhaStaff(s) - manut;
+  s.clube.saldo += s.clube.tv + s.clube.patrocinio + somaPatro - folhaDe(s) - folhaStaff(s) - manut;
   s.financas.unshift({ rotulo: `${rotuloSemanaT(s)}`, receitas: rec, despesas: des });
   s.financas = s.financas.slice(0, 24);
   s.mes = { receitas: {}, despesas: {} };
@@ -643,7 +647,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   s.diretoria.obras = s.diretoria.obras.filter((x) => x.fim > ab);
   // fim do mês
   if (s.semana % 4 === 3) {
-    fecharMes(s);
+    fecharMes(pacote, s);
     const pos = ordenar(s.tabela).findIndex((t) => t.clube === s.clubeId) + 1;
     if (r > 4) s.diretoria.confianca = clamp(s.diretoria.confianca + (pos <= s.diretoria.expectativa.pos ? 2 : pos > s.diretoria.expectativa.pos + 4 ? -3 : 0), 0, 100);
   }
@@ -686,12 +690,14 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   }
   for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
+  for (const av of viradaPatro(pacote, s)) noticia(s, "dinheiro", av);
   // o mundo vira a temporada (com a tabela da liga do técnico valendo para o acesso e o rebaixamento)
   sincronizarMundo(pacote, s.semente, s.temporada, 0, s.tabelasReais, 0);
   const w = mundo(pacote), ligaNova = w.info[s.clubeId]?.ligaId ?? s.ligaId;
   if (ligaNova !== s.ligaId) {
     const subiu = infoLiga(ligaNova).divisao < li.divisao;
     s.clube.tv = Math.round(s.clube.tv * infoLiga(ligaNova).fLiga / li.fLiga);
+    if (s.patro) s.patro.base = Math.round(s.patro.base * infoLiga(ligaNova).fLiga / li.fLiga);
     noticia(s, "clube", subiu ? `ACESSO! O clube jogará a ${infoLiga(ligaNova).curto}.` : `Rebaixado para a ${infoLiga(ligaNova).curto}.`);
     s.ligaId = ligaNova;
   }

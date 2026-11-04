@@ -98,6 +98,15 @@ dialog .tela { padding: 18px 16px; display: flex; flex-direction: column; gap: 1
 .estadio-box { margin: 0 -16px 10px; } .estadio-box svg { width: 100%; height: auto; display: block; border-radius: 12px; }
 .placar-vivo { text-align: center; margin: 4px 0 8px; color: var(--giz-2); } .placar-vivo b { font-family: var(--display); font-size: 30px; color: var(--ouro-claro); margin-left: 6px; }
 .sel-funcao { width: 100%; margin: 4px 0 2px; padding: 8px 10px; font-size: 14px; }
+.patro-topo { display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: center; margin-bottom: 10px; }
+.camisa-patro svg { width: 130px; height: auto; display: block; filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+.patro-total { font-family: var(--display); font-size: 30px; font-weight: 900; color: var(--ouro-claro); display: block; line-height: 1.1; }
+.patro-cota { margin-top: 10px; } .patro-cota .rotulo { margin-bottom: 2px; }
+.patro-atual { display: flex; gap: 10px; align-items: center; } .patro-atual small { display: block; }
+.patro-oferta { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--linha); } .patro-oferta .botao { justify-self: start; }
+.logo-marca { border-radius: 6px; flex: none; }
+.chips .chip.cor-chip { width: auto; height: auto; min-width: 0; padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; border-radius: 999px; }
+.cor-chip i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,.4); margin-right: 5px; vertical-align: -1px; }
 .atr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
 @media (max-width: 380px) { .atr { grid-template-columns: 1fr; } }
 </style>
