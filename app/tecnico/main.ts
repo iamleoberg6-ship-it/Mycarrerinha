@@ -259,6 +259,9 @@ function abaLivres(s: SaveTecnico): string {
 /** O elenco inteiro na tela da escalação: titulares (na vaga), banco e quem está fora, com condição, moral e alertas. */
 function elencoEscalacao(s: SaveTecnico, reservas: Atleta[]): string {
   const vagas = FORMACOES[s.tatica.formacao], av = s.aoVivo, tit = s.esc.titulares;
+  // titular: a função escolhida ali mesmo, embaixo do nome (estrelas = encaixe dele naquela função)
+  const funcao = (a: Atleta, pos: PosT) => { const atual = funcaoNaVaga(s.esc, a, pos);
+    return `<div class="esc-funcao"><select class="campo-sel sel-funcao" data-funcao="${esc(a.id)}" aria-label="Função de ${esc(a.nome)}">${funcoesDa(pos).map((f) => `<option value="${f.id}" ${f.id === atual?.id ? "selected" : ""}>${"★".repeat(estrelasEncaixe(encaixe(a.at, exDe(a), f), ovrPos(a.at, pos)))} ${esc(f.nome)}</option>`).join("")}</select><small>${esc(atual?.desc ?? "")}</small></div>`; };
   const linha = (a: Atleta, rot: string, pos: PosT, onde: "tit" | "banco" | "fora", lado?: Lado) => {
     const cond = Math.round(av?.cond[a.id] ?? a.condicao), enc = rotuloEncaixe(a, pos, lado), ov = Math.round(onde === "tit" ? ovrNaVaga(a, pos, lado) : ovrDe(a));
     const saiu = av && (av.fora.includes(a.id) || (av.stats[a.id] && !(av.emCampo ?? []).includes(a.id)));
@@ -267,7 +270,7 @@ function elencoEscalacao(s: SaveTecnico, reservas: Atleta[]): string {
     const banco = onde === "tit" || av ? "" : `<button class="chip mini" data-banco="${esc(a.id)}">${onde === "banco" ? "Tirar" : "+ Banco"}</button>`;
     return `<div class="esc-lin${selEsc === `j:${a.id}` ? " sel" : ""}${!disponivel(a) || saiu ? " apagado" : ""}"><button class="esc-toque" data-sel="j:${esc(a.id)}"><span class="pos-chip" style="background:${corPos(onde === "tit" ? pos : a.pos)}">${esc(rot)}</span>
       <span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade} anos · <span class="mini-barra" title="Condição"><i style="--v:${cond}%;--c:${corC}"></i></span> ${cond}% · ${humor}${alertas ? ` ${alertas}` : ""}</small></span>
-      <span class="ov"><strong>${ov}</strong></span></button>${banco}</div>`;
+      <span class="ov"><strong>${ov}</strong></span></button>${banco}${onde === "tit" ? funcao(a, pos) : ""}</div>`;
   };
   const titulares = vagas.map((v, i) => { const a = s.elenco.find((x) => x.id === tit[i]); return a ? linha(a, v.rot, v.pos, "tit", ladoDaVaga(v)) : `<div class="esc-lin${selEsc === `v:${i}` ? " sel" : ""}"><button class="esc-toque" data-sel="v:${i}"><span class="pos-chip vazio">${v.rot}</span><span class="nm"><b>Vaga vazia</b><small>Toque para escolher quem entra</small></span><span></span></button></div>`; }).join("");
   const usados = new Set([...tit.filter(Boolean) as string[], ...s.esc.reservas]);
@@ -296,8 +299,6 @@ function abaTatica(s: SaveTecnico): string {
     <p class="sub" style="margin:8px 0">Toque num jogador e depois em outro (no campo ou na lista) para trocar os dois de lugar. Entrosamento no ${t.formacao}: <b style="color:var(--giz)">${Math.round(s.entrosamento[t.formacao] ?? 40)}%</b>. Contorno vermelho: improvisado, lesionado ou suspenso.</p>
     ${s.aoVivo ? `<p class="aviso-t ok" style="margin-top:8px">Jogo parado no ${s.aoVivo.minuto ?? 0}' · ${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}. As mudanças valem quando o jogo voltar. Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}.</p><button class="botao grande" data-vivo style="margin-top:8px">▶ Voltar para o jogo</button>` : `<div class="botoes"><button class="botao peq" data-melhor>Melhor escalação</button></div>`}
     ${elencoEscalacao(s, reservas)}
-    <p class="rotulo" style="margin-top:14px">Funções</p><div class="lista">${vagas.map((v, i) => { const a = por.get(s.esc.titulares[i] ?? ""); if (!a) return ""; const atual = funcaoNaVaga(s.esc, a, v.pos);
-      return `<div class="lin" style="cursor:default;grid-template-columns:34px 1fr"><span class="num" style="font-size:12px">${v.rot}</span><span class="nm"><b>${esc(a.nome)}</b><select class="campo-sel sel-funcao" data-funcao="${esc(a.id)}" aria-label="Função de ${esc(a.nome)}">${funcoesDa(v.pos).map((f) => `<option value="${f.id}" ${f.id === atual?.id ? "selected" : ""}>${"★".repeat(estrelasEncaixe(encaixe(a.at, exDe(a), f), ovrPos(a.at, v.pos)))} ${esc(f.nome)}</option>`).join("")}</select><small>${esc(atual?.desc ?? "")}</small></span></div>`; }).join("")}</div>
 
     <p class="sub" style="font-size:12.5px;margin-top:4px">Se você não mexer durante o jogo, o auxiliar faz até 3 trocas a partir dos 60', tirando quem estiver mais cansado.</p>
     <div class="grade-tat" style="margin-top:14px"><p class="rotulo">Instruções</p>
