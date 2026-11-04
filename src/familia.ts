@@ -331,11 +331,19 @@ export function falaSobreVoce(relacao: number): string {
     : relacao >= 20 ? "Distante: quase não se falam."
     : "Guarda mágoa e mal atende o telefone.";
 }
-/** Dois traços da pessoa (de um lado e do outro), mais o que vem do papel dela na família. */
-export function jeitoDe(m: Pick<Familiar, "id" | "nome" | "traco">, semente: string, crianca: boolean): string[] {
-  const r = new RNG(`jeito|${m.id}|${m.nome}|${semente}`), tabela = crianca ? JEITOS_CRIANCA : JEITOS_ADULTO;
-  const [a, b] = [r.pick(tabela), r.pick(tabela)];
-  const lados = [r.chance(0.5) ? a[0] : a[1], r.chance(0.5) ? b[0] : b[1]].filter((x, i, l) => l.indexOf(x) === i);
+/**
+ * Três traços da pessoa, de pares diferentes (nunca os dois lados do mesmo par, que se contradizem), mais o que vem do
+ * papel dela no futebol: quem é treinador, ex-jogador ou joga bola é sempre fã de futebol.
+ */
+/** Tira o "(a)" do texto: masculino some, feminino troca "o(a)" por "a" e "or(a)" por "ora". */
+export const noGenero = (t: string, mulher?: boolean) => mulher ? t.replace(/o\(a\)/g, "a").replace(/or\(a\)/g, "ora").replace(/\(a\)/g, "a") : t.replace(/\(a\)/g, "");
+export function jeitoDe(m: Pick<Familiar, "id" | "nome" | "traco"> & { futebol?: FutebolIrmao; parentesco?: Parentesco }, semente: string, crianca: boolean, mulher?: boolean): string[] {
+  mulher ??= m.parentesco === "mae" || m.parentesco === "irma";
+  const r = new RNG(`jeito2|${m.id}|${m.nome}|${semente}`), tabela = crianca ? JEITOS_CRIANCA : JEITOS_ADULTO;
+  const doFutebol = !!m.traco || (!!m.futebol && m.futebol.fase !== "parou" && m.futebol.fase !== "crianca");
+  const pares = r.shuffle([...tabela]).slice(0, 3);
+  const lados = pares.map((par) => (!crianca && doFutebol && par[0].startsWith("Fã de futebol") ? par[0] : r.chance(0.5) ? par[0] : par[1]));
   const extra = m.traco === "treinador" ? "Entende de tática e dá palpite em todo jogo." : m.traco === "exJogador" ? "Viveu o futebol de perto e sabe o que é a cobrança." : "";
-  return [...lados, ...(extra ? [extra] : [])];
+  // quem vive o futebol e não sorteou o par do futebol: o "fã" já vem implícito no papel dele
+  return [...lados, ...(extra ? [extra] : [])].map((t) => noGenero(t, mulher));
 }

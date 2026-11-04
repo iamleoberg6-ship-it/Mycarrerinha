@@ -35,7 +35,16 @@ export function gostosDe(p: Perfil): { gosta: Gosto[]; odeia: Gosto } {
   const gosta = [tira(), tira()];
   if (p.jeito === "festeira" && !gosta.includes("balada")) gosta[1] = "balada";
   if (p.jeito === "aventureira" && !gosta.includes("natureza") && !gosta.includes("viagem")) gosta[1] = "viagem";
-  return { gosta, odeia: l.filter((g) => !gosta.includes(g))[Math.floor(r.next() * (l.length - 2))] ?? "games" };
+  // caseira e tranquila não têm a balada como programa preferido
+  if ((p.jeito === "caseira" || p.jeito === "tranquila") && gosta.includes("balada")) gosta[gosta.indexOf("balada")] = gosta.includes("cinema") ? "comida" : "cinema";
+  // o que ela não suporta não pode bater com o jeito nem com a profissão dela
+  const nunca = new Set<Gosto>([...gosta,
+    ...(p.jeito === "festeira" ? ["balada", "musica"] as Gosto[] : []), ...(p.jeito === "aventureira" ? ["natureza", "viagem"] as Gosto[] : []),
+    ...(p.jeito === "caseira" ? ["cinema", "comida", "games"] as Gosto[] : []), ...(p.jeito === "competitiva" ? ["games", "futebol"] as Gosto[] : []),
+    ...(["agente", "jornalista", "personal", "atleta", "fisioterapeuta", "nutricionista"].includes(p.profissao) ? ["futebol"] as Gosto[] : []),
+    ...(["modelo", "influencer", "estilista"].includes(p.profissao) ? ["moda"] as Gosto[] : [])]);
+  const pode = GOSTOS.filter((g) => !nunca.has(g));
+  return { gosta, odeia: pode[Math.floor(r.next() * pode.length)] ?? "games" };
 }
 /** Ela já contou do que gosta? (depois de umas conversas ou do primeiro encontro) */
 export const conheceGostos = (p: Par) => p.etapa !== "match" || p.conversas >= 2;

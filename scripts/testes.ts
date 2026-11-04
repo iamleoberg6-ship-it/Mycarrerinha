@@ -1,5 +1,6 @@
 // Testes do motor: fórmulas do documento e propriedades da simulação.
 import assert from "node:assert/strict";
+import { jeitoDe as jeitoDeFam } from "../src/familia.js";
 import * as T from "../src/tecnico/motor.js";
 import * as M from "../src/tecnico/modelo.js";
 import { RNG } from "../src/rng.js";
@@ -1668,6 +1669,17 @@ teste("Técnico: temporada completa com tabela fechada, dinheiro, escalação e 
   const c = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-tecnico");
   for (let k = 0; k < 10; k++) T.avancarSemana(pacote, c);
   assert.deepEqual(b.tabela, c.tabela);
+});
+
+teste("Família: jeito sem contradição (nunca os dois lados do mesmo traço) e treinador sempre gosta de futebol", () => {
+  for (let k = 0; k < 300; k++) {
+    const tr = k % 3 === 0 ? "treinador" as const : k % 3 === 1 ? "exJogador" as const : undefined;
+    const l = jeitoDeFam({ id: `p${k}`, nome: `Pessoa ${k}`, traco: tr, parentesco: k % 2 ? "mae" : "pai" }, `s${k}`, false);
+    assert.ok(!(l.some((x) => x.startsWith("Fã de futebol")) && l.some((x) => x.startsWith("Não liga"))), "futebol contraditório");
+    assert.ok(!(l.some((x) => x.startsWith("Caseir")) && l.some((x) => x.startsWith("Festeir"))), "caseiro e festeiro");
+    if (tr) assert.ok(!l.some((x) => x.startsWith("Não liga")), "treinador que não liga para futebol");
+    assert.ok(!l.some((x) => x.includes("(a)")), "texto com (a)");
+  }
 });
 
 teste("Técnico: intervalo com trocas, funções por posição e detalhes (falta, liderança, idiomas)", () => {

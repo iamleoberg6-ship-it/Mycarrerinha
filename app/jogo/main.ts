@@ -942,16 +942,53 @@ function bloco(titulo: string, itens: string[]): string {
   return itens.length ? `<p class="rotulo" style="margin-top:12px">${titulo}</p><ul class="sub" style="margin:4px 0 0 18px">${itens.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
 }
 /** Pai, mãe ou irmão sem futebol: jeito, relação e o que ele fala de você. */
+/** Topo das fichas de pessoas: foto (quando tem), nome e a linha de quem é. */
+const topoFicha = (foto: string | undefined, nome: string, linha: string) => `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
+  <div class="ficha-topo">${foto ? `<span class="ficha-foto">${foto}</span>` : ""}<div><h1 style="margin:0">${esc(nome)}</h1><p class="sub" style="margin:4px 0 0">${linha}</p></div></div>`;
 function familiarHtml(s: Save, m: Familiar): string {
   const ano = ANO_INICIAL + s.carreira.temporada, idade = idadeDe(m, ano), cor = corRelFam(m.relacao);
   const saude = m.saude === "doente" ? `<dt>Saúde</dt><dd>${m.tratamento ? "Em tratamento (você paga)" : "Doente, sem tratamento pago"}</dd>` : "";
-  return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
-    <h1 style="margin-top:8px">${esc(m.nome)}</h1>
-    <p class="sub">${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idade} anos</p>
+  return `${topoFicha(rostoParente(m.parentesco, m.id, peleDoJogador(s)) ?? rostoIrmao(s, m), m.nome, `${esc(parentescoCompleto(m, s.jogador.idade, ano))} · ${idade} anos`)}
     <dl class="kv"><dt>Profissão</dt><dd>${esc(m.profissao)}</dd><dt>Relação</dt><dd><span style="color:${cor}">${rotuloRelacaoFam(m.relacao)}</span> <small class="sub">(${Math.round(m.relacao)})</small></dd>${saude}</dl>
     <div class="rel-barra" style="margin:8px 0"><i style="width:${m.relacao}%;background:${cor}"></i></div>
     <p>“${esc(falaSobreVoce(m.relacao))}”</p>
     ${bloco("Jeito", jeitoDe(m, s.semente, false))}`;
+}
+/** Ficha de uma mulher da sua vida (namorada, esposa, casinho, caso ou match): quem é, o jeito, os gostos e a história de vocês. */
+function mulherHtml(s: Save, p: Par, tipo: string): string {
+  const c = s.carreira, n = namoroDe(c), ab = semanaAbsJogo(c), prof = PROFISSOES[p.profissao], r = Math.round(p.relacao), cor = corRelFam(r);
+  const semanas = Math.max(0, ab - p.desde), tempo = semanas < 8 ? `${Math.max(1, semanas)} ${semanas === 1 ? "semana" : "semanas"}` : semanas < SEMANAS_TEMPORADA ? `${Math.round(semanas / 4.3)} meses` : `${(semanas / SEMANAS_TEMPORADA).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} anos`;
+  const g = gostosDe(p), q = Math.round(quimica(p, c.vidaNoturna));
+  const filhos = (n.filhos ?? []).map((f, i) => [f, i] as const).filter(([f]) => f.mae === p.nome);
+  const gravida = gravidasDe(n).find((x) => x.mae === p.nome);
+  const situacao = p.exposto ? "Já saiu na mídia" : n.casos?.includes(p) ? "Ninguém sabe (por enquanto)" : "";
+  const gostos = conheceGostos(p)
+    ? `<p class="rotulo" style="margin-top:12px">Gostos</p><div class="gostos">${g.gosta.map((x) => `<span class="gosto sim">${ICO_GOSTO[x]}<small>${esc(NOME_GOSTO[x])}</small></span>`).join("")}<span class="gosto nao">${ICO_GOSTO[g.odeia]}<small>não suporta ${esc(NOME_GOSTO[g.odeia])}</small></span></div>`
+    : `<p class="sub" style="margin-top:12px">Ela ainda não contou do que gosta. Converse mais um pouco.</p>`;
+  return `${topoFicha(fotoDoPerfil(p), p.nome, `${tipo} · ${p.idade} anos`)}
+    <p style="margin:10px 0">“${esc(p.bio)}”</p>
+    <dl class="kv"><dt>Profissão</dt><dd>${esc(prof.nome)}</dd><dt>Cidade</dt><dd>${esc(p.cidade)}</dd><dt>Jeito</dt><dd>${esc(p.jeito)}</dd>
+      <dt>${p.etapa === "match" ? "Conversando há" : "Juntos há"}</dt><dd>${tempo}</dd>
+      ${p.etapa !== "match" ? `<dt>Conhece sua família</dt><dd>${p.conheceuFamilia ? "Sim" : "Ainda não"}</dd>` : ""}
+      ${p.pet ? `<dt>Bichinho de vocês</dt><dd>${esc(p.pet)}</dd>` : ""}${situacao ? `<dt>Situação</dt><dd>${situacao}</dd>` : ""}${p.famosa ? `<dt>Fama</dt><dd>Celebridade</dd>` : ""}</dl>
+    <p class="sub" style="margin:6px 0 0">${esc(prof.efeito)}</p>
+    <div class="rel-nivel" style="margin-top:10px"><span style="color:${cor}">${esc(NOME_ETAPA[p.etapa])} · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${cor}"></i></span></div>
+    <div class="rel-nivel"><span>Química · ${q}</span><span class="rel-barra"><i style="width:${q}%;background:linear-gradient(90deg,#E58FB1,#FF5C8A)"></i></span></div>
+    <p class="sub" style="margin-top:6px">${esc(pensamentoDela(p))}</p>
+    ${gostos}
+    ${gravida || filhos.length ? `<p class="rotulo" style="margin-top:12px">Filhos com ela</p>${gravida ? `<p>🍼 Grávida: o bebê chega em ${Math.max(1, gravida.parto - ab)} semanas.</p>` : ""}${filhos.map(([f, i]) => `<p><button class="nome-hist" data-filhoperf="${i}">${esc(f.nome)}</button> <small class="sub">· ${(() => { const k = Math.max(0, ANO_INICIAL + c.temporada - f.ano); return k === 0 ? "bebê" : `${k} ${k === 1 ? "ano" : "anos"}`; })()}</small></p>`).join("")}` : ""}`;
+}
+function abrirMulher(id: string) {
+  if (!save) return;
+  const n = namoroDe(save.carreira), par = n.par;
+  const achou: [Par, string] | undefined = par?.id === id ? [par, par.etapa === "casados" ? "Sua esposa" : par.etapa === "noivos" ? "Sua noiva" : par.etapa === "morando" ? "Mora com você" : "Sua namorada"]
+    : (n.ficantes ?? []).find((x) => x.id === id) ? [(n.ficantes ?? []).find((x) => x.id === id)!, "Casinho"]
+    : (n.casos ?? []).find((x) => x.id === id) ? [(n.casos ?? []).find((x) => x.id === id)!, "Caso escondido"]
+    : n.matches.find((x) => x.id === id) ? [n.matches.find((x) => x.id === id)!, "Match"] : undefined;
+  if (!achou) return;
+  $("telaHist").innerHTML = mulherHtml(save, achou[0], achou[1]);
+  const d = $("dlgHist") as HTMLDialogElement;
+  if (!d.open) d.showModal();
 }
 function abrirParente(id: string) {
   if (!save) return;
@@ -963,19 +1000,17 @@ function abrirParente(id: string) {
 }
 /** Filho: idade, relação, habilidades (de 3 anos em diante, com o futebol se for o caso) e o jeito. */
 function filhoHtml(s: Save, f: Filho, i: number): string {
-  const idade = ANO_INICIAL + s.carreira.temporada - f.ano, r = Math.round(f.relacao ?? 70);
+  const idade = Math.max(0, ANO_INICIAL + s.carreira.temporada - f.ano), r = Math.round(f.relacao ?? 70);
   const h = new RNG(`habilidades|${s.semente}|${f.nome}|${f.ano}`);
   const habs: [string, number][] = [["Futebol", f.futebol ? f.futebol.ovr : h.int(25, 60)], ["Estudo", h.int(35, 90)], ["Sociabilidade", h.int(30, 90)], ["Criatividade", h.int(25, 90)]];
   const barra = (nome: string, v: number) => `<div class="rel-nivel"><span>${nome}</span><span class="rel-barra"><i style="width:${v}%;background:#6FB7E0"></i></span><b>${v}</b></div>`;
   const fase = f.futebol ? { escolinha: "Na escolinha de futebol", base: "Na base de um clube", pro: "Profissional", parou: "Largou o futebol" }[f.futebol.fase] : undefined;
-  return `<button class="fechar" data-acao="fechar-hist" aria-label="Fechar">✕</button>
-    <h1 style="margin-top:8px">${esc(f.nome)}</h1>
-    <p class="sub">${f.menina ? "Filha" : "Filho"} · ${idade} anos · mãe: ${esc(f.mae)}</p>
+  return `${topoFicha(retratoFilho(s, f, i), f.nome, `${f.menina ? "Filha" : "Filho"} · ${idade === 0 ? "recém-nascid" + (f.menina ? "a" : "o") : `${idade} ${idade === 1 ? "ano" : "anos"}`} · mãe: ${esc(f.mae)}${f.pensao ? " · mora com a mãe" : " · mora com você"}`)}
     <div class="rel-nivel"><span style="color:${corRelFam(r)}">Relação com você · ${r}</span><span class="rel-barra"><i style="width:${r}%;background:${corRelFam(r)}"></i></span></div>
     <p>“${esc(falaSobreVoce(r))}”</p>
     ${fase && f.futebol ? `<p class="sub">${fase} · OVR ${f.futebol.ovr} (potencial ${f.futebol.pot})</p>` : ""}
     ${idade >= 3 ? `<p class="rotulo" style="margin-top:12px">Habilidades</p>${habs.map(([n, v]) => barra(n, v)).join("")}` : `<p class="sub" style="margin-top:12px">Ainda é bebê: as habilidades aparecem a partir dos 3 anos.</p>`}
-    ${bloco("Jeito", jeitoDe({ id: `filho${i}-${f.ano}`, nome: f.nome }, s.semente, true))}
+    ${bloco("Jeito", jeitoDe({ id: `filho${i}-${f.ano}`, nome: f.nome }, s.semente, true, meninaDe(f)))}
     <p class="sub" style="margin-top:8px">${esc(quemPuxou(s, f, i))}</p>`;
 }
 function abrirFilhoPerfil(i: number) {
@@ -1124,7 +1159,7 @@ function celBusca(s: Save): string {
 }
 function cartaoPar(p: Par | Perfil, botoes: string, extra = ""): string {
   const prof = PROFISSOES[p.profissao];
-  return `<div class="perfil-app"><span class="avatar-app foto">${fotoDoPerfil(p)}</span><div class="perfil-app-txt"><b>${esc(p.nome.split(" ")[0])}, ${p.idade}</b><small>${esc(prof.nome)} · ${esc(p.cidade)} · ${esc(p.jeito)}</small>
+  return `<div class="perfil-app"><span class="avatar-app foto">${fotoDoPerfil(p)}</span><div class="perfil-app-txt">${"etapa" in p ? `<button class="nome-hist nome-par" data-mulher="${p.id}">${esc(p.nome.split(" ")[0])}, ${p.idade}</button>` : `<b>${esc(p.nome.split(" ")[0])}, ${p.idade}</b>`}<small>${esc(prof.nome)} · ${esc(p.cidade)} · ${esc(p.jeito)}</small>
     <p>“${esc(p.bio)}”</p><small class="efeito-prof">${esc(prof.efeito)}</small>${extra}</div><div class="perfil-app-botoes">${botoes}</div></div>`;
 }
 let escolhaNam: { id: string; op: string } | undefined;
@@ -2979,7 +3014,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-pedir-funcao],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-pedir-funcao],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-mulher],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -3084,6 +3119,7 @@ document.addEventListener("click", (ev) => {
   }
   else if (d.irmao) abrirIrmao(d.irmao);
   else if (d.parente) abrirParente(d.parente);
+  else if (d.mulher) abrirMulher(d.mulher);
   else if (d.filhoperf !== undefined) abrirFilhoPerfil(Number(d.filhoperf));
   else if (d.hist) abrirHistorico(d.hist);
   else if (d.vsel) { vistaSelecao = d.vsel as typeof vistaSelecao; const y = window.scrollY; render(); window.scrollTo(0, y); }
