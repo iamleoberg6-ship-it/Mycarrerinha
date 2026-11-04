@@ -91,7 +91,7 @@ export const UNIFORME_SELECAO: Record<string, { cores: [string, string]; padrao:
 };
 /** Calção e meião que fogem do padrão da camisa (São Paulo e Fortaleza jogam de branco embaixo; Liverpool, de vermelho). */
 /** Liverpool joga de vermelho em cima e embaixo: o calção é vermelho, não o amarelo da segunda cor. */
-export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" || clubeId === "FOR" ? "#FFFFFF" : clubeId === "EN-LIV" ? "#C8102E" : clubeId === "FR-PSG" ? "#004170" : undefined);
+export const calcaoDoClube = (clubeId?: string): string | undefined => (clubeId === "SAN" || clubeId === "FOR" ? "#FFFFFF" : clubeId === "EN-LIV" ? "#C8102E" : clubeId === "FR-PSG" ? "#0B1F4D" : clubeId === "ES-RMA" ? "#FFFFFF" : undefined);
 export const meiaoDoClube = (clubeId?: string): string | undefined => (clubeId === "FOR" ? "#FFFFFF" : undefined);
 /** A camisa do armário sai do mesmo uniforme que o campo usa (seleção, clube com uniforme próprio); os demais clubes, o que foi guardado. */
 export function kitVisual(r: { cores: [string, string]; modelo: string; clubeId?: string }): { cores: [string, string]; modelo: string; faixas?: string[]; numeroCor?: string } {

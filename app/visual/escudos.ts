@@ -52,6 +52,28 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     const escudo = "M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z", tri = "M2 3 H24 L13 27 Z";
     return `<defs><clipPath id="escSPA"><path d="${tri}"/></clipPath></defs><path d="${escudo}" fill="#FFFFFF"/><g clip-path="url(#escSPA)"><rect x="0" y="3" width="26" height="8" fill="#0A0A0A"/><rect x="0" y="11" width="26" height="8" fill="#FFFFFF"/><rect x="0" y="19" width="26" height="9" fill="#C8102E"/></g><path d="${tri}" fill="none" stroke="${TINTA}" stroke-width=".8"/><path d="${escudo}" fill="none" stroke="${TINTA}" stroke-width="${borda}"/>`;
   }
+  const MARINHO = "#0B1F4D", OURO = "#D4AF37", OURO_ESC = "#9C7A1E";
+  // Real Madrigal: escudo branco com a faixa diagonal azul, contorno azul-marinho e a coroa dourada em cima
+  if (chave === "ES-RMA") {
+    const esc = "M4 9 H22 V17.5 Q22 25 13 28.8 Q4 25 4 17.5 Z";
+    const coroa = `<path d="M5 8.6 L4.2 3.2 L8 5.6 L10.4 1.6 L13 4.6 L15.6 1.6 L18 5.6 L21.8 3.2 L21 8.6 Z" fill="${OURO}" stroke="${MARINHO}" stroke-width=".7" stroke-linejoin="round"/>`
+      + `<rect x="5" y="7" width="16" height="1.6" fill="${OURO_ESC}"/>` + [[8, 4.9], [13, 3.8], [18, 4.9]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".75" fill="#C8102E"/>`).join("");
+    return `<defs><clipPath id="escRMA"><path d="${esc}"/></clipPath></defs><path d="${esc}" fill="#FFFFFF"/><g clip-path="url(#escRMA)"><path d="M2 12 L6 9 L26 23 L22 27 Z" fill="#3A4FA0"/></g>`
+      + `<text x="13" y="20" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="8" fill="${OURO}" stroke="${MARINHO}" stroke-width=".35" paint-order="stroke">RM</text>`
+      + `<path d="${esc}" fill="none" stroke="${MARINHO}" stroke-width="${borda}" stroke-linejoin="round"/>${coroa}`;
+  }
+  // Arsenau: escudo vermelho com a silhueta de um canhão no meio, contorno azul-marinho
+  if (chave === "EN-ARS") {
+    const esc = "M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z";
+    const canhao = `<g fill="#FFFFFF" stroke="${MARINHO}" stroke-width=".45" stroke-linejoin="round"><path d="M4.5 14.6 Q4.2 12.6 6 12.2 L21.6 10 Q23 9.9 23 11 L23 12.3 Q23 13.3 21.6 13.4 L6.4 16.4 Q4.8 16.6 4.5 14.6 Z"/><rect x="22.4" y="9.6" width="1.4" height="4.2" rx=".5"/><circle cx="9.6" cy="18.4" r="3.4"/><circle cx="9.6" cy="18.4" r="1" fill="${MARINHO}" stroke="none"/></g>`;
+    return `<path d="${esc}" fill="#EF0107"/>${canhao}<path d="${esc}" fill="none" stroke="${MARINHO}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  }
+  // Paris São Germano: redondo azul-marinho, com a torre Eiffel dourada no meio e o anel branco
+  if (chave === "FR-PSG") {
+    const torre = `<g fill="${OURO}" stroke="${OURO_ESC}" stroke-width=".3" stroke-linejoin="round"><path d="M13 3.6 L13.7 8 L14.6 12.5 L16.4 19 L19.4 25.6 H16.6 Q15.6 22.4 13 22.4 Q10.4 22.4 9.4 25.6 H6.6 L9.6 19 L11.4 12.5 L12.3 8 Z"/></g>`
+      + `<rect x="10.8" y="12.2" width="4.4" height="1.1" fill="${OURO_ESC}"/><rect x="9.2" y="18.6" width="7.6" height="1.2" fill="${OURO_ESC}"/>`;
+    return `<circle cx="13" cy="15" r="12.6" fill="${MARINHO}"/><circle cx="13" cy="15" r="11" fill="none" stroke="#FFFFFF" stroke-width=".9"/><rect x="11.4" y="4.2" width="3.2" height="21.6" fill="#DA291C" opacity=".9"/>${torre}<circle cx="13" cy="15" r="12.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   const c2 = c2r && c2r.toLowerCase() !== c1.toLowerCase() ? c2r : c1.toLowerCase() === "#ffffff" ? "#0A0A0A" : "#FFFFFF";
   const { forma, desenho } = modeloEscudo(chave), d = FORMAS[forma], id = `escR${forma}`;
   // Corinthians: um filete vermelho por dentro do contorno (o detalhe da marca, sem mudar o formato)
