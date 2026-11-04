@@ -19,7 +19,7 @@ import { patrociniosDe, receitaPatro, viradaPatro, type PatrociniosClube } from 
 /** Dinheiro nas mensagens: na moeda que a tela está usando. */
 const dinheiroT = (v: number) => curtoBrl(v);
 import {
-  FORMACOES, FUNCOES, NOME_FUNCAO, atletaDoMundo, exDe, idiomasDe, funcaoNaVaga, ovrPos, custoObra, disponivel, forcaDoTime, formaDe, gerarAtributos, melhorEscalacao, ovrDe, ovrNaVaga, precoIngresso,
+  FORMACOES, ladoDaVaga, FUNCOES, NOME_FUNCAO, atletaDoMundo, exDe, idiomasDe, funcaoNaVaga, ovrPos, custoObra, disponivel, forcaDoTime, formaDe, gerarAtributos, melhorEscalacao, ovrDe, ovrNaVaga, precoIngresso,
   salarioJusto, salarioStaff, taticaPadrao, valorAtleta, type Atleta, type Escalacao, type Funcao, type Membro, type PosT, type Tatica,
 } from "./modelo.js";
 
@@ -624,7 +624,7 @@ export function reorganizarNoIntervalo(s: SaveTecnico, f: string) {
   s.tatica.formacao = f; s.entrosamento[f] ??= 40;
   const tit: (string | null)[] = FORMACOES[f].map(() => null), livres = new Set(ids);
   FORMACOES[f].map((v, i) => ({ v, i })).sort((a, b) => (a.v.pos === "GOL" ? -1 : b.v.pos === "GOL" ? 1 : 0)).forEach(({ v, i }) => {
-    const m = [...livres].map((id) => por.get(id)!).sort((a, b) => ovrNaVaga(b, v.pos) - ovrNaVaga(a, v.pos))[0];
+    const m = [...livres].map((id) => por.get(id)!).sort((a, b) => ovrNaVaga(b, v.pos, ladoDaVaga(v)) - ovrNaVaga(a, v.pos, ladoDaVaga(v)))[0];
     if (m) { tit[i] = m.id; livres.delete(m.id); }
   });
   s.esc.titulares = tit;

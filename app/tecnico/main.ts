@@ -37,7 +37,7 @@ import {
 } from "../../src/tecnico/motor";
 import {
   FORMACOES, NOMES_FORMACAO, NOME_MENTALIDADE, NOME_NIVEL3, NOME_AT, NOME_AT_GOL, NOME_POS_T, FUNCOES, NOME_FUNCAO, EFEITO_FUNCAO,
-  forcaDoTime, melhorEscalacao, ovrDe, ovrNaVaga, formaDe, disponivel, rotuloEncaixe, valorAtleta, precoIngresso, exDe, idiomasDe, funcaoNaVaga, ovrPos, type Atleta, type PosT, type Funcao,
+  forcaDoTime, ladoDe, ladoDaVaga, rotuloPos, type Lado, melhorEscalacao, ovrDe, ovrNaVaga, formaDe, disponivel, rotuloEncaixe, valorAtleta, precoIngresso, exDe, idiomasDe, funcaoNaVaga, ovrPos, type Atleta, type PosT, type Funcao,
 } from "../../src/tecnico/modelo";
 
 const pacote = pacoteJson as unknown as PacoteDados;
@@ -176,7 +176,7 @@ function abaElenco(s: SaveTecnico): string {
   return `${subs}${filtros}<p class="sub" style="margin-bottom:6px">Folha: <b style="color:var(--giz)">${curtoBrl(folhaDe(s))}</b>/mês · teto ${curtoBrl(s.clube.tetoFolha)}</p><div class="lista">${lista.map((a) => {
     const tags = [tit.has(a.id) ? `<span class="pill bom">Titular</span>` : "", a.lesao > 0 ? `<span class="pill ruim">Lesão ${a.lesao} sem.</span>` : "", a.suspenso > 0 ? `<span class="pill aviso">Suspenso</span>` : "",
       a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined ? `<span class="pill">Promessa</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : ""].join("");
-    return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${a.pos} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong>${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
+    return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong>${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
   }).join("")}</div>`;
 }
 /** O potencial é uma estimativa: quanto melhor o olheiro e o coordenador da base, mais justa a faixa. */
@@ -192,7 +192,7 @@ function fichaJogador(s: SaveTecnico, id: string): string {
   const nomeAt = (k: (typeof ATRIBUTOS)[number]) => (a.pos === "GOL" ? NOME_AT_GOL[k] ?? NOME_AT[k] : NOME_AT[k]);
   const meses = Math.max(1, (a.contratoAte - s.temporada + 1) * 12 - Math.floor(s.semana / 4)), multa = Math.round(a.salario * meses * 0.5);
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button>
-    <div><p class="rotulo">${NOME_POS_T[a.pos]} · ${a.idade} anos · ${a.nac} · camisa ${a.numero}</p><h2>${esc(a.nome)}</h2></div>
+    <div><p class="rotulo">${NOME_POS_T[a.pos]}${ladoDe(a) ? (ladoDe(a) === "E" ? " pela esquerda" : " pela direita") : ""} · ${a.idade} anos · ${a.nac} · camisa ${a.numero}</p><h2>${esc(a.nome)}</h2></div>
     <div class="forca3"><div><strong>${ovrDe(a)}</strong><span>OVR</span></div><div><strong>${formaDe(a).toFixed(1).replace(".", ",")}</strong><span>Forma</span></div><div><strong>${a.jogos}</strong><span>Jogos · ${a.gols}g ${a.assist}a</span></div></div>
     <div class="atr">${ATRIBUTOS.map((k) => `<div class="barra"><span>${nomeAt(k)}</span><b>${Math.round(a.at[k])}</b><i style="--v:${Math.round(a.at[k])}%;--c:${a.at[k] >= 75 ? "var(--pos)" : a.at[k] >= 55 ? "var(--ouro)" : "var(--giz-2)"}"></i></div>`).join("")}</div>
     <p class="rotulo">Mental e bola parada</p>
@@ -259,25 +259,25 @@ function abaLivres(s: SaveTecnico): string {
 /** O elenco inteiro na tela da escalação: titulares (na vaga), banco e quem está fora, com condição, moral e alertas. */
 function elencoEscalacao(s: SaveTecnico, reservas: Atleta[]): string {
   const vagas = FORMACOES[s.tatica.formacao], av = s.aoVivo, tit = s.esc.titulares;
-  const linha = (a: Atleta, rot: string, pos: PosT, onde: "tit" | "banco" | "fora") => {
-    const cond = Math.round(av?.cond[a.id] ?? a.condicao), enc = rotuloEncaixe(a, pos), ov = Math.round(onde === "tit" ? ovrNaVaga(a, pos) : ovrDe(a));
+  const linha = (a: Atleta, rot: string, pos: PosT, onde: "tit" | "banco" | "fora", lado?: Lado) => {
+    const cond = Math.round(av?.cond[a.id] ?? a.condicao), enc = rotuloEncaixe(a, pos, lado), ov = Math.round(onde === "tit" ? ovrNaVaga(a, pos, lado) : ovrDe(a));
     const saiu = av && (av.fora.includes(a.id) || (av.stats[a.id] && !(av.emCampo ?? []).includes(a.id)));
     const alertas = [a.lesao > 0 ? `<span class="pill ruim">Lesão ${a.lesao} sem.</span>` : "", a.suspenso > 0 ? `<span class="pill ruim">Suspenso</span>` : "", onde === "tit" && enc ? `<span class="pill aviso">${esc(enc)}</span>` : "", saiu ? `<span class="pill">Saiu do jogo</span>` : "", a.querSair ? `<span class="pill aviso">Quer sair</span>` : ""].join("");
     const corC = cond >= 80 ? "#74D394" : cond >= 62 ? "#E3B341" : "#EC7D69", humor = a.moral >= 75 ? "😄" : a.moral >= 55 ? "🙂" : a.moral >= 35 ? "😐" : "😠";
     const banco = onde === "tit" || av ? "" : `<button class="chip mini" data-banco="${esc(a.id)}">${onde === "banco" ? "Tirar" : "+ Banco"}</button>`;
     return `<div class="esc-lin${selEsc === `j:${a.id}` ? " sel" : ""}${!disponivel(a) || saiu ? " apagado" : ""}"><button class="esc-toque" data-sel="j:${esc(a.id)}"><span class="pos-chip" style="background:${corPos(onde === "tit" ? pos : a.pos)}">${esc(rot)}</span>
-      <span class="nm"><b>${esc(a.nome)}</b><small>${a.pos} · ${a.idade} anos · <span class="mini-barra" title="Condição"><i style="--v:${cond}%;--c:${corC}"></i></span> ${cond}% · ${humor}${alertas ? ` ${alertas}` : ""}</small></span>
+      <span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade} anos · <span class="mini-barra" title="Condição"><i style="--v:${cond}%;--c:${corC}"></i></span> ${cond}% · ${humor}${alertas ? ` ${alertas}` : ""}</small></span>
       <span class="ov"><strong>${ov}</strong></span></button>${banco}</div>`;
   };
-  const titulares = vagas.map((v, i) => { const a = s.elenco.find((x) => x.id === tit[i]); return a ? linha(a, v.rot, v.pos, "tit") : `<div class="esc-lin${selEsc === `v:${i}` ? " sel" : ""}"><button class="esc-toque" data-sel="v:${i}"><span class="pos-chip vazio">${v.rot}</span><span class="nm"><b>Vaga vazia</b><small>Toque para escolher quem entra</small></span><span></span></button></div>`; }).join("");
+  const titulares = vagas.map((v, i) => { const a = s.elenco.find((x) => x.id === tit[i]); return a ? linha(a, v.rot, v.pos, "tit", ladoDaVaga(v)) : `<div class="esc-lin${selEsc === `v:${i}` ? " sel" : ""}"><button class="esc-toque" data-sel="v:${i}"><span class="pos-chip vazio">${v.rot}</span><span class="nm"><b>Vaga vazia</b><small>Toque para escolher quem entra</small></span><span></span></button></div>`; }).join("");
   const usados = new Set([...tit.filter(Boolean) as string[], ...s.esc.reservas]);
   const fora = s.elenco.filter((a) => !usados.has(a.id)).sort((a, b) => Number(disponivel(b)) - Number(disponivel(a)) || ovrDe(b) - ovrDe(a));
   const sel = selEsc ? (selEsc.startsWith("j:") ? s.elenco.find((a) => a.id === selEsc!.slice(2))?.nome : `a vaga ${vagas[+selEsc.slice(2)]?.rot ?? ""}`) : undefined;
   const vagaSel = selEsc?.startsWith("v:") ? +selEsc.slice(2) : selEsc ? tit.indexOf(selEsc.slice(2)) : -1;
   return `${sel ? `<div class="sel-barra"><span>Selecionado: <b>${esc(sel)}</b>. Toque em quem vai trocar de lugar.</span><span class="botoes">${vagaSel >= 0 ? `<button class="chip mini" data-vaga="${vagaSel}">Ver opções</button>` : ""}<button class="chip mini" data-sel-cancelar>Cancelar</button></span></div>` : ""}
     <p class="rotulo" style="margin-top:14px">Titulares</p><div class="lista esc-lista">${titulares}</div>
-    <p class="rotulo" style="margin-top:14px">Banco <small>(${reservas.length} de 9)</small></p><div class="lista esc-lista">${reservas.map((a) => linha(a, a.pos, a.pos, "banco")).join("") || `<p class="sub">Ninguém no banco.</p>`}</div>
-    <p class="rotulo" style="margin-top:14px">Fora do jogo <small>(${fora.length})</small></p><div class="lista esc-lista">${fora.map((a) => linha(a, a.pos, a.pos, "fora")).join("") || `<p class="sub">Todo o elenco está relacionado.</p>`}</div>`;
+    <p class="rotulo" style="margin-top:14px">Banco <small>(${reservas.length} de 9)</small></p><div class="lista esc-lista">${reservas.map((a) => linha(a, rotuloPos(a), a.pos, "banco")).join("") || `<p class="sub">Ninguém no banco.</p>`}</div>
+    <p class="rotulo" style="margin-top:14px">Fora do jogo <small>(${fora.length})</small></p><div class="lista esc-lista">${fora.map((a) => linha(a, rotuloPos(a), a.pos, "fora")).join("") || `<p class="sub">Todo o elenco está relacionado.</p>`}</div>`;
 }
 function abaTatica(s: SaveTecnico): string {
   const vagas = FORMACOES[s.tatica.formacao], por = new Map(s.elenco.map((a) => [a.id, a])), t = s.tatica;
@@ -285,8 +285,8 @@ function abaTatica(s: SaveTecnico): string {
   const campo = `<div class="campo"><div class="area cima"></div><div class="area baixo"></div><div class="circ"></div>${vagas.map((v, i) => {
     const a = por.get(s.esc.titulares[i] ?? "");
     if (!a) return `<button class="vaga vazia${selEsc === `v:${i}` ? " sel" : ""}" data-sel="v:${i}" style="left:${v.x}%;top:${v.y}%"><span class="bola">+</span><span class="nomev">${v.rot}</span></button>`;
-    const ruim = !disponivel(a) || rotuloEncaixe(a, v.pos) !== "";
-    return `<button class="vaga${ruim ? " alerta" : ""}${selEsc === `j:${a.id}` ? " sel" : ""}" data-sel="j:${a.id}" style="left:${v.x}%;top:${v.y}%" aria-label="${v.rot}: ${esc(a.nome)}"><span class="bola" style="background:${corPos(v.pos)}">${a.numero}</span><span class="nomev">${esc(a.nome.split(" ").slice(-1)[0])}</span><span class="notav">${v.rot} · ${Math.round(ovrNaVaga(a, v.pos))}</span></button>`;
+    const ruim = !disponivel(a) || rotuloEncaixe(a, v.pos, ladoDaVaga(v)) !== "";
+    return `<button class="vaga${ruim ? " alerta" : ""}${selEsc === `j:${a.id}` ? " sel" : ""}" data-sel="j:${a.id}" style="left:${v.x}%;top:${v.y}%" aria-label="${v.rot}: ${esc(a.nome)}"><span class="bola" style="background:${corPos(v.pos)}">${a.numero}</span><span class="nomev">${esc(a.nome.split(" ").slice(-1)[0])}</span><span class="notav">${v.rot} · ${Math.round(ovrNaVaga(a, v.pos, ladoDaVaga(v)))}</span></button>`;
   }).join("")}</div>`;
   const chips = (campo: string, nomes: string[], atual: number) => `<div class="chips">${nomes.map((n, i) => `<button class="chip${i === atual ? " ativo" : ""}" data-tat="${campo}" data-v="${i}">${n}</button>`).join("")}</div>`;
   const reservas = s.esc.reservas.map((id) => por.get(id)).filter(Boolean) as Atleta[];
@@ -316,11 +316,11 @@ function abaTatica(s: SaveTecnico): string {
 function escolherVaga(s: SaveTecnico, i: number): string {
   const v = FORMACOES[s.tatica.formacao][i], atual = s.esc.titulares[i];
   const av = s.aoVivo, podeVoltar = (a: Atleta) => !av || (!av.fora.includes(a.id) && ((av.emCampo ?? []).includes(a.id) || !av.stats[a.id]));
-  const lista = [...s.elenco].filter((a) => !av || podeVoltar(a)).sort((a, b) => Number(disponivel(b)) - Number(disponivel(a)) || ovrNaVaga(b, v.pos) - ovrNaVaga(a, v.pos));
+  const lista = [...s.elenco].filter((a) => !av || podeVoltar(a)).sort((a, b) => Number(disponivel(b)) - Number(disponivel(a)) || ovrNaVaga(b, v.pos, ladoDaVaga(v)) - ovrNaVaga(a, v.pos, ladoDaVaga(v)));
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button><div><p class="rotulo">Vaga</p><h2>${v.rot} · ${NOME_POS_T[v.pos]}</h2></div>
     <div class="lista">${lista.map((a) => {
-      const enc = rotuloEncaixe(a, v.pos), onde = s.esc.titulares.indexOf(a.id);
-      return `<button class="lin" data-escolher="${esc(a.id)}" data-i="${i}" ${disponivel(a) ? "" : "disabled style=\"opacity:.45\""}><span class="num" style="font-size:13px">${a.pos}</span><span class="nm"><b>${esc(a.nome)}${a.id === atual ? " ✓" : ""}</b><small>${enc ? `<span class="pill aviso">${enc}</span>` : ""}${onde >= 0 && a.id !== atual ? `<span class="pill">Escalado</span>` : ""} físico ${Math.round(a.condicao)}% · forma ${formaDe(a).toFixed(1).replace(".", ",")}${a.lesao > 0 ? " · lesionado" : a.suspenso > 0 ? " · suspenso" : ""}</small></span><span class="ov"><strong>${Math.round(ovrNaVaga(a, v.pos))}</strong><span>na vaga</span></span></button>`;
+      const enc = rotuloEncaixe(a, v.pos, ladoDaVaga(v)), onde = s.esc.titulares.indexOf(a.id);
+      return `<button class="lin" data-escolher="${esc(a.id)}" data-i="${i}" ${disponivel(a) ? "" : "disabled style=\"opacity:.45\""}><span class="num" style="font-size:13px">${rotuloPos(a)}</span><span class="nm"><b>${esc(a.nome)}${a.id === atual ? " ✓" : ""}</b><small>${enc ? `<span class="pill aviso">${enc}</span>` : ""}${onde >= 0 && a.id !== atual ? `<span class="pill">Escalado</span>` : ""} físico ${Math.round(a.condicao)}% · forma ${formaDe(a).toFixed(1).replace(".", ",")}${a.lesao > 0 ? " · lesionado" : a.suspenso > 0 ? " · suspenso" : ""}</small></span><span class="ov"><strong>${Math.round(ovrNaVaga(a, v.pos, ladoDaVaga(v)))}</strong><span>na vaga</span></span></button>`;
     }).join("")}${atual ? `<button class="botao sec" data-escolher="" data-i="${i}" style="margin-top:8px">Deixar a vaga vazia</button>` : ""}</div>`;
 }
 

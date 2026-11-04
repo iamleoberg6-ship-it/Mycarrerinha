@@ -42,7 +42,7 @@ export function gerarAtributos(rng: RNG, pos: PosT, alvo: number): Atributos {
 
 // ------------------------------------------------------------------ atletas
 export interface Atleta {
-  id: string; nome: string; pos: PosT; idade: number; nac: string; at: Atributos; pot: number; numero: number;
+  id: string; nome: string; pos: PosT; /** pontas e laterais: lado preferido */ lado?: Lado; idade: number; nac: string; at: Atributos; pot: number; numero: number;
   /** 0 a 100 */ moral: number; /** 0 a 100 */ condicao: number;
   /** semanas fora */ lesao: number; lesaoTipo?: string; /** jogos de suspensão */ suspenso: number; amarelos: number;
   /** R$ por mês */ salario: number; /** última temporada do contrato (índice da carreira) */ contratoAte: number;
@@ -110,16 +110,25 @@ export const FORMACOES: Record<string, Vaga[]> = {
 };
 export const NOMES_FORMACAO = Object.keys(FORMACOES);
 
+/** Lado de ponta e lateral: esquerdo ou direito (fixo por atleta; quem não tem no save, sorteia pelo id). */
+export type Lado = "E" | "D";
+const hashL = (t: string) => { let h = 2166136261; for (const ch of t) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
+export const ladoDe = (a: Pick<Atleta, "id" | "pos"> & { lado?: Lado }): Lado | undefined => (a.pos === "PON" || a.pos === "LAT" ? a.lado ?? (hashL(`lado|${a.id}`) % 100 < 52 ? "D" : "E") : undefined);
+/** Vaga de um lado do campo (pontas, meias abertos, laterais e alas). */
+export const ladoDaVaga = (v: Vaga): Lado | undefined => (v.pos === "PON" || v.pos === "LAT" ? (v.x < 50 ? "E" : v.x > 50 ? "D" : undefined) : undefined);
+/** Rótulo da posição com o lado: PE/PD para pontas, LE/LD para laterais. */
+export const rotuloPos = (a: Pick<Atleta, "id" | "pos"> & { lado?: Lado }) => { const l = ladoDe(a); return a.pos === "PON" ? (l === "E" ? "PE" : "PD") : a.pos === "LAT" ? (l === "E" ? "LE" : "LD") : a.pos; };
 /** Posições parecidas: quem joga numa rende quase igual na outra. */
 const AFIM: Record<PosT, PosT[]> = { GOL: [], ZAG: ["VOL", "LAT"], LAT: ["ZAG", "PON"], VOL: ["ZAG", "MEI"], MEI: ["VOL", "PON", "ATA"], PON: ["LAT", "MEI", "ATA"], ATA: ["PON", "MEI"] };
 /** OVR do atleta numa vaga: a conta dos atributos naquela posição, com desconto para quem não é dali. */
-export function ovrNaVaga(a: Atleta, pos: PosT): number {
+export function ovrNaVaga(a: Atleta, pos: PosT, lado?: Lado): number {
   const base = ovrPos(a.at, pos);
-  if (a.pos === pos) return base;
+  // lado trocado: ponta rende um pouco menos (pode virar invertido); lateral sente mais
+  if (a.pos === pos) return base - (lado && ladoDe(a) && ladoDe(a) !== lado ? (pos === "LAT" ? 4 : 2) : 0);
   if (pos === "GOL" || a.pos === "GOL") return base - 25;
   return base - (AFIM[a.pos].includes(pos) ? 3 : 9);
 }
-export const rotuloEncaixe = (a: Atleta, pos: PosT) => (a.pos === pos ? "" : pos === "GOL" || a.pos === "GOL" ? "fora de posição" : AFIM[a.pos].includes(pos) ? "improvisado" : "fora de posição");
+export const rotuloEncaixe = (a: Atleta, pos: PosT, lado?: Lado) => (a.pos === pos ? (lado && ladoDe(a) && ladoDe(a) !== lado ? "lado trocado" : "") : pos === "GOL" || a.pos === "GOL" ? "fora de posição" : AFIM[a.pos].includes(pos) ? "improvisado" : "fora de posição");
 
 // ------------------------------------------------------------------ tática
 export interface Tatica {
@@ -147,11 +156,11 @@ export function funcaoNaVaga(esc: Escalacao, a: Atleta, pos: PosT): FuncaoJogo |
 export function melhorEscalacao(elenco: Atleta[], formacao: string, nReservas = 9): Escalacao {
   const vagas = FORMACOES[formacao] ?? FORMACOES["4-3-3"];
   const livres = elenco.filter(disponivel), usados = new Set<string>(), tit: (string | null)[] = vagas.map(() => null);
-  const efetivo = (a: Atleta, p: PosT) => ovrNaVaga(a, p) * (0.85 + 0.15 * a.condicao / 100);
+  const efetivo = (a: Atleta, v: Vaga) => ovrNaVaga(a, v.pos, ladoDaVaga(v)) * (0.85 + 0.15 * a.condicao / 100);
   // ordem: goleiro, depois as posições com menos opções naturais
   const ordem = vagas.map((v, i) => ({ v, i, n: livres.filter((a) => a.pos === v.pos).length })).sort((a, b) => (a.v.pos === "GOL" ? -1 : b.v.pos === "GOL" ? 1 : a.n - b.n));
   for (const { v, i } of ordem) {
-    const m = livres.filter((a) => !usados.has(a.id)).sort((a, b) => efetivo(b, v.pos) - efetivo(a, v.pos))[0];
+    const m = livres.filter((a) => !usados.has(a.id)).sort((a, b) => efetivo(b, v) - efetivo(a, v))[0];
     if (m) { tit[i] = m.id; usados.add(m.id); }
   }
   // banco: um goleiro e o resto por qualidade, cobrindo as posições
@@ -176,7 +185,7 @@ export function forcaDoTime(elenco: Atleta[], esc: Escalacao, tat: Tatica, entro
   const naVaga: { a: Atleta; v: Vaga }[] = [];
   vagas.forEach((v, i) => {
     const a = por.get(esc.titulares[i] ?? "");
-    let ef = a && disponivel(a) ? ovrNaVaga(a, v.pos) * (0.8 + 0.2 * a.condicao / 100) * (0.94 + 0.12 * a.moral / 100) : 32;
+    let ef = a && disponivel(a) ? ovrNaVaga(a, v.pos, ladoDaVaga(v)) * (0.8 + 0.2 * a.condicao / 100) * (0.94 + 0.12 * a.moral / 100) : 32;
     if (a && disponivel(a)) {
       // a função: quem encaixa bem rende acima do OVR, quem não encaixa rende abaixo; e ela puxa o time para um lado
       const fn = funcaoNaVaga(esc, a, v.pos), base = ovrPos(a.at, v.pos);
