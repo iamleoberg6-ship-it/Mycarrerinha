@@ -498,7 +498,14 @@ function abaCarreira(s: SaveTecnico): string {
 // ------------------------------------------------------------------ Vida: o técnico fora do campo
 /** Carreira de técnico começada antes de a família vir junto: traz do save do modo jogador (o mesmo jogador). */
 function completarVida(s: SaveTecnico) {
-  if (s.familia || s.namoro || !s.bio) return;
+  if (!s.bio) return;
+  // a casa que você montou como jogador (móveis, camisas na parede, carros, imóveis comprados) vem para a carreira de técnico
+  if (!s.casaDoJogador) {
+    const jog = ler<SaveJogador>("mycarrerinha:save");
+    if (jog?.casa && jog.jogador.apelido === s.bio.apelido) { trazerVida(s, undefined, undefined, undefined, jog.casa as unknown as EstadoCasa); salvar(); }
+    else s.casaDoJogador = true;
+  }
+  if (s.familia || s.namoro) return;
   const jog = ler<SaveJogador>("mycarrerinha:save");
   if (!jog || jog.jogador.apelido !== s.bio.apelido) return;
   trazerVida(s, jog.carreira.familia as unknown as EstadoFamilia | undefined, jog.carreira.namoro as unknown as EstadoNamoro | undefined, jog.casa?.saldo, jog.casa as unknown as EstadoCasa | undefined);
@@ -515,7 +522,7 @@ function abaVida(s: SaveTecnico): string {
   return subs + aviso() + corpo;
 }
 function vidaPerfil(s: SaveTecnico): string {
-  casaT(pacote, s);
+  completarVida(s); casaT(pacote, s);
   const t = s.tecnico, n = s.namoro, par = n?.par, filhos = n?.filhos ?? [];
   const resumoFam = [par ? `${({ casados: "Casado com", noivos: "Noivo de", morando: "Mora com", namorando: "Namorando", saindo: "Saindo com", match: "Conversando com" } as Record<string, string>)[par.etapa]} ${par.nome.split(" ")[0]}` : "Solteiro", filhos.length ? `${filhos.length} ${filhos.length === 1 ? "filho" : "filhos"}` : ""].filter(Boolean).join(" · ");
   const cab = `<section class="painel"><p class="rotulo">Técnico</p><h2 style="margin:0">${esc(t.nome)}</h2><p class="sub">${t.idade} anos · ${esc(t.nac)}${t.exJogador ? ` · ex-jogador (${esc(t.exJogador.apelido)})` : ""}</p>

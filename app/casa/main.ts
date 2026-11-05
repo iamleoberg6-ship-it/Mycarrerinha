@@ -6,7 +6,7 @@ import {
   imovelAtual, mover, mudar, novoEstado, patrimonio, podeMudar, podeReformar, precoAcabamento, precoTrocaCor, reformar,
   rendaMinima, tirarDoDeposito, trocarCor, vender, registrarReliquias, ganharReliquia, ehReliquia, noComodo, VALOR_REVENDA, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
   type Acabamento, type Categoria, type CategoriaImovel, type Efeitos, type Estilo, type EstadoCasa, type Item, type Objeto, type TipoComodo,
-  arrumarReliquias, MAX_RELIQUIAS_COMODO,
+  arrumarReliquias, MAX_RELIQUIAS_COMODO, orcamentoKit, montarComodo, estruturaFamiliar,
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
 import { salarioLiquido, registrarMarco, type Save } from "../../src/jogo";
@@ -85,7 +85,7 @@ const objSel = (): Objeto | undefined => st.e.objetos.find((o) => o.uid === ui.s
 function renderConta() {
   const m = imovelAtual(st.e), dono = st.e.proprios.includes(m.id);
   const s = $("saldo"); s.textContent = dinheiro(st.e.saldo); s.classList.toggle("neg", st.e.saldo < 0);
-  $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês${carreira || tecnico ? " líquido" : ""}</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span>${carreira ? "" : `<span>Mês <b>${st.e.mes + 1}</b></span>`}`;
+  $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês${carreira || tecnico ? " líquido" : ""}</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span>${carreira || tecnico ? "" : `<span>Mês <b>${st.e.mes + 1}</b></span>`}${(() => { const f = estruturaFamiliar(st.e); return `<span>Quartos com cama <b>${f.quartos}</b> · crianças ${f.filhos ? "✓" : "✗"} · hóspedes ${f.hospedes ? "✓" : "✗"}</span>`; })()}`;
   $("clubes").innerHTML = CLUBES_CASA.map((c) => `<button class="chip${c.id === st.e.clube?.id ? " ativo" : ""}" data-clube="${c.id}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.cores[0]};border:1px solid #0008;margin-right:6px;vertical-align:-1px"></span>${c.nome} · ${"★".repeat(estruturaDoClube(c))}</button>`).join("");
   $("fases").innerHTML = FASES.map((f) => `<button class="chip${f.id === st.fase ? " ativo" : ""}" data-fase="${f.id}">${f.nome} · ${dinheiro(f.salario)}</button>`).join("");
 }
@@ -158,7 +158,12 @@ function renderCatalogo() {
     return `<div class="op"><div class="fig">${miniItem(it.id, cor)}</div><span class="tag">${ESTILOS[it.estilo].nome} · ${TIPOS[it.tipo].nome}</span><div class="n">${esc(it.nome)}</div><div class="p">${dinheiro(it.preco)}</div><div class="ef">${textoEfeitos(it.efeitos)}</div>${cores}${destino}
       <button class="botao" data-comprar="${it.id}" ${falta > 0 || motivo ? "disabled" : ""}>Comprar</button>${falta > 0 && !motivo ? `<span class="falta">Faltam ${dinheiro(falta)}</span>` : ""}</div>`;
   };
-  $("painel").innerHTML = cats + ests + (lista.length ? `<div class="grade">${lista.map(card).join("")}</div>` : `<div class="vazio">Nada nesse estilo para essa categoria.</div>`);
+  // montar o cômodo de uma vez: um kit por estilo, com o que falta e o preço
+  const kits = (Object.keys(ESTILOS) as Estilo[]).map((est) => ({ est, o: orcamentoKit(st.e, c.id, est) })).filter((k) => k.o.itens.length);
+  const kit = kits.length ? `<div class="kit-box"><p class="rotulo" style="margin-bottom:4px">Montar ${esc(c.nome.toLowerCase())} de uma vez</p><p class="sub" style="margin:0 0 8px">Compra o que falta (${kits[0].o.itens.length} ${kits[0].o.itens.length === 1 ? "móvel" : "móveis"}: ${esc([...new Set(kits[0].o.itens.map((i) => TIPOS[i.tipo].nome.toLowerCase()))].join(", "))}) e já deixa tudo arrumado. Escolha o estilo:</p>
+    <div class="chips">${kits.map(({ est, o }) => `<button class="chip" data-kit="${est}" ${o.total > st.e.saldo ? "disabled" : ""}>${ESTILOS[est].nome} · ${dinheiro(o.total)}</button>`).join("")}</div></div>`
+    : `<div class="kit-box"><p class="sub" style="margin:0">${esc(c.nome)}: já tem tudo do kit. Dá para trocar peça por peça abaixo.</p></div>`;
+  $("painel").innerHTML = kit + cats + ests + (lista.length ? `<div class="grade">${lista.map(card).join("")}</div>` : `<div class="vazio">Nada nesse estilo para essa categoria.</div>`);
 }
 
 function renderReforma() {
@@ -349,7 +354,7 @@ cena.addEventListener("click", (ev) => {
 
 // ------------------------------------------------------------------ botões
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-ver],[data-fase],[data-clube],[data-comodo],[data-aba],[data-cat],[data-estilo],[data-corcompra],[data-comprar],[data-acao],[data-lugar],[data-previa],[data-reformar],[data-colocar],[data-venderdep],[data-catimob],[data-mudar],[data-fechar]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-kit],[data-ver],[data-fase],[data-clube],[data-comodo],[data-aba],[data-cat],[data-estilo],[data-corcompra],[data-comprar],[data-acao],[data-lugar],[data-previa],[data-reformar],[data-colocar],[data-venderdep],[data-catimob],[data-mudar],[data-fechar]");
   if (!b) return;
   const d = b.dataset;
   if (d.ver) { const o = st.e.objetos.find((x) => x.uid === d.ver); if (o) { st.comodo = o.comodo; ui.sel = o.uid; ui.brilho = o.uid; tudo(); $("cena").scrollIntoView({ behavior: "smooth", block: "center" }); } }
@@ -365,6 +370,7 @@ document.addEventListener("click", (ev) => {
   else if (d.cat) { ui.cat = d.cat as typeof ui.cat; renderCatalogo(); }
   else if (d.estilo) { ui.estilo = d.estilo as typeof ui.estilo; renderCatalogo(); }
   else if (d.corcompra) { ui.corCompra[d.corcompra] = +d.cor!; const fig = b.closest(".op")?.querySelector(".fig"); if (fig) fig.innerHTML = miniItem(d.corcompra, +d.cor!); b.parentElement!.querySelectorAll(".amostra").forEach((x) => x.classList.toggle("ativa", x === b)); }
+  else if (d.kit) { const r = montarComodo(st.e, st.comodo, d.kit as Estilo); aviso(r.msg, !r.ok); if (r.ok) { ui.sel = undefined; tudo(); $("cena").scrollIntoView({ behavior: "smooth", block: "center" }); } }
   else if (d.comprar) {
     const r = comprar(st.e, d.comprar, ui.corCompra[d.comprar] ?? 0, st.comodo);
     aviso(r.msg, !r.ok);

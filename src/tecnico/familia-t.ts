@@ -11,7 +11,7 @@ import {
   type AcaoNamoro, type AcaoFilho, type AcaoEx, type CtxNamoro, type EstadoNamoro, type ResultadoNamoro,
 } from "../namoro.js";
 import type { SaveTecnico } from "./motor.js";
-import { novoEstado, fecharMes as fecharMesCasa, manutencaoMensal, mudar, IMOVEL, type EstadoCasa, type ClubeCasa } from "../casa.js";
+import { casaNaFamilia, novoEstado, fecharMes as fecharMesCasa, manutencaoMensal, mudar, IMOVEL, type EstadoCasa, type ClubeCasa } from "../casa.js";
 
 const ANO0 = 2026;
 /** Semana na escala da carreira de jogador (40 por temporada): é nela que a família e o namoro guardam datas. */
@@ -28,13 +28,18 @@ export function casaT(pacote: PacoteDados, s: SaveTecnico): EstadoCasa {
   if (!s.casa) { s.casa = novoEstado(bolso(s), "ap-2q", clubeCasaT(pacote, s)); delete s.tecnico.saldo; }
   s.casa.clube = clubeCasaT(pacote, s);
   // técnico não mora em alojamento de clube: vai para um apartamento alugado
-  if (IMOVEL[s.casa.imovel]?.categoria === "alojamento") { const r = mudar(s.casa, "ap-2q", "alugar", salarioTecnico(s)); if (!r.ok) s.casa.imovel = "ap-2q"; }
+  // técnico não mora em alojamento de clube: vai para a melhor casa que já é dele (comprada na época de jogador) ou aluga um apartamento
+  if (IMOVEL[s.casa.imovel]?.categoria === "alojamento") {
+    const minha = [...s.casa.proprios].filter((id) => IMOVEL[id] && IMOVEL[id].categoria !== "alojamento").sort((a, b) => (IMOVEL[b].compra ?? 0) - (IMOVEL[a].compra ?? 0))[0];
+    const r = mudar(s.casa, minha ?? "ap-2q", "alugar", salarioTecnico(s));
+    if (!r.ok) s.casa.imovel = minha ?? "ap-2q";
+  }
   return s.casa;
 }
 
 /** A vida chega da carreira de jogador (cópia: o save do jogador não muda) e envelhece no tempo da pausa. */
 export function trazerVida(s: SaveTecnico, familia?: EstadoFamilia, namoro?: EstadoNamoro, saldo?: number, casa?: EstadoCasa) {
-  if (casa && !s.casa) s.casa = JSON.parse(JSON.stringify(casa));
+  if (casa && !s.casaDoJogador) { const atual = s.casa ? bolso(s) : undefined; s.casa = JSON.parse(JSON.stringify(casa)); if (atual !== undefined) s.casa!.saldo = atual; s.casaDoJogador = true; }
   if (familia) s.familia = JSON.parse(JSON.stringify(familia));
   if (namoro) {
     const n: EstadoNamoro = JSON.parse(JSON.stringify(namoro));
@@ -112,6 +117,10 @@ export function curtirT(pacote: PacoteDados, s: SaveTecnico, id: string, sim: bo
 /** A semana da vida: a família esfria sem contato, o namoro anda (gravidez, nascimento, brigas) e o salário cai no mês. */
 export function semanaDaVida(pacote: PacoteDados, s: SaveTecnico, nota: (texto: string) => void) {
   if (s.familia) for (const a of semanaFamilia(s.familia, { semanaAbs: semanaVida(s), exterior: ctxFamiliaT(pacote, s).exterior, padraoFamilia: 1, polemica: false, clubeId: s.clubeId }).avisos) nota(a);
+  if (s.casa) {
+    const est = casaNaFamilia(s.casa, s.namoro?.filhos ?? [], s.familia?.membros ?? []);
+    if (s.semana === 6 && (s.namoro?.filhos ?? []).some((f) => !f.pensao && !f.adulto && anoVida(s) - f.ano >= 2) && !est.filhos) nota("As crianças dividem o quarto com vocês. Um quarto só delas ajudaria (dá para montar na tela da casa).");
+  }
   if (s.namoro) {
     const antes = s.namoro.filhos?.length ?? 0;
     const r = semanaNamoro(s.namoro, ctxNamoroT(pacote, s));

@@ -562,6 +562,35 @@ IMOVEIS.push(
   DE("casa-sobrado", { id: "casa-condominio", nome: "Casa em condomínio fechado", local: "Condomínio na serra", vista: "condominio", aluguel: 24000, compra: 3200000, descricao: "Segurança 24 horas, quadra de tênis e um quintal grande para o cachorro." }),
   DE("man-classica", { id: "man-jardim", nome: "Mansão com jardim", local: "Bairro nobre", vista: "campo", aluguel: 95000, compra: 16000000, descricao: "Jardim com piscina aquecida e uma casa de hóspedes." }),
 );
+// ------------------------------------------------------------------ casas para a família
+// Quem tem filhos e recebe os pais precisa de quarto para todo mundo: quarto das crianças e quarto de hóspedes.
+const QUARTO_FILHOS = (w: number, d: number, id = "filhos", nome = "Quarto das crianças") => cm(id, nome, "quarto", w, d, { parede: ac("pintura", 6), piso: ac("madeira"), janelas: [jn("esq", Math.min(w - 2, 5))] });
+const QUARTO_HOSPEDES = (w: number, d: number) => cm("hospedes", "Quarto de hóspedes", "quarto", w, d, { piso: ac("madeira"), janelas: [jn("dir", Math.min(d - 2, 5))] });
+// as mansões ganham os dois quartos (cômodos novos: o que já estava montado continua no lugar)
+for (const m of IMOVEIS) if (m.categoria === "mansao") {
+  if (!m.comodos.some((c) => c.id === "filhos")) m.comodos.splice(1, 0, QUARTO_FILHOS(11, 9));
+  if (!m.comodos.some((c) => c.id === "hospedes")) m.comodos.splice(2, 0, QUARTO_HOSPEDES(10, 8));
+}
+for (const id of ["casa-sobrado", "casa-condominio", "casa-vila-quintal"]) { const q2 = IMOVEIS.find((m) => m.id === id)?.comodos.find((c) => c.id === "quarto2"); if (q2) q2.nome = "Quarto das crianças"; }
+IMOVEIS.push(
+  { id: "ap-familia", categoria: "apartamento", nome: "Apartamento de três quartos", local: "Bairro com escola e parque", vista: "condominio", aluguel: 9500, compra: 1300000,
+    descricao: "Suíte, quarto das crianças e quarto de hóspedes. Playground no condomínio e duas vagas.",
+    comodos: [cm("quarto", "Suíte", "quarto", 10, 8, { piso: ac("madeira"), janelas: [jn("esq", 6.5)] }), QUARTO_FILHOS(9, 8), QUARTO_HOSPEDES(8, 7),
+      cm("sala", "Sala", "sala", 12, 9, { piso: ac("madeira"), janelas: [jn("esq", 6, 3)] }), cm("cozinha", "Cozinha", "cozinha", 8, 7, { janelas: [jn("dir", 6, 2)], inclusos: PIA() }),
+      banheiro(6, 6), cm("varanda", "Varanda", "externo", 8, 4, { piso: ac("deck"), parede: ac("vidro") }), cm("garagem", "Garagem", "garagem", 11, 9)] },
+  { id: "casa-familia", categoria: "casa", nome: "Casa para a família", local: "Bairro residencial arborizado", vista: "rua", aluguel: 20000, compra: 2600000,
+    descricao: "Suíte, quarto das crianças, quarto do bebê, quarto de hóspedes, escritório e quintal grande para jogar bola.",
+    comodos: [cm("quarto", "Suíte", "quarto", 11, 9, { piso: ac("madeira", 1), janelas: [jn("esq", 6.5, 3)] }), QUARTO_FILHOS(10, 8), QUARTO_FILHOS(8, 7, "bebe", "Quarto do bebê"), QUARTO_HOSPEDES(9, 8),
+      cm("sala", "Sala", "sala", 13, 10, { piso: ac("madeira", 1), janelas: [jn("esq", 6, 4)] }), cm("cozinha", "Cozinha", "cozinha", 9, 8, { janelas: [jn("dir", 6)], inclusos: PIA(0, 0, "bancada-moderno-2-3") }),
+      cm("escritorio", "Escritório", "escritorio", 8, 7, { piso: ac("madeira"), janelas: [jn("dir", 5)] }), banheiro(7, 6),
+      cm("quintal", "Quintal", "externo", 14, 10, { parede: ac("muro", 1) }), cm("garagem", "Garagem", "garagem", 11, 9)] },
+  { id: "man-familia", categoria: "mansao", nome: "Mansão da família", local: "Condomínio com escola bilíngue", vista: "condominio", aluguel: 100000, compra: 17000000,
+    descricao: "Suíte master, dois quartos para os filhos, quarto de hóspedes, sala de jogos, academia e piscina.",
+    comodos: [cm("quarto", "Suíte master", "quarto", 13, 10, { piso: ac("madeira", 1), janelas: [jn("esq", 7, 5)] }), QUARTO_FILHOS(11, 9), QUARTO_FILHOS(10, 9, "filhos2", "Quarto dos filhos 2"), QUARTO_HOSPEDES(10, 8),
+      cm("sala", "Sala", "sala", 15, 11, { piso: ac("porcelanato", 1), janelas: [jn("esq", 6, 6)] }), cm("cozinha", "Cozinha gourmet", "cozinha", 11, 8, { piso: ac("porcelanato", 1), janelas: [jn("dir", 7.5, 3)], inclusos: PIA(0, 0, "bancada-classico-2-4") }),
+      banheiro(9, 7, { inclusos: BANHEIRO_LUXO("moderno"), parede: ac("marmoreP"), piso: ac("porcelanato", 2) }), cm("jogos", "Sala de jogos", "jogos", 12, 10, { piso: ac("carpete", 1) }),
+      cm("academia", "Academia", "academia", 10, 8, { piso: ac("cimento", 2) }), cm("piscina", "Área da piscina", "externo", 16, 12, { piso: ac("deck") }), cm("garagem", "Garagem", "garagem", 16, 9)] },
+);
 export const IMOVEL: Record<string, Imovel> = Object.fromEntries(IMOVEIS.map((m) => [m.id, m]));
 export const areaM2 = (m: Imovel) => Math.round(m.comodos.reduce((s, c) => s + c.w * c.d * 0.25, 0));
 
@@ -1024,4 +1053,73 @@ export function dinheiro(v: number): string {
   if (a >= 1e6) return `${sinal}${s} ${(a / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: a >= 1e7 ? 1 : 2 })} mi`;
   if (a >= 1e4) return `${sinal}${s} ${Math.round(a / 1e3).toLocaleString("pt-BR")} mil`;
   return `${sinal}${s} ${Math.round(a).toLocaleString("pt-BR")}`;
+}
+
+// ------------------------------------------------------------------ montar o cômodo de uma vez (kits prontos)
+/** Tipo de quarto pelo nome: o das crianças, o de hóspedes ou o do casal. */
+export const tipoDeQuarto = (c: Comodo): "filhos" | "hospedes" | "casal" =>
+  /filho|crian|beb/i.test(`${c.id} ${c.nome}`) ? "filhos" : /h[oó]spede/i.test(`${c.id} ${c.nome}`) ? "hospedes" : "casal";
+/** O que vai em cada cômodo, do maior para o menor (repetido = mais de um). */
+export function kitDoComodo(c: Comodo): TipoMovel[] {
+  switch (c.tipo) {
+    case "quarto": return tipoDeQuarto(c) === "filhos" ? ["cama", "armario", "mesaEstudo", "videogame", "tapete", "luminaria", "quadro", "quadro"]
+      : tipoDeQuarto(c) === "hospedes" ? ["cama", "armario", "criado", "tapete", "luminaria", "quadro"]
+      : ["cama", "armario", "comoda", "criado", "criado", "tapete", "luminaria", "planta", "quadro"];
+    case "kitnet": return ["cama", "sofa", "armario", "mesaJantar", "tv", "tapete", "planta", "quadro"];
+    case "sala": return ["sofa", "estante", "tv", "poltrona", "mesaCentro", "tapete", "som", "planta", "planta", "quadro"];
+    case "cozinha": return ["mesaJantar", "geladeira", "fogao", "planta", "quadro"];
+    case "banheiro": return ["planta", "quadro"];
+    case "escritorio": return ["mesa", "estante", "poltrona", "tapete", "luminaria", "planta", "quadro"];
+    case "jogos": return ["sinuca", "sofa", "pebolim", "tv", "videogame", "fliperama", "tapete", "quadro"];
+    case "academia": return ["esteira", "pesos", "maca", "planta"];
+    case "trofeus": return ["trofeus", "estante", "poltrona", "tapete", "escultura"];
+    case "externo": return ["mesaExterna", "churrasqueira", "espreguicadeira", "espreguicadeira", "planta", "planta"];
+    default: return [];
+  }
+}
+/** O item mais barato do tipo no estilo (sem ele no estilo, o básico). */
+function itemDoKit(tipo: TipoMovel, estilo: Estilo): Item | undefined {
+  const l = (est: Estilo) => CATALOGO.filter((i) => i.aVenda && i.tipo === tipo && i.estilo === est).sort((a, b) => a.preco - b.preco)[0];
+  return l(estilo) ?? l("basico") ?? CATALOGO.filter((i) => i.aVenda && i.tipo === tipo).sort((a, b) => a.preco - b.preco)[0];
+}
+/** O que falta no cômodo para o kit ficar completo (o que já tem do mesmo tipo conta) e quanto custa no estilo. */
+export function orcamentoKit(e: EstadoCasa, comodo: string, estilo: Estilo): { itens: Item[]; total: number } {
+  const c = comodoDe(e, comodo), tem = new Map<TipoMovel, number>();
+  for (const o of e.objetos.filter((x) => x.comodo === comodo)) { const t = ITENS[o.item]?.tipo; if (t) tem.set(t, (tem.get(t) ?? 0) + 1); }
+  const itens: Item[] = [];
+  for (const tipo of kitDoComodo(c)) {
+    if ((tem.get(tipo) ?? 0) > 0) { tem.set(tipo, tem.get(tipo)! - 1); continue; }
+    const it = itemDoKit(tipo, estilo);
+    if (it && !motivoNaoCabe(e, it.id) && TIPOS[tipo].comodos.includes(c.tipo)) itens.push(it);
+  }
+  return { itens, total: itens.reduce((a, i) => a + i.preco, 0) };
+}
+/** Compra e arruma o cômodo inteiro de uma vez. O que não couber não é comprado. */
+export function montarComodo(e: EstadoCasa, comodo: string, estilo: Estilo): Resultado {
+  const { itens, total } = orcamentoKit(e, comodo, estilo);
+  if (!itens.length) return { ok: false, msg: "Este cômodo já está completo." };
+  if (e.saldo < total) return { ok: false, msg: `O cômodo completo custa ${dinheiro(total)}. Faltam ${dinheiro(total - e.saldo)}.` };
+  let gasto = 0, n = 0;
+  for (const it of itens) {
+    const uid = novoUid(e), lugar = acharLugar(e, it.id, comodo, uid);
+    if (!lugar) continue;
+    e.objetos.push({ ...lugar, cor: 0 }); e.saldo -= it.preco; gasto += it.preco; n++;
+  }
+  return n ? { ok: true, msg: `${comodoDe(e, comodo).nome} montado no estilo ${ESTILOS[estilo].nome.toLowerCase()}: ${n} ${n === 1 ? "item" : "itens"} por ${dinheiro(gasto)}.`, comodo }
+    : { ok: false, msg: "Não sobrou espaço no cômodo para os móveis do kit." };
+}
+
+// ------------------------------------------------------------------ a casa e a família
+/** Quartos com cama (o do casal, o das crianças, o de hóspedes): quanto da família a casa comporta. */
+export function estruturaFamiliar(e: EstadoCasa): { quartos: number; filhos: boolean; hospedes: boolean } {
+  const m = imovelAtual(e), comCama = m.comodos.filter((c) => c.tipo === "quarto" && e.objetos.some((o) => o.comodo === c.id && ["cama", "beliche"].includes(ITENS[o.item]?.tipo)));
+  const extras = comCama.filter((c) => tipoDeQuarto(c) !== "casal" || c !== comCama[0]);
+  return { quartos: comCama.length, filhos: extras.some((c) => tipoDeQuarto(c) !== "hospedes") || extras.length >= 2, hospedes: extras.some((c) => tipoDeQuarto(c) === "hospedes") || extras.length >= 2 };
+}
+/** A semana em casa: filhos que moram com você querem um quarto deles; os pais gostam de ter onde dormir quando visitam. */
+export function casaNaFamilia(e: EstadoCasa, filhos: { relacao?: number; pensao: boolean; adulto?: boolean }[], pais: { relacao: number; falecido?: number; parentesco: string }[]) {
+  const est = estruturaFamiliar(e), clampR = (v: number) => Math.max(0, Math.min(100, v));
+  for (const f of filhos) if (!f.pensao && !f.adulto) f.relacao = clampR((f.relacao ?? 70) + (est.filhos ? 0.3 : -0.2));
+  if (est.hospedes) for (const p of pais) if (!p.falecido && (p.parentesco === "pai" || p.parentesco === "mae")) p.relacao = clampR(p.relacao + 0.15);
+  return est;
 }

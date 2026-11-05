@@ -66,7 +66,7 @@ import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, aco
 import { agirFilho, programaPreferido, acoesFilho, type AcaoFilho } from "./namoro.js";
 import { gostosDe, MAX_ACOES_NAMORO, gravidasDe, estaGravida, marcosDoAno, virarEx, agirEx, type AcaoEx, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
-import { podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
+import { casaNaFamilia, podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 import { valorBrl, curtoBrl } from "./moeda.js";
 
 // ------------------------------------------------------------------ tipos
@@ -1502,6 +1502,9 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const nam = namoroDe(c), ctxN = ctxNamoro(pacote, s);
   const sn = semanaNamoro(nam, { ...ctxN, mudouDeCidade: nam.par && nam.par.cidadeClube !== cidadeAgora ? cidadeAgora : undefined });
   eventos.push(...sn.avisos);
+  // a casa e a família: filhos que moram com você querem um quarto deles; os pais gostam do quarto de hóspedes
+  { const est = casaNaFamilia(s.casa, nam.filhos ?? [], fam.membros);
+    if (c.semana === 6 && (nam.filhos ?? []).some((f) => !f.pensao && !f.adulto && ANO_INICIAL + c.temporada - f.ano >= 2) && !est.filhos) eventos.push("As crianças dividem o quarto com vocês. Um quarto só delas ajudaria (dá para montar na tela da casa)."); }
   // marcos da infância dos filhos (primeiros passos, primeira palavra, escola...), um por ano, no meio da temporada
   if (c.semana === 14) for (const m of marcosDoAno(nam, ANO_INICIAL + c.temporada)) {
     const fi = nam.filhos![m.filho], perto = semanaAbsJogo(c) - (fi.contato ?? -99) <= 6;

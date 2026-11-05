@@ -72,7 +72,7 @@ export interface SaveTecnico {
   /** temporadas dos atletas do seu elenco em cada clube que você treinou (a história do clube usa no lugar do mundo simulado) */
   temporadasElenco?: { clubeId: string; t: number; nome: string; pos: string; j: number; g: number; a: number; nota?: number }[];
   /** a vida fora do campo, vinda da carreira de jogador: pais e irmãos, companheira, filhos e ex */
-  familia?: EstadoFamilia; namoro?: EstadoNamoro; /** a casa (a mesma tela de decorar da carreira de jogador) */ casa?: EstadoCasa;
+  familia?: EstadoFamilia; namoro?: EstadoNamoro; /** a casa (a mesma tela de decorar da carreira de jogador) e se ela já veio da carreira de jogador */ casa?: EstadoCasa; casaDoJogador?: boolean;
   premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
