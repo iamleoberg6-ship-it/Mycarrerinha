@@ -8,6 +8,7 @@ import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres
 import { trazerVida, semanaDaVida, mesDaVida } from "./familia-t.js";
 import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
+import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
 import { gerarNome } from "../nomes.js";
 import { onzeProvavel } from "../relacoes.js";
@@ -71,7 +72,7 @@ export interface SaveTecnico {
   /** temporadas dos atletas do seu elenco em cada clube que você treinou (a história do clube usa no lugar do mundo simulado) */
   temporadasElenco?: { clubeId: string; t: number; nome: string; pos: string; j: number; g: number; a: number; nota?: number }[];
   /** a vida fora do campo, vinda da carreira de jogador: pais e irmãos, companheira, filhos e ex */
-  familia?: EstadoFamilia; namoro?: EstadoNamoro;
+  familia?: EstadoFamilia; namoro?: EstadoNamoro; /** a casa (a mesma tela de decorar da carreira de jogador) */ casa?: EstadoCasa;
   premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
@@ -120,7 +121,7 @@ export function clubesDaLiga(pacote: PacoteDados, ligaId: string) {
 export interface DadosTecnico { nome: string; nac: string; idade: number; exJogador?: { apelido: string; fama: number }; licenca?: number; idiomas?: Idiomas;
   /** continuação da carreira de jogador: o mesmo mundo (semente), a temporada em que parou, a pausa antes de treinar, a bio, os contatos e a família que joga */
   vindoDe?: { semente: string; temporada: number; pausa: number; bio: BioJogador; contatos: Contato[]; familia: FamiliarJogador[];
-    /** pais, irmãos, namoro, filhos e o dinheiro guardado da carreira de jogador */ vida?: { familia?: EstadoFamilia; namoro?: EstadoNamoro; saldo?: number } } }
+    /** pais, irmãos, namoro, filhos e o dinheiro guardado da carreira de jogador */ vida?: { familia?: EstadoFamilia; namoro?: EstadoNamoro; saldo?: number; casa?: EstadoCasa } } }
 /** Licença do técnico (quem começa direto já tem a B). */
 export const licencaT = (s: SaveTecnico) => s.tecnico.curso?.licenca ?? 2;
 export const idiomasT = (s: SaveTecnico) => (s.tecnico.idiomas ??= idiomasIniciais(s.tecnico.nome, s.tecnico.nac, s.tecnico.idade));
@@ -152,7 +153,7 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   if (d.vindoDe) {
     const v = d.vindoDe, anos = v.pausa + 1;
     s.bio = v.bio; s.contatos = v.contatos; s.pausa = v.pausa;
-    if (v.vida) trazerVida(s, v.vida.familia, v.vida.namoro, v.vida.saldo);
+    if (v.vida) trazerVida(s, v.vida.familia, v.vida.namoro, v.vida.saldo, v.vida.casa);
     // a família que joga envelhece e evolui no tempo em que você ficou fora
     s.familiaJog = v.familia.map((f) => { let ovr = f.ovr; for (let k = 0; k < anos; k++) ovr = Math.min(f.pot, ovr + (f.idade + k < 24 ? 4 : f.idade + k < 30 ? 1 : -1)); return { ...f, idade: f.idade + anos, ovr }; }).filter((f) => f.idade <= 38);
     noticia(s, "clube", v.pausa ? `Depois de ${v.pausa === 1 ? "um ano" : `${v.pausa} anos`} longe do campo, entre cursos e viagens para estudar o jogo, ${v.bio.apelido} volta ao futebol como técnico.` : `Nem bem pendurou as chuteiras e ${v.bio.apelido} já está de prancheta na mão.`);

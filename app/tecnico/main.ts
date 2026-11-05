@@ -19,7 +19,8 @@ import { fotoDoPerfil } from "../visual/mulheres";
 import { rostoParente } from "../visual/rostos";
 import { NOME_ACAO_FAM, NOME_PARENTESCO, rotuloRelacaoFam, falaSobreVoce, idadeDe, type AcaoFamilia, type EstadoFamilia } from "../../src/familia";
 import { NOME_ACAO_NAMORO, NOME_ACAO_FILHO, NOME_ACAO_EX, NOME_ETAPA, PROFISSOES, TEXTO_FIM, gravidasDe, type AcaoNamoro, type AcaoFilho, type AcaoEx, type EstadoNamoro } from "../../src/namoro";
-import { acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
+import { IMOVEL, nomeImovel, patrimonio, type EstadoCasa } from "../../src/casa";
+import { casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { titulosDoClube, timeDeTodosOsTempos, recordesHistoricosDoClube, plantelDoClube, type TemporadaUsuario, type RecordeNome, type TitularHistorico } from "../../src/perfil-clube";
 import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
@@ -49,7 +50,7 @@ function vindoDoJogador(jog: SaveJogador, pausa: number): NonNullable<DadosTecni
   const bioCompleta = { ...bio, ...(jog.jogador.posicao ? { pos: jog.jogador.posicao } : {}), temporadas };
   // a temporada em que ele parou (a carreira de técnico começa na seguinte, mais a pausa)
   // a vida fora do campo vem inteira: pais, irmãos, companheira, filhos, ex e o dinheiro guardado
-  const vida = { familia: c.familia as unknown as EstadoFamilia | undefined, namoro: c.namoro as unknown as EstadoNamoro | undefined, saldo: jog.casa?.saldo };
+  const vida = { familia: c.familia as unknown as EstadoFamilia | undefined, namoro: c.namoro as unknown as EstadoNamoro | undefined, saldo: jog.casa?.saldo, casa: jog.casa as unknown as EstadoCasa | undefined };
   return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio: bioCompleta, contatos, familia, vida };
 }
 let pausaEscolhida = 0;
@@ -500,7 +501,7 @@ function completarVida(s: SaveTecnico) {
   if (s.familia || s.namoro || !s.bio) return;
   const jog = ler<SaveJogador>("mycarrerinha:save");
   if (!jog || jog.jogador.apelido !== s.bio.apelido) return;
-  trazerVida(s, jog.carreira.familia as unknown as EstadoFamilia | undefined, jog.carreira.namoro as unknown as EstadoNamoro | undefined, jog.casa?.saldo);
+  trazerVida(s, jog.carreira.familia as unknown as EstadoFamilia | undefined, jog.carreira.namoro as unknown as EstadoNamoro | undefined, jog.casa?.saldo, jog.casa as unknown as EstadoCasa | undefined);
   salvar();
 }
 const corRel = (r: number) => (r >= 70 ? "#5FC08A" : r >= 45 ? "#E3B341" : "#E06A5A");
@@ -514,11 +515,14 @@ function abaVida(s: SaveTecnico): string {
   return subs + aviso() + corpo;
 }
 function vidaPerfil(s: SaveTecnico): string {
+  casaT(pacote, s);
   const t = s.tecnico, n = s.namoro, par = n?.par, filhos = n?.filhos ?? [];
   const resumoFam = [par ? `${({ casados: "Casado com", noivos: "Noivo de", morando: "Mora com", namorando: "Namorando", saindo: "Saindo com", match: "Conversando com" } as Record<string, string>)[par.etapa]} ${par.nome.split(" ")[0]}` : "Solteiro", filhos.length ? `${filhos.length} ${filhos.length === 1 ? "filho" : "filhos"}` : ""].filter(Boolean).join(" · ");
   const cab = `<section class="painel"><p class="rotulo">Técnico</p><h2 style="margin:0">${esc(t.nome)}</h2><p class="sub">${t.idade} anos · ${esc(t.nac)}${t.exJogador ? ` · ex-jogador (${esc(t.exJogador.apelido)})` : ""}</p>
     <div class="dl" style="margin-top:8px"><span>Clube</span><b>${esc(nomeClube(s.clubeId))}</b><span>Reputação</span><b>${t.reputacao}/100</b><span>Salário</span><b>${curtoBrl(salarioTecnico(s))}/mês</b><span>No bolso</span><b>${curtoBrl(bolso(s))}</b><span>Vida pessoal</span><b>${esc(resumoFam)}</b></div>
-    <div class="botoes" style="margin-top:10px"><button class="botao sec" data-sub="vida:familia">Ver a família</button></div></section>`;
+    <div class="botoes" style="margin-top:10px"><button class="botao sec" data-sub="vida:familia">Ver a família</button></div></section>
+    <section class="painel"><p class="rotulo">Sua casa</p>${(() => { const c = casaT(pacote, s), m = IMOVEL[c.imovel]; return `<h3 style="margin:0">${esc(nomeImovel(c, m))}</h3><p class="sub">${esc(m.local)} · ${c.proprios.includes(c.imovel) ? "imóvel próprio" : `aluguel ${curtoBrl(m.aluguel)}/mês`} · ${c.objetos.length} itens · ${(c.carros ?? []).length} ${(c.carros ?? []).length === 1 ? "carro" : "carros"}</p><p class="sub">Patrimônio: ${curtoBrl(patrimonio(c))}</p>`; })()}
+    <div class="botoes" style="margin-top:10px"><button class="botao" data-casa>Entrar em casa</button></div></section>`;
   return cab + abaCarreira(s).replace(/<section class="painel"><p class="rotulo">Contatos da época de jogador<\/p>[\s\S]*$/, "");
 }
 function vidaContatos(s: SaveTecnico): string {
@@ -712,6 +716,7 @@ document.addEventListener("click", (ev) => {
   const s = save;
   if (d.aba) { aba = d.aba as typeof aba; msg = undefined; selEsc = undefined; if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; } fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
+  if (d.casa !== undefined) { casaT(pacote, s); salvar(); location.href = "casa.html?modo=tecnico"; return; }
   if (d.vf) { const [id, ac] = d.vf.split("|"); const r = agirFamiliaT(pacote, s, id, ac as AcaoFamilia, !!proximoJogo(s)?.souCasa); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.vp) { const [id, ac] = d.vp.split("|"); const r = agirParT(pacote, s, id, ac as AcaoNamoro); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.vfi) { const [i, ac] = d.vfi.split("|"); const r = agirFilhoT(pacote, s, +i, ac as AcaoFilho); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }

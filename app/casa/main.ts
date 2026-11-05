@@ -10,6 +10,8 @@ import {
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
 import { salarioLiquido, registrarMarco, type Save } from "../../src/jogo";
+import type { SaveTecnico } from "../../src/tecnico/motor";
+import { salarioTecnico } from "../../src/tecnico/familia-t";
 import { CONQUISTAS, OURO, PRATA, coresDaBola, padraoCamisa, type Grupo } from "../../src/reliquias";
 import { svgComodo, svgFantasma, svgItem, svgRevestimento, telaParaChao } from "./iso";
 
@@ -30,8 +32,12 @@ interface Salvo { e: EstadoCasa; fase: string; comodo: string }
 const CLUBE_PADRAO = CLUBES_CASA.find((c) => c.id === "PAL") ?? CLUBES_CASA[0];
 /** No jogo completo a casa vive dentro do save da carreira: dinheiro e salário vêm de lá. */
 const CHAVE_CARREIRA = "mycarrerinha:save";
-const carreira: Save | null = (() => { try { return JSON.parse(localStorage.getItem(CHAVE_CARREIRA) ?? "null") as Save | null; } catch { return null; } })();
+/** Aberta pelo modo técnico (casa.html?modo=tecnico): a casa e o dinheiro são os do técnico. */
+const CHAVE_TEC = "mycarrerinha:tecnico";
+const tecnico: SaveTecnico | null = new URLSearchParams(location.search).get("modo") === "tecnico" ? (() => { try { return JSON.parse(localStorage.getItem(CHAVE_TEC) ?? "null") as SaveTecnico | null; } catch { return null; } })() : null;
+const carreira: Save | null = tecnico ? null : (() => { try { return JSON.parse(localStorage.getItem(CHAVE_CARREIRA) ?? "null") as Save | null; } catch { return null; } })();
 function carregar(): Salvo {
+  if (tecnico?.casa) { registrarReliquias(tecnico.casa); return { e: tecnico.casa, fase: "carreira", comodo: IMOVEL[tecnico.casa.imovel].comodos[0].id }; }
   if (carreira?.casa) return { e: carreira.casa, fase: "carreira", comodo: carreira.casa.imovel ? IMOVEL[carreira.casa.imovel].comodos[0].id : "quarto" };
   try {
     const s = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as Salvo | null;
@@ -41,7 +47,7 @@ function carregar(): Salvo {
 }
 const st = carregar();
 registrarReliquias(st.e);
-const salvar = () => { try { if (carreira) { carreira.casa = st.e; localStorage.setItem(CHAVE_CARREIRA, JSON.stringify(carreira)); } else localStorage.setItem(CHAVE, JSON.stringify(st)); } catch { /* ok */ } };
+const salvar = () => { try { if (tecnico) { tecnico.casa = st.e; localStorage.setItem(CHAVE_TEC, JSON.stringify(tecnico)); } else if (carreira) { carreira.casa = st.e; localStorage.setItem(CHAVE_CARREIRA, JSON.stringify(carreira)); } else localStorage.setItem(CHAVE, JSON.stringify(st)); } catch { /* ok */ } };
 const ui = {
   sel: undefined as string | undefined, brilho: undefined as string | undefined,
   aba: "moveis" as "moveis" | "reforma" | "deposito" | "conquistas",
@@ -52,7 +58,7 @@ const ui = {
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-const salario = () => (carreira ? salarioLiquido(carreira.carreira) : FASES.find((f) => f.id === st.fase)!.salario);
+const salario = () => (tecnico ? Math.round(salarioTecnico(tecnico) * 0.62) : carreira ? salarioLiquido(carreira.carreira) : FASES.find((f) => f.id === st.fase)!.salario);
 const cacheItem = new Map<string, string>();
 const miniItem = (id: string, cor = 0) => { const k = `${id}:${cor}`; if (!cacheItem.has(k)) cacheItem.set(k, svgItem(id, cor)); return cacheItem.get(k)!; };
 const cacheRev = new Map<string, string>();
@@ -79,7 +85,7 @@ const objSel = (): Objeto | undefined => st.e.objetos.find((o) => o.uid === ui.s
 function renderConta() {
   const m = imovelAtual(st.e), dono = st.e.proprios.includes(m.id);
   const s = $("saldo"); s.textContent = dinheiro(st.e.saldo); s.classList.toggle("neg", st.e.saldo < 0);
-  $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês${carreira ? " líquido" : ""}</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span>${carreira ? "" : `<span>Mês <b>${st.e.mes + 1}</b></span>`}`;
+  $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês${carreira || tecnico ? " líquido" : ""}</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span>${carreira ? "" : `<span>Mês <b>${st.e.mes + 1}</b></span>`}`;
   $("clubes").innerHTML = CLUBES_CASA.map((c) => `<button class="chip${c.id === st.e.clube?.id ? " ativo" : ""}" data-clube="${c.id}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.cores[0]};border:1px solid #0008;margin-right:6px;vertical-align:-1px"></span>${c.nome} · ${"★".repeat(estruturaDoClube(c))}</button>`).join("");
   $("fases").innerHTML = FASES.map((f) => `<button class="chip${f.id === st.fase ? " ativo" : ""}" data-fase="${f.id}">${f.nome} · ${dinheiro(f.salario)}</button>`).join("");
 }
@@ -99,7 +105,8 @@ function renderCena() {
   renderFerramentas();
   const { total, bruto } = efeitosDaCasa(st.e);
   const bonus = bonusDeEstilo(st.e);
-  $("efeitos").innerHTML = (Object.keys(NOMES_EFEITO) as (keyof Efeitos)[]).map((k) => {
+  // técnico não treina nem se machuca: a casa só mexe com o humor (moral) e o descanso
+  $("efeitos").innerHTML = (Object.keys(NOMES_EFEITO) as (keyof Efeitos)[]).filter((k) => !tecnico || k === "moral" || k === "recuperacao").map((k) => {
     const v = total[k], txt = k === "lesao" || k === "evolucao" ? `${v > 0 ? "+" : ""}${v}%` : `${v > 0 ? "+" : ""}${v}`;
     return `<span class="efeito${v < 0 ? " neg" : ""}">${NOMES_EFEITO[k]} <b>${txt}</b>${bruto[k] > TETO[k] ? " (máx.)" : ""}</span>`;
   }).join("") + bonus.map((b) => `<span class="efeito estilo">${comodoDe(st.e, b.comodo).nome} ${ESTILOS[b.estilo].nome.toLowerCase()} · +${b.moral} moral</span>`).join("");
@@ -194,7 +201,7 @@ function renderConquistas() {
   const feitas = CONQUISTAS.filter((c) => rels.some((r) => r.chave === c.chave)).length, total = CONQUISTAS.filter((c) => !c.emBreve).length;
   const grupos: Grupo[] = ["Camisas", "Bolas", "Troféus"];
   let h = `<p class="sub">${feitas} de ${total} conquistas · ${rels.length} ${rels.length === 1 ? "relíquia" : "relíquias"} na coleção. Toda relíquia vai para qualquer cômodo e dá +1 de moral.</p>`;
-  if (!carreira) h += `<div class="ferr-botoes"><button class="botao sec peq" data-acao="exemplos">Liberar relíquias de exemplo</button></div>`;
+  if (!carreira && !tecnico) h += `<div class="ferr-botoes"><button class="botao sec peq" data-acao="exemplos">Liberar relíquias de exemplo</button></div>`;
   const soltas = st.e.objetos.filter((o) => ehReliquia(o.item) && comodoDe(st.e, o.comodo).tipo !== "trofeus").length;
   if (soltas > MAX_RELIQUIAS_COMODO) h += `<div class="ferr-botoes"><button class="botao sec peq" data-acao="arrumar">Arrumar a casa (deixar ${MAX_RELIQUIAS_COMODO} por cômodo)</button></div><p class="sub">A sala de troféus não tem limite. O que sair fica no depósito e volta quando você quiser.</p>`;
   for (const gr of grupos) {
@@ -414,10 +421,10 @@ $("imobiliaria").addEventListener("click", () => { ui.catImob = "auto"; renderIm
 $("dlgImob").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ($("dlgImob") as HTMLDialogElement).close(); });
 $("recomecar").addEventListener("click", () => { st.e = novoEstado(3000, "aloj-ct", st.e.clube ?? CLUBE_PADRAO); st.fase = "base"; st.comodo = "quarto"; ui.sel = undefined; ui.previa = undefined; tudo(); aviso("De volta ao alojamento."); });
 void REVEST; void ehDono; void NOME_COMODO;
-if (carreira) {
+if (carreira || tecnico) {
   // dentro da carreira: o mês fecha na semana, não aqui; nada de modo de teste
   $("fecharMes").hidden = true;
   document.querySelector<HTMLElement>("details.teste")!.hidden = true;
-  document.querySelector(".marca span")!.innerHTML = `<a href="index.html" style="color:var(--ouro-claro);text-decoration:none;font-weight:700">← Voltar à semana</a>`;
+  document.querySelector(".marca span")!.innerHTML = `<a href="${tecnico ? "tecnico.html" : "index.html"}" style="color:var(--ouro-claro);text-decoration:none;font-weight:700">← Voltar ${tecnico ? "ao clube" : "à semana"}</a>`;
 }
 tudo();
