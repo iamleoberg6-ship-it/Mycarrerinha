@@ -42,7 +42,7 @@ export type TipoMovel =
   | "piscina" | "espreguicadeira" | "churrasqueira" | "mesaExterna" | "trave" | "jacuzzi" | "fogueira"
   | "carro" | "moto" | "mesa"
   | "mesaEstudo" | "saco" | "massagem" | "pingPong" | "lareira" | "bateria"
-  | "quadraTenis" | "quadraFutebol" | "piscinao" | "sauna" | "criocamara" | "projetor" | "estatua" | "painelEstatisticas" | "paredeEscalada" | "escadaAgilidade"
+  | "quadraTenis" | "quadraFutebol" | "quadraBasquete" | "quadraVolei" | "piscinao" | "sauna" | "criocamara" | "projetor" | "estatua" | "painelEstatisticas" | "paredeEscalada" | "escadaAgilidade"
   | "camisaRel" | "bolaRel" | "trofeuRel";
 
 interface InfoTipo { nome: string; categoria: Categoria; w: number; d: number; camada: Camada; ambientes: Ambiente[]; base: number; efeito: Partial<Efeitos>; corDe: "tecido" | "madeira" | "metal"; encosta?: boolean; comodos: TipoComodo[]; instalacao?: boolean }
@@ -96,9 +96,11 @@ export const TIPOS: Record<TipoMovel, InfoTipo> = {
   pingPong: t("Mesa de ping-pong", "lazer", 4, 2, 1500, { moral: 2 }, "madeira"),
   lareira: t("Lareira", "decoracao", 3, 2, 2200, { moral: 1, recuperacao: 1 }, "metal", { encosta: true }),
   bateria: t("Bateria", "lazer", 3, 3, 3000, { moral: 2, fama: 1 }, "metal"),
-  quadraTenis: t("Quadra de tênis", "lazer", 8, 12, 60000, { moral: 3, fama: 1 }, "tecido", { ambientes: E }),
-  quadraFutebol: t("Campo de futebol society", "lazer", 12, 18, 150000, { evolucao: 4, moral: 2 }, "tecido", { ambientes: E }),
-  piscinao: t("Piscinão", "lazer", 10, 6, 90000, { recuperacao: 4, moral: 3 }, "metal", { ambientes: E }),
+  quadraTenis: t("Quadra de tênis", "externo", 8, 12, 60000, { moral: 3, fama: 1 }, "tecido", { ambientes: E }),
+  quadraFutebol: t("Campo de futebol society", "externo", 12, 18, 150000, { evolucao: 4, moral: 2 }, "tecido", { ambientes: E }),
+  quadraBasquete: t("Quadra de basquete", "externo", 8, 10, 45000, { evolucao: 2, moral: 2 }, "tecido", { ambientes: E }),
+  quadraVolei: t("Quadra de vôlei de areia", "externo", 8, 14, 35000, { evolucao: 2, moral: 2, recuperacao: 1 }, "tecido", { ambientes: E }),
+  piscinao: t("Piscinão", "externo", 10, 6, 90000, { recuperacao: 4, moral: 3 }, "metal", { ambientes: E }),
   sauna: t("Sauna", "banheiro", 3, 3, 9000, { recuperacao: 4, lesao: 2 }, "madeira"),
   criocamara: t("Criocâmara", "treino", 2, 2, 25000, { recuperacao: 5, lesao: 2, moral: -1 }, "metal"),
   projetor: t("Projetor de cinema", "lazer", 3, 3, 6000, { moral: 3 }, "metal"),
@@ -134,7 +136,7 @@ const ONDE: Record<TipoMovel, TipoComodo[]> = {
   trofeus: ["sala", "trofeus", "escritorio", "jogos"],
   mesaEstudo: ["escritorio", "quarto", "kitnet", "sala"], saco: ["academia", "kitnet", "quarto"], massagem: ["academia", "sala", "quarto"],
   pingPong: ["jogos", "sala"], lareira: ["sala", "kitnet", "quarto"], bateria: ["jogos", "quarto", "kitnet"],
-  quadraTenis: ["externo"], quadraFutebol: ["externo"], piscinao: ["externo"], sauna: ["banheiro", "academia"], criocamara: ["academia"],
+  quadraTenis: ["externo"], quadraFutebol: ["externo"], quadraBasquete: ["externo"], quadraVolei: ["externo"], piscinao: ["externo"], sauna: ["banheiro", "academia"], criocamara: ["academia"],
   projetor: ["sala", "jogos"], estatua: ["trofeus", "sala", "externo", "escritorio"], painelEstatisticas: ["escritorio", "academia", "jogos"],
   paredeEscalada: ["academia", "jogos", "externo"], escadaAgilidade: ["academia", "externo"],
   piscina: ["externo"], espreguicadeira: ["externo"], churrasqueira: ["externo"], mesaExterna: ["externo"], trave: ["externo"], jacuzzi: ["externo", "banheiro"], fogueira: ["externo"],
@@ -268,6 +270,8 @@ const ACRESCIMO: Partial<Record<TipoMovel, Linha[]>> = {
   bateria: [["basico", 1, 1, "Bateria de cinco peças"], ["gamer", 2, 2, "Bateria eletrônica com fones"], ["classico", 3, 3, "Bateria vintage de jazz", { efeitos: { moral: 3, fama: 2 } }]],
   quadraTenis: [["basico", 1, 1, "Quadra de saibro"], ["moderno", 2, 2, "Quadra de piso rápido com alambrado"], ["classico", 3, 3, "Quadra de grama de clube inglês", { efeitos: { moral: 4, fama: 2 } }]],
   quadraFutebol: [["basico", 2, 2, "Campinho de terra batida"], ["moderno", 3, 3, "Gramado society com alambrado"], ["gamer", 3, 4, "Campo com arquibancada de LED", { efeitos: { evolucao: 5, moral: 3 } }]],
+  quadraBasquete: [["basico", 1, 1, "Meia quadra de cimento"], ["moderno", 2, 2, "Quadra de basquete com piso emborrachado"], ["gamer", 3, 3, "Quadra com tabelas de vidro e LED", { efeitos: { evolucao: 3, moral: 3 } }]],
+  quadraVolei: [["basico", 1, 1, "Quadra de areia com rede"], ["moderno", 2, 2, "Arena de vôlei de praia com refletores", { efeitos: { evolucao: 3, moral: 2, recuperacao: 1 } }]],
   piscinao: [["moderno", 3, 3, "Piscinão de borda infinita"], ["classico", 3, 4, "Piscinão com cascata e raia", { efeitos: { recuperacao: 6, moral: 3, lesao: 2 } }]],
   sauna: [["rustico", 1, 2, "Sauna finlandesa de madeira"], ["moderno", 2, 3, "Sauna a vapor com cromoterapia", { efeitos: { recuperacao: 5, lesao: 2 } }]],
   criocamara: [["moderno", 2, 4, "Criocâmara de menos 110 graus", { efeitos: { recuperacao: 6, lesao: 3, moral: -1 } }]],
@@ -571,6 +575,9 @@ for (const m of IMOVEIS) if (m.categoria === "mansao") {
   if (!m.comodos.some((c) => c.id === "filhos")) m.comodos.splice(1, 0, QUARTO_FILHOS(11, 9));
   if (!m.comodos.some((c) => c.id === "hospedes")) m.comodos.splice(2, 0, QUARTO_HOSPEDES(10, 8));
 }
+// e as mansões com terreno ganham a área das quadras (futebol, tênis, basquete e vôlei cabem juntos)
+for (const m of IMOVEIS) if (m.categoria === "mansao" && !/cobertura|duplex/.test(m.id) && !m.comodos.some((c) => c.ambiente === "externo" && c.w >= 26 && c.d >= 20))
+  m.comodos.push(cm("quadras", "Área das quadras", "externo", 30, 22, { parede: ac("cerca") }));
 for (const id of ["casa-sobrado", "casa-condominio", "casa-vila-quintal"]) { const q2 = IMOVEIS.find((m) => m.id === id)?.comodos.find((c) => c.id === "quarto2"); if (q2) q2.nome = "Quarto das crianças"; }
 IMOVEIS.push(
   { id: "ap-familia", categoria: "apartamento", nome: "Apartamento de três quartos", local: "Bairro com escola e parque", vista: "condominio", aluguel: 9500, compra: 1300000,
@@ -952,13 +959,15 @@ export function mudar(e: EstadoCasa, id: string, modo: "alugar" | "comprar", sal
   }
   const antigo = imovelAtual(e);
   const tipoDe = (cid: string) => antigo.comodos.find((c) => c.id === cid)?.tipo;
-  const levar = e.objetos.filter((o) => !o.incluso).map((o) => ({ uid: o.uid, item: o.item, cor: o.cor, tipo: tipoDe(o.comodo) }));
-  const guardados = e.deposito.map((g) => ({ ...g, tipo: undefined as TipoComodo | undefined }));
+  // cada coisa vai para o cômodo equivalente: o mesmo id, ou o quarto do mesmo jeito (casal, crianças, hóspedes)
+  const jeitoDe = (cid: string) => { const c = antigo.comodos.find((x) => x.id === cid); return c && c.tipo === "quarto" ? tipoDeQuarto(c) : undefined; };
+  const levar = e.objetos.filter((o) => !o.incluso).map((o) => ({ uid: o.uid, item: o.item, cor: o.cor, tipo: tipoDe(o.comodo), de: o.comodo as string | undefined, jeito: jeitoDe(o.comodo) }));
+  const guardados = e.deposito.map((g) => ({ ...g, tipo: undefined as TipoComodo | undefined, de: undefined as string | undefined, jeito: undefined as string | undefined }));
   e.imovel = id; e.objetos = []; e.deposito = [];
   colocarInclusos(e);
   const area0 = (it: string) => TIPOS[ITENS[it].tipo].w * TIPOS[ITENS[it].tipo].d;
   for (const g of [...levar, ...guardados].sort((a, b) => area0(b.item) - area0(a.item) || ITENS[b.item].preco - ITENS[a.item].preco)) {
-    const pref = m.comodos.find((c) => c.tipo === g.tipo || (g.tipo === "kitnet" && c.tipo === "quarto") || (g.tipo === "quarto" && c.tipo === "kitnet"))?.id;
+    const pref = (g.jeito ? m.comodos.find((c) => c.tipo === "quarto" && tipoDeQuarto(c) === g.jeito) : undefined)?.id ?? m.comodos.find((c) => c.id === g.de && c.tipo === g.tipo)?.id ?? m.comodos.find((c) => c.tipo === g.tipo || (g.tipo === "kitnet" && c.tipo === "quarto") || (g.tipo === "quarto" && c.tipo === "kitnet"))?.id;
     let posto = false;
     if (!motivoNaoCabe(e, g.item)) for (const cid of comodosPara(e, g.item, pref)) {
       const lugar = acharLugar(e, g.item, cid, g.uid);
@@ -1122,4 +1131,18 @@ export function casaNaFamilia(e: EstadoCasa, filhos: { relacao?: number; pensao:
   for (const f of filhos) if (!f.pensao && !f.adulto) f.relacao = clampR((f.relacao ?? 70) + (est.filhos ? 0.3 : -0.2));
   if (est.hospedes) for (const p of pais) if (!p.falecido && (p.parentesco === "pai" || p.parentesco === "mae")) p.relacao = clampR(p.relacao + 0.15);
   return est;
+}
+
+// ------------------------------------------------------------------ quadras em casa
+/** Que atributos cada quadra treina (o jogador bate bola em casa nas folgas). */
+export const ATRIBUTOS_QUADRA: Partial<Record<TipoMovel, { nome: string; at: ("VEL" | "RES" | "FOR" | "PAS" | "CRU" | "DRI" | "FIN" | "CAB" | "MAR" | "VIS" | "POS" | "COM")[] }>> = {
+  quadraFutebol: { nome: "Futebol society", at: ["FIN", "DRI", "PAS"] },
+  quadraTenis: { nome: "Tênis", at: ["VEL", "RES"] },
+  quadraBasquete: { nome: "Basquete", at: ["CAB", "VIS"] },
+  quadraVolei: { nome: "Vôlei de areia", at: ["CAB", "FOR"] },
+};
+/** Atributos treinados pelas quadras que estão montadas na casa (um de cada, sem repetir). */
+export function atributosDasQuadras(e: EstadoCasa): ("VEL" | "RES" | "FOR" | "PAS" | "CRU" | "DRI" | "FIN" | "CAB" | "MAR" | "VIS" | "POS" | "COM")[] {
+  const tipos = new Set(e.objetos.map((o) => ITENS[o.item]?.tipo).filter((t) => t && ATRIBUTOS_QUADRA[t]));
+  return [...new Set([...tipos].flatMap((t) => ATRIBUTOS_QUADRA[t!]!.at))];
 }

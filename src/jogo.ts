@@ -66,7 +66,7 @@ import { gerarFamilia, semanaFamilia, temporadaFamilia, agirFamilia, membro, aco
 import { agirFilho, programaPreferido, acoesFilho, type AcaoFilho } from "./namoro.js";
 import { gostosDe, MAX_ACOES_NAMORO, gravidasDe, estaGravida, marcosDoAno, virarEx, agirEx, type AcaoEx, type Par } from "./namoro.js";
 import { novoNamoro, arrumarNamoro, acharPar, baralhoDaSemana, curtir, agirNamoro, efeitosNamoro, semanaNamoro, temporadaNamoro, responderCena, type EstadoNamoro, type AcaoNamoro, type CtxNamoro } from "./namoro.js";
-import { casaNaFamilia, podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
+import { casaNaFamilia, atributosDasQuadras, podeTerCarro, vagasGaragem, veiculosDaCasa, ganharReliquia, novoEstado, fecharMes, manutencaoMensal, efeitosDaCasa, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, IMOVEL, nomeImovel, type EstadoCasa, type ClubeCasa } from "./casa.js";
 import { valorBrl, curtoBrl } from "./moeda.js";
 
 // ------------------------------------------------------------------ tipos
@@ -1518,6 +1518,8 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const en = efeitosNamoro(nam);
   const mult = 1 + cont("treino") * 0.1 + (casa.evolucao + vida.evolucao + en.evolucao) / 100 + c.bonusEvolucao - (c.treinoPosicao ? 0.1 : 0) + (paiTreinador(fam) ? 0.05 : 0);
   for (const k of ATRIBUTOS) j.at[k] = clamp(j.at[k] + (evoluido[k] - j.at[k]) * (evoluido[k] > j.at[k] ? mult : 1), 1, 99);
+  // quadras em casa: treino extra por conta própria, cada esporte puxa atributos diferentes (até o potencial)
+  if (!c.fase && ovr(j) < j.pot) for (const k of atributosDasQuadras(s.casa)) j.at[k] = clamp(j.at[k] + 0.05, 1, 99);
   // a função puxa o treino para o que ela pede; os detalhados amadurecem (determinação acelera)
   {
     const fn = funcaoDoJogador(s), jogou = participacao === "titular" || participacao === "entrou";

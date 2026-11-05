@@ -16,6 +16,7 @@ import { responderEvento, rankingT, TIPO_CONTATO } from "../../src/tecnico/vida"
 import { patrociniosDe, ofertasPatro, assinarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
 import { fotoDoPerfil } from "../visual/mulheres";
+import { svgFoto, APARENCIA_PADRAO, CABELOS, CABELOS_TECNICO, NOMES_CABELO_COR, CORES_CABELO, BARBAS, ROUPAS_TECNICO, type Aparencia, type RoupaTecnico } from "../criacao/avatar";
 import { rostoParente } from "../visual/rostos";
 import { NOME_ACAO_FAM, NOME_PARENTESCO, rotuloRelacaoFam, falaSobreVoce, idadeDe, type AcaoFamilia, type EstadoFamilia } from "../../src/familia";
 import { NOME_ACAO_NAMORO, NOME_ACAO_FILHO, NOME_ACAO_EX, NOME_ETAPA, PROFISSOES, TEXTO_FIM, gravidasDe, type AcaoNamoro, type AcaoFilho, type AcaoEx, type EstadoNamoro } from "../../src/namoro";
@@ -27,7 +28,7 @@ import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
 import { NOME_LINGUA, rotuloNivel, linguaDe, nivelEm, idiomasIniciais } from "../../src/idiomas";
 /** Do save do jogador aposentado: licença (dos Estudos) e idiomas (nível de 0 a 3 vira 0 a 95). */
 type HistJ = { ano: number; idade: number; clube: string; clubeId?: string; nota?: number; jogos: number; gols: number; assist: number; titulo: boolean; base: number; parcial?: boolean; premios?: string[] };
-type SaveJogador = { semente: string; casa?: { saldo?: number }; jogador: { nome: string; apelido: string; nacionalidade: string; idade: number; posicao?: string };
+type SaveJogador = { semente: string; casa?: { saldo?: number }; jogador: { nome: string; apelido: string; nacionalidade: string; idade: number; posicao?: string; aparencia?: Partial<Aparencia> };
   carreira: { encerrada?: { ano: number; idade: number; texto: string; nivel?: { titulo: string }; recordes?: string[] }; fama: number; temporada: number; historico?: HistJ[];
     estudos?: { idiomas: Record<string, number>; formacoes: string[] };
     relacoes?: { lista: Record<string, { nome: string; clubeId: string; nivel: number; aposentado?: boolean; companheiro?: boolean }> };
@@ -511,21 +512,56 @@ function completarVida(s: SaveTecnico) {
   trazerVida(s, jog.carreira.familia as unknown as EstadoFamilia | undefined, jog.carreira.namoro as unknown as EstadoNamoro | undefined, jog.casa?.saldo, jog.casa as unknown as EstadoCasa | undefined);
   salvar();
 }
+// ------------------------------------------------------------------ a cara e a roupa do técnico
+/** A cara do técnico: a do jogador que ele foi (com as marcas da idade); quem começou direto ganha uma padrão, já grisalha. */
+function aparenciaT(s: SaveTecnico): Aparencia {
+  if (!s.tecnico.aparencia) {
+    const jog = ler<SaveJogador>("mycarrerinha:save"), dele = s.bio && jog?.jogador.apelido === s.bio.apelido ? jog.jogador.aparencia : undefined;
+    s.tecnico.aparencia = { ...APARENCIA_PADRAO, ...(dele ?? { corCabelo: 10, barba: "sombra" }), rugas: true, oculosSol: null, fone: null, bonePatro: null, blusaoPatro: null };
+    salvar();
+  }
+  return { ...APARENCIA_PADRAO, ...(s.tecnico.aparencia as Partial<Aparencia>) };
+}
+const CORES_TRAJE: [string, string][] = [["clube", "Cor do clube"], ["clube2", "Segunda cor"], ["preto", "Preto"], ["branco", "Branco"], ["marinho", "Azul-marinho"], ["cinza", "Cinza"]];
+function coresClube(s: SaveTecnico): [string, string] { const info = infoClube(pacote, s.clubeId), u = UNIFORME_CLUBE[s.clubeId]; return u ? [u.cores[0], u.cores[1]] : [info?.cores[0] ?? "#1D1F22", info?.cores[1] ?? "#FFFFFF"]; }
+function fotoTecnico(s: SaveTecnico): string {
+  const v = s.tecnico.visual ?? { roupa: "polo", cor: "clube" }, [a, b] = coresClube(s), info = infoClube(pacote, s.clubeId);
+  const base: Record<string, [string, string]> = { clube: [a, b], clube2: [b, a], preto: ["#1D1F22", a], branco: ["#F4F2EC", a], marinho: ["#1C2A44", a], cinza: ["#5B6066", a] };
+  let [cor, cor2] = base[v.cor] ?? [a, b];
+  if (cor.toLowerCase() === cor2.toLowerCase()) cor2 = cor.toLowerCase() === "#ffffff" ? "#1D1F22" : "#FFFFFF";
+  const u = UNIFORME_CLUBE[s.clubeId], ec = u?.escudo ?? [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
+  const escudoSvg = `<svg viewBox="0 0 26 30" width="26" height="30">${corpoEscudo(idClube(s.clubeId), ec[0], ec[1], info?.nome)}</svg>`;
+  return svgFoto({ aparencia: aparenciaT(s), tecnico: { roupa: v.roupa as RoupaTecnico, cor, cor2, escudo: escudoSvg }, fundo: [escurecerHex(a), b] });
+}
+const escurecerHex = (h: string) => { const n = parseInt(h.slice(1), 16), f = (x: number) => Math.round(x * 0.55).toString(16).padStart(2, "0"); return `#${f((n >> 16) & 255)}${f((n >> 8) & 255)}${f(n & 255)}`; };
+function vidaVisual(s: SaveTecnico): string {
+  const a = aparenciaT(s), v = s.tecnico.visual ?? { roupa: "polo", cor: "clube" };
+  const grupo = (titulo: string, campo: string, ops: [string, string][], atual: string) => `<p class="rotulo" style="margin:12px 0 6px">${titulo}</p><div class="v-acoes">${ops.map(([k, n]) => `<button class="${k === atual ? "v-ativo" : ""}" data-vis="${campo}|${k}">${esc(n)}</button>`).join("")}</div>`;
+  return `<section class="painel"><div class="v-retrato">${fotoTecnico(s)}</div>
+    ${grupo("Roupa da beira do campo", "roupa", ROUPAS_TECNICO.map((r) => [r.id, r.nome]), v.roupa)}
+    ${grupo("Cor da roupa", "cor", CORES_TRAJE, v.cor)}
+    ${grupo("Cabelo", "cabelo", [...CABELOS_TECNICO, ...CABELOS].map((c) => [c.id, c.nome]), a.cabelo)}
+    ${grupo("Cor do cabelo", "corCabelo", NOMES_CABELO_COR.map((n, i) => [String(i), n] as [string, string]).filter(([i]) => !["8", "9"].includes(i)), String(a.corCabelo))}
+    ${grupo("Barba", "barba", BARBAS.map((x) => [x.id, x.nome]), a.barba)}
+    ${grupo("Marcas da idade", "rugas", [["1", "Com rugas"], ["0", "Sem rugas"]], a.rugas ? "1" : "0")}
+    <p class="sub" style="margin-top:10px">O escudo no peito muda sozinho quando você troca de clube.</p></section>`;
+}
+void CORES_CABELO;
 const corRel = (r: number) => (r >= 70 ? "#5FC08A" : r >= 45 ? "#E3B341" : "#E06A5A");
 const barraRel = (r: number, rot?: string) => `<div class="v-rel"><span style="color:${corRel(r)}">${esc(rot ?? rotuloRelacaoFam(r))} · ${Math.round(r)}</span><span class="v-barra"><i style="width:${Math.round(r)}%;background:${corRel(r)}"></i></span></div>`;
 const chips = (attr: string, alvo: string | number, l: [string, string][]) => l.length ? `<div class="v-acoes">${l.map(([k, n]) => `<button data-${attr}="${alvo}|${k}">${esc(n)}</button>`).join("")}</div>` : "";
 const inicial = (nome: string) => `<span class="v-ini">${esc(nome.trim()[0] ?? "?")}</span>`;
 function abaVida(s: SaveTecnico): string {
   completarVida(s);
-  const subs = `<div class="sub-abas">${[["perfil", "Seu perfil"], ["familia", "Família"], ["app", "Namoro"], ["contatos", "Contatos"]].map(([k, n]) => `<button class="${(sub.vida ?? "perfil") === k ? "ativo" : ""}" data-sub="vida:${k}">${n}</button>`).join("")}</div>`;
-  const corpo = sub.vida === "familia" ? vidaFamilia(s) : sub.vida === "app" ? vidaApp(s) : sub.vida === "contatos" ? vidaContatos(s) : vidaPerfil(s);
+  const subs = `<div class="sub-abas">${[["perfil", "Seu perfil"], ["visual", "Visual"], ["familia", "Família"], ["app", "Namoro"], ["contatos", "Contatos"]].map(([k, n]) => `<button class="${(sub.vida ?? "perfil") === k ? "ativo" : ""}" data-sub="vida:${k}">${n}</button>`).join("")}</div>`;
+  const corpo = sub.vida === "familia" ? vidaFamilia(s) : sub.vida === "app" ? vidaApp(s) : sub.vida === "contatos" ? vidaContatos(s) : sub.vida === "visual" ? vidaVisual(s) : vidaPerfil(s);
   return subs + aviso() + corpo;
 }
 function vidaPerfil(s: SaveTecnico): string {
   completarVida(s); casaT(pacote, s);
   const t = s.tecnico, n = s.namoro, par = n?.par, filhos = n?.filhos ?? [];
   const resumoFam = [par ? `${({ casados: "Casado com", noivos: "Noivo de", morando: "Mora com", namorando: "Namorando", saindo: "Saindo com", match: "Conversando com" } as Record<string, string>)[par.etapa]} ${par.nome.split(" ")[0]}` : "Solteiro", filhos.length ? `${filhos.length} ${filhos.length === 1 ? "filho" : "filhos"}` : ""].filter(Boolean).join(" · ");
-  const cab = `<section class="painel"><p class="rotulo">Técnico</p><h2 style="margin:0">${esc(t.nome)}</h2><p class="sub">${t.idade} anos · ${esc(t.nac)}${t.exJogador ? ` · ex-jogador (${esc(t.exJogador.apelido)})` : ""}</p>
+  const cab = `<section class="painel"><div class="v-topo"><button class="v-mini" data-sub="vida:visual" aria-label="Mudar o visual">${fotoTecnico(s)}</button><div><p class="rotulo">Técnico</p><h2 style="margin:0">${esc(t.nome)}</h2><p class="sub">${t.idade} anos · ${esc(t.nac)}${t.exJogador ? ` · ex-jogador (${esc(t.exJogador.apelido)})` : ""}</p></div></div>
     <div class="dl" style="margin-top:8px"><span>Clube</span><b>${esc(nomeClube(s.clubeId))}</b><span>Reputação</span><b>${t.reputacao}/100</b><span>Salário</span><b>${curtoBrl(salarioTecnico(s))}/mês</b><span>No bolso</span><b>${curtoBrl(bolso(s))}</b><span>Vida pessoal</span><b>${esc(resumoFam)}</b></div>
     <div class="botoes" style="margin-top:10px"><button class="botao sec" data-sub="vida:familia">Ver a família</button></div></section>
     <section class="painel"><p class="rotulo">Sua casa</p>${(() => { const c = casaT(pacote, s), m = IMOVEL[c.imovel]; return `<h3 style="margin:0">${esc(nomeImovel(c, m))}</h3><p class="sub">${esc(m.local)} · ${c.proprios.includes(c.imovel) ? "imóvel próprio" : `aluguel ${curtoBrl(m.aluguel)}/mês`} · ${c.objetos.length} itens · ${(c.carros ?? []).length} ${(c.carros ?? []).length === 1 ? "carro" : "carros"}</p><p class="sub">Patrimônio: ${curtoBrl(patrimonio(c))}</p>`; })()}
@@ -723,6 +759,9 @@ document.addEventListener("click", (ev) => {
   const s = save;
   if (d.aba) { aba = d.aba as typeof aba; msg = undefined; selEsc = undefined; if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; } fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
+  if (d.vis) { const [k, v] = d.vis.split("|"); aparenciaT(s); const ap = s.tecnico.aparencia!; const vis = (s.tecnico.visual ??= { roupa: "polo", cor: "clube" });
+    if (k === "roupa") vis.roupa = v; else if (k === "cor") vis.cor = v; else if (k === "corCabelo") ap.corCabelo = +v; else if (k === "rugas") ap.rugas = v === "1"; else ap[k] = v;
+    redesenhar(); return; }
   if (d.casa !== undefined) { casaT(pacote, s); salvar(); location.href = "casa.html?modo=tecnico"; return; }
   if (d.vf) { const [id, ac] = d.vf.split("|"); const r = agirFamiliaT(pacote, s, id, ac as AcaoFamilia, !!proximoJogo(s)?.souCasa); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.vp) { const [id, ac] = d.vp.split("|"); const r = agirParT(pacote, s, id, ac as AcaoNamoro); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }

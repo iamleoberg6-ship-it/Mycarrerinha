@@ -5,7 +5,8 @@ export type Rosto = "oval" | "redondo" | "quadrado" | "longo" | "coracao" | "lar
 export type Cabelo =
   | "careca" | "raspado" | "curto" | "degrade" | "topete" | "franja" | "ondulado" | "cacheado"
   | "crespo" | "blackpower" | "trancas" | "dreads" | "moicano" | "coque" | "longo"
-  | "mullet" | "undercut" | "flattop" | "risco" | "pompadour" | "espetado" | "baguncado" | "emo";
+  | "mullet" | "undercut" | "flattop" | "risco" | "pompadour" | "espetado" | "baguncado" | "emo"
+  | "calvicie" | "entradas";
 export type Olho = "amendoado" | "redondo" | "estreito" | "caido" | "erguido" | "semdobra" | "encapuzado" | "grande" | "felino" | "sonolento";
 export type Sobrancelha = "reta" | "arqueada" | "angulada" | "suave" | "corte";
 export type Nariz = "reto" | "pequeno" | "fino" | "largo" | "achatado" | "arrebitado" | "aquilino" | "grande" | "batata" | "torto" | "botao" | "comprido";
@@ -35,11 +36,19 @@ export interface Aparencia {
   /** boné e blusão de patrocinador (só fora de campo): cores e o símbolo da marca (SVG num quadro 40×40) */
   bonePatro?: { cor: string; aba: string; logo: string } | null;
   blusaoPatro?: { cor: string; detalhe: string; logo: string } | null;
+  /** marcas da idade: rugas na testa, pés de galinha e o bigode chinês (o técnico) */
+  rugas?: boolean;
 }
+/** Roupa de técnico: com as cores e o escudo do clube (o escudo é um SVG num quadro 26×30). */
+export type RoupaTecnico = "polo" | "camisa" | "agasalho" | "terno" | "casaco";
+export const ROUPAS_TECNICO: { id: RoupaTecnico; nome: string }[] = [
+  { id: "polo", nome: "Polo do clube" }, { id: "camisa", nome: "Camisa social do clube" }, { id: "agasalho", nome: "Agasalho de treino" }, { id: "casaco", nome: "Casaco de frio" }, { id: "terno", nome: "Terno com gravata do clube" },
+];
+export interface TrajeTecnico { roupa: RoupaTecnico; cor: string; cor2: string; escudo?: string }
 
 export const PELES = ["#F8DCC4", "#F0C29E", "#E2A77D", "#C98C63", "#A66A43", "#8A5534", "#6B3F24", "#4A2A18"];
-export const CORES_CABELO = ["#0F0D0B", "#2E1D14", "#4E311E", "#7A4E2A", "#A97C3C", "#D7B25E", "#9C4422", "#E9E4D8", "#2F6FD1", "#B8323C"];
-export const NOMES_CABELO_COR = ["Preto", "Castanho escuro", "Castanho", "Castanho claro", "Loiro escuro", "Loiro", "Ruivo", "Platinado", "Tingido azul", "Tingido vermelho"];
+export const CORES_CABELO = ["#0F0D0B", "#2E1D14", "#4E311E", "#7A4E2A", "#A97C3C", "#D7B25E", "#9C4422", "#E9E4D8", "#2F6FD1", "#B8323C", "#6B6A66", "#A9A7A1", "#DCDAD4"];
+export const NOMES_CABELO_COR = ["Preto", "Castanho escuro", "Castanho", "Castanho claro", "Loiro escuro", "Loiro", "Ruivo", "Platinado", "Tingido azul", "Tingido vermelho", "Grisalho escuro", "Grisalho", "Branco"];
 export const CORES_OLHOS = ["#3B2416", "#6B4423", "#8A6A2E", "#4F6B3A", "#3E6A8C", "#1E1E1E"];
 export const NOMES_OLHOS = ["Castanho escuro", "Castanho", "Mel", "Verde", "Azul", "Preto"];
 export const ROSTOS: { id: Rosto; nome: string }[] = [
@@ -55,6 +64,8 @@ export const CABELOS: { id: Cabelo; nome: string }[] = [
   { id: "mullet", nome: "Mullet" }, { id: "undercut", nome: "Undercut" }, { id: "flattop", nome: "Flat top" }, { id: "risco", nome: "Social com risca" },
   { id: "pompadour", nome: "Pompadour" }, { id: "espetado", nome: "Espetado" }, { id: "baguncado", nome: "Bagunçado" }, { id: "emo", nome: "Franja lateral" },
 ];
+/** Cortes de quem já passou dos 40 (o técnico pode usar qualquer um; estes só aparecem para ele). */
+export const CABELOS_TECNICO: { id: Cabelo; nome: string }[] = [{ id: "entradas", nome: "Com entradas" }, { id: "calvicie", nome: "Calvície com laterais" }];
 export const OLHOS: { id: Olho; nome: string }[] = [
   { id: "amendoado", nome: "Amendoado" }, { id: "redondo", nome: "Redondo" }, { id: "estreito", nome: "Estreito" },
   { id: "caido", nome: "Caído" }, { id: "erguido", nome: "Erguido" }, { id: "semdobra", nome: "Monopálpebra" },
@@ -263,6 +274,12 @@ function cabeloFrente(c: Cabelo, f: Forma, cor: string, pele: string): string {
   const brilho = luminancia(cor) < 0.3 ? mistura(cor, "#FFFFFF", 0.18) : mistura(cor, "#FFFFFF", 0.35);
   const reflexo = `<path d="M${150 - 0.5 * w} ${T + 4} Q${150 - 0.2 * w} ${T - 6} ${150 + 0.1 * w} ${T - 5}" stroke="${brilho}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
   switch (c) {
+    case "entradas": { const d = calota(f, { volume: 3, testa: T + 12 }); return contorno(d, cor) + recorte(d, fios(f, s) + reflexo) + `<path d="M${150 - 0.42 * w} ${T + 16} Q${150 - 0.3 * w} ${T + 4} ${150 - 0.18 * w} ${T + 10} M${150 + 0.42 * w} ${T + 16} Q${150 + 0.3 * w} ${T + 4} ${150 + 0.18 * w} ${T + 10}" stroke="${pele}" stroke-width="7" fill="none" stroke-linecap="round"/>`; }
+    case "calvicie": {
+      // topo careca (com o brilho) e o cabelo só nas laterais, acima das orelhas
+      const lado = (k: -1 | 1) => { const x0 = 150 + k * (f.w100 + 1), x1 = 150 + k * (largura(f, 132) + 2); return `<path d="M${f1(x0)} 96 Q${f1(x0 + k * 7)} 112 ${f1(x1)} 134 L${f1(x1 - k * 9)} 132 Q${f1(x0 - k * 4)} 114 ${f1(x0 - k * 9)} 100 Z" fill="${cor}" stroke="${TINTA}" stroke-width="1.6" stroke-linejoin="round"/>`; };
+      return lado(-1) + lado(1) + `<path d="M${150 - 0.55 * w} ${T + 18} Q${150 - 0.3 * w} ${T + 4} ${150 - 0.05 * w} ${T + 4}" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    }
     case "careca": return `<path d="M${150 - 0.55 * w} ${T + 18} Q${150 - 0.3 * w} ${T + 4} ${150 - 0.05 * w} ${T + 4}" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="4" fill="none" stroke-linecap="round"/>`;
     case "raspado": {
       const d = calota(f, { volume: 1, folga: 1.5, testa: T + 26 });
@@ -577,7 +594,10 @@ function uniforme(c: Camisa, numero: string | undefined, pele: string, sombraPel
 }
 
 function roupaSocial(tipo: RoupaSocial, corIdx: number, pele: string, sombraPele: string, hach: string): string {
-  const c = CORES_ROUPA[corIdx], s = escurecer(c, 0.78), claro = luminancia(c) > 0.6;
+  return roupaSocialCor(tipo, CORES_ROUPA[corIdx], pele, sombraPele, hach);
+}
+function roupaSocialCor(tipo: RoupaSocial, c: string, pele: string, sombraPele: string, hach: string): string {
+  const s = escurecer(c, 0.78), claro = luminancia(c) > 0.6;
   const detalhe = claro ? escurecer(c, 0.55) : mistura(c, "#FFFFFF", 0.45);
   const id = novoId("rs");
   const pescoco = `<path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>`;
@@ -614,6 +634,48 @@ function roupaSocial(tipo: RoupaSocial, corIdx: number, pele: string, sombraPele
     default:
       return pescoco + corpo(TRONCO_RETO, c) + `<path d="M118 226 C130 240 170 240 182 226" stroke="${s}" stroke-width="5" fill="none"/><path d="M118 226 C130 240 170 240 182 226" stroke="${TINTA}" stroke-width="1.4" fill="none"/>`;
   }
+}
+
+/** Roupa de técnico: polo, camisa, agasalho, casaco ou terno, nas cores do clube, com o escudo no peito. */
+function roupaTecnico(t: TrajeTecnico, pele: string, sombraPele: string, hach: string): string {
+  const c = t.cor, c2 = t.cor2, s = escurecer(c, 0.78), id = novoId("rt");
+  const escudo = (x: number, y: number, k = 0.72) => t.escudo ? `<g transform="translate(${x} ${y}) scale(${k})">${t.escudo}</g>` : "";
+  const pescoco = `<path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>`;
+  const corpo = (fill: string) => `<clipPath id="${id}"><path d="${TRONCO_RETO}"/></clipPath><path d="${TRONCO_RETO}" fill="${fill}"/><g clip-path="url(#${id})">${sombrasTronco(hach)}</g><path d="${TRONCO_RETO}" fill="none" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>`;
+  switch (t.roupa) {
+    case "polo": return roupaSocialCor("polo", c, pele, sombraPele, hach) + `<path d="M116 224 L150 238 L136 258 L108 236 Z" fill="${c2}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M184 224 L150 238 L164 258 L192 236 Z" fill="${c2}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>` + escudo(170, 270);
+    case "camisa": return roupaSocialCor("camisa", c, pele, sombraPele, hach) + escudo(170, 272);
+    case "agasalho": {
+      // jaqueta de treino fechada até o pescoço: zíper no meio, gola alta e a faixa nos ombros na segunda cor
+      return pescoco + corpo(c) +
+        `<clipPath id="${id}f"><path d="${TRONCO_RETO}"/></clipPath><g clip-path="url(#${id}f)"><path d="M0 300 C30 268 70 252 112 240 L118 252 C76 262 36 278 6 310 Z" fill="${c2}"/><path d="M300 300 C270 268 230 252 188 240 L182 252 C224 262 264 278 294 310 Z" fill="${c2}"/></g>` +
+        `<path d="M118 222 C126 212 174 212 182 222 L184 240 C170 248 130 248 116 240 Z" fill="${s}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>` +
+        `<path d="M150 236 L150 360" stroke="${TINTA}" stroke-width="2"/><path d="M150 236 L150 360" stroke="#C8CCD0" stroke-width="0.9" stroke-dasharray="2 2"/><rect x="147" y="244" width="6" height="9" rx="1.5" fill="#C8CCD0" stroke="${TINTA}" stroke-width="1"/>` + escudo(168, 268);
+    }
+    case "casaco": {
+      // casaco acolchoado (inverno, beira do campo): gomos horizontais e gola alta
+      return pescoco + corpo(c) + [270, 296, 322, 348].map((y) => `<path d="M8 ${y + 4} Q150 ${y - 10} 292 ${y + 4}" stroke="${s}" stroke-width="2.4" fill="none"/>`).join("") +
+        `<path d="M112 216 C124 204 176 204 188 216 L190 244 C172 254 128 254 110 244 Z" fill="${s}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>` +
+        `<path d="M150 244 L150 360" stroke="${TINTA}" stroke-width="2"/>` + escudo(166, 262);
+    }
+    case "terno": {
+      // terno escuro, camisa branca e a gravata na cor do clube, broche com o escudo na lapela
+      const terno = luminancia(c) > 0.55 ? "#22252A" : c, gravata = c2;
+      return pescoco + corpo(terno) +
+        `<path d="M122 226 L150 258 L178 226 L170 360 L130 360 Z" fill="#F4F2EC" stroke="${TINTA}" stroke-width="1.6" stroke-linejoin="round"/>` +
+        `<path d="M144 236 L156 236 L153 248 L147 248 Z" fill="${gravata}" stroke="${TINTA}" stroke-width="1.2"/><path d="M147 248 L153 248 L158 330 L150 342 L142 330 Z" fill="${gravata}" stroke="${TINTA}" stroke-width="1.2" stroke-linejoin="round"/>` +
+        `<path d="M118 225 L150 300 L132 360 L112 360 L104 262 Z" fill="${escurecer(terno, 0.85)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/><path d="M182 225 L150 300 L168 360 L188 360 L196 262 Z" fill="${escurecer(terno, 0.85)}" stroke="${TINTA}" stroke-width="1.8" stroke-linejoin="round"/>` +
+        escudo(176, 270, 0.42);
+    }
+  }
+}
+/** Marcas da idade: testa, canto dos olhos e o bigode chinês. */
+function rugas(pele: string): string {
+  const r = mistura(pele, "#3A1A08", 0.42);
+  return `<g stroke="${r}" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.8">
+    <path d="M126 104 Q150 98 174 104"/><path d="M130 112 Q150 107 170 112"/>
+    <path d="M106 146 L100 143 M106 151 L99 152 M194 146 L200 143 M194 151 L201 152"/>
+    <path d="M134 168 Q128 180 132 192"/><path d="M166 168 Q172 180 168 192"/></g>`;
 }
 
 // ---------------------------------- acessórios ----------------------------------
@@ -716,6 +778,8 @@ export interface OpcoesFoto {
   pescoco?: string;
   /** fora de campo (corpo inteiro de roupa do dia a dia): óculos aparecem */
   fora?: boolean;
+  /** roupa de técnico na beira do campo (no lugar do uniforme) */
+  tecnico?: TrajeTecnico;
 }
 
 /** Fundos do avatar (acabamento aprovado: gradiente em dois tons, como o das mulheres). */
@@ -743,10 +807,11 @@ export function svgFoto(o: OpcoesFoto): string {
     ? `<path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/><path d="M124 192 Q150 228 176 192 L178 222 Q150 240 122 222 Z" fill="${sombraPele}"/>`
     : silhueta
     ? uniforme({ cor1: "#1E2E28", cor2: "#18261F", estilo: "lisa" }, undefined, pele, sombraPele, hach)
+    : o.tecnico ? roupaTecnico(o.tecnico, pele, sombraPele, hach)
     : o.traje === "social" ? (a.blusaoPatro ? blusaoPatroSvg(a.blusaoPatro, pele, sombraPele, hach) : roupaSocial(a.roupaSocial, a.corSocial, pele, sombraPele, hach))
     : uniforme(o.camisa ?? CAMISA_PADRAO, o.numero, pele, sombraPele, hach);
   // em campo (uniforme, sem cenário de criação): sem brinco, piercing nem corrente
-  const emCampo = !silhueta && o.traje !== "social" && !o.fora && !o.cenario;
+  const emCampo = !silhueta && o.traje !== "social" && !o.fora && !o.cenario && !o.tecnico;
   const detalhes = silhueta ? "" : [
     a.sardas ? [[118, 160], [125, 164], [132, 160], [168, 160], [175, 164], [182, 160], [121, 168], [179, 168]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${mistura(pele, "#5A2A12", 0.5)}"/>`).join("") : "",
     a.pinta ? `<circle cx="172" cy="186" r="2" fill="${mistura(pele, "#000", 0.6)}"/>` : "",
@@ -766,6 +831,7 @@ export function svgFoto(o: OpcoesFoto): string {
     ${olho(129, false, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}${olho(171, true, a.formatoOlho, CORES_OLHOS[a.olhos], pele, sombraPele)}
     ${nariz(a.nariz, luzPele)}
     ${boca(a.boca, pele)}
+    ${a.rugas ? rugas(pele) : ""}
     ${detalhes}`;
   const fundoId = novoId("fu"), skinId = novoId("sk");
   const [fa, fb] = o.fundo ?? FUNDO_AVATAR[a.pele % FUNDO_AVATAR.length];

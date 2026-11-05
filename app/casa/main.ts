@@ -6,7 +6,7 @@ import {
   imovelAtual, mover, mudar, novoEstado, patrimonio, podeMudar, podeReformar, precoAcabamento, precoTrocaCor, reformar,
   rendaMinima, tirarDoDeposito, trocarCor, vender, registrarReliquias, ganharReliquia, ehReliquia, noComodo, VALOR_REVENDA, alojamentosDoClube, estruturaDoClube, ESTRUTURAS, ehDono, motivoNaoCabe, nomeImovel, travado, NOME_COMODO,
   type Acabamento, type Categoria, type CategoriaImovel, type Efeitos, type Estilo, type EstadoCasa, type Item, type Objeto, type TipoComodo,
-  arrumarReliquias, MAX_RELIQUIAS_COMODO, orcamentoKit, montarComodo, estruturaFamiliar,
+  arrumarReliquias, MAX_RELIQUIAS_COMODO, orcamentoKit, montarComodo, estruturaFamiliar, ATRIBUTOS_QUADRA,
 } from "../../src/casa";
 import { CLUBES_CASA } from "../../src/clubes";
 import { salarioLiquido, registrarMarco, type Save } from "../../src/jogo";
@@ -155,7 +155,7 @@ function renderCatalogo() {
     const outro = imovelAtual(st.e).comodos.find((x) => ok.includes(x.tipo));
     const destino = motivo ? `<span class="falta">${esc(motivo)}</span>` : aqui ? "" : `<span class="vai">Vai para: ${esc(outro!.nome)}</span>`;
     const cores = it.cores.length > 1 ? `<div class="cores">${it.cores.map((h, i) => `<button class="amostra peq${i === cor ? " ativa" : ""}" style="background:${h}" data-corcompra="${it.id}" data-cor="${i}" aria-label="Cor ${i + 1}"></button>`).join("")}</div>` : "";
-    return `<div class="op"><div class="fig">${miniItem(it.id, cor)}</div><span class="tag">${ESTILOS[it.estilo].nome} · ${TIPOS[it.tipo].nome}</span><div class="n">${esc(it.nome)}</div><div class="p">${dinheiro(it.preco)}</div><div class="ef">${textoEfeitos(it.efeitos)}</div>${cores}${destino}
+    return `<div class="op"><div class="fig">${miniItem(it.id, cor)}</div><span class="tag">${ESTILOS[it.estilo].nome} · ${TIPOS[it.tipo].nome}</span><div class="n">${esc(it.nome)}</div><div class="p">${dinheiro(it.preco)}</div><div class="ef">${textoEfeitos(it.efeitos)}</div>${ATRIBUTOS_QUADRA[it.tipo] ? `<div class="ef">${tecnico ? "Lazer para você e a família" : `Treina ${ATRIBUTOS_QUADRA[it.tipo]!.at.join(", ")} nas folgas`}</div>` : ""}${cores}${destino}
       <button class="botao" data-comprar="${it.id}" ${falta > 0 || motivo ? "disabled" : ""}>Comprar</button>${falta > 0 && !motivo ? `<span class="falta">Faltam ${dinheiro(falta)}</span>` : ""}</div>`;
   };
   // montar o cômodo de uma vez: um kit por estilo, com o que falta e o preço

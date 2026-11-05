@@ -143,6 +143,9 @@ dialog .tela { padding: 18px 16px; display: flex; flex-direction: column; gap: 1
 .v-rel { display: grid; gap: 3px; font-size: 13px; margin: 2px 0 6px; } .v-barra { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; } .v-barra i { display: block; height: 100%; }
 .v-acoes { display: flex; flex-wrap: wrap; gap: 6px; } .v-acoes button { font: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--linha); background: rgba(255,255,255,.04); color: var(--giz); cursor: pointer; } .v-acoes button:hover { border-color: var(--ouro, #E3B341); }
 .abas { grid-template-columns: repeat(6, 1fr) !important; }
+.v-topo { display: flex; gap: 12px; align-items: center; } .v-mini { all: unset; cursor: pointer; width: 76px; height: 76px; border-radius: 14px; overflow: hidden; flex: none; border: 2px solid var(--ouro, #E3B341); } .v-mini svg { width: 100%; height: 100%; display: block; }
+.v-retrato { max-width: 240px; margin: 0 auto 4px; border-radius: 16px; overflow: hidden; } .v-retrato svg { width: 100%; height: auto; display: block; }
+.v-acoes button.v-ativo { background: var(--ouro, #E3B341); color: #12100A; border-color: var(--ouro, #E3B341); font-weight: 700; }
 </style>
 </head>
 <body>

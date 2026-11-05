@@ -47,7 +47,8 @@ export interface Clube {
 }
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
-  tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number; exJogador?: { apelido: string; fama: number }; idiomas?: Idiomas; curso?: CursoTecnico };
+  tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number;
+    /** a cara do técnico (a do jogador, mais velha) e a roupa da beira do campo */ aparencia?: Record<string, unknown>; visual?: { roupa: string; cor: string }; exJogador?: { apelido: string; fama: number }; idiomas?: Idiomas; curso?: CursoTecnico };
   /** ex-atletas do clube que se aposentaram com licença de técnico: podem virar comissão */
   exAtletas?: { nome: string; nac: string; idade: number; licenca: number; lid: number; pos: PosT }[];
   clubeId: string; ligaId: string; temporada: number; semana: number;
