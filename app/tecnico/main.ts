@@ -15,13 +15,18 @@ import { UNIFORME_CLUBE } from "../../src/reliquias";
 import { responderEvento, rankingT, TIPO_CONTATO } from "../../src/tecnico/vida";
 import { patrociniosDe, ofertasPatro, assinarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
+import { fotoDoPerfil } from "../visual/mulheres";
+import { rostoParente } from "../visual/rostos";
+import { NOME_ACAO_FAM, NOME_PARENTESCO, rotuloRelacaoFam, falaSobreVoce, idadeDe, type AcaoFamilia, type EstadoFamilia } from "../../src/familia";
+import { NOME_ACAO_NAMORO, NOME_ACAO_FILHO, NOME_ACAO_EX, NOME_ETAPA, PROFISSOES, TEXTO_FIM, gravidasDe, type AcaoNamoro, type AcaoFilho, type AcaoEx, type EstadoNamoro } from "../../src/namoro";
+import { acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { titulosDoClube, timeDeTodosOsTempos, recordesHistoricosDoClube, plantelDoClube, type TemporadaUsuario, type RecordeNome, type TitularHistorico } from "../../src/perfil-clube";
 import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
 import { NOME_LINGUA, rotuloNivel, linguaDe, nivelEm, idiomasIniciais } from "../../src/idiomas";
 /** Do save do jogador aposentado: licença (dos Estudos) e idiomas (nível de 0 a 3 vira 0 a 95). */
 type HistJ = { ano: number; idade: number; clube: string; clubeId?: string; nota?: number; jogos: number; gols: number; assist: number; titulo: boolean; base: number; parcial?: boolean; premios?: string[] };
-type SaveJogador = { semente: string; jogador: { nome: string; apelido: string; nacionalidade: string; idade: number; posicao?: string };
+type SaveJogador = { semente: string; casa?: { saldo?: number }; jogador: { nome: string; apelido: string; nacionalidade: string; idade: number; posicao?: string };
   carreira: { encerrada?: { ano: number; idade: number; texto: string; nivel?: { titulo: string }; recordes?: string[] }; fama: number; temporada: number; historico?: HistJ[];
     estudos?: { idiomas: Record<string, number>; formacoes: string[] };
     relacoes?: { lista: Record<string, { nome: string; clubeId: string; nivel: number; aposentado?: boolean; companheiro?: boolean }> };
@@ -43,7 +48,9 @@ function vindoDoJogador(jog: SaveJogador, pausa: number): NonNullable<DadosTecni
   const temporadas = h.filter((x) => x.clubeId && x.jogos > 0).map((x) => ({ clubeId: x.clubeId!, t: x.ano - ANO_INICIAL_T, j: x.jogos, g: x.gols, a: x.assist, ...(x.nota ? { nota: x.nota } : {}) }));
   const bioCompleta = { ...bio, ...(jog.jogador.posicao ? { pos: jog.jogador.posicao } : {}), temporadas };
   // a temporada em que ele parou (a carreira de técnico começa na seguinte, mais a pausa)
-  return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio: bioCompleta, contatos, familia };
+  // a vida fora do campo vem inteira: pais, irmãos, companheira, filhos, ex e o dinheiro guardado
+  const vida = { familia: c.familia as unknown as EstadoFamilia | undefined, namoro: c.namoro as unknown as EstadoNamoro | undefined, saldo: jog.casa?.saldo };
+  return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio: bioCompleta, contatos, familia, vida };
 }
 let pausaEscolhida = 0;
 function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, number> } {
@@ -74,8 +81,8 @@ const ler = <T>(k: string): T | null => { try { return JSON.parse(localStorage.g
 const gravar = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem armazenamento */ } };
 
 let save: SaveTecnico | null = ler<SaveTecnico>(CHAVE_TECNICO);
-let aba: "inicio" | "elenco" | "tatica" | "liga" | "clube" = "inicio";
-let sub = { elenco: "jogadores", clube: "financas" } as Record<string, string>;
+let aba: "inicio" | "elenco" | "tatica" | "liga" | "clube" | "vida" = "inicio";
+let sub = { elenco: "jogadores", clube: "financas", vida: "perfil" } as Record<string, string>;
 let filtro = "todos";
 /** escalação: quem está selecionado para trocar ("j:id" jogador, "v:3" vaga vazia) */
 let selEsc: string | undefined;
@@ -147,17 +154,18 @@ const ICONES: Record<string, string> = {
   inicio: '<path d="M3 11 12 4l9 7v9H3z"/>', elenco: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.4c3 .2 5.5 2.4 5.5 5.6"/>',
   tatica: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 12h18"/>', liga: '<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M12 14v4M8 20h8M17 6h3a3 3 0 0 1-3 4M7 6H4a3 3 0 0 0 3 4"/>',
   clube: '<path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/>',
+  vida: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
 };
 const ic = (p: string) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 function nav(s: SaveTecnico): string {
   const alertas = s.elenco.filter((a) => a.querSair || (a.contratoAte <= s.temporada && s.semana - SEMANAS_PRE_T >= nRodadasT(s) - 8)).length;
-  return `<nav class="abas" role="tablist" aria-label="Menu">${([["inicio", "Início"], ["elenco", "Elenco"], ["tatica", "Tática"], ["liga", "Liga"], ["clube", "Clube"]] as const).map(([k, n]) =>
+  return `<nav class="abas" role="tablist" aria-label="Menu">${([["inicio", "Início"], ["elenco", "Elenco"], ["tatica", "Tática"], ["liga", "Liga"], ["clube", "Clube"], ["vida", "Vida"]] as const).map(([k, n]) =>
     `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}"><span class="aba-ico">${ic(ICONES[k])}${k === "elenco" && alertas ? `<i class="aba-badge">${alertas}</i>` : ""}</span><span class="aba-nome">${n}</span></button>`).join("")}</nav>`;
 }
 function topo(s: SaveTecnico): string {
   const li = infoLiga(s.ligaId), pos = ordenar(s.tabela).findIndex((t) => t.clube === s.clubeId) + 1;
   return `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemanaT(s))}</span></header>
-    <section class="painel topo-clube">${escudo(s.clubeId)}<div><b>${esc(nomeClube(s.clubeId))}</b><small>${esc(s.tecnico.nome)} · ${esc(li.curto)}${s.semana >= SEMANAS_PRE_T ? ` · ${pos}º` : ""}</small></div>
+    <section class="painel topo-clube">${escudo(s.clubeId)}<div><b>${esc(nomeClube(s.clubeId))}</b><small><button class="link-clube" data-aba="vida" data-sub="vida:perfil" style="text-decoration:underline">${esc(s.tecnico.nome)}</button> · ${esc(li.curto)}${s.semana >= SEMANAS_PRE_T ? ` · ${pos}º` : ""}</small></div>
       <div class="caixa">Caixa<br><b style="color:${s.clube.saldo < 0 ? "var(--neg)" : "var(--giz)"}">${curtoBrl(s.clube.saldo)}</b></div></section>`;
 }
 const aviso = () => (msg ? `<p class="aviso-t ${msg.ok ? "ok" : "erro"}" role="status">${esc(msg.texto)}</p>` : "");
@@ -430,7 +438,7 @@ function perfilClubeT(s: SaveTecnico, clubeId: string): string {
 
 // ------------------------------------------------------------------ Clube
 function abaClube(s: SaveTecnico): string {
-  const subs = `<div class="sub-abas">${[["carreira", "Sua carreira"], ["historia", "História do clube"], ["noticias", "Notícias"], ["financas", "Finanças"], ["patrocinios", "Patrocínios"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
+  const subs = `<div class="sub-abas">${[["historia", "História do clube"], ["noticias", "Notícias"], ["financas", "Finanças"], ["patrocinios", "Patrocínios"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
   return subs + aviso() + (sub.clube === "diretoria" ? abaDiretoria(s) : sub.clube === "comissao" ? abaComissao(s) : sub.clube === "patrocinios" ? abaPatrocinios(s) : sub.clube === "carreira" ? abaCarreira(s) : sub.clube === "historia" ? perfilClubeT(s, s.clubeId).replace(/<div class="botoes" style="margin-top:14px"><button class="botao sec" data-fechar>Fechar<\/button><\/div>/, "") : sub.clube === "noticias" ? abaNoticias(s) : abaFinancas(s));
 }
 // ------------------------------------------------------------------ patrocínios do clube
@@ -486,8 +494,76 @@ function abaCarreira(s: SaveTecnico): string {
   const contatos = (s.contatos ?? []).length ? `<section class="painel"><p class="rotulo">Contatos da época de jogador</p><p class="sub">Amigos topam vir para clubes menores e não pedem salário a mais.</p>${[...s.contatos!].sort((x, y) => y.nivel - x.nivel).slice(0, 20).map((c) => `<div class="not"><b>${esc(c.nome)}</b> · ${TIPO_CONTATO[c.tipo]} · ${Math.round(c.nivel)}/100</div>`).join("")}</section>` : "";
   return jogador + tecnico + premios + fam + contatos;
 }
+// ------------------------------------------------------------------ Vida: o técnico fora do campo
+/** Carreira de técnico começada antes de a família vir junto: traz do save do modo jogador (o mesmo jogador). */
+function completarVida(s: SaveTecnico) {
+  if (s.familia || s.namoro || !s.bio) return;
+  const jog = ler<SaveJogador>("mycarrerinha:save");
+  if (!jog || jog.jogador.apelido !== s.bio.apelido) return;
+  trazerVida(s, jog.carreira.familia as unknown as EstadoFamilia | undefined, jog.carreira.namoro as unknown as EstadoNamoro | undefined, jog.casa?.saldo);
+  salvar();
+}
+const corRel = (r: number) => (r >= 70 ? "#5FC08A" : r >= 45 ? "#E3B341" : "#E06A5A");
+const barraRel = (r: number, rot?: string) => `<div class="v-rel"><span style="color:${corRel(r)}">${esc(rot ?? rotuloRelacaoFam(r))} · ${Math.round(r)}</span><span class="v-barra"><i style="width:${Math.round(r)}%;background:${corRel(r)}"></i></span></div>`;
+const chips = (attr: string, alvo: string | number, l: [string, string][]) => l.length ? `<div class="v-acoes">${l.map(([k, n]) => `<button data-${attr}="${alvo}|${k}">${esc(n)}</button>`).join("")}</div>` : "";
+const inicial = (nome: string) => `<span class="v-ini">${esc(nome.trim()[0] ?? "?")}</span>`;
+function abaVida(s: SaveTecnico): string {
+  completarVida(s);
+  const subs = `<div class="sub-abas">${[["perfil", "Seu perfil"], ["familia", "Família"], ["app", "Namoro"], ["contatos", "Contatos"]].map(([k, n]) => `<button class="${(sub.vida ?? "perfil") === k ? "ativo" : ""}" data-sub="vida:${k}">${n}</button>`).join("")}</div>`;
+  const corpo = sub.vida === "familia" ? vidaFamilia(s) : sub.vida === "app" ? vidaApp(s) : sub.vida === "contatos" ? vidaContatos(s) : vidaPerfil(s);
+  return subs + aviso() + corpo;
+}
+function vidaPerfil(s: SaveTecnico): string {
+  const t = s.tecnico, n = s.namoro, par = n?.par, filhos = n?.filhos ?? [];
+  const resumoFam = [par ? `${({ casados: "Casado com", noivos: "Noivo de", morando: "Mora com", namorando: "Namorando", saindo: "Saindo com", match: "Conversando com" } as Record<string, string>)[par.etapa]} ${par.nome.split(" ")[0]}` : "Solteiro", filhos.length ? `${filhos.length} ${filhos.length === 1 ? "filho" : "filhos"}` : ""].filter(Boolean).join(" · ");
+  const cab = `<section class="painel"><p class="rotulo">Técnico</p><h2 style="margin:0">${esc(t.nome)}</h2><p class="sub">${t.idade} anos · ${esc(t.nac)}${t.exJogador ? ` · ex-jogador (${esc(t.exJogador.apelido)})` : ""}</p>
+    <div class="dl" style="margin-top:8px"><span>Clube</span><b>${esc(nomeClube(s.clubeId))}</b><span>Reputação</span><b>${t.reputacao}/100</b><span>Salário</span><b>${curtoBrl(salarioTecnico(s))}/mês</b><span>No bolso</span><b>${curtoBrl(bolso(s))}</b><span>Vida pessoal</span><b>${esc(resumoFam)}</b></div>
+    <div class="botoes" style="margin-top:10px"><button class="botao sec" data-sub="vida:familia">Ver a família</button></div></section>`;
+  return cab + abaCarreira(s).replace(/<section class="painel"><p class="rotulo">Contatos da época de jogador<\/p>[\s\S]*$/, "");
+}
+function vidaContatos(s: SaveTecnico): string {
+  const m = abaCarreira(s).match(/<section class="painel"><p class="rotulo">Contatos da época de jogador<\/p>[\s\S]*$/);
+  return m ? m[0] : `<p class="sub">Sem contatos da época de jogador.</p>`;
+}
+function vidaFamilia(s: SaveTecnico): string {
+  const n = s.namoro, f = s.familia, ano = anoVida(s), pj = proximoJogo(s), emCasa = !!pj?.souCasa;
+  if (!n && !f) return `<section class="painel"><p class="sub">${s.bio ? "Não achei a carreira de jogador neste aparelho para trazer a família." : "Esta carreira começou direto como técnico: a família aparece quando você vem da carreira de jogador."} Você ainda pode conhecer alguém na aba Namoro.</p></section>`;
+  const blocos: string[] = [];
+  const par = n?.par;
+  if (par) {
+    const grav = n ? gravidasDe(n).find((g) => g.mae === par.nome) : undefined;
+    blocos.push(`<section class="painel"><p class="rotulo">${par.etapa === "casados" ? "Esposa" : "Companheira"}</p><div class="v-pessoa"><span class="v-foto">${fotoDoPerfil(par)}</span><div><b>${esc(par.nome)}</b><small class="sub">${NOME_ETAPA[par.etapa]} · ${par.idade} anos · ${esc(PROFISSOES[par.profissao]?.nome ?? par.profissao)}</small></div></div>
+      ${barraRel(par.relacao, par.relacao >= 80 ? "Apaixonados" : par.relacao >= 60 ? "Bem" : par.relacao >= 40 ? "Morna" : "Em crise")}
+      ${grav ? `<p class="sub">Grávida: o bebê nasce em ${Math.max(0, grav.parto - (s.temporada * 40 + Math.min(39, s.semana)))} semanas.</p>` : ""}
+      ${chips("vp", par.id, acoesParT(s, par.id).map((a) => [a, NOME_ACAO_NAMORO[a]] as [string, string]))}</section>`);
+  }
+  for (const g of n ? gravidasDe(n).filter((g) => g.mae !== par?.nome) : []) blocos.push(`<section class="painel"><p class="sub">${esc(g.mae.split(" ")[0])} está grávida de você. O bebê nasce em ${Math.max(0, g.parto - (s.temporada * 40 + Math.min(39, s.semana)))} semanas.</p></section>`);
+  const filhos = n?.filhos ?? [];
+  if (filhos.length) blocos.push(`<section class="painel"><p class="rotulo">Filhos</p>${filhos.map((x, i) => {
+    const idade = Math.max(0, ano - x.ano), r = x.relacao ?? 70;
+    const fb = x.futebol ? ` · ${{ escolinha: "na escolinha", base: "na base", pro: "jogador profissional", parou: "largou o futebol" }[x.futebol.fase]}` : "";
+    return `<div class="v-card"><div class="v-pessoa">${inicial(x.nome)}<div><b>${esc(x.nome)}</b><small class="sub">${x.menina ? "Filha" : "Filho"} · ${idade === 0 ? "recém-nascid" + (x.menina ? "a" : "o") : `${idade} ${idade === 1 ? "ano" : "anos"}`} · mãe: ${esc(x.mae.split(" ")[0])}${x.pensao ? " (mora com a mãe)" : ""}${fb}</small></div></div>${barraRel(r)}<p class="sub" style="margin:2px 0 4px">“${esc(falaSobreVoce(r))}”</p>${chips("vfi", i, acoesFilhoT(s, i).map((a) => [a, NOME_ACAO_FILHO[a]] as [string, string]))}</div>`;
+  }).join("")}</section>`);
+  const membros = (f?.membros ?? []).filter((m) => !m.falecido);
+  if (membros.length) blocos.push(`<section class="painel"><p class="rotulo">Pais e irmãos</p>${membros.map((m) => {
+    const rosto = rostoParente(m.parentesco, m.id, undefined);
+    return `<div class="v-card"><div class="v-pessoa">${rosto ? `<span class="v-foto">${rosto}</span>` : inicial(m.nome)}<div><b>${esc(m.nome)}</b><small class="sub">${NOME_PARENTESCO[m.parentesco]} · ${idadeDe(m, ano)} anos · ${esc(m.profissao)}</small></div></div>${barraRel(m.relacao)}${chips("vf", m.id, acoesFamiliaT(pacote, s, m.id, emCasa).map((a) => [a, NOME_ACAO_FAM[a]] as [string, string]))}</div>`;
+  }).join("")}${(f?.membros ?? []).filter((m) => m.falecido).map((m) => `<p class="sub">${NOME_PARENTESCO[m.parentesco]}: ${esc(m.nome)} (faleceu em ${m.falecido})</p>`).join("")}</section>`);
+  const exes = exesT(s);
+  if (exes.length) blocos.push(`<section class="painel"><p class="rotulo">Ex</p>${exes.map((e) => `<div class="v-card"><div class="v-pessoa"><span class="v-foto">${fotoDoPerfil(e.par)}</span><div><b>${esc(e.par.nome)}</b><small class="sub">${esc(TEXTO_FIM[e.como])}</small></div></div>${barraRel(e.relacao, e.relacao >= 60 ? "Amigos" : e.relacao >= 35 ? "Cordial" : "Frio")}${chips("vx", e.par.id, acoesExT(s, e.par.id).map((a) => [a, NOME_ACAO_EX[a]] as [string, string]))}</div>`).join("")}</section>`);
+  const jog = (s.familiaJog ?? []).length ? abaCarreira(s).match(/<section class="painel"><p class="rotulo">Família que joga<\/p>[\s\S]*?<\/section>/)?.[0] ?? "" : "";
+  return `<p class="sub" style="margin-bottom:8px">Programas pagos saem do seu bolso (${curtoBrl(bolso(s))}), não do caixa do clube.</p>` + blocos.join("") + jog;
+}
+function vidaApp(s: SaveTecnico): string {
+  const n = s.namoro, par = n?.par;
+  const matches = (n?.matches ?? []).concat(n?.ficantes ?? []);
+  const lista = matches.length ? `<section class="painel"><p class="rotulo">Conversas</p>${matches.map((p) => `<div class="v-card"><div class="v-pessoa"><span class="v-foto">${fotoDoPerfil(p)}</span><div><b>${esc(p.nome.split(" ")[0])}, ${p.idade}</b><small class="sub">${NOME_ETAPA[p.etapa]} · ${esc(PROFISSOES[p.profissao]?.nome ?? p.profissao)}</small></div></div>${barraRel(p.relacao, "Clima")}${chips("vp", p.id, acoesParT(s, p.id).map((a) => [a, NOME_ACAO_NAMORO[a]] as [string, string]))}</div>`).join("")}</section>` : "";
+  const perfis = perfisDaSemanaT(pacote, s).filter((p) => !matches.some((m) => m.id === p.id)).slice(0, 6);
+  return `${par ? `<p class="aviso-t" style="margin-bottom:8px">Você está ${NOME_ETAPA[par.etapa].toLowerCase()} com ${esc(par.nome.split(" ")[0])}. Se ela descobrir o app, vai dar problema.</p>` : ""}${lista}
+    <section class="painel"><p class="rotulo">Perfis da semana</p>${perfis.map((p) => `<div class="v-card"><div class="v-pessoa"><span class="v-foto">${fotoDoPerfil(p)}</span><div><b>${esc(p.nome.split(" ")[0])}, ${p.idade}</b><small class="sub">${esc(PROFISSOES[p.profissao]?.nome ?? p.profissao)} · ${esc(p.cidade)}</small><small class="sub">“${esc(p.bio)}”</small></div></div><div class="v-acoes"><button data-vc="${p.id}|1">Curtir</button><button data-vc="${p.id}|0">Passar</button></div></div>`).join("") || `<p class="sub">Acabaram os perfis desta semana.</p>`}</section>`;
+}
 function abaNoticias(s: SaveTecnico): string {
-  const ICO: Record<string, string> = { jogo: "⚽", clube: "🏟️", elenco: "👕", diretoria: "💼", dinheiro: "💰" };
+  const ICO: Record<string, string> = { jogo: "⚽", clube: "🏟️", elenco: "👕", diretoria: "💼", dinheiro: "💰", vida: "❤️" };
   return `<p class="rotulo">Notícias</p>${s.noticias.map((n) => `<div class="not"><small>${ICO[n.tipo] ?? "•"} ${esc(n.quando)}</small>${esc(n.texto)}</div>`).join("") || `<p class="sub">Nada por enquanto.</p>`}`;
 }
 function abaFinancas(s: SaveTecnico): string {
@@ -607,7 +683,7 @@ function render() {
       <div class="botoes" style="margin-top:12px"><button class="botao" data-recomecar>Procurar outro clube</button><a class="botao sec" href="index.html">Modo jogador</a></div></section>`;
     return;
   }
-  const corpo = aba === "inicio" ? abaInicio(s) : aba === "elenco" ? abaElenco(s) : aba === "tatica" ? abaTatica(s) : aba === "liga" ? abaLiga(s) : abaClube(s);
+  const corpo = aba === "inicio" ? abaInicio(s) : aba === "elenco" ? abaElenco(s) : aba === "tatica" ? abaTatica(s) : aba === "liga" ? abaLiga(s) : aba === "vida" ? abaVida(s) : abaClube(s);
   app.innerHTML = `${topo(s)}${aba === "inicio" ? aviso() + corpo : `<section class="painel tela-aba">${corpo}</section>`}${nav(s)}`;
 }
 
@@ -636,6 +712,11 @@ document.addEventListener("click", (ev) => {
   const s = save;
   if (d.aba) { aba = d.aba as typeof aba; msg = undefined; selEsc = undefined; if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; } fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
+  if (d.vf) { const [id, ac] = d.vf.split("|"); const r = agirFamiliaT(pacote, s, id, ac as AcaoFamilia, !!proximoJogo(s)?.souCasa); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.vp) { const [id, ac] = d.vp.split("|"); const r = agirParT(pacote, s, id, ac as AcaoNamoro); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.vfi) { const [i, ac] = d.vfi.split("|"); const r = agirFilhoT(pacote, s, +i, ac as AcaoFilho); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.vx) { const [id, ac] = d.vx.split("|"); const r = agirExT(pacote, s, id, ac as AcaoEx); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.vc) { const [id, sim] = d.vc.split("|"); const r = curtirT(pacote, s, id, sim === "1"); msg = sim === "1" ? { texto: r.msg, ok: r.ok } : undefined; redesenhar(); return; }
   if (d.perfil) { abrir(perfilClubeT(s, d.perfil)); salvar(); return; }
   if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
   if (d.evt) { const r = responderEvento(pacote, s, d.evt); msg = r ? { texto: r, ok: true } : undefined; redesenhar(); return; }

@@ -5,6 +5,9 @@ import { evoluirSemana, type Grupo, type Intensidade, type Participacao } from "
 import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type LinhaTabela, type PacoteDados, type JogadorNPC, type Liga } from "../liga.js";
 import { simularPlacar, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
 import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
+import { trazerVida, semanaDaVida, mesDaVida } from "./familia-t.js";
+import type { EstadoFamilia } from "../familia.js";
+import type { EstadoNamoro } from "../namoro.js";
 import { infoLiga } from "../ligas.js";
 import { gerarNome } from "../nomes.js";
 import { onzeProvavel } from "../relacoes.js";
@@ -28,7 +31,7 @@ export const ANO_INICIAL_T = 2026;
 export const SEMANAS_PRE_T = 2;
 export const CHAVE_TECNICO = "mycarrerinha:tecnico";
 
-export interface Noticia { quando: string; texto: string; tipo: "jogo" | "clube" | "elenco" | "diretoria" | "dinheiro" }
+export interface Noticia { quando: string; texto: string; tipo: "jogo" | "clube" | "elenco" | "diretoria" | "dinheiro" | "vida" }
 export interface EventoPartida { min: number; tipo: "gol" | "amarelo" | "vermelho" | "lesao" | "sub" | "lance"; meu: boolean; texto: string; /** o lance contado (jogo ao vivo) */ narra?: string }
 export interface NotaPartida { id: string; nome: string; pos: PosT; nota: number; min: number; gols: number; assist: number }
 export interface Relatorio {
@@ -43,7 +46,7 @@ export interface Clube {
 }
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
-  tecnico: { nome: string; nac: string; idade: number; reputacao: number; exJogador?: { apelido: string; fama: number }; idiomas?: Idiomas; curso?: CursoTecnico };
+  tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number; exJogador?: { apelido: string; fama: number }; idiomas?: Idiomas; curso?: CursoTecnico };
   /** ex-atletas do clube que se aposentaram com licença de técnico: podem virar comissão */
   exAtletas?: { nome: string; nac: string; idade: number; licenca: number; lid: number; pos: PosT }[];
   clubeId: string; ligaId: string; temporada: number; semana: number;
@@ -67,6 +70,8 @@ export interface SaveTecnico {
   /** prêmios, evento da semana esperando resposta, contatos e bio da época de jogador, família que joga */
   /** temporadas dos atletas do seu elenco em cada clube que você treinou (a história do clube usa no lugar do mundo simulado) */
   temporadasElenco?: { clubeId: string; t: number; nome: string; pos: string; j: number; g: number; a: number; nota?: number }[];
+  /** a vida fora do campo, vinda da carreira de jogador: pais e irmãos, companheira, filhos e ex */
+  familia?: EstadoFamilia; namoro?: EstadoNamoro;
   premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
@@ -114,7 +119,8 @@ export function clubesDaLiga(pacote: PacoteDados, ligaId: string) {
 }
 export interface DadosTecnico { nome: string; nac: string; idade: number; exJogador?: { apelido: string; fama: number }; licenca?: number; idiomas?: Idiomas;
   /** continuação da carreira de jogador: o mesmo mundo (semente), a temporada em que parou, a pausa antes de treinar, a bio, os contatos e a família que joga */
-  vindoDe?: { semente: string; temporada: number; pausa: number; bio: BioJogador; contatos: Contato[]; familia: FamiliarJogador[] } }
+  vindoDe?: { semente: string; temporada: number; pausa: number; bio: BioJogador; contatos: Contato[]; familia: FamiliarJogador[];
+    /** pais, irmãos, namoro, filhos e o dinheiro guardado da carreira de jogador */ vida?: { familia?: EstadoFamilia; namoro?: EstadoNamoro; saldo?: number } } }
 /** Licença do técnico (quem começa direto já tem a B). */
 export const licencaT = (s: SaveTecnico) => s.tecnico.curso?.licenca ?? 2;
 export const idiomasT = (s: SaveTecnico) => (s.tecnico.idiomas ??= idiomasIniciais(s.tecnico.nome, s.tecnico.nac, s.tecnico.idade));
@@ -146,6 +152,7 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   if (d.vindoDe) {
     const v = d.vindoDe, anos = v.pausa + 1;
     s.bio = v.bio; s.contatos = v.contatos; s.pausa = v.pausa;
+    if (v.vida) trazerVida(s, v.vida.familia, v.vida.namoro, v.vida.saldo);
     // a família que joga envelhece e evolui no tempo em que você ficou fora
     s.familiaJog = v.familia.map((f) => { let ovr = f.ovr; for (let k = 0; k < anos; k++) ovr = Math.min(f.pot, ovr + (f.idade + k < 24 ? 4 : f.idade + k < 30 ? 1 : -1)); return { ...f, idade: f.idade + anos, ovr }; }).filter((f) => f.idade <= 38);
     noticia(s, "clube", v.pausa ? `Depois de ${v.pausa === 1 ? "um ano" : `${v.pausa} anos`} longe do campo, entre cursos e viagens para estudar o jogo, ${v.bio.apelido} volta ao futebol como técnico.` : `Nem bem pendurou as chuteiras e ${v.bio.apelido} já está de prancheta na mão.`);
@@ -778,6 +785,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   // fim do mês
   if (s.semana % 4 === 3) {
     fecharMes(pacote, s);
+    mesDaVida(s);
     if (r >= 0) eventos.push(...premiosDoMes(pacote, s));
     const pos = ordenar(s.tabela).findIndex((t) => t.clube === s.clubeId) + 1;
     if (r > 4) s.diretoria.confianca = clamp(s.diretoria.confianca + (pos <= s.diretoria.expectativa.pos ? 2 : pos > s.diretoria.expectativa.pos + 4 ? -3 : 0), 0, 100);
@@ -792,6 +800,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   let fim: string | undefined;
   if (s.semana >= semanasDaTemporada(s)) fim = virarTemporada(pacote, s);
   else prepararMundo(pacote, s);
+  semanaDaVida(pacote, s, (t) => noticia(s, "vida", t));
   sortearEvento(pacote, s, rngT(s, "evento"));
   return { eventos, partida, fimDeTemporada: fim };
 }
