@@ -5,7 +5,11 @@ import { evoluirSemana, type Grupo, type Intensidade, type Participacao } from "
 import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type LinhaTabela, type PacoteDados, type JogadorNPC, type Liga } from "../liga.js";
 import { simularPlacar, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
 import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
-import { trazerVida, semanaDaVida, mesDaVida, semanaNegocios, mesDosNegocios } from "./familia-t.js";
+import { valorBrl } from "../moeda.js";
+import { contratoInicial, salarioOferecido, type Contrato, type Negociacao } from "./contrato.js";
+import { copasT, jogoCopaT, rodarCopasT, fecharCopasT, temCopaPendente, premioDeTitulo, bonusVitoriaCopa, type PalmaresT } from "./copas-t.js";
+import { COPAS, NOME_FASE, rotuloJogo, type CopaId, type EstadoCopa } from "../copas.js";
+import { receberMulta, trazerVida, semanaDaVida, mesDaVida, semanaNegocios, mesDosNegocios } from "./familia-t.js";
 import type { EstadoNegocios } from "../negocios.js";
 import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
@@ -49,6 +53,7 @@ export interface Clube {
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
   tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number; /** o nome que ele fez como jogador (0 a 100) */ prestigio?: number;
+    /** contrato atual: salário, até quando e a multa que o clube paga se demitir antes */ contrato?: Contrato;
     /** a cara do técnico (a do jogador, mais velha) e a roupa da beira do campo */ aparencia?: Record<string, unknown>; visual?: { roupa: string; cor: string }; exJogador?: { apelido: string; fama: number }; idiomas?: Idiomas; curso?: CursoTecnico };
   /** ex-atletas do clube que se aposentaram com licença de técnico: podem virar comissão */
   exAtletas?: { nome: string; nac: string; idade: number; licenca: number; lid: number; pos: PosT }[];
@@ -76,7 +81,9 @@ export interface SaveTecnico {
   /** a vida fora do campo, vinda da carreira de jogador: pais e irmãos, companheira, filhos e ex */
   familia?: EstadoFamilia; namoro?: EstadoNamoro; /** a casa (a mesma tela de decorar da carreira de jogador) e se ela já veio da carreira de jogador */ casa?: EstadoCasa; casaDoJogador?: boolean; /** empresas e investimentos (os mesmos da carreira de jogador) */ negocios?: EstadoNegocios;
   /** proposta de emprego de outro clube (com prazo) e o clube que você já acertou para a próxima temporada */
-  ofertaEmprego?: { clubeId: string; expira: number; texto: string }; novoClube?: string;
+  ofertaEmprego?: { clubeId: string; expira: number; texto: string }; novoClube?: string; negociacaoT?: Negociacao; contratoNovo?: Contrato;
+  /** as copas da temporada (estadual, copa nacional, continental, Intercontinental, Mundial), os campeões de cada ano e os seus títulos */
+  copas?: Partial<Record<CopaId, EstadoCopa>>; copasT?: number; palmaresT?: PalmaresT; titulosCopa?: { t: number; id: CopaId; nome: string; clubeId: string }[];
   premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
 }
@@ -126,6 +133,7 @@ export interface DadosTecnico { nome: string; nac: string; idade: number; exJoga
   /** o tamanho do nome do ex-jogador (0 a 100): fama, títulos, prêmios, gigantes em que jogou e idiomas */ prestigio?: number;
   /** troca de clube no meio da carreira: o mesmo mundo, a temporada em que assume e as tabelas reais das temporadas passadas */
   continuar?: { semente: string; temporada: number; tabelas: SaveTecnico["tabelasReais"] };
+  /** contrato já negociado (entrevista com o presidente) */ contrato?: Contrato;
   /** continuação da carreira de jogador: o mesmo mundo (semente), a temporada em que parou, a pausa antes de treinar, a bio, os contatos e a família que joga */
   vindoDe?: { semente: string; temporada: number; pausa: number; bio: BioJogador; contatos: Contato[]; familia: FamiliarJogador[];
     /** pais, irmãos, namoro, filhos e o dinheiro guardado da carreira de jogador */ vida?: { familia?: EstadoFamilia; namoro?: EstadoNamoro; saldo?: number; casa?: EstadoCasa; negocios?: EstadoNegocios } } }
@@ -168,6 +176,7 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
     s.familiaJog = v.familia.map((f) => { let ovr = f.ovr; for (let k = 0; k < anos; k++) ovr = Math.min(f.pot, ovr + (f.idade + k < 24 ? 4 : f.idade + k < 30 ? 1 : -1)); return { ...f, idade: f.idade + anos, ovr }; }).filter((f) => f.idade <= 38);
     noticia(s, "clube", v.pausa ? `Depois de ${v.pausa === 1 ? "um ano" : `${v.pausa} anos`} longe do campo, entre cursos e viagens para estudar o jogo, ${v.bio.apelido} volta ao futebol como técnico.` : `Nem bem pendurou as chuteiras e ${v.bio.apelido} já está de prancheta na mão.`);
   }
+  s.tecnico.contrato = d.contrato ?? contratoInicial(salarioOferecido(pacote, s, s.clubeId), s.temporada);
   noticia(s, "clube", `${d.nome} é o novo técnico do ${info.nome}. A diretoria espera: ${s.diretoria.expectativa.texto.toLowerCase()}.`);
   // ídolo contratado sem a licença que o clube pede: o clube banca o curso e ele estuda já na primeira temporada
   const precisa = licencaExigida(c.forca), cur = s.tecnico.curso!;
@@ -692,12 +701,43 @@ export function reorganizarNoIntervalo(s: SaveTecnico, f: string) {
 }
 
 // ------------------------------------------------------------------ a semana
-export interface ResumoSemanaT { eventos: string[]; partida?: Relatorio; fimDeTemporada?: string }
+export interface ResumoSemanaT { eventos: string[]; partida?: Relatorio; fimDeTemporada?: string; /** o jogo de copa da semana (antes da rodada da liga) */ partidaCopa?: Relatorio & { copa: string } }
 export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemanaT {
   if (s.demitido) return { eventos: [] };
   prepararMundo(pacote, s);
   const eventos: string[] = [], ab = semanaAbs(s), li = infoLiga(s.ligaId), w = mundo(pacote);
   let partida: Relatorio | undefined;
+  // jogo de copa da semana (meio de semana): com a sua escalação, antes da rodada da liga
+  let partidaCopa: (Relatorio & { copa: string }) | undefined, meuCopa: { id: string; gc: number; gf: number } | undefined;
+  const jc = jogoCopaT(pacote, s);
+  if (jc) {
+    if (!s.aoVivo) eventos.push(...conferirEscalacao(s));
+    const guarda = s.aoVivo; s.aoVivo = undefined;
+    const souCasa = jc.jogo.casa === s.clubeId, adv = souCasa ? jc.jogo.fora : jc.jogo.casa;
+    const antes = new Map(s.elenco.map((x) => [x.id, x.condicao]));
+    const rel = terminarPartida(pacote, s, adv, souCasa, 1000 + s.semana);
+    s.aoVivo = guarda;
+    // o jogo de meio de semana cansa menos (o preparador físico dosa e o elenco roda)
+    for (const x of s.elenco) { const c0 = antes.get(x.id); if (c0 !== undefined && x.condicao < c0) x.condicao = Math.max(x.condicao, c0 - 7); }
+    const nomeCopa = `${COPAS[jc.copa.id].curto} · ${rotuloJogo(jc.jogo)}`;
+    partidaCopa = { ...rel, copa: nomeCopa };
+    meuCopa = { id: jc.jogo.id, gc: rel.gc, gf: rel.gf };
+    const mg = souCasa ? rel.gc : rel.gf, dg = souCasa ? rel.gf : rel.gc;
+    if (mg > dg) { const b = bonusVitoriaCopa(s, jc.copa.id); s.clube.saldo += b; receber(s, "Premiação de copas", b); }
+    const placar = `${infoClube(pacote, rel.casa).nome} ${rel.gc} × ${rel.gf} ${infoClube(pacote, rel.fora).nome}`;
+    eventos.push(`${nomeCopa}: ${placar}.`);
+    noticia(s, "jogo", `${nomeCopa}: ${placar}.`);
+  }
+  {
+    const rc = rodarCopasT(pacote, s, meuCopa);
+    for (const id of rc.titulos) {
+      const p = premioDeTitulo(s, id); s.clube.saldo += p.dinheiro; receber(s, "Premiação de copas", p.dinheiro);
+      (s.titulosCopa ??= []).push({ t: s.temporada, id, nome: COPAS[id].nome, clubeId: s.clubeId });
+      (s.premios ??= []).unshift({ t: s.temporada, nome: COPAS[id].nome, texto: `Campeão com o ${infoClube(pacote, s.clubeId).nome}` });
+      eventos.unshift(p.texto); noticia(s, "clube", `${p.texto} O ${infoClube(pacote, s.clubeId).nome} é campeão ${COPAS[id].prep} ${COPAS[id].nome}.`);
+    }
+    for (const id of rc.caiu) { const e = s.copas?.[id]; noticia(s, "clube", `Fim da linha ${COPAS[id].prep} ${COPAS[id].curto}: eliminado ${e ? `na fase "${NOME_FASE[e.chegou[s.clubeId]] ?? e.chegou[s.clubeId]}"` : ""}.`); }
+  }
   const r = s.semana - SEMANAS_PRE_T, rodadas = rodadasDaLiga(s.ordem.length);
   const titularesIds = new Set<string>(), entraram = new Set<string>();
   if (r >= 0 && r < rodadas.length) {
@@ -807,6 +847,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   }
   if (s.diretoria.confianca < 8 && r > 6) {
     s.demitido = `Demitido na ${rotuloSemanaT(s).toLowerCase()}: a diretoria perdeu a confiança no trabalho.`;
+    { const m = receberMulta(s); if (m) s.demitido += ` O clube pagou a multa rescisória: ${valorBrl(m)}.`; }
     noticia(s, "diretoria", s.demitido);
     return { eventos: [...eventos, s.demitido], partida };
   }
@@ -814,17 +855,18 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   if (s.ofertaEmprego && semanaAbs(s) > s.ofertaEmprego.expira) { noticia(s, "clube", `A proposta do ${infoClube(pacote, s.ofertaEmprego.clubeId)?.nome ?? "outro clube"} expirou.`); s.ofertaEmprego = undefined; }
   s.semana++;
   let fim: string | undefined;
-  if (s.semana >= semanasDaTemporada(s)) fim = virarTemporada(pacote, s);
+  if (s.semana >= semanasDaTemporada(s) && !temCopaPendente(s)) fim = virarTemporada(pacote, s);
   else prepararMundo(pacote, s);
   semanaDaVida(pacote, s, (t) => noticia(s, "vida", t));
   semanaNegocios(s, (t) => noticia(s, "dinheiro", t));
   sortearEvento(pacote, s, rngT(s, "evento"));
-  return { eventos, partida, fimDeTemporada: fim };
+  return { eventos, partida, fimDeTemporada: fim, ...(partidaCopa ? { partidaCopa } : {}) };
 }
 const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 // ------------------------------------------------------------------ virada de temporada
 function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
+  fecharCopasT(pacote, s);
   const t = s.temporada, final = ordenar(s.tabela), n = final.length, pos = final.findIndex((x) => x.clube === s.clubeId) + 1, li = infoLiga(s.ligaId);
   const esperado = s.diretoria.expectativa.pos, campeao = pos === 1;
   // premiação
@@ -840,7 +882,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   const premiosAno = premiosDoAno(pacote, s, pos, esperado);
   // a família que joga cresce um ano (quem está no seu elenco evolui no treino, como os outros)
   for (const f of s.familiaJog ?? []) if (!f.noClube) { f.idade++; f.ovr = Math.min(f.pot, f.ovr + (f.idade < 24 ? 4 : f.idade < 30 ? 1 : -1)); }
-  if (s.diretoria.confianca < 15) { s.demitido = `Demitido no fim de ${ANO_INICIAL_T + t}: a campanha ficou longe do que a diretoria esperava.`; noticia(s, "diretoria", s.demitido); return resumo; }
+  if (s.diretoria.confianca < 15) { s.demitido = `Demitido no fim de ${ANO_INICIAL_T + t}: a campanha ficou longe do que a diretoria esperava.`; { const m = receberMulta(s); if (m) s.demitido += ` O clube pagou a multa rescisória: ${valorBrl(m)}.`; } noticia(s, "diretoria", s.demitido); return resumo; }
   // contratos que acabam e aposentadorias
   const rng = new RNG(`${s.semente}|virada|${t}`);
   for (const a of [...s.elenco]) {
@@ -881,6 +923,12 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   prepararMundo(pacote, s);
   definirExpectativa(pacote, s);
   noticia(s, "diretoria", `Temporada ${ANO_INICIAL_T + s.temporada}: a diretoria espera "${s.diretoria.expectativa.texto.toLowerCase()}".`);
+  // fim do contrato: com a diretoria satisfeita, renova com aumento; sem, você sai de graça (sem multa)
+  const ct = s.tecnico.contrato;
+  if (ct && ct.ate < s.temporada && !s.novoClube) {
+    if (s.diretoria.confianca >= 45) { const novo = Math.round(Math.max(ct.salario * 1.1, salarioOferecido(pacote, s, s.clubeId)) / 1000) * 1000; s.tecnico.contrato = { salario: novo, ate: s.temporada + 1, multa: novo * 6 }; noticia(s, "diretoria", `Contrato renovado por duas temporadas, com salário de ${valorBrl(novo)} por mês.`); }
+    else { s.demitido = `Seu contrato acabou no fim de ${ANO_INICIAL_T + t} e a diretoria preferiu não renovar.`; noticia(s, "diretoria", s.demitido); return resumo; }
+  }
   // o mercado de técnicos: quem fez boa campanha (ou tem nome) recebe proposta de um clube maior na pré-temporada
   if (!s.novoClube && !s.ofertaEmprego && rng.chance(clamp(0.12 + (diff > 0 ? 0.12 : 0) + (campeao ? 0.25 : 0) + s.tecnico.reputacao / 300, 0, 0.75))) {
     const o = clubeQueQuer(pacote, s, rng);
@@ -1109,8 +1157,8 @@ export function assumirNovoClube(pacote: PacoteDados, s: SaveTecnico, clubeId: s
   const n = novaCarreiraTecnico(pacote, { nome: t.nome, nac: t.nac, idade: t.idade, licenca: t.curso?.licenca, idiomas: t.idiomas, ...(t.exJogador ? { exJogador: t.exJogador } : {}), ...(t.prestigio !== undefined ? { prestigio: t.prestigio } : {}),
     continuar: { semente: s.semente, temporada, tabelas: s.tabelasReais } }, clubeId);
   const novidades = n.noticias;
-  n.tecnico = { ...t };
-  for (const k of ["historico", "bio", "contatos", "pausa", "familia", "namoro", "casa", "casaDoJogador", "negocios", "premios", "temporadasElenco", "exAtletas", "tabelasReais"] as const) if (s[k] !== undefined) (n as unknown as Record<string, unknown>)[k] = s[k];
+  n.tecnico = { ...t, contrato: s.contratoNovo ?? n.tecnico.contrato };
+  for (const k of ["historico", "bio", "contatos", "pausa", "familia", "namoro", "casa", "casaDoJogador", "negocios", "premios", "temporadasElenco", "exAtletas", "tabelasReais", "palmaresT", "titulosCopa"] as const) if (s[k] !== undefined) (n as unknown as Record<string, unknown>)[k] = s[k];
   n.familiaJog = (s.familiaJog ?? []).map((f) => ({ ...f, noClube: false }));
   n.noticias = [...novidades, ...s.noticias].slice(0, 60);
   // o curso da licença continua; se o clube novo pede mais, ele paga o próximo

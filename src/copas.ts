@@ -15,7 +15,7 @@ export type EstadualId = "PAU" | "CAR" | "MIN" | "GAU" | "PRN" | "CAT" | "BAI" |
 // Copa Intercontinental (todo ano, campeões da temporada anterior, jogos únicos em campo neutro) e Mundial de Clubes
 // (a cada quatro anos, 32 clubes, no fim da temporada): os participantes são definidos em src/jogo.ts (precisam do
 // histórico das copas da carreira).
-export type CopaId = "LIB" | "UCL" | "ACL" | "CON" | "INT" | "MUN" | "SEL" | "COP" | TorneioId | "FIN" | EstadualId;
+export type CopaId = "LIB" | "UCL" | "ACL" | "CON" | "INT" | "MUN" | "SEL" | "COP" | TorneioId | "FIN" | EstadualId | "NAC";
 /** Torneios continentais de seleções (no meio do ciclo da Copa do Mundo: 2028, 2032...). */
 export type TorneioId = "EUR" | "AME" | "AFR" | "ASI";
 export interface InfoCopa { id: CopaId; nome: string; curto: string; regiao: string; cores: [string, string]; prep: "da" | "do"; uf?: string; vagas?: number }
@@ -34,6 +34,7 @@ export const COPAS: Record<CopaId, InfoCopa> = {
   ASI: { id: "ASI", nome: "Copa da Ásia", curto: "Copa da Ásia", regiao: "Ásia", cores: ["#7A1E2B", "#C9A14A"], prep: "da" },
   FIN: { id: "FIN", nome: "Finalíssima", curto: "Finalíssima", regiao: "Mundo", cores: ["#C9A14A", "#111111"], prep: "da" },
   MUN: { id: "MUN", nome: "Mundial de Clubes", curto: "Mundial", regiao: "Mundo", cores: ["#C9A14A", "#0B2F7A"], prep: "do" },
+  NAC: { id: "NAC", nome: "Copa Nacional", curto: "Copa Nacional", regiao: "País", cores: ["#1F6B3A", "#E3B341"], prep: "da" },
   PAU: est("PAU", "Campeonato Paulista", "Paulistão", "SP", ["#C8102E", "#111111"]),
   CAR: est("CAR", "Campeonato Carioca", "Cariocão", "RJ", ["#0B3D91", "#F5C400"]),
   MIN: est("MIN", "Campeonato Mineiro", "Mineirão", "MG", ["#C8102E", "#FFFFFF"]),
@@ -101,7 +102,7 @@ export const SEMANAS_COPA = {
   UCL: { liga: [4, 6, 8, 10, 13, 15, 18, 19], playoff: [21, 22], oitavas: [24, 25], quartas: [28, 29], semi: [32, 33], final: [37] },
   ACL: { liga: [4, 6, 8, 10, 13, 15, 18, 19], oitavas: [22, 23], quartas: [33], semi: [35], final: [37] },
 } as const;
-export const NOME_FASE: Record<string, string> = { amistoso: "Amistoso", eliminatorias: "Eliminatórias", derby: "Dérbi das Américas", desafio: "Desafio", turno: "Primeira fase", grupos: "Fase de grupos", liga: "Fase de liga", playoff: "Playoff", oitavas: "Oitavas de final", quartas: "Quartas de final", semi: "Semifinal", final: "Final" };
+export const NOME_FASE: Record<string, string> = { amistoso: "Amistoso", eliminatorias: "Eliminatórias", derby: "Dérbi das Américas", desafio: "Desafio", turno: "Primeira fase", grupos: "Fase de grupos", liga: "Fase de liga", playoff: "Playoff", "16avos": "16 avos de final", oitavas: "Oitavas de final", quartas: "Quartas de final", semi: "Semifinal", final: "Final" };
 
 export interface JogoCopa {
   id: string; semana: number; fase: string; casa: string; fora: string;
@@ -111,6 +112,8 @@ export interface JogoCopa {
 }
 export interface EstadoCopa {
   id: CopaId; temporada: number; clubes: string[];
+  /** país da copa nacional (o calendário e o nome dependem dele) */
+  pais?: string;
   /** tabelas: grupos "A".."H" (Libertadora), "Liga" (Champions), "Oeste"/"Leste" (Asiática) */
   tabelas: Record<string, LinhaTabela[]>;
   jogos: JogoCopa[]; fase: string; campeao?: string;
@@ -190,6 +193,15 @@ export function novaCopa(id: CopaId, temporada: number, clubes: string[], forca:
     return e;
   }
   if (id === "FIN") { serie(e, "final", "final-1", clubes[0], clubes[1], [SEMANA_FINALISSIMA], true); return e; }
+  if (id === "NAC") {
+    // mata-mata desde a primeira fase: o mais forte pega o mais fraco (o pior decide em casa no jogo único, como na Copa da Inglaterra)
+    const pais = paisDe(clubes[0]); e.pais = pais;
+    const f = clubes.length >= 32 ? "16avos" : clubes.length >= 16 ? "oitavas" : "quartas";
+    e.fase = f; for (const c of clubes) e.chegou[c] = f;
+    const N = clubes.length, ord = [...clubes].sort((a, b) => forca(b) - forca(a));
+    for (let i = 0; i < N / 2; i++) serie(e, f, `${f}-${i + 1}`, ord[i], ord[N - 1 - i], semanasNac(pais)[f as FaseNac]);
+    return e;
+  }
   if (torneio) {
     // 4, 8 ou 16 seleções (em ordem de força): potes de G (um cabeça de chave por grupo), grupos de 4 em campo neutro
     const G = clubes.length / 4, potes = [0, 1, 2, 3].map((p) => rng.shuffle(clubes.slice(p * G, p * G + G)));
@@ -311,6 +323,13 @@ function proximaFase(e: EstadoCopa, forca: (c: string) => number) {
     if (e.fase === "derby") { const v = vencedores("derby")[0]; marca([v, e.clubes[2]], "desafio"); serie(e, "desafio", "desafio-1", v, e.clubes[2], SEMANAS_INT.desafio, true); e.fase = "desafio"; }
     else if (e.fase === "desafio") { const v = vencedores("desafio")[0]; marca([v, e.clubes[3]], "final"); serie(e, "final", "final-1", e.clubes[3], v, SEMANAS_INT.final, true); e.fase = "final"; }
     else if (e.fase === "final") { e.campeao = vencedores("final")[0]; e.fase = "fim"; }
+    return;
+  }
+  if (e.id === "NAC") {
+    const S = semanasNac(e.pais ?? ""), seg: Record<string, FaseNac | "fim"> = { "16avos": "oitavas", oitavas: "quartas", quartas: "semi", semi: "final", final: "fim" };
+    const prox = seg[e.fase];
+    if (prox === "fim" || !prox) { e.campeao = vencedores("final")[0]; e.fase = "fim"; return; }
+    const cs = vencedores(e.fase); marca(cs, prox); pares(cs, prox, S[prox], prox === "final" && e.pais !== "BRA"); e.fase = prox;
     return;
   }
   if (e.id === "SEL") { e.fase = "fim"; return; }
@@ -445,3 +464,29 @@ export function rotuloJogo(j: JogoCopa): string {
 export const idaDe = (e: EstadoCopa, j: JogoCopa) => (j.perna === 2 ? e.jogos.find((x) => x.serie === j.serie && x.perna === 1) : undefined);
 /** Região do clube na Champions Asiática (os do Golfo jogam no Oeste). */
 export const regiaoNaCopa = (clubeId: string) => CONVIDADOS.find((c) => c.id === clubeId)?.regiao ?? "ASO";
+
+// ------------------------------------------------------------------ copa nacional (Copa do Brasil, Copa do Rei, Copa da Inglaterra...)
+export type FaseNac = "16avos" | "oitavas" | "quartas" | "semi" | "final";
+/** Semanas de cada fase, encaixadas nas datas livres do calendário do país (no Brasil, ida e volta como na Copa do Brasil). */
+export function semanasNac(pais: string): Record<FaseNac, readonly number[]> {
+  if (pais === "BRA") return { "16avos": [15, 18], oitavas: [19, 22], quartas: [23, 24], semi: [28, 29], final: [32, 33] };
+  if (["ENG", "ESP", "ITA", "GER", "FRA", "POR", "NED", "BEL", "TUR", "SCO"].includes(pais)) return { "16avos": [9], oitavas: [14], quartas: [20], semi: [26], final: [35] };
+  return { "16avos": [9], oitavas: [16], quartas: [23], semi: [26], final: [30] };
+}
+const NOMES_NAC: Record<string, [string, string]> = {
+  BRA: ["Copa do Brasil", "Copa do Brasil"], ENG: ["Copa da Inglaterra", "Copa da Inglaterra"], ESP: ["Copa do Rei", "Copa do Rei"], ITA: ["Copa da Itália", "Copa da Itália"],
+  GER: ["Copa da Alemanha", "Copa da Alemanha"], FRA: ["Copa da França", "Copa da França"], POR: ["Taça de Portugal", "Taça de Portugal"], NED: ["Copa da Holanda", "Copa da Holanda"],
+  ARG: ["Copa Argentina", "Copa Argentina"], MEX: ["Copa México", "Copa México"], USA: ["Copa dos Estados Unidos", "US Cup"], KSA: ["Copa do Rei Saudita", "Copa do Rei"],
+  TUR: ["Copa da Turquia", "Copa da Turquia"], JPN: ["Copa do Imperador", "Copa do Imperador"],
+};
+/** Ajusta o nome da copa nacional para o país do clube (a carreira só disputa a do próprio país). */
+export function nomearCopaNacional(pais: string) {
+  const [nome, curto] = NOMES_NAC[pais] ?? ["Copa Nacional", "Copa Nacional"];
+  COPAS.NAC.nome = nome; COPAS.NAC.curto = curto;
+}
+/** Quem joga a copa nacional: os clubes da primeira e da segunda divisão do país (32, 16 ou 8, pela força). */
+export function participantesNac(ligas: Record<string, Liga>, pais: string, ligaDe: (id: string) => { pais: string; divisao: number } | undefined): string[] {
+  const cs = Object.entries(ligas).filter(([lid]) => { const i = ligaDe(lid); return i && i.pais === pais && i.divisao <= 2; }).flatMap(([, l]) => l.clubes).sort((a, b) => b.forca - a.forca);
+  const n = cs.length >= 32 ? 32 : cs.length >= 16 ? 16 : cs.length >= 8 ? 8 : 0;
+  return cs.slice(0, n).map((c) => c.id);
+}

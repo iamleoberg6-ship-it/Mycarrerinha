@@ -37,7 +37,7 @@ import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
 import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, type TabelasReais, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
-import { ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type TorneioId } from "./copas.js";
+import { nomearCopaNacional, participantesNac, ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type TorneioId } from "./copas.js";
 import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, sugestaoParaEsquema, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
@@ -650,11 +650,23 @@ export function escalacao(pacote: PacoteDados, s: Save, cansacoPrevisto = s.carr
 /** As copas da temporada (criadas no começo dela pela tabela final da anterior). */
 export function copasDe(pacote: PacoteDados, s: Save): Partial<Record<CopaId, EstadoCopa>> {
   const c = s.carreira, w = mundo(pacote);
+  // a copa nacional leva o nome do país do clube (Copa do Brasil, Copa do Rei...)
+  const paisClube = w.info[c.clubeId]?.pais;
+  if (paisClube) nomearCopaNacional(paisClube);
   const algum = Object.values(c.copas ?? {})[0];
-  if (c.copas && algum && algum.temporada === c.temporada) return c.copas;
+  if (c.copas && algum && algum.temporada === c.temporada) {
+    // save de antes da copa nacional existir: entra já nesta temporada, com as semanas que passaram simuladas
+    if (!c.copas.NAC && paisClube) {
+      const pn = participantesNac(w.liga, paisClube, (lid) => infoLiga(lid)), forca = (id: string) => w.clube[id]?.forca ?? 60;
+      if (pn.length) { const e = novaCopa("NAC", c.temporada, pn, forca, (id) => w.clube[id]?.pais ?? "", regiaoNaCopa, s.semente); for (let sem = 0; sem < c.semana; sem++) rodarSemana(e, sem, forca, rngDe(s, "nac-atraso", String(sem))); c.copas.NAC = e; }
+    }
+    return c.copas;
+  }
   const fonte = { ligas: w.liga, tabelaReal: c.tabelaAnterior, semente: s.semente, temporada: c.temporada, cidade: (id: string) => w.info[id]?.cidade ?? "" };
   const forca = (id: string) => w.clube[id]?.forca ?? 60, pais = (id: string) => w.clube[id]?.pais ?? "";
-  const copas: Partial<Record<CopaId, EstadoCopa>> = Object.fromEntries((Object.keys(COPAS) as CopaId[]).filter((id) => !["INT", "MUN", "SEL", "COP", "EUR", "AME", "AFR", "ASI", "FIN"].includes(id)).map((id) => [id, novaCopa(id, c.temporada, classificados(fonte, id), forca, pais, regiaoNaCopa, s.semente)]));
+  const copas: Partial<Record<CopaId, EstadoCopa>> = Object.fromEntries((Object.keys(COPAS) as CopaId[]).filter((id) => !["INT", "MUN", "SEL", "COP", "EUR", "AME", "AFR", "ASI", "FIN", "NAC"].includes(id)).map((id) => [id, novaCopa(id, c.temporada, classificados(fonte, id), forca, pais, regiaoNaCopa, s.semente)]));
+  // copa nacional do país do clube: primeira e segunda divisão, mata-mata
+  if (paisClube) { const pn = participantesNac(w.liga, paisClube, (lid) => infoLiga(lid)); if (pn.length) copas.NAC = novaCopa("NAC", c.temporada, pn, forca, pais, regiaoNaCopa, s.semente); }
   // Intercontinental: campeões da temporada passada (Concacaf = campeão mexicano, Libertadora, Asiática, Champions)
   const p = palmaresDe(pacote, s, c.temporada - 1);
   const ints = [p.campeoes.CON ?? p.ordens.MEX1?.[0], p.campeoes.LIB, p.campeoes.ACL, p.campeoes.UCL];

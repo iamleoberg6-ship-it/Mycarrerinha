@@ -18,7 +18,9 @@ const ANO0 = 2026;
 export const semanaVida = (s: SaveTecnico) => s.temporada * 40 + Math.min(39, s.semana);
 export const anoVida = (s: SaveTecnico) => ANO0 + s.temporada;
 /** Salário do técnico por mês: cresce com a reputação e com o tamanho da liga. */
-export const salarioTecnico = (s: SaveTecnico) => Math.round((18_000 + s.tecnico.reputacao * 2_600) * Math.max(0.35, infoLiga(s.ligaId).fLiga) / 100) * 100;
+export const salarioTecnico = (s: SaveTecnico) => s.tecnico.contrato?.salario ?? salarioDeMercado(s);
+/** Salário de mercado (sem contrato assinado): cresce com a reputação e com o tamanho da liga. */
+export const salarioDeMercado = (s: SaveTecnico) => Math.round((18_000 + s.tecnico.reputacao * 2_600) * Math.max(0.35, infoLiga(s.ligaId).fLiga) / 100) * 100;
 /** Dinheiro do técnico: com casa, é o saldo da casa (o mesmo da tela da casa); sem, o do bolso. */
 export const bolso = (s: SaveTecnico) => (s.casa ? s.casa.saldo : (s.tecnico.saldo ??= 0));
 const mexer = (s: SaveTecnico, v: number) => { if (s.casa) s.casa.saldo += v; else s.tecnico.saldo = bolso(s) + v; };
@@ -175,4 +177,12 @@ export function mesDosNegocios(s: SaveTecnico, nota: (t: string) => void) {
   if (mn.fama) s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.sign(mn.fama), 0, 100);
   for (const a of mn.avisos) nota(a);
   for (const x of mn.noticias) nota(`${x.titulo}: ${x.texto}`);
+}
+
+/** A multa rescisória cai no bolso quando o clube demite antes do fim do contrato. */
+export function receberMulta(s: SaveTecnico): number {
+  const c = s.tecnico.contrato;
+  if (!c || c.ate < s.temporada) return 0;
+  mexer(s, c.multa);
+  return c.multa;
 }

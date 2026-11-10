@@ -23,6 +23,9 @@ import { NOME_ACAO_NAMORO, NOME_ACAO_FILHO, NOME_ACAO_EX, NOME_ETAPA, PROFISSOES
 import { IMOVEL, nomeImovel, patrimonio, type EstadoCasa } from "../../src/casa";
 import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR, patrimonioInvestido, type EstadoNegocios, type TipoEmpresa, type TipoInvest, type AcaoEmpresa, type DecisaoMes } from "../../src/negocios";
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
+import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
+import { ENTREVISTA, NOME_PERFIL, perfilDoClube, abrirNegociacao, responderEntrevista, negociarContrato } from "../../src/tecnico/contrato";
+import { COPAS, NOME_FASE, rotuloJogo, type EstadoCopa } from "../../src/copas";
 import { titulosDoClube, timeDeTodosOsTempos, recordesHistoricosDoClube, plantelDoClube, type TemporadaUsuario, type RecordeNome, type TitularHistorico } from "../../src/perfil-clube";
 import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
@@ -212,7 +215,11 @@ function abaInicio(s: SaveTecnico): string {
     <p>${esc(of.texto)} ${s.semana < SEMANAS_PRE_T ? "Se aceitar agora, assume já nesta pré-temporada." : "Com a temporada rolando, você termina aqui e assume lá na próxima."}</p>
     <div class="botoes"><button class="botao" data-emprego="1">Aceitar e mudar de clube</button><button class="botao sec" data-emprego="0">Recusar</button><button class="botao sec" data-perfil="${of.clubeId}">Ver o clube</button></div></section>` : "";
   const acerto = s.novoClube ? `<section class="painel"><p class="sub">Pré-contrato assinado: na próxima temporada você assume o <b>${esc(nomeClube(s.novoClube))}</b>.</p></section>` : "";
-  return `${oferta}${acerto}${ev}${jogo}${ult}
+  const jcp = jogoCopaT(pacote, s);
+  const copa = jcp ? `<section class="painel"><p class="rotulo" style="color:${COPAS[jcp.copa.id].cores[0]}">Meio de semana · ${esc(COPAS[jcp.copa.id].curto)} · ${esc(rotuloJogo(jcp.jogo))}</p>
+    <div class="prox"><div class="lado">${escudo(jcp.jogo.casa)}<span>${esc(nomeClube(jcp.jogo.casa))}</span></div><span class="x">×</span><div class="lado">${escudo(jcp.jogo.fora)}<span>${esc(nomeClube(jcp.jogo.fora))}</span></div></div>
+    <p class="sub" style="text-align:center;margin:6px 0 0">Joga com a sua escalação quando você avançar a semana, antes da rodada da liga.${jcp.jogo.neutro ? " Campo neutro." : ""}</p></section>` : "";
+  return `${oferta}${acerto}${ev}${copa}${jogo}${ult}
     <section class="painel"><p class="rotulo">Diretoria</p><h2 style="font-size:19px">${esc(d.expectativa.texto)}</h2>
       <div class="medidor"><i style="--v:${Math.round(d.confianca)}%;--c:${d.confianca >= 60 ? "var(--pos)" : d.confianca >= 30 ? "var(--ouro)" : "var(--neg)"}"></i></div>
       <p class="sub">Confiança ${Math.round(d.confianca)}/100 · meta: ${d.expectativa.pos}º lugar${s.semana >= SEMANAS_PRE_T ? ` · hoje: ${pos}º` : ""} · torcida ${Math.round(s.clube.torcida)}/100</p></section>
@@ -389,11 +396,60 @@ function escolherVaga(s: SaveTecnico, i: number): string {
 }
 
 // ------------------------------------------------------------------ Liga
+// ------------------------------------------------------------------ entrevista com o presidente e o contrato
+let notaEntrevista: string | undefined;
+function negociacaoHtml(s: SaveTecnico): string {
+  const n = s.negociacaoT;
+  if (!n) return "";
+  const info = infoClube(pacote, n.clubeId), forca = mundo(pacote).clube[n.clubeId]?.forca ?? 65;
+  const cab = `<button class="fechar" data-fechar aria-label="Fechar">×</button><div style="display:flex;gap:10px;align-items:center">${escudo(n.clubeId)}<div><p class="rotulo" style="margin:0">Reunião com o presidente</p><h2 style="margin:0">${esc(info?.nome ?? "")}</h2><p class="sub" style="margin:0">${esc(NOME_PERFIL[perfilDoClube(forca)])}</p></div></div>`;
+  if (n.nota === undefined) {
+    return cab + `<p class="sub" style="margin-top:10px">Antes de falar de dinheiro, o presidente quer te conhecer. As respostas pesam no quanto ele vai topar pagar.</p>
+      ${ENTREVISTA.map((q) => `<p class="rotulo" style="margin:12px 0 6px">${esc(q.texto)}</p><div class="v-acoes" style="flex-direction:column;align-items:stretch">${q.opcoes.map((o) => `<button class="${n.respostas[q.id] === o.id ? "v-ativo" : ""}" data-resp="${q.id}|${o.id}" style="text-align:left">${esc(o.texto)}</button>`).join("")}</div>`).join("")}
+      <div class="botoes" style="margin-top:14px"><button class="botao" data-entrevista ${ENTREVISTA.every((q) => n.respostas[q.id]) ? "" : "disabled"}>Terminar a entrevista</button></div>`;
+  }
+  const o = n.oferta;
+  return cab + `${notaEntrevista ? `<p class="aviso-t ok" style="margin-top:10px">${esc(notaEntrevista)}</p>` : ""}
+    <p class="rotulo" style="margin:12px 0 4px">Proposta do clube</p><div class="dl"><span>Salário</span><b>${curtoBrl(o.salario)}/mês</b><span>Contrato</span><b>${o.anos} ${o.anos === 1 ? "temporada" : "temporadas"}</b><span>Multa rescisória</span><b>${o.multaMeses} salários (${curtoBrl(o.salario * o.multaMeses)})</b></div>
+    <p class="sub" style="margin-top:6px">A multa é o que o clube te paga se te demitir antes do fim do contrato.${n.recusou ? " <b>Esta é a última proposta: se pedir mais, eles desistem.</b>" : ""}</p>
+    <p class="rotulo" style="margin:12px 0 4px">Seu pedido</p>
+    <p class="sub" style="margin:0 0 4px">Salário por mês</p>${campoValor("negSal", o.salario)}
+    <p class="sub" style="margin:10px 0 4px">Tempo de contrato</p><div class="v-acoes">${[1, 2, 3, 4].map((a) => `<button class="${negAnos === a ? "v-ativo" : ""}" data-neganos="${a}">${a} ${a === 1 ? "temporada" : "temporadas"}</button>`).join("")}</div>
+    <p class="sub" style="margin:10px 0 4px">Multa rescisória</p><div class="v-acoes">${[0, 3, 6, 12, 18, 24].map((m) => `<button class="${negMulta === m ? "v-ativo" : ""}" data-negmulta="${m}">${m === 0 ? "Sem multa" : `${m} salários`}</button>`).join("")}</div>
+    <div class="botoes" style="margin-top:14px"><button class="botao" data-negpropor>Fazer a proposta</button><button class="botao sec" data-negaceitar>Aceitar a do clube</button><button class="botao sec" data-negdesistir>Desistir</button></div>`;
+}
+let negAnos = 2, negMulta = 6;
+function fecharContrato(s: SaveTecnico, c: NonNullable<SaveTecnico["contratoNovo"]>, texto: string) {
+  s.contratoNovo = c;
+  const alvo = s.ofertaEmprego?.clubeId, r = aceitarEmprego(pacote, s);
+  fechar();
+  if (r.ok && r.agora && alvo) { save = assumirNovoClube(pacote, s, alvo); save.contratoNovo = undefined; aba = "inicio"; }
+  msg = { texto: `${texto} ${r.msg}`, ok: r.ok }; salvar(); render(); window.scrollTo(0, 0);
+}
+
+// ------------------------------------------------------------------ copas (estadual, nacional, continental, Intercontinental, Mundial)
+function abaCopas(s: SaveTecnico): string {
+  const copas = Object.values(copasT(pacote, s)).filter((e): e is EstadoCopa => !!e && e.clubes.includes(s.clubeId));
+  const titulos = (s.titulosCopa ?? []).slice().reverse();
+  const sala = titulos.length ? `<section class="painel"><p class="rotulo">Sua sala de troféus</p>${titulos.map((x) => `<div class="not">🏆 <b>${esc(x.nome)}</b> · ${ANO_INICIAL_T + x.t} · ${esc(nomeClube(x.clubeId))}</div>`).join("")}</section>` : "";
+  if (!copas.length) return `<section class="painel"><p class="sub">O ${esc(nomeClube(s.clubeId))} não está em nenhuma copa nesta temporada. Termine bem a liga para ir ao continental no ano que vem.</p></section>${sala}`;
+  const nomeTime = (id: string) => `${id === s.clubeId ? "<b>" : ""}${esc(nomeClube(id))}${id === s.clubeId ? "</b>" : ""}`;
+  return copas.map((e) => {
+    const info = COPAS[e.id], meus = e.jogos.filter((j) => j.casa === s.clubeId || j.fora === s.clubeId);
+    const fase = e.fase === "fim" ? (e.campeao === s.clubeId ? "🏆 Campeão!" : `Campeão: ${esc(nomeClube(e.campeao ?? ""))}`) : NOME_FASE[e.fase] ?? e.fase;
+    const onde = e.campeao === s.clubeId ? "" : `<p class="sub" style="margin:0 0 6px">Você chegou até: <b>${esc(NOME_FASE[e.chegou[s.clubeId]] ?? e.chegou[s.clubeId] ?? "-")}</b></p>`;
+    const grupo = Object.entries(e.tabelas).find(([, t]) => t.some((x) => x.clube === s.clubeId));
+    const tabela = grupo ? `<table class="tab" style="margin:6px 0"><thead><tr><th>#</th><th style="text-align:left">${grupo[0].length === 1 ? `Grupo ${grupo[0]}` : esc(grupo[0])}</th><th>J</th><th>SG</th><th>P</th></tr></thead><tbody>${ordenar(grupo[1]).slice(0, grupo[1].length > 12 ? 12 : grupo[1].length).map((t, i) => `<tr${t.clube === s.clubeId ? ' class="eu"' : ""}><td>${i + 1}</td><td class="cl" style="text-align:left">${escudo(t.clube, "escudo esc-p")}${nomeTime(t.clube)}</td><td>${t.j}</td><td>${t.gp - t.gc}</td><td><b>${t.pts}</b></td></tr>`).join("")}</tbody></table>` : "";
+    const jogos = meus.map((j) => `<div class="not" style="display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px;align-items:center"><small class="sub">S${j.semana + 1}</small><span style="text-align:right">${nomeTime(j.casa)}</span><b>${j.gc === undefined ? "×" : `${j.gc}–${j.gf}${j.penaltis ? "*" : ""}`}</b><span>${nomeTime(j.fora)}</span><small class="sub" style="grid-column:2 / 5">${esc(rotuloJogo(j))}${j.penaltis ? ` · pênaltis: ${esc(nomeClube(j.penaltis))}` : ""}</small></div>`).join("");
+    return `<section class="painel"><p class="rotulo" style="color:${info.cores[0]}">${esc(info.nome)}</p><p style="margin:0 0 4px"><b>${fase}</b></p>${onde}${tabela}${jogos}</section>`;
+  }).join("") + sala;
+}
 function abaLiga(s: SaveTecnico): string {
   const li = infoLiga(s.ligaId), tab = ordenar(s.tabela), n = tab.length;
   const ult = Math.max(-1, ...Object.keys(s.rodadas).map(Number));
   const rodada = ult >= 0 ? `<section class="painel" style="margin-top:12px"><p class="rotulo">Rodada ${ult + 1}</p>${s.rodadas[ult].map(([c, f, gc, gf]) => `<div class="not" style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;${c === s.clubeId || f === s.clubeId ? "font-weight:700" : ""}"><span style="text-align:right">${esc(nomeClube(c))}</span><b>${gc} × ${gf}</b><span>${esc(nomeClube(f))}</span></div>`).join("")}</section>` : "";
-  const subs = `<div class="sub-abas">${[["tabela", "Tabela"], ["artilharia", "Artilharia"], ["assist", "Assistências"], ["elenco", "Seu elenco"]].map(([k, n2]) => `<button class="${(sub.liga ?? "tabela") === k ? "ativo" : ""}" data-sub="liga:${k}">${n2}</button>`).join("")}</div>`;
+  const subs = `<div class="sub-abas">${[["tabela", "Tabela"], ["copas", "Copas"], ["artilharia", "Artilharia"], ["assist", "Assistências"], ["elenco", "Seu elenco"]].map(([k, n2]) => `<button class="${(sub.liga ?? "tabela") === k ? "ativo" : ""}" data-sub="liga:${k}">${n2}</button>`).join("")}</div>`;
+  if (sub.liga === "copas") return subs + abaCopas(s);
   if (sub.liga === "artilharia" || sub.liga === "assist") {
     const l = rankingT(pacote, s, sub.liga === "artilharia" ? "g" : "a", 15);
     return `${subs}<p class="rotulo">${sub.liga === "artilharia" ? "Artilharia" : "Assistências"} · ${esc(li.curto)} ${ANO_INICIAL_T + s.temporada}</p>${l.length ? `<table class="tab"><thead><tr><th>#</th><th style="text-align:left">Jogador</th><th>J</th><th>${sub.liga === "artilharia" ? "Gols" : "Assist."}</th></tr></thead><tbody>${l.map((x, i) => `<tr class="${x.meu ? "eu" : ""}"><td>${i + 1}</td><td class="cl">${escudo(x.clubeId, "escudo esc-p")}${esc(x.nome)}</td><td>${x.jogos}</td><td><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : `<p class="sub">A bola ainda não rolou nesta temporada.</p>`}`;
@@ -615,7 +671,7 @@ function vidaPerfil(s: SaveTecnico): string {
   const t = s.tecnico, n = s.namoro, par = n?.par, filhos = n?.filhos ?? [];
   const resumoFam = [par ? `${({ casados: "Casado com", noivos: "Noivo de", morando: "Mora com", namorando: "Namorando", saindo: "Saindo com", match: "Conversando com" } as Record<string, string>)[par.etapa]} ${par.nome.split(" ")[0]}` : "Solteiro", filhos.length ? `${filhos.length} ${filhos.length === 1 ? "filho" : "filhos"}` : ""].filter(Boolean).join(" · ");
   const cab = `<section class="painel"><div class="v-topo"><button class="v-mini" data-sub="vida:visual" aria-label="Mudar o visual">${fotoTecnico(s)}</button><div><p class="rotulo">Técnico</p><h2 style="margin:0">${esc(t.nome)}</h2><p class="sub">${t.idade} anos · ${esc(t.nac)}${t.exJogador ? ` · ex-jogador (${esc(t.exJogador.apelido)})` : ""}</p></div></div>
-    <div class="dl" style="margin-top:8px"><span>Clube</span><b>${esc(nomeClube(s.clubeId))}</b><span>Reputação</span><b>${t.reputacao}/100</b><span>Salário</span><b>${curtoBrl(salarioTecnico(s))}/mês</b><span>No bolso</span><b>${curtoBrl(bolso(s))}</b><span>Vida pessoal</span><b>${esc(resumoFam)}</b></div>
+    <div class="dl" style="margin-top:8px"><span>Clube</span><b>${esc(nomeClube(s.clubeId))}</b><span>Reputação</span><b>${t.reputacao}/100</b><span>Salário</span><b>${curtoBrl(salarioTecnico(s))}/mês</b>${t.contrato ? `<span>Contrato</span><b>até ${ANO_INICIAL_T + t.contrato.ate} · multa ${curtoBrl(t.contrato.multa)}</b>` : ""}<span>No bolso</span><b>${curtoBrl(bolso(s))}</b><span>Vida pessoal</span><b>${esc(resumoFam)}</b></div>
     <div class="botoes" style="margin-top:10px"><button class="botao sec" data-sub="vida:familia">Ver a família</button></div></section>
     <section class="painel"><p class="rotulo">Sua casa</p>${(() => { const c = casaT(pacote, s), m = IMOVEL[c.imovel]; return `<h3 style="margin:0">${esc(nomeImovel(c, m))}</h3><p class="sub">${esc(m.local)} · ${c.proprios.includes(c.imovel) ? "imóvel próprio" : `aluguel ${curtoBrl(m.aluguel)}/mês`} · ${c.objetos.length} itens · ${(c.carros ?? []).length} ${(c.carros ?? []).length === 1 ? "carro" : "carros"}</p><p class="sub">Patrimônio: ${curtoBrl(patrimonio(c))}</p>`; })()}
     <div class="botoes" style="margin-top:10px"><button class="botao" data-casa>Entrar em casa</button></div></section>`;
@@ -830,12 +886,20 @@ document.addEventListener("click", (ev) => {
   if (d.vc) { const [id, sim] = d.vc.split("|"); const r = curtirT(pacote, s, id, sim === "1"); msg = sim === "1" ? { texto: r.msg, ok: r.ok } : undefined; redesenhar(); return; }
   if (d.perfil) { abrir(perfilClubeT(s, d.perfil)); salvar(); return; }
   if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
+  if (d.resp && s.negociacaoT) { const [q, o] = d.resp.split("|"); s.negociacaoT.respostas[q] = o; salvar(); abrir(negociacaoHtml(s)); return; }
+  if (d.entrevista !== undefined && s.negociacaoT) { const r = responderEntrevista(pacote, s, s.negociacaoT.respostas); notaEntrevista = r.texto; negAnos = s.negociacaoT.oferta.anos; negMulta = s.negociacaoT.oferta.multaMeses; salvar(); abrir(negociacaoHtml(s)); return; }
+  if (d.neganos) { negAnos = +d.neganos; const v = lerValor("negSal"); if (v && s.negociacaoT) s.negociacaoT.oferta = { ...s.negociacaoT.oferta, salario: v }; abrir(negociacaoHtml(s)); return; }
+  if (d.negmulta) { negMulta = +d.negmulta; const v = lerValor("negSal"); if (v && s.negociacaoT) s.negociacaoT.oferta = { ...s.negociacaoT.oferta, salario: v }; abrir(negociacaoHtml(s)); return; }
+  if (d.negaceitar !== undefined && s.negociacaoT) { const o = s.negociacaoT.oferta, r = negociarContrato(pacote, s, o); if (r.fechou) fecharContrato(s, r.fechou, r.msg); return; }
+  if (d.negpropor !== undefined && s.negociacaoT) {
+    const r = negociarContrato(pacote, s, { salario: lerValor("negSal") || s.negociacaoT.oferta.salario, anos: negAnos, multaMeses: negMulta });
+    if (r.fechou) { fecharContrato(s, r.fechou, r.msg); return; }
+    if (r.desistiu) { fechar(); msg = { texto: r.msg, ok: false }; salvar(); render(); return; }
+    notaEntrevista = r.msg; negMulta = s.negociacaoT?.oferta.multaMeses ?? negMulta; salvar(); abrir(negociacaoHtml(s)); return;
+  }
+  if (d.negdesistir !== undefined) { s.negociacaoT = undefined; fechar(); msg = { texto: "Você saiu da reunião sem fechar. A proposta continua de pé até o prazo acabar.", ok: true }; salvar(); render(); return; }
   if (d.emprego !== undefined) {
-    if (d.emprego === "1") {
-      const alvo = s.ofertaEmprego?.clubeId, r = aceitarEmprego(pacote, s);
-      if (r.ok && r.agora && alvo) { save = assumirNovoClube(pacote, s, alvo); aba = "inicio"; }
-      msg = { texto: r.msg, ok: r.ok }; salvar(); render(); window.scrollTo(0, 0); return;
-    }
+    if (d.emprego === "1" && s.ofertaEmprego) { if (s.negociacaoT?.clubeId !== s.ofertaEmprego.clubeId) { abrirNegociacao(pacote, s, s.ofertaEmprego.clubeId); notaEntrevista = undefined; negAnos = 2; negMulta = 6; } salvar(); abrir(negociacaoHtml(s)); return; }
     const r = recusarEmprego(pacote, s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return;
   }
   if (d.evt) { const r = responderEvento(pacote, s, d.evt); msg = r ? { texto: r, ok: true } : undefined; redesenhar(); return; }
@@ -848,7 +912,9 @@ document.addEventListener("click", (ev) => {
     // virou a temporada com pré-contrato assinado: assume o clube novo
     if (s.novoClube && s.semana === 0 && !s.demitido) { const nome = nomeClube(s.novoClube); save = assumirNovoClube(pacote, s, s.novoClube); r.fimDeTemporada = `${r.fimDeTemporada ?? ""} Começa a sua passagem pelo ${nome}.`.trim(); }
     msg = undefined; salvar(); render(); window.scrollTo(0, 0);
-    if (r.partida) abrir(relatorioHtml(r.partida) + (r.eventos.length > 1 ? `<div><p class="rotulo">Na semana</p>${r.eventos.slice(1).map((e) => `<div class="not">${esc(e)}</div>`).join("")}</div>` : "") + (r.fimDeTemporada ? `<div class="aviso-t ok">${esc(r.fimDeTemporada)}</div>` : ""));
+    let copaHtml = "";
+    if (r.partidaCopa) { const rc = relatorioHtml(r.partidaCopa).replace(/<p class="rotulo">Rodada \d+/, `<p class="rotulo">${esc(r.partidaCopa.copa)}`); if (!r.partida) { abrir(rc + (r.eventos.length ? `<div><p class="rotulo">Na semana</p>${r.eventos.map((e) => `<div class="not">${esc(e)}</div>`).join("")}</div>` : "")); return; } copaHtml = `${rc.replace(/<button class="fechar"[^>]*>×<\/button>/, "")}<hr style="border:0;border-top:1px solid var(--linha);margin:14px 0">`; }
+    if (r.partida) abrir(relatorioHtml(r.partida).replace(/(<button class="fechar"[^>]*>×<\/button>)/, `$1${copaHtml}`) + (r.eventos.length > 1 ? `<div><p class="rotulo">Na semana</p>${r.eventos.slice(1).map((e) => `<div class="not">${esc(e)}</div>`).join("")}</div>` : "") + (r.fimDeTemporada ? `<div class="aviso-t ok">${esc(r.fimDeTemporada)}</div>` : ""));
     else if (r.fimDeTemporada || r.eventos.length) msg = { texto: [r.fimDeTemporada, ...r.eventos].filter(Boolean).join(" "), ok: true }, render();
     return;
   }

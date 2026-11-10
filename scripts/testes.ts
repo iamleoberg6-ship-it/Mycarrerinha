@@ -1671,7 +1671,8 @@ teste("Técnico: temporada completa com tabela fechada, dinheiro, escalação e 
   assert.equal(s.esc.titulares.filter(Boolean).length, 11);
   assert.ok(s.elenco.every((a) => Object.values(a.at).every(Number.isFinite) && M.ovrDe(a) > 30));
   const n = T.semanasDaTemporada(s);
-  for (let k = 0; k < n && !s.demitido; k++) {
+  // a temporada pode passar das rodadas da liga quando o clube ainda tem copa (final continental, Mundial)
+  for (let k = 0; k < n + 10 && !s.demitido && s.temporada === 0; k++) {
     if (k === 6) { const a = s.elenco[3]; assert.ok(T.conversar(s, a.id, "elogiar").ok); T.mudarFormacao(s, "4-4-2"); }
     T.avancarSemana(pacote, s);
   }
