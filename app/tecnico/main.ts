@@ -21,7 +21,8 @@ import { rostoParente } from "../visual/rostos";
 import { NOME_ACAO_FAM, NOME_PARENTESCO, rotuloRelacaoFam, falaSobreVoce, idadeDe, type AcaoFamilia, type EstadoFamilia } from "../../src/familia";
 import { NOME_ACAO_NAMORO, NOME_ACAO_FILHO, NOME_ACAO_EX, NOME_ETAPA, PROFISSOES, TEXTO_FIM, gravidasDe, type AcaoNamoro, type AcaoFilho, type AcaoEx, type EstadoNamoro } from "../../src/namoro";
 import { IMOVEL, nomeImovel, patrimonio, type EstadoCasa } from "../../src/casa";
-import { casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
+import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR, patrimonioInvestido, type EstadoNegocios, type TipoEmpresa, type TipoInvest, type AcaoEmpresa, type DecisaoMes } from "../../src/negocios";
+import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { titulosDoClube, timeDeTodosOsTempos, recordesHistoricosDoClube, plantelDoClube, type TemporadaUsuario, type RecordeNome, type TitularHistorico } from "../../src/perfil-clube";
 import { EXTRAS, NOME_EXTRA, DICA_EXTRA } from "../../src/detalhes";
 import { funcoesDa, encaixe, estrelasEncaixe } from "../../src/funcoes";
@@ -51,15 +52,25 @@ function vindoDoJogador(jog: SaveJogador, pausa: number): NonNullable<DadosTecni
   const bioCompleta = { ...bio, ...(jog.jogador.posicao ? { pos: jog.jogador.posicao } : {}), temporadas };
   // a temporada em que ele parou (a carreira de técnico começa na seguinte, mais a pausa)
   // a vida fora do campo vem inteira: pais, irmãos, companheira, filhos, ex e o dinheiro guardado
-  const vida = { familia: c.familia as unknown as EstadoFamilia | undefined, namoro: c.namoro as unknown as EstadoNamoro | undefined, saldo: jog.casa?.saldo, casa: jog.casa as unknown as EstadoCasa | undefined };
+  const vida = { familia: c.familia as unknown as EstadoFamilia | undefined, namoro: c.namoro as unknown as EstadoNamoro | undefined, saldo: jog.casa?.saldo, casa: jog.casa as unknown as EstadoCasa | undefined, negocios: (c as { negocios?: EstadoNegocios }).negocios };
   return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio: bioCompleta, contatos, familia, vida };
 }
 let pausaEscolhida = 0;
-function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, number> } {
+/** O tamanho do nome que o jogador fez (0 a 100): fama, títulos, prêmios individuais, gigantes em que jogou e idiomas. */
+function prestigioDe(jog: SaveJogador, idiomas: Record<string, number>): { valor: number; resumo: string } {
+  const h = (jog.carreira.historico ?? []).filter((x) => !x.base), w = mundo(pacote);
+  const titulos = h.filter((x) => x.titulo).length, premios = h.reduce((a, x) => a + (x.premios?.length ?? 0), 0);
+  const gigantes = new Set(h.filter((x) => x.clubeId && (w.clube[x.clubeId]?.forca ?? 0) >= 80).map((x) => x.clubeId)).size;
+  const linguas = Object.values(idiomas).filter((n) => n >= 65).length;
+  const valor = Math.round(Math.min(100, jog.carreira.fama * 0.45 + Math.min(20, titulos * 3) + Math.min(15, premios * 1.5) + Math.min(12, gigantes * 4) + Math.min(8, Math.max(0, linguas - 1) * 3)));
+  const partes = [titulos ? `${titulos} ${titulos === 1 ? "título" : "títulos"}` : "", premios ? `${premios} ${premios === 1 ? "prêmio individual" : "prêmios individuais"}` : "", gigantes ? `${gigantes} ${gigantes === 1 ? "gigante" : "gigantes"} no currículo` : "", linguas > 1 ? `${linguas} idiomas` : ""].filter(Boolean);
+  return { valor, resumo: partes.join(" · ") };
+}
+function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, number>; prestigio: number } {
   const f = jog.carreira.estudos?.formacoes ?? [], licenca = f.includes("Licença Pro de técnico") ? 4 : f.includes("Licença A de técnico") ? 3 : f.includes("Licença B de técnico") ? 2 : f.includes("Licença C de técnico") ? 1 : 0;
   const idiomas = idiomasIniciais(jog.jogador.nome, jog.jogador.nacionalidade, jog.jogador.idade);
   for (const [l, n] of Object.entries(jog.carreira.estudos?.idiomas ?? {})) idiomas[l] = Math.max(idiomas[l] ?? 0, [0, 35, 65, 95][n] ?? 0);
-  return { licenca, idiomas };
+  return { licenca, idiomas, prestigio: prestigioDe(jog, idiomas).valor };
 }
 import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
@@ -69,6 +80,7 @@ import {
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
+  toleranciaLicenca, aceitarEmprego, recusarEmprego, assumirNovoClube,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import {
@@ -130,6 +142,9 @@ function telaInicio(): string {
   const anoParou = ex ? (ex.carreira.encerrada?.ano ?? ANO_INICIAL_T + ex.carreira.temporada) : 0;
   if (ex && !anterior) sincronizarMundo(pacote, ex.semente, anoParou - ANO_INICIAL_T + 1 + pausaEscolhida, 0, {}, 0);
   const rep = anterior ? anterior.tecnico.reputacao : reputacaoInicial(d), ligas = ligasParaComecar(pacote);
+  const prest = anterior ? anterior.tecnico.prestigio ?? 0 : d.prestigio ?? 0, tol = toleranciaLicenca(prest);
+  const fama = ex && !anterior ? prestigioDe(ex, d.idiomas ?? {}) : undefined;
+  const nivelNome = prest >= 80 ? "Lenda mundial" : prest >= 60 ? "Ídolo conhecido" : prest >= 40 ? "Nome respeitado" : "Começando do zero";
   if (!ligas.some((l) => l.id === ligaEscolhida)) ligaEscolhida = ligas[0]?.id ?? "BRA1";
   const clubes = clubesDaLiga(pacote, ligaEscolhida);
   return `<header class="marca"><strong>Mycarrerinha</strong><span>Técnico</span></header>
@@ -142,11 +157,11 @@ function telaInicio(): string {
       <label>Nome do técnico<input id="iNome" value="${esc(d.nome)}" maxlength="28" autocomplete="off" placeholder="Seu nome"></label>
       <label>Nacionalidade<select id="iNac">${["BRA", "ARG", "POR", "ESP", "ITA", "ENG", "GER", "FRA", "NED", "URU", "COL", "MEX", "USA", "JPN"].map((p) => `<option ${p === d.nac ? "selected" : ""}>${p}</option>`).join("")}</select></label>
       <label>Liga<select id="iLiga">${ligas.map((l) => `<option value="${l.id}" ${l.id === ligaEscolhida ? "selected" : ""}>${esc(l.nome)}</option>`).join("")}</select></label>
-      <p class="sub">Sua reputação: <b style="color:var(--giz)">${rep}</b> · ${LICENCAS[lic]}. Clubes grandes só aceitam técnico com nome e licença alta; comece por baixo e suba.</p>
+      <p class="sub">Sua reputação: <b style="color:var(--giz)">${rep}</b> · ${LICENCAS[lic]}.${fama ? ` <b style="color:var(--giz)">${nivelNome}</b>${fama.resumo ? ` (${esc(fama.resumo)})` : ""}.` : ""} ${tol ? `Com o seu nome, clubes grandes aceitam você com até ${tol === 1 ? "uma licença" : "duas licenças"} a menos e pagam o curso.` : "Clubes grandes só aceitam técnico com nome e licença alta; comece por baixo e suba."}</p>
     </section>
     <section class="painel"><p class="rotulo">Escolha o clube</p>${clubes.map((c) => {
-      const ok = c.exige <= rep && c.licenca <= lic;
-      return `<div class="clube-op${ok ? "" : " trancado"}">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">Força ${c.forca}${c.exige > rep ? ` · exige reputação ${c.exige}` : ""}${c.licenca > lic ? ` · exige ${LICENCAS[c.licenca]}` : ""}</small></div>${ok ? `<button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Assumir</button>` : `<span class="pill">Fechado</span>`}</div>`;
+      const ok = c.exige <= rep && c.licenca <= lic + tol;
+      return `<div class="clube-op${ok ? "" : " trancado"}">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">Força ${c.forca}${c.exige > rep ? ` · exige reputação ${c.exige}` : ""}${c.licenca > lic + tol ? ` · exige ${LICENCAS[c.licenca]}` : c.licenca > lic ? ` · paga o curso da ${LICENCAS[lic + 1]}` : ""}</small></div>${ok ? `<button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Assumir</button>` : `<span class="pill">Fechado</span>`}</div>`;
     }).join("")}</section>
     <a class="botao sec" href="index.html">Voltar para a carreira de jogador</a>`;
 }
@@ -192,7 +207,12 @@ function abaInicio(s: SaveTecnico): string {
     ...sair.map((a) => `<span class="pill ruim">${esc(a.nome)} quer sair</span>`), ...((s.propostas ?? []).length ? [`<button class="pill aviso" data-ir-propostas style="cursor:pointer">${s.propostas!.length} proposta${s.propostas!.length > 1 ? "s" : ""} por jogadores seus ›</button>`] : []), ...(contratos.length ? [`<span class="pill aviso">${contratos.length} contrato${contratos.length > 1 ? "s" : ""} acabando</span>`] : []),
   ];
   const ev = s.evento ? `<section class="painel evento-t"><p class="rotulo">Acontecendo agora</p><h2 style="font-size:19px">${esc(s.evento.titulo)}</h2><p>${esc(s.evento.texto)}</p><div class="botoes">${s.evento.opcoes.map((o) => `<button class="botao sec" data-evt="${o.id}">${esc(o.rotulo)}</button>`).join("")}</div></section>` : "";
-  return `${ev}${jogo}${ult}
+  const of = s.ofertaEmprego, ofC = of ? infoClube(pacote, of.clubeId) : undefined;
+  const oferta = of && ofC ? `<section class="painel evento-t"><p class="rotulo">Proposta de emprego</p><div style="display:flex;gap:10px;align-items:center">${escudo(of.clubeId)}<div><h2 style="font-size:19px;margin:0">${esc(ofC.nome)} quer você</h2><p class="sub" style="margin:2px 0 0">${esc(infoLiga(ofC.ligaId).curto)} · força ${Math.round(w.clube[of.clubeId]?.forca ?? 0)}</p></div></div>
+    <p>${esc(of.texto)} ${s.semana < SEMANAS_PRE_T ? "Se aceitar agora, assume já nesta pré-temporada." : "Com a temporada rolando, você termina aqui e assume lá na próxima."}</p>
+    <div class="botoes"><button class="botao" data-emprego="1">Aceitar e mudar de clube</button><button class="botao sec" data-emprego="0">Recusar</button><button class="botao sec" data-perfil="${of.clubeId}">Ver o clube</button></div></section>` : "";
+  const acerto = s.novoClube ? `<section class="painel"><p class="sub">Pré-contrato assinado: na próxima temporada você assume o <b>${esc(nomeClube(s.novoClube))}</b>.</p></section>` : "";
+  return `${oferta}${acerto}${ev}${jogo}${ult}
     <section class="painel"><p class="rotulo">Diretoria</p><h2 style="font-size:19px">${esc(d.expectativa.texto)}</h2>
       <div class="medidor"><i style="--v:${Math.round(d.confianca)}%;--c:${d.confianca >= 60 ? "var(--pos)" : d.confianca >= 30 ? "var(--ouro)" : "var(--neg)"}"></i></div>
       <p class="sub">Confiança ${Math.round(d.confianca)}/100 · meta: ${d.expectativa.pos}º lugar${s.semana >= SEMANAS_PRE_T ? ` · hoje: ${pos}º` : ""} · torcida ${Math.round(s.clube.torcida)}/100</p></section>
@@ -506,6 +526,8 @@ function completarVida(s: SaveTecnico) {
     if (jog?.casa && jog.jogador.apelido === s.bio.apelido) { trazerVida(s, undefined, undefined, undefined, jog.casa as unknown as EstadoCasa); salvar(); }
     else s.casaDoJogador = true;
   }
+  // as empresas e os investimentos também vêm
+  if (!s.negocios) { const jog = ler<SaveJogador>("mycarrerinha:save"), n = (jog?.carreira as { negocios?: EstadoNegocios } | undefined)?.negocios; if (n && jog!.jogador.apelido === s.bio.apelido) { trazerVida(s, undefined, undefined, undefined, undefined, n); salvar(); } }
   if (s.familia || s.namoro) return;
   const jog = ler<SaveJogador>("mycarrerinha:save");
   if (!jog || jog.jogador.apelido !== s.bio.apelido) return;
@@ -547,14 +569,45 @@ function vidaVisual(s: SaveTecnico): string {
     <p class="sub" style="margin-top:10px">O escudo no peito muda sozinho quando você troca de clube.</p></section>`;
 }
 void CORES_CABELO;
+// ------------------------------------------------------------------ Vida › Negócios (as mesmas empresas da carreira de jogador)
+function vidaNegocios(s: SaveTecnico): string {
+  completarVida(s);
+  const n = negociosT(s), saldo = bolso(s), inv = patrimonioInvestido(n), ab = semanaVida(s), fama = Math.max(s.tecnico.reputacao, (s.tecnico.prestigio ?? 0) * 0.8);
+  const p = n.proposta;
+  const prop = p ? `<section class="painel"><p class="rotulo">Proposta · ${esc(p.de)}</p><h3 style="margin:0">${esc(p.titulo)}</h3><p class="sub">${esc(p.texto)}</p>
+    <div class="dl"><span>Valor</span><b>${curtoBrl(p.valor)}</b><span>Promessa</span><b>${esc(p.promessa)}</b></div>
+    ${n.assessor ? `<p class="sub">${p.golpe ? "🧐 Seu assessor: \"Retorno garantido desse tamanho não existe. Isso tem cara de golpe.\"" : "📊 Seu assessor: \"Negócio de verdade. Tem risco, mas é honesto.\""}</p>` : ""}
+    <div class="v-acoes"><button data-propneg="1">Topar</button><button data-propneg="0">Recusar</button></div></section>` : "";
+  const emp = n.empresas.map((e) => {
+    const info = EMPRESAS[e.tipo], feito = e.acao === ab, unid = (e.unidades ?? 0) + 1;
+    const gest = e.tipo === "app" ? "" : `<p class="sub" style="margin:6px 0 4px">Decisão do mês: <b>${e.decisao ? esc(DECISOES[e.decisao as DecisaoMes].nome) : "nenhuma"}</b></p><div class="v-acoes">${(Object.keys(DECISOES) as DecisaoMes[]).map((k) => `<button class="${e.decisao === k ? "v-ativo" : ""}" data-decide="${e.uid}|${k}">${esc(DECISOES[k].nome)}</button>`).join("")}</div>
+      ${FRANQUIAVEIS.includes(e.tipo) ? `<p class="sub" style="margin:6px 0 4px">${unid} ${unid === 1 ? "unidade" : "unidades"}</p>${unid < MAX_UNIDADES && e.saude >= 60 ? `<div class="v-acoes"><button data-franq="${e.uid}">Abrir unidade (${curtoBrl(Math.round(info.custo * 0.5 * (1 + (e.unidades ?? 0) * 0.5)))})</button></div>` : ""}` : ""}`;
+    return `<div class="v-card"><div style="display:flex;justify-content:space-between;gap:8px"><div><b>${esc(e.nome)}</b><small class="sub" style="display:block">${esc(info.nome)} · desde ${e.desde}</small></div><div style="text-align:right"><b>${curtoBrl(Math.round(e.valor))}</b><small class="sub" style="display:block">${e.lucroUlt === undefined ? "primeiro mês" : `${e.lucroUlt >= 0 ? "+" : "−"}${curtoBrl(Math.abs(e.lucroUlt))} no mês`}</small></div></div>
+      ${barraRel(e.saude, "Saúde do negócio")}${gest}
+      <div class="v-acoes" style="margin-top:6px">${feito ? `<span class="sub">Já mexeu nela nesta semana.</span>` : (["cuidar", "divulgar", "investir"] as AcaoEmpresa[]).map((a) => `<button data-emp="${e.uid}|${a}">${{ cuidar: "Cuidar pessoalmente", divulgar: "Divulgar", investir: `Investir ${curtoBrl(Math.round(info.custo * 0.25))}` }[a as "cuidar"]}</button>`).join("")}<button data-emp="${e.uid}|vender">Vender (${curtoBrl(Math.round(e.valor))})</button></div></div>`;
+  }).join("");
+  const abrir = (Object.keys(EMPRESAS) as TipoEmpresa[]).filter((t) => !n.empresas.some((e) => e.tipo === t)).map((t) => {
+    const i = EMPRESAS[t], pode = fama >= i.famaMin && saldo >= i.custo;
+    return `<div class="v-card" style="display:flex;justify-content:space-between;gap:10px;align-items:center${pode ? "" : ";opacity:.55"}"><div><b>${esc(i.nome)}</b><small class="sub" style="display:block">${esc(i.desc)}${fama < i.famaMin ? ` · precisa de fama ${i.famaMin}` : ""}</small></div><div class="v-acoes"><button data-abrir="${t}" ${pode ? "" : "disabled"}>${curtoBrl(i.custo)}</button></div></div>`;
+  }).join("");
+  const invs = (Object.keys(INVEST) as TipoInvest[]).map((k) => `<div class="v-card"><div style="display:flex;justify-content:space-between"><div><b>${INVEST[k].nome}</b><small class="sub" style="display:block">${esc(INVEST[k].desc)}</small></div><b>${curtoBrl(n.invest[k])}</b></div>
+    <div class="v-acoes" style="margin-top:6px">${[100_000, 1_000_000].map((v) => `<button data-inv="${k}|${v}" ${saldo >= v ? "" : "disabled"}>+${curtoBrl(v)}</button>`).join("")}${n.invest[k] > 0 ? `<button data-inv="${k}|-1e15">Resgatar</button>` : ""}</div></div>`).join("");
+  const golpes = n.golpes.map((g) => `<div class="v-card"><b>${esc(g.nome)}</b><small class="sub" style="display:block">O extrato não para de subir: ${curtoBrl(g.mostrado)}</small></div>`).join("");
+  return `${prop}<section class="painel"><div class="dl"><span>Em conta</span><b>${curtoBrl(saldo)}</b><span>Investido</span><b>${curtoBrl(inv)}</b><span>Patrimônio</span><b>${curtoBrl(saldo + inv)}</b></div>
+    ${n.mes ? `<p class="sub" style="margin-top:6px">Último mês: empresas ${n.mes.empresas >= 0 ? "+" : "−"}${curtoBrl(Math.abs(n.mes.empresas))} · investimentos ${n.mes.invest >= 0 ? "+" : "−"}${curtoBrl(Math.abs(Math.round(n.mes.invest)))}</p>` : ""}</section>
+    <section class="painel"><p class="rotulo">Suas empresas</p>${emp || `<p class="sub">Nenhuma ainda. Empresa dá lucro quando vai bem, perde quando vai mal e pode falir. Quem cuida, divulga e tem nome vende mais.</p>`}</section>
+    <section class="painel"><p class="rotulo">Investimentos</p>${invs}${golpes}
+      <div class="v-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b>Assessor financeiro</b><small class="sub" style="display:block">Desconfia das propostas estranhas e cuida um pouco das empresas. ${curtoBrl(CUSTO_ASSESSOR)}/mês.</small></div><div class="v-acoes"><button data-assessor="${n.assessor ? 0 : 1}">${n.assessor ? "Dispensar" : "Contratar"}</button></div></div></section>
+    <section class="painel"><p class="rotulo">Abrir um negócio</p>${abrir || `<p class="sub">Você já tem um de cada.</p>`}</section>`;
+}
 const corRel = (r: number) => (r >= 70 ? "#5FC08A" : r >= 45 ? "#E3B341" : "#E06A5A");
 const barraRel = (r: number, rot?: string) => `<div class="v-rel"><span style="color:${corRel(r)}">${esc(rot ?? rotuloRelacaoFam(r))} · ${Math.round(r)}</span><span class="v-barra"><i style="width:${Math.round(r)}%;background:${corRel(r)}"></i></span></div>`;
 const chips = (attr: string, alvo: string | number, l: [string, string][]) => l.length ? `<div class="v-acoes">${l.map(([k, n]) => `<button data-${attr}="${alvo}|${k}">${esc(n)}</button>`).join("")}</div>` : "";
 const inicial = (nome: string) => `<span class="v-ini">${esc(nome.trim()[0] ?? "?")}</span>`;
 function abaVida(s: SaveTecnico): string {
   completarVida(s);
-  const subs = `<div class="sub-abas">${[["perfil", "Seu perfil"], ["visual", "Visual"], ["familia", "Família"], ["app", "Namoro"], ["contatos", "Contatos"]].map(([k, n]) => `<button class="${(sub.vida ?? "perfil") === k ? "ativo" : ""}" data-sub="vida:${k}">${n}</button>`).join("")}</div>`;
-  const corpo = sub.vida === "familia" ? vidaFamilia(s) : sub.vida === "app" ? vidaApp(s) : sub.vida === "contatos" ? vidaContatos(s) : sub.vida === "visual" ? vidaVisual(s) : vidaPerfil(s);
+  const subs = `<div class="sub-abas">${[["perfil", "Seu perfil"], ["visual", "Visual"], ["familia", "Família"], ["negocios", "Negócios"], ["app", "Namoro"], ["contatos", "Contatos"]].map(([k, n]) => `<button class="${(sub.vida ?? "perfil") === k ? "ativo" : ""}" data-sub="vida:${k}">${n}</button>`).join("")}</div>`;
+  const corpo = sub.vida === "familia" ? vidaFamilia(s) : sub.vida === "app" ? vidaApp(s) : sub.vida === "contatos" ? vidaContatos(s) : sub.vida === "visual" ? vidaVisual(s) : sub.vida === "negocios" ? vidaNegocios(s) : vidaPerfil(s);
   return subs + aviso() + corpo;
 }
 function vidaPerfil(s: SaveTecnico): string {
@@ -750,15 +803,22 @@ document.addEventListener("click", (ev) => {
     const nome = ($("iNome") as HTMLInputElement).value.trim() || "Técnico", nac = ($("iNac") as HTMLSelectElement).value;
     const jog = ler<SaveJogador>("mycarrerinha:save");
     const ex = d.ex === "1" && jog?.carreira?.encerrada ? { apelido: jog.jogador.apelido, fama: jog.carreira.fama } : undefined;
+    if (anterior) { save = assumirNovoClube(pacote, anterior, d.assumir); anterior = null; aba = "inicio"; msg = undefined; salvar(); nuvem.agora(); render(); window.scrollTo(0, 0); return; }
     save = novaCarreiraTecnico(pacote, { nome, nac, idade: ex ? jog!.jogador.idade + 1 + pausaEscolhida : 38, ...(ex ? { exJogador: ex, ...heranca(jog!), vindoDe: vindoDoJogador(jog!, pausaEscolhida) } : {}) }, d.assumir);
     if (ex && pausaEscolhida) save.tecnico.reputacao = Math.min(100, save.tecnico.reputacao + 3 * pausaEscolhida);
-    if (anterior) { save.tecnico.reputacao = anterior.tecnico.reputacao; save.historico = anterior.historico; save.tecnico.curso = anterior.tecnico.curso; save.tecnico.idiomas = anterior.tecnico.idiomas; anterior = null; }
     aba = "inicio"; msg = undefined; salvar(); nuvem.agora(); render(); window.scrollTo(0, 0); return;
   }
   if (!save) return;
   const s = save;
   if (d.aba) { aba = d.aba as typeof aba; msg = undefined; selEsc = undefined; if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; } fechar(); salvar(); render(); window.scrollTo(0, 0); return; }
   if (d.sub) { const [k, v] = d.sub.split(":"); sub[k] = v; msg = undefined; render(); return; }
+  if (d.propneg) { const r = responderPropostaNegT(s, d.propneg === "1"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.decide) { const [u, k] = d.decide.split("|"); const r = decidirMesT(s, u, k as DecisaoMes); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.franq) { const r = franquiaT(s, d.franq); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.emp) { const [u, k] = d.emp.split("|"); const r = agirEmpresaT(s, u, k as AcaoEmpresa); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.abrir) { const r = abrirEmpresaT(s, d.abrir as TipoEmpresa); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.inv) { const [k, v] = d.inv.split("|"); const r = aplicarT(s, k as TipoInvest, +v); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.assessor) { const r = assessorT(s, d.assessor === "1"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.vis) { const [k, v] = d.vis.split("|"); aparenciaT(s); const ap = s.tecnico.aparencia!; const vis = (s.tecnico.visual ??= { roupa: "polo", cor: "clube" });
     if (k === "roupa") vis.roupa = v; else if (k === "cor") vis.cor = v; else if (k === "corCabelo") ap.corCabelo = +v; else if (k === "rugas") ap.rugas = v === "1"; else ap[k] = v;
     redesenhar(); return; }
@@ -770,13 +830,24 @@ document.addEventListener("click", (ev) => {
   if (d.vc) { const [id, sim] = d.vc.split("|"); const r = curtirT(pacote, s, id, sim === "1"); msg = sim === "1" ? { texto: r.msg, ok: r.ok } : undefined; redesenhar(); return; }
   if (d.perfil) { abrir(perfilClubeT(s, d.perfil)); salvar(); return; }
   if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
+  if (d.emprego !== undefined) {
+    if (d.emprego === "1") {
+      const alvo = s.ofertaEmprego?.clubeId, r = aceitarEmprego(pacote, s);
+      if (r.ok && r.agora && alvo) { save = assumirNovoClube(pacote, s, alvo); aba = "inicio"; }
+      msg = { texto: r.msg, ok: r.ok }; salvar(); render(); window.scrollTo(0, 0); return;
+    }
+    const r = recusarEmprego(pacote, s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return;
+  }
   if (d.evt) { const r = responderEvento(pacote, s, d.evt); msg = r ? { texto: r, ok: true } : undefined; redesenhar(); return; }
   if (d.familia) { const r = trazerFamiliar(pacote, s, d.familia); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.filtro) { filtro = d.filtro; render(); return; }
   if (d.patro) { const [cota, marca] = d.patro.split("|"), nome = (document.getElementById(`pn-${marca}`) as HTMLSelectElement | null)?.value; const r = assinarPatro(pacote, s, cota as Cota, marca, lerValor(`pv-${cota}-${marca}`), nome ? { nome } : undefined); msg = { texto: r.msg, ok: r.ok }; salvar(); render(); return; }
   if (d.patroCor) { const [cota, cor] = d.patroCor.split("|"); corDoPatro(pacote, s, cota as Cota, cor); salvar(); render(); return; }
   if (d.avancar !== undefined || d.avancarTatica !== undefined) {
-    const r = avancarSemana(pacote, s); msg = undefined; salvar(); render(); window.scrollTo(0, 0);
+    const r = avancarSemana(pacote, s);
+    // virou a temporada com pré-contrato assinado: assume o clube novo
+    if (s.novoClube && s.semana === 0 && !s.demitido) { const nome = nomeClube(s.novoClube); save = assumirNovoClube(pacote, s, s.novoClube); r.fimDeTemporada = `${r.fimDeTemporada ?? ""} Começa a sua passagem pelo ${nome}.`.trim(); }
+    msg = undefined; salvar(); render(); window.scrollTo(0, 0);
     if (r.partida) abrir(relatorioHtml(r.partida) + (r.eventos.length > 1 ? `<div><p class="rotulo">Na semana</p>${r.eventos.slice(1).map((e) => `<div class="not">${esc(e)}</div>`).join("")}</div>` : "") + (r.fimDeTemporada ? `<div class="aviso-t ok">${esc(r.fimDeTemporada)}</div>` : ""));
     else if (r.fimDeTemporada || r.eventos.length) msg = { texto: [r.fimDeTemporada, ...r.eventos].filter(Boolean).join(" "), ok: true }, render();
     return;

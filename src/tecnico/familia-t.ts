@@ -38,7 +38,8 @@ export function casaT(pacote: PacoteDados, s: SaveTecnico): EstadoCasa {
 }
 
 /** A vida chega da carreira de jogador (cópia: o save do jogador não muda) e envelhece no tempo da pausa. */
-export function trazerVida(s: SaveTecnico, familia?: EstadoFamilia, namoro?: EstadoNamoro, saldo?: number, casa?: EstadoCasa) {
+export function trazerVida(s: SaveTecnico, familia?: EstadoFamilia, namoro?: EstadoNamoro, saldo?: number, casa?: EstadoCasa, negocios?: EstadoNegocios) {
+  if (negocios && !s.negocios) s.negocios = JSON.parse(JSON.stringify(negocios));
   if (casa && !s.casaDoJogador) { const atual = s.casa ? bolso(s) : undefined; s.casa = JSON.parse(JSON.stringify(casa)); if (atual !== undefined) s.casa!.saldo = atual; s.casaDoJogador = true; }
   if (familia) s.familia = JSON.parse(JSON.stringify(familia));
   if (namoro) {
@@ -137,4 +138,41 @@ export function mesDaVida(s: SaveTecnico) {
   const liquido = Math.round(sal * 0.62) - pensao;
   if (s.casa) { const manut = manutencaoMensal(s.casa).reduce((a, x) => a + x.valor, 0); fecharMesCasa(s.casa, liquido - manut); }
   else s.tecnico.saldo = bolso(s) + liquido;
+}
+
+// ------------------------------------------------------------------ negócios (os mesmos da carreira de jogador)
+import { novoNegocios, mesNegocios, sortearProposta, abrirEmpresa, agirEmpresa, decidirMes, abrirUnidade, aplicar, responderProposta, CUSTO_ASSESSOR,
+  type EstadoNegocios, type CtxNegocios, type TipoEmpresa, type AcaoEmpresa, type DecisaoMes, type TipoInvest } from "../negocios.js";
+export const negociosT = (s: SaveTecnico): EstadoNegocios => (s.negocios ??= novoNegocios());
+export function ctxNegociosT(s: SaveTecnico): CtxNegocios {
+  // a fama do técnico é a reputação (e o nome de ex-jogador ainda vende)
+  const fama = clamp(Math.max(s.tecnico.reputacao, (s.tecnico.prestigio ?? 0) * 0.8), 0, 100);
+  return { ano: anoVida(s), semanaAbs: semanaVida(s), fama, seguidores: Math.round(fama * fama * 600), saldo: bolso(s), apelido: s.bio?.apelido ?? s.tecnico.nome, numero: "" };
+}
+const rngNeg = (s: SaveTecnico, k: string) => new RNG(`${s.semente}|negT|${k}|${semanaVida(s)}`);
+const contas = <R extends { ok: boolean; msg: string; custo?: number; ganho?: number }>(s: SaveTecnico, r: R): R => { if (r.custo) mexer(s, -r.custo); if (r.ganho) mexer(s, r.ganho); return r; };
+export const abrirEmpresaT = (s: SaveTecnico, tipo: TipoEmpresa) => contas(s, abrirEmpresa(negociosT(s), tipo, ctxNegociosT(s), rngNeg(s, `abrir-${tipo}`)));
+export const agirEmpresaT = (s: SaveTecnico, uid: string, a: AcaoEmpresa) => contas(s, agirEmpresa(negociosT(s), uid, a, ctxNegociosT(s)));
+export const decidirMesT = (s: SaveTecnico, uid: string, op: DecisaoMes) => decidirMes(negociosT(s), uid, op);
+export const franquiaT = (s: SaveTecnico, uid: string) => { const r = abrirUnidade(negociosT(s), uid, ctxNegociosT(s)); if (r.ok && r.custo) mexer(s, -r.custo); return r; };
+export const aplicarT = (s: SaveTecnico, tipo: TipoInvest, valor: number) => contas(s, aplicar(negociosT(s), tipo, valor, bolso(s)));
+export const responderPropostaNegT = (s: SaveTecnico, sim: boolean) => contas(s, responderProposta(negociosT(s), sim, ctxNegociosT(s), rngNeg(s, "prop")));
+export const assessorT = (s: SaveTecnico, on: boolean) => { negociosT(s).assessor = on; return { ok: true, msg: on ? `Assessor financeiro contratado: ${CUSTO_ASSESSOR.toLocaleString("pt-BR")} por mês.` : "Assessor dispensado." }; };
+/** Semana dos negócios: propostas chegam e vencem. */
+export function semanaNegocios(s: SaveTecnico, nota: (t: string) => void) {
+  if (!s.negocios) return;
+  const n = s.negocios, ab = semanaVida(s);
+  if (n.proposta && ab > n.proposta.expira) { nota(`A proposta "${n.proposta.titulo}" expirou.`); n.proposta = undefined; }
+  const p = sortearProposta(n, rngNeg(s, "sorteio"), ctxNegociosT(s));
+  if (p) { n.proposta = p; nota(`Proposta de negócio: ${p.titulo}. Veja em Vida › Negócios.`); }
+}
+/** Mês dos negócios: lucro das empresas, rendimento dos investimentos e o assessor. */
+export function mesDosNegocios(s: SaveTecnico, nota: (t: string) => void) {
+  if (!s.negocios) return;
+  const mn = mesNegocios(s.negocios, rngNeg(s, "mes"), ctxNegociosT(s));
+  mexer(s, mn.lucro);
+  if (s.negocios.assessor) mexer(s, -CUSTO_ASSESSOR);
+  if (mn.fama) s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.sign(mn.fama), 0, 100);
+  for (const a of mn.avisos) nota(a);
+  for (const x of mn.noticias) nota(`${x.titulo}: ${x.texto}`);
 }

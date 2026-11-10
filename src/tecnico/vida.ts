@@ -112,7 +112,9 @@ export function responderEvento(pacote: PacoteDados, s: SaveTecnico, op: string)
     case "protesto:receber": torc(6); todos(-1); r = "Conversa tensa, mas a torcida saiu mais calma."; break;
     case "protesto:ignorar": torc(-5); conf(-2); r = "A torcida ficou ainda mais irritada."; break;
     case "proposta:fiel": conf(5); torc(4); s.tecnico.reputacao = clamp(s.tecnico.reputacao + 1, 0, 100); r = "A diretoria e a torcida gostaram da lealdade."; break;
-    case "proposta:ouvir": conf(-8); s.tecnico.reputacao = clamp(s.tecnico.reputacao + 2, 0, 100); r = "A notícia vazou e a diretoria ficou desconfiada. Seu nome ficou mais valorizado no mercado."; break;
+    case "proposta:ouvir": conf(-8); s.tecnico.reputacao = clamp(s.tecnico.reputacao + 2, 0, 100);
+      if (e.alvo) { s.ofertaEmprego = { clubeId: e.alvo, expira: s.temporada * 60 + s.semana + 3, texto: "Eles mandaram a proposta por escrito. Você tem três semanas para responder." }; r = "A proposta chegou por escrito: responda na tela inicial (aceitar muda você de clube). A diretoria ficou desconfiada."; }
+      else r = "A notícia vazou e a diretoria ficou desconfiada. Seu nome ficou mais valorizado no mercado."; break;
     case "amigo:convidar": { const c = (s.contatos ?? []).find((x) => x.nome === e.alvo); if (c) c.nivel = clamp(c.nivel + 8, 0, 100); r = `${e.alvo} ficou animado. Se ele estiver no mercado, vai topar conversar mais fácil.`; break; }
     case "amigo:agradecer": r = "Papo bom, coisa de velhos amigos."; break;
     case "joia:segurar": if (a) { a.moral = clamp(a.moral + 8, 0, 100); a.relacao = clamp(a.relacao + 8, 0, 100); } r = "O garoto ficou. Agora ele espera jogar."; break;
