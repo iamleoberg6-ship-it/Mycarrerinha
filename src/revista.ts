@@ -1,6 +1,6 @@
 // Revista ISPN: no fim de cada temporada, as listas dos 100 melhores do mundo, da Europa, das Américas e sub-21.
-// A nota mistura o nível do jogador (overall), a temporada (nota média, gols e assistências por jogo), o tamanho da liga
-// e os títulos do clube. O jogador do usuário entra com os números dele e ganha um troféu com a posição em cada lista.
+// A nota mistura o nível do jogador (overall), a temporada (nota média, gols e assistências por jogo, valendo menos em
+// liga fraca), a vitrine da liga (as cinco grandes da Europa pesam mais; fora da Europa, menos) e os títulos do clube. O jogador do usuário entra com os números dele e ganha um troféu com a posição em cada lista.
 import { candidatosDoAno, mundo, type Candidato } from "./mundo.js";
 import { infoLiga } from "./ligas.js";
 import type { PacoteDados } from "./liga.js";
@@ -16,9 +16,13 @@ type Cand = Candidato & { eu?: boolean };
 
 /** Pontos da revista: quem é bom e jogou bem, numa liga forte, num clube que ganhou. */
 export function pontosRevista(c: Cand, campeoes: Set<string>): number {
-  const nivel = infoLiga(c.ligaId).nivel ?? 3, j = Math.max(1, c.jogos ?? 1);
+  const li = infoLiga(c.ligaId), nivel = Math.min(4, li.nivel ?? 3), j = Math.max(1, c.jogos ?? 1);
   const producao = c.posicao === "GOL" || c.posicao === "ZAG" ? 0 : ((c.gols + c.assist * 0.7) / j) * (c.posicao === "ATA" ? 8 : 10);
-  return +(c.ovr * 1.0 + (c.nota - 6.5) * 9 + producao + (4 - Math.min(4, nivel)) * 1.6 + (campeoes.has(c.clubeId) ? 2.5 : 0)).toFixed(1);
+  // número em liga fraca vale menos: a temporada pesa pelo nível da liga, e quem joga fora da Europa tem menos vitrine
+  const peso = ({ 1: 1, 2: 0.78, 3: 0.65, 4: 0.5 } as Record<number, number>)[nivel] ?? 0.65;
+  const vitrine = ({ 1: 4, 2: 2.5, 3: 0, 4: -3 } as Record<number, number>)[nivel] ?? 0;
+  const foraDaEuropa = li.regiao === "EUR" ? 0 : -1.5;
+  return +(c.ovr + ((c.nota - 6.5) * 9 + producao) * peso + vitrine + foraDaEuropa + (campeoes.has(c.clubeId) ? 2.5 * peso : 0)).toFixed(1);
 }
 /** Monta a edição do ano (com o jogador do usuário, se ele jogou o mínimo). */
 export function montarRevista(pacote: PacoteDados, ano: number, extra: Cand[] = [], campeoes: string[] = [], feitas?: number): EdicaoRevista {
