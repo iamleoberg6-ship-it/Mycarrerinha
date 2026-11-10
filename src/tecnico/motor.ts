@@ -6,6 +6,7 @@ import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type Linh
 import { simularPlacar, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
 import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
 import { valorBrl } from "../moeda.js";
+import { montarRevista, type EdicaoRevista } from "../revista.js";
 import { semanaEmpregos, tabelaAgora } from "./empregos.js";
 import { contratoInicial, salarioOferecido, type Contrato, type Negociacao } from "./contrato.js";
 import { copasT, jogoCopaT, rodarCopasT, fecharCopasT, temCopaPendente, premioDeTitulo, bonusVitoriaCopa, type PalmaresT } from "./copas-t.js";
@@ -86,6 +87,7 @@ export interface SaveTecnico {
   /** mercado de técnicos: vagas abertas no meio da temporada e clubes em que você demonstrou interesse */
   vagasT?: Record<string, { desde: number; saiu: string }>; interesses?: Record<string, number>; negociacaoT?: Negociacao; contratoNovo?: Contrato;
   /** as copas da temporada (estadual, copa nacional, continental, Intercontinental, Mundial), os campeões de cada ano e os seus títulos */
+  /** Revista ISPN: as listas dos 100 melhores das últimas temporadas */ revista?: Record<number, EdicaoRevista>;
   copas?: Partial<Record<CopaId, EstadoCopa>>; copasT?: number; palmaresT?: PalmaresT; titulosCopa?: { t: number; id: CopaId; nome: string; clubeId: string }[];
   premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
   aVenda?: string[]; propostas?: PropostaRecebida[]; negociacoes?: Record<string, { pedido?: number; tentativas: number; janela: string }>; transferencias?: Transferencia[];
@@ -871,6 +873,12 @@ const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.
 // ------------------------------------------------------------------ virada de temporada
 function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   fecharCopasT(pacote, s);
+  try {
+    const camp = Object.values(s.palmaresT?.[s.temporada] ?? {}).filter(Boolean) as string[];
+    const rev = (s.revista ??= {}); rev[ANO_INICIAL_T + s.temporada] = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [...camp, ordenar(s.tabela)[0]?.clube].filter(Boolean) as string[]);
+    for (const k of Object.keys(rev).map(Number).sort((x, y) => x - y).slice(0, -3)) delete rev[k];
+    noticia(s, "clube", `Saiu a revista ISPN de ${ANO_INICIAL_T + s.temporada}: os 100 melhores do mundo, da Europa, das Américas e sub-21 (Liga › Revista).`);
+  } catch (err) { console.error(err); }
   const t = s.temporada, final = ordenar(s.tabela), n = final.length, pos = final.findIndex((x) => x.clube === s.clubeId) + 1, li = infoLiga(s.ligaId);
   const esperado = s.diretoria.expectativa.pos, campeao = pos === 1;
   // premiação

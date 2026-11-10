@@ -37,6 +37,7 @@ import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
 import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, type TabelasReais, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
+import { montarRevista, minhasPosicoes, LISTAS_REVISTA, type EdicaoRevista, type ListaRevista } from "./revista.js";
 import { nomearCopaNacional, participantesNac, ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type TorneioId } from "./copas.js";
 import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
@@ -161,6 +162,8 @@ export interface Carreira {
   /** vencedores de cada prêmio do mundo, ano a ano */
   /** vida fora de campo: negócios e investimentos, saúde do corpo, imprensa e redes */
   negocios?: EstadoNegocios; saude?: EstadoSaude; midia?: EstadoMidia;
+  /** Revista ISPN: as listas dos 100 melhores das últimas temporadas */
+  revista?: Record<number, EdicaoRevista>;
   /** agenda de momentos com escolha, parças, garagem, hobbies, estudos, adaptação no exterior e fundação */
   agenda?: EstadoAgenda; parcas?: Parca[]; luxo?: ItemLuxo[]; hobbies?: EstadoHobbies; estudos?: EstadoEstudos; adaptacao?: Adaptacao; fundacao?: Fundacao;
   /** última semana em que fez churrasco com os parças */
@@ -767,6 +770,22 @@ function premiosDoMundo(pacote: PacoteDados, s: Save, r: ResumoTemporada, ev: st
   const minimo = Math.ceil(nRodadas(c) * 0.5);
   const meus = c.selecao?.copas.filter((x) => x.ano === ano) ?? [];
   if (!c.fase && r.jogos >= minimo) cands.push({ nome: j.apelido, clubeId: c.clubeId, posicao: j.posicao, nota: r.nota, gols: r.gols, assist: r.assist, jogos: r.jogos, idade: j.idade, ligaId: infoLiga(c.ligaId).id, ovr: ovr(j) + (c.fama - 50) / 10, nacionalidade: j.nacionalidade, minimo, eu: true });
+  // Revista ISPN: os 100 melhores do mundo, da Europa, das Américas e sub-21 (troféu com a posição para quem entra)
+  try {
+    const campeoes = [...Object.values(campeaoLiga), ...Object.values(c.copas ?? {}).map((e) => e?.campeao)].filter(Boolean) as string[];
+    const eu = cands.filter((x) => (x as { eu?: boolean }).eu);
+    const ed = montarRevista(pacote, ano, eu, campeoes);
+    const rev = (c.revista ??= {}); rev[ano] = ed;
+    for (const k of Object.keys(rev).map(Number).sort((x, y) => x - y).slice(0, -3)) delete rev[k];
+    const CORES_ISPN: Record<ListaRevista, [string, string]> = { mundo: ["#C8102E", "#E3B341"], europa: ["#0B2F7A", "#E3B341"], americas: ["#0B7A3B", "#E3B341"], sub21: ["#7A3BC8", "#E3B341"] };
+    for (const m of minhasPosicoes(ed)) {
+      const nomeL = LISTAS_REVISTA.find((x) => x.id === m.id)!.nome, nomeT = `ISPN · ${m.pos}º · ${nomeL} ${ano}`;
+      receberReliquias(s, [{ conquista: `trofeu-ispn-${m.id}`, reliquia: { id: `rel-ispn-${m.id}-${ano}`, chave: `trofeu-ispn-${m.id}`, tipo: "trofeu", nome: nomeT, legenda: `Revista ISPN · ${infoClube(pacote, c.clubeId)?.nome ?? ""} · ${ano}`, ano, cores: CORES_ISPN[m.id], modelo: "placa" } }], ev);
+      r.premios = [...(r.premios ?? []), nomeT];
+      c.fama = clamp(c.fama + (m.pos <= 10 ? 3 : m.pos <= 50 ? 1.5 : 0.5), 0, 100);
+      noticia(s, "jogo", `${j.apelido} é o ${m.pos}º da lista da ISPN`, `A revista ISPN colocou ${j.apelido} em ${m.pos}º lugar entre ${nomeL.toLowerCase().replace("os 100 melhores", "os 100 melhores")} de ${ano}.`, { k: "trofeu" });
+    }
+  } catch (err) { console.error(err); }
   const p = premiosDoAno(cands, {
     semente: s.semente, ano, campeaoLiga, regiaoLiga: (id) => infoLiga(id).regiao, nivelLiga: (id) => infoLiga(id).nivel, confederacao,
     faseCopa: (copa, id) => faseDe(c.copas?.[copa as CopaId], id),

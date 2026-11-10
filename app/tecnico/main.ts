@@ -17,6 +17,8 @@ import { patrociniosDe, ofertasPatro, assinarPatro, corDoPatro, receitaPatro, ar
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
 import { fotoDoPerfil } from "../visual/mulheres";
 import { gerarEstatCompleta } from "../../src/estatisticas-completas";
+import { montarRevista, type EdicaoRevista, type ListaRevista } from "../../src/revista";
+import { revistaHtml } from "../visual/revista";
 import { estatCompletaHtml } from "../visual/estat-campo";
 import { svgFoto, APARENCIA_PADRAO, CABELOS, CABELOS_TECNICO, NOMES_CABELO_COR, CORES_CABELO, BARBAS, ROUPAS_TECNICO, type Aparencia, type RoupaTecnico } from "../criacao/avatar";
 import { rostoParente } from "../visual/rostos";
@@ -453,6 +455,18 @@ function fecharContrato(s: SaveTecnico, c: NonNullable<SaveTecnico["contratoNovo
   msg = { texto: `${texto} ${r.msg}`, ok: r.ok }; salvar(); render(); window.scrollTo(0, 0);
 }
 
+// ------------------------------------------------------------------ Revista ISPN (os 100 melhores)
+let rvLista: ListaRevista = "mundo", rvAno: number | "previa" = "previa";
+const previaCache = new Map<string, EdicaoRevista>();
+function abaRevista(s: SaveTecnico): string {
+  const anos = Object.keys(s.revista ?? {}).map(Number).sort((a, b) => b - a);
+  if (rvAno !== "previa" && !anos.includes(rvAno)) rvAno = anos[0] ?? "previa";
+  let ed: EdicaoRevista | undefined;
+  if (rvAno === "previa") { const k = `${s.semente}|${s.temporada}|${s.semana}`; ed = previaCache.get(k); if (!ed) { ed = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [], Math.max(1, s.semana - SEMANAS_PRE_T)); previaCache.clear(); previaCache.set(k, ed); } }
+  else ed = s.revista?.[rvAno];
+  return `<section class="painel">${revistaHtml(ed, { lista: rvLista, ano: rvAno, anos: ["previa", ...anos], nomeClube, escudo: (id) => escudo(id, "escudo esc-p") })}</section>`;
+}
+
 // ------------------------------------------------------------------ copas (estadual, nacional, continental, Intercontinental, Mundial)
 function abaCopas(s: SaveTecnico): string {
   const copas = Object.values(copasT(pacote, s)).filter((e): e is EstadoCopa => !!e && e.clubes.includes(s.clubeId));
@@ -474,8 +488,9 @@ function abaLiga(s: SaveTecnico): string {
   const li = infoLiga(s.ligaId), tab = ordenar(s.tabela), n = tab.length;
   const ult = Math.max(-1, ...Object.keys(s.rodadas).map(Number));
   const rodada = ult >= 0 ? `<section class="painel" style="margin-top:12px"><p class="rotulo">Rodada ${ult + 1}</p>${s.rodadas[ult].map(([c, f, gc, gf]) => `<div class="not" style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;${c === s.clubeId || f === s.clubeId ? "font-weight:700" : ""}"><span style="text-align:right">${esc(nomeClube(c))}</span><b>${gc} × ${gf}</b><span>${esc(nomeClube(f))}</span></div>`).join("")}</section>` : "";
-  const subs = `<div class="sub-abas">${[["tabela", "Tabela"], ["copas", "Copas"], ["artilharia", "Artilharia"], ["assist", "Assistências"], ["elenco", "Seu elenco"]].map(([k, n2]) => `<button class="${(sub.liga ?? "tabela") === k ? "ativo" : ""}" data-sub="liga:${k}">${n2}</button>`).join("")}</div>`;
+  const subs = `<div class="sub-abas">${[["tabela", "Tabela"], ["copas", "Copas"], ["revista", "Revista ISPN"], ["artilharia", "Artilharia"], ["assist", "Assistências"], ["elenco", "Seu elenco"]].map(([k, n2]) => `<button class="${(sub.liga ?? "tabela") === k ? "ativo" : ""}" data-sub="liga:${k}">${n2}</button>`).join("")}</div>`;
   if (sub.liga === "copas") return subs + abaCopas(s);
+  if (sub.liga === "revista") return subs + abaRevista(s);
   if (sub.liga === "artilharia" || sub.liga === "assist") {
     const l = rankingT(pacote, s, sub.liga === "artilharia" ? "g" : "a", 15);
     return `${subs}<p class="rotulo">${sub.liga === "artilharia" ? "Artilharia" : "Assistências"} · ${esc(li.curto)} ${ANO_INICIAL_T + s.temporada}</p>${l.length ? `<table class="tab"><thead><tr><th>#</th><th style="text-align:left">Jogador</th><th>J</th><th>${sub.liga === "artilharia" ? "Gols" : "Assist."}</th></tr></thead><tbody>${l.map((x, i) => `<tr class="${x.meu ? "eu" : ""}"><td>${i + 1}</td><td class="cl">${escudo(x.clubeId, "escudo esc-p")}${esc(x.nome)}</td><td>${x.jogos}</td><td><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : `<p class="sub">A bola ainda não rolou nesta temporada.</p>`}`;
@@ -925,6 +940,8 @@ document.addEventListener("click", (ev) => {
   if (d.vc) { const [id, sim] = d.vc.split("|"); const r = curtirT(pacote, s, id, sim === "1"); msg = sim === "1" ? { texto: r.msg, ok: r.ok } : undefined; redesenhar(); return; }
   if (d.perfil) { abrir(perfilClubeT(s, d.perfil)); salvar(); return; }
   if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
+  if (d.rvlista) { rvLista = d.rvlista as ListaRevista; render(); return; }
+  if (d.rvano) { rvAno = d.rvano === "previa" ? "previa" : +d.rvano; render(); return; }
   if (d.ligaemp) { ligaEmprego = d.ligaemp; render(); return; }
   if (d.filtroemp) { filtroEmprego = d.filtroemp as typeof filtroEmprego; render(); return; }
   if (d.int) { const [id, disc] = d.int.split("|"); const r = declararInteresse(pacote, s, id, disc === "1"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }

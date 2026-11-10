@@ -7,6 +7,8 @@ import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { xgDoGol, xgDoChute, type Chute, type EventoEst, type TipoEvento } from "../../src/estatisticas-partida";
 import { gerarEstatCompleta } from "../../src/estatisticas-completas";
+import { montarRevista, type EdicaoRevista, type ListaRevista } from "../../src/revista";
+import { revistaHtml } from "../visual/revista";
 import { estatCompletaHtml } from "../visual/estat-campo";
 import { camisaCostas } from "../visual/camisas";
 import { kitVisual, calcaoDoClube, meiaoDoClube, numeroCorClube, UNIFORME_CLUBE, UNIFORME_SELECAO } from "../../src/reliquias";
@@ -409,7 +411,24 @@ function opcoesHtml(s: Save): string {
   return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador e, dentro do Claude, também na sua conta: se o navegador perder o save, a carreira volta sozinha. Baixar o arquivo é uma cópia extra.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><p id="statusNuvem" class="sub" style="font-size:12.5px">${textoNuvem()}</p><div id="listaNuvem" class="sub" style="font-size:13px;margin:6px 0"></div><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p><a class="botao sec peq" href="tecnico.html" style="margin-top:8px">Carreira de técnico</a></section>`;
 }
 let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, verOutras = false;
-let subTabela: "classificacao" | "estatisticas" | "premios" = "classificacao";
+let subTabela: "classificacao" | "estatisticas" | "premios" | "revista" = "classificacao";
+let rvLista: ListaRevista = "mundo", rvAno: number | "previa" = "previa";
+const previaRevista = new Map<string, EdicaoRevista>();
+/** Revista ISPN no modo jogador: as edições guardadas e a prévia de agora (com você, se já jogou o mínimo). */
+function revistaJogHtml(s: Save): string {
+  const c = s.carreira, anos = Object.keys(c.revista ?? {}).map(Number).sort((a, b) => b - a);
+  if (rvAno !== "previa" && !anos.includes(rvAno)) rvAno = anos[0] ?? "previa";
+  let ed: EdicaoRevista | undefined;
+  if (rvAno === "previa") {
+    const k = `${s.semente}|${c.temporada}|${c.semana}`; ed = previaRevista.get(k);
+    if (!ed) {
+      const st = c.stats, n = st.notas.length ? st.notas.reduce((a, b) => a + b, 0) / st.notas.length : 0, min = Math.max(4, Math.ceil(Math.max(0, c.semana - SEMANAS_PRE) * 0.5));
+      const eu = !c.fase && st.jogos >= min ? [{ nome: s.jogador.apelido, clubeId: c.clubeId, posicao: s.jogador.posicao, nota: n, gols: st.gols, assist: st.assist, jogos: st.jogos, idade: s.jogador.idade, ligaId: infoLiga(c.ligaId).id, ovr: ovr(s.jogador) + (c.fama - 50) / 10, nacionalidade: s.jogador.nacionalidade, minimo: min, eu: true }] : [];
+      ed = montarRevista(pacote, ANO_INICIAL + c.temporada, eu, [], Math.max(1, c.semana - SEMANAS_PRE)); previaRevista.clear(); previaRevista.set(k, ed);
+    }
+  } else ed = c.revista?.[rvAno];
+  return `<section class="painel">${revistaHtml(ed, { lista: rvLista, ano: rvAno, anos: ["previa", ...anos], nomeClube: (id) => infoClube(pacote, id)?.nome ?? id, escudo: (id) => escudo(id) })}</section>`;
+}
 const FASES_MM = ["derby", "desafio", "playoff", "oitavas", "quartas", "semi", "final"];
 function tabelaCopaHtml(t: LinhaTabela[], meu: string, zona?: (i: number) => string) {
   return `<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${ordenar(t).map((x, i) => `<tr class="${x.clube === meu ? "meu" : ""} ${zona ? zona(i) : ""}"><td>${i + 1}</td><td>${linkClube(x.clube)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table>`;
@@ -546,8 +565,9 @@ function abaTabela(s: Save): string {
   const minhas = vistas.filter(([k]) => minha(k) || k === vistaTabela), outras = vistas.filter(([k]) => !minha(k) && k !== vistaTabela);
   const chip = ([k, n]: [typeof vistaTabela, string]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`;
   const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${minhas.map(chip).join("")}${outras.length ? `<button class="chip outras" data-outras="1" aria-expanded="${verOutras}">${verOutras ? "Menos ▴" : `Outras (${outras.length}) ▾`}</button>` : ""}${verOutras ? outras.map(chip).join("") : ""}</div>`;
-  const subT = `<div class="sub-abas rolar">${([["classificacao", "Classificação"], ["estatisticas", "Estatísticas"], ["premios", "Prêmios"]] as const).map(([k, n]) => `<button class="${subTabela === k ? "ativo" : ""}" data-subtab="${k}">${n}</button>`).join("")}</div>`;
+  const subT = `<div class="sub-abas rolar">${([["classificacao", "Classificação"], ["estatisticas", "Estatísticas"], ["premios", "Prêmios"], ["revista", "Revista ISPN"]] as const).map(([k, n]) => `<button class="${subTabela === k ? "ativo" : ""}" data-subtab="${k}">${n}</button>`).join("")}</div>`;
   if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "estatisticas") return chips + subT + (selecaoHtml(s) + rankingsHtml(s) || `<p class="sub">As estatísticas aparecem depois da primeira rodada.</p>`);
+  if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "revista") return chips + subT + revistaJogHtml(s);
   if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "premios") return chips + subT + (premiosLigaHtml(s) + premiosMundoHtml(s) || `<p class="sub">Os prêmios saem no fim da primeira temporada.</p>`);
   if (vistaTabela === "base") {
     const tb = c.tabelaBase && c.tabelaBase.t === c.temporada && c.tabelaBase.cat === categoriaBase(s.jogador.idade) ? ordenar(c.tabelaBase.tabela) : ordenar(novaTabelaDe(c));
@@ -3075,7 +3095,7 @@ function mostrarResumo(r: ResumoSemana) {
 
 // ------------------------------------------------------------------ eventos
 document.addEventListener("click", (ev) => {
-  const b = (ev.target as Element).closest<HTMLElement>("[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-pedir-funcao],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-mulher],[data-ex],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
+  const b = (ev.target as Element).closest<HTMLElement>("[data-rvlista],[data-rvano],[data-acao],[data-chat],[data-cena],[data-oca],[data-subvida],[data-parca],[data-afastar],[data-luxo],[data-vender-luxo],[data-hobby],[data-curso],[data-doacao],[data-staff],[data-tratar],[data-operar],[data-emp],[data-decide],[data-franq],[data-emp-pedido],[data-album],[data-ampliar-pag],[data-fechar-fig],[data-abrir-album],[data-fechar-album],[data-abrir-pacote],[data-revelar-pacote],[data-colar-pacote],[data-perfil-clube],[data-fechar-clube],[data-abrir],[data-inv],[data-propneg],[data-assessor],[data-post],[data-pauta],[data-retro],[data-retro-ir],[data-evo],[data-subjog],[data-subimp],[data-filho],[data-nomefilho],[data-subtab],[data-outras],[data-fnot],[data-relabre],[data-assinar],[data-foco],[data-int],[data-dia],[data-aba],[data-decidir],[data-pen],[data-prop],[data-agente],[data-agente-iniciar],[data-agente-resp],[data-ag-abrir],[data-ag-fechar],[data-ag-ord],[data-cons],[data-cons-iniciar],[data-evento],[data-vida],[data-patro],[data-negoc],[data-aumento],[data-vis],[data-ap],[data-abaap],[data-traje],[data-tarea],[data-tat],[data-tat-remover],[data-sair],[data-trofeu],[data-camisa],[data-rel],[data-tpos],[data-pedir-funcao],[data-mudapos],[data-sug],[data-caminho],[data-cidade],[data-convite],[data-num],[data-num-manter],[data-cel],[data-fav],[data-fam],[data-bliga],[data-bclube],[data-curtir],[data-nam],[data-vtab],[data-bbase],[data-hist],[data-irmao],[data-parente],[data-mulher],[data-ex],[data-filhoperf],[data-vmerc],[data-janela],[data-fjanela],[data-vsel],[data-semsub],[data-moeda]");
   if (!b) return;
   const d = b.dataset;
   if (d.agAbrir !== undefined || d.agFechar !== undefined || d.agOrd !== undefined) { agirAgentesDialog(d); return; }
@@ -3115,6 +3135,8 @@ document.addEventListener("click", (ev) => {
   else if (d.emp) { const r = agirEmpresaJogo(pacote, save!, d.emp, d.op as AcaoEmpresa); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.abrir) { const r = abrirEmpresaJogo(pacote, save!, d.abrir as TipoEmpresa); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.inv) { const r = aplicarJogo(save!, d.inv as TipoInvest, +d.valor!); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.rvlista) { rvLista = d.rvlista as ListaRevista; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  else if (d.rvano) { rvAno = d.rvano === "previa" ? "previa" : +d.rvano; const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.propneg) { const r = responderPropostaNegocio(pacote, save!, d.propneg === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.assessor) { const r = assessorJogo(save!, d.assessor === "1"); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
   else if (d.post) { const r = postarJogo(pacote, save!, d.post as TipoPost); msgRel = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); }
