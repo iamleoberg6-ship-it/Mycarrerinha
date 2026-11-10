@@ -6,6 +6,7 @@ import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type Linh
 import { simularPlacar, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
 import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
 import { valorBrl } from "../moeda.js";
+import { semanaEmpregos, tabelaAgora } from "./empregos.js";
 import { contratoInicial, salarioOferecido, type Contrato, type Negociacao } from "./contrato.js";
 import { copasT, jogoCopaT, rodarCopasT, fecharCopasT, temCopaPendente, premioDeTitulo, bonusVitoriaCopa, type PalmaresT } from "./copas-t.js";
 import { COPAS, NOME_FASE, rotuloJogo, type CopaId, type EstadoCopa } from "../copas.js";
@@ -81,7 +82,9 @@ export interface SaveTecnico {
   /** a vida fora do campo, vinda da carreira de jogador: pais e irmãos, companheira, filhos e ex */
   familia?: EstadoFamilia; namoro?: EstadoNamoro; /** a casa (a mesma tela de decorar da carreira de jogador) e se ela já veio da carreira de jogador */ casa?: EstadoCasa; casaDoJogador?: boolean; /** empresas e investimentos (os mesmos da carreira de jogador) */ negocios?: EstadoNegocios;
   /** proposta de emprego de outro clube (com prazo) e o clube que você já acertou para a próxima temporada */
-  ofertaEmprego?: { clubeId: string; expira: number; texto: string }; novoClube?: string; negociacaoT?: Negociacao; contratoNovo?: Contrato;
+  ofertaEmprego?: { clubeId: string; expira: number; texto: string; /** clube sem técnico: assume na hora */ vaga?: boolean }; novoClube?: string;
+  /** mercado de técnicos: vagas abertas no meio da temporada e clubes em que você demonstrou interesse */
+  vagasT?: Record<string, { desde: number; saiu: string }>; interesses?: Record<string, number>; negociacaoT?: Negociacao; contratoNovo?: Contrato;
   /** as copas da temporada (estadual, copa nacional, continental, Intercontinental, Mundial), os campeões de cada ano e os seus títulos */
   copas?: Partial<Record<CopaId, EstadoCopa>>; copasT?: number; palmaresT?: PalmaresT; titulosCopa?: { t: number; id: CopaId; nome: string; clubeId: string }[];
   premios?: Premio[]; evento?: EventoT; contatos?: Contato[]; bio?: BioJogador; familiaJog?: FamiliarJogador[]; pausa?: number;
@@ -859,6 +862,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   else prepararMundo(pacote, s);
   semanaDaVida(pacote, s, (t) => noticia(s, "vida", t));
   semanaNegocios(s, (t) => noticia(s, "dinheiro", t));
+  semanaEmpregos(pacote, s, (t) => noticia(s, "clube", t));
   sortearEvento(pacote, s, rngT(s, "evento"));
   return { eventos, partida, fimDeTemporada: fim, ...(partidaCopa ? { partidaCopa } : {}) };
 }
@@ -1138,7 +1142,7 @@ export function aceitarEmprego(pacote: PacoteDados, s: SaveTecnico): { ok: boole
   if (!o) return { ok: false, msg: "A proposta não está mais de pé.", agora: false };
   const nome = infoClube(pacote, o.clubeId)?.nome ?? o.clubeId;
   s.ofertaEmprego = undefined;
-  if (s.semana < SEMANAS_PRE_T) return { ok: true, msg: `Acertado: você é o novo técnico do ${nome}.`, agora: true };
+  if (s.semana < SEMANAS_PRE_T || o.vaga) return { ok: true, msg: `Acertado: você é o novo técnico do ${nome}.`, agora: true };
   s.novoClube = o.clubeId;
   s.diretoria.confianca = clamp(s.diretoria.confianca - 10, 0, 100);
   noticia(s, "clube", `Pré-contrato assinado: você assume o ${nome} na próxima temporada. A diretoria atual não gostou de saber.`);
@@ -1151,8 +1155,9 @@ export function recusarEmprego(pacote: PacoteDados, s: SaveTecnico): { ok: boole
 }
 /** Assume outro clube no mesmo mundo e na temporada certa, levando a vida inteira junto (carreira, família, casa,
  *  negócios, prêmios, contatos). Serve para proposta aceita e para recomeçar depois de uma demissão. */
-export function assumirNovoClube(pacote: PacoteDados, s: SaveTecnico, clubeId: string): SaveTecnico {
-  const temporada = s.semana === 0 || s.semana < SEMANAS_PRE_T ? s.temporada : s.temporada + 1;
+export function assumirNovoClube(pacote: PacoteDados, s: SaveTecnico, clubeId: string, agora = false): SaveTecnico {
+  const meioDaTemporada = agora && s.semana >= SEMANAS_PRE_T && !s.demitido;
+  const temporada = s.semana < SEMANAS_PRE_T || meioDaTemporada ? s.temporada : s.temporada + 1;
   const t = s.tecnico;
   const n = novaCarreiraTecnico(pacote, { nome: t.nome, nac: t.nac, idade: t.idade, licenca: t.curso?.licenca, idiomas: t.idiomas, ...(t.exJogador ? { exJogador: t.exJogador } : {}), ...(t.prestigio !== undefined ? { prestigio: t.prestigio } : {}),
     continuar: { semente: s.semente, temporada, tabelas: s.tabelasReais } }, clubeId);
@@ -1161,6 +1166,16 @@ export function assumirNovoClube(pacote: PacoteDados, s: SaveTecnico, clubeId: s
   for (const k of ["historico", "bio", "contatos", "pausa", "familia", "namoro", "casa", "casaDoJogador", "negocios", "premios", "temporadasElenco", "exAtletas", "tabelasReais", "palmaresT", "titulosCopa"] as const) if (s[k] !== undefined) (n as unknown as Record<string, unknown>)[k] = s[k];
   n.familiaJog = (s.familiaJog ?? []).map((f) => ({ ...f, noClube: false }));
   n.noticias = [...novidades, ...s.noticias].slice(0, 60);
+  // no meio da temporada: assume com a liga do clube novo já rolando (a tabela até aqui) e as copas dele
+  if (meioDaTemporada) {
+    n.semana = s.semana;
+    if (n.ligaId === s.ligaId) n.tabela = s.tabela.map((x) => ({ ...x }));
+    else { const parcial = tabelaAgora(pacote, { ...n, ligaId: "_" } as SaveTecnico, n.ligaId); if (parcial.length) n.tabela = parcial.map((x) => ({ ...x })); }
+    n.vagasT = { ...(s.vagasT ?? {}) }; delete n.vagasT[clubeId];
+    n.interesses = {};
+    definirExpectativa(pacote, n);
+    noticia(n, "diretoria", `Você chega com a temporada em andamento. A diretoria espera: ${n.diretoria.expectativa.texto.toLowerCase()}.`);
+  }
   // o curso da licença continua; se o clube novo pede mais, ele paga o próximo
   const precisa = licencaExigida(mundo(pacote).clube[n.clubeId]?.forca ?? 60), cur = (n.tecnico.curso ??= { licenca: 2 });
   if (precisa > cur.licenca && !cur.estudando) { cur.estudando = cur.licenca + 1; cur.progresso = 0; }

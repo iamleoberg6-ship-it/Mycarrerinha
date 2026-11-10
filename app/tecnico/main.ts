@@ -24,6 +24,7 @@ import { IMOVEL, nomeImovel, patrimonio, type EstadoCasa } from "../../src/casa"
 import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR, patrimonioInvestido, type EstadoNegocios, type TipoEmpresa, type TipoInvest, type AcaoEmpresa, type DecisaoMes } from "../../src/negocios";
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
+import { listaEmpregos, ligasDoMercado, vagasAbertas, situacaoDoClube, declararInteresse, candidatar, NOME_STATUS, type SituacaoClube } from "../../src/tecnico/empregos";
 import { ENTREVISTA, NOME_PERFIL, perfilDoClube, abrirNegociacao, responderEntrevista, negociarContrato } from "../../src/tecnico/contrato";
 import { COPAS, NOME_FASE, rotuloJogo, type EstadoCopa } from "../../src/copas";
 import { titulosDoClube, timeDeTodosOsTempos, recordesHistoricosDoClube, plantelDoClube, type TemporadaUsuario, type RecordeNome, type TitularHistorico } from "../../src/perfil-clube";
@@ -396,6 +397,29 @@ function escolherVaga(s: SaveTecnico, i: number): string {
 }
 
 // ------------------------------------------------------------------ Liga
+// ------------------------------------------------------------------ Clube › Empregos (mercado de técnicos)
+let ligaEmprego = "", filtroEmprego: "todos" | "balancando" | "vaga" = "todos";
+function abaEmpregos(s: SaveTecnico): string {
+  const ligas = ligasDoMercado(s);
+  if (!ligas.includes(ligaEmprego)) ligaEmprego = s.ligaId;
+  const cor: Record<string, string> = { vaga: "#5FC08A", balancando: "#E06A5A", pressao: "#E3B341", estavel: "#8FA39A" };
+  const vagas = vagasAbertas(s).map((id) => situacaoDoClube(pacote, s, id));
+  const linha = (c: SituacaoClube) => {
+    const tec = c.status === "vaga" ? `<span style="color:${cor.vaga}">Vaga aberta</span>${c.saiu ? ` · ${esc(c.saiu)} caiu` : ""}` : c.seu ? "Você" : c.tecnico ? `${esc(c.tecnico.nome)} · ${c.tecnico.idade} anos${c.tecnico.desde < s.temporada ? ` · ${s.temporada - c.tecnico.desde + 1}ª temporada` : " · chegou neste ano"}` : "—";
+    const interesse = s.interesses?.[c.clubeId] !== undefined;
+    const acoes = c.seu ? "" : c.status === "vaga" ? `<button data-cand="${c.clubeId}">Candidatar-se</button>` : `${interesse ? `<span class="sub">Interesse declarado</span>` : `<button data-int="${c.clubeId}|0">Declarar interesse na mídia</button><button data-int="${c.clubeId}|1">Empresário sonda (discreto)</button>`}`;
+    const req = c.seu ? "" : `<small class="sub" style="display:block">Pede reputação ${c.exige} (você tem ${s.tecnico.reputacao})${c.licenca > (s.tecnico.curso?.licenca ?? 2) ? " · licença maior" : ""}</small>`;
+    return `<div class="v-card"><div style="display:flex;gap:10px;align-items:center"><button class="link-clube" data-perfil="${c.clubeId}">${escudo(c.clubeId)}</button><div style="flex:1;min-width:0"><b>${esc(nomeClube(c.clubeId))}</b><small class="sub" style="display:block">${c.semJogos ? `liga ainda sem jogos (esperado ${c.esperado}º)` : `${c.pos}º de ${c.n} (esperado ${c.esperado}º)`} · ${tec}</small>${req}</div><span style="font-size:12px;font-weight:700;color:${cor[c.status]};white-space:nowrap">${NOME_STATUS[c.status]}</span></div>
+      ${c.seu ? "" : `<div class="v-barra" style="margin:6px 0"><i style="width:${c.pressao}%;background:${cor[c.status]}"></i></div>`}${acoes ? `<div class="v-acoes">${acoes}</div>` : ""}</div>`;
+  };
+  const l = listaEmpregos(pacote, s, ligaEmprego).filter((c) => filtroEmprego === "todos" || (filtroEmprego === "vaga" ? c.status === "vaga" : c.status === "balancando" || c.status === "pressao"));
+  return `<section class="painel"><p class="rotulo">Mercado de técnicos</p><p class="sub" style="margin:0">Quem está estável, sob pressão ou balançando. Declarar interesse em público irrita a sua diretoria e a torcida; o empresário é discreto, mas pode vazar. Se o técnico de lá cair, quem demonstrou interesse é lembrado. Clube sem técnico contrata na hora.</p></section>
+    ${vagas.length ? `<section class="painel"><p class="rotulo">Vagas abertas agora</p>${vagas.map(linha).join("")}</section>` : ""}
+    <section class="painel"><div class="v-acoes" style="margin-bottom:6px">${ligas.map((id) => `<button class="${id === ligaEmprego ? "v-ativo" : ""}" data-ligaemp="${id}">${esc(infoLiga(id).curto)}</button>`).join("")}</div>
+      <div class="v-acoes" style="margin-bottom:8px">${([["todos", "Todos"], ["balancando", "Balançando"], ["vaga", "Sem técnico"]] as const).map(([k, n]) => `<button class="${filtroEmprego === k ? "v-ativo" : ""}" data-filtroemp="${k}">${n}</button>`).join("")}</div>
+      ${l.map(linha).join("") || `<p class="sub">Ninguém nessa situação nesta liga.</p>`}</section>`;
+}
+
 // ------------------------------------------------------------------ entrevista com o presidente e o contrato
 let notaEntrevista: string | undefined;
 function negociacaoHtml(s: SaveTecnico): string {
@@ -423,7 +447,7 @@ function fecharContrato(s: SaveTecnico, c: NonNullable<SaveTecnico["contratoNovo
   s.contratoNovo = c;
   const alvo = s.ofertaEmprego?.clubeId, r = aceitarEmprego(pacote, s);
   fechar();
-  if (r.ok && r.agora && alvo) { save = assumirNovoClube(pacote, s, alvo); save.contratoNovo = undefined; aba = "inicio"; }
+  if (r.ok && r.agora && alvo) { save = assumirNovoClube(pacote, s, alvo, true); save.contratoNovo = undefined; aba = "inicio"; }
   msg = { texto: `${texto} ${r.msg}`, ok: r.ok }; salvar(); render(); window.scrollTo(0, 0);
 }
 
@@ -516,8 +540,8 @@ function perfilClubeT(s: SaveTecnico, clubeId: string): string {
 
 // ------------------------------------------------------------------ Clube
 function abaClube(s: SaveTecnico): string {
-  const subs = `<div class="sub-abas">${[["historia", "História do clube"], ["noticias", "Notícias"], ["financas", "Finanças"], ["patrocinios", "Patrocínios"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
-  return subs + aviso() + (sub.clube === "diretoria" ? abaDiretoria(s) : sub.clube === "comissao" ? abaComissao(s) : sub.clube === "patrocinios" ? abaPatrocinios(s) : sub.clube === "carreira" ? abaCarreira(s) : sub.clube === "historia" ? perfilClubeT(s, s.clubeId).replace(/<div class="botoes" style="margin-top:14px"><button class="botao sec" data-fechar>Fechar<\/button><\/div>/, "") : sub.clube === "noticias" ? abaNoticias(s) : abaFinancas(s));
+  const subs = `<div class="sub-abas">${[["historia", "História do clube"], ["empregos", "Empregos"], ["noticias", "Notícias"], ["financas", "Finanças"], ["patrocinios", "Patrocínios"], ["diretoria", "Diretoria"], ["comissao", "Comissão técnica"]].map(([k, n]) => `<button class="${sub.clube === k ? "ativo" : ""}" data-sub="clube:${k}">${n}</button>`).join("")}</div>`;
+  return subs + aviso() + (sub.clube === "empregos" ? abaEmpregos(s) : sub.clube === "diretoria" ? abaDiretoria(s) : sub.clube === "comissao" ? abaComissao(s) : sub.clube === "patrocinios" ? abaPatrocinios(s) : sub.clube === "carreira" ? abaCarreira(s) : sub.clube === "historia" ? perfilClubeT(s, s.clubeId).replace(/<div class="botoes" style="margin-top:14px"><button class="botao sec" data-fechar>Fechar<\/button><\/div>/, "") : sub.clube === "noticias" ? abaNoticias(s) : abaFinancas(s));
 }
 // ------------------------------------------------------------------ patrocínios do clube
 const hexRgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) || 0);
@@ -886,6 +910,10 @@ document.addEventListener("click", (ev) => {
   if (d.vc) { const [id, sim] = d.vc.split("|"); const r = curtirT(pacote, s, id, sim === "1"); msg = sim === "1" ? { texto: r.msg, ok: r.ok } : undefined; redesenhar(); return; }
   if (d.perfil) { abrir(perfilClubeT(s, d.perfil)); salvar(); return; }
   if (d.passo) { const [id, delta] = d.passo.split("|"), el = document.getElementById(id) as HTMLInputElement | null; if (el) { const v = Math.max(0, (+el.value.replace(/\D/g, "") || 0) + +delta); el.value = v.toLocaleString("pt-BR"); } return; }
+  if (d.ligaemp) { ligaEmprego = d.ligaemp; render(); return; }
+  if (d.filtroemp) { filtroEmprego = d.filtroemp as typeof filtroEmprego; render(); return; }
+  if (d.int) { const [id, disc] = d.int.split("|"); const r = declararInteresse(pacote, s, id, disc === "1"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.cand) { const r = candidatar(pacote, s, d.cand); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.resp && s.negociacaoT) { const [q, o] = d.resp.split("|"); s.negociacaoT.respostas[q] = o; salvar(); abrir(negociacaoHtml(s)); return; }
   if (d.entrevista !== undefined && s.negociacaoT) { const r = responderEntrevista(pacote, s, s.negociacaoT.respostas); notaEntrevista = r.texto; negAnos = s.negociacaoT.oferta.anos; negMulta = s.negociacaoT.oferta.multaMeses; salvar(); abrir(negociacaoHtml(s)); return; }
   if (d.neganos) { negAnos = +d.neganos; const v = lerValor("negSal"); if (v && s.negociacaoT) s.negociacaoT.oferta = { ...s.negociacaoT.oferta, salario: v }; abrir(negociacaoHtml(s)); return; }
