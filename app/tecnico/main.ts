@@ -16,6 +16,8 @@ import { responderEvento, rankingT, TIPO_CONTATO } from "../../src/tecnico/vida"
 import { patrociniosDe, ofertasPatro, assinarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
 import { fotoDoPerfil } from "../visual/mulheres";
+import { gerarEstatCompleta } from "../../src/estatisticas-completas";
+import { estatCompletaHtml } from "../visual/estat-campo";
 import { svgFoto, APARENCIA_PADRAO, CABELOS, CABELOS_TECNICO, NOMES_CABELO_COR, CORES_CABELO, BARBAS, ROUPAS_TECNICO, type Aparencia, type RoupaTecnico } from "../criacao/avatar";
 import { rostoParente } from "../visual/rostos";
 import { NOME_ACAO_FAM, NOME_PARENTESCO, rotuloRelacaoFam, falaSobreVoce, idadeDe, type AcaoFamilia, type EstadoFamilia } from "../../src/familia";
@@ -791,6 +793,19 @@ function abaComissao(s: SaveTecnico): string {
 }
 
 // ------------------------------------------------------------------ partida
+/** As estatísticas completas do jogo do técnico (o seu time com a escalação de verdade; o adversário completo). */
+function estatDoRelatorio(p: Relatorio): string {
+  const w = mundo(pacote), eu: 0 | 1 = p.souCasa ? 0 : 1, de = (meu: boolean): 0 | 1 => (meu ? eu : (1 - eu) as 0 | 1);
+  const conta = (tipo: string, meu: boolean) => p.eventos.filter((e) => e.tipo === tipo && e.meu === meu).length;
+  const par = (tipo: string): [number, number] => (eu === 0 ? [conta(tipo, true), conta(tipo, false)] : [conta(tipo, false), conta(tipo, true)]);
+  const e = gerarEstatCompleta({
+    semente: `${p.casa}|${p.fora}|${p.rodada}|${p.gc}|${p.gf}`, posse: eu === 0 ? p.posse : 100 - p.posse, forca: [w.clube[p.casa]?.forca ?? 65, w.clube[p.fora]?.forca ?? 65], placar: [p.gc, p.gf],
+    gols: p.eventos.filter((x) => x.tipo === "gol").map((x) => ({ time: de(x.meu), min: x.min })), chutes: eu === 0 ? p.chutes : [p.chutes[1], p.chutes[0]],
+    cartoes: { amarelos: par("amarelo"), vermelhos: par("vermelho") },
+    jogadores: p.notas.map((n) => ({ id: n.id, nome: n.nome, pos: n.pos, min: n.min, gols: n.gols, assist: n.assist, nota: n.nota, time: eu })),
+  });
+  return estatCompletaHtml(e, [nomeClube(p.casa), nomeClube(p.fora)], eu);
+}
 function relatorioHtml(p: Relatorio): string {
   const minha = (e: { meu: boolean }) => e.meu;
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button>
@@ -799,7 +814,7 @@ function relatorioHtml(p: Relatorio): string {
     <div class="dl"><span>Posse de bola (seu time)</span><b>${p.posse}%</b><span>Finalizações</span><b>${p.chutes[0]} × ${p.chutes[1]}</b>${p.melhor ? `<span>Melhor em campo</span><b>${esc(p.melhor)}</b>` : ""}</div>
     <div><p class="rotulo">Lances</p>${p.eventos.some((e) => e.tipo !== "lance") ? p.eventos.filter((e) => e.tipo !== "lance").map((e) => `<div class="evento${minha(e) ? "" : " adv"}"><span class="m">${e.min}'</span><span>${e.tipo === "gol" ? "⚽" : e.tipo === "amarelo" ? "🟨" : e.tipo === "vermelho" ? "🟥" : e.tipo === "lesao" ? "✚" : "⇄"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">Jogo sem gols nem grandes lances.</p>`}</div>
     ${p.eventos.some((e) => e.narra) ? `<details class="not"><summary>Narração do jogo</summary>${p.eventos.map((e) => `<div class="evento${minha(e) ? "" : " adv"}"><span class="m">${e.min}'</span><span>${ICO_EV[e.tipo] ?? "•"}</span><span>${esc(e.narra ?? e.texto)}</span></div>`).join("")}</details>` : ""}
-    <div><p class="rotulo">Notas</p><div class="lista">${[...p.notas].sort((a, b) => b.nota - a.nota).map((n) => `<div class="lin" style="cursor:default;grid-template-columns:40px 1fr auto"><span class="num" style="font-size:13px">${n.pos}</span><span class="nm"><b>${esc(n.nome)}</b><small>${n.min}'${n.gols ? ` · ${n.gols} gol${n.gols > 1 ? "s" : ""}` : ""}${n.assist ? ` · ${n.assist} assist.` : ""}</small></span><span class="ov"><strong style="font-size:20px;color:${n.nota >= 7 ? "var(--pos)" : n.nota < 6 ? "var(--neg)" : "var(--ouro-claro)"}">${n.nota.toFixed(1).replace(".", ",")}</strong></span></div>`).join("")}</div></div>`;
+    <div><p class="rotulo">Notas</p><div class="lista">${[...p.notas].sort((a, b) => b.nota - a.nota).map((n) => `<div class="lin" style="cursor:default;grid-template-columns:40px 1fr auto"><span class="num" style="font-size:13px">${n.pos}</span><span class="nm"><b>${esc(n.nome)}</b><small>${n.min}'${n.gols ? ` · ${n.gols} gol${n.gols > 1 ? "s" : ""}` : ""}${n.assist ? ` · ${n.assist} assist.` : ""}</small></span><span class="ov"><strong style="font-size:20px;color:${n.nota >= 7 ? "var(--pos)" : n.nota < 6 ? "var(--neg)" : "var(--ouro-claro)"}">${n.nota.toFixed(1).replace(".", ",")}</strong></span></div>`).join("")}</div></div>${estatDoRelatorio(p)}`;
 }
 
 // ------------------------------------------------------------------ partida ao vivo
