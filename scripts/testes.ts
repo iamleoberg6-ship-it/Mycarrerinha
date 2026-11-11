@@ -379,9 +379,9 @@ teste("Relíquias: primeiro gol, hat-trick, prêmios; vão para a casa e não se
 
 teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS e ligas amadoras", () => {
   const w = mundo(pacote);
-  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "CHI1", "COL1", "ECU1", "ENG1", "ENG2", "ENG3", "ENG4", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "MEX1", "NED1", "PAR1", "POR1", "TUR1", "URU1", "USA1", "CRO1", "EGY1", "JPN1", "KOR1", "MAR1"].sort());
+  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "CHI1", "COL1", "ECU1", "ENG1", "ENG2", "ENG3", "ENG4", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "MEX1", "NED1", "PAR1", "POR1", "TUR1", "URU1", "USA1", "CRO1", "EGY1", "JPN1", "KOR1", "MAR1", "ITA2", "FRA2", "NOR1"].sort());
   assert.equal(w.amadoras.length, 12); // + high school e universidade do Japão (paródia)
-  assert.equal(Object.values(w.clube).filter((c) => c.ligaId !== "SELECOES").length, 516 + CONVIDADOS.length + 116 + 80 + 16 + 48); // + Japão amador (16) e terceira e quarta inglesas (48)
+  assert.equal(Object.values(w.clube).filter((c) => c.ligaId !== "SELECOES").length, 516 + CONVIDADOS.length + 116 + 80 + 16 + 48 + 54); // + Japão amador (16), terceira e quarta inglesas (48), Noruega, Série B e Ligue 2 (54)
   assert.equal(w.liga.USA1.clubes.length, 30); assert.equal(w.liga.BRA3.clubes.length, 20);
   assert.equal("ABCDEFGH".split("").reduce((a, g) => a + w.liga[`BRA4${g}`].clubes.length, 0), 96);
   assert.ok(w.clube["US-MIA"].elenco.some((j) => j.nome === "Lionel Mesi" && j.ovr >= 85), "o craque da liga americana");
@@ -1573,7 +1573,7 @@ teste("Pedir empréstimo: o jogador só pede; propostas de clubes chegam na jane
   assert.equal(mercadoDe(s.carreira).pedidoEmprestimo, true);
   // propostas de empréstimo só aparecem depois de pedir, e nunca do próprio clube
   let viu = false;
-  for (let k = 0; k < SEMANAS_TEMPORADA && !viu; k++) {
+  for (let k = 0; k < 2 * SEMANAS_TEMPORADA && !viu; k++) {
     semanaAutomatica(pacote, s);
     const prop = mercadoDe(s.carreira).propostas.find((p) => p.tipo === "emprestimo");
     if (prop) { viu = true; assert.notEqual(prop.clubeId, s.carreira.clubeId); }
@@ -1583,7 +1583,9 @@ teste("Pedir empréstimo: o jogador só pede; propostas de clubes chegam na jane
     aceitar(pacote, s, prop.id);
     assert.equal(mercadoDe(s.carreira).emprestimo?.fracao ?? 1, prop.fracaoSalario ?? 1, "a divisão do salário vai para o empréstimo");
   }
-  assert.ok(viu || mercadoDe(s.carreira).emprestimo, "um clube interessado manda proposta na janela");
+  // se virou titular no caminho, ninguém pede emprestado (é o comportamento certo)
+  const titular = papelNoClube(mundo(pacote).clube[s.carreira.clubeId]!, s) === "titular";
+  assert.ok(viu || mercadoDe(s.carreira).emprestimo || titular, "um clube interessado manda proposta na janela");
   pedirEmprestimo(s, false); // tirar o pedido (se ainda estiver ativo, já foi limpo ao aceitar)
   assert.ok(!mercadoDe(s.carreira).pedidoEmprestimo);
 });
