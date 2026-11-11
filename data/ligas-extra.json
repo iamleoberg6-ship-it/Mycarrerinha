@@ -1,5 +1,5 @@
 {
-  "aviso": "Terceira e quarta divisões inglesas e colégios e universidades japoneses: clubes em paródia inspirados em times reais, com nomes que lembram os originais (cidades e cores aproximadas). Elencos gerados no jogo. Cidades, estádios, cores e capacidades são aproximados. Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com. Out/2026: campeonatos de high school e universidade do Japão, e terceira e quarta divisões inglesas (paródia). Elitesérie norueguesa, Série B italiana e Ligue 2 francesa: clubes em paródia inspirados nos times reais da temporada 2025-26, com alguns jogadores reais (nomes levemente alterados); o resto do elenco é gerado. 2. Bundesliga, liga belga e liga escocesa: idem (Bruges, Anderlecht, Céltico e Rangeres deixam de ser convidados e passam a jogar a liga do país).",
+  "aviso": "Terceira e quarta divisões inglesas e colégios e universidades japoneses: clubes em paródia inspirados em times reais, com nomes que lembram os originais (cidades e cores aproximadas). Elencos gerados no jogo. Cidades, estádios, cores e capacidades são aproximados. Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com. Out/2026: campeonatos de high school e universidade do Japão, e terceira e quarta divisões inglesas (paródia). Elitesérie norueguesa, Série B italiana e Ligue 2 francesa: clubes em paródia inspirados nos times reais da temporada 2025-26, com alguns jogadores reais (nomes levemente alterados); o resto do elenco é gerado. 2. Bundesliga, liga belga e liga escocesa: idem (Bruges, Anderlecht, Céltico e Rangeres deixam de ser convidados e passam a jogar a liga do país). Dinamarca, Suécia, Grécia, Áustria e Suíça: idem (o Salzburgo deixa de ser convidado e passa a jogar a liga austríaca).",
   "ligas": {
     "URU1": [
       {
@@ -7279,6 +7279,1290 @@
         "cores": [
           "#F5D200",
           "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      }
+    ],
+    "DEN1": [
+      {
+        "id": "DK-FCK",
+        "nome": "Copenhague FC",
+        "apelido": "Leões",
+        "cidade": "Copenhague",
+        "estadio": "Parque Parken",
+        "capacidade": 38000,
+        "cores": [
+          "#FFFFFF",
+          "#0B3D91"
+        ],
+        "padrao": "lisa",
+        "forca": 72,
+        "elenco": [
+          [
+            "Dominik Kotárski",
+            "GOL",
+            72,
+            25,
+            "CRO",
+            1
+          ],
+          [
+            "Pantelis Hatzidiákos",
+            "ZAG",
+            72,
+            28,
+            "GRE",
+            6
+          ],
+          [
+            "Rodrigo Huéscas",
+            "LAT",
+            71,
+            22,
+            "MEX",
+            2
+          ],
+          [
+            "Viktor Claessom",
+            "MEI",
+            71,
+            33,
+            "SWE",
+            7
+          ],
+          [
+            "Mohamed Elyounoussí",
+            "PON",
+            73,
+            31,
+            "NOR",
+            10
+          ],
+          [
+            "Jordan Larsom",
+            "ATA",
+            73,
+            28,
+            "SWE",
+            11
+          ],
+          [
+            "Youssoufa Moukóko",
+            "ATA",
+            70,
+            20,
+            "GER",
+            9
+          ]
+        ]
+      },
+      {
+        "id": "DK-FCM",
+        "nome": "Midjutlândia FC",
+        "apelido": "Ulvene",
+        "cidade": "Herning",
+        "estadio": "Arena MCH",
+        "capacidade": 11400,
+        "cores": [
+          "#111111",
+          "#C8102E"
+        ],
+        "padrao": "lisa",
+        "forca": 72,
+        "elenco": [
+          [
+            "Elías Ólafssom",
+            "GOL",
+            71,
+            25,
+            "ISL",
+            1
+          ],
+          [
+            "Martin Erlič",
+            "ZAG",
+            72,
+            27,
+            "CRO",
+            3
+          ],
+          [
+            "Darío Osório",
+            "PON",
+            73,
+            21,
+            "CHI",
+            11
+          ],
+          [
+            "Aral Simsír",
+            "PON",
+            72,
+            23,
+            "TUR",
+            58
+          ],
+          [
+            "Franculíno",
+            "ATA",
+            72,
+            21,
+            "GNB",
+            9
+          ]
+        ]
+      },
+      {
+        "id": "DK-BIF",
+        "nome": "Brondby IF",
+        "apelido": "Drengene fra Vestegnen",
+        "cidade": "Brøndby",
+        "estadio": "Estádio de Brøndby",
+        "capacidade": 28000,
+        "cores": [
+          "#F5D200",
+          "#0B3D91"
+        ],
+        "padrao": "lisa",
+        "forca": 68,
+        "elenco": [
+          [
+            "Nicolai Valys",
+            "MEI",
+            70,
+            29,
+            "DEN",
+            10
+          ]
+        ]
+      },
+      {
+        "id": "DK-AGF",
+        "nome": "Aarús GF",
+        "apelido": "De Hvide",
+        "cidade": "Aarhus",
+        "estadio": "Parque Ceres",
+        "capacidade": 19400,
+        "cores": [
+          "#FFFFFF",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 67
+      },
+      {
+        "id": "DK-FCN",
+        "nome": "Nordsjélland FC",
+        "apelido": "Tigrene",
+        "cidade": "Farum",
+        "estadio": "Parque do Direito à Escolha",
+        "capacidade": 10000,
+        "cores": [
+          "#C8102E",
+          "#F5D200"
+        ],
+        "padrao": "lisa",
+        "forca": 66
+      },
+      {
+        "id": "DK-RFC",
+        "nome": "Randérs FC",
+        "apelido": "Hestene",
+        "cidade": "Randers",
+        "estadio": "Parque Cepheus",
+        "capacidade": 10300,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 64
+      },
+      {
+        "id": "DK-SIF",
+        "nome": "Silkebórg IF",
+        "apelido": "Guldfisk",
+        "cidade": "Silkeborg",
+        "estadio": "Parque JYSK",
+        "capacidade": 10000,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 64
+      },
+      {
+        "id": "DK-VFF",
+        "nome": "Víborg FF",
+        "apelido": "Grønne",
+        "cidade": "Viborg",
+        "estadio": "Estádio de Viborg",
+        "capacidade": 9600,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 63
+      },
+      {
+        "id": "DK-OB",
+        "nome": "Odênse BK",
+        "apelido": "Striberne",
+        "cidade": "Odense",
+        "estadio": "Parque da Natureza",
+        "capacidade": 15800,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 63
+      },
+      {
+        "id": "DK-SJE",
+        "nome": "Sonderjiske",
+        "apelido": "Os do Sul",
+        "cidade": "Haderslev",
+        "estadio": "Parque Sydbank",
+        "capacidade": 10000,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "DK-VB",
+        "nome": "Véjle BK",
+        "apelido": "Rød-Hvide",
+        "cidade": "Vejle",
+        "estadio": "Parque de Vejle",
+        "capacidade": 10400,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "DK-FFR",
+        "nome": "Fredericía FC",
+        "apelido": "Os do Forte",
+        "cidade": "Fredericia",
+        "estadio": "Estádio Monjasa",
+        "capacidade": 4000,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 59
+      }
+    ],
+    "SWE1": [
+      {
+        "id": "SE-MFF",
+        "nome": "Malmó FF",
+        "apelido": "Di Blåe",
+        "cidade": "Malmö",
+        "estadio": "Estádio Eleda",
+        "capacidade": 22500,
+        "cores": [
+          "#6CB4E4",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 68,
+        "elenco": [
+          [
+            "Erik Botheím",
+            "ATA",
+            70,
+            25,
+            "NOR",
+            9
+          ]
+        ]
+      },
+      {
+        "id": "SE-MJA",
+        "nome": "Mjallby AIF",
+        "apelido": "Os da Costa",
+        "cidade": "Hällevik",
+        "estadio": "Arena Strandvallen",
+        "capacidade": 7000,
+        "cores": [
+          "#F5D200",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 66
+      },
+      {
+        "id": "SE-HAM",
+        "nome": "Hammarbí IF",
+        "apelido": "Bajen",
+        "cidade": "Estocolmo",
+        "estadio": "Arena Tele2",
+        "capacidade": 30000,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 66,
+        "elenco": [
+          [
+            "Nahir Besára",
+            "MEI",
+            69,
+            34,
+            "SWE",
+            10
+          ]
+        ]
+      },
+      {
+        "id": "SE-AIK",
+        "nome": "AIK Solna",
+        "apelido": "Gnaget",
+        "cidade": "Solna",
+        "estadio": "Arena Estrela",
+        "capacidade": 50000,
+        "cores": [
+          "#111111",
+          "#F5D200"
+        ],
+        "padrao": "lisa",
+        "forca": 65
+      },
+      {
+        "id": "SE-DIF",
+        "nome": "Djurgárden IF",
+        "apelido": "Järnkaminerna",
+        "cidade": "Estocolmo",
+        "estadio": "Arena Tele2",
+        "capacidade": 30000,
+        "cores": [
+          "#0B3D91",
+          "#6CB4E4"
+        ],
+        "padrao": "listrasV",
+        "forca": 65
+      },
+      {
+        "id": "SE-IFK",
+        "nome": "IFK Gotemburgo",
+        "apelido": "Blåvitt",
+        "cidade": "Gotemburgo",
+        "estadio": "Estádio Gamla Ullevi",
+        "capacidade": 18400,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 64
+      },
+      {
+        "id": "SE-ELF",
+        "nome": "Elfsborgue IF",
+        "apelido": "Gul-Svart",
+        "cidade": "Borås",
+        "estadio": "Arena Borås",
+        "capacidade": 16900,
+        "cores": [
+          "#F5D200",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 65
+      },
+      {
+        "id": "SE-HAC",
+        "nome": "Hacken BK",
+        "apelido": "Getingarna",
+        "cidade": "Gotemburgo",
+        "estadio": "Arena Bravida",
+        "capacidade": 6300,
+        "cores": [
+          "#F5D200",
+          "#111111"
+        ],
+        "padrao": "listrasV",
+        "forca": 64
+      },
+      {
+        "id": "SE-GAI",
+        "nome": "GAIS Gotemburgo",
+        "apelido": "Makrillarna",
+        "cidade": "Gotemburgo",
+        "estadio": "Estádio Gamla Ullevi",
+        "capacidade": 18400,
+        "cores": [
+          "#0B7A3B",
+          "#111111"
+        ],
+        "padrao": "listrasH",
+        "forca": 63
+      },
+      {
+        "id": "SE-SIR",
+        "nome": "Sírius IK",
+        "apelido": "Blåsvart",
+        "cidade": "Uppsala",
+        "estadio": "Arena Studenternas",
+        "capacidade": 10500,
+        "cores": [
+          "#0B3D91",
+          "#111111"
+        ],
+        "padrao": "listrasV",
+        "forca": 61
+      },
+      {
+        "id": "SE-HBK",
+        "nome": "Halmstad BK",
+        "apelido": "Bollklubben",
+        "cidade": "Halmstad",
+        "estadio": "Estádio Örjans Vall",
+        "capacidade": 10900,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "SE-BP",
+        "nome": "Brommapojkárna",
+        "apelido": "BP",
+        "cidade": "Estocolmo",
+        "estadio": "Estádio Grimsta",
+        "capacidade": 5000,
+        "cores": [
+          "#C8102E",
+          "#111111"
+        ],
+        "padrao": "listrasV",
+        "forca": 61
+      },
+      {
+        "id": "SE-DEG",
+        "nome": "Degerfórs IF",
+        "apelido": "Degerfors",
+        "cidade": "Degerfors",
+        "estadio": "Estádio Stora Valla",
+        "capacidade": 7500,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      },
+      {
+        "id": "SE-VSK",
+        "nome": "Vasterás SK",
+        "apelido": "Grönvitt",
+        "cidade": "Västerås",
+        "estadio": "Arena Hitachi",
+        "capacidade": 7000,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 59
+      },
+      {
+        "id": "SE-KFF",
+        "nome": "Kálmar FF",
+        "apelido": "Röda Bröder",
+        "cidade": "Kalmar",
+        "estadio": "Arena Guldfågeln",
+        "capacidade": 12000,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      },
+      {
+        "id": "SE-OIS",
+        "nome": "Orgryte IS",
+        "apelido": "Sällskapet",
+        "cidade": "Gotemburgo",
+        "estadio": "Estádio Gamla Ullevi",
+        "capacidade": 18400,
+        "cores": [
+          "#C8102E",
+          "#0B3D91"
+        ],
+        "padrao": "listrasV",
+        "forca": 58
+      }
+    ],
+    "GRE1": [
+      {
+        "id": "GR-OLY",
+        "nome": "Olympiakós",
+        "apelido": "Thrylos",
+        "cidade": "Pireu",
+        "estadio": "Estádio Karaiskákis",
+        "capacidade": 32100,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 75,
+        "elenco": [
+          [
+            "Konstantinos Tzolákis",
+            "GOL",
+            76,
+            23,
+            "GRE",
+            88
+          ],
+          [
+            "Panagiotis Rétsos",
+            "ZAG",
+            73,
+            27,
+            "GRE",
+            45
+          ],
+          [
+            "Lorenzo Piróla",
+            "ZAG",
+            74,
+            24,
+            "ITA",
+            5
+          ],
+          [
+            "Dani Garcíá",
+            "VOL",
+            73,
+            35,
+            "ESP",
+            14
+          ],
+          [
+            "Chiquínho",
+            "MEI",
+            76,
+            30,
+            "POR",
+            22
+          ],
+          [
+            "Gelson Martíns",
+            "PON",
+            76,
+            30,
+            "POR",
+            10
+          ],
+          [
+            "Daniel Podênce",
+            "PON",
+            75,
+            30,
+            "POR",
+            56
+          ],
+          [
+            "Ayoub El Káabi",
+            "ATA",
+            78,
+            32,
+            "MAR",
+            9
+          ]
+        ]
+      },
+      {
+        "id": "GR-PAO",
+        "nome": "PAOK Salónica",
+        "apelido": "Dikefalos",
+        "cidade": "Salônica",
+        "estadio": "Estádio Toumba",
+        "capacidade": 28700,
+        "cores": [
+          "#111111",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 73,
+        "elenco": [
+          [
+            "Jiří Pavlénka",
+            "GOL",
+            74,
+            33,
+            "CZE",
+            1
+          ],
+          [
+            "Giannis Konstantélias",
+            "MEI",
+            75,
+            22,
+            "GRE",
+            65
+          ],
+          [
+            "Andrija Živkovič",
+            "PON",
+            74,
+            29,
+            "SRB",
+            14
+          ],
+          [
+            "Fedor Chálov",
+            "ATA",
+            73,
+            27,
+            "RUS",
+            9
+          ]
+        ]
+      },
+      {
+        "id": "GR-AEK",
+        "nome": "AEK Atenas",
+        "apelido": "Enosis",
+        "cidade": "Atenas",
+        "estadio": "Arena OPAP",
+        "capacidade": 32500,
+        "cores": [
+          "#F5D200",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 73,
+        "elenco": [
+          [
+            "Thomas Strakósha",
+            "GOL",
+            74,
+            30,
+            "ALB",
+            1
+          ],
+          [
+            "Orbelín Pinéda",
+            "MEI",
+            74,
+            29,
+            "MEX",
+            13
+          ],
+          [
+            "Mijat Gačinović",
+            "MEI",
+            73,
+            30,
+            "SRB",
+            10
+          ],
+          [
+            "Levi Garcíá",
+            "ATA",
+            73,
+            28,
+            "TRI",
+            7
+          ],
+          [
+            "Luka Jovič",
+            "ATA",
+            74,
+            27,
+            "SRB",
+            9
+          ]
+        ]
+      },
+      {
+        "id": "GR-PAN",
+        "nome": "Panathinaikós",
+        "apelido": "Trifylli",
+        "cidade": "Atenas",
+        "estadio": "Estádio Apostolos Nikolaídis",
+        "capacidade": 16000,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 72,
+        "elenco": [
+          [
+            "Alban Lafónt",
+            "GOL",
+            74,
+            26,
+            "FRA",
+            40
+          ],
+          [
+            "Filip Đuričič",
+            "MEI",
+            73,
+            33,
+            "SRB",
+            10
+          ],
+          [
+            "Tetê",
+            "PON",
+            74,
+            25,
+            "BRA",
+            7
+          ],
+          [
+            "Anass Zaroúry",
+            "PON",
+            72,
+            24,
+            "MAR",
+            11
+          ]
+        ]
+      },
+      {
+        "id": "GR-ARI",
+        "nome": "Áris Salônica",
+        "apelido": "Theos tou Polemou",
+        "cidade": "Salônica",
+        "estadio": "Estádio Kleanthis Vikelídis",
+        "capacidade": 22800,
+        "cores": [
+          "#F5D200",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 67
+      },
+      {
+        "id": "GR-OFI",
+        "nome": "OFI Creta",
+        "apelido": "Omilos",
+        "cidade": "Heraklion",
+        "estadio": "Estádio Theodoros Vardinogiánnis",
+        "capacidade": 9000,
+        "cores": [
+          "#111111",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 64
+      },
+      {
+        "id": "GR-AST",
+        "nome": "Ásteras Trípolis",
+        "apelido": "Asteras",
+        "cidade": "Trípoli",
+        "estadio": "Estádio Theodoros Kolokotrónis",
+        "capacidade": 7400,
+        "cores": [
+          "#F5D200",
+          "#0B3D91"
+        ],
+        "padrao": "lisa",
+        "forca": 63
+      },
+      {
+        "id": "GR-ATR",
+        "nome": "Atrómitos",
+        "apelido": "Peristeri",
+        "cidade": "Peristeri",
+        "estadio": "Estádio de Peristéri",
+        "capacidade": 9000,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 62
+      },
+      {
+        "id": "GR-VOL",
+        "nome": "Vólos NFC",
+        "apelido": "Os do Porto",
+        "cidade": "Volos",
+        "estadio": "Estádio Panthessaliko",
+        "capacidade": 22700,
+        "cores": [
+          "#0B3D91",
+          "#C8102E"
+        ],
+        "padrao": "lisa",
+        "forca": 62
+      },
+      {
+        "id": "GR-PNE",
+        "nome": "Panetolikós",
+        "apelido": "Kanarinia",
+        "cidade": "Agrínio",
+        "estadio": "Estádio Panetolikou",
+        "capacidade": 7300,
+        "cores": [
+          "#F5D200",
+          "#0B3D91"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "GR-LEV",
+        "nome": "Levadiakós",
+        "apelido": "Os da Beócia",
+        "cidade": "Livadeia",
+        "estadio": "Estádio de Livadeia",
+        "capacidade": 6000,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "GR-KIF",
+        "nome": "Kifissiá FC",
+        "apelido": "Os do Norte",
+        "cidade": "Kifissia",
+        "estadio": "Estádio Zirineio",
+        "capacidade": 3500,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      },
+      {
+        "id": "GR-AEL",
+        "nome": "AEL Lárissa",
+        "apelido": "Vissinia",
+        "cidade": "Larissa",
+        "estadio": "Arena AEL",
+        "capacidade": 16100,
+        "cores": [
+          "#7A1E2B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      },
+      {
+        "id": "GR-PSE",
+        "nome": "Panserraikós",
+        "apelido": "Lions of the North",
+        "cidade": "Serres",
+        "estadio": "Estádio Municipal de Serres",
+        "capacidade": 9500,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      }
+    ],
+    "AUT1": [
+      {
+        "convidado": "AT-SAL",
+        "forca": 73
+      },
+      {
+        "id": "AT-STU",
+        "nome": "Sturm Gratz",
+        "apelido": "Blackies",
+        "cidade": "Graz",
+        "estadio": "Arena Merkur",
+        "capacidade": 16300,
+        "cores": [
+          "#111111",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 70,
+        "elenco": [
+          [
+            "Otar Kiteixvili",
+            "MEI",
+            73,
+            29,
+            "GEO",
+            10
+          ],
+          [
+            "Tomi Horvát",
+            "MEI",
+            70,
+            26,
+            "SVN",
+            19
+          ]
+        ]
+      },
+      {
+        "id": "AT-RAP",
+        "nome": "Rápid Viena",
+        "apelido": "Grün-Weiße",
+        "cidade": "Viena",
+        "estadio": "Estádio Allianz",
+        "capacidade": 28000,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 68
+      },
+      {
+        "id": "AT-LAS",
+        "nome": "LASK Línz",
+        "apelido": "Athletiker",
+        "cidade": "Linz",
+        "estadio": "Raiffeisen Arena",
+        "capacidade": 19000,
+        "cores": [
+          "#111111",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 67
+      },
+      {
+        "id": "AT-AUS",
+        "nome": "Áustria Viena",
+        "apelido": "Veilchen",
+        "cidade": "Viena",
+        "estadio": "Arena Generali",
+        "capacidade": 17500,
+        "cores": [
+          "#6A3FA0",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 66
+      },
+      {
+        "id": "AT-WAC",
+        "nome": "Wolfsberguer AC",
+        "apelido": "Wölfe",
+        "cidade": "Wolfsberg",
+        "estadio": "Arena Lavanttal",
+        "capacidade": 7300,
+        "cores": [
+          "#111111",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 64
+      },
+      {
+        "id": "AT-HAR",
+        "nome": "Hartbérg TSV",
+        "apelido": "Os da Estíria",
+        "cidade": "Hartberg",
+        "estadio": "Arena Profertil",
+        "capacidade": 5000,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 62
+      },
+      {
+        "id": "AT-BWL",
+        "nome": "Blau-Weiss Linz",
+        "apelido": "Os Azul e Branco",
+        "cidade": "Linz",
+        "estadio": "Estádio Donaupark",
+        "capacidade": 5600,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 61
+      },
+      {
+        "id": "AT-WSG",
+        "nome": "WSG Tírol",
+        "apelido": "Os do Tirol",
+        "cidade": "Innsbruck",
+        "estadio": "Estádio Tivoli",
+        "capacidade": 16000,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "AT-GAK",
+        "nome": "Grazér AK",
+        "apelido": "Rotjacken",
+        "cidade": "Graz",
+        "estadio": "Arena Merkur",
+        "capacidade": 16300,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      },
+      {
+        "id": "AT-ALT",
+        "nome": "Áltach SCR",
+        "apelido": "Os do Reno",
+        "cidade": "Altach",
+        "estadio": "Estádio Schnabelholz",
+        "capacidade": 8500,
+        "cores": [
+          "#111111",
+          "#F5D200"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      },
+      {
+        "id": "AT-RIE",
+        "nome": "Ríed SV",
+        "apelido": "Wikinger",
+        "cidade": "Ried im Innkreis",
+        "estadio": "Arena Josko",
+        "capacidade": 7300,
+        "cores": [
+          "#0B7A3B",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      }
+    ],
+    "SUI1": [
+      {
+        "id": "CH-BAS",
+        "nome": "Basiléia FC",
+        "apelido": "Rotblau",
+        "cidade": "Basileia",
+        "estadio": "Parque St. Jakob",
+        "capacidade": 38500,
+        "cores": [
+          "#C8102E",
+          "#0B3D91"
+        ],
+        "padrao": "metade",
+        "forca": 70,
+        "elenco": [
+          [
+            "Marwin Hítz",
+            "GOL",
+            70,
+            38,
+            "SUI",
+            1
+          ],
+          [
+            "Xherdan Xaqiri",
+            "MEI",
+            74,
+            34,
+            "SUI",
+            10
+          ]
+        ]
+      },
+      {
+        "id": "CH-YB",
+        "nome": "Young Boyz",
+        "apelido": "Gelb-Schwarz",
+        "cidade": "Berna",
+        "estadio": "Estádio Wankdórf",
+        "capacidade": 31800,
+        "cores": [
+          "#F5D200",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 70,
+        "elenco": [
+          [
+            "Marvin Kéller",
+            "GOL",
+            70,
+            23,
+            "SUI",
+            1
+          ],
+          [
+            "Chris Bédia",
+            "ATA",
+            72,
+            29,
+            "CIV",
+            9
+          ]
+        ]
+      },
+      {
+        "id": "CH-SER",
+        "nome": "Servétte FC",
+        "apelido": "Grenat",
+        "cidade": "Genebra",
+        "estadio": "Estádio de Genebra",
+        "capacidade": 30000,
+        "cores": [
+          "#7A1E2B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 66
+      },
+      {
+        "id": "CH-LUG",
+        "nome": "Lugáno FC",
+        "apelido": "Bianconeri",
+        "cidade": "Lugano",
+        "estadio": "Estádio de Cornaredo",
+        "capacidade": 6300,
+        "cores": [
+          "#111111",
+          "#FFFFFF"
+        ],
+        "padrao": "listrasV",
+        "forca": 66
+      },
+      {
+        "id": "CH-LUZ",
+        "nome": "Lucérna FC",
+        "apelido": "Leuchten",
+        "cidade": "Lucerna",
+        "estadio": "Arena Swissporarena",
+        "capacidade": 16500,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 64
+      },
+      {
+        "id": "CH-STG",
+        "nome": "São Galo FC",
+        "apelido": "Espen",
+        "cidade": "São Galo",
+        "estadio": "Parque Kybun",
+        "capacidade": 19500,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 64
+      },
+      {
+        "id": "CH-FCZ",
+        "nome": "Zúrique FC",
+        "apelido": "Stadtclub",
+        "cidade": "Zurique",
+        "estadio": "Estádio Letzigrúnd",
+        "capacidade": 26000,
+        "cores": [
+          "#FFFFFF",
+          "#0B3D91"
+        ],
+        "padrao": "lisa",
+        "forca": 64
+      },
+      {
+        "id": "CH-GCZ",
+        "nome": "Grasshópper",
+        "apelido": "Hoppers",
+        "cidade": "Zurique",
+        "estadio": "Estádio Letzigrúnd",
+        "capacidade": 26000,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "metade",
+        "forca": 62
+      },
+      {
+        "id": "CH-SIO",
+        "nome": "Sión FC",
+        "apelido": "Os do Valais",
+        "cidade": "Sion",
+        "estadio": "Estádio Tourbillón",
+        "capacidade": 14000,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 62
+      },
+      {
+        "id": "CH-LAU",
+        "nome": "Lausánne-Sport",
+        "apelido": "Os do Lago",
+        "cidade": "Lausanne",
+        "estadio": "Estádio de la Tuilière",
+        "capacidade": 12500,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 62
+      },
+      {
+        "id": "CH-THU",
+        "nome": "Thún FC",
+        "apelido": "Oberländer",
+        "cidade": "Thun",
+        "estadio": "Arena Stockhorn",
+        "capacidade": 10000,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "CH-WIN",
+        "nome": "Winterthúr FC",
+        "apelido": "Os do Norte",
+        "cidade": "Winterthur",
+        "estadio": "Estádio Schützenwiese",
+        "capacidade": 8500,
+        "cores": [
+          "#C8102E",
+          "#FFFFFF"
         ],
         "padrao": "lisa",
         "forca": 60

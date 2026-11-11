@@ -11,7 +11,7 @@ import { licencaExigida } from "../licencas.js";
 import type { Tecnico } from "../tecnicos.js";
 import type { SaveTecnico } from "./motor.js";
 
-export const LIGAS_EMPREGO = ["BRA1", "BRA2", "ENG1", "ESP1", "ITA1", "GER1", "FRA1", "POR1", "NED1", "ARG1", "MEX1", "USA1", "KSA1", "TUR1", "JPN1", "ITA2", "FRA2", "NOR1", "GER2", "BEL1", "SCO1"];
+export const LIGAS_EMPREGO = ["BRA1", "BRA2", "ENG1", "ESP1", "ITA1", "GER1", "FRA1", "POR1", "NED1", "ARG1", "MEX1", "USA1", "KSA1", "TUR1", "JPN1", "ITA2", "FRA2", "NOR1", "GER2", "BEL1", "SCO1", "DEN1", "SWE1", "GRE1", "AUT1", "SUI1"];
 export type StatusTecnico = "vaga" | "balancando" | "pressao" | "estavel";
 export const NOME_STATUS: Record<StatusTecnico, string> = { vaga: "Sem técnico", balancando: "Balançando", pressao: "Sob pressão", estavel: "Estável" };
 export interface SituacaoClube { /** a liga ainda não começou */ semJogos?: boolean; clubeId: string; tecnico?: Tecnico; saiu?: string; status: StatusTecnico; pressao: number; pos: number; esperado: number; n: number; exige: number; licenca: number; seu?: boolean }
