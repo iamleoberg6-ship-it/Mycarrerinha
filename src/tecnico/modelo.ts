@@ -231,11 +231,16 @@ export function forcaDoTime(elenco: Atleta[], esc: Escalacao, tat: Tatica, entro
 }
 
 // ------------------------------------------------------------------ comissão técnica
-export type Funcao = "auxiliar" | "preparador" | "goleiros" | "medico" | "base" | "olheiro";
-export const FUNCOES: Funcao[] = ["auxiliar", "preparador", "goleiros", "medico", "base", "olheiro"];
-export const NOME_FUNCAO: Record<Funcao, string> = { auxiliar: "Auxiliar técnico", preparador: "Preparador físico", goleiros: "Treinador de goleiros", medico: "Médico", base: "Coordenador da base", olheiro: "Olheiro" };
+export type Funcao = "auxiliar" | "treinador" | "preparador" | "goleiros" | "medico" | "fisio" | "analista" | "base" | "olheiro";
+export const FUNCOES: Funcao[] = ["auxiliar", "treinador", "preparador", "goleiros", "medico", "fisio", "analista", "base", "olheiro"];
+export const NOME_FUNCAO: Record<Funcao, string> = { auxiliar: "Auxiliar técnico", treinador: "Treinador de campo", preparador: "Preparador físico", goleiros: "Treinador de goleiros", medico: "Médico", fisio: "Fisioterapeuta", analista: "Analista de desempenho", base: "Coordenador da base", olheiro: "Olheiro" };
+/** Plural de cada função (para a equipe com mais de um). */
+export const NOME_FUNCAO_PL: Record<Funcao, string> = { auxiliar: "Auxiliares técnicos", treinador: "Treinadores de campo", preparador: "Preparadores físicos", goleiros: "Treinadores de goleiros", medico: "Médicos", fisio: "Fisioterapeutas", analista: "Analistas de desempenho", base: "Coordenadores da base", olheiro: "Olheiros" };
 export const EFEITO_FUNCAO: Record<Funcao, string> = {
   auxiliar: "O time pega a tática mais rápido e as conversas rendem mais.",
+  treinador: "Os jogadores evoluem mais nos treinos (técnica, físico, finalização).",
+  fisio: "Recuperação física mais rápida entre os jogos e volta mais cedo de lesão.",
+  analista: "Estuda os adversários: o time entra em campo mais bem armado.",
   preparador: "Recuperação física mais rápida e menos lesões.",
   goleiros: "Os goleiros evoluem mais.",
   medico: "Lesões mais curtas.",

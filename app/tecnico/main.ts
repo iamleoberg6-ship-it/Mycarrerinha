@@ -28,6 +28,7 @@ import { IMOVEL, nomeImovel, patrimonio, type EstadoCasa } from "../../src/casa"
 import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR, patrimonioInvestido, type EstadoNegocios, type TipoEmpresa, type TipoInvest, type AcaoEmpresa, type DecisaoMes } from "../../src/negocios";
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
+import { chanceSituacao } from "../../src/tecnico/gestao";
 import { listaEmpregos, ligasDoMercado, vagasAbertas, situacaoDoClube, declararInteresse, candidatar, NOME_STATUS, type SituacaoClube } from "../../src/tecnico/empregos";
 import { ENTREVISTA, NOME_PERFIL, perfilDoClube, abrirNegociacao, responderEntrevista, negociarContrato } from "../../src/tecnico/contrato";
 import { COPAS, NOME_FASE, rotuloJogo, type EstadoCopa } from "../../src/copas";
@@ -84,7 +85,7 @@ import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
-  proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
+  proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
@@ -92,7 +93,7 @@ import {
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import {
-  FORMACOES, NOMES_FORMACAO, NOME_MENTALIDADE, NOME_NIVEL3, NOME_AT, NOME_AT_GOL, NOME_POS_T, FUNCOES, NOME_FUNCAO, EFEITO_FUNCAO,
+  FORMACOES, NOMES_FORMACAO, NOME_MENTALIDADE, NOME_NIVEL3, NOME_AT, NOME_AT_GOL, NOME_POS_T, FUNCOES, NOME_FUNCAO, NOME_FUNCAO_PL, EFEITO_FUNCAO,
   forcaDoTime, ladoDe, ladoDaVaga, rotuloPos, type Lado, melhorEscalacao, ovrDe, ovrNaVaga, formaDe, disponivel, rotuloEncaixe, valorAtleta, precoIngresso, exDe, idiomasDe, funcaoNaVaga, ovrPos, type Atleta, type PosT, type Funcao,
 } from "../../src/tecnico/modelo";
 
@@ -800,6 +801,7 @@ function abaDiretoria(s: SaveTecnico): string {
   const est = `<div class="estadio-box">${svgEstadio({ ...(ap?.dados ?? { nome: "Estádio", cores: ["#2E7D4F", "#FFFFFF"] }), nome: arenaDoClube(pacote, s).nome, capacidade: s.clube.capacidade, obra: !!obraEst })}</div>${ap?.divideCom.length ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}
     ${obraEst ? `<p class="sub" style="text-align:center;margin:-4px 0 10px">Obra de ampliação: +${(obraEst.lugares ?? 0).toLocaleString("pt-BR")} lugares em ${obraEst.fim - ab} semanas.</p>` : ""}`;
   return `${est}<div class="dl"><span>Confiança</span><b>${Math.round(d.confianca)}/100</b><span>Meta da temporada</span><b>${esc(d.expectativa.texto)} (${d.expectativa.pos}º)</b><span>Centro de treinamento</span><b>${estrelas(s.clube.ctNivel)}</b><span>Categoria de base</span><b>${estrelas(s.clube.baseNivel)}</b></div>
+    ${governoHtml(s)}
     <p class="rotulo" style="margin-top:14px">Pedidos</p>
     ${pedido("estadio", "Ampliar o estádio", `+${(cE.lugares ?? 0).toLocaleString("pt-BR")} lugares, mais bilheteria. Precisa de confiança 55`)}
     ${pedido("ct", `Reformar o centro de treinamento (nível ${Math.min(5, s.clube.ctNivel + 1)})`, "Todo o elenco evolui mais. Precisa de confiança 50")}
@@ -807,15 +809,36 @@ function abaDiretoria(s: SaveTecnico): string {
     ${pedido("verba", "Aumentar o teto salarial (+12%)", "Espaço para renovar e contratar. Precisa de confiança 70 e caixa de quatro meses de salários")}
     <p class="sub" style="margin-top:8px">A confiança sobe com vitórias acima do esperado e com campanha melhor que a meta. Abaixo de 8, você é demitido.</p>`;
 }
+/** Quem manda no clube: presidente e mandato (associativo), o dono (SAF ou empresa), a dívida e a eleição. */
+function governoHtml(s: SaveTecnico): string {
+  const g = s.governo, base = s.clube.folhaBase ?? 1;
+  if (!g) return "";
+  const tipo = g.tipo === "saf" ? `SAF · dono: ${esc(g.dono ?? "")} (${g.perfil === "austero" ? "austero: contrata só com caixa sobrando" : "investidor: põe dinheiro, cobra resultado"})` : g.tipo === "empresa" ? `Clube-empresa · dono: ${esc(g.dono ?? "")}` : `Associativo (dos sócios) · mandato de ${g.mandato} anos`;
+  const div = s.clube.divida ?? 0;
+  const e = g.eleicao, pos = Math.max(1, ordenar(s.tabela).findIndex((x) => x.clube === s.clubeId) + 1);
+  const eleicao = e ? `<div class="evento-t painel" style="margin-top:10px"><p class="rotulo">Eleição para presidente · votação na semana ${e.votacao + 1}</p>
+    ${(["situacao", "oposicao"] as const).map((k) => `<div class="not"><b>${esc(e[k].nome)}</b> <small class="sub">${k === "situacao" ? "situação" : "oposição"}</small><br><small>${esc(e[k].texto)}</small></div>`).join("")}
+    <p class="sub">Pelas pesquisas, a situação tem ${Math.round(chanceSituacao(s, pos, s.diretoria.expectativa.pos) * 100)}% de chance. Se você apoiar quem ganhar, ganha crédito com a nova diretoria; se apoiar quem perder, fica marcado.</p>
+    <div class="v-acoes">${(["situacao", "oposicao", "neutro"] as const).map((k) => `<button class="${(e.apoio ?? "") === k ? "v-ativo" : ""}" data-apoio="${k}">${k === "neutro" ? "Ficar neutro" : `Apoiar ${esc(e[k].nome.split(" ")[0])}`}</button>`).join("")}</div></div>` : "";
+  return `<p class="rotulo" style="margin-top:14px">Quem manda</p><div class="dl"><span>Presidente</span><b>${esc(g.presidente)}</b><span>Modelo</span><b>${tipo}</b>${g.proxEleicao !== undefined ? `<span>Próxima eleição</span><b>${ANO_INICIAL_T + g.proxEleicao}</b>` : ""}<span>Dívida</span><b>${div ? `${curtoBrl(div)} (${(div / base).toFixed(1).replace(".", ",")} folhas)` : "nenhuma"}</b></div>${eleicao}`;
+}
 function abaComissao(s: SaveTecnico): string {
-  return FUNCOES.map((f) => {
-    const m = s.staff[f], cs = candidatos(s, f).filter((c) => c.nome !== m?.nome);
-    return `<details class="painel" style="margin-bottom:8px"${m ? "" : " open"}><summary style="cursor:pointer"><b>${NOME_FUNCAO[f]}</b> · ${m ? `${esc(m.nome)} ${estrelas(m.nivel)}` : `<span class="pill ruim">vaga aberta</span>`}</summary>
-      <p class="sub" style="margin:6px 0">${EFEITO_FUNCAO[f]}${m ? ` Salário ${curtoBrl(m.salario)}/mês.` : ""}</p>
-      ${m ? `<button class="botao sec peq" data-staff-d="${f}">Demitir (3 salários)</button>` : ""}
-      <p class="rotulo" style="margin-top:10px">Disponíveis</p>${cs.map((c) => `<div class="clube-op" style="grid-template-columns:1fr auto"><div><b>${esc(c.nome)}</b> ${estrelas(c.nivel)}${c.ex ? ` <span class="pill bom">Ex-atleta do clube</span>` : ""}<br><small class="sub">${c.nac} · ${c.idade} anos · ${curtoBrl(c.salario)}/mês</small></div><button class="botao peq" data-staff-c="${f}" data-nome="${esc(c.nome)}">Contratar</button></div>`).join("")}
+  const folha = folhaDe(s), custo = folhaStaff(s), corte = s.diretoria.corte;
+  const topo = `<section class="painel"><p class="rotulo">Comissão técnica</p><div class="dl"><span>Pessoas</span><b>${FUNCOES.reduce((a, f) => a + (s.equipe?.[f]?.length ?? 0), 0)} de ${FUNCOES.reduce((a, f) => a + (s.vagasStaff?.[f] ?? 0), 0)} vagas</b><span>Custo por mês</span><b>${curtoBrl(custo)} (${Math.round((custo / Math.max(1, folha)) * 100)}% da folha do elenco)</b></div>
+    <p class="sub" style="margin:6px 0 0">Como no Football Manager: cada função pode ter mais de uma pessoa. O melhor conta inteiro e cada um a mais soma um pedaço. Quem libera as vagas é a diretoria, e ela pede corte quando o caixa aperta.</p>
+    ${corte ? `<p class="aviso-t" style="margin-top:8px">${esc(corte.texto)}</p>` : ""}</section>`;
+  return topo + FUNCOES.map((f) => {
+    const eq = s.equipe?.[f] ?? [], vagas = s.vagasStaff?.[f] ?? 1, nv = nivelStaff(s, f), cheio = eq.length >= vagas;
+    const nomes = new Set(eq.map((m) => m.nome)), cs = candidatos(s, f).filter((c) => !nomes.has(c.nome));
+    const sobra = eq.length > vagas;
+    return `<details class="painel" style="margin-bottom:8px"${!eq.length || sobra ? " open" : ""}><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:8px"><span><b>${eq.length > 1 ? NOME_FUNCAO_PL[f] : NOME_FUNCAO[f]}</b> <small class="sub">${eq.length}/${vagas}</small></span><span>${eq.length ? estrelas(Math.min(5, Math.round(nv))) : `<span class="pill ruim">sem ninguém</span>`}</span></summary>
+      <p class="sub" style="margin:6px 0">${EFEITO_FUNCAO[f]}${eq.length ? ` Força da equipe: ${nv.toFixed(1).replace(".", ",")}.` : ""}</p>
+      ${sobra ? `<p class="aviso-t">Tem ${eq.length - vagas} a mais do que a diretoria autoriza. Dispense alguém até o prazo.</p>` : ""}
+      ${eq.map((m) => `<div class="clube-op" style="grid-template-columns:1fr auto"><div><b>${esc(m.nome)}</b> ${estrelas(m.nivel)}<br><small class="sub">${m.nac} · ${m.idade} anos · ${curtoBrl(m.salario)}/mês</small></div><button class="botao sec peq" data-staff-d="${f}" data-nome="${esc(m.nome)}">Dispensar</button></div>`).join("")}
+      <div class="botoes" style="margin:8px 0"><button class="botao sec peq" data-pede-vaga="${f}">Pedir mais uma vaga à diretoria</button></div>
+      <p class="rotulo" style="margin-top:6px">Disponíveis${cheio ? " (sem vaga livre)" : ""}</p>${cs.map((c) => `<div class="clube-op" style="grid-template-columns:1fr auto"><div><b>${esc(c.nome)}</b> ${estrelas(c.nivel)}${c.ex ? ` <span class="pill bom">Ex-atleta do clube</span>` : ""}<br><small class="sub">${c.nac} · ${c.idade} anos · ${curtoBrl(c.salario)}/mês</small></div><button class="botao peq" data-staff-c="${f}" data-nome="${esc(c.nome)}" ${cheio ? "disabled" : ""}>Contratar</button></div>`).join("")}
     </details>`;
-  }).join("") + `<p class="sub">A lista de disponíveis muda a cada dois meses.</p>`;
+  }).join("") + `<p class="sub">A lista de disponíveis muda a cada dois meses. Dispensar custa 3 salários.</p>`;
 }
 
 // ------------------------------------------------------------------ partida
@@ -1022,7 +1045,9 @@ document.addEventListener("click", (ev) => {
   if (d.treino && d.v) { (s.treino as unknown as Record<string, string>)[d.treino] = d.v; redesenhar(false); return; }
   if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Funcao, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
-  if (d.staffD) { const r = demitirStaff(s, d.staffD as Funcao); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.staffD) { const r = demitirStaff(s, d.staffD as Funcao, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.pedeVaga) { const r = pedirVaga(s, d.pedeVaga as Funcao); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.apoio && s.governo?.eleicao) { s.governo.eleicao.apoio = d.apoio as "situacao" | "oposicao" | "neutro"; msg = { texto: d.apoio === "neutro" ? "Você ficou neutro na eleição." : `Você declarou apoio a ${s.governo.eleicao[d.apoio as "situacao" | "oposicao"].nome}.`, ok: true }; redesenhar(); return; }
   if (d.mpos !== undefined) { filtroMercado.pos = (d.mpos || undefined) as PosT | undefined; render(); return; }
   if (d.midade !== undefined) { filtroMercado.idadeMax = +d.midade || undefined; render(); return; }
   if (d.mliga !== undefined) { filtroMercado.minhaLiga = d.mliga === "1"; render(); return; }

@@ -106,11 +106,11 @@ export function fecharCopasT(pacote: PacoteDados, s: SaveTecnico) {
 }
 /** Recompensa por título (dinheiro, reputação, confiança e torcida). */
 export function premioDeTitulo(s: SaveTecnico, id: CopaId): { dinheiro: number; texto: string } {
-  const p = peso(id), dinheiro = Math.round(s.clube.tv * 1.6 * p);
+  const p = peso(id), dinheiro = Math.round(s.clube.tv * 0.9 * p);
   s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.round(3 * p), 0, 100);
   s.diretoria.confianca = clamp(s.diretoria.confianca + Math.round(6 * p), 0, 100);
   s.clube.torcida = clamp(s.clube.torcida + Math.round(5 * p), 0, 100);
   return { dinheiro, texto: `CAMPEÃO ${COPAS[id].prep === "do" ? "DO" : "DA"} ${COPAS[id].curto.toUpperCase()}!` };
 }
 /** Bônus por vitória num jogo de copa (a premiação por fase). */
-export const bonusVitoriaCopa = (s: SaveTecnico, id: CopaId) => Math.round(s.clube.tv * 0.06 * peso(id));
+export const bonusVitoriaCopa = (s: SaveTecnico, id: CopaId) => Math.round(s.clube.tv * 0.04 * peso(id));
