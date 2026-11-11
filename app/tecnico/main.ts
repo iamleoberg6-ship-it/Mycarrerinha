@@ -29,6 +29,7 @@ import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR,
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
+import { patroSel, ofertasSel, assinarSel, COTAS_SEL, NOME_COTA_SEL, type CotaSel } from "../../src/tecnico/patro-sel";
 import { poolSel, convocarMelhores, convocadosDe, forcaMinhaSel, copasSel, proximoJogoSel, metaNoTorneio, textoMeta, aceitarSelecao, deixarSelecao, listaSelecoes, declararInteresseSel, FORMACOES_SEL, POS_ORDEM, type Candidato, type Formacao, type Estilo } from "../../src/tecnico/selecao-t";
 import { Album, figurinhaArte, type CtxFig } from "../visual/album";
 import type { Figurinha } from "../../src/figurinhas";
@@ -564,7 +565,28 @@ function abaSelecao(s: SaveTecnico): string {
     ${ult ? `<section class="painel"><p class="rotulo">Últimos jogos</p>${ult}</section>` : ""}
     ${art.length ? `<section class="painel"><p class="rotulo">Artilheiros com você</p>${art.map((x) => `<div class="not" style="display:flex;justify-content:space-between"><span>${esc(x.nome)} <small class="sub">${x.pos} · ${x.j} jogos</small></span><span><b>${x.g}</b> gols · ${x.a} assist.</span></div>`).join("")}</section>` : ""}
     ${sel.titulos.length ? `<section class="painel"><p class="rotulo">Títulos pela seleção</p>${sel.titulos.map((x) => `<div class="not">🏆 <b>${esc(x.nome)}</b> · ${ANO_INICIAL_T + x.t}</div>`).join("")}</section>` : ""}
+    ${patroSelHtml(s)}
     <div class="botoes"><button class="botao sec" data-sel-sair>Deixar o cargo na seleção</button></div>`;
+}
+/** Patrocínios da federação: a camisa só leva o fornecedor; os oficiais aparecem fora do uniforme. */
+function patroSelHtml(s: SaveTecnico): string {
+  const sel = s.selecao!, p = patroSel(pacote, s), ofs = ofertasSel(pacote, s), info = infoClube(pacote, sel.id), [a, b] = info?.cores ?? ["#888", "#FFF"];
+  const f = p.contratos.fornecedor && MARCA[p.contratos.fornecedor.marca], contraste = claro(a) ? "#111111" : "#FFFFFF", ano = (t: number) => ANO_INICIAL_T + t;
+  const camisa = camisaFrente({ cores: [a, b], modelo: "lisa" }, { escudo: corpoEscudo(idClube(sel.id), a, b, info?.nome), fornecedor: f ? simboloMarca(f, contraste, a) : undefined });
+  const mes = Object.values(p.contratos).reduce((x, c) => x + (c && c.ate >= s.temporada ? c.valor : 0), 0);
+  const cartao = (k: CotaSel) => {
+    const c = p.contratos[k], m = c ? MARCA[c.marca] : undefined, l = ofs[k] ?? [];
+    const atual = c && m ? `<div class="patro-atual">${logoSvg(m, 24)}<div><b>${curtoBrl(c.valor)}/mês</b><small class="sub">${esc(NOME_CATEGORIA[m.categoria])} · ${c.anos} anos · até ${ano(c.ate)}${c.ate <= s.temporada ? " · último ano" : ""}</small></div></div>` : `<p class="sub">Cota livre.</p>`;
+    const ofertas = l.map((o) => { const mo = MARCA[o.marca]; if (!mo) return ""; const anos = [o.anos - 2, o.anos, o.anos + 2].filter((x) => x >= 2);
+      return `<div class="patro-oferta">${logoSvg(mo, 22)}<small class="sub">${esc(NOME_CATEGORIA[mo.categoria])} · oferece <b>${curtoBrl(o.valor)}/mês</b> por ${o.anos} anos (${curtoBrl(o.valor * 12 * o.anos)} no total)${o.recusou ? " · última chance" : ""}</small>
+        ${campoValor(`psv-${k}-${o.marca}`, o.valor)}<select class="campo-sel" id="psa-${k}-${o.marca}" aria-label="Anos de contrato">${anos.map((x) => `<option value="${x}"${x === o.anos ? " selected" : ""}>${x} anos${x < o.anos ? " (a marca paga menos)" : x > o.anos ? " (a marca topa pagar mais)" : ""}</option>`).join("")}</select>
+        <button class="botao peq" data-psel="${k}|${o.marca}">Pedir este valor</button></div>`; }).join("");
+    return `<div class="not"><p class="rotulo" style="margin:0">${NOME_COTA_SEL[k]}${k === "fornecedor" ? " · a única marca na camisa" : " · fora do uniforme"}</p>${atual}${ofertas ? `<p class="rotulo" style="margin-top:8px">${c ? "Ofertas para depois do contrato" : "Ofertas"}</p>${ofertas}` : ""}</div>`;
+  };
+  return `<section class="painel"><p class="rotulo">Patrocínios da seleção</p>
+    <div style="display:flex;gap:12px;align-items:center"><div style="width:90px;flex:none">${camisa}</div><p class="sub" style="margin:0">Na camisa de seleção só entra o fornecedor de material: nada de master nem manga. Os patrocinadores oficiais (banco, companhia aérea, bebida...) aparecem em propaganda, nas placas e no fundo das entrevistas. Os valores sobem muito com o tamanho da seleção, e as marcas preferem contrato longo.</p></div>
+    <div class="dl" style="margin-top:8px"><span>Entra por mês</span><b>${curtoBrl(mes)}</b><span>Arrecadado com você</span><b>${curtoBrl(p.arrecadado)}</b></div>
+    ${COTAS_SEL.map(cartao).join("")}<p class="sub">O dinheiro é da federação. Contrato acima do valor da oferta agrada a federação, e com confiança alta a renovação do seu contrato vem com aumento.</p></section>`;
 }
 /** Lista de quem dá para chamar (os melhores de cada posição que ainda não estão na lista). */
 function poolSelHtml(s: SaveTecnico): string {
@@ -1221,6 +1243,7 @@ document.addEventListener("click", (ev) => {
     if (d.selDesc) { sel.convocados = sel.convocados.filter((k) => k !== d.selDesc); sel.titulares = sel.titulares.filter((k) => k !== d.selDesc); redesenhar(); return; }
     if (d.selPool !== undefined) { abrir(poolSelHtml(s)); return; }
     if (d.selConv) { if (sel.convocados.length < 23 && !sel.convocados.includes(d.selConv)) sel.convocados.push(d.selConv); salvar(); abrir(poolSelHtml(s)); render(); return; }
+    if (d.psel) { const [k, marca] = d.psel.split("|"), anos = +((document.getElementById(`psa-${k}-${marca}`) as HTMLSelectElement | null)?.value ?? 0); const r = assinarSel(pacote, s, k as CotaSel, marca, lerValor(`psv-${k}-${marca}`), anos); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
     if (d.selSair !== undefined) { const r = deixarSelecao(pacote, s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   }
   if (d.grama) { const r = ajustarGrama(s, +d.grama); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }

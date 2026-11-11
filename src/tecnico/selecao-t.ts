@@ -12,6 +12,7 @@ import {
 } from "../copas.js";
 import { participantesCopa, participantesTorneio } from "../selecoes-copas.js";
 import { figurinhaLivre } from "../figurinhas.js";
+import { viradaPatroSel } from "./patro-sel.js";
 import type { PosT } from "./modelo.js";
 import { ovrDe } from "./modelo.js";
 import type { SaveTecnico } from "./motor.js";
@@ -38,6 +39,7 @@ export interface SelecaoT {
   jogos: JogoSel[]; copas?: Partial<Record<CopaId, EstadoCopa>>; copasT?: number;
   /** pontos das eliminatórias no ciclo (vale a vaga na Copa) */ elim: { p: number; j: number };
   titulos: { t: number; id: CopaId; nome: string }[]; avaliadas: string[]; avisos?: string[];
+  /** fornecedor de material e patrocinadores oficiais da federação */ patro?: import("./patro-sel.js").PatroSel;
 }
 export interface OfertaSel { pais: string; salario: number; texto: string; expira: number }
 const semanaAbs = (s: SaveTecnico) => s.temporada * 60 + s.semana;
@@ -309,9 +311,10 @@ export function declararInteresseSel(pacote: PacoteDados, s: SaveTecnico, pais: 
 export function viradaSelecao(pacote: PacoteDados, s: SaveTecnico, tAntes: number, nota: (t: string) => void) {
   const sel = s.selecao;
   if (sel) {
+    for (const t of viradaPatroSel(s, tAntes)) nota(t);
     if (ehCopaDoMundo(tAntes)) sel.elim = { p: 0, j: 0 };
     if (tAntes >= sel.ate) {
-      if (sel.confianca >= 55) { sel.ate = proximaCopa(tAntes + 1); nota(`A federação renovou com você ${artigo(pacote, sel.pais).em} até a Copa de ${ANO_INICIAL_T + sel.ate}.`); }
+      if (sel.confianca >= 55) { sel.ate = proximaCopa(tAntes + 1); if (sel.confianca >= 70) sel.salario = Math.round(sel.salario * 1.12 / 1000) * 1000; nota(`A federação renovou com você ${artigo(pacote, sel.pais).em} até a Copa de ${ANO_INICIAL_T + sel.ate}.`); }
       else { nota(`Acabou o seu ciclo ${artigo(pacote, sel.pais).em}: a federação não renovou.`); s.selecao = undefined; }
     }
     return;

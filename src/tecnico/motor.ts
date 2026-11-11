@@ -18,6 +18,7 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import { mesPatroSel } from "./patro-sel.js";
 import { semanaSelecao, selPendente, viradaSelecao, type SelecaoT, type OfertaSel } from "./selecao-t.js";
 import type { Figurinha } from "../figurinhas.js";
 import { figurinhasDoAnoT, figurinhaDeAcessoT } from "./album-t.js";
@@ -350,6 +351,7 @@ function venderCamisas(s: SaveTecnico): { n: number; fator: number } {
   return { n, fator };
 }
 function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
+  try { mesPatroSel(pacote, s); } catch (err) { console.error(err); }
   arrumarClube(pacote, s);
   const base = s.clube.folhaBase ?? folhaDe(s), capF = clamp(Math.sqrt(s.clube.capacidade / 35000), 0.7, 1.3), g = s.governo;
   const patro = receitaPatro(pacote, s), somaPatro = Object.values(patro).reduce((x, y) => x + y, 0);
