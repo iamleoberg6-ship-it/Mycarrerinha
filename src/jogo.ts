@@ -1,5 +1,6 @@
 // A carreira jogável, semana a semana. Tudo que o jogo precisa guardar fica num Save (JSON).
 // Cada sorteio usa uma semente derivada do save + semana, então recarregar a página não muda resultados.
+import { figurinhaDeHattrick, figurinhaDeDespedida } from "./clube-vivo.js";
 import { TACA_DO_TORNEIO } from "./trofeus.js";
 import { RNG, clamp } from "./rng.js";
 import { ATRIBUTOS, ovr as calcOvr, evoluirSemana, type Atributo, type Atributos, type Grupo, type Intensidade, type Participacao, type Posicao } from "./atributos.js";
@@ -243,6 +244,7 @@ export interface Carreira {
   contrato?: ClausulasContrato;
   /** vestiário do clube atual, rival pessoal (e os de antes), torcida de cada clube, cidade onde mora e álbum */
   vestiario?: Vestiario; rival?: Rival; rivaisPassados?: Rival[]; torcidaViva?: EstadoTorcida; cidade?: EstadoCidade; cidadesMoradas?: string[]; album?: Figurinha[];
+  /** camisas vendidas com o seu nome em cada temporada (e o lugar no elenco) */ camisasHist?: { ano: number; clube: string; n: number; pos: number; total: number }[];
   bonusEvolucao: number; patrocinioMensal: number; mesesPatrocinio: number; pressao: number; vidaNoturna: number; exposicao: number;
   temporada: number; semana: number; ordem: string[]; tabela: LinhaTabela[]; stats: Stats; historico: ResumoTemporada[];
 }
@@ -1335,6 +1337,7 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
     }, (id) => (s.casa.reliquias ?? []).some((r) => r.id === id));
     receberReliquias(s, ganhos, eventos);
     // golaços (relíquias de bola) viram figurinha de golaço no álbum
+    if (gols >= 3) figurinhaDeHattrick(pacote, s, `${c.temporada}-${c.semana}`, `${gols} gols contra o ${clubeCasa(pacote, adversario).apelido} · ${meusGols} × ${golsAdv}`);
     for (const g of ganhos) if (g.reliquia.id.startsWith("bola-")) figurinhaDeGolaco(pacote, s, g.reliquia.id, `${g.reliquia.nome ?? "Golaço"} · ${meusGols} × ${golsAdv} contra o ${clubeCasa(pacote, adversario).apelido}`);
   }
   c.formaUlt = [...c.formaUlt.slice(-4), nota];
@@ -2700,6 +2703,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   if (!c.fase && (c.aposentadoria?.temporada === c.temporada - 1 || r.idade >= 40 || (!!c.mercado?.semClube && r.idade >= 35))) {
     checarRecordes(pacote, s, eventos);
     c.encerrada = despedida(pacote, s, c.aposentadoria?.temporada === c.temporada - 1 ? "anunciada" : r.idade >= 40 ? "idade" : "sem-clube");
+    figurinhaDeDespedida(pacote, s, r.ano);
     noticia(s, "clube", `${j.apelido} pendura as chuteiras`, c.encerrada.texto, { k: "trofeu" });
     return r;
   }

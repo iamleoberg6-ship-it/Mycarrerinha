@@ -29,6 +29,10 @@ import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR,
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
+import { Album, figurinhaArte, type CtxFig } from "../visual/album";
+import type { Figurinha } from "../../src/figurinhas";
+import { bandeiraSvg } from "../../src/bandeiras";
+import { rankingCamisas, totalCamisas, fmtMil, precoCamisa } from "../../src/camisas";
 import { scoutDe, faixaDe, textoFaixa, textoPot, statusObs, observar, mudarFoco, vagasFoco, vagasObs, forcaScout, olhoScout, FOCO_JOVENS, FOCO_LIVRES, type Faixa } from "../../src/tecnico/scout";
 import { DEPS, NOME_DEP, HABS, HABS_DEP, NOME_HAB, CARGOS, CARGOS_DEP, CHEFE_DEP, notaNoCargo, fatorChefe, melhoresHabs, type Dep, type Cargo, type Hab } from "../../src/tecnico/staff";
 import { listaEmpregos, ligasDoMercado, vagasAbertas, situacaoDoClube, declararInteresse, candidatar, NOME_STATUS, type SituacaoClube } from "../../src/tecnico/empregos";
@@ -41,7 +45,7 @@ import { NOME_LINGUA, rotuloNivel, linguaDe, nivelEm, idiomasIniciais } from "..
 /** Do save do jogador aposentado: licença (dos Estudos) e idiomas (nível de 0 a 3 vira 0 a 95). */
 type HistJ = { ano: number; idade: number; clube: string; clubeId?: string; nota?: number; jogos: number; gols: number; assist: number; titulo: boolean; base: number; parcial?: boolean; premios?: string[] };
 type SaveJogador = { semente: string; casa?: { saldo?: number }; jogador: { nome: string; apelido: string; nacionalidade: string; idade: number; posicao?: string; aparencia?: Partial<Aparencia> };
-  carreira: { encerrada?: { ano: number; idade: number; texto: string; nivel?: { titulo: string }; recordes?: string[] }; fama: number; temporada: number; historico?: HistJ[];
+  carreira: { album?: Figurinha[]; encerrada?: { ano: number; idade: number; texto: string; nivel?: { titulo: string }; recordes?: string[] }; fama: number; temporada: number; historico?: HistJ[];
     estudos?: { idiomas: Record<string, number>; formacoes: string[] };
     relacoes?: { lista: Record<string, { nome: string; clubeId: string; nivel: number; aposentado?: boolean; companheiro?: boolean }> };
     namoro?: { filhos?: { nome: string; ano: number; menina?: boolean; futebol?: { fase: string; ovr: number; pot: number; clubeId?: string } }[] };
@@ -64,7 +68,7 @@ function vindoDoJogador(jog: SaveJogador, pausa: number): NonNullable<DadosTecni
   // a temporada em que ele parou (a carreira de técnico começa na seguinte, mais a pausa)
   // a vida fora do campo vem inteira: pais, irmãos, companheira, filhos, ex e o dinheiro guardado
   const vida = { familia: c.familia as unknown as EstadoFamilia | undefined, namoro: c.namoro as unknown as EstadoNamoro | undefined, saldo: jog.casa?.saldo, casa: jog.casa as unknown as EstadoCasa | undefined, negocios: (c as { negocios?: EstadoNegocios }).negocios };
-  return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio: bioCompleta, contatos, familia, vida };
+  return { semente: jog.semente, temporada: ano - ANO_INICIAL_T, pausa, bio: bioCompleta, contatos, familia, vida, album: (c.album ?? []).map((f) => ({ ...f })) };
 }
 let pausaEscolhida = 0;
 /** O tamanho do nome que o jogador fez (0 a 100): fama, títulos, prêmios individuais, gigantes em que jogou e idiomas. */
@@ -87,7 +91,7 @@ import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
-  proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
+  proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
@@ -106,6 +110,8 @@ const ler = <T>(k: string): T | null => { try { return JSON.parse(localStorage.g
 const gravar = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem armazenamento */ } };
 
 let save: SaveTecnico | null = ler<SaveTecnico>(CHAVE_TECNICO);
+// carreiras de técnico de antes do álbum: as figurinhas do jogador vêm do save dele (o mesmo jogador)
+if (save && !save.album && save.bio) { const jog = ler<SaveJogador>("mycarrerinha:save"); if (jog?.carreira.album?.length && jog.jogador.apelido === save.bio.apelido) save.album = jog.carreira.album.map((f) => ({ ...f })); }
 let aba: "inicio" | "elenco" | "tatica" | "liga" | "clube" | "vida" = "inicio";
 let sub = { elenco: "jogadores", clube: "financas", vida: "perfil" } as Record<string, string>;
 let filtro = "todos";
@@ -744,6 +750,33 @@ function abaVida(s: SaveTecnico): string {
   const corpo = sub.vida === "familia" ? vidaFamilia(s) : sub.vida === "app" ? vidaApp(s) : sub.vida === "contatos" ? vidaContatos(s) : sub.vida === "visual" ? vidaVisual(s) : sub.vida === "negocios" ? vidaNegocios(s) : vidaPerfil(s);
   return subs + aviso() + corpo;
 }
+/** Card do álbum na bio: as últimas figurinhas e o botão de abrir. */
+function albumCardT(s: SaveTecnico): string {
+  const al = s.album ?? [], ult = [...al].sort((a, b) => b.ano - a.ano).slice(0, 3);
+  return `<section class="painel"><p class="rotulo">Álbum de figurinhas</p>${al.length ? `<button class="album-t" data-album-t style="all:unset;cursor:pointer;display:flex;gap:12px;align-items:center;width:100%"><span style="display:flex;gap:4px;width:150px;flex:none">${ult.map((f) => `<span class="fig ${f.raridade}" style="width:48px">${figurinhaArte(f, ctxFigT(s))}</span>`).join("")}</span><span><b>Abrir o álbum</b><br><small class="sub">${al.length} figurinhas${al.some((f) => f.posicao !== "TEC") ? " · a carreira de jogador e a de técnico" : ""}</small></span></button>` : `<p class="sub">A primeira figurinha de técnico sai no fim da temporada: uma por ano, com jogos, vitórias e posição, e especiais para título, acesso, técnico do ano e marcas da carreira.</p>`}</section>`;
+}
+/** O que a arte das figurinhas precisa no modo técnico: o técnico de roupa de beira de campo, ou o jogador de uniforme (álbum antigo). */
+function ctxFigT(s: SaveTecnico): CtxFig {
+  const ap = (f: Figurinha) => ({ ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) });
+  const v = s.tecnico.visual ?? { roupa: "polo", cor: "clube" };
+  return {
+    nome: s.tecnico.exJogador?.apelido ?? s.tecnico.nome,
+    escudo: (id) => id.startsWith("sel-") ? bandeiraSvg(id.slice(4)) : id.startsWith("marca-") ? (MARCA[id.slice(6)] ? logoSvg(MARCA[id.slice(6)], 44) : "") : escudo(id),
+    bandeira: (c) => bandeiraSvg(c),
+    retrato: (f) => {
+      if (f.posicao === "TEC") { const [a, b] = f.cores, esc2 = `<svg viewBox="0 0 26 30" width="26" height="30">${corpoEscudo(idClube(f.clubeId), a, b, f.clube)}</svg>`; return svgFoto({ aparencia: ap(f), tecnico: { roupa: v.roupa as RoupaTecnico, cor: a.toUpperCase() === "#FFFFFF" ? "#F4F2EC" : a, cor2: b, escudo: esc2 }, semFundo: true }); }
+      if (f.tipo === "familia") return svgFoto({ aparencia: ap(f), traje: "social", semFundo: true });
+      const c1 = f.cores[0];
+      return svgFoto({ aparencia: ap(f), camisa: { cor1: c1.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : c1, cor2: f.cores[1] ?? "#111111", estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo", semFundo: true });
+    },
+    marca: (f) => { const m = f.contrato ? MARCA[f.contrato.marca] : undefined; return m ? logoSvg(m, 44) : undefined; },
+  };
+}
+function abrirAlbumT(s: SaveTecnico) {
+  abrir(`<div id="albumT" style="min-height:600px"></div>`);
+  const el = document.getElementById("albumT");
+  if (el) new Album(el, { figs: () => s.album ?? [], ctx: () => ctxFigT(s), nome: () => s.tecnico.exJogador?.apelido ?? s.tecnico.nome, fechar: () => ($("dlg") as HTMLDialogElement).close() }).abrir(-1);
+}
 function vidaPerfil(s: SaveTecnico): string {
   completarVida(s); casaT(pacote, s);
   const t = s.tecnico, n = s.namoro, par = n?.par, filhos = n?.filhos ?? [];
@@ -752,7 +785,8 @@ function vidaPerfil(s: SaveTecnico): string {
     <div class="dl" style="margin-top:8px"><span>Clube</span><b>${esc(nomeClube(s.clubeId))}</b><span>Reputação</span><b>${t.reputacao}/100</b><span>Salário</span><b>${curtoBrl(salarioTecnico(s))}/mês</b>${t.contrato ? `<span>Contrato</span><b>até ${ANO_INICIAL_T + t.contrato.ate} · multa ${curtoBrl(t.contrato.multa)}</b>` : ""}<span>No bolso</span><b>${curtoBrl(bolso(s))}</b><span>Vida pessoal</span><b>${esc(resumoFam)}</b></div>
     <div class="botoes" style="margin-top:10px"><button class="botao sec" data-sub="vida:familia">Ver a família</button></div></section>
     <section class="painel"><p class="rotulo">Sua casa</p>${(() => { const c = casaT(pacote, s), m = IMOVEL[c.imovel]; return `<h3 style="margin:0">${esc(nomeImovel(c, m))}</h3><p class="sub">${esc(m.local)} · ${c.proprios.includes(c.imovel) ? "imóvel próprio" : `aluguel ${curtoBrl(m.aluguel)}/mês`} · ${c.objetos.length} itens · ${(c.carros ?? []).length} ${(c.carros ?? []).length === 1 ? "carro" : "carros"}</p><p class="sub">Patrimônio: ${curtoBrl(patrimonio(c))}</p>`; })()}
-    <div class="botoes" style="margin-top:10px"><button class="botao" data-casa>Entrar em casa</button></div></section>`;
+    <div class="botoes" style="margin-top:10px"><button class="botao" data-casa>Entrar em casa</button></div></section>
+    ${albumCardT(s)}`;
   return cab + abaCarreira(s).replace(/<section class="painel"><p class="rotulo">Contatos da época de jogador<\/p>[\s\S]*$/, "");
 }
 function vidaContatos(s: SaveTecnico): string {
@@ -800,6 +834,18 @@ function abaNoticias(s: SaveTecnico): string {
   const ICO: Record<string, string> = { jogo: "⚽", clube: "🏟️", elenco: "👕", diretoria: "💼", dinheiro: "💰", vida: "❤️" };
   return `<p class="rotulo">Notícias</p>${s.noticias.map((n) => `<div class="not"><small>${ICO[n.tipo] ?? "•"} ${esc(n.quando)}</small>${esc(n.texto)}</div>`).join("") || `<p class="sub">Nada por enquanto.</p>`}`;
 }
+/** Camisas vendidas na temporada: total, ranking por jogador (com barra) e os campeões de venda das anteriores. */
+function camisasHtml(s: SaveTecnico): string {
+  const v = s.camisas?.temporada === s.temporada ? s.camisas : undefined, hist = s.camisasHist ?? [];
+  if (!v && !hist.length) return `<p class="rotulo" style="margin-top:14px">Camisas vendidas</p><p class="sub">A conta das camisas fecha no fim de cada mês.</p>`;
+  const rk = v ? rankingCamisas(v).slice(0, 10) : [], max = rk[0]?.[2] ?? 1, tot = v ? totalCamisas(v) : 0;
+  return `<p class="rotulo" style="margin-top:14px">Camisas vendidas · ${ANO_INICIAL_T + s.temporada}</p>
+    ${v ? "" : `<p class="sub">A conta da temporada nova começa no fim do primeiro mês.</p>`}
+    ${v ? `<div class="dl"><span>Total na temporada</span><b>${fmtMil(tot)}</b><span>Sem nome (lisas)</span><b>${fmtMil(v.semNome)}</b><span>Preço da oficial</span><b>${valorBrl(precoCamisa(infoLiga(s.ligaId).fLiga))}</b></div>
+    <p class="sub" style="margin:6px 0">O clube fica com os royalties (entram no mês como "Camisas vendidas"). Craque, artilheiro, reforço novo e cria da base vendem mais.</p>
+    ${rk.map(([id, nome, n], i) => { const a = s.elenco.find((x) => x.id === id); return `<div class="not" style="display:flex;align-items:center;gap:10px"><b style="width:18px;text-align:right">${i + 1}</b><span style="flex:1"><b>${esc(nome)}</b>${a ? ` <small class="sub">${a.pos} · ${a.numero}</small>` : ` <small class="sub">saiu</small>`}<i style="display:block;height:6px;border-radius:3px;margin-top:4px;background:linear-gradient(90deg,var(--ouro) ${Math.round((n / max) * 100)}%,transparent 0)"></i></span><b>${fmtMil(n)}</b></div>`; }).join("")}` : ""}
+    ${hist.length ? `<details class="not"><summary>Temporadas anteriores</summary>${hist.map((h) => `<div class="not"><small>${ANO_INICIAL_T + h.temporada} · ${fmtMil(h.total)} camisas</small>${h.top.slice(0, 3).map(([n, q], i) => `${i + 1}º ${esc(n)} (${fmtMil(q)})`).join(" · ")}</div>`).join("")}</details>` : ""}`;
+}
 function abaFinancas(s: SaveTecnico): string {
   const li = infoLiga(s.ligaId), manut = Math.round(s.clube.capacidade * 10 * Math.max(0.4, li.fLiga)), cotas = Object.values(receitaPatro(pacote, s)).reduce((x, y) => x + y, 0), mensal = s.clube.tv + s.clube.patrocinio + cotas - folhaDe(s) - folhaStaff(s) - manut;
   const linha = (o: Record<string, number>, sinal: string) => Object.entries(o).filter(([, v]) => v).map(([k, v]) => `<span>${esc(k)}</span><b class="${sinal}">${sinal === "neg" ? "−" : "+"}${curtoBrl(v)}</b>`).join("");
@@ -810,6 +856,7 @@ function abaFinancas(s: SaveTecnico): string {
       <span>Manutenção do estádio</span><b>${curtoBrl(manut)}/mês</b><span>Fixo do mês (sem bilheteria)</span><b class="${mensal < 0 ? "neg" : "pos"}">${curtoBrl(mensal)}</b>
       <span>Estádio</span><b>${s.clube.capacidade.toLocaleString("pt-BR")} lugares</b><span>Ingresso médio</span><b>${valorBrl(precoIngresso(li.fLiga))}</b>
     </div></section>
+    ${camisasHtml(s)}
     <p class="rotulo" style="margin-top:14px">Meses fechados</p>${s.financas.length ? s.financas.slice(0, 8).map((m) => {
       const r = Object.values(m.receitas).reduce((a, b) => a + b, 0), d = Object.values(m.despesas).reduce((a, b) => a + b, 0);
       return `<details class="not"><summary>${esc(m.rotulo)} · <b class="${r - d < 0 ? "neg" : ""}" style="color:${r - d < 0 ? "var(--neg)" : "var(--pos)"}">${r - d < 0 ? "" : "+"}${curtoBrl(r - d)}</b></summary><div class="dl" style="margin-top:6px">${linha(m.receitas, "pos")}${linha(m.despesas, "neg")}</div></details>`;
@@ -818,7 +865,7 @@ function abaFinancas(s: SaveTecnico): string {
 function abaDiretoria(s: SaveTecnico): string {
   const d = s.diretoria, ab = semanaAbs(s);
   const pedido = (p: Pedido, titulo: string, texto: string) => {
-    const c = custoPedido(s, p), andando = d.obras.find((o) => o.tipo === p), max = (p === "ct" && s.clube.ctNivel >= 5) || (p === "base" && s.clube.baseNivel >= 5);
+    const c = custoPedido(s, p), andando = d.obras.find((o) => o.tipo === p), max = (p === "ct" && s.clube.ctNivel >= 5) || (p === "base" && s.clube.baseNivel >= 5) || (p === "gramado" && (s.clube.gramado ?? 3) >= 5) || (p === "conforto" && (s.clube.conforto ?? 3) >= 5);
     return `<div class="not"><b>${titulo}</b><small style="font-size:13px;margin:2px 0 6px">${texto}${c.custo ? ` · custo ${curtoBrl(c.custo)}` : ""}</small>${andando ? `<span class="pill aviso">Em obra · ${andando.fim - ab} semanas</span>` : max ? `<span class="pill bom">Nível máximo</span>` : `<button class="botao sec peq" data-ped="${p}">Pedir à diretoria</button>`}</div>`;
   };
   const cE = custoPedido(s, "estadio"), info = infoClube(pacote, s.clubeId), obraEst = d.obras.find((o) => o.tipo === "estadio");
@@ -826,13 +873,24 @@ function abaDiretoria(s: SaveTecnico): string {
   const est = `<div class="estadio-box">${svgEstadio({ ...(ap?.dados ?? { nome: "Estádio", cores: ["#2E7D4F", "#FFFFFF"] }), nome: arenaDoClube(pacote, s).nome, capacidade: s.clube.capacidade, obra: !!obraEst })}</div>${ap?.divideCom.length ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}
     ${obraEst ? `<p class="sub" style="text-align:center;margin:-4px 0 10px">Obra de ampliação: +${(obraEst.lugares ?? 0).toLocaleString("pt-BR")} lugares em ${obraEst.fim - ab} semanas.</p>` : ""}`;
   return `${est}<div class="dl"><span>Confiança</span><b>${Math.round(d.confianca)}/100</b><span>Meta da temporada</span><b>${esc(d.expectativa.texto)} (${d.expectativa.pos}º)</b><span>Centro de treinamento</span><b>${estrelas(s.clube.ctNivel)}</b><span>Categoria de base</span><b>${estrelas(s.clube.baseNivel)}</b></div>
+    ${gramadoHtml(s)}
     ${governoHtml(s)}
     <p class="rotulo" style="margin-top:14px">Pedidos</p>
     ${pedido("estadio", "Ampliar o estádio", `+${(cE.lugares ?? 0).toLocaleString("pt-BR")} lugares, mais bilheteria. Precisa de confiança 55`)}
     ${pedido("ct", `Reformar o centro de treinamento (nível ${Math.min(5, s.clube.ctNivel + 1)})`, "Todo o elenco evolui mais. Precisa de confiança 50")}
     ${pedido("base", `Investir na base (nível ${Math.min(5, s.clube.baseNivel + 1)})`, "Garotos melhores e em maior número a cada temporada. Precisa de confiança 45")}
+    ${pedido("gramado", `Trocar o gramado (nível ${Math.min(5, (s.clube.gramado ?? 3) + 1)})`, "Bola rola melhor para quem tem técnica e menos lesões em casa. Obra rápida (5 semanas). Precisa de confiança 40")}
+    ${pedido("conforto", `Reformar arquibancadas e cadeiras (conforto ${Math.min(5, (s.clube.conforto ?? 3) + 1)})`, "Cadeiras novas, cobertura e banheiros: mais público, ingresso mais caro e torcida mais feliz. Precisa de confiança 50")}
     ${pedido("verba", "Aumentar o teto salarial (+12%)", "Espaço para renovar e contratar. Precisa de confiança 70 e caixa de quatro meses de salários")}
     <p class="sub" style="margin-top:8px">A confiança sobe com vitórias acima do esperado e com campanha melhor que a meta. Abaixo de 8, você é demitido.</p>`;
+}
+/** O gramado do estádio: qualidade, conforto e a altura da grama (o técnico escolhe, de 20 a 30 mm). */
+function gramadoHtml(s: SaveTecnico): string {
+  const h = s.clube.grama ?? 25, est = estiloDoTime(s);
+  const dica = est >= 0.6 ? "Seu time toca a bola e joga com ritmo: grama mais baixa (20–23 mm) acelera o jogo a seu favor." : est <= -0.6 ? "Seu time é mais físico e se fecha: grama mais alta (27–30 mm) segura a bola e trava quem gosta de tocar." : "Seu time está no meio-termo: a altura padrão (25 mm) não atrapalha ninguém.";
+  return `<p class="rotulo" style="margin-top:14px">Estádio e gramado</p><div class="dl"><span>Qualidade do gramado</span><b>${estrelas(s.clube.gramado ?? 3)}</b><span>Conforto das arquibancadas</span><b>${estrelas(s.clube.conforto ?? 3)}</b><span>Altura da grama</span><b>${h} mm</b></div>
+    <div class="chips" style="margin:8px 0">${[20, 22, 24, 25, 26, 28, 30].map((v) => `<button class="chip${v === h ? " ativo" : ""}" data-grama="${v}">${v} mm</button>`).join("")}</div>
+    <p class="sub">Vale só nos jogos em casa e fica sempre dentro da faixa usada nos gramados oficiais (20 a 30 mm). Grama baixa deixa a bola rápida; grama alta deixa o jogo lento e ajuda o time mais fraco a segurar o favorito. ${dica}</p>`;
 }
 /** Quem manda no clube: presidente e mandato (associativo), o dono (SAF ou empresa), a dívida e a eleição. */
 function governoHtml(s: SaveTecnico): string {
@@ -1086,6 +1144,8 @@ document.addEventListener("click", (ev) => {
   if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffD) { const r = demitirStaff(s, d.staffD as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.albumT !== undefined) { abrirAlbumT(s); return; }
+  if (d.grama) { const r = ajustarGrama(s, +d.grama); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.foco) { const r = mudarFoco(s, d.foco); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.observar) { const r = observar(s, d.observar, d.clube || undefined); msg = { texto: r.msg, ok: r.ok }; if (($("dlg") as HTMLDialogElement).open && d.clube) { msg = undefined; msgNeg = { texto: r.msg, ok: r.ok }; salvar(); abrir(negociarHtml(s, d.observar, d.clube)); render(); return; } redesenhar(); return; }
   if (d.poeCargo) { const [dep, nome, cargo] = d.poeCargo.split("|"); const r = mudarCargo(s, dep as Dep, nome, cargo as Cargo); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }

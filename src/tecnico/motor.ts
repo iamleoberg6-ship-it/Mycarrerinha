@@ -18,6 +18,9 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import type { Figurinha } from "../figurinhas.js";
+import { figurinhasDoAnoT, figurinhaDeAcessoT } from "./album-t.js";
+import { camisasDoMes, dividirCamisas, somarCamisas, totalCamisas, rankingCamisas, type VendaTemporada, type HistCamisas } from "../camisas.js";
 import { scoutDe, semanaScout, faixaDe, type EstadoScout } from "./scout.js";
 import { DEPS, NOME_DEP, CARGOS, CARGOS_DEP, ORDEM_INICIAL, vagasIniciaisDep, nivelCargo, notaNoCargo, melhorCargo, fatorAtributos, type Dep, type Deps, type Cargo } from "./staff.js";
 import { gerarNome } from "../nomes.js";
@@ -50,9 +53,10 @@ export interface Relatorio {
   eventos: EventoPartida[]; notas: NotaPartida[]; posse: number; chutes: [number, number]; melhor?: string;
 }
 export interface LinhaFinancas { rotulo: string; receitas: Record<string, number>; despesas: Record<string, number> }
-export interface Obra { tipo: "estadio" | "ct" | "base"; nivel?: number; lugares?: number; fim: number; custo: number }
+export interface Obra { tipo: "estadio" | "ct" | "base" | "gramado" | "conforto"; nivel?: number; lugares?: number; fim: number; custo: number }
 export interface Clube {
   saldo: number; tv: number; patrocinio: number; capacidade: number; ctNivel: number; baseNivel: number; tetoFolha: number;
+  /** qualidade do gramado (1 a 5), altura da grama (mm, 20 a 30) e conforto das arquibancadas (1 a 5) */ gramado?: number; grama?: number; conforto?: number;
   /** humor da torcida, 0 a 100 */ torcida: number;
   /** o tamanho da folha do clube (a régua das receitas e despesas), a dívida e há quantos meses o caixa fecha no vermelho */
   folhaBase?: number; divida?: number; mesesVermelho?: number;
@@ -71,6 +75,8 @@ export interface SaveTecnico {
   /** (antigo) uma pessoa por função; hoje a comissão é a equipe */ staff: Partial<Record<Funcao, Membro>>;
   /** comissão técnica: várias pessoas por função, nas vagas que a diretoria autoriza */ equipe?: Partial<Record<Funcao, Membro[]>>; vagasStaff?: Record<Funcao, number>;
   /** a estrutura do clube: departamentos com chefe e equipe, cada um num cargo */ deps?: Deps; vagasDep?: Record<Dep, number>;
+  /** álbum de figurinhas (o do jogador continua aqui) e os números da carreira de técnico */ album?: Figurinha[]; statsT?: { j: number; v: number; e: number; d: number };
+  /** camisas vendidas na temporada (por jogador) e o histórico das anteriores */ camisas?: VendaTemporada; camisasHist?: HistCamisas[];
   /** o que o scout sabe do mundo: conhecimento por liga, focos e relatórios */ scout?: EstadoScout;
   /** quem manda no clube (presidente eleito, dono da SAF) */ governo?: Governo;
   clube: Clube;
@@ -160,7 +166,7 @@ export interface DadosTecnico { nome: string; nac: string; idade: number; exJoga
   /** contrato já negociado (entrevista com o presidente) */ contrato?: Contrato;
   /** continuação da carreira de jogador: o mesmo mundo (semente), a temporada em que parou, a pausa antes de treinar, a bio, os contatos e a família que joga */
   vindoDe?: { semente: string; temporada: number; pausa: number; bio: BioJogador; contatos: Contato[]; familia: FamiliarJogador[];
-    /** pais, irmãos, namoro, filhos e o dinheiro guardado da carreira de jogador */ vida?: { familia?: EstadoFamilia; namoro?: EstadoNamoro; saldo?: number; casa?: EstadoCasa; negocios?: EstadoNegocios } } }
+    /** pais, irmãos, namoro, filhos e o dinheiro guardado da carreira de jogador */ vida?: { familia?: EstadoFamilia; namoro?: EstadoNamoro; saldo?: number; casa?: EstadoCasa; negocios?: EstadoNegocios }; album?: Figurinha[] } }
 /** Licença do técnico (quem começa direto já tem a B). */
 export const licencaT = (s: SaveTecnico) => s.tecnico.curso?.licenca ?? 2;
 export const idiomasT = (s: SaveTecnico) => (s.tecnico.idiomas ??= idiomasIniciais(s.tecnico.nome, s.tecnico.nac, s.tecnico.idade));
@@ -206,6 +212,7 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   if (d.vindoDe) {
     const v = d.vindoDe, anos = v.pausa + 1;
     s.bio = v.bio; s.contatos = v.contatos; s.pausa = v.pausa;
+    if (v.album?.length) s.album = v.album.map((f) => ({ ...f }));
     if (v.vida) trazerVida(s, v.vida.familia, v.vida.namoro, v.vida.saldo, v.vida.casa, v.vida.negocios);
     // a família que joga envelhece e evolui no tempo em que você ficou fora
     s.familiaJog = v.familia.map((f) => { let ovr = f.ovr; for (let k = 0; k < anos; k++) ovr = Math.min(f.pot, ovr + (f.idade + k < 24 ? 4 : f.idade + k < 30 ? 1 : -1)); return { ...f, idade: f.idade + anos, ovr }; }).filter((f) => f.idade <= 38);
@@ -300,21 +307,55 @@ export function arrumarClube(pacote: PacoteDados, s: SaveTecnico) {
   s.clube.divida ??= dividaInicial(pacote, s, s.clube.folhaBase);
   s.governo ??= governoInicial(pacote, s);
   scoutDe(s);
+  const nv = nivelDoClube(pacote, s);
+  s.clube.gramado ??= clamp(nv, 1, 5); s.clube.grama ??= 25; s.clube.conforto ??= clamp(nv - 1, 1, 5);
+}
+/** O estilo do seu time (positivo = toque rápido, posse e ritmo; negativo = jogo físico, fechado e de contra-ataque). */
+export function estiloDoTime(s: SaveTecnico): number {
+  const tit = s.esc.titulares.map((id) => s.elenco.find((a) => a.id === id)).filter((a): a is Atleta => !!a && a.pos !== "GOL");
+  const pas = tit.length ? tit.reduce((x, a) => x + (a.at.PAS + a.at.DRI + a.at.VIS) / 3, 0) / tit.length : 65;
+  const t = s.tatica;
+  return clamp((pas - 66) / 10 + (t.ritmo - 1) * 0.5 + (t.mentalidade - 2) * 0.3 - (t.contraAtaque ? 0.4 : 0) + (t.pressao - 1) * 0.2, -2, 2);
+}
+/** Efeito do gramado num jogo em casa: grama baixa acelera a bola (ajuda quem toca rápido), grama alta segura o jogo
+ *  (ajuda quem se fecha e o time mais fraco); gramado ruim atrapalha quem tem técnica. */
+export function efeitoGramado(s: SaveTecnico, fAdv: number, fMeu: number): { me: number; adv: number } {
+  const h = s.clube.grama ?? 25, rap = (25 - h) / 5, est = estiloDoTime(s), q = s.clube.gramado ?? 3;
+  let me = 1 + 0.025 * rap * est + 0.006 * (q - 3) * Math.max(0, est), adv = 1 + 0.006 * (q - 3);
+  // grama alta é a arma do mais fraco: o favorito de fora perde velocidade
+  if (rap < 0 && fAdv > fMeu) adv *= 1 + 0.02 * rap;
+  if (rap > 0 && fAdv > fMeu) adv *= 1 + 0.01 * rap;
+  return { me, adv };
 }
 
 // ------------------------------------------------------------------ dinheiro
 /** Bilheteria bruta de um jogo em casa: pela régua do clube (a folha), pela ocupação e um pouco pelo tamanho do estádio. */
-export const bilheteria = (s: SaveTecnico, ocup: number, peso: number) => Math.round((s.clube.folhaBase ?? folhaDe(s)) * 0.16 * ocup * clamp(Math.sqrt(s.clube.capacidade / 35000), 0.7, 1.3) * peso);
+export const bilheteria = (s: SaveTecnico, ocup: number, peso: number) => Math.round((s.clube.folhaBase ?? folhaDe(s)) * 0.16 * ocup * clamp(Math.sqrt(s.clube.capacidade / 35000), 0.7, 1.3) * peso * (0.88 + 0.04 * (s.clube.conforto ?? 3)));
 const receber = (s: SaveTecnico, k: string, v: number) => { s.mes.receitas[k] = (s.mes.receitas[k] ?? 0) + v; };
 const gastar = (s: SaveTecnico, k: string, v: number) => { s.mes.despesas[k] = (s.mes.despesas[k] ?? 0) + v; };
+/** As camisas do mês: o total sai do tamanho do clube e cresce com craque no elenco e reforço novo; divide por jogador. */
+function venderCamisas(s: SaveTecnico): { n: number; fator: number } {
+  if (!s.camisas || s.camisas.temporada !== s.temporada) {
+    if (s.camisas && totalCamisas(s.camisas)) (s.camisasHist ??= []).unshift({ temporada: s.camisas.temporada, total: totalCamisas(s.camisas), top: rankingCamisas(s.camisas).slice(0, 5).map(([, n, q]) => [n, q]) });
+    s.camisasHist = (s.camisasHist ?? []).slice(0, 12);
+    s.camisas = { temporada: s.temporada, porJogador: {}, nomes: {}, semNome: 0 };
+  }
+  const ovrs = s.elenco.map(ovrDe).sort((a, b) => b - a), novos = s.elenco.filter((a) => a.desde === s.temporada && !a.base).length;
+  const fator = clamp(0.8 + ((ovrs[0] ?? 70) - 72) / 40 + ((ovrs[1] ?? 70) - 72) / 80 + novos * 0.03, 0.7, 1.7);
+  const n = Math.round(camisasDoMes(s.clube.capacidade, s.clube.torcida, fLigaDe(s), Math.floor(s.semana / 4)) * fator);
+  const perfis = s.elenco.map((a) => ({ id: a.id, nome: a.nome, pos: a.pos, ovr: ovrDe(a), idade: a.idade, gols: a.gols, assist: a.assist, jogos: a.jogos, novo: a.desde === s.temporada && !a.base, base: a.base }));
+  somarCamisas(s.camisas, dividirCamisas(n, perfis), Object.fromEntries(s.elenco.map((a) => [a.id, a.nome])));
+  return { n, fator };
+}
 function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
   arrumarClube(pacote, s);
   const base = s.clube.folhaBase ?? folhaDe(s), capF = clamp(Math.sqrt(s.clube.capacidade / 35000), 0.7, 1.3), g = s.governo;
   const patro = receitaPatro(pacote, s), somaPatro = Object.values(patro).reduce((x, y) => x + y, 0);
   // receitas fixas do mês: TV, patrocínios, sócio-torcedor e licenciamento (pela torcida)
-  const socio = Math.round(base * 0.1 * (0.5 + s.clube.torcida / 100));
-  const rec = { ...s.mes.receitas, "TV": s.clube.tv, ...patro, "Outros patrocínios": s.clube.patrocinio, "Sócio-torcedor e licenciamento": socio };
-  const fixasRec = s.clube.tv + s.clube.patrocinio + somaPatro + socio;
+  const socio = Math.round(base * 0.075 * (0.5 + s.clube.torcida / 100));
+  const camisas = venderCamisas(s), roy = Math.round(base * 0.03 * (0.5 + s.clube.torcida / 100) * camisas.fator);
+  const rec = { ...s.mes.receitas, "TV": s.clube.tv, ...patro, "Outros patrocínios": s.clube.patrocinio, "Sócio-torcedor": socio, [`Camisas vendidas (${camisas.n.toLocaleString("pt-BR")})`]: roy };
+  const fixasRec = s.clube.tv + s.clube.patrocinio + somaPatro + socio + roy;
   // despesas fixas: salários, comissão, encargos e impostos, manutenção do estádio e do CT, viagens e a parcela da dívida
   const encargos = Math.round((folhaDe(s) + folhaStaff(s)) * 0.15), manut = Math.round(base * 0.05 * capF * (0.8 + 0.1 * s.clube.ctNivel)), viagens = Math.round(base * 0.035);
   const parcela = parcelaDivida(s.clube.divida ?? 0), amort = Math.round((s.clube.divida ?? 0) / 120);
@@ -345,12 +386,15 @@ function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
 }
 
 // ------------------------------------------------------------------ diretoria
-export type Pedido = "estadio" | "ct" | "base" | "verba";
+export type Pedido = "estadio" | "ct" | "base" | "verba" | "gramado" | "conforto";
 export function custoPedido(s: SaveTecnico, p: Pedido): { custo: number; lugares?: number; nivel?: number } {
   const fL = fLigaDe(s);
   if (p === "estadio") { const lugares = Math.max(3000, Math.round((s.clube.capacidade * 0.15) / 1000) * 1000); return { custo: custoObra("estadio", 0, fL, lugares), lugares }; }
   if (p === "ct") return { custo: custoObra("ct", s.clube.ctNivel + 1, fL), nivel: s.clube.ctNivel + 1 };
   if (p === "base") return { custo: custoObra("base", s.clube.baseNivel + 1, fL), nivel: s.clube.baseNivel + 1 };
+  const base = s.clube.folhaBase ?? folhaDe(s);
+  if (p === "gramado") { const nivel = (s.clube.gramado ?? 3) + 1; return { custo: Math.round(base * 0.35 * nivel / 1e4) * 1e4, nivel }; }
+  if (p === "conforto") { const nivel = (s.clube.conforto ?? 3) + 1; return { custo: Math.round(s.clube.capacidade * 260 * nivel * Math.max(0.35, fL) / 1e5) * 1e5, nivel }; }
   return { custo: 0 };
 }
 export function pedirDiretoria(s: SaveTecnico, p: Pedido): { ok: boolean; msg: string } {
@@ -363,14 +407,14 @@ export function pedirDiretoria(s: SaveTecnico, p: Pedido): { ok: boolean; msg: s
     noticia(s, "diretoria", "A diretoria aumentou o teto salarial em 12%.");
     return { ok: true, msg: "Aprovado: o teto da folha subiu 12%." };
   }
-  if ((p === "ct" || p === "base") && (nivel ?? 6) > 5) return { ok: false, msg: "Já está no nível máximo." };
-  const minimo = p === "estadio" ? 55 : p === "ct" ? 50 : 45;
+  if ((p === "ct" || p === "base" || p === "gramado" || p === "conforto") && (nivel ?? 6) > 5) return { ok: false, msg: "Já está no nível máximo." };
+  const minimo = p === "estadio" ? 55 : p === "ct" ? 50 : p === "conforto" ? 50 : p === "gramado" ? 40 : 45;
   if (conf < minimo) return { ok: false, msg: `A diretoria não aprovou. Ela só investe nisso com confiança de ${minimo} ou mais (hoje: ${Math.round(conf)}).` };
   if (s.clube.saldo < custo) return { ok: false, msg: "A diretoria gostou da ideia, mas o clube não tem esse dinheiro em caixa." };
-  const semanas = p === "estadio" ? 30 : p === "ct" ? 20 : 16;
+  const semanas = p === "estadio" ? 30 : p === "ct" ? 20 : p === "gramado" ? 5 : p === "conforto" ? 18 : 16;
   s.clube.saldo -= custo; gastar(s, "Obras", custo);
   d.obras.push({ tipo: p, fim: ab + semanas, custo, ...(lugares ? { lugares } : {}), ...(nivel ? { nivel } : {}) });
-  const o = p === "estadio" ? `a ampliação do estádio (+${lugares!.toLocaleString("pt-BR")} lugares)` : p === "ct" ? `a reforma do centro de treinamento (nível ${nivel})` : `a melhoria da base (nível ${nivel})`;
+  const o = p === "estadio" ? `a ampliação do estádio (+${lugares!.toLocaleString("pt-BR")} lugares)` : p === "ct" ? `a reforma do centro de treinamento (nível ${nivel})` : p === "gramado" ? `a troca do gramado (nível ${nivel})` : p === "conforto" ? `a reforma das arquibancadas e cadeiras (conforto ${nivel})` : `a melhoria da base (nível ${nivel})`;
   noticia(s, "diretoria", `A diretoria aprovou ${o}. Obra de ${semanas} semanas.`);
   return { ok: true, msg: `Aprovado: ${o}. Fica pronta em ${semanas} semanas.` };
 }
@@ -617,8 +661,9 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   const melhor = (k: "FAL" | "PEN") => [...campo].sort((p, q) => exDe(q.a)[k] - exDe(p.a)[k])[0];
   const bFal = melhor("FAL"), bPen = melhor("PEN");
   const bp = nivelCargo(s.deps, "t_bp"), bola = (1 + ((bFal ? exDe(bFal.a).FAL : 60) - 60) / 900 + ((bPen ? exDe(bPen.a).PEN : 60) - 60) / 1400) * (1 + 0.008 * bp);
-  const lMe = ((av.souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto * bola;
-  const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp);
+  const gr = av.souCasa ? efeitoGramado(s, fAdv, (atk + def) / 2) : { me: 1, adv: 1 };
+  const lMe = ((av.souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto * bola * gr.me;
+  const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp) * gr.adv;
   av.lambdas.push([lMe, lAdv]);
   const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai > min && !av.fora.includes(x.a.id));
   const peso = <T>(lista: T[], fw: (x: T) => number) => { const t = lista.reduce((a, x) => a + fw(x), 0); let r = rng.next() * t; for (const x of lista) { r -= fw(x); if (r <= 0) return x; } return lista[lista.length - 1]; };
@@ -680,7 +725,7 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   for (const x of campo) {
     if (av.fora.includes(x.a.id) && !st(x).vermelho) continue;
     const c = av.cond[x.a.id] ?? x.a.condicao;
-    if (!rng.chance(0.008 * (1 + (100 - c) / 70) * (1 - 0.06 * prep) * (tat.ritmo === 2 ? 1.2 : 1) * (x.a.idade >= 31 ? 1.2 : 1) * ((x.sai - x.ent) / 45))) continue;
+    if (!rng.chance(0.008 * (1 + (100 - c) / 70) * (1 - 0.06 * prep) * (tat.ritmo === 2 ? 1.2 : 1) * (x.a.idade >= 31 ? 1.2 : 1) * (av.souCasa ? 1 + (3 - (s.clube.gramado ?? 3)) * 0.1 : 1) * ((x.sai - x.ent) / 45))) continue;
     const r = rng.next(), base = r < 0.65 ? rng.int(1, 2) : r < 0.93 ? rng.int(3, 6) : rng.int(10, 24), semanas = Math.max(1, Math.round(base * (1 - 0.08 * med)));
     const tipo = semanas <= 2 ? "Lesão muscular leve" : semanas <= 6 ? "Estiramento" : rng.pick(["Lesão no joelho", "Fratura no pé", "Ruptura no tornozelo"]);
     const min = rng.int(Math.max(x.ent + 1, ini + 1), Math.max(x.ent + 1, x.sai - 1));
@@ -868,7 +913,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
       // bilheteria
       if (p.souCasa) {
         const pos = ordenar(s.tabela).findIndex((t) => t.clube === s.clubeId) + 1, n = s.ordem.length;
-        const ocup = clamp(0.38 + s.clube.torcida / 220 + (pos <= 4 ? 0.1 : pos > n - 4 ? -0.08 : 0) + ((w.clube[adv]?.forca ?? 60) > (w.clube[s.clubeId]?.forca ?? 60) ? 0.08 : 0), 0.2, 1);
+        const ocup = clamp(0.38 + 0.025 * ((s.clube.conforto ?? 3) - 3) + s.clube.torcida / 220 + (pos <= 4 ? 0.1 : pos > n - 4 ? -0.08 : 0) + ((w.clube[adv]?.forca ?? 60) > (w.clube[s.clubeId]?.forca ?? 60) ? 0.08 : 0), 0.2, 1);
         p.publico = Math.round(s.clube.capacidade * ocup);
         const bruto = bilheteria(s, ocup, 1);
         receber(s, "Bilheteria", bruto); gastar(s, "Operação dos jogos", Math.round(bruto * 0.25));
@@ -934,6 +979,8 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   for (const o of s.diretoria.obras.filter((x) => x.fim <= ab)) {
     if (o.tipo === "estadio") { s.clube.capacidade += o.lugares ?? 0; noticia(s, "clube", `Estádio ampliado: agora cabem ${s.clube.capacidade.toLocaleString("pt-BR")} torcedores.`); }
     if (o.tipo === "ct") { s.clube.ctNivel = o.nivel ?? s.clube.ctNivel + 1; noticia(s, "clube", `Centro de treinamento reformado (nível ${s.clube.ctNivel}).`); }
+    if (o.tipo === "gramado") { s.clube.gramado = o.nivel ?? (s.clube.gramado ?? 3) + 1; noticia(s, "clube", `Gramado novo no estádio (nível ${s.clube.gramado}): bola rolando melhor e menos lesão.`); }
+    if (o.tipo === "conforto") { s.clube.conforto = o.nivel ?? (s.clube.conforto ?? 3) + 1; s.clube.torcida = clamp(s.clube.torcida + 3, 0, 100); noticia(s, "clube", `Arquibancadas reformadas (conforto ${s.clube.conforto}): cadeiras novas, mais público e ingresso melhor.`); }
     if (o.tipo === "base") { s.clube.baseNivel = o.nivel ?? s.clube.baseNivel + 1; noticia(s, "clube", `Categoria de base melhorada (nível ${s.clube.baseNivel}).`); }
     eventos.push("Uma obra do clube ficou pronta.");
   }
@@ -1003,6 +1050,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   const resumo = `${ANO_INICIAL_T + t}: ${pos}º lugar na ${li.curto}${campeao ? " — CAMPEÃO!" : ""} (a diretoria esperava ${esperado}º).`;
   noticia(s, "clube", resumo);
   const premiosAno = premiosDoAno(pacote, s, pos, esperado);
+  try { figurinhasDoAnoT(pacote, s, pos, final[pos - 1], esperado, premiosAno); } catch (err) { console.error(err); }
   // a família que joga cresce um ano (quem está no seu elenco evolui no treino, como os outros)
   for (const f of s.familiaJog ?? []) if (!f.noClube) { f.idade++; f.ovr = Math.min(f.pot, f.ovr + (f.idade < 24 ? 4 : f.idade < 30 ? 1 : -1)); }
   if (s.diretoria.confianca < 15) { s.demitido = `Demitido no fim de ${ANO_INICIAL_T + t}: a campanha ficou longe do que a diretoria esperava.`; { const m = receberMulta(s); if (m) s.demitido += ` O clube pagou a multa rescisória: ${valorBrl(m)}.`; } noticia(s, "diretoria", s.demitido); return resumo; }
@@ -1026,6 +1074,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
     s.clube.tv = Math.round(s.clube.tv * infoLiga(ligaNova).fLiga / li.fLiga);
     if (s.patro) s.patro.base = Math.round(s.patro.base * infoLiga(ligaNova).fLiga / li.fLiga);
     noticia(s, "clube", subiu ? `ACESSO! O clube jogará a ${infoLiga(ligaNova).curto}.` : `Rebaixado para a ${infoLiga(ligaNova).curto}.`);
+    if (subiu) figurinhaDeAcessoT(pacote, s, ANO_INICIAL_T + t, infoLiga(ligaNova).curto);
     s.ligaId = ligaNova;
   }
   const l = w.liga[s.ligaId];
@@ -1303,4 +1352,11 @@ export function assumirNovoClube(pacote: PacoteDados, s: SaveTecnico, clubeId: s
   const precisa = licencaExigida(mundo(pacote).clube[n.clubeId]?.forca ?? 60), cur = (n.tecnico.curso ??= { licenca: 2 });
   if (precisa > cur.licenca && !cur.estudando) { cur.estudando = cur.licenca + 1; cur.progresso = 0; }
   return n;
+}
+
+/** Altura da grama do estádio (20 a 30 mm, a faixa dos gramados oficiais). Muda na hora, vale para os jogos em casa. */
+export function ajustarGrama(s: SaveTecnico, mm: number): { ok: boolean; msg: string } {
+  const v = clamp(Math.round(mm), 20, 30);
+  s.clube.grama = v;
+  return { ok: true, msg: `Grama cortada em ${v} mm. ${v <= 23 ? "Bola mais rápida: bom para quem toca." : v >= 27 ? "Bola mais lenta: jogo mais truncado." : "Altura padrão."}` };
 }

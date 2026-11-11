@@ -3,8 +3,8 @@
 // A raridade sai do que o jogador fez: comum, prata, brilhante e lenda.
 export type Raridade = "comum" | "prata" | "brilhante" | "lenda";
 export const NOME_RARIDADE: Record<Raridade, string> = { comum: "Comum", prata: "Prata", brilhante: "Brilhante", lenda: "Lenda" };
-export type TipoFigurinha = "temporada" | "selecao" | "capitao" | "titulo" | "premio" | "estreia" | "patrocinio" | "familia" | "golaco" | "filho";
-export const NOME_TIPO_FIG: Record<TipoFigurinha, string> = { temporada: "Temporada", selecao: "Seleção", capitao: "Capitão", titulo: "Campeão", premio: "Prêmio", estreia: "Estreia", patrocinio: "Patrocínio", familia: "Família", golaco: "Golaço", filho: "Filho" };
+export type TipoFigurinha = "temporada" | "selecao" | "capitao" | "titulo" | "premio" | "estreia" | "patrocinio" | "familia" | "golaco" | "filho" | "escudo" | "hattrick" | "marco" | "despedida" | "tecnico" | "acesso";
+export const NOME_TIPO_FIG: Record<TipoFigurinha, string> = { temporada: "Temporada", selecao: "Seleção", capitao: "Capitão", titulo: "Campeão", premio: "Prêmio", estreia: "Estreia", patrocinio: "Patrocínio", familia: "Família", golaco: "Golaço", filho: "Filho", escudo: "Escudo", hattrick: "Hat-trick", marco: "Marca histórica", despedida: "Despedida", tecnico: "Técnico", acesso: "Acesso" };
 export interface Figurinha {
   id: string; ano: number; tipo: TipoFigurinha; raridade: Raridade;
   clubeId: string; clube: string; cores: [string, string]; numero: string; posicao: string;
@@ -19,14 +19,18 @@ export interface Figurinha {
   parId?: string;
   /** figurinha de filho: o índice do filho na lista de filhos do jogador (o retrato sai da genética dele) */
   filhoIdx?: number;
+  /** números extras: técnico (j, v, e, d, pos, aprov), marca (n, unidade), despedida (j, g, t) */
+  extra?: Record<string, number | string>;
+  /** desenho do prêmio: bola, chuteira, estrela, luva */
+  arte?: string;
 }
 export interface DadosTemporadaFig { ano: number; ovr: number; idade: number; jogos: number; gols: number; assist: number; titulo: boolean; premios: string[]; selecao: boolean; capitao: boolean; clubeId: string; clube: string; cores: [string, string]; numero: string; posicao: string; ap: Record<string, unknown> }
 
 const PREMIO_LENDA = /Bola de Ouro|Melhor do Mundo|Melhor da Europa|Rei da América|Chuteira de Ouro/;
 export function raridadeDaTemporada(d: DadosTemporadaFig): Raridade {
   if (d.premios.some((p) => PREMIO_LENDA.test(p))) return "lenda";
-  if (d.titulo || d.ovr >= 82 || d.selecao || d.gols >= 25) return "brilhante";
-  if (d.ovr >= 72 || d.gols >= 12 || d.capitao) return "prata";
+  if (d.titulo || d.ovr >= 86 || d.gols >= 25) return "brilhante";
+  if (d.ovr >= 76 || d.gols >= 10 || d.capitao || d.selecao) return "prata";
   return "comum";
 }
 /** A figurinha do ano (não repete o mesmo ano e clube). */
@@ -56,3 +60,22 @@ export function figurinhaEspecial(album: Figurinha[], tipo: Exclude<TipoFigurinh
   album.push(f);
   return f;
 }
+
+/** Desenho e raridade de um prêmio pelo nome. */
+export function artePremio(nome: string): { arte: string; raridade: Raridade } {
+  if (PREMIO_LENDA.test(nome) && !/Chuteira/.test(nome)) return { arte: "bola", raridade: "lenda" };
+  if (/Chuteira|Artilh/i.test(nome)) return { arte: "chuteira", raridade: /Ouro/.test(nome) ? "lenda" : "brilhante" };
+  if (/Goleiro|Luva/i.test(nome)) return { arte: "luva", raridade: "brilhante" };
+  return { arte: "estrela", raridade: "brilhante" };
+}
+/** Figurinha com chave própria e campos livres (marcas, prêmios, técnico, despedida). */
+export function figurinhaLivre(album: Figurinha[], f: Omit<Figurinha, "id"> & { chave: string }): Figurinha | undefined {
+  const id = `${f.tipo}-${f.chave}`;
+  if (album.some((x) => x.id === id)) return undefined;
+  const { chave: _c, ...resto } = f;
+  const nova: Figurinha = { ...resto, id };
+  album.push(nova);
+  return nova;
+}
+/** Marcas redondas de carreira já batidas (100 jogos, 50 gols...). */
+export function marcasBatidas(total: number, lista: number[]): number[] { return lista.filter((n) => total >= n); }

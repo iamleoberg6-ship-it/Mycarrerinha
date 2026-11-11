@@ -12,12 +12,15 @@ import { novoVestiario, semanaVestiario, conversaTecnicoNovo, talvezGeladeira, t
 import { escolherRival, novoRival, registrarDuelo, semanaRival, anoDoRival } from "./rival.js";
 import { torcidaDe, semanaTorcida, recepcaoAeroporto } from "./torcida.js";
 import { perfilCidade, semanaCidade } from "./cidades.js";
-import { figurinhaDaTemporada, figurinhaEspecial, figurinhaDeMomento, type Figurinha } from "./figurinhas.js";
+import { figurinhaDaTemporada, figurinhaEspecial, figurinhaDeMomento, figurinhaLivre, artePremio, type Figurinha } from "./figurinhas.js";
+import { totaisDaCarreira } from "./perfil-jogador.js";
 import { propostaPorIndicacao, janelaAberta } from "./transferencias.js";
 import { MARCA, type ContratoPatrocinio } from "./marcas.js";
 import { temFuncao } from "./vida-social.js";
-import { noticia, registrarMarco, agendaDe, elencoAtual, ovr, semanaAbsJogo, ANO_INICIAL, parcasDe, jogoDaSemana, jogoCopaDaSemana, ehClassico, type Save, type ResumoTemporada } from "./jogo.js";
+import { SEMANAS_PRE, noticia, registrarMarco, agendaDe, elencoAtual, ovr, semanaAbsJogo, ANO_INICIAL, parcasDe, jogoDaSemana, jogoCopaDaSemana, ehClassico, type Save, type ResumoTemporada } from "./jogo.js";
 import { valorBrl } from "./moeda.js";
+import { rankingDaLiga } from "./mundo.js";
+import { camisasDoMes, dividirCamisas, type PerfilCamisa } from "./camisas.js";
 
 const rngDe = (s: Save, ...p: (string | number)[]) => new RNG(`${s.semente}|${s.carreira.temporada}|${s.carreira.semana}|clube|${p.join("|")}`);
 const ativo = (s: Save) => { const c = s.carreira; return !c.fase && !c.formacao && !c.mercado?.semClube && !c.encerrada; };
@@ -209,6 +212,37 @@ export function figurinhaDePatrocinio(pacote: PacoteDados, s: Save, k: ContratoP
   const f = figurinhaDeMomento(albumDe(s.carreira), "patrocinio", base, chave, `Contrato com a ${m?.nome ?? k.marca}`, "prata");
   if (f) f.contrato = { marca: k.marca, tipo: k.tipo, mensal: k.mensal, meses: k.meses, luvas: k.luvas };
 }
+/** Hat-trick: uma figurinha por jogo de três gols (no máximo duas por temporada). */
+export function figurinhaDeHattrick(pacote: PacoteDados, s: Save, chave: string, legenda: string) {
+  const b = baseFigurinha(pacote, s);
+  if (albumDe(s.carreira).filter((f) => f.tipo === "hattrick" && f.ano === b.ano).length >= 2) return;
+  figurinhaLivre(albumDe(s.carreira), { ...b, tipo: "hattrick", raridade: "brilhante", legenda, chave });
+}
+/** Despedida: a figurinha de lenda com os números da carreira. */
+export function figurinhaDeDespedida(pacote: PacoteDados, s: Save, ano: number) {
+  const c = s.carreira, t = totaisDaCarreira(c.historico);
+  figurinhaLivre(albumDe(c), { ...baseFigurinha(pacote, s), ano, tipo: "despedida", raridade: "lenda", legenda: `${c.historico.length} temporadas como profissional`, extra: { j: t.jogos, g: t.gols, t: t.titulos.length }, chave: "fim" });
+}
+/** As figurinhas especiais do fim do ano: escudo do clube novo, prêmios, estreia e marcas da carreira. */
+function figurinhasDoAno(pacote: PacoteDados, s: Save, r: ResumoTemporada, clubes: string[], fase: boolean) {
+  const c = s.carreira, al = albumDe(c), ano = r.ano, b = baseFigurinha(pacote, s);
+  if (fase) return;
+  for (const id of clubes) {
+    const ic = infoClube(pacote, id);
+    if (!ic || al.some((f) => f.tipo === "escudo" && f.clubeId === id)) continue;
+    figurinhaLivre(al, { ...baseDoClube(pacote, s, id), ano, tipo: "escudo", raridade: (ic.forca ?? 70) >= 80 ? "brilhante" : "prata", legenda: `Primeira temporada no clube · ${ano}`, chave: id });
+  }
+  // só os prêmios grandes viram figurinha (no máximo três por ano, os mais importantes primeiro)
+  const PRIOR = [/^Bola de Ouro/, /^The Best/, /^(Melhor da Europa|Rei da América|Melhor da Ásia|Melhor Africano)/, /Chuteira de Ouro/, /^(Craque|Melhor jogador)/i, /Artilh|Rei dos gols/i, /Rei das assist/i, /Melhor jovem|Revela/i, /Melhor goleiro|Luva/i];
+  const grandes = (r.premios ?? []).filter((p) => PRIOR.some((re) => re.test(p))).sort((x, y) => PRIOR.findIndex((re) => re.test(x)) - PRIOR.findIndex((re) => re.test(y))).slice(0, 3);
+  for (const p of grandes) { const a = artePremio(p); figurinhaLivre(al, { ...b, ano, tipo: "premio", raridade: a.raridade, arte: a.arte, legenda: p, chave: `${ano}-${p}` }); }
+  const antes = c.historico.filter((h) => h !== r && h.jogos > 0).length;
+  if (r.jogos > 0 && !antes && !al.some((f) => f.tipo === "estreia")) figurinhaLivre(al, { ...b, ano, tipo: "estreia", raridade: "prata", legenda: `Estreia como profissional · ${b.clube}`, chave: "pro" });
+  const t = totaisDaCarreira(c.historico.includes(r) ? c.historico : [...c.historico, r]);
+  const marcas: [number, number, string, string][] = [[t.jogos, 100, "jogos", "jogos"], [t.jogos, 250, "jogos", "jogos"], [t.jogos, 500, "jogos", "jogos"], [t.jogos, 750, "jogos", "jogos"],
+    [t.gols, 50, "gols", "gols"], [t.gols, 100, "gols", "gols"], [t.gols, 200, "gols", "gols"], [t.gols, 300, "gols", "gols"], [t.gols, 500, "gols", "gols"], [t.assist, 100, "assist", "assistências"], [t.assist, 200, "assist", "assistências"]];
+  for (const [tot, n, k, uni] of marcas) if (tot >= n) figurinhaLivre(al, { ...b, ano, tipo: "marco", raridade: n >= 300 ? "lenda" : n >= 100 ? "brilhante" : "prata", legenda: `${n} ${uni} na carreira`, extra: { n, unidade: uni }, chave: `${k}-${n}` });
+}
 /** Golaço (relíquia de gol de placa): figurinha do lance. */
 export function figurinhaDeGolaco(pacote: PacoteDados, s: Save, chave: string, legenda: string) {
   figurinhaDeMomento(albumDe(s.carreira), "golaco", baseFigurinha(pacote, s), chave, legenda, "brilhante");
@@ -267,8 +301,12 @@ export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTempo
       const f = figurinhaDaTemporada(albumDe(c), { ...baseDoClube(pacote, s, id), ano, ovr: r.ovr, idade: r.idade, jogos: t.jogos, gols: t.gols, assist: t.assist, titulo: atual && r.titulo, premios: atual ? r.premios ?? [] : [], selecao: atual && conv, capitao: atual && c.vestiario?.papel === "capitao" });
       if (f) ev.push(`Figurinha ${ano} no álbum: ${ic.nome} (${f.raridade}).`);
     }
+    figurinhasDoAno(pacote, s, r, lista.map(([id]) => id), fase);
     if (albumDe(c).some((f) => f.ano === ano)) ev.push(`Pacote de figurinhas de ${ano}: abra no álbum.`);
   }
+  // camisas: quanto você vendeu no ano e em que lugar do elenco ficou
+  const cam = camisasDoClube(pacote, s);
+  if (cam && cam.minhas) { (c.camisasHist ??= []).push({ ano, clube: info?.nome ?? "", n: cam.minhas, pos: cam.posicao, total: cam.total }); if (cam.posicao === 1) ev.push(`Sua camisa foi a mais vendida do ${info?.nome ?? "clube"} em ${ano}.`); }
   // rival: quem fez mais gols no ano
   const rv = c.rival;
   if (rv && !rv.fim) {
@@ -280,4 +318,28 @@ export function fimDeTemporadaClube(pacote: PacoteDados, s: Save, r: ResumoTempo
       noticia(s, "jogo", `Balanço de ${ano}: ${j.apelido} ${r.gols} × ${st.g} ${rv.nome.split(" ")[0]}`, empate ? `Empate na briga particular de gols em ${ano}.` : ganhou ? `${j.apelido} fez mais gols que ${rv.nome} na temporada.` : `${rv.nome} terminou o ano com mais gols que ${j.apelido}.`);
     }
   }
+}
+
+// ------------------------------------------------------------------ camisas
+export interface CamisasClube { ranking: { nome: string; n: number; eu: boolean; pos: string }[]; total: number; semNome: number; minhas: number; posicao: number; meses: number }
+/** Camisas vendidas pelo clube na temporada até agora: você e os companheiros (os números deles saem da artilharia da liga). */
+export function camisasDoClube(pacote: PacoteDados, s: Save): CamisasClube | undefined {
+  const c = s.carreira, info = infoClube(pacote, c.clubeId);
+  if (!info || c.fase || c.formacao || c.mercado?.semClube) return undefined;
+  const meses = Math.max(0, Math.floor((c.semana - SEMANAS_PRE) / 4) + 1), li = infoLiga(c.ligaId), feitas = Math.max(0, c.semana - SEMANAS_PRE);
+  const gols = new Map<string, number>(), ass = new Map<string, number>();
+  for (const x of rankingDaLiga(pacote, li.id, feitas, "g", 600)) if (x.clubeId === c.clubeId) gols.set(x.nome, x.valor);
+  for (const x of rankingDaLiga(pacote, li.id, feitas, "a", 600)) if (x.clubeId === c.clubeId) ass.set(x.nome, x.valor);
+  const el = elencoAtual(pacote, s).filter((j) => j.nome !== s.jogador.apelido);
+  const perfis: PerfilCamisa[] = el.map((j) => ({ id: j.nome, nome: j.nome, pos: j.posicao, ovr: j.ovr, idade: j.idade, gols: gols.get(j.nome) ?? 0, assist: ass.get(j.nome) ?? 0, jogos: feitas * 0.7 }));
+  perfis.push({ id: "§eu", nome: s.jogador.apelido, pos: s.jogador.posicao, ovr: Math.round(ovr(s.jogador)), idade: s.jogador.idade, gols: c.stats.gols, assist: c.stats.assist, jogos: c.stats.jogos, fama: c.fama, novo: (c.clubesTemp ? Object.keys(c.clubesTemp).length > 1 : false) });
+  const soma = new Map<string, number>(); let semNome = 0;
+  for (let m = 0; m < meses; m++) {
+    const d = dividirCamisas(camisasDoMes(info.capacidade || 15000, c.torcida ?? 55, li.fLiga, m), perfis);
+    for (const [k, v] of Object.entries(d.porJogador)) soma.set(k, (soma.get(k) ?? 0) + v);
+    semNome += d.semNome;
+  }
+  const ranking = perfis.map((p) => ({ nome: p.nome, n: soma.get(p.id) ?? 0, eu: p.id === "§eu", pos: p.pos })).sort((a, b) => b.n - a.n);
+  const minhas = soma.get("§eu") ?? 0;
+  return { ranking, total: [...soma.values()].reduce((a, b) => a + b, 0) + semNome, semNome, minhas, posicao: ranking.findIndex((x) => x.eu) + 1, meses };
 }

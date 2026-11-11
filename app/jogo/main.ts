@@ -3,6 +3,7 @@ import { CADEIAS } from "../../src/cadeias-dados.js";
 import { preencherPessoa } from "../../src/cadeias.js";
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
 import { bandeiraSvg } from "../../src/bandeiras";
+import { Album, figurinhaArte, type CtxFig } from "../visual/album";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { xgDoGol, xgDoChute, type Chute, type EventoEst, type TipoEvento } from "../../src/estatisticas-partida";
@@ -93,7 +94,8 @@ import { acessoriosAtivos, type Marca } from "../../src/marcas";
 import { NOME_PAPEL_VEST, NOME_COMP } from "../../src/vestiario";
 import { identidade, estiloIdent, seloSvg, faixaComp, bannerComp } from "../visual/torneios";
 import { anelNota, repetir, blocoDelta, cartoesEventos, iconesEfeito, corNota, catEvento } from "./visuais";
-import { vestiarioDe, albumDe, figurinhaDePatrocinio } from "../../src/clube-vivo";
+import { vestiarioDe, albumDe, figurinhaDePatrocinio, camisasDoClube } from "../../src/clube-vivo";
+import { fmtMil } from "../../src/camisas";
 import { perfilCidade, NOME_CLIMA, inverno } from "../../src/cidades";
 import { temOlheiro, rotuloPotencial, disputaNaPosicao } from "../../src/base-olheiro";
 import { VAGAS_433 } from "../../src/partida";
@@ -1464,7 +1466,17 @@ function blocoClubeCorpo(s: Save): string {
     <div class="ferr-botoes"><button class="botao sec peq" data-aumento="1" ${k?.pedidoAumento === c.temporada ? "disabled" : ""}>Pedir aumento à diretoria</button></div>
     <p class="sub">Uma vez por temporada. Quem é titular e está em boa fase ganha renovação melhor; quem não está, ouve um não.</p></div>`;
   return `<div style="display:flex;gap:10px;align-items:center">${escudo(c.clubeId)}<div><h2 style="margin:0">${linkClube(c.clubeId, info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(info.estadio)}</span></div></div>
-    ${sub("Técnico")}${tecnico}${sub("Vestiário")}${vest}${sub("Rival")}${rival}${passados}${sub("Torcida")}${torcida}${sub("Contrato")}${contrato}`;
+    ${sub("Técnico")}${tecnico}${sub("Vestiário")}${vest}${sub("Rival")}${rival}${passados}${sub("Torcida")}${torcida}${sub("Camisas mais vendidas")}${camisasCard(s)}${sub("Contrato")}${contrato}`;
+}
+/** Ranking de camisas do elenco na temporada e as suas vendas ano a ano. */
+function camisasCard(s: Save): string {
+  const cam = camisasDoClube(pacote, s), hist = s.carreira.camisasHist ?? [];
+  if (!cam) return "";
+  const top = cam.ranking.slice(0, 8), max = top[0]?.n || 1, eu = cam.ranking.find((x) => x.eu);
+  const linha = (x: { nome: string; n: number; eu: boolean; pos: string }, i: number) => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><b style="width:20px;text-align:right">${i}</b><span style="flex:1">${x.eu ? `<b style="color:var(--ouro)">${esc(x.nome)} (você)</b>` : esc(x.nome)} <small class="sub">${x.pos}</small><i style="display:block;height:6px;border-radius:3px;margin-top:3px;background:linear-gradient(90deg,${x.eu ? "var(--ouro)" : "#74D394"} ${Math.round((x.n / max) * 100)}%,transparent 0)"></i></span><b>${fmtMil(x.n)}</b></div>`;
+  return `<div class="card-clube"><p class="sub" style="margin-top:0">${cam.meses ? `${fmtMil(cam.total)} camisas vendidas em ${cam.meses} ${cam.meses === 1 ? "mês" : "meses"} (${fmtMil(cam.semNome)} sem nome). Gol, fama e chegada de reforço fazem a venda subir.` : "A temporada ainda não começou: as vendas aparecem a partir da primeira rodada."}</p>
+    ${top.map((x, i) => linha(x, i + 1)).join("")}${eu && cam.posicao > top.length ? linha(eu, cam.posicao) : ""}
+    ${hist.length ? `<p class="sub" style="margin-top:8px">Suas camisas por temporada: ${hist.slice(-6).reverse().map((h) => `<b>${h.ano}</b> ${fmtMil(h.n)} (${h.pos}º no ${esc(h.clube)})`).join(" · ")}</p>` : ""}</div>`;
 }
 /** A cidade onde o jogador mora. */
 function blocoCidade(s: Save, curto = false): string {
@@ -1498,83 +1510,25 @@ function quemPuxou(s: Save, f: Filho, i: number): string {
   const olhos = ["castanho-escuros", "castanhos", "cor de mel", "verdes", "azuis"][g.olhos] ?? "castanhos";
   return `Cabelo ${tex} ${g.puxou.cabelo === "pai" ? "com a cor do seu" : `com a cor do da ${m}`}, olhos ${olhos} ${g.puxou.olhos === "pai" ? "como os seus" : `como os da ${m}`}, a pele ${g.puxou.pele === "os dois" ? "é uma mistura dos dois" : `puxou mais ${de(g.puxou.pele) === "seu" ? "a sua" : `a ${de(g.puxou.pele)}`}`}${g.sardas ? ". E tem sardinhas" : ""}.`;
 }
-/** Figurinha: moldura pela raridade (CSS), fundo com a cor do clube, o jogador de uniforme, a faixa do ano ou do tipo e as estatísticas. */
-/** Figurinha de patrocínio: cartão de contrato (faixa da marca, logo, valor e duração), sem estatística. */
-function figurinhaPatrocinioSvg(f: Figurinha): string {
-  const k = f.contrato!, m = MARCA[k.marca], c1 = m?.cores[0] ?? f.cores[0], c2 = m?.cores[1] ?? "#FFFFFF", ink = "#1B1B1B", papel = "#F6F1E4";
-  const id = f.id.replace(/[^a-zA-Z0-9]/g, "");
-  const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
-  const rosto = svgFoto({ aparencia: ap, camisa: { cor1: "#F4F4F2", cor2: c1, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="54" y="106" width="52" height="56" ');
-  const logo = m ? logoSvg(m, 44).replace("<svg ", '<svg x="14" y="24" width="132" height="64" style="width:132px;height:64px" ') : "";
-  const reais = (v: number) => curtoBrl(v);
-  const tipo = k.tipo === "fixo" ? "valor fixo" : k.tipo === "desempenho" ? "por desempenho" : "longo prazo";
-  const pill = k.luvas ? `LUVAS ${reais(k.luvas)}` : tipo.toUpperCase();
-  return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="Patrocínio ${f.ano}"><defs>
-    <pattern id="st${id}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="10" fill="${c2}" opacity=".14"/></pattern>
-    <clipPath id="cp${id}"><circle cx="80" cy="132" r="25"/></clipPath></defs>
-    <rect x="1" y="1" width="158" height="228" rx="10" fill="${papel}"/>
-    <rect x="1" y="1" width="158" height="104" rx="10" fill="${c1}"/><rect x="1" y="60" width="158" height="44" fill="url(#st${id})"/>
-    <rect x="0" y="104" width="160" height="3" fill="${c2}"/>
-    <text x="14" y="16" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="9.5" letter-spacing="2" fill="${c2}">PATROCÍNIO · ${f.ano}</text>
-    ${logo}
-    <circle cx="80" cy="132" r="28" fill="${c2}"/><g clip-path="url(#cp${id})">${rosto}</g><circle cx="80" cy="132" r="28" fill="none" stroke="${c1}" stroke-width="2"/>
-    <text x="80" y="184" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="24" fill="${ink}">${esc(reais(k.mensal))}</text>
-    <text x="80" y="197" text-anchor="middle" font-family="sans-serif" font-size="7.5" letter-spacing="1.5" fill="${ink}" opacity=".7">POR MÊS</text>
-    <rect x="14" y="204" width="62" height="18" rx="9" fill="${c1}"/><text x="45" y="216" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="10.5" fill="${c2}">${k.meses} MESES</text>
-    <rect x="82" y="204" width="64" height="18" rx="9" fill="none" stroke="${c1}" stroke-width="1.5"/><text x="114" y="216" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="8" fill="${ink}">${esc(pill.slice(0, 22))}</text>
-    </svg>`;
+/** O que a arte da figurinha precisa saber do jogador: retrato de uniforme (ou social, ou do filho), escudos e marcas. */
+function ctxFig(): CtxFig {
+  const sv = save;
+  const ap = (f: Figurinha) => ({ ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) });
+  return {
+    nome: sv?.jogador.apelido ?? "",
+    escudo: (id) => id.startsWith("sel-") ? bandeiraSvg(id.slice(4)) : id.startsWith("marca-") ? (MARCA[id.slice(6)] ? logoSvg(MARCA[id.slice(6)], 44) : "") : escudo(id),
+    bandeira: (cod) => bandeiraSvg(cod),
+    retrato: (f) => {
+      if (f.tipo === "familia") return svgFoto({ aparencia: ap(f), traje: "social", semFundo: true });
+      const m = f.contrato ? MARCA[f.contrato.marca] : undefined, c1 = m ? "#F4F4F2" : f.cores[0], c2 = m ? m.cores[0] : f.cores[1] ?? "#111111";
+      return svgFoto({ aparencia: ap(f), camisa: { cor1: c1.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo", semFundo: true });
+    },
+    parceira: (f) => { const p = f.parId && sv ? acharPar(namoroDe(sv.carreira), f.parId) : undefined; return p ? fotoDoPerfil(p) : undefined; },
+    filho: (f) => { const fl = sv && f.filhoIdx !== undefined ? (namoroDe(sv.carreira).filhos ?? [])[f.filhoIdx] : undefined; return fl && sv ? retratoFilho(sv, fl, f.filhoIdx!) : undefined; },
+    marca: (f) => { const m = f.contrato ? MARCA[f.contrato.marca] : undefined; return m ? logoSvg(m, 44) : undefined; },
+  };
 }
-/** Retrato (svg ou foto) dentro de uma área da figurinha: a foto entra por foreignObject, o svg ganha o tamanho da área. */
-function retratoNoMedalhao(html: string, x: number, y: number, w: number, h: number): string {
-  if (html.startsWith("<svg")) return html.replace("<svg ", `<svg x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice" `);
-  return `<foreignObject x="${x}" y="${y}" width="${w}" height="${h}"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;overflow:hidden">${html.replace("<img ", '<img style="width:100%;height:100%;object-fit:cover" ')}</div></foreignObject>`;
-}
-function figurinhaSvg(f: Figurinha): string {
-  if (f.tipo === "patrocinio" && f.contrato) return figurinhaPatrocinioSvg(f);
-  const c1 = f.cores[0], c2 = f.cores[1] ?? "#111111", claro = c1.toUpperCase() === "#FFFFFF", fundo = claro ? c2 : c1;
-  const ap = { ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) };
-  const id = f.id.replace(/[^a-zA-Z0-9]/g, "");
-  // o brasão é o destaque: escudo do clube, ou a bandeira quando a figurinha é da seleção
-  const selecao = f.clubeId.startsWith("sel-");
-  const marca = f.clubeId.startsWith("marca-") ? MARCA[f.clubeId.slice(6)] : undefined;
-  // patrocínio: a logo da marca no lugar do brasão
-  const brasao = marca ? logoSvg(marca, 60).replace("<svg ", '<svg x="12" y="52" width="136" height="80" style="width:136px;height:80px" ')
-    : (selecao ? bandeiraSvg(f.clubeId.slice(4)) : escudo(f.clubeId)).replace("<svg ", selecao ? '<svg x="36" y="32" width="88" height="104" style="width:88px;height:104px" ' : '<svg x="28" y="30" width="104" height="104" style="width:104px;height:104px" ');
-  // o jogador entra num medalhão pequeno no canto do brasão
-  // o medalhão: o jogador de uniforme; na figurinha de família, de roupa social; na de filho, o retrato do filho
-  const sv = save, filhos = sv ? namoroDe(sv.carreira).filhos ?? [] : [];
-  const filho = f.tipo === "filho" && f.filhoIdx !== undefined ? filhos[f.filhoIdx] : undefined;
-  const parceira = f.parId && sv ? acharPar(namoroDe(sv.carreira), f.parId) : undefined;
-  const rostoMedalhao = filho && sv ? retratoFilho(sv, filho, f.filhoIdx!).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ')
-    : f.tipo === "familia" ? svgFoto({ aparencia: ap, traje: "social" }).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ')
-    : svgFoto({ aparencia: ap, camisa: { cor1: claro ? "#F4F4F2" : c1, cor2: c2, estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo" }).replace("<svg ", '<svg x="104" y="116" width="40" height="44" ');
-  const rosto = rostoMedalhao;
-  // a companheira, no medalhão ao lado (figurinha de família)
-  const medalhaoParceira = parceira ? `<circle cx="36" cy="136" r="27" fill="#0B1410" stroke="#E3B341" stroke-width="1.8"/><g clip-path="url(#pp${id})">${retratoNoMedalhao(fotoDoPerfil(parceira), 12, 116, 48, 44)}</g>` : "";
-  // estádio em traço claro atrás do escudo (as linhas do campo e a arquibancada do clube)
-  const estadio = `<g fill="none" stroke="#ffffff" opacity=".16"><ellipse cx="80" cy="92" rx="70" ry="44" stroke-width="9" stroke-dasharray="5 3"/><rect x="34" y="78" width="92" height="56" stroke-width="1.2"/><line x1="80" y1="78" x2="80" y2="134" stroke-width="1.2"/></g>`;
-  const especial = f.tipo !== "temporada", faixa = especial ? NOME_TIPO_FIG[f.tipo].toUpperCase() : String(f.ano);
-  const fw = especial ? 104 : 58;
-  const stat = (x: number, rot: string, v: number) => `<rect x="${x}" y="164" width="44" height="22" rx="4" fill="#0B1410" opacity=".8"/><text x="${x + 22}" y="173" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#cfd8d3">${rot}</text><text x="${x + 22}" y="186" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${v}</text>`;
-  return `<svg viewBox="0 0 160 230" class="fig-svg" role="img" aria-label="${esc(NOME_TIPO_FIG[f.tipo])} ${f.ano}"><defs>
-    <linearGradient id="fg${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${fundo}"/><stop offset=".62" stop-color="${fundo}" stop-opacity=".55"/><stop offset="1" stop-color="#0B1410"/></linearGradient>
-    <pattern id="lis${id}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><rect width="6" height="12" fill="#ffffff" opacity=".07"/></pattern>
-    <linearGradient id="sh${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset=".42" stop-color="#ffffff" stop-opacity=".28"/><stop offset=".58" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
-    <clipPath id="cp${id}"><circle cx="124" cy="136" r="24"/></clipPath><clipPath id="pp${id}"><circle cx="36" cy="136" r="24"/></clipPath></defs>
-    <rect x="1" y="1" width="158" height="228" rx="10" fill="url(#fg${id})"/><rect x="1" y="1" width="158" height="228" rx="10" fill="url(#lis${id})"/>
-    <circle cx="80" cy="82" r="54" fill="#ffffff" opacity=".12"/><circle cx="80" cy="82" r="62" fill="${c2}" opacity=".18"/>
-    ${estadio}
-    ${brasao}
-    <circle cx="124" cy="136" r="27" fill="#0B1410" stroke="#E3B341" stroke-width="1.8"/><g clip-path="url(#cp${id})">${rosto}</g>${medalhaoParceira}
-    <rect x="0" y="0" width="160" height="180" rx="10" fill="url(#sh${id})"/>
-    <rect x="6" y="6" width="${fw}" height="17" rx="5" fill="#0B1410" opacity=".85"/><text x="${6 + fw / 2}" y="18.5" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="11" letter-spacing=".4" fill="#fff">${esc(faixa)}</text>
-    <circle cx="142" cy="24" r="13" fill="#E3B341" stroke="#0B1410" stroke-width="1.6"/><text x="142" y="29" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="15" fill="#0B1410">${f.ovr}</text>
-    ${stat(7, "JOGOS", f.jogos)}${stat(58, "GOLS", f.gols)}${stat(109, "ASSIST.", f.assist)}
-    <rect x="0" y="194" width="160" height="36" fill="#0B1410" opacity=".94"/><rect x="0" y="194" width="160" height="2" fill="#E3B341"/>
-    <text x="80" y="209" text-anchor="middle" font-family="'Big Shoulders Display',sans-serif" font-weight="900" font-size="12" fill="#fff">${esc(f.clube.toUpperCase().slice(0, 24))}</text>
-    <text x="80" y="224" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#E3B341">${esc(f.legenda.slice(0, 36))}</text></svg>`;
-}
-/** Página do álbum aberta (índice na lista de temporadas); undefined = a última. */
+const figurinhaSvg = (f: Figurinha) => figurinhaArte(f, ctxFig());
 let albumPag: number | undefined;
 const ORDEM_FIG = ["temporada", "selecao", "titulo", "capitao", "estreia", "golaco", "patrocinio", "familia", "filho", "premio"];
 /** Capa do álbum na aba do jogador: abre o álbum inteiro numa janela. */
@@ -1685,8 +1639,19 @@ function pacoteHtml(s: Save, ano: number, estado: "fechado" | "rasgando" | "reve
     <div class="ferr-botoes" style="margin-top:14px"><button class="botao peq" data-colar-pacote="${ano}">Colar no álbum</button></div>`;
 }
 function desenharPacote() { const t = $("telaPacote"); if (t && save && pacoteAberto) t.innerHTML = pacoteHtml(save, pacoteAberto.ano, pacoteAberto.estado); }
-/** Redesenha a janela do álbum (página nova ou álbum recém-aberto). */
-function desenharAlbum() { const t = $("telaAlbum"); if (t && save) t.innerHTML = albumPaginaHtml(save); }
+/** O álbum (componente compartilhado com o modo técnico): só as temporadas com o pacote já colado. */
+let albumUi: Album | undefined;
+function desenharAlbum() {
+  const t = $("telaAlbum");
+  if (!t || !save) return;
+  if (!albumUi) albumUi = new Album(t, {
+    figs: () => { const ab = save?.carreira.pacotesAbertos ?? []; return save ? albumDe(save.carreira).filter((f) => ab.includes(f.ano)) : []; },
+    ctx: ctxFig, nome: () => save?.jogador.apelido ?? "",
+    fechar: () => ($("dlgAlbum") as HTMLDialogElement).close(),
+    rodape: () => { const pend = save ? pacotesPendentes(save) : []; return pend.length ? `<p class="sub" style="margin-top:10px;color:#E7EFE9">Tem pacote de ${pend[0]} esperando para colar.</p><button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""; },
+  });
+  albumUi.abrir(albumPag === -1 ? -1 : undefined);
+}
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const visual = blocoVisual(s);
