@@ -137,7 +137,7 @@ export function semanaDaVida(pacote: PacoteDados, s: SaveTecnico, nota: (texto: 
  *  o aluguel e a manutenção da casa; entra o aluguel das casas que ele aluga para outros). */
 export function mesDaVida(s: SaveTecnico) {
   const sal = salarioTecnico(s), pensao = (s.namoro?.filhos ?? []).filter((f) => f.pensao && !f.adulto).length * Math.round(sal * 0.08);
-  const liquido = Math.round(sal * 0.62) - pensao;
+  const liquido = Math.round((sal + (s.selecao?.salario ?? 0)) * 0.62) - pensao;
   if (s.casa) { const manut = manutencaoMensal(s.casa).reduce((a, x) => a + x.valor, 0); fecharMesCasa(s.casa, liquido - manut); }
   else s.tecnico.saldo = bolso(s) + liquido;
 }

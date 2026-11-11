@@ -18,6 +18,7 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import { semanaSelecao, selPendente, viradaSelecao, type SelecaoT, type OfertaSel } from "./selecao-t.js";
 import type { Figurinha } from "../figurinhas.js";
 import { figurinhasDoAnoT, figurinhaDeAcessoT } from "./album-t.js";
 import { camisasDoMes, dividirCamisas, somarCamisas, totalCamisas, rankingCamisas, type VendaTemporada, type HistCamisas } from "../camisas.js";
@@ -76,6 +77,7 @@ export interface SaveTecnico {
   /** comissão técnica: várias pessoas por função, nas vagas que a diretoria autoriza */ equipe?: Partial<Record<Funcao, Membro[]>>; vagasStaff?: Record<Funcao, number>;
   /** a estrutura do clube: departamentos com chefe e equipe, cada um num cargo */ deps?: Deps; vagasDep?: Record<Dep, number>;
   /** álbum de figurinhas (o do jogador continua aqui) e os números da carreira de técnico */ album?: Figurinha[]; statsT?: { j: number; v: number; e: number; d: number };
+  /** seleção que você treina junto com o clube, a proposta de uma federação e o interesse declarado */ selecao?: SelecaoT; ofertaSel?: OfertaSel; interesseSel?: string;
   /** camisas vendidas na temporada (por jogador) e o histórico das anteriores */ camisas?: VendaTemporada; camisasHist?: HistCamisas[];
   /** o que o scout sabe do mundo: conhecimento por liga, focos e relatórios */ scout?: EstadoScout;
   /** quem manda no clube (presidente eleito, dono da SAF) */ governo?: Governo;
@@ -1008,12 +1010,14 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   if (s.ofertaEmprego && semanaAbs(s) > s.ofertaEmprego.expira) { noticia(s, "clube", `A proposta do ${infoClube(pacote, s.ofertaEmprego.clubeId)?.nome ?? "outro clube"} expirou.`); s.ofertaEmprego = undefined; }
   s.semana++;
   let fim: string | undefined;
-  if (s.semana >= semanasDaTemporada(s) && !temCopaPendente(s)) fim = virarTemporada(pacote, s);
+  if (s.semana >= semanasDaTemporada(s) && !temCopaPendente(s) && !selPendente(s)) fim = virarTemporada(pacote, s);
   else prepararMundo(pacote, s);
   semanaDaVida(pacote, s, (t) => noticia(s, "vida", t));
   semanaNegocios(s, (t) => noticia(s, "dinheiro", t));
   semanaEmpregos(pacote, s, (t) => noticia(s, "clube", t));
   for (const t of semanaScout(s)) noticia(s, "clube", t);
+  if (s.ofertaSel && s.ofertaSel.expira <= semanaAbs(s)) { noticia(s, "clube", "A federação cansou de esperar e procurou outro técnico."); s.ofertaSel = undefined; }
+  try { semanaSelecao(pacote, s, (t) => { noticia(s, "clube", t); eventos.push(t); }); } catch (err) { console.error(err); }
   // eleição no clube: candidatos na semana 22, votação na 32
   if (s.semana === 22) { const e = abrirEleicao(pacote, s); if (e) { noticia(s, "diretoria", `Eleição no clube! ${e.situacao.nome} (situação) contra ${e.oposicao.nome} (oposição). A votação é na semana 33. Veja em Clube › Diretoria.`); eventos.push("Começou a campanha para presidente do clube."); } }
   if (s.governo?.eleicao && s.semana >= s.governo.eleicao.votacao) {
@@ -1035,6 +1039,7 @@ const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.
 // ------------------------------------------------------------------ virada de temporada
 function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   fecharCopasT(pacote, s);
+  try { viradaSelecao(pacote, s, s.temporada, (t) => noticia(s, "clube", t)); } catch (err) { console.error(err); }
   try {
     const camp = Object.values(s.palmaresT?.[s.temporada] ?? {}).filter(Boolean) as string[];
     const rev = (s.revista ??= {}); rev[ANO_INICIAL_T + s.temporada] = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [...camp, ordenar(s.tabela)[0]?.clube].filter(Boolean) as string[]);

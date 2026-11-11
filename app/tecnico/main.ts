@@ -29,6 +29,7 @@ import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR,
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
+import { poolSel, convocarMelhores, convocadosDe, forcaMinhaSel, copasSel, proximoJogoSel, metaNoTorneio, textoMeta, aceitarSelecao, deixarSelecao, listaSelecoes, declararInteresseSel, FORMACOES_SEL, POS_ORDEM, type Candidato, type Formacao, type Estilo } from "../../src/tecnico/selecao-t";
 import { Album, figurinhaArte, type CtxFig } from "../visual/album";
 import type { Figurinha } from "../../src/figurinhas";
 import { bandeiraSvg } from "../../src/bandeiras";
@@ -142,7 +143,7 @@ const EURO = new Set(["POR", "ESP", "ITA", "FRA", "GER", "NED", "BEL", "AUT", "C
 function moedaDaLiga(ligaId: string) { const p = infoLiga(ligaId).pais; definirMoeda(p === "BRA" ? "BRL" : p === "ENG" || p === "SCO" ? "GBP" : EURO.has(p) ? "EUR" : "USD"); }
 
 const cores = (id: string) => { const i = infoClube(pacote, id); return [i?.cores[0] ?? "#888", i?.cores[1] ?? "#FFF"]; };
-const escudo = (id: string, cls = "escudo") => { const [a, b] = cores(id); return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome, cls); };
+const escudo = (id: string, cls = "escudo") => { if (id.startsWith("NAT-")) return bandeiraSvg(id.slice(4), cls); const [a, b] = cores(id); return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome, cls); };
 const nomeClube = (id: string) => infoClube(pacote, id)?.nome ?? id;
 const estrelas = (n: number) => `<span class="estrelas" aria-label="nível ${n} de 5">${"★".repeat(n)}${"☆".repeat(5 - n)}</span>`;
 const barra = (v: number, cor?: string) => `<span class="mini-barra"><i style="--v:${Math.round(v)}%;--c:${cor ?? (v >= 66 ? "var(--pos)" : v >= 40 ? "var(--ouro)" : "var(--neg)")}"></i></span>`;
@@ -233,7 +234,7 @@ function abaInicio(s: SaveTecnico): string {
   const copa = jcp ? `<section class="painel"><p class="rotulo" style="color:${COPAS[jcp.copa.id].cores[0]}">Meio de semana · ${esc(COPAS[jcp.copa.id].curto)} · ${esc(rotuloJogo(jcp.jogo))}</p>
     <div class="prox"><div class="lado">${escudo(jcp.jogo.casa)}<span>${esc(nomeClube(jcp.jogo.casa))}</span></div><span class="x">×</span><div class="lado">${escudo(jcp.jogo.fora)}<span>${esc(nomeClube(jcp.jogo.fora))}</span></div></div>
     <p class="sub" style="text-align:center;margin:6px 0 0">Joga com a sua escalação quando você avançar a semana, antes da rodada da liga.${jcp.jogo.neutro ? " Campo neutro." : ""}</p></section>` : "";
-  return `${oferta}${acerto}${ev}${copa}${jogo}${ult}
+  return `${oferta}${ofertaSelHtml(s)}${acerto}${ev}${copa}${cardJogoSel(s)}${jogo}${ult}
     <section class="painel"><p class="rotulo">Diretoria</p><h2 style="font-size:19px">${esc(d.expectativa.texto)}</h2>
       <div class="medidor"><i style="--v:${Math.round(d.confianca)}%;--c:${d.confianca >= 60 ? "var(--pos)" : d.confianca >= 30 ? "var(--ouro)" : "var(--neg)"}"></i></div>
       <p class="sub">Confiança ${Math.round(d.confianca)}/100 · meta: ${d.expectativa.pos}º lugar${s.semana >= SEMANAS_PRE_T ? ` · hoje: ${pos}º` : ""} · torcida ${Math.round(s.clube.torcida)}/100</p></section>
@@ -511,6 +512,65 @@ function fotoNpcT(nome: string, clubeId: string, idade = 25): string {
 }
 
 // ------------------------------------------------------------------ copas (estadual, nacional, continental, Intercontinental, Mundial)
+const nomeSel = (pais: string) => infoClube(pacote, `NAT-${pais}`)?.nome ?? pais;
+/** Proposta de uma federação (vai também na tela inicial). */
+function ofertaSelHtml(s: SaveTecnico): string {
+  const of = s.ofertaSel;
+  if (!of) return "";
+  return `<section class="painel evento-t"><p class="rotulo">Proposta de seleção</p><div style="display:flex;gap:10px;align-items:center">${bandeiraSvg(of.pais)}<div><h2 style="font-size:19px;margin:0">${esc(nomeSel(of.pais))} quer você</h2><small class="sub">${valorBrl(of.salario)}/mês · contrato até a próxima Copa do Mundo</small></div></div>
+    <p>${esc(of.texto)}</p><div class="botoes"><button class="botao" data-sel-aceitar>Aceitar</button><button class="botao sec" data-sel-recusar>Recusar</button></div></section>`;
+}
+/** O próximo jogo da seleção (aparece na tela inicial quando está perto). */
+function cardJogoSel(s: SaveTecnico, sempre = false): string {
+  const p = s.selecao ? proximoJogoSel(pacote, s) : undefined;
+  if (!p || (!sempre && p.j.semana - s.semana > 2)) return "";
+  const sel = s.selecao!, adv = p.j.casa === sel.id ? p.j.fora : p.j.casa, fm = forcaMinhaSel(pacote, s), fa = mundo(pacote).clube[adv]?.forca ?? 0;
+  const comp = p.e.id === "SEL" ? NOME_FASE[p.j.fase] ?? "Data FIFA" : `${COPAS[p.e.id].curto} · ${NOME_FASE[p.e.fase] ?? p.e.fase}`;
+  return `<section class="painel"><p class="rotulo">Seleção · ${esc(comp)} · semana ${p.j.semana + 1}${p.j.semana === s.semana ? " (nesta semana)" : ""}</p>
+    <div class="prox"><div class="lado">${escudo(p.j.casa)}<span>${esc(nomeClube(p.j.casa))}</span></div><span class="x">×</span><div class="lado">${escudo(p.j.fora)}<span>${esc(nomeClube(p.j.fora))}</span></div></div>
+    <p class="sub" style="text-align:center">Seu time: <b style="color:var(--giz)">${fm.forca.toFixed(1).replace(".", ",")}</b> · ${esc(nomeClube(adv))}: <b style="color:var(--giz)">${fa.toFixed(1).replace(".", ",")}</b> · ${sel.convocados.length}/23 convocados</p>
+    ${sempre ? "" : `<div class="botoes" style="justify-content:center"><button class="botao sec peq" data-ir-sel>Convocação e time</button></div>`}</section>`;
+}
+function abaSelecao(s: SaveTecnico): string {
+  const sel = s.selecao;
+  if (!sel) {
+    const l = listaSelecoes(pacote, s);
+    return `${ofertaSelHtml(s)}<section class="painel"><p class="rotulo">Técnico de seleção</p><p class="sub" style="margin:0">Dá para treinar uma seleção junto com o clube. A federação escolhe pelo seu nome: seleção grande pede reputação alta. As propostas chegam na virada da temporada (mais no fim do ciclo da Copa do Mundo); declarar interesse aumenta a chance. Sua reputação: <b>${Math.round(s.tecnico.reputacao)}</b>.</p></section>
+      <section class="painel">${l.map((x) => `<div class="clube-op" style="grid-template-columns:auto 1fr auto;align-items:center;gap:10px">${bandeiraSvg(x.pais)}<div><b>${esc(x.nome)}</b><br><small class="sub">força ${x.forca.toFixed(0)} · pede reputação ${x.exige} · ${curtoBrl(x.salario)}/mês</small></div>${x.cabe ? (x.interesse ? `<span class="pill bom">interesse enviado</span>` : `<button class="botao sec peq" data-int-sel="${x.pais}">Declarar interesse</button>`) : `<span class="pill">falta nome</span>`}</div>`).join("")}</section>`;
+  }
+  const w = mundo(pacote), conv = convocadosDe(pacote, s), fm = forcaMinhaSel(pacote, s), titularesK = new Set(fm.onze.map((x) => x.c.chave));
+  const st = sel.stats, cor = sel.confianca >= 60 ? "var(--pos)" : sel.confianca >= 30 ? "var(--ouro)" : "var(--neg)";
+  const cab = `<section class="painel"><div style="display:flex;gap:12px;align-items:center">${bandeiraSvg(sel.pais, "escudo grande")}<div><h2 style="margin:0">${esc(nomeSel(sel.pais))}</h2><small class="sub">Desde ${ANO_INICIAL_T + sel.desde} · contrato até a Copa de ${ANO_INICIAL_T + sel.ate} · ${curtoBrl(sel.salario)}/mês</small></div></div>
+    <p class="rotulo" style="margin-top:10px">Confiança da federação</p><div class="medidor"><i style="--v:${Math.round(sel.confianca)}%;--c:${cor}"></i></div>
+    <div class="dl" style="margin-top:8px"><span>Jogos</span><b>${st.j} · ${st.v}V ${st.e}E ${st.d}D</b><span>Gols</span><b>${st.gp} pró · ${st.gc} contra</b><span>Entrosamento</span><b>${Math.round(sel.entrosamento)}/100</b>${sel.elim.j ? `<span>Eliminatórias no ciclo</span><b>${sel.elim.p} pts em ${sel.elim.j} jogos${sel.elim.p / sel.elim.j >= 1.5 ? " · vaga encaminhada" : sel.elim.p / sel.elim.j < 1.1 ? " · vaga em risco" : ""}</b>` : ""}</div></section>`;
+  const tat = `<section class="painel"><p class="rotulo">Formação e estilo</p><div class="chips">${(Object.keys(FORMACOES_SEL) as Formacao[]).map((f) => `<button class="chip${sel.formacao === f ? " ativo" : ""}" data-sel-form="${f}">${f}</button>`).join("")}</div>
+    <div class="chips" style="margin-top:6px">${(["ofensivo", "equilibrado", "defensivo"] as Estilo[]).map((e) => `<button class="chip${sel.estilo === e ? " ativo" : ""}" data-sel-estilo="${e}">${e[0].toUpperCase() + e.slice(1)}</button>`).join("")}</div>
+    <p class="sub">Ofensivo rende contra seleção mais fraca; defensivo segura a mais forte; equilibrado não arrisca. Repetir a base entre as datas FIFA sobe o entrosamento; mudar muito derruba. Força do seu time titular: <b>${fm.forca.toFixed(1).replace(".", ",")}</b> (a seleção inteira vale ${fm.base.toFixed(1).replace(".", ",")}).</p>
+    <p class="rotulo" style="margin-top:8px">Time titular</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">${fm.onze.map((x) => `<div style="display:flex;justify-content:space-between;gap:6px;font-size:13px;padding:3px 0;border-bottom:1px solid #ffffff14"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><small class="sub">${x.vaga}</small> ${esc(x.c.nome)}${x.improvisado ? " ⚠" : ""}</span><b>${x.c.ovr}</b></div>`).join("")}</div>${fm.onze.some((x) => x.improvisado) ? `<p class="sub">⚠ improvisado fora da posição: falta gente dessa posição na lista.</p>` : ""}</section>`;
+  const lin = (c: Candidato) => `<div class="clube-op" style="grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px">${escudo(c.clubeId, "escudo esc-p")}<div><b>${esc(c.nome)}</b>${c.meu ? ` <span class="pill bom">seu clube</span>` : ""}<br><small class="sub">${c.pos} · ${c.idade} anos · ${esc(nomeClube(c.clubeId))}</small></div><span><b>${c.ovr}</b></span><span style="display:flex;gap:4px"><button class="botao ${sel.titulares.includes(c.chave) ? "" : "sec "}peq" data-sel-tit="${esc(c.chave)}" title="Titular">${titularesK.has(c.chave) ? "★" : "☆"}</button><button class="botao sec peq" data-sel-desc="${esc(c.chave)}" title="Tirar da lista">✕</button></span></div>`;
+  const lista = `<section class="painel"><p class="rotulo">Convocados · ${conv.length}/23</p><div class="botoes" style="margin-bottom:6px"><button class="botao sec peq" data-sel-auto>Convocar os melhores</button><button class="botao sec peq" data-sel-pool>Chamar outro jogador</button></div>
+    <p class="sub">★ = titular (marque para forçar a escolha; sem marca, entra o melhor da posição). Os do seu clube voltam cansados das datas FIFA.</p>
+    ${POS_ORDEM.map((p) => { const l = conv.filter((c) => c.pos === p); return l.length ? `<p class="rotulo" style="margin-top:8px">${p}</p>${l.map(lin).join("")}` : ""; }).join("")}</section>`;
+  const copas = Object.values(copasSel(pacote, s)).filter((e): e is EstadoCopa => !!e);
+  const comp = copas.map((e) => { const meus = e.jogos.filter((j) => j.casa === sel.id || j.fora === sel.id); const grupo = Object.entries(e.tabelas).find(([, t]) => t.some((x) => x.clube === sel.id));
+    const meta = e.id !== "SEL" && e.id !== "FIN" ? ` · meta: ${textoMeta(metaNoTorneio(pacote, e, sel.id))}` : "";
+    return `<div class="not"><b>${esc(e.id === "SEL" ? (meus[0]?.fase === "eliminatorias" ? "Eliminatórias (datas FIFA)" : "Amistosos (datas FIFA)") : COPAS[e.id].nome)}</b><small class="sub">${meta}${e.fase === "fim" ? (e.campeao === sel.id ? " · 🏆 campeão" : e.campeao ? ` · campeão: ${esc(nomeClube(e.campeao))}` : "") : ""}</small>
+      ${grupo && e.id !== "SEL" ? `<table class="tab" style="margin:6px 0"><tbody>${ordenar(grupo[1]).map((x, i) => `<tr${x.clube === sel.id ? ' class="eu"' : ""}><td>${i + 1}</td><td style="text-align:left">${esc(nomeClube(x.clube))}</td><td>${x.j}</td><td>${x.pts}</td></tr>`).join("")}</tbody></table>` : ""}
+      ${meus.map((j) => `<div style="display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px;font-size:13px;margin-top:3px"><small class="sub">S${j.semana + 1}</small><span style="text-align:right">${esc(nomeClube(j.casa))}</span><b>${j.gc === undefined ? "×" : `${j.gc} × ${j.gf}${j.penaltis ? "*" : ""}`}</b><span>${esc(nomeClube(j.fora))}</span></div>`).join("")}</div>`; }).join("");
+  const art = Object.values(sel.jog).filter((x) => x.g || x.a).sort((a, b) => b.g - a.g || b.a - a.a).slice(0, 8);
+  const ult = sel.jogos.slice(0, 6).map((j) => `<div class="not"><small class="sub">${ANO_INICIAL_T + j.t} · ${esc(j.copa === "SEL" ? NOME_FASE[j.fase] ?? "Data FIFA" : COPAS[j.copa].curto)}</small><br><b>${esc(nomeClube(j.casa))} ${j.gc} × ${j.gf} ${esc(nomeClube(j.fora))}</b>${j.gols.length ? `<br><small class="sub">⚽ ${esc(j.gols.join(", "))}</small>` : ""}</div>`).join("");
+  return `${cab}${cardJogoSel(s, true)}${tat}${lista}
+    <section class="painel"><p class="rotulo">Competições de ${ANO_INICIAL_T + s.temporada}</p>${comp || `<p class="sub">Sem jogos da seleção nesta temporada.</p>`}</section>
+    ${ult ? `<section class="painel"><p class="rotulo">Últimos jogos</p>${ult}</section>` : ""}
+    ${art.length ? `<section class="painel"><p class="rotulo">Artilheiros com você</p>${art.map((x) => `<div class="not" style="display:flex;justify-content:space-between"><span>${esc(x.nome)} <small class="sub">${x.pos} · ${x.j} jogos</small></span><span><b>${x.g}</b> gols · ${x.a} assist.</span></div>`).join("")}</section>` : ""}
+    ${sel.titulos.length ? `<section class="painel"><p class="rotulo">Títulos pela seleção</p>${sel.titulos.map((x) => `<div class="not">🏆 <b>${esc(x.nome)}</b> · ${ANO_INICIAL_T + x.t}</div>`).join("")}</section>` : ""}
+    <div class="botoes"><button class="botao sec" data-sel-sair>Deixar o cargo na seleção</button></div>`;
+}
+/** Lista de quem dá para chamar (os melhores de cada posição que ainda não estão na lista). */
+function poolSelHtml(s: SaveTecnico): string {
+  const sel = s.selecao!, pool = poolSel(pacote, s, sel.pais).filter((c) => !sel.convocados.includes(c.chave));
+  return `<h2>Chamar jogador · ${esc(nomeSel(sel.pais))}</h2><p class="sub">${sel.convocados.length}/23 na lista. ${sel.convocados.length >= 23 ? "Para chamar alguém, tire outro antes." : ""}</p>${POS_ORDEM.map((p) => `<p class="rotulo" style="margin-top:8px">${p}</p>${pool.filter((c) => c.pos === p).slice(0, 8).map((c) => `<div class="clube-op" style="grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px">${escudo(c.clubeId, "escudo esc-p")}<div><b>${esc(c.nome)}</b><br><small class="sub">${c.idade} anos · ${esc(nomeClube(c.clubeId))}</small></div><b>${c.ovr}</b><button class="botao peq" data-sel-conv="${esc(c.chave)}" ${sel.convocados.length >= 23 ? "disabled" : ""}>Chamar</button></div>`).join("")}`).join("")}<div class="botoes" style="margin-top:10px"><button class="botao sec" data-fechar>Fechar</button></div>`;
+}
 function abaCopas(s: SaveTecnico): string {
   const copas = Object.values(copasT(pacote, s)).filter((e): e is EstadoCopa => !!e && e.clubes.includes(s.clubeId));
   const titulos = (s.titulosCopa ?? []).slice().reverse();
@@ -533,8 +593,9 @@ function abaLiga(s: SaveTecnico): string {
   const li = infoLiga(s.ligaId), tab = ordenar(s.tabela), n = tab.length;
   const ult = Math.max(-1, ...Object.keys(s.rodadas).map(Number));
   const rodada = ult >= 0 ? `<section class="painel" style="margin-top:12px"><p class="rotulo">Rodada ${ult + 1}</p>${s.rodadas[ult].map(([c, f, gc, gf]) => `<div class="not" style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;${c === s.clubeId || f === s.clubeId ? "font-weight:700" : ""}"><span style="text-align:right">${esc(nomeClube(c))}</span><b>${gc} × ${gf}</b><span>${esc(nomeClube(f))}</span></div>`).join("")}</section>` : "";
-  const subs = `<div class="sub-abas">${[["tabela", "Tabela"], ["copas", "Copas"], ["revista", "Revista ISPN"], ["artilharia", "Artilharia"], ["assist", "Assistências"], ["elenco", "Seu elenco"]].map(([k, n2]) => `<button class="${(sub.liga ?? "tabela") === k ? "ativo" : ""}" data-sub="liga:${k}">${n2}</button>`).join("")}</div>`;
+  const subs = `<div class="sub-abas">${[["tabela", "Tabela"], ["copas", "Copas"], ["selecao", "Seleção"], ["revista", "Revista ISPN"], ["artilharia", "Artilharia"], ["assist", "Assistências"], ["elenco", "Seu elenco"]].map(([k, n2]) => `<button class="${(sub.liga ?? "tabela") === k ? "ativo" : ""}" data-sub="liga:${k}">${n2}</button>`).join("")}</div>`;
   if (sub.liga === "copas") return subs + abaCopas(s);
+  if (sub.liga === "selecao") return subs + abaSelecao(s);
   if (sub.liga === "revista") return subs + abaRevista(s);
   if (sub.liga === "artilharia" || sub.liga === "assist") {
     const l = rankingT(pacote, s, sub.liga === "artilharia" ? "g" : "a", 15);
@@ -766,7 +827,7 @@ function ctxFigT(s: SaveTecnico): CtxFig {
     escudo: (id) => id.startsWith("sel-") ? bandeiraSvg(id.slice(4)) : id.startsWith("marca-") ? (MARCA[id.slice(6)] ? logoSvg(MARCA[id.slice(6)], 44) : "") : escudo(id),
     bandeira: (c) => bandeiraSvg(c),
     retrato: (f) => {
-      if (f.posicao === "TEC") { const [a, b] = f.cores, esc2 = `<svg viewBox="0 0 26 30" width="26" height="30">${corpoEscudo(idClube(f.clubeId), a, b, f.clube)}</svg>`; return svgFoto({ aparencia: ap(f), tecnico: { roupa: v.roupa as RoupaTecnico, cor: a.toUpperCase() === "#FFFFFF" ? "#F4F2EC" : a, cor2: b, escudo: esc2 }, semFundo: true }); }
+      if (f.posicao === "TEC") { const [a, b] = f.cores, esc2 = f.clubeId.startsWith("sel-") ? bandeiraSvg(f.clubeId.slice(4)) : `<svg viewBox="0 0 26 30" width="26" height="30">${corpoEscudo(idClube(f.clubeId), a, b, f.clube)}</svg>`; return svgFoto({ aparencia: ap(f), tecnico: { roupa: v.roupa as RoupaTecnico, cor: a.toUpperCase() === "#FFFFFF" ? "#F4F2EC" : a, cor2: b, escudo: esc2 }, semFundo: true }); }
       if (f.tipo === "familia") return svgFoto({ aparencia: ap(f), traje: "social", semFundo: true });
       const c1 = f.cores[0];
       return svgFoto({ aparencia: ap(f), camisa: { cor1: c1.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : c1, cor2: f.cores[1] ?? "#111111", estilo: "lisa", fonte: f.clubeId }, numero: f.numero, traje: "jogo", semFundo: true });
@@ -1147,6 +1208,21 @@ document.addEventListener("click", (ev) => {
   if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffD) { const r = demitirStaff(s, d.staffD as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.albumT !== undefined) { abrirAlbumT(s); return; }
+  if (d.selAceitar !== undefined) { const r = aceitarSelecao(pacote, s); msg = { texto: r.msg, ok: r.ok }; aba = "liga"; sub.liga = "selecao"; redesenhar(); return; }
+  if (d.selRecusar !== undefined) { s.ofertaSel = undefined; msg = { texto: "Você agradeceu e recusou a seleção.", ok: true }; redesenhar(); return; }
+  if (d.irSel !== undefined) { aba = "liga"; sub.liga = "selecao"; redesenhar(); return; }
+  if (d.intSel) { const r = declararInteresseSel(pacote, s, d.intSel); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (s.selecao) {
+    const sel = s.selecao;
+    if (d.selForm) { sel.formacao = d.selForm as Formacao; redesenhar(); return; }
+    if (d.selEstilo) { sel.estilo = d.selEstilo as Estilo; redesenhar(); return; }
+    if (d.selAuto !== undefined) { sel.convocados = convocarMelhores(poolSel(pacote, s, sel.pais)); sel.titulares = []; msg = { texto: "Lista refeita com os melhores de cada posição.", ok: true }; redesenhar(); return; }
+    if (d.selTit) { sel.titulares = sel.titulares.includes(d.selTit) ? sel.titulares.filter((k) => k !== d.selTit) : [...sel.titulares, d.selTit]; redesenhar(); return; }
+    if (d.selDesc) { sel.convocados = sel.convocados.filter((k) => k !== d.selDesc); sel.titulares = sel.titulares.filter((k) => k !== d.selDesc); redesenhar(); return; }
+    if (d.selPool !== undefined) { abrir(poolSelHtml(s)); return; }
+    if (d.selConv) { if (sel.convocados.length < 23 && !sel.convocados.includes(d.selConv)) sel.convocados.push(d.selConv); salvar(); abrir(poolSelHtml(s)); render(); return; }
+    if (d.selSair !== undefined) { const r = deixarSelecao(pacote, s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  }
   if (d.grama) { const r = ajustarGrama(s, +d.grama); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.foco) { const r = mudarFoco(s, d.foco); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.observar) { const r = observar(s, d.observar, d.clube || undefined); msg = { texto: r.msg, ok: r.ok }; if (($("dlg") as HTMLDialogElement).open && d.clube) { msg = undefined; msgNeg = { texto: r.msg, ok: r.ok }; salvar(); abrir(negociarHtml(s, d.observar, d.clube)); render(); return; } redesenhar(); return; }
