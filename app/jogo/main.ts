@@ -427,7 +427,7 @@ function revistaJogHtml(s: Save): string {
       ed = montarRevista(pacote, ANO_INICIAL + c.temporada, eu, [], Math.max(1, c.semana - SEMANAS_PRE)); previaRevista.clear(); previaRevista.set(k, ed);
     }
   } else ed = c.revista?.[rvAno];
-  return `<section class="painel">${revistaHtml(ed, { lista: rvLista, ano: rvAno, anos: ["previa", ...anos], nomeClube: (id) => infoClube(pacote, id)?.nome ?? id, escudo: (id) => escudo(id) })}</section>`;
+  return `<section class="painel">${revistaHtml(ed, { lista: rvLista, ano: rvAno, anos: ["previa", ...anos], nomeClube: (id) => infoClube(pacote, id)?.nome ?? id, escudo: (id) => escudo(id), foto: (x) => (x.eu ? foto(s) : fotoNpc(x.nome, x.clubeId, x.idade)) })}</section>`;
 }
 const FASES_MM = ["derby", "desafio", "playoff", "oitavas", "quartas", "semi", "final"];
 function tabelaCopaHtml(t: LinhaTabela[], meu: string, zona?: (i: number) => string) {

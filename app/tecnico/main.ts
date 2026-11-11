@@ -464,7 +464,18 @@ function abaRevista(s: SaveTecnico): string {
   let ed: EdicaoRevista | undefined;
   if (rvAno === "previa") { const k = `${s.semente}|${s.temporada}|${s.semana}`; ed = previaCache.get(k); if (!ed) { ed = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [], Math.max(1, s.semana - SEMANAS_PRE_T)); previaCache.clear(); previaCache.set(k, ed); } }
   else ed = s.revista?.[rvAno];
-  return `<section class="painel">${revistaHtml(ed, { lista: rvLista, ano: rvAno, anos: ["previa", ...anos], nomeClube, escudo: (id) => escudo(id, "escudo esc-p") })}</section>`;
+  return `<section class="painel">${revistaHtml(ed, { lista: rvLista, ano: rvAno, anos: ["previa", ...anos], nomeClube, escudo: (id) => escudo(id, "escudo esc-p"), foto: (x) => fotoNpcT(x.nome, x.clubeId, x.idade) })}</section>`;
+}
+/** Rosto de um jogador do mundo, sorteado pelo nome (sempre o mesmo), com a camisa do clube. */
+function fotoNpcT(nome: string, clubeId: string, idade = 25): string {
+  let h = 2166136261; for (const ch of nome) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const pick = <T,>(l: readonly T[], k: number) => l[(h >>> k) % l.length];
+  const info = infoClube(pacote, clubeId), u = UNIFORME_CLUBE[clubeId], [a, b] = u ? u.cores : [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
+  const ap: Aparencia = { ...APARENCIA_PADRAO, pele: (h >>> 3) % 8, rosto: pick(["oval", "redondo", "quadrado", "longo", "largo", "diamante"] as const, 5),
+    cabelo: pick(["raspado", "curto", "degrade", "topete", "ondulado", "cacheado", "crespo", "blackpower", "trancas", "undercut", "careca", "moicano"] as const, 7),
+    corCabelo: (h >>> 11) % 5, olhos: (h >>> 13) % 4, nariz: pick(["reto", "pequeno", "largo", "achatado", "aquilino", "batata"] as const, 9),
+    boca: pick(["neutra", "sorriso", "lado", "fina", "cheia"] as const, 15), barba: idade < 21 ? "nenhuma" : pick(["nenhuma", "sombra", "rala", "cavanhaque", "curta", "cheia", "bigode"] as const, 17) };
+  return svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa", fonte: clubeId }, numero: String(((h >>> 19) % 30) + 2), traje: "jogo" });
 }
 
 // ------------------------------------------------------------------ copas (estadual, nacional, continental, Intercontinental, Mundial)
