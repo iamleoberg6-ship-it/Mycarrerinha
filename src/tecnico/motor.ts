@@ -793,7 +793,7 @@ export function jogarAte(pacote: PacoteDados, s: SaveTecnico, ate: number): Even
   return av.eventos.slice(antes);
 }
 /** O apito final: joga o que falta e fecha notas, cartões, suspensões, lesões, cansaço e moral. */
-function terminarPartida(pacote: PacoteDados, s: SaveTecnico, adv: string, souCasa: boolean, rodada: number): Relatorio {
+function terminarPartida(pacote: PacoteDados, s: SaveTecnico, adv: string, souCasa: boolean, rodada: number, comp = "liga"): Relatorio {
   if (!(s.aoVivo && s.aoVivo.rodada === rodada && s.aoVivo.adv === adv)) { s.aoVivo = novoAoVivo(rodada, adv, souCasa); s.aoVivo.emCampo = s.esc.titulares.filter((x): x is string => !!x); }
   jogarAte(pacote, s, 90);
   const av = s.aoVivo!;
@@ -812,7 +812,11 @@ function terminarPartida(pacote: PacoteDados, s: SaveTecnico, adv: string, souCa
     if (e.min < 30) n = 6 + (n - 6) * 0.5;
     const nota = Math.round(clamp(n, 3, 10) * 10) / 10;
     notas.push({ id, nome: a.nome, pos: e.pos, nota, min: e.min, gols: e.gols, assist: e.assist });
-    a.jogos++; a.gols += e.gols; a.assist += e.assist; a.notas = [...a.notas, nota].slice(-10); a.semJogar = 0;
+    a.jogos++; a.gols += e.gols; a.assist += e.assist;
+    // save de antes da separação: o que já tinha na temporada fica na liga
+    if (!a.porComp) a.porComp = a.jogos > 0 ? { liga: { j: a.jogos - 1, g: a.gols - e.gols, a: a.assist - e.assist } } : {};
+    const pc = ((a.porComp ??= {})[comp] ??= { j: 0, g: 0, a: 0 }); pc.j++; pc.g += e.gols; pc.a += e.assist;
+    a.notas = [...a.notas, nota].slice(-10); a.semJogar = 0;
     const am = e.vermelho ? Math.max(0, e.amarelo - 1) : e.amarelo;
     if (am) { a.amarelos += am; a.amarelosT += am; if (a.amarelos >= 3) { a.amarelos = 0; a.suspenso = 1; } }
     if (e.vermelho) { a.vermelhosT++; a.suspenso = rng.int(1, 2); }
@@ -857,7 +861,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
     const guarda = s.aoVivo; s.aoVivo = undefined;
     const souCasa = jc.jogo.casa === s.clubeId, adv = souCasa ? jc.jogo.fora : jc.jogo.casa;
     const antes = new Map(s.elenco.map((x) => [x.id, x.condicao]));
-    const rel = terminarPartida(pacote, s, adv, souCasa, 1000 + s.semana);
+    const rel = terminarPartida(pacote, s, adv, souCasa, 1000 + s.semana, jc.copa.id);
     s.aoVivo = guarda;
     // o jogo de meio de semana cansa menos (o preparador físico dosa e o elenco roda)
     for (const x of s.elenco) { const c0 = antes.get(x.id); if (c0 !== undefined && x.condicao < c0) x.condicao = Math.max(x.condicao, c0 - 7); }
@@ -1063,7 +1067,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
     if (aposenta) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
   }
   for (const a of s.elenco) guardarTemporada(s, a);
-  for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
+  for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
   for (const av of viradaPatro(pacote, s)) noticia(s, "dinheiro", av);
   // o mundo vira a temporada (com a tabela da liga do técnico valendo para o acesso e o rebaixamento)

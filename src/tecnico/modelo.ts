@@ -49,6 +49,7 @@ export interface Atleta {
   /** 1 a 20 */ prof: number; /** 1 a 20: quanto mais alto, mais explode */ temp: number;
   /** relação com o técnico, 0 a 100 */ relacao: number;
   notas: number[]; jogos: number; gols: number; assist: number; amarelosT: number; vermelhosT: number;
+  /** números da temporada por competição ("liga" ou o id da copa): a artilharia de cada uma é separada */ porComp?: Record<string, { j: number; g: number; a: number }>;
   /** semanas seguidas sem entrar em campo */ semJogar: number;
   /** prometeu titularidade: jogos que ainda pode ficar fora antes de se sentir enganado */ promessa?: number;
   /** já conversou com ele nesta semana */ conversa?: number;
