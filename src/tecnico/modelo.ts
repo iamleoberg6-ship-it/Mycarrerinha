@@ -247,7 +247,8 @@ export const EFEITO_FUNCAO: Record<Funcao, string> = {
   base: "Garotos melhores na base todo começo de temporada.",
   olheiro: "Mostra o potencial dos agentes livres e acha nomes melhores.",
 };
-export interface Membro { nome: string; nac: string; idade: number; nivel: number; salario: number; /** ex-atleta do clube, formado técnico */ ex?: boolean }
+export interface Membro { nome: string; nac: string; idade: number; nivel: number; salario: number; /** ex-atleta do clube, formado técnico */ ex?: boolean;
+  /** cargo no departamento e habilidades (1 a 20) */ cargo?: import("./staff.js").Cargo; hab?: Partial<Record<import("./staff.js").Hab, number>> }
 export const salarioStaff = (nivel: number, fLiga: number) => Math.round((14_000 * Math.pow(nivel, 1.7) * Math.max(0.25, fLiga * fLiga)) / 100) * 100;
 
 // ------------------------------------------------------------------ dinheiro

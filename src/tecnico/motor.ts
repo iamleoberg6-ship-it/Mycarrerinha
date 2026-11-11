@@ -8,7 +8,7 @@ import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres
 import { valorBrl } from "../moeda.js";
 import { montarRevista, type EdicaoRevista } from "../revista.js";
 import { semanaEmpregos, tabelaAgora } from "./empregos.js";
-import { nivelEquipe, vagasIniciais, migrarEquipe, pedirVagaStaff, governoInicial, dividaInicial, parcelaDivida, abrirEleicao, votar, talvezSaf, travaContratacao, type Governo } from "./gestao.js";
+import { migrarEquipe, pedirVagaStaff, gerarMembro, cortarVagas, nivelDoClube, governoInicial, dividaInicial, parcelaDivida, abrirEleicao, votar, talvezSaf, travaContratacao, type Governo } from "./gestao.js";
 import { contratoInicial, salarioOferecido, type Contrato, type Negociacao } from "./contrato.js";
 import { copasT, jogoCopaT, rodarCopasT, fecharCopasT, temCopaPendente, premioDeTitulo, bonusVitoriaCopa, type PalmaresT } from "./copas-t.js";
 import { COPAS, NOME_FASE, rotuloJogo, type CopaId, type EstadoCopa } from "../copas.js";
@@ -18,6 +18,7 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import { DEPS, NOME_DEP, CARGOS, CARGOS_DEP, ORDEM_INICIAL, vagasIniciaisDep, nivelCargo, notaNoCargo, melhorCargo, fatorAtributos, type Dep, type Deps, type Cargo } from "./staff.js";
 import { gerarNome } from "../nomes.js";
 import { onzeProvavel } from "../relacoes.js";
 import { encaixe } from "../funcoes.js";
@@ -68,6 +69,7 @@ export interface SaveTecnico {
   treino: { foco: Grupo; intensidade: Intensidade };
   /** (antigo) uma pessoa por função; hoje a comissão é a equipe */ staff: Partial<Record<Funcao, Membro>>;
   /** comissão técnica: várias pessoas por função, nas vagas que a diretoria autoriza */ equipe?: Partial<Record<Funcao, Membro[]>>; vagasStaff?: Record<Funcao, number>;
+  /** a estrutura do clube: departamentos com chefe e equipe, cada um num cargo */ deps?: Deps; vagasDep?: Record<Dep, number>;
   /** quem manda no clube (presidente eleito, dono da SAF) */ governo?: Governo;
   clube: Clube;
   mes: { receitas: Record<string, number>; despesas: Record<string, number> };
@@ -106,9 +108,17 @@ const rngT = (s: SaveTecnico, ...p: (string | number)[]) => new RNG(`${s.semente
 const ligaDe = (pacote: PacoteDados, s: SaveTecnico): Liga => mundo(pacote).liga[s.ligaId];
 const fLigaDe = (s: SaveTecnico) => infoLiga(s.ligaId).fLiga;
 export const folhaDe = (s: SaveTecnico) => s.elenco.reduce((a, x) => a + x.salario, 0);
-export const folhaStaff = (s: SaveTecnico) => s.equipe ? Object.values(s.equipe).reduce((a, l) => a + (l ?? []).reduce((b, x) => b + x.salario, 0), 0) : Object.values(s.staff).reduce((a, x) => a + (x?.salario ?? 0), 0);
-/** Nível que a equipe da função entrega (o melhor inteiro, cada um a mais soma um pedaço). */
-export const nivelStaff = (s: SaveTecnico, f: Funcao) => (s.equipe ? nivelEquipe(s.equipe[f] ?? []) : s.staff[f]?.nivel ?? 0);
+export const folhaStaff = (s: SaveTecnico) => s.deps ? Object.values(s.deps).reduce((a, l) => a + (l ?? []).reduce((b, x) => b + x.salario, 0), 0) : s.equipe ? Object.values(s.equipe).reduce((a, l) => a + (l ?? []).reduce((b, x) => b + x.salario, 0), 0) : Object.values(s.staff).reduce((a, x) => a + (x?.salario ?? 0), 0);
+export const nivelDoCargo = (s: SaveTecnico, c: Cargo) => nivelCargo(s.deps, c);
+/** Nível de cada área de efeito (0 a 6,5), somando os cargos que trabalham nela. */
+export function nivelStaff(s: SaveTecnico, f: Funcao): number {
+  const n = (c: Cargo) => nivelCargo(s.deps, c);
+  const v = f === "auxiliar" ? n("assistente") + 0.3 * n("auxiliar") : f === "treinador" ? Math.max(n("t_ataque"), n("t_defesa"), n("t_posse"), n("auxiliar"))
+    : f === "preparador" ? n("preparador") + 0.5 * n("fisiologista") + 0.3 * n("nutri") : f === "goleiros" ? n("t_goleiros")
+    : f === "medico" ? n("medico") + 0.5 * n("chefe_med") : f === "fisio" ? n("fisio") + 0.4 * n("fisiologista")
+    : f === "analista" ? n("ana_adv") + 0.3 * n("ana_des") + 0.2 * n("chefe_ana") : f === "base" ? n("coord_base") + 0.4 * n("t_base") : n("olheiro") + 0.5 * n("chefe_scout");
+  return Math.min(6.5, v);
+}
 const noticia = (s: SaveTecnico, tipo: Noticia["tipo"], texto: string) => { s.noticias.unshift({ quando: rotuloSemanaT(s), texto, tipo }); s.noticias = s.noticias.slice(0, 60); };
 const sal = (s: SaveTecnico, fClube: number) => (ovr: number, idade: number) => { const li = infoLiga(s.ligaId); return salarioJusto(ovr, idade, li.fLiga, li.fSalario, fClube); };
 
@@ -178,9 +188,16 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   s.clube = { ...s.clube, saldo: Math.round(folha * (3 + 4 * c.fClube)), tv: Math.round(folha * 0.62), patrocinio: Math.round(folha * 0.28 * c.fClube), ctNivel: nivelClube, baseNivel: clamp(nivelClube + rng.int(-1, 1), 1, 5), tetoFolha: Math.round(folha * 1.2) };
   patrociniosDe(pacote, s);
   s.clube.folhaBase = folha; s.clube.tv = Math.round(folha * 1.0); s.clube.divida = dividaInicial(pacote, s, folha); s.clube.mesesVermelho = 0;
-  const vagas0 = vagasIniciais(nivelClube); s.vagasStaff = vagas0; s.equipe = {};
-  // a comissão de começo: preenche quase todas as vagas (clube pequeno sempre tem buraco)
-  for (const f of FUNCOES) { s.equipe[f] = []; for (let i = 0; i < vagas0[f]; i++) { if (i > 0 && rng.chance(0.25)) continue; const c = candidatos(s, f, `inicio-${i}`, clamp(nivelClube - 1 + rng.int(0, 1) - (i > 0 ? 1 : 0), 1, 4)).find((x) => !x.ex); if (c) s.equipe[f]!.push(c); } }
+  const vagas0 = vagasIniciaisDep(nivelClube); s.vagasDep = vagas0; s.deps = {};
+  // a estrutura de começo: o chefe e quase todas as vagas (clube pequeno sempre tem buraco)
+  for (const d of DEPS) {
+    s.deps[d] = [];
+    for (let i = 0; i < vagas0[d]; i++) {
+      if (i > 1 && rng.chance(0.25)) continue;
+      const cargo = ORDEM_INICIAL[d][i] ?? CARGOS_DEP(d).find((c) => !CARGOS[c].chefe)!;
+      s.deps[d]!.push(novoProfissional(s, rng, d, cargo, clamp(nivelClube - 1 + rng.int(0, 1) - (i > 1 ? 1 : 0), 1, 4)));
+    }
+  }
   s.governo = governoInicial(pacote, s);
   s.esc = melhorEscalacao(s.elenco, s.tatica.formacao);
   definirExpectativa(pacote, s);
@@ -215,40 +232,62 @@ function definirExpectativa(pacote: PacoteDados, s: SaveTecnico) {
 }
 
 // ------------------------------------------------------------------ comissão técnica
-/** Candidatos de uma função (mudam a cada dois meses); o nível puxa pela reputação do técnico e pela força do clube. */
-export function candidatos(s: SaveTecnico, f: Funcao, chave = `${s.temporada}-${Math.floor(s.semana / 8)}`, nivelBase?: number): Membro[] {
-  const rng = new RNG(`${s.semente}|staff|${f}|${chave}`), pais = infoLiga(s.ligaId).pais, usados = new Set([...Object.values(s.staff).map((m) => m!.nome), ...Object.values(s.equipe ?? {}).flatMap((l) => (l ?? []).map((m) => m.nome))]);
-  const centro = nivelBase ?? clamp(1.6 + s.tecnico.reputacao / 30 + s.clube.ctNivel * 0.25, 1, 5);
-  const fL = fLigaDe(s), base = s.clube.folhaBase;
-  // salário da comissão na régua do clube (clube pequeno paga pouco; o profissional caro não vem)
-  const salario = (nivel: number) => base ? Math.max(1500, Math.round(base * 0.0023 * Math.pow(nivel, 1.5) / 100) * 100) : salarioStaff(nivel, fL);
-  // ex-atletas do clube com licença entram na frente (auxiliar, base; ex-goleiro também para treinar goleiros)
-  const ex: Membro[] = (s.exAtletas ?? []).filter((x) => (f === "auxiliar" || f === "base" || (f === "goleiros" && x.pos === "GOL")) && !usados.has(x.nome))
-    .map((x) => { const nivel = clamp(x.licenca + (x.lid >= 70 ? 1 : 0), 1, 5); return { nome: x.nome, nac: x.nac, idade: x.idade, nivel, salario: Math.round(salario(nivel) * 0.85 / 100) * 100, ex: true }; });
-  return [...ex, ...Array.from({ length: 4 }, (_, i) => {
-    const nivel = clamp(Math.round(centro + (i === 0 ? 0 : rng.normal(0, 1))), 1, 5), nac = rng.chance(0.7) ? pais : rng.pick(["BRA", "ARG", "POR", "ESP", "ITA", "ENG", "GER", "FRA", "NED", "URU"]);
-    return { nome: gerarNome(rng, nac.length === 3 ? nac : "BRA", usados), nac, idade: rng.int(31, 64), nivel, salario: salario(nivel) };
-  }).sort((a, b) => b.nivel - a.nivel)];
+/** Salário da comissão na régua do clube (clube pequeno paga pouco; o profissional caro não vem). */
+function salarioDe(s: SaveTecnico) {
+  const base = s.clube.folhaBase, fL = fLigaDe(s);
+  return (nota: number) => base ? Math.max(1500, Math.round(base * 0.0023 * Math.pow(Math.max(1, nota), 1.5) / 100) * 100) : salarioStaff(Math.max(1, Math.round(nota)), fL);
 }
-export function contratarStaff(s: SaveTecnico, f: Funcao, nome: string): { ok: boolean; msg: string } {
-  const m = candidatos(s, f).find((x) => x.nome === nome), eq = (s.equipe![f] ??= []), vagas = s.vagasStaff?.[f] ?? 1;
+const nomesStaff = (s: SaveTecnico) => new Set([...Object.values(s.staff).map((m) => m!.nome), ...Object.values(s.deps ?? {}).flatMap((l) => (l ?? []).map((m) => m.nome))]);
+function novoProfissional(s: SaveTecnico, rng: RNG, d: Dep, cargo: Cargo, nivel: number): Membro {
+  const pais = infoLiga(s.ligaId).pais, nac = rng.chance(0.7) ? pais : rng.pick(["BRA", "ARG", "POR", "ESP", "ITA", "ENG", "GER", "FRA", "NED", "URU"]);
+  return gerarMembro(rng, d, cargo, nivel, gerarNome(rng, nac.length === 3 ? nac : "BRA", nomesStaff(s)), nac, salarioDe(s));
+}
+/** Candidatos de um departamento (mudam a cada dois meses): cada um com a sua especialidade; o nível puxa pela sua reputação e pelo CT. */
+export function candidatos(s: SaveTecnico, d: Dep, chave = `${s.temporada}-${Math.floor(s.semana / 8)}`): Membro[] {
+  const rng = new RNG(`${s.semente}|staff2|${d}|${chave}`), usados = nomesStaff(s);
+  const centro = clamp(1.6 + s.tecnico.reputacao / 30 + s.clube.ctNivel * 0.25, 1, 5), sal = salarioDe(s);
+  // ex-atletas do clube com licença entram na frente (comissão técnica e base; ex-goleiro treina goleiros)
+  const ex: Membro[] = (s.exAtletas ?? []).filter((x) => (d === "tecnica" || d === "base") && !usados.has(x.nome)).map((x) => {
+    const cargo: Cargo = d === "base" ? "t_base" : x.pos === "GOL" ? "t_goleiros" : x.lid >= 70 ? "assistente" : "auxiliar";
+    const m = gerarMembro(new RNG(`${s.semente}|ex|${x.nome}`), d, cargo, clamp(x.licenca + (x.lid >= 70 ? 1 : 0), 1, 5), x.nome, x.nac, sal);
+    return { ...m, idade: x.idade, salario: Math.round(m.salario * 0.85 / 100) * 100, ex: true };
+  });
+  const cargos = CARGOS_DEP(d);
+  return [...ex, ...Array.from({ length: 5 }, (_, i) => {
+    const cargo = rng.chance(0.2) ? cargos.find((c) => CARGOS[c].chefe)! : rng.pick(cargos.filter((c) => !CARGOS[c].chefe));
+    return novoProfissional(s, rng, d, cargo, clamp(Math.round(centro + (i === 0 ? 0 : rng.normal(0, 1))), 1, 5));
+  }).filter((m) => !usados.has(m.nome)).sort((a, b) => b.nivel - a.nivel)];
+}
+export function contratarStaff(s: SaveTecnico, d: Dep, nome: string): { ok: boolean; msg: string } {
+  const m = candidatos(s, d).find((x) => x.nome === nome), eq = ((s.deps ??= {})[d] ??= []), vagas = s.vagasDep?.[d] ?? 1;
   if (!m) return { ok: false, msg: "Esse profissional já acertou com outro clube." };
-  if (eq.length >= vagas) return { ok: false, msg: `As ${vagas} ${vagas === 1 ? "vaga" : "vagas"} de ${NOME_FUNCAO[f].toLowerCase()} estão ocupadas. Dispense alguém ou peça mais uma vaga à diretoria.` };
+  if (eq.length >= vagas) return { ok: false, msg: `As ${vagas} vagas da ${NOME_DEP[d].toLowerCase()} estão ocupadas. Dispense alguém ou peça mais uma vaga à diretoria.` };
   if (s.clube.saldo < m.salario * 3) return { ok: false, msg: "O clube não tem caixa para mais um salário agora." };
+  // chefe só tem um: se já tem, o novo entra no cargo em que rende mais
+  if (m.cargo && CARGOS[m.cargo].chefe && eq.some((x) => x.cargo === m.cargo)) m.cargo = melhorCargo(m, d);
   eq.push(m);
   if (m.ex) s.exAtletas = (s.exAtletas ?? []).filter((x) => x.nome !== m.nome);
-  noticia(s, "clube", `${m.nome} chega à comissão técnica como ${NOME_FUNCAO[f].toLowerCase()}.`);
-  return { ok: true, msg: `${m.nome} contratado.` };
+  noticia(s, "clube", `${m.nome} chega ao clube como ${CARGOS[m.cargo!].nome.toLowerCase()}.`);
+  return { ok: true, msg: `${m.nome} contratado como ${CARGOS[m.cargo!].nome.toLowerCase()}.` };
 }
-export function demitirStaff(s: SaveTecnico, f: Funcao, nome?: string): { ok: boolean; msg: string } {
-  const eq = s.equipe?.[f] ?? [], atual = nome ? eq.find((x) => x.nome === nome) : eq[eq.length - 1];
-  if (!atual) return { ok: false, msg: "Não tem ninguém nessa função." };
+/** Trocar o cargo de alguém no departamento (o chefe antigo, se for trocado, vai para onde rende mais). */
+export function mudarCargo(s: SaveTecnico, d: Dep, nome: string, cargo: Cargo): { ok: boolean; msg: string } {
+  const eq = s.deps?.[d] ?? [], m = eq.find((x) => x.nome === nome);
+  if (!m || CARGOS[cargo].dep !== d) return { ok: false, msg: "Não deu para mudar o cargo." };
+  let extra = "";
+  if (CARGOS[cargo].chefe) { const velho = eq.find((x) => x !== m && x.cargo === cargo); if (velho) { velho.cargo = melhorCargo(velho, d); extra = ` ${velho.nome} passa a ${CARGOS[velho.cargo].nome.toLowerCase()}.`; } }
+  m.cargo = cargo;
+  return { ok: true, msg: `${m.nome} agora é ${CARGOS[cargo].nome.toLowerCase()} (rende ${notaNoCargo(m, cargo).toFixed(1).replace(".", ",")} de 5).${extra}` };
+}
+export function demitirStaff(s: SaveTecnico, d: Dep, nome?: string): { ok: boolean; msg: string } {
+  const eq = s.deps?.[d] ?? [], atual = nome ? eq.find((x) => x.nome === nome) : eq[eq.length - 1];
+  if (!atual) return { ok: false, msg: "Não tem ninguém nesse departamento." };
   const multa = atual.salario * 3;
-  s.clube.saldo -= multa; gastar(s, "Rescisões", multa); s.equipe![f] = eq.filter((x) => x !== atual);
+  s.clube.saldo -= multa; gastar(s, "Rescisões", multa); s.deps![d] = eq.filter((x) => x !== atual);
   return { ok: true, msg: `${atual.nome} saiu. Rescisão de 3 salários (${valorBrl(multa)}).` };
 }
-export function pedirVaga(s: SaveTecnico, f: Funcao): { ok: boolean; msg: string } {
-  const r = pedirVagaStaff(s, f, folhaDe(s), folhaStaff(s));
+export function pedirVaga(s: SaveTecnico, d: Dep): { ok: boolean; msg: string } {
+  const r = pedirVagaStaff(s, d, folhaDe(s), folhaStaff(s));
   if (r.ok) noticia(s, "diretoria", r.msg);
   return r;
 }
@@ -295,8 +334,8 @@ function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
     noticia(s, "dinheiro", "O caixa fechou o mês no vermelho. A diretoria cobra controle nos gastos.");
     // dois meses seguidos no vermelho: a diretoria manda cortar a comissão (uma vaga das maiores equipes)
     if (s.clube.mesesVermelho >= 2 && !s.diretoria.corte) {
-      const maior = FUNCOES.filter((f) => (s.vagasStaff?.[f] ?? 0) > 1).sort((a, b) => (s.vagasStaff![b] - s.vagasStaff![a]))[0];
-      if (maior) { s.vagasStaff![maior]--; s.diretoria.corte = { ate: semanaAbs(s) + 4, texto: `A diretoria cortou uma vaga de ${NOME_FUNCAO[maior].toLowerCase()}. Ajuste a comissão em até quatro semanas.` }; noticia(s, "diretoria", s.diretoria.corte.texto); }
+      const maior = DEPS.filter((d) => (s.vagasDep?.[d] ?? 0) > 1).sort((a, b) => (s.vagasDep![b] - s.vagasDep![a]))[0];
+      if (maior) { cortarVagas(s, [maior]); s.diretoria.corte = { ate: semanaAbs(s) + 4, texto: `A diretoria cortou uma vaga da ${NOME_DEP[maior].toLowerCase()}. Ajuste a equipe em até quatro semanas.` }; noticia(s, "diretoria", s.diretoria.corte.texto); }
     }
   } else s.clube.mesesVermelho = 0;
   return saldoMes;
@@ -574,9 +613,9 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   // bola parada: o melhor cobrador de falta e de pênalti em campo
   const melhor = (k: "FAL" | "PEN") => [...campo].sort((p, q) => exDe(q.a)[k] - exDe(p.a)[k])[0];
   const bFal = melhor("FAL"), bPen = melhor("PEN");
-  const bola = 1 + ((bFal ? exDe(bFal.a).FAL : 60) - 60) / 900 + ((bPen ? exDe(bPen.a).PEN : 60) - 60) / 1400;
+  const bp = nivelCargo(s.deps, "t_bp"), bola = (1 + ((bFal ? exDe(bFal.a).FAL : 60) - 60) / 900 + ((bPen ? exDe(bPen.a).PEN : 60) - 60) / 1400) * (1 + 0.008 * bp);
   const lMe = ((av.souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto * bola;
-  const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto;
+  const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp);
   av.lambdas.push([lMe, lAdv]);
   const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai > min && !av.fora.includes(x.a.id));
   const peso = <T>(lista: T[], fw: (x: T) => number) => { const t = lista.reduce((a, x) => a + fw(x), 0); let r = rng.next() * t; for (const x of lista) { r -= fw(x); if (r <= 0) return x; } return lista[lista.length - 1]; };
@@ -859,10 +898,10 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   const lingua = linguaDe(li.pais), cap = s.elenco.find((a) => a.id === s.esc.capitao), liderCapitao = cap ? clamp((exDe(cap).LID - 60) / 6, -3, 4) : 0;
   const titularesAgora = s.esc.titulares.map((id) => s.elenco.find((a) => a.id === id)).filter((a): a is Atleta => !!a);
   const equipe = titularesAgora.length ? titularesAgora.reduce((x, a) => x + exDe(a).EQU, 0) / titularesAgora.length : 60;
-  const ct = s.clube.ctNivel, gol = nivelStaff(s, "goleiros"), prep = nivelStaff(s, "preparador"), trein = nivelStaff(s, "treinador"), fisio = nivelStaff(s, "fisio");
+  const ct = s.clube.ctNivel, prep = nivelStaff(s, "preparador"), fisio = nivelStaff(s, "fisio");
   for (const a of s.elenco) {
     const participacao: Participacao = a.lesao > 0 ? "ferias" : titularesIds.has(a.id) ? "titular" : entraram.has(a.id) ? "entrou" : "naoJogou";
-    a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.94 + exDe(a).DET / 800) * (0.88 + 0.05 * ct) * (0.9 + 0.035 * trein) * (a.pos === "GOL" ? 1 + 0.08 * gol : 1) });
+    a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.94 + exDe(a).DET / 800) * (0.88 + 0.05 * ct), fAtrib: fatorAtributos(s.deps, a.pos, a.idade) });
     const rec = s.treino.intensidade === "alta" ? 18 : s.treino.intensidade === "leve" ? 34 : 26;
     a.condicao = a.lesao > 0 ? clamp(a.condicao, 0, 75) : clamp(a.condicao + rec + 2 * prep + 1.2 * fisio, 0, 100);
     // fisioterapia boa adianta a volta (às vezes o jogador volta uma semana antes)
@@ -929,7 +968,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   // prazo do corte na comissão: quem passou do limite sai (o de menor nível), e a diretoria perde a paciência
   if (s.diretoria.corte && semanaAbs(s) >= s.diretoria.corte.ate) {
     let demitiu = 0;
-    for (const f of FUNCOES) while ((s.equipe?.[f]?.length ?? 0) > (s.vagasStaff?.[f] ?? 1)) { const pior = [...s.equipe![f]!].sort((a, b) => a.nivel - b.nivel)[0]; demitirStaff(s, f, pior.nome); demitiu++; }
+    for (const d of DEPS) while ((s.deps?.[d]?.length ?? 0) > (s.vagasDep?.[d] ?? 1)) { const pior = [...s.deps![d]!].sort((a, b) => notaNoCargo(a, a.cargo!) - notaNoCargo(b, b.cargo!))[0]; demitirStaff(s, d, pior.nome); demitiu++; }
     if (demitiu) { s.diretoria.confianca = clamp(s.diretoria.confianca - 6, 0, 100); noticia(s, "diretoria", `A diretoria fez o corte por conta própria: ${demitiu} ${demitiu === 1 ? "saiu" : "saíram"} da comissão.`); }
     s.diretoria.corte = undefined;
   }

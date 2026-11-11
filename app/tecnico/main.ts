@@ -29,6 +29,7 @@ import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR,
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
+import { DEPS, NOME_DEP, HABS, HABS_DEP, NOME_HAB, CARGOS, CARGOS_DEP, CHEFE_DEP, notaNoCargo, fatorChefe, melhoresHabs, type Dep, type Cargo, type Hab } from "../../src/tecnico/staff";
 import { listaEmpregos, ligasDoMercado, vagasAbertas, situacaoDoClube, declararInteresse, candidatar, NOME_STATUS, type SituacaoClube } from "../../src/tecnico/empregos";
 import { ENTREVISTA, NOME_PERFIL, perfilDoClube, abrirNegociacao, responderEntrevista, negociarContrato } from "../../src/tecnico/contrato";
 import { COPAS, NOME_FASE, rotuloJogo, type EstadoCopa } from "../../src/copas";
@@ -85,7 +86,7 @@ import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
-  proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
+  proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
@@ -822,21 +823,36 @@ function governoHtml(s: SaveTecnico): string {
     <div class="v-acoes">${(["situacao", "oposicao", "neutro"] as const).map((k) => `<button class="${(e.apoio ?? "") === k ? "v-ativo" : ""}" data-apoio="${k}">${k === "neutro" ? "Ficar neutro" : `Apoiar ${esc(e[k].nome.split(" ")[0])}`}</button>`).join("")}</div></div>` : "";
   return `<p class="rotulo" style="margin-top:14px">Quem manda</p><div class="dl"><span>Presidente</span><b>${esc(g.presidente)}</b><span>Modelo</span><b>${tipo}</b>${g.proxEleicao !== undefined ? `<span>Próxima eleição</span><b>${ANO_INICIAL_T + g.proxEleicao}</b>` : ""}<span>Dívida</span><b>${div ? `${curtoBrl(div)} (${(div / base).toFixed(1).replace(".", ",")} folhas)` : "nenhuma"}</b></div>${eleicao}`;
 }
+const n1 = (x: number) => x.toFixed(1).replace(".", ",");
+const est = (x: number) => estrelas(Math.max(0, Math.min(5, Math.round(x))));
+/** A ficha de um profissional: as habilidades do departamento e quanto ele rende em cada cargo. */
+function fichaStaff(m: import("../../src/tecnico/modelo").Membro, d: Dep, meu: boolean): string {
+  const hs = HABS_DEP[d], outros = HABS.filter((h) => !hs.includes(h) && (m.hab?.[h] ?? 0) >= 12);
+  const barra = (h: Hab) => { const v = m.hab?.[h] ?? 1; return `<div class="barra"><span>${NOME_HAB[h]}</span><b>${v}</b><i style="--v:${v * 5}%;--c:${v >= 15 ? "var(--pos)" : v >= 10 ? "var(--ouro)" : "var(--giz-2)"}"></i></div>`; };
+  return `<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Ficha completa${meu ? " e cargo" : ""}</summary>
+    <div class="atr" style="margin-top:6px">${[...hs, ...outros].map(barra).join("")}</div>
+    <p class="rotulo" style="margin-top:8px">Rende como</p>
+    ${CARGOS_DEP(d).map((c) => { const atual = m.cargo === c; return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0"><span>${CARGOS[c].nome} ${est(notaNoCargo(m, c))}</span>${meu ? (atual ? `<span class="pill bom">cargo atual</span>` : `<button class="botao sec peq" style="white-space:nowrap" data-poe-cargo="${d}|${esc(m.nome)}|${c}">Pôr aqui</button>`) : ""}</div>`; }).join("")}
+  </details>`;
+}
 function abaComissao(s: SaveTecnico): string {
   const folha = folhaDe(s), custo = folhaStaff(s), corte = s.diretoria.corte;
-  const topo = `<section class="painel"><p class="rotulo">Comissão técnica</p><div class="dl"><span>Pessoas</span><b>${FUNCOES.reduce((a, f) => a + (s.equipe?.[f]?.length ?? 0), 0)} de ${FUNCOES.reduce((a, f) => a + (s.vagasStaff?.[f] ?? 0), 0)} vagas</b><span>Custo por mês</span><b>${curtoBrl(custo)} (${Math.round((custo / Math.max(1, folha)) * 100)}% da folha do elenco)</b></div>
-    <p class="sub" style="margin:6px 0 0">Como no Football Manager: cada função pode ter mais de uma pessoa. O melhor conta inteiro e cada um a mais soma um pedaço. Quem libera as vagas é a diretoria, e ela pede corte quando o caixa aperta.</p>
+  const total = DEPS.reduce((a, d) => a + (s.deps?.[d]?.length ?? 0), 0), vagas = DEPS.reduce((a, d) => a + (s.vagasDep?.[d] ?? 0), 0);
+  const topo = `<section class="painel"><p class="rotulo">Estrutura do clube</p><div class="dl"><span>Pessoas</span><b>${total} de ${vagas} vagas</b><span>Custo por mês</span><b>${curtoBrl(custo)} (${Math.round((custo / Math.max(1, folha)) * 100)}% da folha do elenco)</b></div>
+    <p class="sub" style="margin:6px 0 0">Como no Football Manager: seis departamentos, cada um com um chefe e a equipe dele. Cada profissional tem habilidades de 1 a 20 e você escolhe o cargo de cada um: o treinador de ataque melhora finalização e drible, o de defesa melhora marcação e posicionamento, o de bola parada faz o time marcar mais de bola parada, e assim por diante. Um bom chefe faz o departamento render até 10% mais; sem chefe, rende 12% menos. Quem libera as vagas é a diretoria.</p>
     ${corte ? `<p class="aviso-t" style="margin-top:8px">${esc(corte.texto)}</p>` : ""}</section>`;
-  return topo + FUNCOES.map((f) => {
-    const eq = s.equipe?.[f] ?? [], vagas = s.vagasStaff?.[f] ?? 1, nv = nivelStaff(s, f), cheio = eq.length >= vagas;
-    const nomes = new Set(eq.map((m) => m.nome)), cs = candidatos(s, f).filter((c) => !nomes.has(c.nome));
-    const sobra = eq.length > vagas;
-    return `<details class="painel" style="margin-bottom:8px"${!eq.length || sobra ? " open" : ""}><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:8px"><span><b>${eq.length > 1 ? NOME_FUNCAO_PL[f] : NOME_FUNCAO[f]}</b> <small class="sub">${eq.length}/${vagas}</small></span><span>${eq.length ? estrelas(Math.min(5, Math.round(nv))) : `<span class="pill ruim">sem ninguém</span>`}</span></summary>
-      <p class="sub" style="margin:6px 0">${EFEITO_FUNCAO[f]}${eq.length ? ` Força da equipe: ${nv.toFixed(1).replace(".", ",")}.` : ""}</p>
-      ${sobra ? `<p class="aviso-t">Tem ${eq.length - vagas} a mais do que a diretoria autoriza. Dispense alguém até o prazo.</p>` : ""}
-      ${eq.map((m) => `<div class="clube-op" style="grid-template-columns:1fr auto"><div><b>${esc(m.nome)}</b> ${estrelas(m.nivel)}<br><small class="sub">${m.nac} · ${m.idade} anos · ${curtoBrl(m.salario)}/mês</small></div><button class="botao sec peq" data-staff-d="${f}" data-nome="${esc(m.nome)}">Dispensar</button></div>`).join("")}
-      <div class="botoes" style="margin:8px 0"><button class="botao sec peq" data-pede-vaga="${f}">Pedir mais uma vaga à diretoria</button></div>
-      <p class="rotulo" style="margin-top:6px">Disponíveis${cheio ? " (sem vaga livre)" : ""}</p>${cs.map((c) => `<div class="clube-op" style="grid-template-columns:1fr auto"><div><b>${esc(c.nome)}</b> ${estrelas(c.nivel)}${c.ex ? ` <span class="pill bom">Ex-atleta do clube</span>` : ""}<br><small class="sub">${c.nac} · ${c.idade} anos · ${curtoBrl(c.salario)}/mês</small></div><button class="botao peq" data-staff-c="${f}" data-nome="${esc(c.nome)}" ${cheio ? "disabled" : ""}>Contratar</button></div>`).join("")}
+  return topo + DEPS.map((d) => {
+    const eq = s.deps?.[d] ?? [], v = s.vagasDep?.[d] ?? 1, cheio = eq.length >= v, sobra = eq.length - v;
+    const chefe = eq.find((m) => m.cargo === CHEFE_DEP(d)), fc = fatorChefe(s.deps, d);
+    const nomes = new Set(eq.map((m) => m.nome)), cs = candidatos(s, d).filter((c) => !nomes.has(c.nome));
+    const entrega = CARGOS_DEP(d).map((c) => { const n = nivelDoCargo(s, c); return `<div class="not" style="display:flex;justify-content:space-between;gap:8px"><span><b>${CARGOS[c].nome}</b><br><small class="sub">${CARGOS[c].efeito}</small></span><span style="white-space:nowrap">${n ? `${n1(n)}` : `<span class="pill ruim">ninguém</span>`}</span></div>`; }).join("");
+    const ordem = [...eq].sort((a, b) => Number(b.cargo === CHEFE_DEP(d)) - Number(a.cargo === CHEFE_DEP(d)));
+    return `<details class="painel" style="margin-bottom:8px"${sobra > 0 ? " open" : ""}><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center"><span><b>${NOME_DEP[d]}</b> <small class="sub">${eq.length}/${v}</small><br><small class="sub">${chefe ? `Chefe: ${esc(chefe.nome)}` : "Sem chefe"} · rende ${Math.round(fc * 100)}%</small></span><span>${chefe ? est(notaNoCargo(chefe, CHEFE_DEP(d))) : `<span class="pill ruim">sem chefe</span>`}</span></summary>
+      ${sobra > 0 ? `<p class="aviso-t">Tem ${sobra} a mais do que a diretoria autoriza. Dispense alguém até o prazo.</p>` : ""}
+      ${ordem.map((m) => `<div class="clube-op" style="grid-template-columns:1fr auto;align-items:start"><div><b>${esc(m.nome)}</b>${m.ex ? ` <span class="pill bom">Ex-atleta</span>` : ""}<br><small><b>${CARGOS[m.cargo!].nome}</b> ${est(notaNoCargo(m, m.cargo!))}</small><br><small class="sub">${melhoresHabs(m).map((h) => `${NOME_HAB[h]} ${m.hab![h]}`).join(" · ")}</small><br><small class="sub">${m.nac} · ${m.idade} anos · ${curtoBrl(m.salario)}/mês</small>${fichaStaff(m, d, true)}</div><button class="botao sec peq" data-staff-d="${d}" data-nome="${esc(m.nome)}">Dispensar</button></div>`).join("") || `<p class="sub">Ninguém no departamento.</p>`}
+      <div class="botoes" style="margin:8px 0"><button class="botao sec peq" data-pede-vaga="${d}">Pedir mais uma vaga à diretoria</button></div>
+      <details style="margin:6px 0"><summary class="rotulo" style="cursor:pointer">O que o departamento entrega</summary>${entrega}</details>
+      <p class="rotulo" style="margin-top:6px">Disponíveis${cheio ? " (sem vaga livre)" : ""}</p>${cs.map((c) => `<div class="clube-op" style="grid-template-columns:1fr auto;align-items:start"><div><b>${esc(c.nome)}</b>${c.ex ? ` <span class="pill bom">Ex-atleta do clube</span>` : ""}<br><small>Especialidade: <b>${CARGOS[c.cargo!].nome}</b> ${est(notaNoCargo(c, c.cargo!))}</small><br><small class="sub">${melhoresHabs(c).map((h) => `${NOME_HAB[h]} ${c.hab![h]}`).join(" · ")}</small><br><small class="sub">${c.nac} · ${c.idade} anos · ${curtoBrl(c.salario)}/mês</small>${fichaStaff(c, d, false)}</div><button class="botao peq" data-staff-c="${d}" data-nome="${esc(c.nome)}" ${cheio ? "disabled" : ""}>Contratar</button></div>`).join("")}
     </details>`;
   }).join("") + `<p class="sub">A lista de disponíveis muda a cada dois meses. Dispensar custa 3 salários.</p>`;
 }
@@ -1044,9 +1060,10 @@ document.addEventListener("click", (ev) => {
   if (d.tat && d.v !== undefined) { const k = d.tat as keyof typeof s.tatica; (s.tatica as unknown as Record<string, number | boolean>)[k] = k === "contraAtaque" ? d.v === "1" : +d.v; redesenhar(false); return; }
   if (d.treino && d.v) { (s.treino as unknown as Record<string, string>)[d.treino] = d.v; redesenhar(false); return; }
   if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
-  if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Funcao, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
-  if (d.staffD) { const r = demitirStaff(s, d.staffD as Funcao, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
-  if (d.pedeVaga) { const r = pedirVaga(s, d.pedeVaga as Funcao); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.staffD) { const r = demitirStaff(s, d.staffD as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.poeCargo) { const [dep, nome, cargo] = d.poeCargo.split("|"); const r = mudarCargo(s, dep as Dep, nome, cargo as Cargo); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.pedeVaga) { const r = pedirVaga(s, d.pedeVaga as Dep); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.apoio && s.governo?.eleicao) { s.governo.eleicao.apoio = d.apoio as "situacao" | "oposicao" | "neutro"; msg = { texto: d.apoio === "neutro" ? "Você ficou neutro na eleição." : `Você declarou apoio a ${s.governo.eleicao[d.apoio as "situacao" | "oposicao"].nome}.`, ok: true }; redesenhar(); return; }
   if (d.mpos !== undefined) { filtroMercado.pos = (d.mpos || undefined) as PosT | undefined; render(); return; }
   if (d.midade !== undefined) { filtroMercado.idadeMax = +d.midade || undefined; render(); return; }

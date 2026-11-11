@@ -6,48 +6,71 @@ import type { PacoteDados } from "../liga.js";
 import { mundo, infoClube } from "../mundo.js";
 import { infoLiga } from "../ligas.js";
 import { gerarNome } from "../nomes.js";
-import { FUNCOES, NOME_FUNCAO, type Funcao, type Membro } from "./modelo.js";
+import { FUNCOES, type Funcao, type Membro } from "./modelo.js";
+import { DEPS, NOME_DEP, HABS, HABS_DEP, CARGOS, CARGOS_DEP, LIMITE_DEP, vagasIniciaisDep, notaNoCargo, type Dep, type Cargo, type Hab } from "./staff.js";
 import type { SaveTecnico } from "./motor.js";
 
-// ------------------------------------------------------------------ comissão técnica
-/** Quantos de cada função cabem no máximo (o que a diretoria pode chegar a autorizar). */
-export const LIMITE_VAGAS: Record<Funcao, number> = { auxiliar: 3, treinador: 5, preparador: 4, goleiros: 2, medico: 3, fisio: 4, analista: 4, base: 2, olheiro: 8 };
-/** Vagas de começo pelo tamanho do clube (nível 1 a 5). */
-export function vagasIniciais(nivel: number): Record<Funcao, number> {
-  const n = clamp(Math.round(nivel), 1, 5);
-  return { auxiliar: n >= 3 ? 2 : 1, treinador: 1 + Math.floor(n * 0.6), preparador: 1 + Math.floor(n / 2), goleiros: 1, medico: n >= 4 ? 2 : 1, fisio: 1 + Math.floor(n / 2), analista: Math.floor(n / 2), base: 1, olheiro: 1 + n };
-}
-export const equipeDe = (s: SaveTecnico, f: Funcao): Membro[] => s.equipe?.[f] ?? [];
-/** Nível que a equipe entrega: o melhor conta inteiro, cada um a mais soma um pedaço (mais gente boa = melhor, com retorno menor). */
-export function nivelEquipe(ms: Membro[]): number {
-  const l = ms.map((m) => m.nivel).sort((a, b) => b - a);
-  if (!l.length) return 0;
-  return Math.min(6.5, l[0] + l.slice(1).reduce((a, v, i) => a + (v * 0.32) / (i + 1), 0));
-}
-/** Saves antigos (uma pessoa por função) viram equipes, e cada clube ganha as vagas do tamanho dele. */
-export function migrarEquipe(pacote: PacoteDados, s: SaveTecnico) {
-  if (!s.equipe) {
-    s.equipe = {};
-    for (const f of FUNCOES) { const m = (s.staff as Partial<Record<Funcao, Membro>>)[f]; s.equipe[f] = m ? [m] : []; }
+// ------------------------------------------------------------------ comissão técnica (departamentos)
+/** Habilidades de um profissional (1 a 20): fortes no que é a especialidade, medianas no resto do departamento. */
+export function gerarHabs(rng: RNG, d: Dep, spec: Cargo, nivel: number): Partial<Record<Hab, number>> {
+  const h: Partial<Record<Hab, number>> = {}, base = 1 + nivel * 3.4, foco = CARGOS[spec].peso;
+  for (const k of HABS) {
+    const v = foco[k] ? base + 1.8 + rng.normal(0, 1.4) : HABS_DEP[d].includes(k) ? base - 4 + rng.normal(0, 2.2) : rng.int(1, 9);
+    h[k] = clamp(Math.round(v), 1, 20);
   }
-  if (!s.vagasStaff) s.vagasStaff = vagasIniciais(nivelDoClube(pacote, s));
-  for (const f of FUNCOES) { s.equipe[f] ??= []; s.vagasStaff[f] ??= vagasIniciais(nivelDoClube(pacote, s))[f]; }
+  return h;
+}
+/** Uma pessoa nova para o cargo (nível de 1 a 5 vira as habilidades). */
+export function gerarMembro(rng: RNG, d: Dep, cargo: Cargo, nivel: number, nome: string, nac: string, salario: (n: number) => number): Membro {
+  const m: Membro = { nome, nac, idade: rng.int(29, 64), nivel: 1, salario: 0, cargo, hab: gerarHabs(rng, d, cargo, nivel) };
+  m.nivel = clamp(Math.round(notaNoCargo(m, cargo)), 1, 5);
+  const topo = Math.max(...CARGOS_DEP(d).map((c) => notaNoCargo(m, c)));
+  m.salario = salario(topo);
+  return m;
+}
+export const membrosDe = (s: SaveTecnico, d: Dep): Membro[] => s.deps?.[d] ?? [];
+/** De função antiga para departamento e cargo (saves de antes dos departamentos). */
+const ANTIGO: Record<Funcao, [Dep, Cargo[]]> = {
+  auxiliar: ["tecnica", ["assistente", "auxiliar"]], treinador: ["tecnica", ["t_ataque", "t_defesa", "t_posse", "t_bp", "auxiliar"]],
+  preparador: ["fisica", ["preparador"]], goleiros: ["tecnica", ["t_goleiros"]], medico: ["medica", ["chefe_med", "medico"]], fisio: ["medica", ["fisio"]],
+  analista: ["analise", ["chefe_ana", "ana_adv", "ana_des"]], base: ["base", ["coord_base", "t_base"]], olheiro: ["scout", ["chefe_scout", "olheiro"]],
+};
+/** Saves antigos (uma pessoa por função, ou equipes por função) viram departamentos com cargos e habilidades. */
+export function migrarEquipe(pacote: PacoteDados, s: SaveTecnico) {
+  if (!s.deps) {
+    const velhas: Partial<Record<Funcao, Membro[]>> = s.equipe ?? Object.fromEntries(FUNCOES.map((f) => [f, (s.staff as Partial<Record<Funcao, Membro>>)[f] ? [(s.staff as Partial<Record<Funcao, Membro>>)[f]!] : []]));
+    s.deps = {};
+    for (const f of FUNCOES) {
+      const [d, cargos] = ANTIGO[f];
+      (velhas[f] ?? []).forEach((m, i) => {
+        let cargo = cargos[Math.min(i, cargos.length - 1)];
+        if (CARGOS[cargo].chefe && (s.deps![d] ?? []).some((x) => x.cargo === cargo)) cargo = cargos.find((c) => !CARGOS[c].chefe) ?? CARGOS_DEP(d).find((c) => !CARGOS[c].chefe)!;
+        const hab = m.hab ?? gerarHabs(new RNG(`${s.semente}|migra|${m.nome}`), d, cargo, m.nivel);
+        (s.deps![d] ??= []).push({ ...m, cargo, hab });
+      });
+    }
+  }
+  const ini = vagasIniciaisDep(nivelDoClube(pacote, s));
+  s.vagasDep ??= ini;
+  for (const d of DEPS) { s.deps[d] ??= []; s.vagasDep[d] = Math.max(s.vagasDep[d] ?? ini[d], s.deps[d]!.length); }
 }
 export function nivelDoClube(pacote: PacoteDados, s: SaveTecnico): number {
   const c = mundo(pacote).clube[s.clubeId];
   return clamp(Math.round(1 + (c?.fClube ?? 0.5) * 1.4 + (infoLiga(s.ligaId).nivel <= 1 ? 1 : 0)), 1, 5);
 }
-/** Pedir mais uma vaga numa função: a diretoria olha a confiança, o caixa e o quanto a comissão já custa. */
-export function pedirVagaStaff(s: SaveTecnico, f: Funcao, folha: number, folhaStaff: number): { ok: boolean; msg: string } {
-  const v = s.vagasStaff![f], conf = s.diretoria.confianca, austero = s.governo?.perfil === "austero";
-  if (v >= LIMITE_VAGAS[f]) return { ok: false, msg: `Já é o máximo de ${NOME_FUNCAO[f].toLowerCase()} que um clube mantém.` };
+/** Pedir mais uma vaga num departamento: a diretoria olha a confiança, o caixa e o quanto a comissão já custa. */
+export function pedirVagaStaff(s: SaveTecnico, d: Dep, folha: number, folhaStaff: number): { ok: boolean; msg: string } {
+  const v = s.vagasDep![d], conf = s.diretoria.confianca, austero = s.governo?.perfil === "austero", nome = NOME_DEP[d].toLowerCase();
+  if (v >= LIMITE_DEP[d]) return { ok: false, msg: `A ${nome} já está do tamanho máximo que um clube mantém.` };
   if (s.diretoria.corte) return { ok: false, msg: "A diretoria está pedindo corte na comissão. Agora não dá para crescer." };
-  if (conf < (austero ? 65 : 55)) return { ok: false, msg: `A diretoria não confia o bastante para aumentar a comissão (precisa de ${austero ? 65 : 55}).` };
+  if (conf < (austero ? 65 : 55)) return { ok: false, msg: `A diretoria não confia o bastante para aumentar a estrutura (precisa de ${austero ? 65 : 55}).` };
   if (s.clube.saldo < (austero ? 8 : 5) * (folha + folhaStaff)) return { ok: false, msg: `O caixa não sustenta mais gente: a diretoria quer ${austero ? 8 : 5} meses de salários guardados.` };
-  if (folhaStaff > folha * (austero ? 0.12 : 0.18)) return { ok: false, msg: "A comissão já está cara perto da folha do elenco. A diretoria disse não." };
-  s.vagasStaff![f] = v + 1; s.diretoria.confianca = clamp(conf - 2, 0, 100);
-  return { ok: true, msg: `Aprovado: mais uma vaga de ${NOME_FUNCAO[f].toLowerCase()} (agora ${v + 1}).` };
+  if (folhaStaff > folha * (austero ? 0.12 : 0.18)) return { ok: false, msg: "A estrutura já está cara perto da folha do elenco. A diretoria disse não." };
+  s.vagasDep![d] = v + 1; s.diretoria.confianca = clamp(conf - 2, 0, 100);
+  return { ok: true, msg: `Aprovado: mais uma vaga na ${nome} (agora ${v + 1}).` };
 }
+/** Diretoria cortando: tira uma vaga de cada departamento indicado (nunca abaixo de 1). */
+export function cortarVagas(s: SaveTecnico, deps: Dep[]) { for (const d of deps) s.vagasDep![d] = Math.max(1, (s.vagasDep![d] ?? 1) - 1); }
 
 // ------------------------------------------------------------------ dívida e governo do clube
 export type TipoGoverno = "associativo" | "saf" | "empresa";
@@ -116,7 +139,7 @@ export function votar(pacote: PacoteDados, s: SaveTecnico, pos: number, esperado
     s.diretoria.confianca = apoio === "oposicao" ? clamp(s.diretoria.confianca + 10, 0, 100) : apoio === "situacao" ? 22 : 45;
     texto += apoio === "situacao" ? " Você apoiou o outro lado: a nova diretoria assume desconfiada do seu trabalho." : apoio === "oposicao" ? " Você apoiou o vencedor e ganhou crédito." : " A nova diretoria chega sem compromisso com você.";
     if (quem.plataforma === "gastador") { s.clube.saldo += base * 4; s.clube.divida = (s.clube.divida ?? 0) + base * 6; s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 1.15); texto += " Ele pegou um empréstimo para reforçar o time: mais dinheiro agora, mais dívida depois."; }
-    if (quem.plataforma === "austero") { s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 0.88); for (const f of ["treinador", "olheiro"] as Funcao[]) s.vagasStaff![f] = Math.max(1, s.vagasStaff![f] - 1); texto += " Ele cortou o teto salarial e duas vagas da comissão."; }
+    if (quem.plataforma === "austero") { s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 0.88); cortarVagas(s, ["tecnica", "scout"]); texto += " Ele cortou o teto salarial e duas vagas da comissão."; }
   } else {
     s.diretoria.confianca = clamp(s.diretoria.confianca + (apoio === "situacao" ? 8 : apoio === "oposicao" ? -20 : 0), 0, 100);
     if (apoio === "oposicao") texto += " Você apoiou a oposição e perdeu: a diretoria não esquece.";
@@ -140,7 +163,7 @@ export function talvezSaf(s: SaveTecnico): string | undefined {
     return `${dono} comprou o futebol do clube e virou SAF! Aporte de ${(aporte / 1e6).toFixed(1).replace(".", ",")} milhões, metade da dívida paga e teto salarial 30% maior. O novo dono quer resultado rápido.`;
   }
   s.clube.divida = 0; s.clube.saldo = Math.max(s.clube.saldo, base * 2); s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 0.88); s.diretoria.confianca = 50;
-  for (const f of ["treinador", "olheiro"] as Funcao[]) s.vagasStaff![f] = Math.max(1, s.vagasStaff![f] - 1);
+  cortarVagas(s, ["tecnica", "scout"]);
   return `${dono} comprou o futebol do clube e virou SAF. O grupo assumiu a dívida inteira, mas chegou cortando: teto salarial menor, comissão enxuta e contratação só com caixa sobrando (seis folhas guardadas).`;
 }
 /** SAF austera: só libera contratação se sobrar caixa. */
