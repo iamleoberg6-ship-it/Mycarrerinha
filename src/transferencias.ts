@@ -460,12 +460,12 @@ export function recusar(pacote: PacoteDados, s: Save, id: string): R {
 export type Destino = "qualquer" | "casa" | "europa" | "golfo" | "salario";
 export const NOME_DESTINO: Record<Destino, string> = { qualquer: "Qualquer clube", casa: "Voltar para casa", europa: "Europa", golfo: "Golfo", salario: "Ganhar mais" };
 export const ONDE_DESTINO: Record<Destino, string> = { qualquer: "em qualquer lugar", casa: "no seu país", europa: "na Europa", golfo: "no Golfo", salario: "que paguem mais" };
-const PAIS_LIGAS: Record<string, string[]> = { BRA: ["BRA1", "BRA2"], ARG: ["ARG1"], URU: ["ARG1", "BRA1"], ENG: ["ENG1", "ENG2", "ENG3", "ENG4"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1", "ITA2"], GER: ["GER1"], FRA: ["FRA1", "FRA2"], NOR: ["NOR1"], POR: ["POR1"], NED: ["NED1"], KSA: ["KSA1"], JPN: ["JPN1"], TUR: ["TUR1"], MAR: ["MAR1"] };
+const PAIS_LIGAS: Record<string, string[]> = { BRA: ["BRA1", "BRA2"], ARG: ["ARG1"], URU: ["ARG1", "BRA1"], ENG: ["ENG1", "ENG2", "ENG3", "ENG4"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1", "ITA2"], GER: ["GER1", "GER2"], FRA: ["FRA1", "FRA2"], NOR: ["NOR1"], BEL: ["BEL1"], SCO: ["SCO1"], POR: ["POR1"], NED: ["NED1"], KSA: ["KSA1"], JPN: ["JPN1"], TUR: ["TUR1"], MAR: ["MAR1"] };
 /** Ligas que entram no pedido de saída. */
 export function ligasDoDestino(d: Destino, nacionalidade: string): string[] | undefined {
   if (d === "qualquer" || d === "salario") return undefined;
   if (d === "golfo") return ["KSA1"];
-  if (d === "europa") return ["ENG1", "ENG2", "ENG3", "ENG4", "ESP1", "ESP2", "ITA1", "ITA2", "GER1", "FRA1", "FRA2", "POR1", "NED1", "NOR1"];
+  if (d === "europa") return ["ENG1", "ENG2", "ENG3", "ENG4", "ESP1", "ESP2", "ITA1", "ITA2", "GER1", "GER2", "FRA1", "FRA2", "POR1", "NED1", "NOR1", "BEL1", "SCO1"];
   return PAIS_LIGAS[nacionalidade] ?? ["BRA1", "ARG1"];
 }
 /** Pedir para ser negociado. Com destino, a notícia vaza: pior com técnico, torcida e diretoria. */

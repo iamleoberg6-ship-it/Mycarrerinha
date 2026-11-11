@@ -379,9 +379,9 @@ teste("Relíquias: primeiro gol, hat-trick, prêmios; vão para a casa e não se
 
 teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS e ligas amadoras", () => {
   const w = mundo(pacote);
-  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "CHI1", "COL1", "ECU1", "ENG1", "ENG2", "ENG3", "ENG4", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "MEX1", "NED1", "PAR1", "POR1", "TUR1", "URU1", "USA1", "CRO1", "EGY1", "JPN1", "KOR1", "MAR1", "ITA2", "FRA2", "NOR1"].sort());
+  assert.deepEqual(w.ligas.map((l) => l.id).sort(), ["ARG1", "BRA1", "BRA2", "BRA3", ..."ABCDEFGH".split("").map((g) => `BRA4${g}`), "CHI1", "COL1", "ECU1", "ENG1", "ENG2", "ENG3", "ENG4", "ESP1", "ESP2", "FRA1", "GER1", "ITA1", "KSA1", "MEX1", "NED1", "PAR1", "POR1", "TUR1", "URU1", "USA1", "CRO1", "EGY1", "JPN1", "KOR1", "MAR1", "ITA2", "FRA2", "NOR1", "GER2", "BEL1", "SCO1"].sort());
   assert.equal(w.amadoras.length, 12); // + high school e universidade do Japão (paródia)
-  assert.equal(Object.values(w.clube).filter((c) => c.ligaId !== "SELECOES").length, 516 + CONVIDADOS.length + 116 + 80 + 16 + 48 + 54); // + Japão amador (16), terceira e quarta inglesas (48), Noruega, Série B e Ligue 2 (54)
+  assert.equal(Object.values(w.clube).filter((c) => c.ligaId !== "SELECOES").length, 516 + CONVIDADOS.length + 116 + 80 + 16 + 48 + 54 + 46); // + Japão amador (16), terceira e quarta inglesas (48), Noruega, Série B e Ligue 2 (54), 2. Bundesliga, Bélgica e Escócia sem os 4 ex-convidados (46)
   assert.equal(w.liga.USA1.clubes.length, 30); assert.equal(w.liga.BRA3.clubes.length, 20);
   assert.equal("ABCDEFGH".split("").reduce((a, g) => a + w.liga[`BRA4${g}`].clubes.length, 0), 96);
   assert.ok(w.clube["US-MIA"].elenco.some((j) => j.nome === "Lionel Mesi" && j.ovr >= 85), "o craque da liga americana");
@@ -392,7 +392,7 @@ teste("Mundo: ligas reais em paródia, pirâmide brasileira até a Série D, MLS
     assert.ok(n("GOL") >= 2 && n("ZAG") >= 3 && n("LAT") >= 2 && n("ATA") >= 2, `posições em ${c.id}`);
   }
   for (const l of w.ligas) {
-    assert.ok(l.clubes.length % 2 === 0 && l.clubes.length >= (l.id.startsWith("BRA4") || ["URU1", "CHI1", "PAR1", "ECU1"].includes(l.id) ? 12 : 16), l.id);
+    assert.ok(l.clubes.length % 2 === 0 && l.clubes.length >= (l.id.startsWith("BRA4") || ["URU1", "CHI1", "PAR1", "ECU1", "SCO1"].includes(l.id) ? 12 : 16), l.id);
     for (const c of l.clubes) { assert.ok(w.info[c.id]?.estadio && w.info[c.id].cores.length >= 2, c.id); assert.ok(c.elenco.length >= 20 && c.elenco.every((j) => !/^[A-Z]{3}-\d/.test(j.nome)), c.id); }
   }
   const forca = (id: string) => w.liga[id].clubes.reduce((a, c) => a + c.forca, 0) / w.liga[id].clubes.length;

@@ -351,7 +351,7 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
 }
 // ------------------------------------------------------------------ acesso e rebaixamento
 /** Pirâmides com acesso: [divisão de cima, de baixo, quantos trocam]. A Série D sobe pelos campeões dos grupos. */
-const PIRAMIDES: [string, string, number][] = [["BRA1", "BRA2", 4], ["BRA2", "BRA3", 4], ["ENG1", "ENG2", 3], ["ENG2", "ENG3", 3], ["ENG3", "ENG4", 3], ["ESP1", "ESP2", 3], ["ITA1", "ITA2", 3], ["FRA1", "FRA2", 2]];
+const PIRAMIDES: [string, string, number][] = [["BRA1", "BRA2", 4], ["BRA2", "BRA3", 4], ["ENG1", "ENG2", 3], ["ENG2", "ENG3", 3], ["ENG3", "ENG4", 3], ["ESP1", "ESP2", 3], ["ITA1", "ITA2", 3], ["FRA1", "FRA2", 2], ["GER1", "GER2", 2]];
 const GRUPOS_D = "ABCDEFGH".split("").map((g) => `BRA4${g}`);
 /** Fim da temporada t: os últimos de cada divisão descem, os primeiros de baixo sobem (a tabela real vale para a liga do jogador). */
 function acessoERebaixamento(m: Mundo, semente: string, t: number, real?: { ligaId: string; ordem: string[] }): Acesso[] {

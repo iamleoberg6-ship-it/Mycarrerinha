@@ -59,7 +59,7 @@ export const ufDoClube = (id: string, cidade: string) => (id.startsWith("D-") ? 
 /** Vagas de cada liga (pela tabela final da temporada anterior) e convidados de cada copa. */
 const VAGAS: Partial<Record<CopaId, [string, number][]>> = {
   LIB: [["BRA1", 7], ["ARG1", 6], ["URU1", 3], ["COL1", 3], ["CHI1", 3], ["PAR1", 3], ["ECU1", 3]],
-  UCL: [["ENG1", 5], ["ESP1", 5], ["ITA1", 5], ["GER1", 5], ["FRA1", 4], ["POR1", 3], ["NED1", 3], ["TUR1", 1], ["NOR1", 1]],
+  UCL: [["ENG1", 5], ["ESP1", 5], ["ITA1", 5], ["GER1", 5], ["FRA1", 4], ["POR1", 3], ["NED1", 3], ["TUR1", 1], ["NOR1", 1], ["BEL1", 2], ["SCO1", 1]],
   ACL: [["KSA1", 4]],
   // Concachampions: os 8 melhores da Liga MX e da MLS (os clubes do Canadá jogam a MLS)
   CON: [["MEX1", 8], ["USA1", 8]],
