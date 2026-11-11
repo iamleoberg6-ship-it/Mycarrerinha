@@ -18,6 +18,7 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import { scoutDe, semanaScout, faixaDe, type EstadoScout } from "./scout.js";
 import { DEPS, NOME_DEP, CARGOS, CARGOS_DEP, ORDEM_INICIAL, vagasIniciaisDep, nivelCargo, notaNoCargo, melhorCargo, fatorAtributos, type Dep, type Deps, type Cargo } from "./staff.js";
 import { gerarNome } from "../nomes.js";
 import { onzeProvavel } from "../relacoes.js";
@@ -70,6 +71,7 @@ export interface SaveTecnico {
   /** (antigo) uma pessoa por função; hoje a comissão é a equipe */ staff: Partial<Record<Funcao, Membro>>;
   /** comissão técnica: várias pessoas por função, nas vagas que a diretoria autoriza */ equipe?: Partial<Record<Funcao, Membro[]>>; vagasStaff?: Record<Funcao, number>;
   /** a estrutura do clube: departamentos com chefe e equipe, cada um num cargo */ deps?: Deps; vagasDep?: Record<Dep, number>;
+  /** o que o scout sabe do mundo: conhecimento por liga, focos e relatórios */ scout?: EstadoScout;
   /** quem manda no clube (presidente eleito, dono da SAF) */ governo?: Governo;
   clube: Clube;
   mes: { receitas: Record<string, number>; despesas: Record<string, number> };
@@ -297,6 +299,7 @@ export function arrumarClube(pacote: PacoteDados, s: SaveTecnico) {
   if (s.clube.folhaBase === undefined) { s.clube.folhaBase = Math.round(s.clube.tetoFolha / 1.2); s.clube.tv = Math.max(s.clube.tv, s.clube.folhaBase); }
   s.clube.divida ??= dividaInicial(pacote, s, s.clube.folhaBase);
   s.governo ??= governoInicial(pacote, s);
+  scoutDe(s);
 }
 
 // ------------------------------------------------------------------ dinheiro
@@ -959,6 +962,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   semanaDaVida(pacote, s, (t) => noticia(s, "vida", t));
   semanaNegocios(s, (t) => noticia(s, "dinheiro", t));
   semanaEmpregos(pacote, s, (t) => noticia(s, "clube", t));
+  for (const t of semanaScout(s)) noticia(s, "clube", t);
   // eleição no clube: candidatos na semana 22, votação na 32
   if (s.semana === 22) { const e = abrirEleicao(pacote, s); if (e) { noticia(s, "diretoria", `Eleição no clube! ${e.situacao.nome} (situação) contra ${e.oposicao.nome} (oposição). A votação é na semana 33. Veja em Clube › Diretoria.`); eventos.push("Começou a campanha para presidente do clube."); } }
   if (s.governo?.eleicao && s.semana >= s.governo.eleicao.votacao) {
@@ -1101,7 +1105,9 @@ export function buscarJogadores(pacote: PacoteDados, s: SaveTecnico, f: { pos?: 
       }
     }
   }
-  return lista.sort((a, b) => b.ovr - a.ovr || a.valor - b.valor).slice(0, 60);
+  // a ordem não pode entregar o nível escondido: vai pelo que o seu scout acha (o meio da faixa) e pelo valor
+  const meio = (x: Alvo) => { const f = faixaDe(s, x, x.ligaId, x.clubeId); return (f.min + f.max) / 2; };
+  return lista.map((x) => [x, meio(x)] as const).sort((a, b) => b[1] - a[1] || b[0].valor - a[0].valor).slice(0, 60).map((x) => x[0]);
 }
 /** O que o jogador acha de vir: topa ou acha o clube pequeno; e quanto quer ganhar. */
 export function interesseDo(pacote: PacoteDados, s: SaveTecnico, a: Alvo): { topa: boolean; motivo: string; salario: number } {

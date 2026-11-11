@@ -29,6 +29,7 @@ import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR,
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
+import { scoutDe, faixaDe, textoFaixa, textoPot, statusObs, observar, mudarFoco, vagasFoco, vagasObs, forcaScout, olhoScout, FOCO_JOVENS, FOCO_LIVRES, type Faixa } from "../../src/tecnico/scout";
 import { DEPS, NOME_DEP, HABS, HABS_DEP, NOME_HAB, CARGOS, CARGOS_DEP, CHEFE_DEP, notaNoCargo, fatorChefe, melhoresHabs, type Dep, type Cargo, type Hab } from "../../src/tecnico/staff";
 import { listaEmpregos, ligasDoMercado, vagasAbertas, situacaoDoClube, declararInteresse, candidatar, NOME_STATUS, type SituacaoClube } from "../../src/tecnico/empregos";
 import { ENTREVISTA, NOME_PERFIL, perfilDoClube, abrirNegociacao, responderEntrevista, negociarContrato } from "../../src/tecnico/contrato";
@@ -242,8 +243,9 @@ function abaInicio(s: SaveTecnico): string {
 const grupoPos = (p: PosT) => (p === "GOL" ? "gol" : p === "ZAG" || p === "LAT" ? "def" : p === "VOL" || p === "MEI" ? "mei" : "ata");
 function abaElenco(s: SaveTecnico): string {
   const nProp = (s.propostas ?? []).length;
-  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["mercado", "Mercado"], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["livres", "Agentes livres"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
+  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["mercado", "Mercado"], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["livres", "Agentes livres"], ["scout", "Scout"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
   if (sub.elenco === "livres") return subs + abaLivres(s);
+  if (sub.elenco === "scout") return subs + abaScout(s);
   if (sub.elenco === "mercado") return subs + abaMercadoT(s);
   if (sub.elenco === "propostas") return subs + abaPropostas(s);
   const filtros = `<div class="chips" style="margin-bottom:8px">${[["todos", "Todos"], ["gol", "Goleiros"], ["def", "Defesa"], ["mei", "Meio"], ["ata", "Ataque"]].map(([k, n]) => `<button class="chip${filtro === k ? " ativo" : ""}" data-filtro="${k}">${n}</button>`).join("")}</div>`;
@@ -287,6 +289,26 @@ function fichaJogador(s: SaveTecnico, id: string): string {
     <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button></div></div>
     <div><p class="rotulo">Dispensar · rescisão de ${curtoBrl(multa)}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-dispensar data-id="${esc(a.id)}">Dispensar ${esc(a.nome)}</button></div></div>`;
 }
+/** O número da direita na lista: a faixa de OVR (e o potencial embaixo), com a marca do relatório. */
+function ovFaixa(s: SaveTecnico, f: Faixa, nome: string, clubeId?: string): string {
+  const st = statusObs(s, nome, clubeId);
+  return `<span class="ov"><strong style="${f.exato ? "" : "font-size:15px"}">${textoFaixa(f)}</strong><span>${st === "pronto" ? "relatório · " : st === "andando" ? "observando · " : ""}pot ${textoPot(f)}</span></span>`;
+}
+function relatorioScout(s: SaveTecnico, f: Faixa, nome: string, clubeId?: string): string {
+  const st = statusObs(s, nome, clubeId);
+  return `<div class="dl"><span>Nível (OVR)</span><b>${textoFaixa(f)}</b><span>Potencial</span><b>${textoPot(f)}</b><span>Conhecimento da liga</span><b>${Math.round(f.con)}%</b></div>
+    ${st === "pronto" ? `<p class="sub">Relatório do scout pronto: a faixa já está a mais justa que os seus olheiros conseguem.</p>` : st === "andando" ? `<p class="sub">Um olheiro está acompanhando os jogos dele. O relatório sai em breve.</p>` : `<div class="botoes"><button class="botao sec peq" data-observar="${esc(nome)}" data-clube="${clubeId ?? ""}">Mandar um olheiro observar</button></div>`}`;
+}
+function abaScout(s: SaveTecnico): string {
+  const e = scoutDe(s), ab = semanaAbs(s), ligas = ligasDoMercado(s);
+  const barraCon = (v: number) => `<i style="display:block;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--ouro) ${Math.round(v)}%,var(--giz-2) ${Math.round(v)}%);margin-top:4px"></i>`;
+  const linha = (id: string, nome: string, extra = "") => { const on = e.focos.includes(id), v = e.con[id] ?? 0; return `<div class="not" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="flex:1"><b>${esc(nome)}</b> <small class="sub">${Math.round(v)}%${extra}</small>${barraCon(v)}</span><button class="${on ? "botao" : "botao sec"} peq" data-foco="${id}" style="white-space:nowrap">${on ? "Com foco ✓" : "Mandar olheiros"}</button></div>`; };
+  const andando = Object.entries(e.obs).filter(([, v]) => v > ab), prontos = Object.entries(e.obs).filter(([, v]) => v <= ab).slice(-12).reverse();
+  return `<section class="painel"><p class="rotulo">Departamento de scout</p><div class="dl"><span>Pessoas no scout</span><b>${(s.deps?.scout ?? []).length}</b><span>Força da rede</span><b>${forcaScout(s).toFixed(1).replace(".", ",")}</b><span>Melhor olheiro</span><b>${olhoScout(s).toFixed(1).replace(".", ",")} de 5</b><span>Focos</span><b>${e.focos.length} de ${vagasFoco(s)}</b><span>Relatórios ao mesmo tempo</span><b>${vagasObs(s)}</b></div>
+    <p class="sub" style="margin-top:6px">Você não vê o nível exato de quem é de outro clube: vê a faixa que o seu scout estima. Onde você manda os olheiros procurar, o conhecimento cresce toda semana e a faixa fecha. Onde ninguém olha, cai devagar. Mais olheiros e melhores = mais focos ao mesmo tempo e faixas mais justas. Para um jogador específico, peça um relatório (uma ou duas semanas).</p></section>
+    <section class="painel"><p class="rotulo">Onde procurar</p>${linha(FOCO_JOVENS, "Jovens talentos (até 21 anos)", " · qualquer liga")}${linha(FOCO_LIVRES, "Agentes livres")}${ligas.map((id) => linha(id, infoLiga(id).nome, id === s.ligaId ? " · a sua liga" : "")).join("")}</section>
+    <section class="painel"><p class="rotulo">Relatórios</p>${andando.map(([k, v]) => `<div class="not">${esc(k.split("|")[0])} <small class="sub">· sai em ${v - ab} ${v - ab === 1 ? "semana" : "semanas"}</small></div>`).join("")}${prontos.map(([k]) => `<div class="not">${esc(k.split("|")[0])} <small class="sub">· pronto${k.split("|")[1] !== "livre" ? ` (${esc(nomeClube(k.split("|")[1]))})` : " (livre)"}</small></div>`).join("") || (andando.length ? "" : `<p class="sub">Nenhum relatório. Peça na ficha de um jogador do mercado.</p>`)}</section>`;
+}
 function abaMercadoT(s: SaveTecnico): string {
   const jan = janelaT(s), f = filtroMercado, lista = buscarJogadores(pacote, s, f);
   const chip = (on: boolean, attrs: string, n: string) => `<button class="chip${on ? " ativo" : ""}" ${attrs}>${n}</button>`;
@@ -295,16 +317,18 @@ function abaMercadoT(s: SaveTecnico): string {
     <div class="chips" style="margin-bottom:6px">${chip(!f.idadeMax, 'data-midade="0"', "Qualquer idade")}${chip(f.idadeMax === 23, 'data-midade="23"', "Até 23")}${chip(f.idadeMax === 28, 'data-midade="28"', "Até 28")}</div>
     <div class="chips" style="margin-bottom:6px">${chip(f.minhaLiga, 'data-mliga="1"', `Só na ${esc(infoLiga(s.ligaId).curto)}`)}${chip(!f.minhaLiga, 'data-mliga="0"', "Todas as ligas")}</div>
     <div class="chips" style="margin-bottom:10px">${chip(f.alcance, 'data-malc="1"', "Ao seu alcance")}${chip(!f.alcance, 'data-malc="0"', "Todos")}</div>
-    <div class="lista">${lista.map((x) => `<button class="lin" data-alvo="${esc(x.nome)}" data-clube="${x.clubeId}"><span class="num" style="font-size:13px">${x.pos}</span><span class="nm"><b>${esc(x.nome)}</b><small>${escudo(x.clubeId, "escudo esc-p")}${esc(nomeClube(x.clubeId))} · ${x.idade}a${x.titular ? ` <span class="pill">Titular</span>` : ""}</small><small>Valor ${curtoBrl(x.valor)}</small></span><span class="ov"><strong>${x.ovr}</strong><span>OVR</span></span></button>`).join("") || `<p class="sub">Ninguém com esse filtro.</p>`}</div>`;
+    <div class="lista">${lista.map((x) => `<button class="lin" data-alvo="${esc(x.nome)}" data-clube="${x.clubeId}"><span class="num" style="font-size:13px">${x.pos}</span><span class="nm"><b>${esc(x.nome)}</b><small>${escudo(x.clubeId, "escudo esc-p")}${esc(nomeClube(x.clubeId))} · ${x.idade}a${x.titular ? ` <span class="pill">Titular</span>` : ""}</small><small>Valor ${curtoBrl(x.valor)}</small></span>${ovFaixa(s, faixaDe(s, x, x.ligaId, x.clubeId), x.nome, x.clubeId)}</button>`).join("") || `<p class="sub">Ninguém com esse filtro.</p>`}</div>
+    <p class="sub" style="margin-top:8px">O nível de quem não é seu aparece como uma faixa: o que o seu scout acha. Ela fecha quando você manda os olheiros procurar naquela liga (aba Scout) ou pede um relatório do jogador.</p>`;
 }
 function negociarHtml(s: SaveTecnico, nome: string, clubeId: string): string {
   const a = alvoPorNome(pacote, s, nome, clubeId);
   if (!a) return `<button class="fechar" data-fechar aria-label="Fechar">×</button><p class="sub">Esse jogador não está mais nesse clube.</p>`;
-  const int = interesseDo(pacote, s, a), jan = janelaT(s);
+  const int = interesseDo(pacote, s, a), jan = janelaT(s), fx = faixaDe(s, a, a.ligaId, a.clubeId);
   const ofertas = [0.8, 1, 1.2, 1.5].map((k) => Math.round(a.valor * k / 1000) * 1000);
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button>
     <div><p class="rotulo">${NOME_POS_T[a.pos]} · ${a.idade} anos · ${a.nac}</p><h2>${esc(a.nome)}</h2></div>
-    <div class="clube-op" style="border:0">${escudo(a.clubeId)}<div><b>${esc(nomeClube(a.clubeId))}</b><br><small class="sub">${esc(infoLiga(a.ligaId).curto)}${a.titular ? " · titular" : ""}</small></div><span class="ov"><strong style="font-family:var(--display);font-size:30px;color:var(--ouro-claro)">${a.ovr}</strong></span></div>
+    <div class="clube-op" style="border:0">${escudo(a.clubeId)}<div><b>${esc(nomeClube(a.clubeId))}</b><br><small class="sub">${esc(infoLiga(a.ligaId).curto)}${a.titular ? " · titular" : ""}</small></div><span class="ov"><strong style="font-family:var(--display);font-size:26px;color:var(--ouro-claro)">${textoFaixa(fx)}</strong><span>OVR</span></span></div>
+    ${relatorioScout(s, fx, a.nome, a.clubeId)}
     <div class="dl"><span>Valor de mercado</span><b>${valorBrl(a.valor)}</b><span>Salário que ele pede</span><b>${valorBrl(int.salario)}/mês</b><span>Seu caixa</span><b>${valorBrl(s.clube.saldo)}</b></div>
     <p class="aviso-t ${int.topa ? "ok" : "erro"}">${esc(int.motivo)}</p>
     ${msgNeg ? `<p class="aviso-t ${msgNeg.ok ? "ok" : "erro"}" role="status">${esc(msgNeg.texto)}</p>` : ""}
@@ -325,10 +349,10 @@ function abaPropostas(s: SaveTecnico): string {
     ${hist.length ? `<p class="rotulo" style="margin-top:14px">Transferências</p>${hist.map((t) => `<div class="not"><small>${ANO_INICIAL_T + t.t} · ${t.venda ? "venda" : "compra"}</small>${esc(t.nome)}: ${t.venda ? `para o ${esc(nomeClube(t.para))}` : `do ${esc(nomeClube(t.de))}`} · ${curtoBrl(t.valor)}</div>`).join("")}` : ""}`;
 }
 function abaLivres(s: SaveTecnico): string {
-  const l = agentesLivresT(pacote, s), olheiro = nivelStaff(s, "olheiro");
-  return `<p class="sub" style="margin-bottom:8px">Sem custo de transferência: só o salário. A lista muda todo mês. Jogador bom demais para o clube pode recusar. ${olheiro >= 3 ? "Seu olheiro mostra o potencial." : "Com olheiro nível 3 ou mais, você vê o potencial."}</p>${aviso()}
-    <div class="lista">${l.map((x) => `<div class="lin" style="cursor:default"><span class="num" style="font-size:13px">${x.pos}</span><span class="nm"><b>${esc(x.nome)}</b><small>${x.idade}a · ${x.nac} · ${valorBrl(x.pedido)}/mês${olheiro >= 3 ? ` · pot ${x.pot}` : ""}</small>
-      <span class="botoes" style="margin-top:5px">${[1, 2, 3].map((n) => `<button class="botao sec peq" data-livre="${esc(x.nome)}" data-anos="${n}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</span></span><span class="ov"><strong>${x.ovr}</strong><span>OVR</span></span></div>`).join("")}</div>
+  const l = agentesLivresT(pacote, s);
+  return `<p class="sub" style="margin-bottom:8px">Sem custo de transferência: só o salário. A lista muda todo mês. Jogador bom demais para o clube pode recusar. O nível e o potencial são o que o seu scout acha: mande olheiros procurar agentes livres na aba Scout ou peça um relatório para fechar a faixa.</p>${aviso()}
+    <div class="lista">${l.map((x) => `<div class="lin" style="cursor:default"><span class="num" style="font-size:13px">${x.pos}</span><span class="nm"><b>${esc(x.nome)}</b><small>${x.idade}a · ${x.nac} · ${valorBrl(x.pedido)}/mês</small>
+      <span class="botoes" style="margin-top:5px">${[1, 2, 3].map((n) => `<button class="botao sec peq" data-livre="${esc(x.nome)}" data-anos="${n}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}${statusObs(s, x.nome) === "nao" ? `<button class="botao sec peq" data-observar="${esc(x.nome)}" data-clube="">Relatório</button>` : ""}</span></span>${ovFaixa(s, faixaDe(s, x), x.nome)}</div>`).join("")}</div>
     <p class="sub" style="margin-top:10px">Compra e venda entre clubes chegam na próxima fase do modo técnico.</p>`;
 }
 
@@ -564,7 +588,7 @@ function perfilClubeT(s: SaveTecnico, clubeId: string): string {
     ${passagem}
     <p class="rotulo" style="margin-top:14px">Time de todos os tempos</p><p class="sub" style="margin-bottom:4px">Quem mais vezes foi o melhor da posição numa temporada. Ao lado, o melhor ano e a nota.</p><table class="tab"><tbody>${xiOrd.map(linhaXi).join("")}</tbody></table>
     ${bloco("Mais gols em uma temporada", rec.golsTemp, true)}${bloco("Mais assistências em uma temporada", rec.assistTemp, true)}${bloco("Maiores artilheiros da história", rec.artilheiros, false)}${bloco("Maiores assistentes da história", rec.assistentes, false)}${bloco("Goleiros com mais jogos sem tomar gol", rec.semGol, false)}
-    ${elenco.length ? `<p class="rotulo" style="margin-top:14px">Destaques do elenco atual</p>${elenco.map((j) => `<div class="not">${esc(j.nome)} <small class="sub">${j.posicao} · ${j.ovr}</small></div>`).join("")}` : ""}
+    ${elenco.length ? `<p class="rotulo" style="margin-top:14px">Destaques do elenco atual</p>${elenco.map((j) => `<div class="not">${esc(j.nome)} <small class="sub">${j.posicao} · ${textoFaixa(faixaDe(s, j, info.ligaId, clubeId))}</small></div>`).join("")}` : ""}
     <div class="botoes" style="margin-top:14px"><button class="botao sec" data-fechar>Fechar</button></div>`;
 }
 
@@ -1062,6 +1086,8 @@ document.addEventListener("click", (ev) => {
   if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffD) { const r = demitirStaff(s, d.staffD as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.foco) { const r = mudarFoco(s, d.foco); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.observar) { const r = observar(s, d.observar, d.clube || undefined); msg = { texto: r.msg, ok: r.ok }; if (($("dlg") as HTMLDialogElement).open && d.clube) { msg = undefined; msgNeg = { texto: r.msg, ok: r.ok }; salvar(); abrir(negociarHtml(s, d.observar, d.clube)); render(); return; } redesenhar(); return; }
   if (d.poeCargo) { const [dep, nome, cargo] = d.poeCargo.split("|"); const r = mudarCargo(s, dep as Dep, nome, cargo as Cargo); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.pedeVaga) { const r = pedirVaga(s, d.pedeVaga as Dep); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.apoio && s.governo?.eleicao) { s.governo.eleicao.apoio = d.apoio as "situacao" | "oposicao" | "neutro"; msg = { texto: d.apoio === "neutro" ? "Você ficou neutro na eleição." : `Você declarou apoio a ${s.governo.eleicao[d.apoio as "situacao" | "oposicao"].nome}.`, ok: true }; redesenhar(); return; }
