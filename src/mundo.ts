@@ -107,6 +107,17 @@ const SELECOES: [string, string, string, string[], number][] = [
   ["JAM", "Jamaica", "Reggae Boyz", ["#F5C400", "#0B7A3B"], 69], ["HON", "Honduras", "Los Catrachos", ["#1C4FA1", "#FFFFFF"], 67],
   ["MLI", "Mali", "Águias", ["#0B7A3B", "#F5C400"], 74], ["RSA", "África do Sul", "Bafana Bafana", ["#F5C400", "#0B7A3B"], 71],
   ["IRQ", "Iraque", "Leões da Mesopotâmia", ["#FFFFFF", "#0B7A3B"], 70], ["UAE", "Emirados Árabes Unidos", "Al-Abyad", ["#FFFFFF", "#C8102E"], 68],
+  ["GRE", "Grécia", "Galanolefki", ["#0B5FA5", "#FFFFFF"], 76], ["CZE", "Tchéquia", "Národní tým", ["#C8102E", "#FFFFFF"], 75],
+  ["HUN", "Hungria", "Magiares", ["#C8102E", "#0B7A3B"], 75], ["SVK", "Eslováquia", "Repre", ["#FFFFFF", "#0B3D91"], 73],
+  ["SVN", "Eslovênia", "Fantje", ["#FFFFFF", "#0B7A3B"], 73], ["ROU", "Romênia", "Tricolorii", ["#F5D200", "#0B3D91"], 73],
+  ["GEO", "Geórgia", "Crocodilos", ["#FFFFFF", "#C8102E"], 74], ["IRL", "Irlanda", "Boys in Green", ["#0B7A3B", "#FFFFFF"], 72],
+  ["WAL", "País de Gales", "Dragões", ["#C8102E", "#FFFFFF"], 72], ["ALB", "Albânia", "Águias Vermelhas", ["#C8102E", "#111111"], 71],
+  ["BIH", "Bósnia", "Zmajevi", ["#0B3D91", "#F5D200"], 70], ["ISL", "Islândia", "Strákarnir okkar", ["#0B3D91", "#FFFFFF"], 70],
+  ["FIN", "Finlândia", "Huuhkajat", ["#FFFFFF", "#0B3D91"], 69], ["NIR", "Irlanda do Norte", "Green and White Army", ["#0B7A3B", "#FFFFFF"], 67],
+  ["CHN", "China", "Dragões Vermelhos", ["#C8102E", "#F5D200"], 66], ["FIJ", "Fiji", "Bula Boys", ["#FFFFFF", "#6CB4E4"], 52],
+  ["NCL", "Nova Caledônia", "Les Cagous", ["#9E9E9E", "#C8102E"], 51], ["SOL", "Ilhas Salomão", "Bonitos", ["#F5D200", "#0B3D91"], 51],
+  ["TAH", "Taiti", "Toa Aito", ["#FFFFFF", "#C8102E"], 49], ["PNG", "Papua-Nova Guiné", "Kapuls", ["#C8102E", "#111111"], 48],
+  ["VAN", "Vanuatu", "Vanuatu", ["#0B7A3B", "#C8102E"], 48], ["SAM", "Samoa", "Samoa", ["#0B3D91", "#C8102E"], 45],
 ];
 export const idSelecao = (pais: string) => `NAT-${pais}`;
 export const temSelecao = (pais: string) => SELECOES.some((x) => x[0] === pais);

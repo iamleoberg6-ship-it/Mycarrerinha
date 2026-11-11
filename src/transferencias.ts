@@ -251,7 +251,9 @@ export function semanaDoMercado(pacote: PacoteDados, s: Save, rng: RNG, eventos:
   }
   // 2b. pediu para ser emprestado: clubes da liga e de baixo que precisam de um jogador do seu nível mandam proposta
   if (m.pedidoEmprestimo && !m.emprestimo && papelNoClube(clube, s) !== "titular" && !m.propostas.some((p) => p.tipo === "emprestimo") && rng.chance(0.5)) {
-    const nivel = ovr(j), destinos = [...(l.clubes ?? []), ...(infoLiga(l.id).abaixo ? w.liga[infoLiga(l.id).abaixo!]?.clubes ?? [] : [])]
+    // a liga, a de baixo e (para garoto da base, ainda fraco) a de dois degraus abaixo
+    const ab1 = infoLiga(l.id).abaixo, ab2 = ab1 ? infoLiga(ab1).abaixo : undefined;
+    const nivel = ovr(j), destinos = [...(l.clubes ?? []), ...(ab1 ? w.liga[ab1]?.clubes ?? [] : []), ...(ab2 ? w.liga[ab2]?.clubes ?? [] : [])]
       .filter((x) => x.id !== c.clubeId && x.forca >= nivel - 12 && x.forca <= nivel + 6 && papelNoClube(x, s) === "titular");
     if (destinos.length) {
       const d = rng.pick(destinos.sort((a, b) => Math.abs(a.forca - nivel) - Math.abs(b.forca - nivel)).slice(0, 4));
@@ -460,7 +462,7 @@ export function recusar(pacote: PacoteDados, s: Save, id: string): R {
 export type Destino = "qualquer" | "casa" | "europa" | "golfo" | "salario";
 export const NOME_DESTINO: Record<Destino, string> = { qualquer: "Qualquer clube", casa: "Voltar para casa", europa: "Europa", golfo: "Golfo", salario: "Ganhar mais" };
 export const ONDE_DESTINO: Record<Destino, string> = { qualquer: "em qualquer lugar", casa: "no seu país", europa: "na Europa", golfo: "no Golfo", salario: "que paguem mais" };
-const PAIS_LIGAS: Record<string, string[]> = { BRA: ["BRA1", "BRA2"], ARG: ["ARG1"], URU: ["ARG1", "BRA1"], ENG: ["ENG1", "ENG2", "ENG3", "ENG4"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1", "ITA2"], GER: ["GER1", "GER2"], FRA: ["FRA1", "FRA2"], NOR: ["NOR1"], BEL: ["BEL1"], SCO: ["SCO1"], DEN: ["DEN1"], SWE: ["SWE1"], GRE: ["GRE1"], AUT: ["AUT1"], SUI: ["SUI1"], POR: ["POR1"], NED: ["NED1"], KSA: ["KSA1"], JPN: ["JPN1"], TUR: ["TUR1"], MAR: ["MAR1"] };
+const PAIS_LIGAS: Record<string, string[]> = { BRA: ["BRA1", "BRA2"], ARG: ["ARG1"], URU: ["ARG1", "BRA1"], ENG: ["ENG1", "ENG2", "ENG3", "ENG4"], ESP: ["ESP1", "ESP2"], ITA: ["ITA1", "ITA2"], GER: ["GER1", "GER2"], FRA: ["FRA1", "FRA2"], NOR: ["NOR1"], BEL: ["BEL1"], SCO: ["SCO1"], DEN: ["DEN1"], SWE: ["SWE1"], GRE: ["GRE1"], AUT: ["AUT1"], SUI: ["SUI1"], AUS: ["AUS1"], NZL: ["AUS1", "OCE1"], POR: ["POR1"], NED: ["NED1"], KSA: ["KSA1"], JPN: ["JPN1"], TUR: ["TUR1"], MAR: ["MAR1"] };
 /** Ligas que entram no pedido de saída. */
 export function ligasDoDestino(d: Destino, nacionalidade: string): string[] | undefined {
   if (d === "qualquer" || d === "salario") return undefined;

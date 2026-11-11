@@ -6,7 +6,7 @@
 import { RNG } from "./rng.js";
 import { simularPlacar } from "./partida.js";
 import { tabelaTurnoReturno, novaTabela, registrar, ordenar, simularTemporada, rodadasDaLiga, type LinhaTabela, type Liga } from "./liga.js";
-import { CONVIDADOS } from "./convidados.js";
+import { CONVIDADOS, TODOS_CONVIDADOS } from "./convidados.js";
 
 // Estaduais: os campeonatos dos estados nas primeiras semanas do ano (às quartas), com os clubes do estado de todas as
 // divisões (os 8 melhores; 6 nos estados menores): turno único, semifinal em jogo único na casa do mais bem colocado
@@ -60,7 +60,7 @@ export const ufDoClube = (id: string, cidade: string) => (id.startsWith("D-") ? 
 const VAGAS: Partial<Record<CopaId, [string, number][]>> = {
   LIB: [["BRA1", 7], ["ARG1", 6], ["URU1", 3], ["COL1", 3], ["CHI1", 3], ["PAR1", 3], ["ECU1", 3]],
   UCL: [["ENG1", 5], ["ESP1", 5], ["ITA1", 5], ["GER1", 5], ["FRA1", 4], ["POR1", 3], ["NED1", 3], ["TUR1", 1], ["NOR1", 1], ["BEL1", 1], ["SCO1", 1], ["AUT1", 1], ["GRE1", 1]],
-  ACL: [["KSA1", 4]],
+  ACL: [["KSA1", 4], ["AUS1", 2]],
   // Concachampions: os 8 melhores da Liga MX e da MLS (os clubes do Canadá jogam a MLS)
   CON: [["MEX1", 8], ["USA1", 8]],
 };
@@ -93,7 +93,7 @@ export function confederacao(pais: string): string {
   if (["MEX", "USA", "CAN", "CRC", "PAN", "JAM", "HON", "GUA", "SLV", "HAI", "TRI", "CUB", "DOM"].includes(pais)) return "CONCACAF";
   if (["KSA", "UAE", "QAT", "IRN", "IRQ", "JOR", "SYR", "JPN", "KOR", "CHN", "AUS", "THA", "MAS"].includes(pais)) return "AFC";
   if (["EGY", "MAR", "TUN", "RSA", "ALG", "NGA", "LBY", "SEN", "CIV", "MLI", "GUI", "CMR", "BFA", "COD", "GAB", "TOG", "BEN", "CGO", "CTA", "GHA", "SLE", "LBR", "GAM", "KEN", "ZAM", "ZIM", "UGA", "TAN", "ANG", "CPV", "GNB", "MOZ"].includes(pais)) return "CAF";
-  if (pais === "NZL") return "OFC";
+  if (["NZL", "FIJ", "SOL", "NCL", "TAH", "PNG", "VAN", "SAM", "OCE"].includes(pais)) return "OFC";
   return "UEFA";
 }
 export const SEMANAS_ESTADUAL = { liga: [0, 1, 2, 3, 4, 6, 8], semi: [10], final: [11, 13] } as const;
@@ -465,7 +465,7 @@ export function rotuloJogo(j: JogoCopa): string {
 /** Ida da série (para mostrar o placar agregado na volta). */
 export const idaDe = (e: EstadoCopa, j: JogoCopa) => (j.perna === 2 ? e.jogos.find((x) => x.serie === j.serie && x.perna === 1) : undefined);
 /** Região do clube na Champions Asiática (os do Golfo jogam no Oeste). */
-export const regiaoNaCopa = (clubeId: string) => CONVIDADOS.find((c) => c.id === clubeId)?.regiao ?? "ASO";
+export const regiaoNaCopa = (clubeId: string) => TODOS_CONVIDADOS.find((c) => c.id === clubeId)?.regiao ?? (clubeId.startsWith("AU-") ? "ASL" : "ASO");
 
 // ------------------------------------------------------------------ copa nacional (Copa do Brasil, Copa do Rei, Copa da Inglaterra...)
 export type FaseNac = "16avos" | "oitavas" | "quartas" | "semi" | "final";

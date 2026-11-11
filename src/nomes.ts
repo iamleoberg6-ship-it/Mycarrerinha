@@ -55,6 +55,30 @@ export const POOLS: Record<string, Pool> = {
     primeiros: ["Oliver", "William", "Emil", "Lucas", "Magnus", "Mikkel", "Rasmus", "Anders", "Erik", "Viktor", "Jonas", "Sander", "Mathias", "Kristoffer", "Elias", "Isak", "Linus", "Joakim", "Aron", "Gunnar"],
     sobrenomes: ["Hansen", "Nielsen", "Jensen", "Pedersen", "Andersen", "Larsen", "Johansson", "Karlsson", "Nilsson", "Eriksson", "Olsen", "Berg", "Lund", "Holm", "Dahl", "Strand", "Lindqvist", "Sigurdsson", "Virtanen", "Korhonen"],
   },
+  gr: {
+    primeiros: ["Giorgos", "Dimitris", "Kostas", "Nikos", "Giannis", "Panagiotis", "Christos", "Vasilis", "Thanasis", "Stelios", "Lazaros", "Anastasios", "Petros", "Manolis", "Fotis", "Tasos"],
+    sobrenomes: ["Papadopoulos", "Georgiou", "Nikolaidis", "Karagiannis", "Konstantinou", "Dimitriou", "Vlachos", "Pappas", "Oikonomou", "Makris", "Alexiou", "Tsimikas", "Mantalos", "Siopis", "Masouras", "Bakasetas"],
+  },
+  hu: {
+    primeiros: ["Dominik", "Bence", "Ádám", "Péter", "Zsolt", "Roland", "Milos", "Barnabás", "Dániel", "Kristóf", "Attila", "Loïc", "Márton", "Botond"],
+    sobrenomes: ["Nagy", "Kovács", "Tóth", "Szabó", "Horváth", "Varga", "Kiss", "Molnár", "Németh", "Farkas", "Balogh", "Szalai", "Sallai", "Orbán"],
+  },
+  ro: {
+    primeiros: ["Andrei", "Alexandru", "Ionuț", "Răzvan", "Florin", "Nicolae", "Dennis", "Valentin", "Marius", "Darius", "Vlad", "Cristian", "Radu", "Bogdan"],
+    sobrenomes: ["Popescu", "Ionescu", "Stanciu", "Mihăilă", "Drăguș", "Rațiu", "Burcă", "Marin", "Dumitru", "Stoica", "Constantin", "Munteanu", "Neagu", "Pușcaș"],
+  },
+  sq: {
+    primeiros: ["Armando", "Ermir", "Kristjan", "Arlind", "Berat", "Elseid", "Nedim", "Taulant", "Mirlind", "Rey", "Amir", "Ardian", "Klaus", "Ylber"],
+    sobrenomes: ["Broja", "Hysaj", "Asllani", "Ramadani", "Bajrami", "Djimsiti", "Gjasula", "Laçi", "Muçi", "Manaj", "Rrahmani", "Berisha", "Krasniqi", "Hoxha"],
+  },
+  ka: {
+    primeiros: ["Giorgi", "Levan", "Otar", "Zuriko", "Saba", "Luka", "Nika", "Guram", "Davit", "Lasha", "Irakli", "Budu", "Anzor", "Vako"],
+    sobrenomes: ["Mikautadze", "Kvaratskhelia", "Chakvetadze", "Lobjanidze", "Kashia", "Kochorashvili", "Mamardashvili", "Davitashvili", "Zivzivadze", "Gocholeishvili", "Kiteishvili", "Lochoshvili", "Beridze", "Tsitaishvili"],
+  },
+  pac: {
+    primeiros: ["Roy", "Iosefo", "Sitiveni", "Micah", "Raphael", "Tevita", "Atkin", "Bertrand", "Teaonui", "Alvin", "Junior", "Brian", "Etienne", "Nigel", "Tony", "Samuela"],
+    sobrenomes: ["Krishna", "Verevou", "Waqa", "Lea'alafa", "Kakate", "Tehau", "Kaltak", "Kaprou", "Tuilagi", "Rokotuiloma", "Tagi", "Nabou", "Mansale", "Wadriako", "Sio", "Faitala"],
+  },
   slav: {
     primeiros: ["Luka", "Marko", "Ivan", "Nikola", "Stefan", "Filip", "Josip", "Mateo", "Dušan", "Aleksandar", "Jakub", "Kamil", "Tomáš", "Patrik", "Mykola", "Artem", "Dmitri", "Bartosz", "Petar", "Andrej"],
     sobrenomes: ["Horvat", "Kovačić", "Babić", "Marić", "Jurić", "Petrović", "Jovanović", "Nikolić", "Popović", "Novak", "Kowalski", "Nowak", "Wiśniewski", "Dvořák", "Svoboda", "Shevchenko", "Kovalenko", "Ivanov", "Hadžić", "Begović"],
@@ -80,6 +104,8 @@ export const LINGUA: Record<string, string> = {
   NGA: "afe", GHA: "afe", SLE: "afe", LBR: "afe", GAM: "afe", KEN: "afe", ZAM: "afe", ZIM: "afe", RSA: "afe", UGA: "afe", TAN: "afe",
   DEN: "nord", SWE: "nord", NOR: "nord", ISL: "nord", FIN: "nord",
   SRB: "slav", CRO: "slav", BIH: "slav", SVN: "slav", MNE: "slav", MKD: "slav", POL: "slav", CZE: "slav", SVK: "slav", UKR: "slav", RUS: "slav",
+  GRE: "gr", CYP: "gr", HUN: "hu", ROU: "ro", MDA: "ro", ALB: "sq", KOS: "sq", GEO: "ka",
+  FIJ: "pac", SOL: "pac", NCL: "pac", TAH: "pac", PNG: "pac", VAN: "pac", SAM: "pac",
   BAS: "eu", TUR: "tr", IRN: "fa", JPN: "ja", KOR: "ko", CHN: "zh", THA: "th", MAS: "ms",
 };
 

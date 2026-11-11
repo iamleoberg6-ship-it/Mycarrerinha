@@ -1,5 +1,5 @@
 {
-  "aviso": "Terceira e quarta divisões inglesas e colégios e universidades japoneses: clubes em paródia inspirados em times reais, com nomes que lembram os originais (cidades e cores aproximadas). Elencos gerados no jogo. Cidades, estádios, cores e capacidades são aproximados. Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com. Out/2026: campeonatos de high school e universidade do Japão, e terceira e quarta divisões inglesas (paródia). Elitesérie norueguesa, Série B italiana e Ligue 2 francesa: clubes em paródia inspirados nos times reais da temporada 2025-26, com alguns jogadores reais (nomes levemente alterados); o resto do elenco é gerado. 2. Bundesliga, liga belga e liga escocesa: idem (Bruges, Anderlecht, Céltico e Rangeres deixam de ser convidados e passam a jogar a liga do país). Dinamarca, Suécia, Grécia, Áustria e Suíça: idem (o Salzburgo deixa de ser convidado e passa a jogar a liga austríaca).",
+  "aviso": "Terceira e quarta divisões inglesas e colégios e universidades japoneses: clubes em paródia inspirados em times reais, com nomes que lembram os originais (cidades e cores aproximadas). Elencos gerados no jogo. Cidades, estádios, cores e capacidades são aproximados. Clubes em paródia das primeiras divisões de Uruguai, Colômbia, Chile, Paraguai, Equador, Turquia e México (elencos gerados no jogo). Elencos reais (em paródia, out/2026) de Fenerbahçe, Galatasaray, Beşiktaş e Trabzonspor; principais jogadores de América, Chivas, Pachuca, León, Monterrey, Tigres, Toluca, Cruz Azul, Atlético Nacional, Colo-Colo e Olimpia. Fontes: starting11.com. Out/2026: campeonatos de high school e universidade do Japão, e terceira e quarta divisões inglesas (paródia). Elitesérie norueguesa, Série B italiana e Ligue 2 francesa: clubes em paródia inspirados nos times reais da temporada 2025-26, com alguns jogadores reais (nomes levemente alterados); o resto do elenco é gerado. 2. Bundesliga, liga belga e liga escocesa: idem (Bruges, Anderlecht, Céltico e Rangeres deixam de ser convidados e passam a jogar a liga do país). Dinamarca, Suécia, Grécia, Áustria e Suíça: idem (o Salzburgo deixa de ser convidado e passa a jogar a liga austríaca). A-League australiana (com dois clubes da Nova Zelândia) e Liga Profissional da Oceania (franquias de Fiji, Ilhas Salomão, Nova Caledônia, Taiti, Papua-Nova Guiné, Vanuatu, Samoa e Nova Zelândia): clubes em paródia, alguns jogadores reais.",
   "ligas": {
     "URU1": [
       {
@@ -5368,14 +5368,6 @@
             2
           ],
           [
-            "Felix Horn Myre",
-            "MEI",
-            70,
-            26,
-            "NOR",
-            8
-          ],
-          [
             "Emil Kornvigue",
             "MEI",
             69,
@@ -5778,14 +5770,6 @@
             31,
             "ITA",
             17
-          ],
-          [
-            "Jérémy Le Douarom",
-            "PON",
-            68,
-            27,
-            "FRA",
-            21
           ],
           [
             "Joel Pohjampalo",
@@ -6648,14 +6632,6 @@
             4
           ],
           [
-            "Raphael Onyédika",
-            "VOL",
-            77,
-            24,
-            "NGA",
-            15
-          ],
-          [
             "Hans Vanakem",
             "MEI",
             77,
@@ -6670,14 +6646,6 @@
             25,
             "NOR",
             10
-          ],
-          [
-            "Christos Tzólis",
-            "PON",
-            78,
-            23,
-            "GRE",
-            8
           ],
           [
             "Nicolò Tresóldi",
@@ -6718,14 +6686,6 @@
             28,
             "ARG",
             5
-          ],
-          [
-            "Promise Davíd",
-            "ATA",
-            73,
-            24,
-            "CAN",
-            12
           ]
         ]
       },
@@ -7038,36 +6998,12 @@
             27
           ],
           [
-            "Reo Hatatê",
-            "MEI",
-            76,
-            28,
-            "JPN",
-            41
-          ],
-          [
             "Benjamin Nygrem",
             "PON",
             74,
             24,
             "SWE",
             8
-          ],
-          [
-            "Daizen Maedá",
-            "PON",
-            77,
-            28,
-            "JPN",
-            38
-          ],
-          [
-            "Adam Idá",
-            "ATA",
-            72,
-            24,
-            "IRL",
-            9
           ]
         ]
       },
@@ -7075,14 +7011,6 @@
         "convidado": "SC-RAN",
         "forca": 73,
         "elenco": [
-          [
-            "Jack Butlande",
-            "GOL",
-            75,
-            32,
-            "ENG",
-            1
-          ],
           [
             "John Souttár",
             "ZAG",
@@ -7340,14 +7268,6 @@
             10
           ],
           [
-            "Jordan Larsom",
-            "ATA",
-            73,
-            28,
-            "SWE",
-            11
-          ],
-          [
             "Youssoufa Moukóko",
             "ATA",
             70,
@@ -7386,14 +7306,6 @@
             27,
             "CRO",
             3
-          ],
-          [
-            "Darío Osório",
-            "PON",
-            73,
-            21,
-            "CHI",
-            11
           ],
           [
             "Aral Simsír",
@@ -7826,14 +7738,6 @@
         "forca": 75,
         "elenco": [
           [
-            "Konstantinos Tzolákis",
-            "GOL",
-            76,
-            23,
-            "GRE",
-            88
-          ],
-          [
             "Panagiotis Rétsos",
             "ZAG",
             73,
@@ -7850,36 +7754,12 @@
             5
           ],
           [
-            "Dani Garcíá",
-            "VOL",
-            73,
-            35,
-            "ESP",
-            14
-          ],
-          [
-            "Chiquínho",
-            "MEI",
-            76,
-            30,
-            "POR",
-            22
-          ],
-          [
             "Gelson Martíns",
             "PON",
             76,
             30,
             "POR",
             10
-          ],
-          [
-            "Daniel Podênce",
-            "PON",
-            75,
-            30,
-            "POR",
-            56
           ],
           [
             "Ayoub El Káabi",
@@ -8032,14 +7912,6 @@
             25,
             "BRA",
             7
-          ],
-          [
-            "Anass Zaroúry",
-            "PON",
-            72,
-            24,
-            "MAR",
-            11
           ]
         ]
       },
@@ -8210,14 +8082,6 @@
             29,
             "GEO",
             10
-          ],
-          [
-            "Tomi Horvát",
-            "MEI",
-            70,
-            26,
-            "SVN",
-            19
           ]
         ]
       },
@@ -8566,6 +8430,330 @@
         ],
         "padrao": "lisa",
         "forca": 60
+      }
+    ],
+    "AUS1": [
+      {
+        "convidado": "AU-MEL",
+        "forca": 65,
+        "elenco": [
+          [
+            "Mathew Leckíe",
+            "PON",
+            67,
+            34,
+            "AUS",
+            7
+          ]
+        ]
+      },
+      {
+        "id": "AU-AFC",
+        "nome": "Auclande FC",
+        "apelido": "Black Knights",
+        "cidade": "Auckland",
+        "estadio": "Estádio Mount Smárt",
+        "capacidade": 25000,
+        "cores": [
+          "#111111",
+          "#0B3D91"
+        ],
+        "padrao": "lisa",
+        "forca": 65,
+        "elenco": [
+          [
+            "Guillermo Mai",
+            "ATA",
+            66,
+            27,
+            "URU",
+            9
+          ]
+        ],
+        "pais": "NZL"
+      },
+      {
+        "id": "AU-SYD",
+        "nome": "Sydnei FC",
+        "apelido": "Sky Blues",
+        "cidade": "Sydney",
+        "estadio": "Estádio Allianza",
+        "capacidade": 42500,
+        "cores": [
+          "#6CB4E4",
+          "#0B2F7A"
+        ],
+        "padrao": "lisa",
+        "forca": 64,
+        "elenco": [
+          [
+            "Joe Lolléy",
+            "PON",
+            66,
+            33,
+            "ENG",
+            10
+          ]
+        ]
+      },
+      {
+        "id": "AU-MVC",
+        "nome": "Melburno Vitória",
+        "apelido": "Big V",
+        "cidade": "Melbourne",
+        "estadio": "Parque AAMI",
+        "capacidade": 30000,
+        "cores": [
+          "#0B2F7A",
+          "#FFFFFF"
+        ],
+        "padrao": "faixa",
+        "forca": 64,
+        "elenco": [
+          [
+            "Daniel Arzáni",
+            "PON",
+            65,
+            26,
+            "AUS",
+            19
+          ]
+        ]
+      },
+      {
+        "id": "AU-WSW",
+        "nome": "Sydnei Ocidental Wanderers",
+        "apelido": "Wanderers",
+        "cidade": "Sydney",
+        "estadio": "Estádio CommBank",
+        "capacidade": 30000,
+        "cores": [
+          "#C8102E",
+          "#111111"
+        ],
+        "padrao": "listrasH",
+        "forca": 63
+      },
+      {
+        "id": "AU-ADE",
+        "nome": "Adelaide Unidos",
+        "apelido": "Reds",
+        "cidade": "Adelaide",
+        "estadio": "Estádio Coopers",
+        "capacidade": 16500,
+        "cores": [
+          "#C8102E",
+          "#F5D200"
+        ],
+        "padrao": "lisa",
+        "forca": 62,
+        "elenco": [
+          [
+            "Craig Goodwím",
+            "PON",
+            66,
+            34,
+            "AUS",
+            11
+          ]
+        ]
+      },
+      {
+        "id": "AU-MAC",
+        "nome": "Macarthur FC",
+        "apelido": "Bulls",
+        "cidade": "Sydney",
+        "estadio": "Estádio Campbelltown",
+        "capacidade": 17500,
+        "cores": [
+          "#111111",
+          "#F5D200"
+        ],
+        "padrao": "lisa",
+        "forca": 62
+      },
+      {
+        "convidado": "AU-CCM",
+        "forca": 61
+      },
+      {
+        "id": "AU-BRI",
+        "nome": "Brisbane Rugido",
+        "apelido": "Roar",
+        "cidade": "Brisbane",
+        "estadio": "Estádio Suncorpe",
+        "capacidade": 52500,
+        "cores": [
+          "#F28C00",
+          "#0B2F7A"
+        ],
+        "padrao": "lisa",
+        "forca": 61
+      },
+      {
+        "id": "AU-WEL",
+        "nome": "Wellingtom Fênix",
+        "apelido": "Nix",
+        "cidade": "Wellington",
+        "estadio": "Estádio Sky",
+        "capacidade": 34500,
+        "cores": [
+          "#F5D200",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 61,
+        "pais": "NZL"
+      },
+      {
+        "id": "AU-NEW",
+        "nome": "Newcastle Jatos",
+        "apelido": "Jets",
+        "cidade": "Newcastle",
+        "estadio": "Estádio McDonald Jones",
+        "capacidade": 33000,
+        "cores": [
+          "#F5D200",
+          "#0B2F7A"
+        ],
+        "padrao": "lisa",
+        "forca": 60
+      },
+      {
+        "id": "AU-PER",
+        "nome": "Perth Glória",
+        "apelido": "Glory",
+        "cidade": "Perth",
+        "estadio": "Parque HBF",
+        "capacidade": 20500,
+        "cores": [
+          "#6A3FA0",
+          "#F28C00"
+        ],
+        "padrao": "lisa",
+        "forca": 59
+      }
+    ],
+    "OCE1": [
+      {
+        "id": "OC-SIU",
+        "nome": "Ilha Sul Unido",
+        "apelido": "Southern",
+        "cidade": "Christchurch",
+        "estadio": "Estádio Apollo",
+        "capacidade": 18000,
+        "cores": [
+          "#0B7A3B",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 55,
+        "pais": "NZL"
+      },
+      {
+        "id": "OC-BUL",
+        "nome": "Bula FC",
+        "apelido": "Bula",
+        "cidade": "Suva",
+        "estadio": "Estádio HFC Bank",
+        "capacidade": 15000,
+        "cores": [
+          "#6CB4E4",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 53,
+        "pais": "FIJ"
+      },
+      {
+        "id": "OC-SOL",
+        "nome": "Reis das Salomão",
+        "apelido": "Kings",
+        "cidade": "Honiara",
+        "estadio": "Estádio Lawson Tama",
+        "capacidade": 10000,
+        "cores": [
+          "#0B3D91",
+          "#F5D200"
+        ],
+        "padrao": "lisa",
+        "forca": 52,
+        "pais": "SOL"
+      },
+      {
+        "id": "OC-NCL",
+        "nome": "Nova Caledônia FC",
+        "apelido": "Cagous",
+        "cidade": "Nouméa",
+        "estadio": "Estádio Numa-Daly",
+        "capacidade": 16000,
+        "cores": [
+          "#C8102E",
+          "#0B3D91"
+        ],
+        "padrao": "lisa",
+        "forca": 52,
+        "pais": "NCL"
+      },
+      {
+        "id": "OC-TAH",
+        "nome": "Taiti Unido",
+        "apelido": "Toa Aito",
+        "cidade": "Papeete",
+        "estadio": "Estádio Pater",
+        "capacidade": 11700,
+        "cores": [
+          "#FFFFFF",
+          "#C8102E"
+        ],
+        "padrao": "lisa",
+        "forca": 51,
+        "pais": "TAH"
+      },
+      {
+        "id": "OC-PNG",
+        "nome": "Port Moresbi FC",
+        "apelido": "Kapuls",
+        "cidade": "Port Moresby",
+        "estadio": "Estádio Sir John Guise",
+        "capacidade": 15000,
+        "cores": [
+          "#C8102E",
+          "#111111"
+        ],
+        "padrao": "lisa",
+        "forca": 50,
+        "pais": "PNG"
+      },
+      {
+        "id": "OC-VAN",
+        "nome": "Vanuatu Unido",
+        "apelido": "Bislama",
+        "cidade": "Port Vila",
+        "estadio": "Estádio Korman",
+        "capacidade": 6500,
+        "cores": [
+          "#0B7A3B",
+          "#C8102E"
+        ],
+        "padrao": "lisa",
+        "forca": 50,
+        "pais": "VAN"
+      },
+      {
+        "id": "OC-SAM",
+        "nome": "Samoa FC",
+        "apelido": "Manu",
+        "cidade": "Apia",
+        "estadio": "Parque Apia",
+        "capacidade": 3500,
+        "cores": [
+          "#0B3D91",
+          "#FFFFFF"
+        ],
+        "padrao": "lisa",
+        "forca": 48,
+        "pais": "SAM"
       }
     ]
   }

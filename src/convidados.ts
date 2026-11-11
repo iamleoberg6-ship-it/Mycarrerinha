@@ -65,7 +65,7 @@ export const TODOS_CONVIDADOS: Convidado[] = [
   { id: "NZ-AUC", nome: "Auclande City", apelido: "Navy Blues", cidade: "Auckland", estadio: "Kiwitea Street", pais: "NZL", cores: ["#0B2F7A", "#FFFFFF"], padrao: "lisa", forca: 55, regiao: "OCE" },
 ];
 /** Países que ganharam liga própria (src/ligas-extra.ts): os clubes deles jogam a liga e entram nas copas pela tabela. */
-const COM_LIGA = new Set(["URU", "COL", "CHI", "PAR", "ECU", "TUR", "BEL", "SCO", "AUT"]);
+const COM_LIGA = new Set(["URU", "COL", "CHI", "PAR", "ECU", "TUR", "BEL", "SCO", "AUT", "AUS"]);
 /** Os convidados que seguem sem liga (só copas). */
 export const CONVIDADOS: Convidado[] = TODOS_CONVIDADOS.filter((c) => !COM_LIGA.has(c.pais));
 

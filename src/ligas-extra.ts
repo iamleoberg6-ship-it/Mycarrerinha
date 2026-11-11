@@ -11,13 +11,14 @@ import dados from "../data/ligas-extra.json";
 type Real = [string, JogadorNPC["posicao"], number, number, string, number];
 export interface ClubeExtra { id: string; nome: string; apelido: string; cidade: string; estadio: string; capacidade: number; cores: string[]; padrao: string; forca: number; pais: string; elenco?: Real[] }
 type Linha = { convidado: string; elenco?: Real[]; forca?: number } | Omit<ClubeExtra, "pais">;
-const PAIS_DA_LIGA: Record<string, string> = { URU1: "URU", COL1: "COL", CHI1: "CHI", PAR1: "PAR", ECU1: "ECU", TUR1: "TUR", MEX1: "MEX", JPN1: "JPN", KOR1: "KOR", MAR1: "MAR", CRO1: "CRO", EGY1: "EGY", "JPN-HS": "JPN", "JPN-UNI": "JPN", ENG3: "ENG", ENG4: "ENG", NOR1: "NOR", ITA2: "ITA", FRA2: "FRA", GER2: "GER", BEL1: "BEL", SCO1: "SCO", DEN1: "DEN", SWE1: "SWE", GRE1: "GRE", AUT1: "AUT", SUI1: "SUI" };
+const PAIS_DA_LIGA: Record<string, string> = { URU1: "URU", COL1: "COL", CHI1: "CHI", PAR1: "PAR", ECU1: "ECU", TUR1: "TUR", MEX1: "MEX", JPN1: "JPN", KOR1: "KOR", MAR1: "MAR", CRO1: "CRO", EGY1: "EGY", "JPN-HS": "JPN", "JPN-UNI": "JPN", ENG3: "ENG", ENG4: "ENG", NOR1: "NOR", ITA2: "ITA", FRA2: "FRA", GER2: "GER", BEL1: "BEL", SCO1: "SCO", DEN1: "DEN", SWE1: "SWE", GRE1: "GRE", AUT1: "AUT", SUI1: "SUI", AUS1: "AUS", OCE1: "OCE" };
 /** de onde vêm os estrangeiros de cada país (e quanto do elenco eles são) */
 const DE_FORA: Record<string, [number, string[]]> = {
   URU: [0.08, ["ARG", "PAR", "COL"]], COL: [0.08, ["VEN", "ARG", "ECU"]], CHI: [0.15, ["ARG", "URU", "COL", "VEN"]], PAR: [0.1, ["ARG", "URU", "COL"]],
   ECU: [0.12, ["COL", "ARG", "URU"]], TUR: [0.4, ["BRA", "POR", "FRA", "SEN", "NGA", "NED", "SRB", "BEL", "CRO"]], MEX: [0.35, ["ARG", "COL", "URU", "CHI", "ECU", "USA", "BRA", "PAR"]],
   GER: [0.25, ["AUT", "POL", "TUR", "DEN", "NED", "SUI"]], BEL: [0.45, ["NED", "FRA", "NGA", "GHA", "CIV", "DEN", "MAR"]], SCO: [0.4, ["ENG", "IRL", "WAL", "NIR", "AUS", "DEN"]],
   DEN: [0.3, ["SWE", "NOR", "ISL", "NGA", "GHA"]], SWE: [0.2, ["NOR", "DEN", "FIN", "ISL", "NGA"]], GRE: [0.45, ["POR", "ESP", "SRB", "BRA", "ARG", "CRO", "ALB"]], AUT: [0.3, ["GER", "CRO", "SUI", "BIH", "SRB"]], SUI: [0.35, ["FRA", "ITA", "GER", "KOS", "ALB", "SEN"]],
+  AUS: [0.25, ["NZL", "ENG", "SCO", "JPN", "KOR", "BRA"]], NZL: [0.3, ["AUS", "ENG", "FIJ"]], FIJ: [0.12, ["NZL", "AUS"]], SOL: [0.1, ["PNG", "FIJ"]], NCL: [0.25, ["FRA", "TAH", "VAN"]], TAH: [0.2, ["FRA", "NCL"]], PNG: [0.1, ["SOL", "AUS"]], VAN: [0.12, ["SOL", "NCL"]], SAM: [0.15, ["NZL", "FIJ"]],
   NOR: [0.2, ["DEN", "SWE", "ISL", "FIN"]], ITA: [0.22, ["ALB", "SRB", "FRA", "ARG", "CRO", "SWE", "POL"]], FRA: [0.28, ["SEN", "CIV", "MLI", "ALG", "MAR", "CMR", "BEL"]],
   JPN: [0.04, ["KOR", "BRA"]], KOR: [0.05, ["JPN", "BRA"]], MAR: [0.12, ["SEN", "ALG", "TUN", "FRA"]], CRO: [0.15, ["SRB", "BIH", "SVN", "BRA"]], EGY: [0.12, ["SEN", "NGA", "GHA", "ALG", "TUN"]],
 };
@@ -26,7 +27,7 @@ export const PAISES_COM_LIGA_NOVA = new Set(Object.values(PAIS_DA_LIGA));
 /** Os clubes de cada liga nova (com os ex-convidados no lugar). */
 export const CLUBES_EXTRA: Record<string, ClubeExtra[]> = Object.fromEntries(Object.entries((dados as { ligas: Record<string, Linha[]> }).ligas).map(([lid, l]) => [lid, l.map((x): ClubeExtra => {
   if ("convidado" in x) { const c = TODOS_CONVIDADOS.find((k) => k.id === x.convidado)!; return { id: c.id, nome: c.nome, apelido: c.apelido, cidade: c.cidade, estadio: c.estadio, capacidade: 40000, cores: c.cores, padrao: c.padrao, forca: x.forca ?? c.forca, pais: c.pais, ...(x.elenco ? { elenco: x.elenco } : {}) }; }
-  return { ...x, pais: PAIS_DA_LIGA[lid] };
+  return { ...x, pais: (x as { pais?: string }).pais ?? PAIS_DA_LIGA[lid] };
 })]));
 
 /** Clube de jogo: os jogadores reais (se houver) e o resto do elenco gerado até 24, sempre igual. `usados`: nomes que já existem no mundo. */

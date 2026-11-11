@@ -6,6 +6,8 @@ const ISO: Record<string, string> = {
   SRB: "RS", POL: "PL", TUR: "TR", NOR: "NO", SWE: "SE", AUT: "AT", SCO: "gb-sct", UKR: "UA", MAR: "MA", SEN: "SN", NGA: "NG",
   GHA: "GH", CIV: "CI", CMR: "CM", EGY: "EG", ALG: "DZ", TUN: "TN", JPN: "JP", KOR: "KR", KSA: "SA", AUS: "AU", IRN: "IR",
   QAT: "QA", NZL: "NZ", BOL: "BO", VEN: "VE", CRC: "CR", PAN: "PA", JAM: "JM", HON: "HN", MLI: "ML", RSA: "ZA", IRQ: "IQ", UAE: "AE",
+  GRE: "GR", ISL: "IS", FIN: "FI", IRL: "IE", WAL: "gb-wls", CZE: "CZ", SVK: "SK", SVN: "SI", HUN: "HU", ROU: "RO", ALB: "AL", BIH: "BA", GEO: "GE",
+  CHN: "CN", FIJ: "FJ", SOL: "SB", NCL: "NC", TAH: "PF", PNG: "PG", VAN: "VU", SAM: "WS",
 };
 const tags = (sub: string) => String.fromCodePoint(0x1f3f4, ...[...sub].map((c) => 0xe0000 + c.charCodeAt(0)), 0xe007f);
 
@@ -21,6 +23,8 @@ export function bandeiraEmoji(pais: string): string {
 export function bandeiraDesenhada(pais: string): string | undefined {
   if (pais === "ENG") return `<rect x="4" y="13" width="32" height="20" fill="#FFFFFF"/><rect x="16" y="13" width="8" height="20" fill="#C8102E"/><rect x="4" y="19" width="32" height="8" fill="#C8102E"/>`;
   if (pais === "SCO") return `<rect x="4" y="13" width="32" height="20" fill="#0B2F7A"/><path d="M4 13L36 33M36 13L4 33" stroke="#FFFFFF" stroke-width="4"/>`;
+  if (pais === "WAL") return `<rect x="4" y="13" width="32" height="10" fill="#FFFFFF"/><rect x="4" y="23" width="32" height="10" fill="#0B7A3B"/><path d="M12 25l4-6 4 3 4-5 3 6-4 3h-8z" fill="#C8102E"/>`;
+  if (pais === "NIR") return `<rect x="4" y="13" width="32" height="20" fill="#FFFFFF"/><rect x="17" y="13" width="6" height="20" fill="#C8102E"/><rect x="4" y="20" width="32" height="6" fill="#C8102E"/><circle cx="20" cy="23" r="3" fill="#FFFFFF" stroke="#C8102E"/>`;
   return undefined;
 }
 
