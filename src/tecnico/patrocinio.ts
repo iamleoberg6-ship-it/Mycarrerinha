@@ -6,14 +6,17 @@ import { MARCA, MARCAS, CLUBE_DA_MARCA, regiaoDoPais, forteEm, type Categoria, t
 import type { PacoteDados } from "../liga.js";
 import { mundo, infoClube } from "../mundo.js";
 import { valorBrl } from "../moeda.js";
+import { abrirMesaPatro, proporPatro, aceitarMesa, textoPatro, type MesaPatro, type PacotePatro } from "../negociacao-patro.js";
 
 export type Cota = "master" | "fornecedor" | "manga" | "arena";
-export interface ContratoClube { marca: string; valor: number; /** última temporada do contrato */ ate: number; /** cor do logo/nome na camisa */ cor?: string; /** nome da arena */ nome?: string }
+export interface ContratoClube { marca: string; valor: number; /** última temporada do contrato */ ate: number; /** cor do logo/nome na camisa */ cor?: string; /** nome da arena */ nome?: string;
+  /** cláusulas negociadas */ bonusTitulo?: number; bonusVaga?: number; rebaixamento?: boolean; renovacao?: boolean; anos?: number }
 export interface OfertaClube { marca: string; valor: number; anos: number; /** teto escondido */ max: number; recusou?: boolean }
 export interface PatrociniosClube {
   /** quanto o clube vale comercialmente por mês (as cotas são frações disso) */ base: number;
   master?: ContratoClube; fornecedor?: ContratoClube; manga?: ContratoClube; arena?: ContratoClube;
   ofertas: Partial<Record<Cota, OfertaClube[]>>; geradas: number;
+  /** mesas de negociação abertas (cota|marca) */ mesas?: Record<string, MesaPatro>;
 }
 export const COTAS: Record<Cota, { nome: string; texto: string; fatia: number; cats: Categoria[] }> = {
   master: { nome: "Patrocínio master", texto: "A marca no meio do peito. A cota mais cara da camisa.", fatia: 0.55, cats: ["banco", "aerea", "aposta", "carro", "celular", "tecnologia", "seguro", "cripto", "cerveja", "energetico"] },
@@ -100,6 +103,53 @@ export function assinarPatro(pacote: PacoteDados, s: SaveMin, cota: Cota, marca:
   delete p.ofertas[cota];
   return { ok: true, msg: `Fechado: ${m.nome} · ${COTAS[cota].nome.toLowerCase()} por ${valorBrl(valor)}/mês, ${of.anos} ${of.anos === 1 ? "temporada" : "temporadas"}${atual && atual.ate >= s.temporada ? " (começa quando o atual acabar)" : ""}.` };
 }
+/** Chance de título e de vaga em copa pelo tamanho do clube na liga (a marca faz essa conta). */
+function chances(pacote: PacoteDados, s: SaveMin): { titulo: number; vaga: number } {
+  const w = mundo(pacote), meu = w.clube[s.clubeId], l = meu ? w.liga[meu.ligaId] : undefined;
+  const rank = l ? 1 + l.clubes.filter((c) => c.forca > (meu?.forca ?? 0)).length : 10;
+  return { titulo: clamp(0.45 - (rank - 1) * 0.09, 0.02, 0.45), vaga: clamp(0.85 - (rank - 1) * 0.1, 0.05, 0.85) };
+}
+/** A mesa de negociação com uma marca (abre na primeira vez, a partir da oferta dela). */
+export function mesaPatro(pacote: PacoteDados, s: SaveMin, cota: Cota, marca: string): MesaPatro | undefined {
+  const p = patrociniosDe(pacote, s), of = p.ofertas[cota]?.find((o) => o.marca === marca);
+  const k = `${cota}|${marca}`, ja = p.mesas?.[k];
+  if (ja) return ja;
+  if (!of) return undefined;
+  const ch = chances(pacote, s), divisao = infoClube(pacote, s.clubeId) ? 1 : 1;
+  const m = abrirMesaPatro(`${s.semente}|${p.geradas}|${cota}`, marca, of.valor, of.anos, of.max, ch.titulo, ch.vaga, divisao > 0);
+  (p.mesas ??= {})[k] = m;
+  return m;
+}
+/** Uma rodada de negociação (ou aceitar a proposta da marca). Fechando, devolve as luvas para entrar no caixa. */
+export function negociarPatro(pacote: PacoteDados, s: SaveMin, cota: Cota, marca: string, pac: PacotePatro | "aceitar", extra?: { cor?: string; nome?: string }): { ok: boolean; msg: string; luvas?: number } {
+  const p = patrociniosDe(pacote, s), m = mesaPatro(pacote, s, cota, marca), mk = MARCA[marca];
+  if (!m || !mk) return { ok: false, msg: "Essa oferta não está mais na mesa." };
+  if (!livre(p, cota, s.temporada)) return { ok: false, msg: "A cota já tem contrato." };
+  const r = pac === "aceitar" ? aceitarMesa(m) : proporPatro(m, pac);
+  if (r.status === "saiu") { p.ofertas[cota] = (p.ofertas[cota] ?? []).filter((o) => o.marca !== marca); return { ok: false, msg: `${mk.nome} saiu da negociação.` }; }
+  if (r.status === "contra") return { ok: false, msg: `${mk.nome}: ${r.texto.replace(/^A marca fez uma contraproposta: /, "contraproposta: ")}` };
+  const c = m.contra, atual = p[cota], nome = cota === "arena" ? (extra?.nome || `${mk.nome} Arena`) : undefined;
+  p[cota] = { marca, valor: c.fixo, ate: (atual && atual.ate >= s.temporada ? atual.ate : s.temporada) + c.anos, anos: c.anos, ...(c.bonusTitulo ? { bonusTitulo: c.bonusTitulo } : {}), ...(c.bonusVaga ? { bonusVaga: c.bonusVaga } : {}), ...(c.rebaixamento ? { rebaixamento: true } : {}), ...(c.renovacao ? { renovacao: true } : {}), ...(extra?.cor ? { cor: extra.cor } : {}), ...(nome ? { nome } : {}) };
+  delete p.ofertas[cota];
+  for (const k of Object.keys(p.mesas ?? {})) if (k.startsWith(`${cota}|`)) delete p.mesas![k];
+  return { ok: true, msg: `Fechado com ${mk.nome} (${COTAS[cota].nome.toLowerCase()}): ${textoPatro(c)}.`, luvas: c.luvas };
+}
+/** Fim de temporada: bônus por título e por vaga; cláusula de rebaixamento corta 40%. */
+export function bonusPatroTemporada(pacote: PacoteDados, s: SaveMin, campeao: boolean, vaga: boolean): { total: number; avisos: string[] } {
+  const p = patrociniosDe(pacote, s), av: string[] = []; let total = 0;
+  for (const cota of ORDEM_COTAS) {
+    const c = p[cota]; if (!c) continue;
+    const nm = MARCA[c.marca]?.nome ?? c.marca;
+    if (campeao && c.bonusTitulo) { total += c.bonusTitulo; av.push(`${nm} paga ${valorBrl(c.bonusTitulo)} de bônus pelo título.`); }
+    if (vaga && c.bonusVaga) { total += c.bonusVaga; av.push(`${nm} paga ${valorBrl(c.bonusVaga)} de bônus pela vaga em copa continental.`); }
+  }
+  return { total, avisos: av };
+}
+export function rebaixamentoPatro(pacote: PacoteDados, s: SaveMin): string[] {
+  const p = patrociniosDe(pacote, s), av: string[] = [];
+  for (const cota of ORDEM_COTAS) { const c = p[cota]; if (c?.rebaixamento) { c.valor = Math.round(c.valor * 0.6); c.rebaixamento = false; av.push(`Cláusula de rebaixamento: ${MARCA[c.marca]?.nome ?? c.marca} passa a pagar ${valorBrl(c.valor)}/mês.`); } }
+  return av;
+}
 /** Muda a cor do logo do fornecedor ou do nome do master (a marca deixa). */
 export function corDoPatro(pacote: PacoteDados, s: SaveMin, cota: Cota, cor: string) { const c = patrociniosDe(pacote, s)[cota]; if (c) c.cor = cor; }
 /** Receita do mês com os patrocínios. */
@@ -111,7 +161,13 @@ export function receitaPatro(pacote: PacoteDados, s: SaveMin): Record<string, nu
 /** Na virada: contrato vencido sai (a arena volta ao nome antigo). Devolve os avisos. */
 export function viradaPatro(pacote: PacoteDados, s: SaveMin): string[] {
   const p = patrociniosDe(pacote, s), av: string[] = [];
-  for (const cota of ORDEM_COTAS) { const c = p[cota]; if (c && c.ate < s.temporada) { av.push(`Acabou o contrato de ${COTAS[cota].nome.toLowerCase()} com ${MARCA[c.marca]?.nome ?? c.marca}. A cota está livre para vender.`); delete p[cota]; } }
+  for (const cota of ORDEM_COTAS) {
+    const c = p[cota];
+    if (!c || c.ate >= s.temporada) continue;
+    if (c.renovacao) { c.ate = s.temporada + (c.anos ?? 2) - 1; c.valor = Math.round(c.valor * 1.06); av.push(`Preferência na renovação: ${MARCA[c.marca]?.nome ?? c.marca} renovou a ${COTAS[cota].nome.toLowerCase()} por mais ${c.anos ?? 2} anos, com 6% de aumento.`); continue; }
+    av.push(`Acabou o contrato de ${COTAS[cota].nome.toLowerCase()} com ${MARCA[c.marca]?.nome ?? c.marca}. A cota está livre para vender.`); delete p[cota];
+  }
+  p.mesas = {};
   p.geradas = -99;
   return av;
 }

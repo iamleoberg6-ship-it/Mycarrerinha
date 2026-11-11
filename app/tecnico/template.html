@@ -104,6 +104,16 @@ dialog .tela { padding: 18px 16px; display: flex; flex-direction: column; gap: 1
 .patro-cota { margin-top: 10px; } .patro-cota .rotulo { margin-bottom: 2px; }
 .patro-atual { display: flex; gap: 10px; align-items: center; } .patro-atual small { display: block; }
 .patro-oferta { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--linha); } .patro-oferta .botao { justify-self: start; }
+.neg-log { display: grid; gap: 6px; flex-shrink: 0; max-height: 260px; overflow-y: auto; padding: 8px; border: 1px solid var(--linha); border-radius: 10px; background: rgba(0,0,0,.12); }
+.neg-l { display: block !important; text-align: left; font-size: 13.5px; line-height: 1.35; padding: 6px 9px; border-radius: 9px; background: rgba(255,255,255,.04); max-width: 92%; }
+.neg-l small { display: block !important; float: none; width: auto; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; opacity: .65; margin-bottom: 2px; }
+.neg-l.voce { justify-self: end; background: rgba(227,179,65,.14); }
+.neg-l.info { max-width: 100%; background: transparent; border: 1px dashed var(--linha); font-size: 12.5px; }
+.neg-l.clube, .neg-l.marca, .neg-l.jogador { background: rgba(116,211,148,.1); }
+.neg-form { display: grid; gap: 2px; margin-top: 10px; }
+.neg-form .campo-sel { width: 100%; }
+.neg-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; margin: 6px 0; cursor: pointer; }
+.neg-check input { margin-top: 3px; accent-color: var(--ouro); }
 .logo-marca { border-radius: 6px; flex: none; }
 .chips .chip.cor-chip { width: auto; height: auto; min-width: 0; padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; border-radius: 999px; }
 .cor-chip i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,.4); margin-right: 5px; vertical-align: -1px; }

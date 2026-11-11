@@ -8,14 +8,15 @@ import type { PacoteDados } from "../liga.js";
 import { mundo } from "../mundo.js";
 import { valorBrl } from "../moeda.js";
 import type { SaveTecnico } from "./motor.js";
+import { abrirMesaPatro, proporPatro, aceitarMesa, textoPatro, type MesaPatro, type PacotePatro } from "../negociacao-patro.js";
 
 export type CotaSel = "fornecedor" | "midia1" | "midia2" | "midia3";
 export const COTAS_SEL: CotaSel[] = ["fornecedor", "midia1", "midia2", "midia3"];
 export const NOME_COTA_SEL: Record<CotaSel, string> = { fornecedor: "Fornecedor de material", midia1: "Patrocinador oficial", midia2: "Patrocinador oficial", midia3: "Patrocinador oficial" };
 const CATS_MIDIA: Categoria[] = ["banco", "aerea", "cerveja", "celular", "carro", "seguro", "refrigerante", "comida", "tecnologia", "aposta", "energetico"];
-export interface ContratoSel { marca: string; valor: number; ate: number; anos: number }
+export interface ContratoSel { marca: string; valor: number; ate: number; anos: number; luvas?: number; bonusTitulo?: number; bonusVaga?: number; renovacao?: boolean }
 export interface OfertaSelPatro { marca: string; valor: number; anos: number; max: number; recusou?: boolean }
-export interface PatroSel { contratos: Partial<Record<CotaSel, ContratoSel>>; ofertas: Partial<Record<CotaSel, OfertaSelPatro[]>>; geradas: number; arrecadado: number }
+export interface PatroSel { contratos: Partial<Record<CotaSel, ContratoSel>>; ofertas: Partial<Record<CotaSel, OfertaSelPatro[]>>; geradas: number; arrecadado: number; mesas?: Record<string, MesaPatro> }
 
 const forcaNat = (pacote: PacoteDados, s: SaveTecnico) => mundo(pacote).clube[s.selecao!.id]?.forca ?? 70;
 /** Quanto a cota vale por mês para uma marca média (R$): sobe muito com o tamanho da seleção. */
@@ -85,6 +86,47 @@ export function assinarSel(pacote: PacoteDados, s: SaveTecnico, k: CotaSel, marc
   const sel = s.selecao!; sel.confianca = clamp(sel.confianca + (valor > of.valor ? 4 : 2), 0, 100);
   return { ok: true, msg: `Fechado: ${m.nome} · ${NOME_COTA_SEL[k].toLowerCase()} da seleção por ${valorBrl(valor)}/mês, ${a} anos (${valorBrl(valor * 12 * a)} no total).` };
 }
+/** A mesa de negociação com uma marca (na seleção, "vaga" é a classificação para a Copa do Mundo e não há rebaixamento). */
+export function mesaSel(pacote: PacoteDados, s: SaveTecnico, k: CotaSel, marca: string): MesaPatro | undefined {
+  const p = patroSel(pacote, s), k2 = `${k}|${marca}`;
+  if (p.mesas?.[k2]) return p.mesas[k2];
+  const of = p.ofertas[k]?.find((o) => o.marca === marca);
+  if (!of) return undefined;
+  const f = forcaNat(pacote, s), pTitulo = clamp((f - 72) / 60, 0.01, 0.2), pVaga = clamp((f - 62) / 90, 0.03, 0.24);
+  const m = abrirMesaPatro(`${s.semente}|sel|${p.geradas}|${k}`, marca, of.valor, of.anos, of.max, pTitulo, pVaga, false);
+  m.anosPref = Math.max(m.anosPref, of.anos);
+  (p.mesas ??= {})[k2] = m;
+  return m;
+}
+export function negociarSel(pacote: PacoteDados, s: SaveTecnico, k: CotaSel, marca: string, pac: PacotePatro | "aceitar"): { ok: boolean; msg: string } {
+  const p = patroSel(pacote, s), m = mesaSel(pacote, s, k, marca), mk = MARCA[marca], of = p.ofertas[k]?.find((o) => o.marca === marca);
+  if (!m || !mk) return { ok: false, msg: "Essa oferta não está mais na mesa." };
+  if (!livre(p, k, s.temporada)) return { ok: false, msg: "Essa cota já tem contrato." };
+  const r = pac === "aceitar" ? aceitarMesa(m) : proporPatro(m, { ...pac, rebaixamento: false });
+  if (r.status === "saiu") { p.ofertas[k] = (p.ofertas[k] ?? []).filter((o) => o.marca !== marca); return { ok: false, msg: `${mk.nome} saiu da negociação.` }; }
+  if (r.status === "contra") return { ok: false, msg: `${mk.nome}: ${r.texto.replace(/^A marca fez uma contraproposta: /, "contraproposta: ")}` };
+  const c = m.contra, atual = p.contratos[k];
+  p.contratos[k] = { marca, valor: c.fixo, anos: c.anos, ate: (atual && atual.ate >= s.temporada ? atual.ate : s.temporada) + c.anos, ...(c.luvas ? { luvas: c.luvas } : {}), ...(c.bonusTitulo ? { bonusTitulo: c.bonusTitulo } : {}), ...(c.bonusVaga ? { bonusVaga: c.bonusVaga } : {}), ...(c.renovacao ? { renovacao: true } : {}) };
+  delete p.ofertas[k];
+  for (const x of Object.keys(p.mesas ?? {})) if (x.startsWith(`${k}|`)) delete p.mesas![x];
+  // luvas entram no caixa da federação; contrato acima da oferta agrada
+  p.arrecadado += c.luvas;
+  const sel = s.selecao!, equiv = c.fixo + c.luvas / Math.max(12, c.anos * 12);
+  sel.confianca = clamp(sel.confianca + (of && equiv > of.valor ? 4 : 2), 0, 100);
+  return { ok: true, msg: `Fechado: ${mk.nome} · ${NOME_COTA_SEL[k].toLowerCase()} da seleção: ${textoPatro(c)}.` };
+}
+/** Bônus de patrocinador (título ou vaga na Copa): vai para a federação e anima a diretoria. */
+export function bonusSel(pacote: PacoteDados, s: SaveTecnico, tipo: "titulo" | "vaga"): string[] {
+  if (!s.selecao) return [];
+  const p = patroSel(pacote, s), av: string[] = [];
+  for (const k of COTAS_SEL) {
+    const c = p.contratos[k], v = c ? (tipo === "titulo" ? c.bonusTitulo : c.bonusVaga) : 0;
+    if (!c || !v) continue;
+    p.arrecadado += v; av.push(`${MARCA[c.marca]?.nome ?? c.marca} paga ${valorBrl(v)} de bônus à federação ${tipo === "titulo" ? "pelo título" : "pela vaga na Copa do Mundo"}.`);
+  }
+  if (av.length) s.selecao.confianca = clamp(s.selecao.confianca + 3, 0, 100);
+  return av;
+}
 /** Fim do mês: a federação recebe (vai para o caixa dela; renovação boa de contrato sobe o seu salário). */
 export function mesPatroSel(pacote: PacoteDados, s: SaveTecnico): number {
   if (!s.selecao) return 0;
@@ -96,7 +138,13 @@ export function mesPatroSel(pacote: PacoteDados, s: SaveTecnico): number {
 export function viradaPatroSel(s: SaveTecnico, tAntes: number): string[] {
   if (!s.selecao?.patro) return [];
   const p = s.selecao.patro, av: string[] = [];
-  for (const k of COTAS_SEL) { const c = p.contratos[k]; if (c && c.ate <= tAntes) { av.push(`Acabou o contrato da seleção com ${MARCA[c.marca]?.nome ?? c.marca} (${NOME_COTA_SEL[k].toLowerCase()}).`); delete p.contratos[k]; } }
+  for (const k of COTAS_SEL) {
+    const c = p.contratos[k];
+    if (!c || c.ate > tAntes) continue;
+    if (c.renovacao) { c.ate = tAntes + c.anos; c.valor = Math.round(c.valor * 1.06); c.renovacao = false; av.push(`Preferência na renovação: ${MARCA[c.marca]?.nome ?? c.marca} renovou com a seleção por mais ${c.anos} anos, com 6% de aumento.`); continue; }
+    av.push(`Acabou o contrato da seleção com ${MARCA[c.marca]?.nome ?? c.marca} (${NOME_COTA_SEL[k].toLowerCase()}).`); delete p.contratos[k];
+  }
+  p.mesas = {};
   p.geradas = -99;
   return av;
 }

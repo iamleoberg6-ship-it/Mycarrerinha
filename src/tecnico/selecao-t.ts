@@ -12,7 +12,7 @@ import {
 } from "../copas.js";
 import { participantesCopa, participantesTorneio } from "../selecoes-copas.js";
 import { figurinhaLivre } from "../figurinhas.js";
-import { viradaPatroSel } from "./patro-sel.js";
+import { viradaPatroSel, bonusSel } from "./patro-sel.js";
 import type { PosT } from "./modelo.js";
 import { ovrDe } from "./modelo.js";
 import type { SaveTecnico } from "./motor.js";
@@ -140,7 +140,10 @@ export function copasSel(pacote: PacoteDados, s: SaveTecnico): Partial<Record<Co
     const ppj = sel.elim.j ? sel.elim.p / sel.elim.j : -1, dentro = ps.includes(meu);
     if (ppj >= 0 && ppj < 1.1 && dentro) { const sub = todasSelecoes(pacote).filter((x) => confederacao(x.pais) === conf && !ps.includes(x.id)).sort((a, b) => b.forca - a.forca)[0]; ps = ps.map((x) => (x === meu ? sub?.id ?? x : x)); }
     if (ppj >= 1.5 && !dentro) { const fora = ps.filter((x) => confDe(x) === conf).sort((a, b) => forca(a) - forca(b))[0] ?? ps[ps.length - 1]; ps = ps.map((x) => (x === fora ? meu : x)); }
-    if (ps.includes(meu)) copas.COP = novaCopa("COP", t, ps.sort((a, b) => forca(b) - forca(a)), forca, paisDe, confDe, s.semente);
+    if (ps.includes(meu)) {
+      copas.COP = novaCopa("COP", t, ps.sort((a, b) => forca(b) - forca(a)), forca, paisDe, confDe, s.semente);
+      if (!sel.avaliadas.includes(`${t}-vaga`)) { sel.avaliadas.push(`${t}-vaga`); try { (sel.avisos ??= []).push(...bonusSel(pacote, s, "vaga")); } catch (err) { console.error(err); } }
+    }
     else if (!sel.avaliadas.includes(`${t}-fora`)) {
       // fora da Copa: a federação não perdoa (menos para seleção pequena, que já não era favorita)
       sel.avaliadas.push(`${t}-fora`);
@@ -255,6 +258,7 @@ function fimDoTorneio(pacote: PacoteDados, s: SaveTecnico, e: EstadoCopa, nota: 
   const chegou = campeao ? 5 : FASE_NUM[e.chegou[meu] ?? "grupos"] ?? 0, meta = e.id === "FIN" ? 5 : metaNoTorneio(pacote, e, meu), peso = e.id === "COP" ? 1.6 : e.id === "FIN" ? 0.7 : 1;
   if (campeao) {
     sel.titulos.push({ t: s.temporada, id: e.id, nome: info.nome });
+    try { for (const x of bonusSel(pacote, s, "titulo")) nota(x); } catch (err) { console.error(err); }
     (s.titulosCopa ??= []).push({ t: s.temporada, id: e.id, nome: info.nome, clubeId: meu });
     s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.round(10 * peso), 0, 100); sel.confianca = clamp(sel.confianca + 25 * peso, 0, 100);
     nota(`🏆 ${nome.toUpperCase()} ${artigo(pacote, sel.pais).fem ? "CAMPEÃ" : "CAMPEÃO"} ${info.prep.toUpperCase()} ${info.nome.toUpperCase()}! Você entra para a história do futebol do país.`);

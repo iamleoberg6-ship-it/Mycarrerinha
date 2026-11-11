@@ -13,7 +13,7 @@ import { simboloMarca, logoSvg } from "../jogo/poster";
 import { MARCA, NOME_CATEGORIA } from "../../src/marcas";
 import { UNIFORME_CLUBE } from "../../src/reliquias";
 import { responderEvento, rankingT, TIPO_CONTATO } from "../../src/tecnico/vida";
-import { patrociniosDe, ofertasPatro, assinarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
+import { patrociniosDe, ofertasPatro, mesaPatro, negociarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
 import { fotoDoPerfil } from "../visual/mulheres";
 import { gerarEstatCompleta } from "../../src/estatisticas-completas";
@@ -29,7 +29,7 @@ import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR,
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
 import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
-import { patroSel, ofertasSel, assinarSel, COTAS_SEL, NOME_COTA_SEL, type CotaSel } from "../../src/tecnico/patro-sel";
+import { patroSel, ofertasSel, mesaSel, negociarSel, COTAS_SEL, NOME_COTA_SEL, type CotaSel } from "../../src/tecnico/patro-sel";
 import { poolSel, convocarMelhores, convocadosDe, forcaMinhaSel, copasSel, proximoJogoSel, metaNoTorneio, textoMeta, aceitarSelecao, deixarSelecao, listaSelecoes, declararInteresseSel, FORMACOES_SEL, POS_ORDEM, type Candidato, type Formacao, type Estilo } from "../../src/tecnico/selecao-t";
 import { Album, figurinhaArte, type CtxFig } from "../visual/album";
 import type { Figurinha } from "../../src/figurinhas";
@@ -90,14 +90,20 @@ function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, n
   return { licenca, idiomas, prestigio: prestigioDe(jog, idiomas).valor };
 }
 import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
+import { NOME_PERFIL_MARCA, textoPatro, type MesaPatro, type PacotePatro } from "../../src/negociacao-patro";
+import {
+  abrirNeg, abrirLivre, proporClube, proporEmprestimo, aceitarContraClube, proporJogador, aceitarContraJogador, desistir, textoPac, textoEmp, NOME_PAPEL, NOME_PERFIL as NOME_PERFIL_CLUBE,
+  contraVenda, leilao, aceitarVenda, recusarVenda, valorVenda, alternarEmprestimo, responderEmp, decidirOpcao, contratoRestante,
+  type Negociacao, type Papel, type PacoteTransf,
+} from "../../src/tecnico/negociacao";
 import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
   proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
-  renovar, dispensar, agentesLivresT, contratarLivre, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
-  janelaT, buscarJogadores, interesseDo, fazerProposta, alvoPorNome, alternarVenda, responderPropostaT,
+  renovar, dispensar, agentesLivresT, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
+  janelaT, buscarJogadores, interesseDo, alvoPorNome, alternarVenda,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
-  toleranciaLicenca, aceitarEmprego, recusarEmprego, assumirNovoClube,
+  toleranciaLicenca, aceitarEmprego, recusarEmprego, assumirNovoClube, creditar,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import {
@@ -131,7 +137,7 @@ const campoValor = (id: string, brl: number) => {
   return `<label class="campo-valor"><span>${esc(simboloAtual())}</span><input id="${id}" inputmode="numeric" autocomplete="off" value="${naTela(brl)}" aria-label="Valor em ${esc(simboloAtual())}"></label>
     <div class="passos" role="group" aria-label="Ajustar o valor">${passos.map((p) => `<div class="passo"><button type="button" data-passo="${id}|${p}" aria-label="Mais ${rotuloPasso(p)}">+</button><small>${rotuloPasso(p)}</small><button type="button" data-passo="${id}|-${p}" aria-label="Menos ${rotuloPasso(p)}">−</button></div>`).join("")}</div>`;
 };
-let anosProposta = 3, msgNeg: { texto: string; ok: boolean; pedido?: number } | undefined;
+let msgNeg: { texto: string; ok: boolean; pedido?: number } | undefined;
 let msg: { texto: string; ok: boolean } | undefined;
 let ligaEscolhida = "BRA1";
 /** Técnico demitido procurando clube: leva a reputação e o histórico. */
@@ -223,7 +229,7 @@ function abaInicio(s: SaveTecnico): string {
   const contratos = s.elenco.filter((a) => a.contratoAte <= s.temporada);
   const alertas = [
     ...lesionados.map((a) => `<span class="pill ruim">${esc(a.nome)} · ${a.lesao} sem.</span>`), ...susp.map((a) => `<span class="pill aviso">${esc(a.nome)} suspenso</span>`),
-    ...sair.map((a) => `<span class="pill ruim">${esc(a.nome)} quer sair</span>`), ...((s.propostas ?? []).length ? [`<button class="pill aviso" data-ir-propostas style="cursor:pointer">${s.propostas!.length} proposta${s.propostas!.length > 1 ? "s" : ""} por jogadores seus ›</button>`] : []), ...(contratos.length ? [`<span class="pill aviso">${contratos.length} contrato${contratos.length > 1 ? "s" : ""} acabando</span>`] : []),
+    ...sair.map((a) => `<span class="pill ruim">${esc(a.nome)} quer sair</span>`), ...(((s.propostasV ?? []).length + (s.ofertasEmp ?? []).length) ? [(() => { const k = (s.propostasV ?? []).length + (s.ofertasEmp ?? []).length; return `<button class="pill aviso" data-ir-propostas style="cursor:pointer">${k} proposta${k > 1 ? "s" : ""} por jogadores seus ›</button>`; })()] : []), ...((s.opcoesCompra ?? []).length ? [`<button class="pill aviso" data-ir-propostas style="cursor:pointer">Opção de compra para decidir ›</button>`] : []), ...(contratos.length ? [`<span class="pill aviso">${contratos.length} contrato${contratos.length > 1 ? "s" : ""} acabando</span>`] : []),
   ];
   const ev = s.evento ? `<section class="painel evento-t"><p class="rotulo">Acontecendo agora</p><h2 style="font-size:19px">${esc(s.evento.titulo)}</h2><p>${esc(s.evento.texto)}</p><div class="botoes">${s.evento.opcoes.map((o) => `<button class="botao sec" data-evt="${o.id}">${esc(o.rotulo)}</button>`).join("")}</div></section>` : "";
   const of = s.ofertaEmprego, ofC = of ? infoClube(pacote, of.clubeId) : undefined;
@@ -250,7 +256,7 @@ function abaInicio(s: SaveTecnico): string {
 // ------------------------------------------------------------------ Elenco
 const grupoPos = (p: PosT) => (p === "GOL" ? "gol" : p === "ZAG" || p === "LAT" ? "def" : p === "VOL" || p === "MEI" ? "mei" : "ata");
 function abaElenco(s: SaveTecnico): string {
-  const nProp = (s.propostas ?? []).length;
+  const nProp = (s.propostasV ?? []).length + (s.ofertasEmp ?? []).length + (s.opcoesCompra ?? []).length;
   const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["mercado", "Mercado"], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["livres", "Agentes livres"], ["scout", "Scout"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
   if (sub.elenco === "livres") return subs + abaLivres(s);
   if (sub.elenco === "scout") return subs + abaScout(s);
@@ -262,7 +268,7 @@ function abaElenco(s: SaveTecnico): string {
   const tit = new Set(s.esc.titulares);
   return `${subs}${filtros}<p class="sub" style="margin-bottom:6px">Folha: <b style="color:var(--giz)">${curtoBrl(folhaDe(s))}</b>/mês · teto ${curtoBrl(s.clube.tetoFolha)}</p><div class="lista">${lista.map((a) => {
     const tags = [tit.has(a.id) ? `<span class="pill bom">Titular</span>` : "", a.lesao > 0 ? `<span class="pill ruim">Lesão ${a.lesao} sem.</span>` : "", a.suspenso > 0 ? `<span class="pill aviso">Suspenso</span>` : "",
-      a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined ? `<span class="pill">Promessa</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : ""].join("");
+      a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined ? `<span class="pill">Promessa</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : "", (s.aEmprestimo ?? []).includes(a.id) ? `<span class="pill aviso">Para empréstimo</span>` : "", a.emprestadoDe ? `<span class="pill">Emprestado</span>` : ""].join("");
     return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong>${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
   }).join("")}</div>`;
 }
@@ -294,7 +300,8 @@ function fichaJogador(s: SaveTecnico, id: string): string {
     <div><p class="rotulo">Curso de técnico</p><p class="sub">${a.curso?.estudando ? `Estudando a ${LICENCAS[a.curso.estudando]} (${Math.round(100 * (a.curso.progresso ?? 0) / CURSO_LICENCA[a.curso.estudando].semanas)}%).` : (a.curso?.licenca ?? 0) > 0 ? `Tem a ${LICENCAS[a.curso!.licenca]}.` : "Ainda não começou."} Quem se aposenta com licença pode entrar na sua comissão.</p>${!a.curso?.estudando && (a.curso?.licenca ?? 0) < 2 ? `<div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-curso="${esc(a.id)}">Recomendar o curso</button></div>` : ""}</div>
     <div><p class="rotulo">Conversar${conv ? " · já conversou nesta semana" : ""}</p><div class="botoes" style="margin-top:6px">${(Object.keys(NOME_CONVERSA) as Conversa[]).map((k) => `<button class="botao sec peq" data-conv="${k}" data-id="${esc(a.id)}" ${conv ? "disabled" : ""}>${NOME_CONVERSA[k]}</button>`).join("")}</div></div>
     <div><p class="rotulo">Renovar · pede ${valorBrl(pedido)}/mês</p><div class="botoes" style="margin-top:6px">${[1, 2, 3, 4].map((n) => `<button class="botao sec peq" data-renovar="${n}" data-id="${esc(a.id)}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
-    <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button></div></div>
+    <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button>${a.emprestadoDe ? "" : `<button class="botao sec peq" data-emp-lista="${esc(a.id)}">${(s.aEmprestimo ?? []).includes(a.id) ? "Tirar da lista de empréstimo" : "Colocar para empréstimo"}</button>`}</div>
+      <p class="sub" style="margin-top:4px">${a.emprestadoDe ? `Emprestado pelo ${esc(nomeClube(a.emprestadoDe.clubeId))} até ${ANO_INICIAL_T + a.emprestadoDe.ate}${a.emprestadoDe.opcao ? ` · ${a.emprestadoDe.obrigacao ? "obrigação" : "opção"} de compra de ${curtoBrl(a.emprestadoDe.opcao)}` : ""}.` : ""}${a.multa ? ` Multa rescisória: ${curtoBrl(a.multa)}.` : ""}${a.papel ? ` Prometido: ${NOME_PAPEL[a.papel].toLowerCase()}.` : ""}${a.revenda ? ` ${a.revenda.pct}% de uma venda vai para o ${esc(nomeClube(a.revenda.clubeId))}.` : ""}</p></div>
     <div><p class="rotulo">Dispensar · rescisão de ${curtoBrl(multa)}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-dispensar data-id="${esc(a.id)}">Dispensar ${esc(a.nome)}</button></div></div>`;
 }
 /** O número da direita na lista: a faixa de OVR (e o potencial embaixo), com a marca do relatório. */
@@ -328,40 +335,164 @@ function abaMercadoT(s: SaveTecnico): string {
     <div class="lista">${lista.map((x) => `<button class="lin" data-alvo="${esc(x.nome)}" data-clube="${x.clubeId}"><span class="num" style="font-size:13px">${x.pos}</span><span class="nm"><b>${esc(x.nome)}</b><small>${escudo(x.clubeId, "escudo esc-p")}${esc(nomeClube(x.clubeId))} · ${x.idade}a${x.titular ? ` <span class="pill">Titular</span>` : ""}</small><small>Valor ${curtoBrl(x.valor)}</small></span>${ovFaixa(s, faixaDe(s, x, x.ligaId, x.clubeId), x.nome, x.clubeId)}</button>`).join("") || `<p class="sub">Ninguém com esse filtro.</p>`}</div>
     <p class="sub" style="margin-top:8px">O nível de quem não é seu aparece como uma faixa: o que o seu scout acha. Ela fecha quando você manda os olheiros procurar naquela liga (aba Scout) ou pede um relatório do jogador.</p>`;
 }
-function negociarHtml(s: SaveTecnico, nome: string, clubeId: string): string {
-  const a = alvoPorNome(pacote, s, nome, clubeId);
-  if (!a) return `<button class="fechar" data-fechar aria-label="Fechar">×</button><p class="sub">Esse jogador não está mais nesse clube.</p>`;
-  const int = interesseDo(pacote, s, a), jan = janelaT(s), fx = faixaDe(s, a, a.ligaId, a.clubeId);
-  const ofertas = [0.8, 1, 1.2, 1.5].map((k) => Math.round(a.valor * k / 1000) * 1000);
+// ------------------------------------------------------------------ mesa de negociação de patrocínio (clube e seleção)
+const PAPEIS: Papel[] = ["estrela", "titular", "rotacao", "reserva", "promessa"];
+const logMesa = (l: { quem: string; texto: string }[]) => `<div class="neg-log">${l.slice(-8).map((x) => `<div class="neg-l ${x.quem}"><small>${x.quem === "voce" ? "Você" : x.quem === "info" ? "Situação" : x.quem === "marca" ? "Marca" : x.quem === "clube" ? "Clube" : "Jogador"}</small>${esc(x.texto)}</div>`).join("")}</div>`;
+const marcar = (id: string, on: boolean, txt: string) => `<label class="neg-check"><input type="checkbox" id="${id}"${on ? " checked" : ""}> ${txt}</label>`;
+const selNum = (id: string, ops: number[], atual: number, rot: (n: number) => string) => `<select class="campo-sel" id="${id}">${ops.map((n) => `<option value="${n}"${n === atual ? " selected" : ""}>${rot(n)}</option>`).join("")}</select>`;
+function mesaPatroHtml(m: MesaPatro, chave: string, sel: boolean, extra = ""): string {
+  const mk = MARCA[m.marca], c = m.contra;
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button>
-    <div><p class="rotulo">${NOME_POS_T[a.pos]} · ${a.idade} anos · ${a.nac}</p><h2>${esc(a.nome)}</h2></div>
-    <div class="clube-op" style="border:0">${escudo(a.clubeId)}<div><b>${esc(nomeClube(a.clubeId))}</b><br><small class="sub">${esc(infoLiga(a.ligaId).curto)}${a.titular ? " · titular" : ""}</small></div><span class="ov"><strong style="font-family:var(--display);font-size:26px;color:var(--ouro-claro)">${textoFaixa(fx)}</strong><span>OVR</span></span></div>
-    ${relatorioScout(s, fx, a.nome, a.clubeId)}
-    <div class="dl"><span>Valor de mercado</span><b>${valorBrl(a.valor)}</b><span>Salário que ele pede</span><b>${valorBrl(int.salario)}/mês</b><span>Seu caixa</span><b>${valorBrl(s.clube.saldo)}</b></div>
-    <p class="aviso-t ${int.topa ? "ok" : "erro"}">${esc(int.motivo)}</p>
+    <div style="display:flex;gap:10px;align-items:center">${mk ? logoSvg(mk, 30) : ""}<div><p class="rotulo" style="margin:0">Negociação de patrocínio${sel ? " · seleção" : ""}</p><h2 style="margin:0">${esc(mk?.nome ?? m.marca)}</h2></div></div>
+    <div class="dl"><span>Perfil</span><b>${NOME_PERFIL_MARCA[m.perfil]}</b><span>Paciência</span><b>${m.saiu ? "saiu da mesa" : "●".repeat(Math.max(0, m.paciencia)) + "○".repeat(Math.max(0, 4 - m.paciencia))}</b><span>Rodadas</span><b>${m.rodadas}</b></div>
+    ${logMesa(m.log)}
     ${msgNeg ? `<p class="aviso-t ${msgNeg.ok ? "ok" : "erro"}" role="status">${esc(msgNeg.texto)}</p>` : ""}
-    ${!jan.aberta ? `<p class="sub">${esc(jan.texto)}</p>` : int.topa ? `<div><p class="rotulo">Contrato</p><div class="chips" style="margin-top:6px">${[1, 2, 3, 4, 5].map((n) => `<button class="chip${anosProposta === n ? " ativo" : ""}" data-anosprop="${n}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
-    <div><p class="rotulo">Sua oferta ao clube</p>${campoValor("ofertaValor", msgNeg?.pedido ?? a.valor)}
-      <div class="chips" style="margin:8px 0">${msgNeg?.pedido ? `<button class="chip ativo" data-preencher="ofertaValor" data-v="${msgNeg.pedido}">O clube pede ${curtoBrl(msgNeg.pedido)}</button>` : ""}${[0.8, 1, 1.2, 1.5].map((k) => `<button class="chip" data-preencher="ofertaValor" data-v="${Math.round(a.valor * k / 1000) * 1000}">${Math.round(k * 100)}% · ${curtoBrl(a.valor * k)}</button>`).join("")}</div>
-      <button class="botao" data-enviar-oferta data-alvo-n="${esc(a.nome)}" data-clube="${a.clubeId}" style="width:100%">Enviar proposta</button>
-    <p class="sub" style="margin-top:6px">Digite o valor que quiser. Os atalhos só preenchem o campo. O clube pede mais por titular, garoto e rival da mesma liga. Até 3 tentativas por janela.</p></div></div>` : ""}`;
+    ${m.saiu ? "" : `<div class="neg-form"><p class="rotulo">Na mesa agora</p><p class="sub">${esc(textoPatro(c))}</p>
+      <button class="botao" data-mp-aceitar="${esc(chave)}" style="width:100%;margin-bottom:12px">Aceitar a proposta da marca</button>
+      <p class="rotulo">Sua contraproposta</p>
+      <p class="sub" style="margin:0 0 4px">Valor fixo por mês</p>${campoValor("mp-fixo", c.fixo)}
+      <p class="sub" style="margin:8px 0 4px">Anos de contrato</p>${selNum("mp-anos", sel ? [2, 3, 4, 5, 6, 7, 8, 9, 10] : [1, 2, 3, 4, 5, 6], c.anos, (n) => `${n} ${n === 1 ? "ano" : "anos"}`)}
+      <p class="sub" style="margin:8px 0 4px">Luvas (na assinatura)</p>${campoValor("mp-luvas", c.luvas)}
+      <p class="sub" style="margin:8px 0 4px">Bônus por título</p>${campoValor("mp-bt", c.bonusTitulo)}
+      <p class="sub" style="margin:8px 0 4px">Bônus por ${sel ? "vaga na Copa do Mundo" : "vaga em copa continental"}</p>${campoValor("mp-bv", c.bonusVaga)}
+      <div style="margin-top:8px">${sel ? "" : marcar("mp-reb", c.rebaixamento, "Aceito cláusula de redução de 40% se cair (a marca topa pagar mais)")}${marcar("mp-ren", c.renovacao, "Preferência da marca na renovação")}</div>
+      ${extra}
+      <button class="botao sec" data-mp-enviar="${esc(chave)}" style="width:100%;margin-top:10px">Enviar contraproposta</button>
+      <p class="sub" style="margin-top:6px">Cada marca pesa diferente: a agressiva paga luvas e quer contrato longo; a conservadora prefere pagar bônus por resultado do que fixo; a parceira valoriza a preferência na renovação. Pedir demais gasta a paciência dela.</p></div>`}`;
+}
+function lerPacotePatro(): PacotePatro {
+  const ck = (id: string) => !!(document.getElementById(id) as HTMLInputElement | null)?.checked;
+  return { fixo: lerValor("mp-fixo"), anos: +((document.getElementById("mp-anos") as HTMLSelectElement | null)?.value ?? 3), luvas: lerValor("mp-luvas"), bonusTitulo: lerValor("mp-bt"), bonusVaga: lerValor("mp-bv"), rebaixamento: ck("mp-reb"), renovacao: ck("mp-ren") };
+}
+function abrirMesaPatroUI(s: SaveTecnico, chave: string): boolean {
+  const [tipo, cota, marca] = chave.split("|");
+  if (tipo === "s") { const m = mesaSel(pacote, s, cota as CotaSel, marca); if (!m) return false; abrir(mesaPatroHtml(m, chave, true)); return true; }
+  const m = mesaPatro(pacote, s, cota as Cota, marca); if (!m) return false;
+  const mo = MARCA[marca], nomes = mo ? [`${mo.nome} Arena`, `Arena ${mo.nome}`, `Estádio ${mo.nome}`, `${mo.nome} Park`] : [];
+  abrir(mesaPatroHtml(m, chave, false, cota === "arena" ? `<p class="sub" style="margin:8px 0 4px">Nome da arena</p><select class="campo-sel" id="mp-nome">${nomes.map((n) => `<option>${esc(n)}</option>`).join("")}</select>` : ""));
+  return true;
+}
+
+// ------------------------------------------------------------------ mesa de transferência (clube e depois jogador/empresário)
+function negociarHtml(s: SaveTecnico, nome: string, clubeId: string): string {
+  const fecharB = `<button class="fechar" data-fechar aria-label="Fechar">×</button>`, jan = janelaT(s), id = `${clubeId}|${nome}`;
+  const n = s.negs?.[id];
+  let topo = "";
+  if (clubeId === "livre") {
+    const x = agentesLivresT(pacote, s).find((l) => l.nome === nome);
+    if (!x && !n) return `${fecharB}<p class="sub">Esse jogador já acertou com outro clube.</p>`;
+    topo = `<div><p class="rotulo">${x ? `${NOME_POS_T[x.pos]} · ${x.idade} anos · ${x.nac} · ` : ""}agente livre</p><h2>${esc(nome)}</h2></div>${x ? relatorioScout(s, faixaDe(s, x), x.nome) : ""}`;
+  } else {
+    const a = alvoPorNome(pacote, s, nome, clubeId);
+    if (!a) return `${fecharB}<p class="sub">Esse jogador não está mais nesse clube.</p>`;
+    const int = interesseDo(pacote, s, a), fx = faixaDe(s, a, a.ligaId, a.clubeId), anos = contratoRestante(s, a.nome, a.clubeId);
+    topo = `<div><p class="rotulo">${NOME_POS_T[a.pos]} · ${a.idade} anos · ${a.nac}</p><h2>${esc(a.nome)}</h2></div>
+    <div class="clube-op" style="border:0">${escudo(a.clubeId)}<div><b>${esc(nomeClube(a.clubeId))}</b><br><small class="sub">${esc(infoLiga(a.ligaId).curto)}${a.titular ? " · titular" : ""} · contrato por mais ${anos} ${anos === 1 ? "ano" : "anos"}</small></div><span class="ov"><strong style="font-family:var(--display);font-size:26px;color:var(--ouro-claro)">${textoFaixa(fx)}</strong><span>OVR</span></span></div>
+    ${relatorioScout(s, fx, a.nome, a.clubeId)}
+    <div class="dl"><span>Valor de mercado</span><b>${valorBrl(a.valor)}</b><span>Salário que ele pede</span><b>${valorBrl(int.salario)}/mês</b><span>Seu caixa</span><b>${valorBrl(s.clube.saldo)}</b><span>Folha</span><b>${curtoBrl(folhaDe(s))} de ${curtoBrl(s.clube.tetoFolha)}</b></div>
+    <p class="aviso-t ${int.topa ? "ok" : "erro"}">${esc(int.motivo)}</p>`;
+    if (!n || n.fase === "fechada") {
+      if (!jan.aberta) return `${fecharB}${topo}<p class="sub">${esc(jan.texto)}</p>`;
+      if (!int.topa) return `${fecharB}${topo}`;
+      return `${fecharB}${topo}${msgNeg ? `<p class="aviso-t ${msgNeg.ok ? "ok" : "erro"}">${esc(msgNeg.texto)}</p>` : ""}<div class="botoes"><button class="botao" data-tn-abrir="compra" data-tn-nome="${esc(a.nome)}" data-tn-clube="${a.clubeId}">Negociar a compra</button><button class="botao sec" data-tn-abrir="emprestimo" data-tn-nome="${esc(a.nome)}" data-tn-clube="${a.clubeId}">Pedir emprestado</button></div>
+        <p class="sub">A negociação tem duas partes: primeiro com o clube (valor, parcelas, bônus, porcentagem de revenda, até um jogador na troca), depois com o jogador e o empresário (salário, anos, luvas, multa, papel no time e comissão).</p>`;
+    }
+  }
+  if (!n) return `${fecharB}${topo}<div class="botoes"><button class="botao" data-tn-abrir="livre" data-tn-nome="${esc(nome)}" data-tn-clube="livre">Conversar com o empresário</button></div>`;
+  return `${fecharB}${topo}${mesaTransfHtml(s, n)}`;
+}
+function mesaTransfHtml(s: SaveTecnico, n: Negociacao): string {
+  const idA = esc(n.id), nomeC = n.clubeId === "livre" ? "" : nomeClube(n.clubeId);
+  const cab = `<div class="dl"><span>Negociação</span><b>${n.tipo === "compra" ? "Compra" : n.tipo === "emprestimo" ? "Empréstimo" : "Agente livre"} · ${n.fase === "clube" ? `com o ${esc(nomeC)}` : n.fase === "jogador" ? "com o jogador e o empresário" : "encerrada"}</b>${n.tipo !== "livre" ? `<span>Jeito do clube</span><b>${NOME_PERFIL_CLUBE[n.perfil]}</b>` : ""}<span>Paciência</span><b>${(() => { const pc = n.fase === "jogador" ? n.jogador?.paciencia ?? 0 : n.paciencia; return "●".repeat(Math.max(0, pc)) + "○".repeat(Math.max(0, (n.fase === "jogador" ? 3 : 5) - pc)); })()}</b>${n.rival ? `<span>Disputa</span><b class="neg">${esc(nomeClube(n.rival))} também quer</b>` : ""}</div>`;
+  const aviso = msgNeg ? `<p class="aviso-t ${msgNeg.ok ? "ok" : "erro"}" role="status">${esc(msgNeg.texto)}</p>` : "";
+  const sair = `<button class="botao sec peq" data-tn-desistir="${idA}">Desistir</button>`;
+  if (n.fase === "encerrada") return `${cab}${logMesa(n.log)}${aviso}<p class="sub">A conversa acabou nesta janela.</p>`;
+  if (n.fase === "clube" && n.tipo === "compra") {
+    const c = n.contraClube ?? { avista: n.pedido, parcelado: 0, parcelas: 0, bonus: 0, revenda: 0 };
+    const trocas = s.elenco.filter((x) => !x.emprestadoDe).sort((a, b) => ovrDe(b) - ovrDe(a));
+    return `${cab}${logMesa(n.log)}${aviso}
+      <div class="neg-form"><p class="rotulo">O ${esc(nomeC)} pede</p><p class="sub">${esc(textoPac(c, s))}</p>
+      <div class="botoes" style="margin-bottom:12px"><button class="botao peq" data-tn-aceitar-clube="${idA}">Aceitar o que o clube pede</button>${sair}</div>
+      <p class="rotulo">Sua proposta</p>
+      <p class="sub" style="margin:0 0 4px">À vista</p>${campoValor("tn-av", Math.round(c.avista * (n.rodadas ? 0.92 : 0.75)))}
+      <p class="sub" style="margin:8px 0 4px">Parcelado (pago nas próximas temporadas)</p>${campoValor("tn-pa", c.parcelado || 0)}
+      ${selNum("tn-pn", [0, 2, 3], c.parcelas || 0, (x) => x ? `em ${x} parcelas anuais` : "sem parcelas")}
+      <p class="sub" style="margin:8px 0 4px">Bônus por metas (só paga se ele jogar 20 jogos)</p>${campoValor("tn-bo", c.bonus || 0)}
+      <p class="sub" style="margin:8px 0 4px">Porcentagem de uma venda futura para eles</p>${selNum("tn-rv", [0, 5, 10, 15, 20, 25, 30], c.revenda, (x) => x ? `${x}% de revenda` : "sem revenda")}
+      <p class="sub" style="margin:8px 0 4px">Jogador na troca</p><select class="campo-sel" id="tn-tr"><option value="">Ninguém</option>${trocas.map((x) => `<option value="${esc(x.id)}">${esc(x.nome)} (${x.pos}, ${ovrDe(x)}, ${x.idade}a)</option>`).join("")}</select>
+      <button class="botao" data-tn-clube-env="${idA}" style="width:100%;margin-top:10px">Enviar proposta ao clube</button>
+      <p class="sub" style="margin-top:6px">Parcela pesa menos no seu caixa, mas vale menos para quem vende. Bônus é incerto (vale pouco para eles). Revenda pesa em garoto. Clube vendedor gosta de dinheiro à vista; clube duro cede devagar. Oferta muito baixa irrita.</p></div>`;
+  }
+  if (n.fase === "clube" && n.tipo === "emprestimo") {
+    const e = n.contraEmp ?? { taxa: 0, salarioPct: 100, opcao: 0, obrigacao: false };
+    return `${cab}${logMesa(n.log)}${aviso}
+      <div class="neg-form"><p class="rotulo">O ${esc(nomeC)} pede</p><p class="sub">${esc(textoEmp(e))}</p>
+      <div class="botoes" style="margin-bottom:12px"><button class="botao peq" data-tn-aceitar-clube="${idA}">Aceitar</button>${sair}</div>
+      <p class="rotulo">Sua proposta de empréstimo (até o fim da temporada)</p>
+      <p class="sub" style="margin:0 0 4px">Taxa de empréstimo</p>${campoValor("tn-tx", Math.round(e.taxa * 0.6))}
+      <p class="sub" style="margin:8px 0 4px">Quanto do salário você paga</p>${selNum("tn-sp", [30, 40, 50, 60, 70, 80, 90, 100], Math.max(30, e.salarioPct - 20), (x) => `${x}% do salário`)}
+      <p class="sub" style="margin:8px 0 4px">Valor da opção de compra (0 = sem opção)</p>${campoValor("tn-op", e.opcao)}
+      ${marcar("tn-ob", e.obrigacao, "Transformar em obrigação de compra (o clube gosta, mas você paga no fim)")}
+      <button class="botao" data-tn-emp-env="${idA}" style="width:100%;margin-top:10px">Enviar proposta</button></div>`;
+  }
+  // fase do jogador
+  const d = n.jogador!, q = d.quer, emp = n.tipo === "emprestimo";
+  return `${cab}${logMesa(n.log)}${aviso}
+    <div class="neg-form"><p class="rotulo">O empresário pede</p><p class="sub">${valorBrl(q.salario)}/mês${emp ? "" : ` por ${q.anos} ${q.anos === 1 ? "ano" : "anos"}, ${valorBrl(q.luvas)} de luvas, multa de ${valorBrl(q.multa)}`}, papel de ${NOME_PAPEL[q.papel].toLowerCase()} e ${valorBrl(q.comissao)} de comissão.</p>
+    <div class="botoes" style="margin-bottom:12px"><button class="botao peq" data-tn-aceitar-jog="${idA}">Aceitar o pedido</button>${sair}</div>
+    <p class="rotulo">Sua proposta ao jogador</p>
+    <p class="sub" style="margin:0 0 4px">Salário por mês${emp ? ` (você paga ${n.acordoEmp?.salarioPct ?? 100}%)` : ""}</p>${campoValor("tn-sal", Math.round(q.salario * 0.88))}
+    ${emp ? "" : `<p class="sub" style="margin:8px 0 4px">Anos de contrato</p>${selNum("tn-an", [1, 2, 3, 4, 5], q.anos, (x) => `${x} ${x === 1 ? "ano" : "anos"}`)}
+    <p class="sub" style="margin:8px 0 4px">Luvas (na assinatura)</p>${campoValor("tn-lu", Math.round(q.luvas * 0.5))}
+    <p class="sub" style="margin:8px 0 4px">Multa rescisória (quem pagar leva ele)</p>${campoValor("tn-mu", q.multa)}`}
+    <p class="sub" style="margin:8px 0 4px">Papel prometido no time</p><select class="campo-sel" id="tn-pp">${PAPEIS.map((x) => `<option value="${x}"${x === q.papel ? " selected" : ""}>${NOME_PAPEL[x]}</option>`).join("")}</select>
+    <p class="sub" style="margin:8px 0 4px">Comissão do empresário</p>${campoValor("tn-co", Math.round(q.comissao * 0.6))}
+    <button class="botao" data-tn-jog-env="${idA}" style="width:100%;margin-top:10px">Enviar proposta ao jogador</button>
+    <p class="sub" style="margin-top:6px">Prometer um papel maior baixa o salário que ele pede, mas ele cobra depois se não jogar. Contrato mais curto que o que ele quer, ou multa alta, encarece. Luvas maiores reduzem o salário. O empresário tem um mínimo de comissão.</p></div>`;
 }
 function abaPropostas(s: SaveTecnico): string {
-  const ps = s.propostas ?? [], jan = janelaT(s), por = new Map(s.elenco.map((a) => [a.id, a]));
-  const hist = (s.transferencias ?? []).slice(0, 15);
-  return `${aviso()}<p class="sub" style="margin-bottom:8px">${esc(jan.texto)} Coloque jogadores à venda pela ficha deles para atrair propostas.</p>
-    ${ps.length ? ps.map((p, i) => { const a = por.get(p.atletaId)!; return `<div class="painel" style="margin-bottom:8px"><div class="clube-op" style="border:0;padding:0">${escudo(p.clubeId)}<div><b>${esc(a.nome)}</b> <small class="sub">(${a.pos}, ${ovrDe(a)})</small><br><small class="sub">${esc(nomeClube(p.clubeId))} oferece</small></div><b style="font-size:16px">${curtoBrl(p.valor)}</b></div>
-      <p class="sub" style="margin:6px 0">Vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))} no mercado · responde até a próxima semana</p>
-      <div class="botoes" style="margin-bottom:8px"><button class="botao peq" data-prop="${esc(p.id)}" data-r="aceitar">Vender por ${curtoBrl(p.valor)}</button><button class="botao sec peq" data-prop="${esc(p.id)}" data-r="recusar">Recusar</button></div>
-      <p class="rotulo">Ou peça outro valor</p>${campoValor(`pedir${i}`, Math.round(p.valor * 1.2 / 1000) * 1000)}<button class="botao sec peq" data-prop="${esc(p.id)}" data-r="contra" data-campo="pedir${i}" style="margin-top:6px">Pedir esse valor</button></div>`; }).join("") : `<p class="sub">Nenhuma proposta agora.</p>`}
-    ${hist.length ? `<p class="rotulo" style="margin-top:14px">Transferências</p>${hist.map((t) => `<div class="not"><small>${ANO_INICIAL_T + t.t} · ${t.venda ? "venda" : "compra"}</small>${esc(t.nome)}: ${t.venda ? `para o ${esc(nomeClube(t.para))}` : `do ${esc(nomeClube(t.de))}`} · ${curtoBrl(t.valor)}</div>`).join("")}` : ""}`;
+  const jan = janelaT(s), por = new Map(s.elenco.map((a) => [a.id, a])), fL = infoLiga(s.ligaId).fLiga, ano = (t: number) => ANO_INICIAL_T + t;
+  const pv = s.propostasV ?? [], oe = s.ofertasEmp ?? [], opc = s.opcoesCompra ?? [], hist = (s.transferencias ?? []).slice(0, 15);
+  const negs = Object.values(s.negs ?? {}).filter((n) => n.fase === "clube" || n.fase === "jogador");
+  const venda = pv.map((p, i) => { const a = por.get(p.atletaId); if (!a) return ""; const outras = pv.filter((x) => x.atletaId === p.atletaId && x !== p && valorVenda(x) > valorVenda(p)).length;
+    return `<div class="painel" style="margin-bottom:8px"><div class="clube-op" style="border:0;padding:0">${escudo(p.clubeId)}<div><b>${esc(a.nome)}</b> <small class="sub">(${a.pos}, ${ovrDe(a)}, ${a.idade}a)</small><br><small class="sub">${esc(nomeClube(p.clubeId))} quer comprar</small></div><b style="font-size:16px">${curtoBrl(p.avista + p.parcelado)}</b></div>
+      <p class="sub" style="margin:6px 0">${esc(textoPac({ ...p, troca: undefined }))}. Vale ${curtoBrl(valorAtleta(a, fL, s.temporada))} no mercado.${a.revenda ? ` O ${esc(nomeClube(a.revenda.clubeId))} leva ${a.revenda.pct}% da venda.` : ""}</p>
+      <div class="botoes" style="margin-bottom:8px"><button class="botao peq" data-pv-aceitar="${esc(p.id)}">Vender</button><button class="botao sec peq" data-pv-recusar="${esc(p.id)}">Recusar</button>${outras && !p.leilao ? `<button class="botao sec peq" data-pv-leilao="${esc(p.id)}">Usar a proposta maior para eles cobrirem</button>` : ""}</div>
+      <details><summary class="sub" style="cursor:pointer">Fazer contraproposta</summary>
+      <p class="sub" style="margin:6px 0 4px">À vista</p>${campoValor(`pv-av-${i}`, Math.round(p.avista * 1.2))}
+      <p class="sub" style="margin:8px 0 4px">Parcelado</p>${campoValor(`pv-pa-${i}`, p.parcelado)}${selNum(`pv-pn-${i}`, [0, 2, 3], p.parcelas, (x) => x ? `em ${x} parcelas anuais` : "sem parcelas")}
+      <p class="sub" style="margin:8px 0 4px">Bônus por metas</p>${campoValor(`pv-bo-${i}`, p.bonus)}
+      <p class="sub" style="margin:8px 0 4px">Sua porcentagem numa venda futura</p>${selNum(`pv-rv-${i}`, [0, 5, 10, 15, 20, 25, 30], p.revenda, (x) => x ? `${x}% para você` : "sem revenda")}
+      <button class="botao sec peq" data-pv-contra="${esc(p.id)}" data-i="${i}" style="margin-top:8px">Mandar contraproposta</button></details></div>`; }).join("");
+  const emp = oe.map((o, i) => { const a = por.get(o.atletaId); if (!a) return "";
+    return `<div class="painel" style="margin-bottom:8px"><div class="clube-op" style="border:0;padding:0">${escudo(o.clubeId)}<div><b>${esc(a.nome)}</b> <small class="sub">(${a.pos}, ${ovrDe(a)}, ${a.idade}a)</small><br><small class="sub">${esc(nomeClube(o.clubeId))} quer emprestado</small></div><b style="font-size:14px">${o.salarioPct}% do salário</b></div>
+      <p class="sub" style="margin:6px 0">Até o fim da temporada · taxa de ${valorBrl(o.taxa)} · papel: ${NOME_PAPEL[o.papel].toLowerCase()}${o.opcao ? ` · opção de compra de ${valorBrl(o.opcao)}` : " · sem opção de compra"}. Eles pagam ${o.salarioPct}% do salário, você paga o resto.</p>
+      <div class="botoes" style="margin-bottom:8px"><button class="botao peq" data-oe-aceitar="${esc(o.id)}">Emprestar</button><button class="botao sec peq" data-oe-recusar="${esc(o.id)}">Recusar</button></div>
+      <details><summary class="sub" style="cursor:pointer">Pedir condições melhores</summary>
+      <p class="sub" style="margin:6px 0 4px">Quanto do salário eles pagam</p>${selNum(`oe-sp-${i}`, [30, 40, 50, 60, 70, 80, 90, 100], Math.min(100, o.salarioPct + 20), (x) => `${x}%`)}
+      <p class="sub" style="margin:8px 0 4px">Taxa</p>${campoValor(`oe-tx-${i}`, o.taxa || 10000)}
+      ${o.opcao ? marcar(`oe-so-${i}`, false, "Sem opção de compra (ele volta com certeza)") : ""}${marcar(`oe-ti-${i}`, o.papel === "titular", "Exigir que ele seja titular lá")}
+      <button class="botao sec peq" data-oe-contra="${esc(o.id)}" data-i="${i}" style="margin-top:8px">Mandar contraproposta</button></details></div>`; }).join("");
+  const ops = opc.map((o) => { const a = por.get(o.atletaId); return a ? `<div class="not" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>${esc(a.nome)}</b> <small class="sub">opção de compra do ${esc(nomeClube(o.clubeId))}: ${curtoBrl(o.valor)} (vale ${curtoBrl(valorAtleta(a, fL, s.temporada))})</small></span><span class="botoes"><button class="botao peq" data-opc="${esc(a.id)}|1">Comprar</button><button class="botao sec peq" data-opc="${esc(a.id)}|0">Devolver</button></span></div>` : ""; }).join("");
+  const fora = (s.emprestados ?? []).map((e) => `<div class="not">${escudo(e.clubeId, "escudo esc-p")} <b>${esc(e.atleta.nome)}</b> <small class="sub">no ${esc(nomeClube(e.clubeId))} até ${ano(e.ate)} · ${NOME_PAPEL[e.papel].toLowerCase()} · ${e.jogos} jogos, ${e.gols} gols${e.opcao ? ` · opção de ${curtoBrl(e.opcao)}` : ""}</small></div>`).join("");
+  const contas = (s.contas ?? []).map((c) => `<div class="not"><small>${ano(c.t)}</small>${c.tipo === "pagar" ? "↑ Pagar" : "↓ Receber"} ${curtoBrl(c.valor)} · ${esc(c.texto)}${c.cond ? " (se bater a meta)" : ""}</div>`).join("");
+  const abertas = negs.map((n) => `<div class="not" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>${esc(n.nome)}</b><small class="sub" style="display:block">${n.clubeId === "livre" ? "agente livre" : esc(nomeClube(n.clubeId))} · ${n.tipo === "emprestimo" ? "empréstimo" : n.tipo === "livre" ? "contrato" : "compra"} · ${n.fase === "clube" ? "falando com o clube" : "falando com o empresário"}</small></span><button class="botao sec peq" data-tn-ver="${esc(n.id)}">Abrir</button></div>`).join("");
+  return `${aviso()}<p class="sub" style="margin-bottom:8px">${esc(jan.texto)} Na ficha do jogador dá para colocar à venda ou para empréstimo: garotos da base sem espaço também recebem propostas de empréstimo.</p>
+    ${abertas ? `<p class="rotulo">Suas negociações abertas</p><div style="margin-bottom:12px">${abertas}</div>` : ""}
+    <p class="rotulo">Propostas de compra</p>${venda || `<p class="sub">Nenhuma agora.</p>`}
+    <p class="rotulo" style="margin-top:12px">Propostas de empréstimo</p>${emp || `<p class="sub">Nenhuma agora.</p>`}
+    ${ops ? `<p class="rotulo" style="margin-top:12px">Opções de compra para decidir</p>${ops}` : ""}
+    ${fora ? `<p class="rotulo" style="margin-top:12px">Seus jogadores emprestados</p>${fora}` : ""}
+    ${contas ? `<p class="rotulo" style="margin-top:12px">Parcelas e bônus a vencer</p>${contas}` : ""}
+    ${(s.revendas ?? []).length ? `<p class="rotulo" style="margin-top:12px">Revendas a seu favor</p>${s.revendas!.map((r) => `<div class="not">${esc(r.nome)} <small class="sub">· ${r.pct}% de uma venda futura pelo ${esc(nomeClube(r.clubeId))}</small></div>`).join("")}` : ""}
+    ${hist.length ? `<p class="rotulo" style="margin-top:14px">Transferências</p>${hist.map((t) => `<div class="not"><small>${ano(t.t)} · ${t.venda ? "saída" : "chegada"}</small>${esc(t.nome)}: ${t.venda ? `para o ${esc(nomeClube(t.para))}` : `do ${esc(nomeClube(t.de))}`}${t.valor ? ` · ${curtoBrl(t.valor)}` : ""}</div>`).join("")}` : ""}`;
 }
 function abaLivres(s: SaveTecnico): string {
   const l = agentesLivresT(pacote, s);
-  return `<p class="sub" style="margin-bottom:8px">Sem custo de transferência: só o salário. A lista muda todo mês. Jogador bom demais para o clube pode recusar. O nível e o potencial são o que o seu scout acha: mande olheiros procurar agentes livres na aba Scout ou peça um relatório para fechar a faixa.</p>${aviso()}
+  return `<p class="sub" style="margin-bottom:8px">Sem custo de transferência, mas jogador livre pede luvas e o empresário cobra comissão. A lista muda todo mês. Jogador bom demais para o clube pode recusar. O nível e o potencial são o que o seu scout acha: mande olheiros procurar agentes livres na aba Scout ou peça um relatório para fechar a faixa.</p>${aviso()}
     <div class="lista">${l.map((x) => `<div class="lin" style="cursor:default"><span class="num" style="font-size:13px">${x.pos}</span><span class="nm"><b>${esc(x.nome)}</b><small>${x.idade}a · ${x.nac} · ${valorBrl(x.pedido)}/mês</small>
-      <span class="botoes" style="margin-top:5px">${[1, 2, 3].map((n) => `<button class="botao sec peq" data-livre="${esc(x.nome)}" data-anos="${n}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}${statusObs(s, x.nome) === "nao" ? `<button class="botao sec peq" data-observar="${esc(x.nome)}" data-clube="">Relatório</button>` : ""}</span></span>${ovFaixa(s, faixaDe(s, x), x.nome)}</div>`).join("")}</div>
-    <p class="sub" style="margin-top:10px">Compra e venda entre clubes chegam na próxima fase do modo técnico.</p>`;
+      <span class="botoes" style="margin-top:5px"><button class="botao sec peq" data-alvo="${esc(x.nome)}" data-clube="livre">Negociar</button>${statusObs(s, x.nome) === "nao" ? `<button class="botao sec peq" data-observar="${esc(x.nome)}" data-clube="">Relatório</button>` : ""}</span></span>${ovFaixa(s, faixaDe(s, x), x.nome)}</div>`).join("")}</div>
+`;
 }
 
 // ------------------------------------------------------------------ Tática
@@ -576,11 +707,10 @@ function patroSelHtml(s: SaveTecnico): string {
   const mes = Object.values(p.contratos).reduce((x, c) => x + (c && c.ate >= s.temporada ? c.valor : 0), 0);
   const cartao = (k: CotaSel) => {
     const c = p.contratos[k], m = c ? MARCA[c.marca] : undefined, l = ofs[k] ?? [];
-    const atual = c && m ? `<div class="patro-atual">${logoSvg(m, 24)}<div><b>${curtoBrl(c.valor)}/mês</b><small class="sub">${esc(NOME_CATEGORIA[m.categoria])} · ${c.anos} anos · até ${ano(c.ate)}${c.ate <= s.temporada ? " · último ano" : ""}</small></div></div>` : `<p class="sub">Cota livre.</p>`;
-    const ofertas = l.map((o) => { const mo = MARCA[o.marca]; if (!mo) return ""; const anos = [o.anos - 2, o.anos, o.anos + 2].filter((x) => x >= 2);
+    const atual = c && m ? `<div class="patro-atual">${logoSvg(m, 24)}<div><b>${curtoBrl(c.valor)}/mês</b><small class="sub">${esc(NOME_CATEGORIA[m.categoria])} · ${c.anos} anos · até ${ano(c.ate)}${c.ate <= s.temporada ? " · último ano" : ""}${c.bonusTitulo ? ` · ${curtoBrl(c.bonusTitulo)} por título` : ""}${c.bonusVaga ? ` · ${curtoBrl(c.bonusVaga)} pela vaga na Copa` : ""}${c.renovacao ? " · preferência na renovação" : ""}</small></div></div>` : `<p class="sub">Cota livre.</p>`;
+    const ofertas = l.map((o) => { const mo = MARCA[o.marca]; if (!mo) return "";
       return `<div class="patro-oferta">${logoSvg(mo, 22)}<small class="sub">${esc(NOME_CATEGORIA[mo.categoria])} · oferece <b>${curtoBrl(o.valor)}/mês</b> por ${o.anos} anos (${curtoBrl(o.valor * 12 * o.anos)} no total)${o.recusou ? " · última chance" : ""}</small>
-        ${campoValor(`psv-${k}-${o.marca}`, o.valor)}<select class="campo-sel" id="psa-${k}-${o.marca}" aria-label="Anos de contrato">${anos.map((x) => `<option value="${x}"${x === o.anos ? " selected" : ""}>${x} anos${x < o.anos ? " (a marca paga menos)" : x > o.anos ? " (a marca topa pagar mais)" : ""}</option>`).join("")}</select>
-        <button class="botao peq" data-psel="${k}|${o.marca}">Pedir este valor</button></div>`; }).join("");
+        <button class="botao peq" data-mp-abrir="s|${k}|${o.marca}">${p.mesas?.[`${k}|${o.marca}`] ? "Voltar à mesa" : "Negociar"}</button></div>`; }).join("");
     return `<div class="not"><p class="rotulo" style="margin:0">${NOME_COTA_SEL[k]}${k === "fornecedor" ? " · a única marca na camisa" : " · fora do uniforme"}</p>${atual}${ofertas ? `<p class="rotulo" style="margin-top:8px">${c ? "Ofertas para depois do contrato" : "Ofertas"}</p>${ofertas}` : ""}</div>`;
   };
   return `<section class="painel"><p class="rotulo">Patrocínios da seleção</p>
@@ -711,20 +841,17 @@ function abaPatrocinios(s: SaveTecnico): string {
   const coresDe = (marca: string) => [["#FFFFFF", "Branco"], ["#111111", "Preto"], ["#D4AF37", "Dourado"], [corClube, "Cor do clube"], [MARCA[marca]?.cores[0] ?? "#888", "Cor da marca"]].filter((x, i, l) => l.findIndex((y) => y[0].toLowerCase() === x[0].toLowerCase()) === i);
   const cartao = (cota: Cota) => {
     const c = p[cota], m = c ? MARCA[c.marca] : undefined, l = ofs[cota] ?? [];
-    const atual = c && m ? `<div class="patro-atual">${logoSvg(m, 24)}<div><b>${curtoBrl(c.valor)}/mês</b><small class="sub">${esc(NOME_CATEGORIA[m.categoria])} · até ${ano(c.ate)}${c.ate <= s.temporada ? " · último ano" : ""}${c.nome ? ` · ${esc(c.nome)}` : ""}</small></div></div>
+    const atual = c && m ? `<div class="patro-atual">${logoSvg(m, 24)}<div><b>${curtoBrl(c.valor)}/mês</b><small class="sub">${esc(NOME_CATEGORIA[m.categoria])} · até ${ano(c.ate)}${c.ate <= s.temporada ? " · último ano" : ""}${c.nome ? ` · ${esc(c.nome)}` : ""}${c.bonusTitulo ? ` · ${curtoBrl(c.bonusTitulo)} por título` : ""}${c.bonusVaga ? ` · ${curtoBrl(c.bonusVaga)} por vaga` : ""}${c.rebaixamento ? " · cai 40% se rebaixar" : ""}${c.renovacao ? " · preferência na renovação" : ""}</small></div></div>
       ${cota === "master" || cota === "fornecedor" ? `<div class="chips" style="flex-wrap:wrap;margin-top:6px">${coresDe(c.marca).map(([cor, nome]) => `<button class="chip cor-chip${(c.cor ?? "") === cor ? " ativo" : ""}" data-patro-cor="${cota}|${cor}"><i style="background:${cor}"></i>${nome}</button>`).join("")}</div>` : ""}` : "";
     const travada = cota === "arena" && arena.travada ? `<p class="sub">${esc(arena.travada)}</p>` : "";
     const ofertas = l.length ? `<p class="rotulo" style="margin-top:10px">${c ? "Ofertas para depois do contrato atual" : "Ofertas"}</p>${l.map((o) => {
       const mo = MARCA[o.marca]; if (!mo) return "";
-      const nomes = [`${mo.nome} Arena`, `Arena ${mo.nome}`, `Estádio ${mo.nome}`, `${mo.nome} Park`];
       return `<div class="patro-oferta">${logoSvg(mo, 22)}<small class="sub">${esc(NOME_CATEGORIA[mo.categoria])} · oferece <b>${curtoBrl(o.valor)}/mês</b> por ${o.anos} ${o.anos === 1 ? "temporada" : "temporadas"}${o.recusou ? " · última proposta" : ""}</small>
-        ${campoValor(`pv-${cota}-${o.marca}`, o.valor)}
-        ${cota === "arena" ? `<select class="campo-sel" id="pn-${o.marca}" aria-label="Nome da arena">${nomes.map((n) => `<option>${esc(n)}</option>`).join("")}</select>` : ""}
-        <button class="botao peq" data-patro="${cota}|${o.marca}">Pedir este valor</button></div>`;
+        <button class="botao peq" data-mp-abrir="c|${cota}|${o.marca}">${p.mesas?.[`${cota}|${o.marca}`] ? "Voltar à mesa" : "Negociar"}</button></div>`;
     }).join("")}` : !c && !travada ? `<p class="sub">Nenhuma marca na mesa agora. Novas propostas chegam a cada 8 semanas.</p>` : "";
     return `<section class="painel patro-cota"><p class="rotulo">${esc(COTAS[cota].nome)}</p><p class="sub" style="margin-top:0">${esc(COTAS[cota].texto)}</p>${cota === "arena" ? `<p class="sub">Estádio: <b>${esc(arena.nome)}</b></p>` : ""}${atual}${travada}${ofertas}</section>`;
   };
-  return `<div class="patro-topo"><div class="camisa-patro">${camisaDoClube(s)}</div><div><p class="rotulo">Patrocínios do clube</p><b class="patro-total">${curtoBrl(total)}/mês</b><p class="sub">Peça o valor que quiser: a marca aceita até o limite dela. Se passar, ela faz uma última proposta; passou de novo, desiste.</p></div></div>
+  return `<div class="patro-topo"><div class="camisa-patro">${camisaDoClube(s)}</div><div><p class="rotulo">Patrocínios do clube</p><b class="patro-total">${curtoBrl(total)}/mês</b><p class="sub">Cada contrato se negocia em pacote: fixo por mês, anos, luvas, bônus por título e por vaga, cláusula de rebaixamento e preferência na renovação. Cada marca tem um jeito e uma paciência.</p></div></div>
     ${ORDEM_COTAS.map(cartao).join("")}`;
 }
 // ------------------------------------------------------------------ sua carreira e notícias
@@ -1098,7 +1225,7 @@ function passoVivo(s: SaveTecnico) {
   vivo.timer = window.setTimeout(() => passoVivo(s), novo ? Math.max(900, vivo.vel * 4) : vivo.vel);
 }
 // ------------------------------------------------------------------ render
-function abrir(html: string) { $("tela").innerHTML = html; const d = $("dlg") as HTMLDialogElement; if (!d.open) d.showModal(); }
+function abrir(html: string) { $("tela").innerHTML = html; const d = $("dlg") as HTMLDialogElement; if (!d.open) d.showModal(); $("tela").querySelectorAll<HTMLElement>(".neg-log").forEach((e) => { e.scrollTop = e.scrollHeight; }); }
 function fechar() { const d = $("dlg") as HTMLDialogElement; if (d.open) d.close(); }
 function render() {
   const app = $("app");
@@ -1182,7 +1309,17 @@ document.addEventListener("click", (ev) => {
   if (d.evt) { const r = responderEvento(pacote, s, d.evt); msg = r ? { texto: r, ok: true } : undefined; redesenhar(); return; }
   if (d.familia) { const r = trazerFamiliar(pacote, s, d.familia); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.filtro) { filtro = d.filtro; render(); return; }
-  if (d.patro) { const [cota, marca] = d.patro.split("|"), nome = (document.getElementById(`pn-${marca}`) as HTMLSelectElement | null)?.value; const r = assinarPatro(pacote, s, cota as Cota, marca, lerValor(`pv-${cota}-${marca}`), nome ? { nome } : undefined); msg = { texto: r.msg, ok: r.ok }; salvar(); render(); return; }
+  if (d.mpAbrir) { msgNeg = undefined; if (!abrirMesaPatroUI(s, d.mpAbrir)) { msg = { texto: "Essa oferta não está mais na mesa.", ok: false }; render(); } salvar(); return; }
+  if (d.mpEnviar || d.mpAceitar) {
+    const chave = (d.mpEnviar || d.mpAceitar)!, [tipo, cota, marca] = chave.split("|"), pac = d.mpAceitar ? "aceitar" as const : lerPacotePatro();
+    if (pac !== "aceitar" && !pac.fixo) { msgNeg = { texto: "Digite o valor fixo por mês.", ok: false }; abrirMesaPatroUI(s, chave); return; }
+    let r: { ok: boolean; msg: string; luvas?: number };
+    if (tipo === "s") r = negociarSel(pacote, s, cota as CotaSel, marca, pac);
+    else { const nome = (document.getElementById("mp-nome") as HTMLSelectElement | null)?.value; r = negociarPatro(pacote, s, cota as Cota, marca, pac, nome ? { nome } : undefined); if (r.ok && r.luvas) creditar(s, "Luvas de patrocínio", r.luvas); }
+    salvar();
+    if (r.ok || !abrirMesaPatroUI(s, chave)) { fechar(); msgNeg = undefined; msg = { texto: r.ok && r.luvas ? `${r.msg} As luvas já entraram no caixa.` : r.msg, ok: r.ok }; render(); return; }
+    msgNeg = { texto: r.msg, ok: !/saiu/.test(r.msg) }; abrirMesaPatroUI(s, chave); render(); return;
+  }
   if (d.patroCor) { const [cota, cor] = d.patroCor.split("|"); corDoPatro(pacote, s, cota as Cota, cor); salvar(); render(); return; }
   if (d.avancar !== undefined || d.avancarTatica !== undefined) {
     const r = avancarSemana(pacote, s);
@@ -1243,7 +1380,6 @@ document.addEventListener("click", (ev) => {
     if (d.selDesc) { sel.convocados = sel.convocados.filter((k) => k !== d.selDesc); sel.titulares = sel.titulares.filter((k) => k !== d.selDesc); redesenhar(); return; }
     if (d.selPool !== undefined) { abrir(poolSelHtml(s)); return; }
     if (d.selConv) { if (sel.convocados.length < 23 && !sel.convocados.includes(d.selConv)) sel.convocados.push(d.selConv); salvar(); abrir(poolSelHtml(s)); render(); return; }
-    if (d.psel) { const [k, marca] = d.psel.split("|"), anos = +((document.getElementById(`psa-${k}-${marca}`) as HTMLSelectElement | null)?.value ?? 0); const r = assinarSel(pacote, s, k as CotaSel, marca, lerValor(`psv-${k}-${marca}`), anos); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
     if (d.selSair !== undefined) { const r = deixarSelecao(pacote, s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   }
   if (d.grama) { const r = ajustarGrama(s, +d.grama); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
@@ -1257,24 +1393,58 @@ document.addEventListener("click", (ev) => {
   if (d.mliga !== undefined) { filtroMercado.minhaLiga = d.mliga === "1"; render(); return; }
   if (d.malc !== undefined) { filtroMercado.alcance = d.malc === "1"; render(); return; }
   if (d.alvo && d.clube) { msgNeg = undefined; abrir(negociarHtml(s, d.alvo, d.clube)); return; }
-  if (d.anosprop) { anosProposta = +d.anosprop; const n = $("tela").querySelector<HTMLElement>("[data-enviar-oferta]"), v = (document.getElementById("ofertaValor") as HTMLInputElement | null)?.value; if (n) { abrir(negociarHtml(s, n.dataset.alvoN!, n.dataset.clube!)); const el = document.getElementById("ofertaValor") as HTMLInputElement | null; if (el && v) el.value = v; } return; }
   if (d.preencher && d.v) { const el = document.getElementById(d.preencher) as HTMLInputElement | null; if (el) { el.value = naTela(+d.v); el.focus(); } return; }
-  if (d.enviarOferta !== undefined && d.alvoN && d.clube) {
-    const v = lerValor("ofertaValor");
-    if (!v) { msgNeg = { texto: "Digite o valor da oferta.", ok: false }; abrir(negociarHtml(s, d.alvoN, d.clube)); return; }
-    const r = fazerProposta(pacote, s, d.alvoN, d.clube, v, anosProposta);
-    msgNeg = { texto: r.msg, ok: r.ok, ...(r.pedido ? { pedido: r.pedido } : {}) }; salvar();
-    if (r.status === "fechado") { fechar(); msg = { texto: r.msg, ok: true }; sub.elenco = "jogadores"; render(); return; }
-    abrir(negociarHtml(s, d.alvoN, d.clube)); render(); return;
-  }
   if (d.venda) { msg = { texto: alternarVenda(s, d.venda), ok: true }; salvar(); abrir(fichaJogador(s, d.venda)); render(); return; }
-  if (d.prop && d.r) {
-    const pedido = d.campo ? lerValor(d.campo) : undefined;
-    if (d.r === "contra" && !pedido) { msg = { texto: "Digite quanto você quer pelo jogador.", ok: false }; redesenhar(); return; }
-    const r = responderPropostaT(pacote, s, d.prop, d.r as "aceitar" | "recusar" | "contra", pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return;
+  if (d.empLista) { msg = { texto: alternarEmprestimo(s, d.empLista), ok: true }; salvar(); abrir(fichaJogador(s, d.empLista)); render(); return; }
+  // mesa de transferência
+  const reabrirNeg = (id: string) => { const k = id.indexOf("|"); abrir(negociarHtml(s, id.slice(k + 1), id.slice(0, k))); };
+  const fimNeg = (id: string, r: { ok: boolean; msg: string }) => {
+    salvar();
+    if (!s.negs?.[id]) { fechar(); msgNeg = undefined; msg = { texto: r.msg, ok: r.ok }; if (r.ok) sub.elenco = "jogadores"; render(); return; }
+    msgNeg = { texto: r.msg, ok: r.ok || /contraproposta|aceitou/.test(r.msg) }; reabrirNeg(id); render();
+  };
+  if (d.tnAbrir && d.tnNome && d.tnClube) {
+    const n = d.tnAbrir === "livre" ? abrirLivre(pacote, s, d.tnNome) : abrirNeg(pacote, s, d.tnNome, d.tnClube, d.tnAbrir as "compra" | "emprestimo");
+    msgNeg = "erro" in n ? { texto: n.erro, ok: false } : undefined; salvar(); abrir(negociarHtml(s, d.tnNome, d.tnClube)); return;
   }
+  if (d.tnVer) { msgNeg = undefined; reabrirNeg(d.tnVer); return; }
+  if (d.tnDesistir) { desistir(s, d.tnDesistir); msgNeg = undefined; salvar(); reabrirNeg(d.tnDesistir); render(); return; }
+  if (d.tnAceitarClube) { fimNeg(d.tnAceitarClube, aceitarContraClube(pacote, s, d.tnAceitarClube)); return; }
+  if (d.tnAceitarJog) { fimNeg(d.tnAceitarJog, aceitarContraJogador(pacote, s, d.tnAceitarJog)); return; }
+  if (d.tnClubeEnv) {
+    const v = (id: string) => (document.getElementById(id) as HTMLSelectElement | null)?.value ?? "";
+    const p: PacoteTransf = { avista: lerValor("tn-av"), parcelado: lerValor("tn-pa"), parcelas: +v("tn-pn") as 0 | 2 | 3, bonus: lerValor("tn-bo"), revenda: +v("tn-rv"), ...(v("tn-tr") ? { troca: v("tn-tr") } : {}) };
+    if (p.parcelado && !p.parcelas) p.parcelas = 2;
+    fimNeg(d.tnClubeEnv, proporClube(pacote, s, d.tnClubeEnv, p)); return;
+  }
+  if (d.tnEmpEnv) {
+    const v = (id: string) => (document.getElementById(id) as HTMLSelectElement | null)?.value ?? "";
+    fimNeg(d.tnEmpEnv, proporEmprestimo(pacote, s, d.tnEmpEnv, { taxa: lerValor("tn-tx"), salarioPct: +v("tn-sp"), opcao: lerValor("tn-op"), obrigacao: !!(document.getElementById("tn-ob") as HTMLInputElement | null)?.checked })); return;
+  }
+  if (d.tnJogEnv) {
+    const n = s.negs?.[d.tnJogEnv], v = (id: string) => (document.getElementById(id) as HTMLSelectElement | null)?.value ?? "";
+    if (!n?.jogador) return;
+    const sal = lerValor("tn-sal"); if (!sal) { msgNeg = { texto: "Digite o salário.", ok: false }; reabrirNeg(d.tnJogEnv); return; }
+    fimNeg(d.tnJogEnv, proporJogador(pacote, s, d.tnJogEnv, { salario: sal, anos: +(v("tn-an") || 1), luvas: lerValor("tn-lu"), multa: lerValor("tn-mu"), papel: (v("tn-pp") || n.jogador.quer.papel) as Papel, comissao: lerValor("tn-co") })); return;
+  }
+  // propostas pelos seus jogadores
+  if (d.pvAceitar) { const r = aceitarVenda(pacote, s, d.pvAceitar); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.pvRecusar) { const r = recusarVenda(pacote, s, d.pvRecusar); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.pvLeilao) { const r = leilao(pacote, s, d.pvLeilao); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.pvContra && d.i !== undefined) {
+    const i = d.i, v = (id: string) => (document.getElementById(id) as HTMLSelectElement | null)?.value ?? "";
+    const r = contraVenda(pacote, s, d.pvContra, { avista: lerValor(`pv-av-${i}`), parcelado: lerValor(`pv-pa-${i}`), parcelas: +v(`pv-pn-${i}`) as 0 | 2 | 3, bonus: lerValor(`pv-bo-${i}`), revenda: +v(`pv-rv-${i}`) });
+    msg = { texto: r.msg, ok: r.ok }; redesenhar(); return;
+  }
+  if (d.oeAceitar) { const r = responderEmp(pacote, s, d.oeAceitar, "aceitar"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.oeRecusar) { const r = responderEmp(pacote, s, d.oeRecusar, "recusar"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.oeContra && d.i !== undefined) {
+    const i = d.i, ck = (id: string) => !!(document.getElementById(id) as HTMLInputElement | null)?.checked;
+    const r = responderEmp(pacote, s, d.oeContra, "contra", { salarioPct: +((document.getElementById(`oe-sp-${i}`) as HTMLSelectElement | null)?.value ?? 50), taxa: lerValor(`oe-tx-${i}`), semOpcao: ck(`oe-so-${i}`), titular: ck(`oe-ti-${i}`) });
+    msg = { texto: r.msg, ok: r.ok }; redesenhar(); return;
+  }
+  if (d.opc) { const [id, sim] = d.opc.split("|"); const r = decidirOpcao(pacote, s, id, sim === "1"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.irPropostas !== undefined) { aba = "elenco"; sub.elenco = "propostas"; render(); window.scrollTo(0, 0); return; }
-  if (d.livre && d.anos) { const r = contratarLivre(pacote, s, d.livre, +d.anos); msg = { texto: r.msg, ok: r.ok }; if (r.ok) prepararMundo(pacote, s); redesenhar(); return; }
   if (d.recomecar !== undefined) { anterior = s; save = null; render(); window.scrollTo(0, 0); return; }
   if (d.apagar !== undefined) {
     if (!b.dataset.certeza) { b.dataset.certeza = "1"; b.textContent = "Toque de novo para apagar"; return; }

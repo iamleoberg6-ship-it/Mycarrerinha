@@ -55,6 +55,8 @@ export interface Atleta {
   /** já conversou com ele nesta semana */ conversa?: number;
   /** subiu da base do clube */ base?: boolean;
   /** pediu para sair (moral no chão) */ querSair?: boolean;
+  /** multa rescisória (quem pagar leva), papel prometido na contratação e revenda devida ao clube antigo */ multa?: number; papel?: "estrela" | "titular" | "rotacao" | "reserva" | "promessa"; revenda?: { clubeId: string; pct: number };
+  /** veio emprestado: de quem, até quando e a opção de compra */ emprestadoDe?: { clubeId: string; ate: number; opcao: number; obrigacao: boolean; salarioPct: number };
   /** temporada em que chegou */ desde: number;
   /** atributos detalhados (bola parada e mentais), idiomas, aulas pagas pelo clube e o curso de técnico recomendado */
   ex?: Extras; idiomas?: Idiomas; aulas?: { lingua: string; ate: number }; curso?: CursoTecnico;

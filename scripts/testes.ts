@@ -4,6 +4,7 @@ import { jeitoDe as jeitoDeFam } from "../src/familia.js";
 import * as T from "../src/tecnico/motor.js";
 import * as M from "../src/tecnico/modelo.js";
 import * as P from "../src/tecnico/patrocinio.js";
+import * as N from "../src/tecnico/negociacao.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1771,4 +1772,40 @@ teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e ve
   assert.ok(!s.elenco.some((a) => a.id === v.id));
   s.semana = 10; assert.ok(!T.janelaT(s).aberta);
   assert.equal(T.fazerProposta(pacote, s, "x", alvo.clubeId, 1, 1).status, "erro");
+});
+
+teste("Técnico: negociação em duas etapas (clube e empresário), empréstimo e mesa de patrocínio", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-neg2");
+  s.clube.saldo = 5e8; s.clube.tetoFolha = 5e7;
+  const alvo = T.buscarJogadores(pacote, s, { alcance: true }).find((a) => T.interesseDo(pacote, s, a).topa)!;
+  const n = N.abrirNeg(pacote, s, alvo.nome, alvo.clubeId, "compra");
+  assert.ok(!("erro" in n));
+  // proposta ridícula: contraproposta ou fim, nunca fecha
+  const r0 = N.proporClube(pacote, s, n.id, { avista: 1000, parcelado: 0, parcelas: 0, bonus: 0, revenda: 0 });
+  assert.ok(!r0.ok);
+  if (s.negs![n.id].fase === "clube") {
+    const r1 = N.aceitarContraClube(pacote, s, n.id);
+    assert.ok(r1.ok, r1.msg); assert.equal(s.negs![n.id].fase, "jogador");
+    const q = s.negs![n.id].jogador!.quer;
+    const r2 = N.proporJogador(pacote, s, n.id, { ...q, salario: Math.round(q.salario * 1.3) });
+    assert.ok(r2.ok, r2.msg);
+    const at = s.elenco.find((a) => a.nome === alvo.nome)!;
+    assert.ok(at && at.papel && at.multa !== undefined);
+  }
+  // seus jogadores: lista de empréstimo gera propostas e emprestar tira do elenco
+  const g = s.elenco.slice().sort((a, b) => a.idade - b.idade)[0];
+  N.alternarEmprestimo(s, g.id);
+  const sem0 = s.semente;
+  for (let k = 0; k < 60 && !(s.ofertasEmp ?? []).some((o) => o.atletaId === g.id); k++) { s.semente = `${sem0}-${k}`; s.ofertasEmp = (s.ofertasEmp ?? []).filter((x) => x.atletaId === g.id); N.propostasDaSemanaT(pacote, s, []); }
+  s.semente = sem0;
+  const o = (s.ofertasEmp ?? []).find((x) => x.atletaId === g.id);
+  assert.ok(o, "chega proposta de empréstimo");
+  assert.ok(N.responderEmp(pacote, s, o!.id, "aceitar").ok);
+  assert.ok(!s.elenco.some((a) => a.id === g.id) && s.emprestados!.some((e) => e.atleta.id === g.id));
+  // patrocínio: mesa com pacote
+  const ofs = P.ofertasPatro(pacote, s), cota = (Object.keys(ofs) as P.Cota[]).find((k) => (ofs[k] ?? []).length)!;
+  const m = P.mesaPatro(pacote, s, cota, ofs[cota]![0].marca)!;
+  assert.ok(m && m.log.length >= 2);
+  const r3 = P.negociarPatro(pacote, s, cota, m.marca, "aceitar");
+  assert.ok(r3.ok && s.patro![cota], r3.msg);
 });

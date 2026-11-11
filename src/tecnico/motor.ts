@@ -18,6 +18,7 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import { propostasDaSemanaT, semanaEmprestados, vencerOpcoes, salarioEmprestados, viradaNegocios } from "./negociacao.js";
 import { mesPatroSel } from "./patro-sel.js";
 import { semanaSelecao, selPendente, viradaSelecao, type SelecaoT, type OfertaSel } from "./selecao-t.js";
 import type { Figurinha } from "../figurinhas.js";
@@ -35,7 +36,7 @@ import { valorMercado, CAMBIO } from "../mercado.js";
 import { curtoBrl } from "../moeda.js";
 import { tipoDoGol, narrarGolMeu, narrarGolAdv, narrarChanceMeu, narrarChanceAdv, narrarCartao, narrarLesao } from "./narracao.js";
 import { premiosDoMes, premiosDoAno, sortearEvento, forcaDoContato, type Premio, type EventoT, type Contato, type BioJogador, type FamiliarJogador } from "./vida.js";
-import { patrociniosDe, receitaPatro, viradaPatro, type PatrociniosClube } from "./patrocinio.js";
+import { patrociniosDe, receitaPatro, viradaPatro, bonusPatroTemporada, rebaixamentoPatro, type PatrociniosClube } from "./patrocinio.js";
 /** Dinheiro nas mensagens: na moeda que a tela está usando. */
 const dinheiroT = (v: number) => curtoBrl(v);
 import {
@@ -79,6 +80,10 @@ export interface SaveTecnico {
   /** a estrutura do clube: departamentos com chefe e equipe, cada um num cargo */ deps?: Deps; vagasDep?: Record<Dep, number>;
   /** álbum de figurinhas (o do jogador continua aqui) e os números da carreira de técnico */ album?: Figurinha[]; statsT?: { j: number; v: number; e: number; d: number };
   /** seleção que você treina junto com o clube, a proposta de uma federação e o interesse declarado */ selecao?: SelecaoT; ofertaSel?: OfertaSel; interesseSel?: string;
+  /** mesa de negociação: conversas abertas, contas (parcelas e bônus), propostas de compra e de empréstimo, emprestados e revendas */
+  negs?: Record<string, import("./negociacao.js").Negociacao>; contas?: import("./negociacao.js").Conta[]; propostasV?: import("./negociacao.js").PropostaVenda[];
+  ofertasEmp?: import("./negociacao.js").OfertaEmp[]; aEmprestimo?: string[]; emprestados?: import("./negociacao.js").Emprestado[];
+  opcoesCompra?: { atletaId: string; clubeId: string; valor: number; ate: number }[]; revendas?: { nome: string; clubeId: string; pct: number; t: number }[];
   /** camisas vendidas na temporada (por jogador) e o histórico das anteriores */ camisas?: VendaTemporada; camisasHist?: HistCamisas[];
   /** o que o scout sabe do mundo: conhecimento por liga, focos e relatórios */ scout?: EstadoScout;
   /** quem manda no clube (presidente eleito, dono da SAF) */ governo?: Governo;
@@ -365,7 +370,7 @@ function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
   const parcela = parcelaDivida(s.clube.divida ?? 0), amort = Math.round((s.clube.divida ?? 0) / 120);
   // clube associativo repassa parte das receitas ao clube social (as outras modalidades, a sede)
   const repasse = g?.tipo === "associativo" ? Math.round(Object.values(rec).reduce((a, b) => a + b, 0) * 0.04) : 0;
-  const fixas: Record<string, number> = { "Salários do elenco": folhaDe(s), "Comissão técnica": folhaStaff(s), "Encargos e impostos": encargos, "Manutenção (estádio e CT)": manut, "Viagens e logística": viagens };
+  const fixas: Record<string, number> = { "Salários do elenco": folhaDe(s), ...(salarioEmprestados(s) ? { "Salários de emprestados (sua parte)": salarioEmprestados(s) } : {}), "Comissão técnica": folhaStaff(s), "Encargos e impostos": encargos, "Manutenção (estádio e CT)": manut, "Viagens e logística": viagens };
   if (parcela) fixas["Parcela da dívida"] = parcela;
   if (repasse) fixas["Repasse ao clube social"] = repasse;
   const des = { ...s.mes.despesas, ...fixas };
@@ -1008,7 +1013,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
     noticia(s, "diretoria", s.demitido);
     return { eventos: [...eventos, s.demitido], partida };
   }
-  propostasDaSemana(pacote, s, eventos);
+  propostasDaSemanaT(pacote, s, eventos); semanaEmprestados(pacote, s); vencerOpcoes(pacote, s);
   if (s.ofertaEmprego && semanaAbs(s) > s.ofertaEmprego.expira) { noticia(s, "clube", `A proposta do ${infoClube(pacote, s.ofertaEmprego.clubeId)?.nome ?? "outro clube"} expirou.`); s.ofertaEmprego = undefined; }
   s.semana++;
   let fim: string | undefined;
@@ -1042,6 +1047,7 @@ const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.
 function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   fecharCopasT(pacote, s);
   try { viradaSelecao(pacote, s, s.temporada, (t) => noticia(s, "clube", t)); } catch (err) { console.error(err); }
+  try { viradaNegocios(pacote, s, s.temporada, (a, semanas, titular) => { for (let i = 0; i < semanas; i++) a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: "tecnico", intensidade: "normal", participacao: titular ? "titular" : i % 2 ? "entrou" : "naoJogou", moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: 0.95 }); }); } catch (err) { console.error(err); }
   try {
     const camp = Object.values(s.palmaresT?.[s.temporada] ?? {}).filter(Boolean) as string[];
     const rev = (s.revista ??= {}); rev[ANO_INICIAL_T + s.temporada] = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [...camp, ordenar(s.tabela)[0]?.clube].filter(Boolean) as string[]);
@@ -1053,6 +1059,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   // premiação
   const premio = Math.round(s.clube.tv * (1.0 * (1 - (pos - 1) / Math.max(1, n - 1)) + (campeao ? 0.8 : 0)));
   s.clube.saldo += premio; receber(s, "Premiação", premio);
+  try { const b = bonusPatroTemporada(pacote, s, campeao, pos <= (li.nivel <= 1 ? 4 : 2)); if (b.total) { s.clube.saldo += b.total; receber(s, "Bônus de patrocinadores", b.total); } for (const t2 of b.avisos) noticia(s, "dinheiro", t2); } catch (err) { console.error(err); }
   const diff = esperado - pos;
   s.diretoria.confianca = clamp(s.diretoria.confianca + clamp(diff * 4, -25, 25) + (campeao ? 15 : 0), 0, 100);
   s.tecnico.reputacao = clamp(s.tecnico.reputacao + clamp(diff, -6, 8) + (campeao ? 8 : 0) + 1, 0, 100);
@@ -1082,6 +1089,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   const w = mundo(pacote), ligaNova = w.info[s.clubeId]?.ligaId ?? s.ligaId;
   if (ligaNova !== s.ligaId) {
     const subiu = infoLiga(ligaNova).divisao < li.divisao;
+    if (!subiu) for (const t2 of rebaixamentoPatro(pacote, s)) noticia(s, "dinheiro", t2);
     s.clube.tv = Math.round(s.clube.tv * infoLiga(ligaNova).fLiga / li.fLiga);
     if (s.patro) s.patro.base = Math.round(s.patro.base * infoLiga(ligaNova).fLiga / li.fLiga);
     noticia(s, "clube", subiu ? `ACESSO! O clube jogará a ${infoLiga(ligaNova).curto}.` : `Rebaixado para a ${infoLiga(ligaNova).curto}.`);
@@ -1371,3 +1379,12 @@ export function ajustarGrama(s: SaveTecnico, mm: number): { ok: boolean; msg: st
   s.clube.grama = v;
   return { ok: true, msg: `Grama cortada em ${v} mm. ${v <= 23 ? "Bola mais rápida: bom para quem toca." : v >= 27 ? "Bola mais lenta: jogo mais truncado." : "Altura padrão."}` };
 }
+
+/** Peças internas usadas pelo módulo de negociação (mesa de compra, venda e empréstimo). */
+export const _int = {
+  numerar, gastar, receber, noticia, tirarDoElenco, rngT, fLigaDe, sal, chaveJanela, valorNpc, dinheiroT, buscarAlvo,
+  invalidar: () => { versaoAplicada = -1; },
+};
+
+/** Dinheiro que entra fora do mês normal (luvas de patrocínio, por exemplo). */
+export function creditar(s: SaveTecnico, k: string, v: number) { if (!v) return; s.clube.saldo += v; receber(s, k, v); }
