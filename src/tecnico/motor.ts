@@ -1,6 +1,7 @@
 // Modo técnico — motor: começo de carreira, a semana (treino, jogo, dinheiro, diretoria), a partida e a virada de temporada.
 // O mundo é o mesmo do modo jogador (mesma semente = mesmo mundo); o clube do técnico usa o elenco do save.
 import { RNG, clamp } from "../rng.js";
+import { semanaBase, viradaBase, custoBase, baseDe, daCat, subirProfissional } from "./base-t.js";
 import { evoluirSemana, type Grupo, type Intensidade, type Participacao } from "../atributos.js";
 import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type LinhaTabela, type PacoteDados, type JogadorNPC, type Liga } from "../liga.js";
 import { simularPlacar, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
@@ -66,6 +67,7 @@ export interface Clube {
 }
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
+  /** categorias de base (Sub-17 e Sub-20 no Brasil), peneira e campanhas */ base?: import("./base-t.js").BaseT;
   tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number; /** o nome que ele fez como jogador (0 a 100) */ prestigio?: number;
     /** contrato atual: salário, até quando e a multa que o clube paga se demitir antes */ contrato?: Contrato;
     /** a cara do técnico (a do jogador, mais velha) e a roupa da beira do campo */ aparencia?: Record<string, unknown>; visual?: { roupa: string; cor: string }; exJogador?: { apelido: string; fama: number }; idiomas?: Idiomas; curso?: CursoTecnico };
@@ -370,7 +372,7 @@ function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
   const parcela = parcelaDivida(s.clube.divida ?? 0), amort = Math.round((s.clube.divida ?? 0) / 120);
   // clube associativo repassa parte das receitas ao clube social (as outras modalidades, a sede)
   const repasse = g?.tipo === "associativo" ? Math.round(Object.values(rec).reduce((a, b) => a + b, 0) * 0.04) : 0;
-  const fixas: Record<string, number> = { "Salários do elenco": folhaDe(s), ...(salarioEmprestados(s) ? { "Salários de emprestados (sua parte)": salarioEmprestados(s) } : {}), "Comissão técnica": folhaStaff(s), "Encargos e impostos": encargos, "Manutenção (estádio e CT)": manut, "Viagens e logística": viagens };
+  const fixas: Record<string, number> = { "Salários do elenco": folhaDe(s), ...(salarioEmprestados(s) ? { "Salários de emprestados (sua parte)": salarioEmprestados(s) } : {}), "Comissão técnica": folhaStaff(s), ...(custoBase(s) ? { "Categorias de base": custoBase(s) } : {}), "Encargos e impostos": encargos, "Manutenção (estádio e CT)": manut, "Viagens e logística": viagens };
   if (parcela) fixas["Parcela da dívida"] = parcela;
   if (repasse) fixas["Repasse ao clube social"] = repasse;
   const des = { ...s.mes.despesas, ...fixas };
@@ -955,6 +957,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
       if (a.semJogar >= 3 && ovrDe(a) >= mediaTit - 3 && a.idade >= 20) a.moral = clamp(a.moral - 3, 0, 100);
     }
   }
+  try { semanaBase(pacote, s, eventos); } catch (err) { console.error(err); }
   // treino e evolução
   const lingua = linguaDe(li.pais), cap = s.elenco.find((a) => a.id === s.esc.capitao), liderCapitao = cap ? clamp((exDe(cap).LID - 60) / 6, -3, 4) : 0;
   const titularesAgora = s.esc.titulares.map((id) => s.elenco.find((a) => a.id === id)).filter((a): a is Atleta => !!a);
@@ -1098,12 +1101,16 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   }
   const l = w.liga[s.ligaId];
   s.ordem = l.clubes.map((x) => x.id); s.tabela = novaTabela(l);
-  // garotos da base
+  // categorias de base: campanhas, aniversários e quem passou da idade
+  try { for (const t2 of viradaBase(s, t)) noticia(s, "elenco", t2); } catch (err) { console.error(err); }
+  // elenco curto: a diretoria sobe os melhores da categoria de cima (e, sem base, gera garotos)
+  if (s.elenco.length < 18) {
+    noticia(s, "diretoria", "O elenco ficou curto: a diretoria completou o grupo com garotos da base.");
+    for (const j of daCat(baseDe(s), 2).filter((x) => !x.doPro)) { if (s.elenco.length >= 18) break; const r = subirProfissional(s, j.a.id); if (r.ok) noticia(s, "elenco", r.msg); }
+  }
   const usados = new Set(s.elenco.map((a) => a.nome)), pais = infoLiga(s.ligaId).pais, nBase = s.clube.baseNivel, coord = nivelStaff(s, "base");
-  const nGarotos = Math.max(2 + Math.floor(nBase / 2), 18 - s.elenco.length);
-  if (s.elenco.length + 2 + Math.floor(nBase / 2) < 18) noticia(s, "diretoria", "O elenco ficou curto: a diretoria completou o grupo com garotos da base.");
-  for (let k = 0; k < nGarotos; k++) {
-    const p = rng.pick(["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"] as PosT[]), idade = rng.int(16, 18), ovr = Math.round(clamp(40 + nBase * 2.5 + rng.normal(0, 4), 35, 64));
+  for (let k = 0; s.elenco.length < 18; k++) {
+    const p = rng.pick(["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"] as PosT[]), idade = rng.int(17, 19), ovr = Math.round(clamp(42 + nBase * 2.5 + rng.normal(0, 4), 35, 64));
     const pot = Math.round(clamp(58 + nBase * 3 + coord * 2 + rng.normal(0, 7), ovr + 5, 94)), nome = gerarNome(rng, pais, usados);
     s.elenco.push({ id: `${s.clubeId}|${nome}`, nome, pos: p, idade, nac: pais, at: gerarAtributos(rng, p, ovr), pot, numero: 0, moral: 75, condicao: 100, lesao: 0, suspenso: 0, amarelos: 0,
       salario: Math.round(sal(s, 0.6)(ovr, idade) * 0.5 / 100) * 100, contratoAte: s.temporada + 2, prof: rng.int(6, 20), temp: rng.int(1, 20), relacao: 60, notas: [], jogos: 0, gols: 0, assist: 0, amarelosT: 0, vermelhosT: 0, semJogar: 0, base: true, desde: s.temporada });

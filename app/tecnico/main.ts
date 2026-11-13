@@ -90,6 +90,7 @@ function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, n
   return { licenca, idiomas, prestigio: prestigioDe(jog, idiomas).valor };
 }
 import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
+import { baseDe, categorias, daCat, faixaPot, faixaOvrCand, vagasSub, aprovar, reprovar, subirParaCat2, descerParaCat1, subirProfissional, dispensar as dispensarJovem, mandarParaBase, posicaoCampanha, custoBase, LIMITE_CAT, pendentesBase, type Jovem } from "../../src/tecnico/base-t";
 import { NOME_PERFIL_MARCA, textoPatro, type MesaPatro, type PacotePatro } from "../../src/negociacao-patro";
 import {
   abrirNeg, abrirLivre, proporClube, proporEmprestimo, aceitarContraClube, proporJogador, aceitarContraJogador, desistir, textoPac, textoEmp, NOME_PAPEL, NOME_PERFIL as NOME_PERFIL_CLUBE,
@@ -257,9 +258,10 @@ function abaInicio(s: SaveTecnico): string {
 const grupoPos = (p: PosT) => (p === "GOL" ? "gol" : p === "ZAG" || p === "LAT" ? "def" : p === "VOL" || p === "MEI" ? "mei" : "ata");
 function abaElenco(s: SaveTecnico): string {
   const nProp = (s.propostasV ?? []).length + (s.ofertasEmp ?? []).length + (s.opcoesCompra ?? []).length;
-  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["mercado", "Mercado"], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["livres", "Agentes livres"], ["scout", "Scout"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
+  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["mercado", "Mercado"], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["base", `Base${pendentesBase(s) ? " (!)" : ""}`], ["livres", "Agentes livres"], ["scout", "Scout"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
   if (sub.elenco === "livres") return subs + abaLivres(s);
   if (sub.elenco === "scout") return subs + abaScout(s);
+  if (sub.elenco === "base") return subs + abaBase(s);
   if (sub.elenco === "mercado") return subs + abaMercadoT(s);
   if (sub.elenco === "propostas") return subs + abaPropostas(s);
   const filtros = `<div class="chips" style="margin-bottom:8px">${[["todos", "Todos"], ["gol", "Goleiros"], ["def", "Defesa"], ["mei", "Meio"], ["ata", "Ataque"]].map(([k, n]) => `<button class="chip${filtro === k ? " ativo" : ""}" data-filtro="${k}">${n}</button>`).join("")}</div>`;
@@ -271,6 +273,44 @@ function abaElenco(s: SaveTecnico): string {
       a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined ? `<span class="pill">Promessa</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : "", (s.aEmprestimo ?? []).includes(a.id) ? `<span class="pill aviso">Para empréstimo</span>` : "", a.emprestadoDe ? `<span class="pill">Emprestado</span>` : ""].join("");
     return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong>${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
   }).join("")}</div>`;
+}
+// ------------------------------------------------------------------ categorias de base
+const fx = (f: [number, number]) => (f[0] === f[1] ? `${f[0]}` : `${f[0]}–${f[1]}`);
+const mediaNota = (j: Jovem) => (j.notas.length ? (j.notas.reduce((a, b) => a + b, 0) / j.notas.length).toFixed(1).replace(".", ",") : "–");
+function abaBase(s: SaveTecnico): string {
+  const b = baseDe(s), [c1, c2] = categorias(infoLiga(s.ligaId).pais), p = b.peneira, aberta = !!p && p.t === s.temporada && s.semana <= p.ate;
+  const linha = (j: Jovem) => { const o = ovrDe(j.a), d = o - j.ovr0;
+    return `<button class="lin" data-jovem="${esc(j.a.id)}"><span class="num">${j.a.pos}</span><span class="nm"><b>${esc(j.a.nome)}</b><small>${j.a.idade}a · ${j.j} jogos · ${j.g}g ${j.as}a · nota ${mediaNota(j)}${j.doPro ? `<span class="pill">Do profissional</span>` : ""}${j.estourou ? `<span class="pill ruim">Passou da idade</span>` : ""}</small></span><span class="ov"><strong>${o}${d > 0 ? `<small style="color:var(--pos);font-size:11px"> +${d}</small>` : ""}</strong><span>pot ${fx(faixaPot(s, j.a.pot, j.semanas, j.a.id))}</span></span></button>`; };
+  const cat = (n: 1 | 2) => { const c = n === 1 ? c1 : c2, l = daCat(b, n), cp = b.campanha[n], jg = cp.v + cp.e + cp.d;
+    return `<div class="painel" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h3 style="margin:0">${esc(c.nome)}</h3><small class="sub">${l.length}/${LIMITE_CAT} · até ${c.max} anos</small></div>
+      <p class="sub" style="margin:2px 0 8px">${esc(c.liga)}: ${jg ? `${cp.v}V ${cp.e}E ${cp.d}D · ${cp.gp} gols pró, ${cp.gc} contra · por volta do ${posicaoCampanha(cp)}º lugar` : "ainda não começou"}</p>
+      <div class="lista">${l.map(linha).join("") || `<p class="sub">Ninguém nesta categoria.</p>`}</div></div>`; };
+  const pend = b.jovens.filter((j) => j.estourou);
+  const pen = !aberta ? (p && p.t === s.temporada ? `<p class="sub">A peneira deste ano acabou: ${p.candidatos.filter((c) => c.aprovado).length} aprovados. A próxima é na pré-temporada.</p>` : "")
+    : `<div class="painel" style="margin-top:12px"><h3 style="margin:0">Peneira ${ANO_INICIAL_T + s.temporada}</h3>
+      <p class="sub" style="margin:4px 0 8px">Até a ${p!.ate - SEMANAS_PRE_T + 1}ª rodada · ${vagasSub(b, 1)} vagas no ${esc(c1.nome)}. A avaliação vai fechando as faixas a cada semana, mas outro clube pode levar quem você demorar para aprovar.</p>
+      <div class="lista">${p!.candidatos.map((c) => { const fo = faixaOvrCand(s, c), fp = faixaPot(s, c.pot, c.semanas * 2, c.id);
+        return `<div class="not" style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center${c.levado ? ";opacity:.5" : ""}"><span><b>${esc(c.nome)}</b> <small class="sub">${c.pos} · ${c.idade}a${c.nac !== infoLiga(s.ligaId).pais ? ` · ${c.nac}` : ""}</small><small class="sub" style="display:block">${esc(c.destaque)} · nível ${fx(fo)} · potencial ${fx(fp)}</small></span>
+          <span class="botoes" style="flex-wrap:nowrap">${c.aprovado ? `<span class="pill bom">Aprovado</span>` : c.levado ? `<span class="pill">Foi para outro clube</span>` : `<button class="botao peq" data-pen-ok="${esc(c.id)}">Aprovar</button><button class="botao sec peq" data-pen-nao="${esc(c.id)}">✕</button>`}</span></div>`; }).join("")}</div></div>`;
+  return `${aviso()}<p class="sub">Base nível ${s.clube.baseNivel} · coordenação ${(Math.round(nivelStaff(s, "base") * 10) / 10).toString().replace(".", ",")} · custo ${curtoBrl(custoBase(s))}/mês. Quanto melhor a base e o coordenador, mais rápido os garotos evoluem e mais justa fica a faixa do potencial. Quem joga evolui mais.</p>
+    ${pend.length ? `<div class="aviso-t erro" style="margin-top:8px">${pend.length === 1 ? "Um garoto passou" : `${pend.length} garotos passaram`} da idade do ${esc(c2.nome)}: suba para o profissional até o fim da temporada ou ${pend.length === 1 ? "ele vai" : "eles vão"} embora.</div>` : ""}
+    ${pen}${cat(2)}${cat(1)}
+    ${b.hist.length ? `<p class="rotulo" style="margin-top:14px">Campanhas</p>${b.hist.map((h) => `<div class="not"><small>${ANO_INICIAL_T + h.t}</small>${esc(h.cat === 1 ? c1.nome : c2.nome)}: ${h.titulo ? "🏆 campeão" : `${h.pos}º lugar`}</div>`).join("")}` : ""}`;
+}
+function fichaJovem(s: SaveTecnico, id: string): string {
+  const b = baseDe(s), j = b.jovens.find((x) => x.a.id === id), [c1, c2] = categorias(infoLiga(s.ligaId).pais);
+  if (!j) return `<button class="fechar" data-fechar aria-label="Fechar">×</button><p class="sub">Esse garoto não está mais na base.</p>`;
+  const a = j.a, o = ovrDe(a), nomeAt = (k: (typeof ATRIBUTOS)[number]) => (a.pos === "GOL" ? NOME_AT_GOL[k] ?? NOME_AT[k] : NOME_AT[k]);
+  return `<button class="fechar" data-fechar aria-label="Fechar">×</button>
+    <div><p class="rotulo">${NOME_POS_T[a.pos]} · ${a.idade} anos · ${a.nac} · ${esc(j.cat === 1 ? c1.nome : c2.nome)}</p><h2>${esc(a.nome)}</h2></div>
+    <div class="forca3"><div><strong>${o}</strong><span>OVR${o > j.ovr0 ? ` (+${o - j.ovr0})` : ""}</span></div><div><strong>${fx(faixaPot(s, a.pot, j.semanas, a.id))}</strong><span>Potencial</span></div><div><strong>${j.j}</strong><span>Jogos · ${j.g}g ${j.as}a</span></div></div>
+    <div class="atr">${ATRIBUTOS.map((k) => `<div class="barra"><span>${nomeAt(k)}</span><b>${Math.round(a.at[k])}</b><i style="--v:${Math.round(a.at[k])}%;--c:${a.at[k] >= 75 ? "var(--pos)" : a.at[k] >= 55 ? "var(--ouro)" : "var(--giz-2)"}"></i></div>`).join("")}</div>
+    <div class="dl"><span>Nota média</span><b>${mediaNota(j)}</b><span>Profissionalismo · temperamento</span><b>${a.prof} · ${a.temp}</b><span>${j.doPro ? "Salário (profissional)" : "Ajuda de custo"}</span><b>${valorBrl(a.salario)}/mês</b><span>Valor de mercado</span><b>${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</b></div>
+    ${msg ? `<p class="aviso-t ${msg.ok ? "ok" : "erro"}">${esc(msg.texto)}</p>` : ""}
+    <div class="botoes"><button class="botao" data-jov-pro="${esc(a.id)}">${j.doPro ? "Trazer de volta ao profissional" : "Subir para o profissional"}</button>
+      ${j.cat === 1 ? `<button class="botao sec" data-jov-c2="${esc(a.id)}">Subir para o ${esc(c2.nome)}</button>` : a.idade <= c1.max ? `<button class="botao sec" data-jov-c1="${esc(a.id)}">Voltar para o ${esc(c1.nome)}</button>` : ""}
+      ${j.doPro ? "" : `<button class="botao sec" data-jov-fora="${esc(a.id)}">Dispensar</button>`}</div>
+    <p class="sub">Subindo, ele ganha contrato profissional de três anos. Na base ele joga toda rodada e evolui mais rápido do que parado no banco do profissional.</p>`;
 }
 /** O potencial é uma estimativa: quanto melhor o olheiro e o coordenador da base, mais justa a faixa. */
 function potTexto(s: SaveTecnico, a: Atleta): string {
@@ -300,7 +340,7 @@ function fichaJogador(s: SaveTecnico, id: string): string {
     <div><p class="rotulo">Curso de técnico</p><p class="sub">${a.curso?.estudando ? `Estudando a ${LICENCAS[a.curso.estudando]} (${Math.round(100 * (a.curso.progresso ?? 0) / CURSO_LICENCA[a.curso.estudando].semanas)}%).` : (a.curso?.licenca ?? 0) > 0 ? `Tem a ${LICENCAS[a.curso!.licenca]}.` : "Ainda não começou."} Quem se aposenta com licença pode entrar na sua comissão.</p>${!a.curso?.estudando && (a.curso?.licenca ?? 0) < 2 ? `<div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-curso="${esc(a.id)}">Recomendar o curso</button></div>` : ""}</div>
     <div><p class="rotulo">Conversar${conv ? " · já conversou nesta semana" : ""}</p><div class="botoes" style="margin-top:6px">${(Object.keys(NOME_CONVERSA) as Conversa[]).map((k) => `<button class="botao sec peq" data-conv="${k}" data-id="${esc(a.id)}" ${conv ? "disabled" : ""}>${NOME_CONVERSA[k]}</button>`).join("")}</div></div>
     <div><p class="rotulo">Renovar · pede ${valorBrl(pedido)}/mês</p><div class="botoes" style="margin-top:6px">${[1, 2, 3, 4].map((n) => `<button class="botao sec peq" data-renovar="${n}" data-id="${esc(a.id)}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
-    <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button>${a.emprestadoDe ? "" : `<button class="botao sec peq" data-emp-lista="${esc(a.id)}">${(s.aEmprestimo ?? []).includes(a.id) ? "Tirar da lista de empréstimo" : "Colocar para empréstimo"}</button>`}</div>
+    <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button>${(() => { const [, c2] = categorias(infoLiga(s.ligaId).pais), [c1] = categorias(infoLiga(s.ligaId).pais); return a.idade <= c2.max && !a.emprestadoDe ? `<button class="botao sec peq" data-mandar-base="${esc(a.id)}">Mandar jogar no ${esc(a.idade <= c1.max ? c1.nome : c2.nome)}</button>` : ""; })()}${a.emprestadoDe ? "" : `<button class="botao sec peq" data-emp-lista="${esc(a.id)}">${(s.aEmprestimo ?? []).includes(a.id) ? "Tirar da lista de empréstimo" : "Colocar para empréstimo"}</button>`}</div>
       <p class="sub" style="margin-top:4px">${a.emprestadoDe ? `Emprestado pelo ${esc(nomeClube(a.emprestadoDe.clubeId))} até ${ANO_INICIAL_T + a.emprestadoDe.ate}${a.emprestadoDe.opcao ? ` · ${a.emprestadoDe.obrigacao ? "obrigação" : "opção"} de compra de ${curtoBrl(a.emprestadoDe.opcao)}` : ""}.` : ""}${a.multa ? ` Multa rescisória: ${curtoBrl(a.multa)}.` : ""}${a.papel ? ` Prometido: ${NOME_PAPEL[a.papel].toLowerCase()}.` : ""}${a.revenda ? ` ${a.revenda.pct}% de uma venda vai para o ${esc(nomeClube(a.revenda.clubeId))}.` : ""}</p></div>
     <div><p class="rotulo">Dispensar · rescisão de ${curtoBrl(multa)}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-dispensar data-id="${esc(a.id)}">Dispensar ${esc(a.nome)}</button></div></div>`;
 }
@@ -1395,6 +1435,15 @@ document.addEventListener("click", (ev) => {
   if (d.alvo && d.clube) { msgNeg = undefined; abrir(negociarHtml(s, d.alvo, d.clube)); return; }
   if (d.preencher && d.v) { const el = document.getElementById(d.preencher) as HTMLInputElement | null; if (el) { el.value = naTela(+d.v); el.focus(); } return; }
   if (d.venda) { msg = { texto: alternarVenda(s, d.venda), ok: true }; salvar(); abrir(fichaJogador(s, d.venda)); render(); return; }
+  if (d.jovem) { msg = undefined; abrir(fichaJovem(s, d.jovem)); return; }
+  if (d.penOk || d.penNao) { const r = d.penOk ? aprovar(s, d.penOk) : reprovar(s, d.penNao!); msg = { texto: r.msg, ok: r.ok }; salvar(); render(); return; }
+  if (d.jovPro || d.jovC2 || d.jovC1 || d.jovFora) {
+    const id = (d.jovPro || d.jovC2 || d.jovC1 || d.jovFora)!, r = d.jovPro ? subirProfissional(s, id) : d.jovC2 ? subirParaCat2(s, id) : d.jovC1 ? descerParaCat1(s, id) : dispensarJovem(s, id);
+    msg = { texto: r.msg, ok: r.ok }; salvar();
+    if (r.ok && (d.jovPro || d.jovFora)) { fechar(); if (d.jovPro) s.esc = melhorEscalacao(s.elenco, s.tatica.formacao); } else abrir(fichaJovem(s, id));
+    render(); return;
+  }
+  if (d.mandarBase) { const r = mandarParaBase(s, d.mandarBase); msg = { texto: r.msg, ok: r.ok }; salvar(); if (r.ok) { fechar(); sub.elenco = "base"; } else abrir(fichaJogador(s, d.mandarBase)); render(); return; }
   if (d.empLista) { msg = { texto: alternarEmprestimo(s, d.empLista), ok: true }; salvar(); abrir(fichaJogador(s, d.empLista)); render(); return; }
   // mesa de transferência
   const reabrirNeg = (id: string) => { const k = id.indexOf("|"); abrir(negociarHtml(s, id.slice(k + 1), id.slice(0, k))); };

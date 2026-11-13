@@ -45,13 +45,14 @@ export interface OfertaSel { pais: string; salario: number; texto: string; expir
 const semanaAbs = (s: SaveTecnico) => s.temporada * 60 + s.semana;
 const forcaNat = (pacote: PacoteDados, pais: string) => selecaoDe(pacote, pais)?.forca ?? 70;
 const nomePais = (pacote: PacoteDados, pais: string) => infoClube(pacote, idSelecao(pais))?.nome ?? pais;
-const SEM_ART = new Set(["GHA", "HON", "POR", "CMR"]), PLURAL = new Set(["USA", "UAE"]);
+const SEM_ART = new Set(["GHA", "HON", "POR", "CMR", "CPV", "ISR", "MNE", "ANG", "CUW", "CYP", "TRI", "LUX", "SLV", "GUA", "CUB"]), PLURAL = new Set(["USA", "UAE"]);
+const MASC = new Set(["KEN"]), FEM = new Set(["MKD", "COD"]);
 /** Artigo do país: "o Brasil", "a Argentina", "os Estados Unidos", "Portugal". */
 export function artigo(pacote: PacoteDados, pais: string): { o: string; de: string; em: string; fem: boolean } {
   const n = nomePais(pacote, pais);
   if (SEM_ART.has(pais)) return { o: n, de: `de ${n}`, em: `em ${n}`, fem: false };
   if (PLURAL.has(pais)) return { o: `os ${n}`, de: `dos ${n}`, em: `nos ${n}`, fem: false };
-  const fem = /a$/.test(n) || /^(Costa|Coreia|Arábia|Nova|África)/.test(n);
+  const fem = FEM.has(pais) || (!MASC.has(pais) && (/a$/.test(n) || /^(Costa|Coreia|Arábia|Nova|África|Guiné)/.test(n)));
   return fem ? { o: `a ${n}`, de: `da ${n}`, em: `na ${n}`, fem } : { o: `o ${n}`, de: `do ${n}`, em: `no ${n}`, fem };
 }
 /** Reputação que a federação pede (a seleção forte quer nome). */

@@ -8,6 +8,9 @@ const ISO: Record<string, string> = {
   QAT: "QA", NZL: "NZ", BOL: "BO", VEN: "VE", CRC: "CR", PAN: "PA", JAM: "JM", HON: "HN", MLI: "ML", RSA: "ZA", IRQ: "IQ", UAE: "AE",
   GRE: "GR", ISL: "IS", FIN: "FI", IRL: "IE", WAL: "gb-wls", CZE: "CZ", SVK: "SK", SVN: "SI", HUN: "HU", ROU: "RO", ALB: "AL", BIH: "BA", GEO: "GE",
   CHN: "CN", FIJ: "FJ", SOL: "SB", NCL: "NC", TAH: "PF", PNG: "PG", VAN: "VU", SAM: "WS",
+  RUS: "RU", UZB: "UZ", COD: "CD", BFA: "BF", CPV: "CV", GUI: "GN", ISR: "IL", JOR: "JO", KOS: "XK", MNE: "ME", MKD: "MK", BUL: "BG", GAB: "GA", ANG: "AO",
+  CUW: "CW", ZAM: "ZM", GAM: "GM", BEN: "BJ", ARM: "AM", GNB: "GW", KAZ: "KZ", SUR: "SR", HAI: "HT", TOG: "TG", GUA: "GT", CYP: "CY", THA: "TH", ZIM: "ZW",
+  TRI: "TT", KEN: "KE", IDN: "ID", SLV: "SV", LUX: "LU", EST: "EE",
 };
 const tags = (sub: string) => String.fromCodePoint(0x1f3f4, ...[...sub].map((c) => 0xe0000 + c.charCodeAt(0)), 0xe007f);
 

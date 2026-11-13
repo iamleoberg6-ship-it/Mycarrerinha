@@ -118,6 +118,23 @@ const SELECOES: [string, string, string, string[], number][] = [
   ["NCL", "Nova Caledônia", "Les Cagous", ["#9E9E9E", "#C8102E"], 51], ["SOL", "Ilhas Salomão", "Bonitos", ["#F5D200", "#0B3D91"], 51],
   ["TAH", "Taiti", "Toa Aito", ["#FFFFFF", "#C8102E"], 49], ["PNG", "Papua-Nova Guiné", "Kapuls", ["#C8102E", "#111111"], 48],
   ["VAN", "Vanuatu", "Vanuatu", ["#0B7A3B", "#C8102E"], 48], ["SAM", "Samoa", "Samoa", ["#0B3D91", "#C8102E"], 45],
+  ["RUS", "Rússia", "Sbornaya", ["#FFFFFF", "#C8102E"], 73], ["UZB", "Uzbequistão", "Lobos Brancos", ["#FFFFFF", "#1C6FB8"], 70],
+  ["COD", "RD Congo", "Leopardos", ["#1C8FD6", "#C8102E"], 73], ["BFA", "Burkina Faso", "Garanhões", ["#0B7A3B", "#C8102E"], 72],
+  ["CPV", "Cabo Verde", "Tubarões Azuis", ["#0B3D91", "#FFFFFF"], 71], ["GUI", "Guiné", "Syli Nationale", ["#C8102E", "#F5D200"], 70],
+  ["ISR", "Israel", "Azuis e Brancos", ["#FFFFFF", "#1C4FA1"], 70], ["JOR", "Jordânia", "Os Nashama", ["#FFFFFF", "#C8102E"], 69],
+  ["KOS", "Kosovo", "Dardânia", ["#1C4FA1", "#F5C400"], 68], ["MNE", "Montenegro", "Bravos Falcões", ["#C8102E", "#C9A14A"], 68],
+  ["MKD", "Macedônia do Norte", "Leões Vermelhos", ["#C8102E", "#F5D200"], 68], ["BUL", "Bulgária", "Leões", ["#FFFFFF", "#0B7A3B"], 67],
+  ["GAB", "Gabão", "Panteras", ["#0B7A3B", "#F5D200"], 67], ["ANG", "Angola", "Palancas Negras", ["#C8102E", "#111111"], 67],
+  ["CUW", "Curaçao", "Família Azul", ["#1C4FA1", "#F5D200"], 66], ["ZAM", "Zâmbia", "Chipolopolo", ["#0B7A3B", "#E87722"], 66],
+  ["GAM", "Gâmbia", "Escorpiões", ["#C8102E", "#0B3D91"], 65], ["BEN", "Benin", "Guepardos", ["#F5D200", "#0B7A3B"], 65],
+  ["ARM", "Armênia", "Dragões", ["#C8102E", "#0B3D91"], 64], ["GNB", "Guiné-Bissau", "Djurtus", ["#C8102E", "#0B7A3B"], 64],
+  ["KAZ", "Cazaquistão", "Falcões da Estepe", ["#1CA5D6", "#F5D200"], 64], ["SUR", "Suriname", "Natio", ["#0B7A3B", "#C8102E"], 63],
+  ["HAI", "Haiti", "Les Grenadiers", ["#0B3D91", "#C8102E"], 63], ["TOG", "Togo", "Gaviões", ["#0B7A3B", "#F5D200"], 63],
+  ["GUA", "Guatemala", "La Bicolor", ["#6CB4E4", "#FFFFFF"], 63], ["CYP", "Chipre", "Galanolefki do Chipre", ["#1C4FA1", "#FFFFFF"], 63],
+  ["THA", "Tailândia", "Elefantes de Guerra", ["#0B3D91", "#C8102E"], 63], ["ZIM", "Zimbábue", "Guerreiros", ["#F5D200", "#0B7A3B"], 62],
+  ["TRI", "Trinidad e Tobago", "Soca Warriors", ["#C8102E", "#111111"], 62], ["KEN", "Quênia", "Harambee Stars", ["#C8102E", "#0B7A3B"], 62],
+  ["IDN", "Indonésia", "Garuda", ["#C8102E", "#FFFFFF"], 62], ["SLV", "El Salvador", "La Selecta", ["#1C4FA1", "#FFFFFF"], 61],
+  ["LUX", "Luxemburgo", "Leões Vermelhos", ["#C8102E", "#6CB4E4"], 61], ["EST", "Estônia", "Sinisärgid", ["#1C6FB8", "#111111"], 59],
 ];
 export const idSelecao = (pais: string) => `NAT-${pais}`;
 export const temSelecao = (pais: string) => SELECOES.some((x) => x[0] === pais);

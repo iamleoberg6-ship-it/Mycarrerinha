@@ -90,8 +90,8 @@ export const TORNEIO_DA_CONF: Record<string, TorneioId> = { UEFA: "EUR", CONMEBO
 /** Confederação de um país (para o Mundial). */
 export function confederacao(pais: string): string {
   if (["BRA", "ARG", "URU", "COL", "CHI", "PAR", "ECU", "PER", "BOL", "VEN"].includes(pais)) return "CONMEBOL";
-  if (["MEX", "USA", "CAN", "CRC", "PAN", "JAM", "HON", "GUA", "SLV", "HAI", "TRI", "CUB", "DOM"].includes(pais)) return "CONCACAF";
-  if (["KSA", "UAE", "QAT", "IRN", "IRQ", "JOR", "SYR", "JPN", "KOR", "CHN", "AUS", "THA", "MAS"].includes(pais)) return "AFC";
+  if (["MEX", "USA", "CAN", "CRC", "PAN", "JAM", "HON", "GUA", "SLV", "HAI", "TRI", "CUB", "DOM", "CUW", "SUR"].includes(pais)) return "CONCACAF";
+  if (["KSA", "UAE", "QAT", "IRN", "IRQ", "JOR", "SYR", "JPN", "KOR", "CHN", "AUS", "THA", "MAS", "UZB", "IDN"].includes(pais)) return "AFC";
   if (["EGY", "MAR", "TUN", "RSA", "ALG", "NGA", "LBY", "SEN", "CIV", "MLI", "GUI", "CMR", "BFA", "COD", "GAB", "TOG", "BEN", "CGO", "CTA", "GHA", "SLE", "LBR", "GAM", "KEN", "ZAM", "ZIM", "UGA", "TAN", "ANG", "CPV", "GNB", "MOZ"].includes(pais)) return "CAF";
   if (["NZL", "FIJ", "SOL", "NCL", "TAH", "PNG", "VAN", "SAM", "OCE"].includes(pais)) return "OFC";
   return "UEFA";

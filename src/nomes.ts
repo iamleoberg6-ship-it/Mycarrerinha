@@ -106,7 +106,7 @@ export const LINGUA: Record<string, string> = {
   SRB: "slav", CRO: "slav", BIH: "slav", SVN: "slav", MNE: "slav", MKD: "slav", POL: "slav", CZE: "slav", SVK: "slav", UKR: "slav", RUS: "slav",
   GRE: "gr", CYP: "gr", HUN: "hu", ROU: "ro", MDA: "ro", ALB: "sq", KOS: "sq", GEO: "ka",
   FIJ: "pac", SOL: "pac", NCL: "pac", TAH: "pac", PNG: "pac", VAN: "pac", SAM: "pac",
-  BAS: "eu", TUR: "tr", IRN: "fa", JPN: "ja", KOR: "ko", CHN: "zh", THA: "th", MAS: "ms",
+  BAS: "eu", ISR: "en", CUW: "nl", SUR: "nl", LUX: "fr", ARM: "slav", BUL: "slav", EST: "nord", KAZ: "slav", UZB: "slav", IDN: "ms", TUR: "tr", IRN: "fa", JPN: "ja", KOR: "ko", CHN: "zh", THA: "th", MAS: "ms",
 };
 
 /** Nome novo para um jogador dessa nacionalidade, sem repetir os já usados no mundo. */

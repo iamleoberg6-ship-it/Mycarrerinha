@@ -5,6 +5,7 @@ import * as T from "../src/tecnico/motor.js";
 import * as M from "../src/tecnico/modelo.js";
 import * as P from "../src/tecnico/patrocinio.js";
 import * as N from "../src/tecnico/negociacao.js";
+import * as B from "../src/tecnico/base-t.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1772,6 +1773,34 @@ teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e ve
   assert.ok(!s.elenco.some((a) => a.id === v.id));
   s.semana = 10; assert.ok(!T.janelaT(s).aberta);
   assert.equal(T.fazerProposta(pacote, s, "x", alvo.clubeId, 1, 1).status, "erro");
+});
+
+teste("Técnico: categorias de base (peneira, evolução, campeonato, subir, mandar para a base, virada)", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-base");
+  const b = B.baseDe(s), [c1, c2] = B.categorias("BRA");
+  assert.equal(c1.nome, "Sub-17"); assert.equal(c2.nome, "Sub-20"); assert.equal(B.categorias("ENG")[1].nome, "Sub-21");
+  assert.ok(B.daCat(b, 1).length >= 15 && B.daCat(b, 2).length >= 15);
+  assert.ok(B.daCat(b, 1).every((j) => j.a.idade <= 17) && B.daCat(b, 2).every((j) => j.a.idade > 17 && j.a.idade <= 20));
+  T.avancarSemana(pacote, s);
+  const p = b.peneira!; assert.ok(p && p.candidatos.length >= 12);
+  const c = p.candidatos.find((x) => !x.levado)!;
+  assert.ok(B.aprovar(s, c.id).ok); assert.ok(b.jovens.some((j) => j.a.nome === c.nome && j.cat === 1));
+  // jogador do profissional com idade de base vai jogar lá e volta
+  const novo = s.elenco.slice().sort((x, y) => x.idade - y.idade)[0];
+  if (novo.idade <= 20) { assert.ok(B.mandarParaBase(s, novo.id).ok); assert.ok(!s.elenco.includes(novo)); assert.ok(B.subirProfissional(s, novo.id).ok); assert.ok(s.elenco.includes(novo)); }
+  const antes = B.daCat(b, 2).reduce((x, j) => x + j.ovr0, 0);
+  for (let k = 0; k < 12; k++) T.avancarSemana(pacote, s);
+  const cp = b.campanha[1]; assert.ok(cp.v + cp.e + cp.d >= 8, "o Sub-17 jogou");
+  assert.ok(B.daCat(b, 2).some((j) => j.g > 0), "alguém fez gol");
+  assert.ok(B.daCat(b, 2).reduce((x, j) => x + T.ovrDe(j.a), 0) >= antes, "a base evoluiu");
+  const promo = B.daCat(b, 2)[0]; const n0 = s.elenco.length;
+  assert.ok(B.subirProfissional(s, promo.a.id).ok); assert.equal(s.elenco.length, n0 + 1);
+  // virada: quem passa da idade sobe de categoria ou estoura
+  const velho = B.daCat(b, 1).find((j) => j.a.idade === 17);
+  const av = B.viradaBase(s, s.temporada);
+  assert.ok(av.length > 0 && b.hist.length >= 2);
+  if (velho) assert.equal(velho.cat, 2);
+  assert.ok(b.jovens.filter((j) => j.cat === 2 && j.a.idade > 20).every((j) => j.estourou));
 });
 
 teste("Técnico: negociação em duas etapas (clube e empresário), empréstimo e mesa de patrocínio", () => {
