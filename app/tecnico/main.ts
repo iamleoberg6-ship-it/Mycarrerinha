@@ -97,7 +97,7 @@ import {
   contraVenda, leilao, aceitarVenda, recusarVenda, valorVenda, alternarEmprestimo, responderEmp, decidirOpcao, contratoRestante,
   type Negociacao, type Papel, type PacoteTransf,
 } from "../../src/tecnico/negociacao";
-import { criarAgendador, chaveNuvem, ultimoDaNuvem, nuvemDisponivel } from "../nuvem";
+import { criarAgendador, chaveNuvem, nuvemDisponivel, apagarDaNuvem } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
   proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
@@ -1497,6 +1497,7 @@ document.addEventListener("click", (ev) => {
   if (d.recomecar !== undefined) { anterior = s; save = null; render(); window.scrollTo(0, 0); return; }
   if (d.apagar !== undefined) {
     if (!b.dataset.certeza) { b.dataset.certeza = "1"; b.textContent = "Toque de novo para apagar"; return; }
+    void apagarDaNuvem(chaveNuvem("tec", s.semente));
     try { localStorage.removeItem(CHAVE_TECNICO); } catch { /* ok */ }
     save = null; render(); return;
   }
@@ -1504,12 +1505,4 @@ document.addEventListener("click", (ev) => {
 
 if (save) prepararMundo(pacote, save);
 render();
-void (async () => {
-  if (!(await nuvemDisponivel())) return;
-  if (save) { nuvem.agora(); return; }
-  const r = await ultimoDaNuvem("tecnico");
-  const s = r ? (JSON.parse(r.json) as SaveTecnico) : null;
-  if (!s?.elenco || save) return;
-  save = s; gravar(CHAVE_TECNICO, s); prepararMundo(pacote, s);
-  msg = { texto: `Carreira recuperada da sua conta: ${r!.meta.rotulo}.`, ok: true }; render();
-})();
+void (async () => { if (save && (await nuvemDisponivel())) nuvem.agora(); })();

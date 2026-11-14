@@ -82,6 +82,17 @@ export async function lerDaNuvem(chave: string): Promise<{ meta: MetaNuvem; json
     return { meta, json: await descomprimir(meta.z, partes.map((p) => String(p.data()?.d ?? "")).join("")) };
   } catch { return null; }
 }
+/** Apaga uma carreira da conta (o documento vira "apagado" e as partes ficam vazias). */
+export async function apagarDaNuvem(chave: string): Promise<boolean> {
+  const c = await conectar();
+  if (!c) return false;
+  try {
+    const m = await c.col.doc(chave).get(), partes = Number((m.data() as { partes?: number } | undefined)?.partes ?? 0);
+    for (let i = 0; i < partes; i++) await c.col.doc(`${chave}_p${i}`).set({ tipo: "apagado", d: "" });
+    await c.col.doc(chave).set({ tipo: "apagado", chave, quando: Date.now() });
+    return true;
+  } catch { return false; }
+}
 /** A carreira mais recente guardada na conta (para recuperar quando o navegador perdeu o save). */
 export async function ultimoDaNuvem(modo: string): Promise<{ meta: MetaNuvem; json: string } | null> {
   const lista = await listarNuvem(modo);

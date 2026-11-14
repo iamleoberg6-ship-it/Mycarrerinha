@@ -103,7 +103,7 @@ import { paiTreinador } from "../../src/familia";
 import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
 import { svgComodo } from "../casa/iso";
 import { valorBrl, valorEur, numBrl, numEur, simboloAtual, definirMoeda, moedaSugerida, MOEDAS, curtoBrl, curtoEur } from "../../src/moeda.js";
-import { criarAgendador, chaveNuvem, ultimoDaNuvem, listarNuvem, lerDaNuvem, nuvemDisponivel } from "../nuvem";
+import { criarAgendador, chaveNuvem, listarNuvem, lerDaNuvem, apagarDaNuvem, nuvemDisponivel } from "../nuvem";
 
 const pacote = pacoteJson as unknown as PacoteDados;
 void liga;
@@ -404,13 +404,13 @@ function preencherListaNuvem() {
   void listarNuvem("jogador").then((l) => {
     const el = document.getElementById("listaNuvem");
     if (!el) return;
-    el.innerHTML = l.length ? `<b style="color:var(--giz)">Carreiras na sua conta</b>${l.slice(0, 8).map((m) => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--linha)"><span>${esc(m.rotulo)}<br><small>${new Date(m.quando).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</small></span><button class="botao sec peq" data-acao="nuvem-carregar" data-chave="${esc(m.chave)}">Carregar</button></div>`).join("")}` : "";
+    el.innerHTML = l.length ? `<b style="color:var(--giz)">Carreiras na sua conta</b>${l.slice(0, 8).map((m) => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--linha)"><span>${esc(m.rotulo)}<br><small>${new Date(m.quando).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</small></span><span style="display:flex;gap:6px"><button class="botao sec peq" data-acao="nuvem-carregar" data-chave="${esc(m.chave)}">Carregar</button><button class="botao sec peq" data-acao="nuvem-apagar" data-chave="${esc(m.chave)}">Apagar</button></span></div>`).join("")}` : "";
   });
 }
 function opcoesHtml(s: Save): string {
   void s;
   setTimeout(preencherListaNuvem, 0);
-  return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador e, dentro do Claude, também na sua conta: se o navegador perder o save, a carreira volta sozinha. Baixar o arquivo é uma cópia extra.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><p id="statusNuvem" class="sub" style="font-size:12.5px">${textoNuvem()}</p><div id="listaNuvem" class="sub" style="font-size:13px;margin:6px 0"></div><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p><a class="botao sec peq" href="tecnico.html" style="margin-top:8px">Carreira de técnico</a></section>`;
+  return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador e, dentro do Claude, também na sua conta: se o navegador perder o save, é só carregar a carreira da lista abaixo. Baixar o arquivo é uma cópia extra.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><p id="statusNuvem" class="sub" style="font-size:12.5px">${textoNuvem()}</p><div id="listaNuvem" class="sub" style="font-size:13px;margin:6px 0"></div><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p><a class="botao sec peq" href="tecnico.html" style="margin-top:8px">Carreira de técnico</a></section>`;
 }
 let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, verOutras = false;
 let subTabela: "classificacao" | "estatisticas" | "premios" | "revista" = "classificacao";
@@ -3265,6 +3265,12 @@ document.addEventListener("click", (ev) => {
       });
       break;
     }
+    case "nuvem-apagar": {
+      if (!b.dataset.certeza) { b.dataset.certeza = "1"; b.textContent = "Toque de novo"; break; }
+      b.textContent = "Apagando…";
+      void apagarDaNuvem(b.dataset.chave ?? "").then((ok) => { avisoSave(ok ? "Carreira apagada da sua conta." : "Não deu para apagar agora.", !ok); preencherListaNuvem(); });
+      break;
+    }
     case "carregar-save":
       if (save && !b.dataset.certeza) { b.dataset.certeza = "1"; b.textContent = "Toque de novo: substitui a carreira atual"; break; }
       ($("arqSave") as HTMLInputElement).click(); break;
@@ -3298,7 +3304,7 @@ document.addEventListener("click", (ev) => {
     case "proxima": ($("dlgResumo") as HTMLDialogElement).close(); window.scrollTo(0, 0); break;
     case "rodada-ok": { ($("dlgRodada") as HTMLDialogElement).close(); const x = resumoPendente; resumoPendente = undefined; if (x) mostrarResumo(x); break; }
     case "recomecar":
-      if (b.dataset.certeza) { try { localStorage.removeItem(CHAVE_SAVE); localStorage.removeItem(CHAVE_PLANO); } catch { /* ok */ } save = null; render(); }
+      if (b.dataset.certeza) { if (save) void apagarDaNuvem(chaveNuvem("car", save.semente)); try { localStorage.removeItem(CHAVE_SAVE); localStorage.removeItem(CHAVE_PLANO); } catch { /* ok */ } save = null; render(); }
       else { b.dataset.certeza = "1"; b.textContent = "Toque de novo para apagar tudo"; }
       break;
   }
@@ -3325,13 +3331,6 @@ const mostrarErro = (e: unknown) => {
 window.addEventListener("error", (ev) => mostrarErro(ev.error ?? ev.message));
 window.addEventListener("unhandledrejection", (ev) => mostrarErro(ev.reason));
 try { render(); } catch (e) { mostrarErro(e); }
-// sem save no navegador: procura a carreira mais recente na conta; com save: manda uma cópia já na abertura
-void (async () => {
-  if (!(await nuvemDisponivel())) return;
-  if (save) { nuvem.agora(); return; }
-  const r = await ultimoDaNuvem("jogador");
-  const d = r ? (JSON.parse(r.json) as { save?: Save; plano?: Plano; jogador?: unknown }) : null;
-  if (!d?.save?.carreira || save) return;
-  gravar(CHAVE_SAVE, d.save); if (d.plano) gravar(CHAVE_PLANO, d.plano); if (d.jogador) gravar(CHAVE_JOGADOR, d.jogador);
-  location.reload();
-})();
+// com save: manda uma cópia já na abertura. Carreira da conta só volta quando você escolhe "Carregar" nas opções
+// (antes ela voltava sozinha e atropelava uma carreira nova recém-criada).
+void (async () => { if (save && (await nuvemDisponivel())) nuvem.agora(); })();
