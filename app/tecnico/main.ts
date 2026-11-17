@@ -8,8 +8,9 @@ import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
 import { svgEscudo, corpoEscudo } from "../visual/escudos";
 import { camisaFrente } from "../visual/camisas";
-import { nomeNoPeito, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
+import { nomeNoPeito, emblemaTouros, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
 import { simboloMarca, logoSvg } from "../jogo/poster";
+import { patroDoClube, type EstadoPatroMundo } from "../../src/patro-mundo";
 import { MARCA, NOME_CATEGORIA } from "../../src/marcas";
 import { UNIFORME_CLUBE } from "../../src/reliquias";
 import { responderEvento, rankingT, TIPO_CONTATO } from "../../src/tecnico/vida";
@@ -160,7 +161,7 @@ const EURO = new Set(["POR", "ESP", "ITA", "FRA", "GER", "NED", "BEL", "AUT", "C
 function moedaDaLiga(ligaId: string) { const p = infoLiga(ligaId).pais; definirMoeda(p === "BRA" ? "BRL" : p === "ENG" || p === "SCO" ? "GBP" : EURO.has(p) ? "EUR" : "USD"); }
 
 const cores = (id: string) => { const i = infoClube(pacote, id); return [i?.cores[0] ?? "#888", i?.cores[1] ?? "#FFF"]; };
-const escudo = (id: string, cls = "escudo") => { if (id.startsWith("NAT-")) return bandeiraSvg(id.slice(4), cls); const [a, b] = cores(id); return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome, cls); };
+const escudo = (id: string, cls = "escudo") => { if (id.startsWith("NAT-")) return bandeiraSvg(id.slice(4), cls); const [a, b] = cores(id); return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome, cls).replace("<svg ", `<svg data-verclube="${id}" `); };
 const nomeClube = (id: string) => infoClube(pacote, id)?.nome ?? id;
 const estrelas = (n: number) => `<span class="estrelas" aria-label="nível ${n} de 5">${"★".repeat(n)}${"☆".repeat(5 - n)}</span>`;
 const barra = (v: number, cor?: string) => `<span class="mini-barra"><i style="--v:${Math.round(v)}%;--c:${cor ?? (v >= 66 ? "var(--pos)" : v >= 40 ? "var(--ouro)" : "var(--neg)")}"></i></span>`;
@@ -981,6 +982,7 @@ function perfilClubeT(s: SaveTecnico, clubeId: string): string {
     ${meu ? `<div class="not">Técnico em ${ANO_INICIAL_T + s.temporada}: temporada em andamento</div>` : ""}` : "";
   const elenco = meu ? [] : plantelDoClube(pacote, clubeId).slice(0, 5);
   return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade ?? "")} · ${esc(infoLiga(info.ligaId).curto)}${info.estadio ? ` · ${esc(info.estadio)}` : ""}</span></div></div>
+    ${uniformeNoPerfil(s, clubeId)}
     <p class="rotulo" style="margin-top:14px">Títulos</p>${trofeus}
     ${passagem}
     <p class="rotulo" style="margin-top:14px">Time de todos os tempos</p><p class="sub" style="margin-bottom:4px">Quem mais vezes foi o melhor da posição numa temporada. Ao lado, o melhor ano e a nota.</p><table class="tab"><tbody>${xiOrd.map(linhaXi).join("")}</tbody></table>
@@ -998,21 +1000,35 @@ function abaClube(s: SaveTecnico): string {
 const hexRgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) || 0);
 const claro = (c: string) => { const [r, g, b] = hexRgb(c); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6; };
 /** A camisa de frente com os patrocínios atuais (escudo, master, fornecedor e manga). */
-function camisaDoClube(s: SaveTecnico): string {
-  const info = infoClube(pacote, s.clubeId), u = UNIFORME_CLUBE[s.clubeId], [a, b] = u ? u.cores : [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
-  const p = patrociniosDe(pacote, s), contraste = claro(a) ? "#111111" : "#FFFFFF";
+/** Os patrocínios de qualquer clube: o seu (os contratos que você fechou) ou os dos outros (o mercado do mundo decide). */
+function patrocClube(s: SaveTecnico, clubeId: string): { master?: { marca: string; cor?: string; ate?: number }; fornecedor?: { marca: string; cor?: string; ate?: number }; manga?: { marca: string; ate?: number } } {
+  if (clubeId === s.clubeId) { const p = patrociniosDe(pacote, s); return { master: p.master, fornecedor: p.fornecedor, manga: p.manga }; }
+  const est = ((s as SaveTecnico & { patroMundo?: EstadoPatroMundo }).patroMundo ??= {});
+  return patroDoClube(pacote, est, s.semente, clubeId, s.temporada).pc;
+}
+/** A camisa de frente de qualquer clube, com o escudo e as marcas (cada marca numa cor que aparece sobre o tecido). */
+function camisaClubeT(s: SaveTecnico, clubeId: string): string {
+  const info = infoClube(pacote, clubeId), u = UNIFORME_CLUBE[clubeId], [a, b] = u ? u.cores : [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
+  const p = patrocClube(s, clubeId), contraste = claro(a) ? "#111111" : "#FFFFFF";
   const m = p.master && MARCA[p.master.marca], f = p.fornecedor && MARCA[p.fornecedor.marca], g = p.manga && MARCA[p.manga.marca];
   const ec = u?.escudo ?? [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"], modelo = u?.padrao ?? info?.padrao ?? "lisa";
-  // cada marca numa cor que aparece sobre o tecido de trás (nada de marca branca em camisa branca)
   const atras = (parte: ParteCamisa) => coresAtras(modelo, a, b, u?.faixas, parte);
   const cm = m ? corQueAparece(atras("peito"), [p.master!.cor, contraste, b, ...m.cores]) : undefined;
   const cf = f ? corQueAparece(atras("alto"), [p.fornecedor!.cor, contraste, b, ...f.cores]) : undefined, cg = g ? corQueAparece(atras("manga"), [contraste, b, ...g.cores]) : undefined;
   return camisaFrente({ cores: [a, b], modelo, faixas: u?.faixas }, {
-    escudo: corpoEscudo(idClube(s.clubeId), ec[0], ec[1], info?.nome),
-    master: m ? nomeNoPeito(m.nome, cm!.cor, cm!.filete) : undefined,
+    escudo: corpoEscudo(idClube(clubeId), ec[0], ec[1], info?.nome),
+    master: m ? (m.id === "redboi" ? emblemaTouros(m.cores[1], m.cores[2]) : nomeNoPeito(m.nome, cm!.cor, cm!.filete)) : undefined,
     fornecedor: f ? comFilete(simboloMarca(f, cf!.cor, a), cf!.filete) : undefined,
     manga: g ? comFilete(simboloMarca(g, cg!.cor, a), cg!.filete) : undefined,
   });
+}
+const camisaDoClube = (s: SaveTecnico) => camisaClubeT(s, s.clubeId);
+/** O uniforme no perfil do clube: a camisa e a lista dos patrocinadores, com até quando vai cada contrato. */
+function uniformeNoPerfil(s: SaveTecnico, clubeId: string): string {
+  const p = patrocClube(s, clubeId);
+  const linha = (rot: string, c?: { marca: string; ate?: number }) => (c && MARCA[c.marca] ? `<div class="not" style="display:flex;gap:8px;align-items:center">${logoSvg(MARCA[c.marca], 22)}<span><small class="sub">${rot}${c.ate !== undefined && c.ate < s.temporada + 50 ? ` · até ${ANO_INICIAL_T + c.ate}` : ""}</small></span></div>` : "");
+  const lista = linha("Patrocinador master", p.master) + linha("Fornecedor de material", p.fornecedor) + linha("Patrocinador de manga", p.manga);
+  return `<p class="rotulo" style="margin-top:14px">Uniforme e patrocinadores</p><div class="patro-topo"><div class="camisa-patro">${camisaClubeT(s, clubeId)}</div><div>${lista || `<p class="sub">Sem patrocinadores na camisa.</p>`}</div></div>`;
 }
 function abaPatrocinios(s: SaveTecnico): string {
   const p = patrociniosDe(pacote, s), ofs = ofertasPatro(pacote, s), arena = arenaDoClube(pacote, s);
@@ -1500,6 +1516,9 @@ document.addEventListener("input", (ev) => {
 });
 document.addEventListener("click", (ev) => {
   const b = (ev.target as Element).closest<HTMLElement>("button, [data-fechar]");
+  // tocar no escudo de um clube (fora de um botão) abre o perfil dele
+  const ver = !b && save ? (ev.target as Element).closest<SVGElement>("[data-verclube]") : null;
+  if (ver && save) { abrir(perfilClubeT(save, ver.dataset.verclube!)); salvar(); return; }
   if (!b) return;
   const d = b.dataset;
   const y = window.scrollY, redesenhar = (manterMsg = true) => { if (!manterMsg) msg = undefined; salvar(); render(); window.scrollTo(0, y); };
