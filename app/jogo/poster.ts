@@ -108,6 +108,10 @@ const PROPRIO: Record<string, (c: string, c2: string) => string> = {
   penalte: (c) => `<path d="M8 36 C6 26 8.4 16 15 9 C20 4 27 2.6 34.6 3.4 C31.4 5.4 29.6 7 28.6 9 C32.4 8.6 35.6 9.4 37.4 10.6 C33.6 11.6 31 13 29.6 15 C32.6 15.2 35 16.2 36.4 17.6 C32.4 18.4 29.4 19.6 27.6 21.6 C30 22.2 31.6 23.2 32.6 24.6 C27.6 24.8 23.4 26 20 28.4 C16 31.2 12.6 34 8 36 Z" fill="${c}"/>`,
   // uma folha azul com a gotinha laranja caindo da ponta
   oranjinha: () => `<path d="M4 6 C14 2.6 25.4 6 28.4 17.4 C17.6 20.4 7 16.4 4 6 Z" fill="#1E5BC6"/><path d="M6 7.4 C12 10.4 18 13.4 26.4 16.6" fill="none" stroke="#FFFFFF" stroke-width=".9" stroke-linecap="round"/><path d="M29 21.4 C32.6 26.4 35 29.4 35 32.2 A6 6 0 0 1 23 32.2 C23 29.4 25.4 26.4 29 21.4 Z" fill="#FF8C1A" stroke="#FFFFFF" stroke-width=".8"/>`,
+  // escudo dividido: em cima verde com TAGUE, embaixo vermelho com ROIER, cada nome enchendo a sua metade
+  taguer: () => `<defs><clipPath id="cTag"><path d="M4 3 H36 V20 Q36 32 20 38 Q4 32 4 20 Z"/></clipPath></defs><g clip-path="url(#cTag)"><rect width="40" height="19" fill="#00703C"/><rect y="19" width="40" height="21" fill="#D0102C"/></g>`
+    + `<path d="M4 19 H36" stroke="#FFFFFF" stroke-width="1"/><path d="M4 3 H36 V20 Q36 32 20 38 Q4 32 4 20 Z" fill="none" stroke="#FFFFFF" stroke-width="1.4"/>`
+    + `<g font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif" font-weight="900" fill="#FFFFFF" text-anchor="middle"><text x="20" y="16.6" font-size="13" textLength="28" lengthAdjust="spacingAndGlyphs">TAGUE</text><text x="20" y="31" font-size="12" textLength="24" lengthAdjust="spacingAndGlyphs">ROIER</text></g>`,
   // dois arcos dourados
   macdonaldo: () => `<path d="M5.4 35 V17 Q5.4 5.4 12.7 5.4 Q20 5.4 20 17 Q20 5.4 27.3 5.4 Q34.6 5.4 34.6 17 V35" fill="none" stroke="#FFC72C" stroke-width="5.2" stroke-linejoin="round"/>`,
 };
