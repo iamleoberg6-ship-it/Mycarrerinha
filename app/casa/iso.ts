@@ -854,24 +854,44 @@ export function trofeuSvg(x: number, y: number, modelo: string, cores: [string, 
       `<path d="M${f1(x - 8)} ${f1(y - 26)} h16 q0 12 -8 16 q-8 -4 -8 -16 Z" fill="${m}" ${tr}/>` +
       `<path d="M${f1(x - 8)} ${f1(y - 23)} q-6 0 -5 5 q1 4 6 3 M${f1(x + 8)} ${f1(y - 23)} q6 0 5 5 q-1 4 -6 3" stroke="${s}" stroke-width="2" fill="none"/>` +
       `<path d="M${f1(x - 4)} ${f1(y - 24)} q0 7 3 10" stroke="${lz}" stroke-width="1.6" fill="none"/>`;
-    case "orelhas": return base(6, 4) +
-      `<path d="M${f1(x - 2.5)} ${f1(y - 4)} h5 v-6 h-5 Z" fill="${s}" ${tr}/>` +
-      `<path d="M${f1(x - 9)} ${f1(y - 27)} h18 q-1 15 -9 18 q-8 -3 -9 -18 Z" fill="${m}" ${tr}/>` +
-      `<path d="M${f1(x - 9)} ${f1(y - 23)} q-10 -1 -9 8 q1 7 9 6 M${f1(x + 9)} ${f1(y - 23)} q10 -1 9 8 q-1 7 -9 6" stroke="${s}" stroke-width="2.4" fill="none"/>` +
-      `<path d="M${f1(x - 4)} ${f1(y - 24)} q0 6 2 9" stroke="${lz}" stroke-width="1.5" fill="none"/>`;
-    case "globo": return base(5, 3) +
-      `<path d="M${f1(x - 1.5)} ${f1(y - 3)} L${f1(x - 1)} ${f1(y - 13)} H${f1(x + 1)} L${f1(x + 1.5)} ${f1(y - 3)} Z" fill="${s}" ${tr}/>` +
-      `<path d="M${f1(x - 6)} ${f1(y - 13)} q-4 -6 0 -12 M${f1(x + 6)} ${f1(y - 13)} q4 -6 0 -12" stroke="${s}" stroke-width="2" fill="none"/>` +
-      `<circle cx="${f1(x)}" cy="${f1(y - 23)}" r="9" fill="${m}" ${tr}/>` +
-      `<path d="M${f1(x - 9)} ${f1(y - 23)} h18 M${f1(x)} ${f1(y - 32)} q-5 9 0 18" stroke="${s}" stroke-width="1" fill="none"/>` +
-      `<circle cx="${f1(x - 3.5)}" cy="${f1(y - 27)}" r="2" fill="${lz}"/>`;
-    case "alcas": return base(5, 4) +
-      `<path d="M${f1(x - 1.5)} ${f1(y - 4)} h3 v-7 h-3 Z" fill="${s}" ${tr}/>` +
-      `<path d="M${f1(x - 6)} ${f1(y - 27)} h12 v9 q0 8 -6 9 q-6 -1 -6 -9 Z" fill="${m}" ${tr}/>` +
-      `<rect x="${f1(x - 9.5)}" y="${f1(y - 25)}" width="2.4" height="13" rx="1" fill="${s}" ${tr}/>` +
-      `<rect x="${f1(x + 7.1)}" y="${f1(y - 25)}" width="2.4" height="13" rx="1" fill="${s}" ${tr}/>` +
-      `<rect x="${f1(x - 5)}" y="${f1(y - 29)}" width="10" height="2.2" rx="0.6" fill="${s}" ${tr}/>` +
-      `<path d="M${f1(x - 3)} ${f1(y - 24)} q0 6 2 8" stroke="${lz}" stroke-width="1.4" fill="none"/>`;
+    // Champions: prata, taça alta e fina com as duas orelhas enormes que vão da boca até quase o pé
+    case "orelhas": {
+      const P = "#D9DEE2", Ps = "#8C959C", Pl = "#F4F6F8";
+      return `<g transform="translate(${f1(x)} ${f1(y)}) scale(0.88) translate(${f1(-x)} ${f1(-y)})"><path d="M${f1(x - 5)} ${f1(y)} h10 l-1.6 -3 h-6.8 Z" fill="${Ps}" ${tr}/><path d="M${f1(x - 1.2)} ${f1(y - 3)} h2.4 v-5 h-2.4 Z" fill="${P}" ${tr}/>`
+        + `<path d="M${f1(x - 10.6)} ${f1(y - 27)} C${f1(x - 13.6)} ${f1(y - 27)} ${f1(x - 13.6)} ${f1(y - 11)} ${f1(x - 3.2)} ${f1(y - 10)} M${f1(x + 10.6)} ${f1(y - 27)} C${f1(x + 13.6)} ${f1(y - 27)} ${f1(x + 13.6)} ${f1(y - 11)} ${f1(x + 3.2)} ${f1(y - 10)}" fill="none" stroke="${TINTA}" stroke-width="3.6" stroke-linecap="round"/>`
+        + `<path d="M${f1(x - 10.6)} ${f1(y - 27)} C${f1(x - 13.6)} ${f1(y - 27)} ${f1(x - 13.6)} ${f1(y - 11)} ${f1(x - 3.2)} ${f1(y - 10)} M${f1(x + 10.6)} ${f1(y - 27)} C${f1(x + 13.6)} ${f1(y - 27)} ${f1(x + 13.6)} ${f1(y - 11)} ${f1(x + 3.2)} ${f1(y - 10)}" fill="none" stroke="${P}" stroke-width="2" stroke-linecap="round"/>`
+        + `<path d="M${f1(x - 6.4)} ${f1(y - 28.6)} H${f1(x + 6.4)} C${f1(x + 6.4)} ${f1(y - 17)} ${f1(x + 3)} ${f1(y - 11)} ${f1(x + 1.2)} ${f1(y - 8)} H${f1(x - 1.2)} C${f1(x - 3)} ${f1(y - 11)} ${f1(x - 6.4)} ${f1(y - 17)} ${f1(x - 6.4)} ${f1(y - 28.6)} Z" fill="${P}" ${tr}/>`
+        + `<path d="M${f1(x - 6.4)} ${f1(y - 27.4)} H${f1(x + 6.4)}" stroke="${Ps}" stroke-width=".8"/><path d="M${f1(x - 3.6)} ${f1(y - 26)} C${f1(x - 3.6)} ${f1(y - 19)} ${f1(x - 2)} ${f1(y - 14)} ${f1(x - 0.8)} ${f1(y - 11)}" stroke="${Pl}" stroke-width="1.3" fill="none"/></g>`;
+    }
+    // Copa do Mundo: ouro, duas figuras em espiral subindo e segurando o globo, com as duas faixas verdes no pé
+    case "globo": {
+      const O = "#E8B730", Os = "#A57A12", Ol = "#FFE38A", V = "#1E7A4A";
+      return `<g transform="translate(${f1(x)} ${f1(y)}) scale(0.9) translate(${f1(-x)} ${f1(-y)})"><path d="M${f1(x - 5.6)} ${f1(y)} h11.2 l-.8 -2 h-9.6 Z" fill="${O}" ${tr}/><rect x="${f1(x - 4.8)}" y="${f1(y - 4.6)}" width="9.6" height="2.6" fill="${V}" ${tr}/><rect x="${f1(x - 4.4)}" y="${f1(y - 7)}" width="8.8" height="2.4" fill="${V}" ${tr}/>`
+        + `<path d="M${f1(x - 4.2)} ${f1(y - 7)} C${f1(x - 5.6)} ${f1(y - 11)} ${f1(x - 2)} ${f1(y - 14)} ${f1(x - 4.6)} ${f1(y - 18)} C${f1(x - 6.4)} ${f1(y - 20.6)} ${f1(x - 5.2)} ${f1(y - 22)} ${f1(x - 3.4)} ${f1(y - 22.6)} L${f1(x + 3.4)} ${f1(y - 22.6)} C${f1(x + 5.2)} ${f1(y - 22)} ${f1(x + 6.4)} ${f1(y - 20.6)} ${f1(x + 4.6)} ${f1(y - 18)} C${f1(x + 2)} ${f1(y - 14)} ${f1(x + 5.6)} ${f1(y - 11)} ${f1(x + 4.2)} ${f1(y - 7)} Z" fill="${O}" ${tr}/>`
+        + `<path d="M${f1(x - 3.6)} ${f1(y - 8)} C${f1(x + 2)} ${f1(y - 11)} ${f1(x - 3)} ${f1(y - 15)} ${f1(x + 3.4)} ${f1(y - 19)} M${f1(x + 3.4)} ${f1(y - 8.4)} C${f1(x - 1)} ${f1(y - 12)} ${f1(x + 2.4)} ${f1(y - 16)} ${f1(x - 3.2)} ${f1(y - 20.6)}" stroke="${Os}" stroke-width=".9" fill="none"/>`
+        + `<circle cx="${f1(x)}" cy="${f1(y - 26.4)}" r="5.6" fill="${O}" ${tr}/><path d="M${f1(x - 3.6)} ${f1(y - 28.6)} q2 -1.6 3.6 -.6 q.6 1.6 -1.2 2.4 q-1.8 .4 -2.4 -1.8 Z M${f1(x + 1)} ${f1(y - 25.6)} q2.6 -.8 3.4 1 q-1 2 -2.8 1.6 Z" fill="${Os}"/>`
+        + `<circle cx="${f1(x - 2)}" cy="${f1(y - 28.4)}" r="1.4" fill="${Ol}" opacity=".8"/><path d="M${f1(x - 2.6)} ${f1(y - 19)} q-.6 -3 .6 -4" stroke="${Ol}" stroke-width=".9" fill="none"/></g>`;
+    }
+    // Libertadores: prata em cima de uma base alta escura cheia de plaquinhas, com o jogadorzinho na tampa
+    case "alcas": {
+      const P = "#D9DEE2", Ps = "#8C959C", Pl = "#F4F6F8", M = "#3B2A1E";
+      const placas = [0, 1, 2].map((r) => [0, 1, 2, 3].map((c) => `<rect x="${f1(x - 5.6 + c * 2.9)}" y="${f1(y - 9.6 + r * 2.8)}" width="2.2" height="1.8" fill="#D4AF5A"/>`).join("")).join("");
+      return `<g transform="translate(${f1(x)} ${f1(y)}) scale(0.94) translate(${f1(-x)} ${f1(-y)})"><path d="M${f1(x - 7.4)} ${f1(y)} h14.8 l-1 -10.6 h-12.8 Z" fill="${M}" ${tr}/>${placas}`
+        + `<path d="M${f1(x - 2.6)} ${f1(y - 10.6)} h5.2 l-1 -2.4 h-3.2 Z" fill="${P}" ${tr}/><path d="M${f1(x - 1)} ${f1(y - 13)} h2 v-2 h-2 Z" fill="${P}" ${tr}/>`
+        + `<path d="M${f1(x - 5.6)} ${f1(y - 24)} H${f1(x + 5.6)} C${f1(x + 5.6)} ${f1(y - 18)} ${f1(x + 3)} ${f1(y - 15.4)} ${f1(x)} ${f1(y - 15)} C${f1(x - 3)} ${f1(y - 15.4)} ${f1(x - 5.6)} ${f1(y - 18)} ${f1(x - 5.6)} ${f1(y - 24)} Z" fill="${P}" ${tr}/>`
+        + `<path d="M${f1(x - 5.6)} ${f1(y - 22.6)} q-3.4 0 -3 3 q.4 2.4 3.4 2 M${f1(x + 5.6)} ${f1(y - 22.6)} q3.4 0 3 3 q-.4 2.4 -3.4 2" stroke="${P}" stroke-width="1.4" fill="none"/>`
+        + `<path d="M${f1(x - 5)} ${f1(y - 24)} q5 -2.4 10 0 Z" fill="${Ps}" ${tr}/>`
+        + `<circle cx="${f1(x)}" cy="${f1(y - 29.4)}" r="1.1" fill="${P}" ${tr}/><path d="M${f1(x)} ${f1(y - 28.4)} v2.4 M${f1(x)} ${f1(y - 26)} l-1.2 1.6 M${f1(x)} ${f1(y - 26)} l1.6 1.2 M${f1(x)} ${f1(y - 27.6)} l-1.4 .6 M${f1(x)} ${f1(y - 27.6)} l1.4 -.6" stroke="${Ps}" stroke-width=".9" stroke-linecap="round"/>`
+        + `<path d="M${f1(x - 3)} ${f1(y - 22.6)} q0 4 2 6" stroke="${Pl}" stroke-width="1.2" fill="none"/></g>`;
+    }
+    // Mundial de Clubes: ouro, um anel oval em pé (vazado no meio) com o globinho dentro, sobre um pé fino
+    case "mundial": {
+      const O = "#E8B730", Os = "#A57A12", Ol = "#FFE38A";
+      return `<path d="M${f1(x - 5)} ${f1(y)} h10 l-1.4 -2.6 h-7.2 Z" fill="#2B2B2B" ${tr}/><path d="M${f1(x - 1.6)} ${f1(y - 2.6)} h3.2 l-.6 -5 h-2 Z" fill="${O}" ${tr}/>`
+        + `<path fill="${O}" fill-rule="evenodd" ${tr} d="M${f1(x)} ${f1(y - 29.6)} C${f1(x + 7.6)} ${f1(y - 29.6)} ${f1(x + 9)} ${f1(y - 19)} ${f1(x + 7)} ${f1(y - 13)} C${f1(x + 5.6)} ${f1(y - 9)} ${f1(x + 2)} ${f1(y - 7.6)} ${f1(x)} ${f1(y - 7.6)} C${f1(x - 2)} ${f1(y - 7.6)} ${f1(x - 5.6)} ${f1(y - 9)} ${f1(x - 7)} ${f1(y - 13)} C${f1(x - 9)} ${f1(y - 19)} ${f1(x - 7.6)} ${f1(y - 29.6)} ${f1(x)} ${f1(y - 29.6)} Z M${f1(x)} ${f1(y - 26)} C${f1(x - 4.4)} ${f1(y - 26)} ${f1(x - 5)} ${f1(y - 19)} ${f1(x - 4)} ${f1(y - 15)} C${f1(x - 3)} ${f1(y - 12)} ${f1(x + 3)} ${f1(y - 12)} ${f1(x + 4)} ${f1(y - 15)} C${f1(x + 5)} ${f1(y - 19)} ${f1(x + 4.4)} ${f1(y - 26)} ${f1(x)} ${f1(y - 26)} Z"/>`
+        + `<circle cx="${f1(x)}" cy="${f1(y - 18.4)}" r="3" fill="${O}" ${tr}/><path d="M${f1(x - 3)} ${f1(y - 18.4)} h6 M${f1(x)} ${f1(y - 21.4)} q-1.6 3 0 6" stroke="${Os}" stroke-width=".6" fill="none"/>`
+        + `<path d="M${f1(x - 5.4)} ${f1(y - 24)} q-1.6 5 .2 9.6" stroke="${Ol}" stroke-width="1.1" fill="none"/>`;
+    }
     case "fitas": return base(4, 4) +
       `<path d="M${f1(x - 3)} ${f1(y - 4)} L${f1(x - 1)} ${f1(y - 14)} H${f1(x + 1)} L${f1(x + 3)} ${f1(y - 4)} Z" fill="${s}" ${tr}/>` +
       `<path d="M${f1(x - 10)} ${f1(y - 17)} Q${f1(x)} ${f1(y - 36)} ${f1(x + 10)} ${f1(y - 17)} Q${f1(x)} ${f1(y - 2)} ${f1(x - 10)} ${f1(y - 17)} Z" fill="${m}" ${tr}/>` +
