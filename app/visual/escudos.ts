@@ -197,14 +197,14 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<path d="M3.4 18.6 Q13 25.2 22.6 18.6 L23.4 22.4 Q13 29 2.6 22.4 Z" fill="#1D428A" stroke="${TINTA}" stroke-width=".7" stroke-linejoin="round"/>`
       + `<text font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="3.2" letter-spacing=".3" fill="#FFFFFF" text-anchor="middle"><textPath href="#aSTK" startOffset="50%">1809</textPath></text>`;
   }
-  // Lids Unido (Leeds): terço de cima azul, terço de baixo listrado na diagonal (amarelo e azul) e uma faixa branca no meio com LUFC em azul
+  // Lids Unido (Leeds): em cima azul, embaixo listrado na diagonal (amarelo e azul) e uma faixa branca vertical no meio com L, U, F, C de cima para baixo
   if (chave === "EN-LEE") {
     const esc = "M3 2.6 H23 V15 Q23 24.6 13 28.6 Q3 24.6 3 15 Z", AZ = "#1D428A", AM = "#FFCD00";
     const diag = Array.from({ length: 10 }, (_, k) => `<rect x="${-14 + k * 4}" y="10" width="2" height="40" fill="${AM}"/>`).join("");
+    const letras = ["L", "U", "F", "C"].map((l, k) => `<text x="13" y="${(8.2 + k * 5.1).toFixed(1)}" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="5" fill="${AZ}">${l}</text>`).join("");
     return `<defs><clipPath id="cLEE"><path d="${esc}"/></clipPath></defs><g clip-path="url(#cLEE)"><rect width="26" height="30" fill="${AZ}"/><g transform="rotate(35 13 22)">${diag}</g>`
-      + `<rect x="0" y="0" width="26" height="11" fill="${AZ}"/><rect x="0" y="10.4" width="26" height="7.6" fill="#FFFFFF"/><path d="M0 10.4 H26 M0 18 H26" stroke="${AM}" stroke-width=".7"/></g>`
-      + `<text x="13" y="16.4" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="6" textLength="16" lengthAdjust="spacingAndGlyphs" fill="${AZ}">LUFC</text>`
-      + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
+      + `<rect x="0" y="0" width="26" height="10.6" fill="${AZ}"/><path d="M0 10.6 H26" stroke="${AM}" stroke-width=".7"/><rect x="10.2" y="0" width="5.6" height="30" fill="#FFFFFF"/><path d="M10.2 0 V30 M15.8 0 V30" stroke="${AM}" stroke-width=".6"/></g>`
+      + letras + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
   }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
