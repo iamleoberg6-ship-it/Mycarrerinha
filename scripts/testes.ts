@@ -6,6 +6,7 @@ import * as M from "../src/tecnico/modelo.js";
 import * as P from "../src/tecnico/patrocinio.js";
 import * as N from "../src/tecnico/negociacao.js";
 import * as B from "../src/tecnico/base-t.js";
+import * as BZ from "../src/tecnico/beira.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1773,6 +1774,22 @@ teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e ve
   assert.ok(!s.elenco.some((a) => a.id === v.id));
   s.semana = 10; assert.ok(!T.janelaT(s).aberta);
   assert.equal(T.fazerProposta(pacote, s, "x", alvo.clubeId, 1, 1).status, "erro");
+});
+
+teste("Técnico: preleção, gritos, xG e relatório do analista", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-beira");
+  while (!T.proximoJogo(s)) T.avancarSemana(pacote, s);
+  const pj = T.proximoJogo(s)!;
+  const rel = BZ.relatorioAdversario(pacote, s, pj.adv, 3); assert.ok(rel.destaques.length >= 2 && rel.dica);
+  assert.ok(T.iniciarPartida(pacote, s));
+  const r1 = BZ.prelecao(pacote, s, "antes", "motivar"); assert.ok(r1.texto);
+  assert.equal(BZ.prelecao(pacote, s, "antes", "cobrar").texto, "Você já falou com o time agora.");
+  T.jogarAte(pacote, s, 30);
+  assert.ok(BZ.gritar(s, "incentivar").ok); assert.ok(!BZ.gritar(s, "exigir").ok);
+  T.jogarAte(pacote, s, 45); assert.ok(BZ.prelecao(pacote, s, "intervalo", "calma").texto);
+  T.jogarAte(pacote, s, 90); BZ.prelecao(pacote, s, "fim", "elogiar");
+  const res = T.avancarSemana(pacote, s);
+  assert.ok(res.partida?.xg && res.partida.xg[0] >= 0 && res.partida.xg[1] >= 0);
 });
 
 teste("Técnico: categorias de base (peneira, evolução, campeonato, subir, mandar para a base, virada)", () => {

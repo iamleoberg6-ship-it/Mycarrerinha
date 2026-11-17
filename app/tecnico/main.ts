@@ -91,6 +91,7 @@ function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, n
 }
 import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
 import { baseDe, categorias, daCat, faixaPot, faixaOvrCand, vagasSub, aprovar, reprovar, subirParaCat2, descerParaCat1, subirProfissional, dispensar as dispensarJovem, mandarParaBase, posicaoCampanha, custoBase, LIMITE_CAT, pendentesBase, type Jovem } from "../../src/tecnico/base-t";
+import { TONS, GRITOS, prelecao, gritar, xgTexto, relatorioAdversario, type Tom, type Grito } from "../../src/tecnico/beira";
 import { NOME_PERFIL_MARCA, textoPatro, type MesaPatro, type PacotePatro } from "../../src/negociacao-patro";
 import {
   abrirNeg, abrirLivre, proporClube, proporEmprestimo, aceitarContraClube, proporJogador, aceitarContraJogador, desistir, textoPac, textoEmp, NOME_PAPEL, NOME_PERFIL as NOME_PERFIL_CLUBE,
@@ -220,6 +221,7 @@ function abaInicio(s: SaveTecnico): string {
   const jogo = pj ? `<section class="painel"><p class="rotulo">Rodada ${pj.rodada + 1} de ${nRodadasT(s)} · ${pj.souCasa ? "em casa" : "fora"}</p>
       <div class="prox"><div class="lado">${escudo(pj.souCasa ? s.clubeId : pj.adv)}<span>${esc(nomeClube(pj.souCasa ? s.clubeId : pj.adv))}</span></div><span class="x">×</span><div class="lado">${escudo(pj.souCasa ? pj.adv : s.clubeId)}<span>${esc(nomeClube(pj.souCasa ? pj.adv : s.clubeId))}</span></div></div>
       <p class="sub" style="text-align:center">Seu time em campo: <b style="color:var(--giz)">${Math.round(f.geral)}</b> · adversário: <b style="color:var(--giz)">${Math.round(w.clube[pj.adv]?.forca ?? 0)}</b></p>
+      ${(() => { const r = relatorioAdversario(pacote, s, pj.adv, nivelStaff(s, "analista")); return `<details class="rel-adv"><summary class="sub" style="cursor:pointer;text-align:center">Relatório do analista ›</summary><div class="dl" style="margin-top:6px">${r.posTabela ? `<span>Na tabela</span><b>${r.posTabela}º · ${r.forma}</b>` : ""}<span>Destaques</span><b>${r.destaques.map(esc).join(", ") || "–"}</b></div><p class="sub" style="margin-top:4px">💡 ${esc(r.dica)}</p></details>`; })()}
       ${s.aoVivo ? `<p class="placar-vivo">Jogo parado no ${s.aoVivo.minuto ?? 0}': <b>${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}</b></p><div class="botoes" style="justify-content:center"><button class="botao sec" data-aba="tatica">Mexer no time</button></div><button class="botao grande" data-vivo style="margin-top:10px">Voltar para o jogo</button>`
         : `<button class="botao grande" data-vivo style="margin-top:10px">▶ Jogar ao vivo</button><button class="botao sec" data-avancar style="margin-top:8px;width:100%">Simular direto</button>`}</section>`
     : `<section class="painel"><p class="rotulo">${s.semana < SEMANAS_PRE_T ? "Pré-temporada" : "Fim de temporada"}</p><h2>${s.semana < SEMANAS_PRE_T ? "Treinos e ajustes antes da estreia" : "Última semana do ano"}</h2>
@@ -1210,7 +1212,7 @@ function relatorioHtml(p: Relatorio): string {
   return `<button class="fechar" data-fechar aria-label="Fechar">×</button>
     <p class="rotulo">Rodada ${p.rodada + 1}${p.publico ? ` · público ${p.publico.toLocaleString("pt-BR")}` : ""}</p>
     <div class="prox"><div class="lado">${escudo(p.casa)}<span>${esc(nomeClube(p.casa))}</span></div><span class="placar">${p.gc} × ${p.gf}</span><div class="lado">${escudo(p.fora)}<span>${esc(nomeClube(p.fora))}</span></div></div>
-    <div class="dl"><span>Posse de bola (seu time)</span><b>${p.posse}%</b><span>Finalizações</span><b>${p.chutes[0]} × ${p.chutes[1]}</b>${p.melhor ? `<span>Melhor em campo</span><b>${esc(p.melhor)}</b>` : ""}</div>
+    <div class="dl"><span>Posse de bola (seu time)</span><b>${p.posse}%</b><span>Finalizações</span><b>${p.chutes[0]} × ${p.chutes[1]}</b>${p.xg ? `<span>Gols esperados (xG)</span><b>${xgTexto(p.xg[0])} × ${xgTexto(p.xg[1])}</b>` : ""}${p.melhor ? `<span>Melhor em campo</span><b>${esc(p.melhor)}</b>` : ""}</div>
     <div><p class="rotulo">Lances</p>${p.eventos.some((e) => e.tipo !== "lance") ? p.eventos.filter((e) => e.tipo !== "lance").map((e) => `<div class="evento${minha(e) ? "" : " adv"}"><span class="m">${e.min}'</span><span>${e.tipo === "gol" ? "⚽" : e.tipo === "amarelo" ? "🟨" : e.tipo === "vermelho" ? "🟥" : e.tipo === "lesao" ? "✚" : "⇄"}</span><span>${esc(e.texto)}</span></div>`).join("") : `<p class="sub">Jogo sem gols nem grandes lances.</p>`}</div>
     ${p.eventos.some((e) => e.narra) ? `<details class="not"><summary>Narração do jogo</summary>${p.eventos.map((e) => `<div class="evento${minha(e) ? "" : " adv"}"><span class="m">${e.min}'</span><span>${ICO_EV[e.tipo] ?? "•"}</span><span>${esc(e.narra ?? e.texto)}</span></div>`).join("")}</details>` : ""}
     <div><p class="rotulo">Notas</p><div class="lista">${[...p.notas].sort((a, b) => b.nota - a.nota).map((n) => `<div class="lin" style="cursor:default;grid-template-columns:40px 1fr auto"><span class="num" style="font-size:13px">${n.pos}</span><span class="nm"><b>${esc(n.nome)}</b><small>${n.min}'${n.gols ? ` · ${n.gols} gol${n.gols > 1 ? "s" : ""}` : ""}${n.assist ? ` · ${n.assist} assist.` : ""}</small></span><span class="ov"><strong style="font-size:20px;color:${n.nota >= 7 ? "var(--pos)" : n.nota < 6 ? "var(--neg)" : "var(--ouro-claro)"}">${n.nota.toFixed(1).replace(".", ",")}</strong></span></div>`).join("")}</div></div>${estatDoRelatorio(p)}`;
@@ -1218,11 +1220,11 @@ function relatorioHtml(p: Relatorio): string {
 
 // ------------------------------------------------------------------ partida ao vivo
 /** Estado da tela do jogo: minuto mostrado, velocidade (ms por minuto), pausa pedida e se parou no intervalo. */
-const vivo = { mostrado: 0, vel: 260, pausado: true, pedirPausa: false, intervalo: false, passouIntervalo: false, timer: 0 as number, avisos: [] as string[] };
+const vivo = { fala: undefined as undefined | { titulo: string; texto: string; reacoes: string[] }, mostrado: 0, vel: 260, pausado: true, pedirPausa: false, intervalo: false, passouIntervalo: false, timer: 0 as number, avisos: [] as string[] };
 const ICO_EV: Record<string, string> = { gol: "⚽", amarelo: "🟨", vermelho: "🟥", lesao: "✚", sub: "⇄", lance: "▸" };
 function abrirVivo(s: SaveTecnico, avisos: string[]) {
   const av = s.aoVivo; if (!av) return;
-  vivo.mostrado = av.minuto ?? 0; vivo.avisos = avisos; vivo.pausado = true; clearTimeout(vivo.timer); vivo.pedirPausa = false; vivo.intervalo = false; vivo.passouIntervalo = vivo.mostrado >= 45;
+  vivo.fala = undefined; vivo.mostrado = av.minuto ?? 0; vivo.avisos = avisos; vivo.pausado = true; clearTimeout(vivo.timer); vivo.pedirPausa = false; vivo.intervalo = false; vivo.passouIntervalo = vivo.mostrado >= 45;
   abrir(`<div id="vivo"></div>`);
   atualizarVivo(s);
 }
@@ -1242,6 +1244,12 @@ function atualizarVivo(s: SaveTecnico) {
     <div class="barra-tempo"><i style="width:${(m / 90) * 100}%"></i><b style="left:50%"></b></div>
     ${vivo.avisos.map((x) => `<p class="sub">${esc(x)}</p>`).join("")}
     <div class="feed-vivo">${evs.length ? [...evs].reverse().map((e) => `<div class="evento${e.meu ? "" : " adv"}${e.tipo === "gol" ? " gol" : e.tipo === "lance" ? " lance" : ""}"><span class="m">${e.min}'</span><span>${ICO_EV[e.tipo] ?? "•"}</span><span>${esc(e.narra ?? e.texto)}</span></div>`).join("") : `<p class="sub">${m ? "Jogo truncado, sem grandes lances." : "A bola vai rolar."}</p>`}</div>
+    ${av.xg && m >= 10 ? `<p class="sub" style="text-align:center;margin:4px 0">Gols esperados (xG): <b style="color:var(--giz)">${xgTexto(av.xg[0] * Math.min(1, m / (av.minuto || 1)))}</b> × <b style="color:var(--giz)">${xgTexto(av.xg[1] * Math.min(1, m / (av.minuto || 1)))}</b></p>` : ""}
+    ${vivo.fala ? `<div class="aviso-t ok" role="status"><b>${esc(vivo.fala.titulo)}</b> ${esc(vivo.fala.texto)}${vivo.fala.reacoes.length ? `<br><small>${vivo.fala.reacoes.map(esc).join(" ")}</small>` : ""}</div>` : ""}
+    ${(() => { const momento = m === 0 ? "antes" : fim ? "fim" : vivo.intervalo ? "intervalo" : ""; if (!momento || !parado || av.falas?.[momento as "antes"]) return "";
+      const titulo = momento === "antes" ? "Preleção antes do jogo" : momento === "intervalo" ? "Conversa no intervalo" : "Conversa no vestiário depois do jogo";
+      return `<div class="painel" style="margin:8px 0;padding:10px"><p class="rotulo" style="margin:0 0 6px">${titulo}</p><div class="chips" style="flex-wrap:wrap">${TONS.map((t) => `<button class="chip" data-prel="${momento}|${t.id}" title="${esc(t.dica)}">${esc(t.nome)}</button>`).join("")}</div><p class="sub" style="font-size:12px;margin-top:6px">O tom certo depende de ser favorito ou zebra e do placar. ${momento === "fim" ? "Mexe na moral para a semana." : "Mexe no ânimo do time em campo."}</p></div>`; })()}
+    ${!fim && m > 0 ? `<div class="chips" style="flex-wrap:wrap;margin:6px 0"><span class="sub" style="font-size:12px;align-self:center">Gritar:</span>${GRITOS.map((g) => `<button class="chip" data-grito="${g.id}" title="${esc(g.dica)}">${esc(g.nome)}</button>`).join("")}</div>` : ""}
     ${parado && !fim && cansados.length ? `<p class="sub">Cansados: ${cansados.map((n) => esc(n!)).join(", ")}.</p>` : ""}
     ${fim ? `<button class="botao grande" data-avancar>Ver o resultado</button>`
       : parado ? `<div class="botoes"><button class="botao" data-vivo-seguir>▶ ${m === 0 ? "Começar" : vivo.intervalo ? "Começar o 2º tempo" : "Continuar"}</button><button class="botao sec" data-vivo-mexer>Mexer no time e na tática</button></div>
@@ -1375,7 +1383,9 @@ document.addEventListener("click", (ev) => {
   if (d.verPartida !== undefined && s.ultima) { abrir(relatorioHtml(s.ultima)); return; }
   if (d.vivo !== undefined) { const r = s.aoVivo ? { avisos: [] } : iniciarPartida(pacote, s); salvar(); render(); if (r) abrirVivo(s, r.avisos); return; }
   if (d.vivoPausa !== undefined) { vivo.pedirPausa = true; atualizarVivo(s); return; }
-  if (d.vivoSeguir !== undefined) { vivo.pausado = false; vivo.pedirPausa = false; vivo.intervalo = false; atualizarVivo(s); passoVivo(s); return; }
+  if (d.prel) { const [mo, tom] = d.prel.split("|"); const r = prelecao(pacote, s, mo as "antes", tom as Tom); vivo.fala = { titulo: TONS.find((t) => t.id === tom)!.nome + ":", texto: r.texto, reacoes: r.reacoes }; salvar(); atualizarVivo(s); return; }
+  if (d.grito) { const r = gritar(s, d.grito as Grito); vivo.fala = { titulo: GRITOS.find((g) => g.id === d.grito)!.nome, texto: r.texto, reacoes: [] }; salvar(); atualizarVivo(s); return; }
+  if (d.vivoSeguir !== undefined) { vivo.fala = undefined; vivo.pausado = false; vivo.pedirPausa = false; vivo.intervalo = false; atualizarVivo(s); passoVivo(s); return; }
   if (d.vivoVel) { vivo.vel = +d.vivoVel; atualizarVivo(s); return; }
   if (d.vivoMexer !== undefined) { vivo.pausado = true; fechar(); aba = "tatica"; render(); window.scrollTo(0, 0); return; }
   if (d.avancarTatica !== undefined) { aba = "inicio"; fechar(); }

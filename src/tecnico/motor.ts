@@ -1,6 +1,7 @@
 // Modo técnico — motor: começo de carreira, a semana (treino, jogo, dinheiro, diretoria), a partida e a virada de temporada.
 // O mundo é o mesmo do modo jogador (mesma semente = mesmo mundo); o clube do técnico usa o elenco do save.
 import { RNG, clamp } from "../rng.js";
+import { efeitoBeira } from "./beira.js";
 import { semanaBase, viradaBase, custoBase, baseDe, daCat, subirProfissional } from "./base-t.js";
 import { evoluirSemana, type Grupo, type Intensidade, type Participacao } from "../atributos.js";
 import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type LinhaTabela, type PacoteDados, type JogadorNPC, type Liga } from "../liga.js";
@@ -55,6 +56,7 @@ export interface NotaPartida { id: string; nome: string; pos: PosT; nota: number
 export interface Relatorio {
   rodada: number; casa: string; fora: string; gc: number; gf: number; souCasa: boolean; publico?: number;
   eventos: EventoPartida[]; notas: NotaPartida[]; posse: number; chutes: [number, number]; melhor?: string;
+  /** gols esperados (seu time, adversário) */ xg?: [number, number];
 }
 export interface LinhaFinancas { rotulo: string; receitas: Record<string, number>; despesas: Record<string, number> }
 export interface Obra { tipo: "estadio" | "ct" | "base" | "gramado" | "conforto"; nivel?: number; lugares?: number; fim: number; custo: number }
@@ -637,6 +639,8 @@ export interface AoVivo {
   /** o técnico mexeu durante o jogo: o assistente não faz troca sozinho */ autoTrocas?: boolean;
   /** cansaço durante o jogo (a condição só é gravada no fim) */ cond: Record<string, number>;
   lambdas: [number, number][];
+  /** beira do campo: ânimo do time (preleção e gritos), o que foi dito, gritos e o risco do momento; gols esperados */
+  animo?: number; falas?: Partial<Record<"antes" | "intervalo" | "fim", string>>; gritoMin?: number; gritos?: number; risco?: { me: number; adv: number; ate: number }; xg?: [number, number];
 }
 export const MAX_TROCAS = 5;
 const DRENO = (tat: Tatica) => 24 + 5 * tat.pressao + 3 * tat.ritmo;
@@ -675,7 +679,11 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   const gr = av.souCasa ? efeitoGramado(s, fAdv, (atk + def) / 2) : { me: 1, adv: 1 };
   const lMe = ((av.souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto * bola * gr.me;
   const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp) * gr.adv;
-  av.lambdas.push([lMe, lAdv]);
+  const bz = efeitoBeira(av, ini), lMeB = lMe * bz.me, lAdvB = lAdv * bz.adv;
+  av.lambdas.push([lMeB, lAdvB]);
+  // gols esperados do trecho (a chance criada, com um pouco de acaso)
+  const xgR = rngT(s, "xg", ini); av.xg ??= [0, 0];
+  av.xg[0] += lMeB * (dur / 90) * clamp(0.75 + xgR.next() * 0.5, 0.5, 1.5); av.xg[1] += lAdvB * (dur / 90) * clamp(0.75 + xgR.next() * 0.5, 0.5, 1.5);
   const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai > min && !av.fora.includes(x.a.id));
   const peso = <T>(lista: T[], fw: (x: T) => number) => { const t = lista.reduce((a, x) => a + fw(x), 0); let r = rng.next() * t; for (const x of lista) { r -= fw(x); if (r <= 0) return x; } return lista[lista.length - 1]; };
   const st = (x: EmCampo) => (av.stats[x.a.id] ??= { gols: 0, assist: 0, amarelo: 0, vermelho: false, min: 0, pos: x.pos });
@@ -697,7 +705,7 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
     if (!e.vermelho && rng.chance(0.0025 * (0.5 + exDe(x.a).AGR / 60) * ((x.sai - x.ent) / 45))) { const min = rng.int(x.ent + 1, Math.max(x.ent + 1, x.sai - 1)); e.vermelho = true; x.sai = min; av.fora.push(x.a.id); saiuAntes = Math.min(saiuAntes, min); av.eventos.push({ min, tipo: "vermelho", meu: true, texto: `Expulso: ${x.a.nome}`, narra: narrarCartao(rn, x.a.nome, "direto") }); }
   }
   const umAMenos = saiuAntes < 99 ? (fim - saiuAntes) / dur : 0;
-  const gMe = rng.poisson(lMe * (dur / 90) * (1 - 0.3 * umAMenos)), gAdv = rng.poisson(lAdv * (dur / 90) * (1 + 0.35 * umAMenos));
+  const gMe = rng.poisson(lMeB * (dur / 90) * (1 - 0.3 * umAMenos)), gAdv = rng.poisson(lAdvB * (dur / 90) * (1 + 0.35 * umAMenos));
   // gols: a função muda quem faz e quem passa; parte sai de falta e de pênalti
   for (let g = 0; g < gMe; g++) {
     const min = rng.int(ini + 1, fim), ali = noCampo(min);
@@ -840,8 +848,9 @@ function terminarPartida(pacote: PacoteDados, s: SaveTecnico, adv: string, souCa
   const posse = Math.round(clamp(50 + (f.meio - fAdv) * 1.1 + (s.tatica.mentalidade - 2) * 2 + (s.tatica.pressao - 1) * 2, 28, 72));
   const chutes: [number, number] = [gm + rng.poisson(2.5 + lm * 2.8), gd + rng.poisson(2.5 + la * 2.8)];
   const melhor = [...notas].sort((a, b) => b.nota - a.nota)[0];
+  const xg: [number, number] = [Math.round((av.xg?.[0] ?? lm) * 100) / 100, Math.round((av.xg?.[1] ?? la) * 100) / 100];
   s.aoVivo = undefined;
-  return { rodada, casa: souCasa ? s.clubeId : adv, fora: souCasa ? adv : s.clubeId, gc: souCasa ? gm : gd, gf: souCasa ? gd : gm, souCasa, eventos: av.eventos.sort((a, b) => a.min - b.min), notas, posse, chutes, melhor: melhor?.nome };
+  return { xg, rodada, casa: souCasa ? s.clubeId : adv, fora: souCasa ? adv : s.clubeId, gc: souCasa ? gm : gd, gf: souCasa ? gd : gm, souCasa, eventos: av.eventos.sort((a, b) => a.min - b.min), notas, posse, chutes, melhor: melhor?.nome };
 }
 /** Mudar a formação no intervalo: os mesmos jogadores, redistribuídos nas vagas novas (sem trocar ninguém). */
 export function reorganizarNoIntervalo(s: SaveTecnico, f: string) {
