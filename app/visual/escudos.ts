@@ -85,6 +85,12 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<g clip-path="url(#cFCB)"><rect x="0" y="0" width="26" height="30" fill="#FFFFFF"/>${losangos}</g><circle cx="13" cy="15" r="7.6" fill="none" stroke="#FFFFFF" stroke-width="1"/>`
       + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
+  // Dortmund: bola amarela com o 09 preto dentro
+  if (chave === "DE-BVB") {
+    return `<circle cx="13" cy="15" r="12.4" fill="#FDE100"/><circle cx="13" cy="15" r="10.8" fill="none" stroke="#0A0A0A" stroke-width="1"/>`
+      + `<text x="13" y="20.6" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="15" letter-spacing="-.4" fill="#0A0A0A">09</text>`
+      + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
@@ -156,8 +162,12 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   const CRUZEIRO = chave === "CRU" ? `<path d="M13.00 3.00 L13.66 4.89 L15.66 4.93 L14.07 6.15 L14.65 8.07 L13.00 6.92 L11.35 8.07 L11.93 6.15 L10.34 4.93 L12.34 4.89 Z M13.40 17.60 L14.11 19.63 L16.25 19.67 L14.54 20.97 L15.16 23.03 L13.40 21.80 L11.64 23.03 L12.26 20.97 L10.55 19.67 L12.69 19.63 Z M7.40 10.30 L7.99 11.99 L9.78 12.03 L8.35 13.11 L8.87 14.82 L7.40 13.80 L5.93 14.82 L6.45 13.11 L5.02 12.03 L6.81 11.99 Z M18.60 9.80 L19.16 11.42 L20.88 11.46 L19.51 12.50 L20.01 14.14 L18.60 13.16 L17.19 14.14 L17.69 12.50 L16.32 11.46 L18.04 11.42 Z" fill="#FFFFFF"/>` : "";
   // Vasco: a cruz vermelha (de pontas largas) no meio da faixa diagonal
   const CRUZ_VAS = chave === "VAS" ? `<g transform="translate(13 14.4) rotate(-41)"><path d="M-1 -1 L-1.6 -4.4 H1.6 L1 -1 L4.4 -1.6 V1.6 L1 1 L1.6 4.4 H-1.6 L-1 1 L-4.4 1.6 V-1.6 Z" fill="#D0102C" stroke="#7A0A18" stroke-width=".25" stroke-linejoin="round"/></g>` : "";
+  // Atlético de Madri: dividido ao meio; embaixo listrado de vermelho e branco, em cima uma árvore azul-marinho
+  const ARVORE = chave === "ES-ATM" ? `<rect x="0" y="0" width="26" height="30" fill="#FFFFFF"/>${[0, 2, 4, 6, 8, 10, 12].map((k) => `<rect x="${(k * 26 / 13).toFixed(2)}" y="14" width="${(26 / 13).toFixed(2)}" height="16" fill="#CB3524"/>`).join("")}`
+    + `<rect x="0" y="0" width="26" height="14" fill="#FFFFFF"/><g fill="#1B2A5C"><path d="M12.3 13.8 L12.5 9.6 L10.8 8.4 L11.1 8 L12.6 8.9 L12.7 7.6 H13.3 L13.4 8.9 L14.9 8 L15.2 8.4 L13.5 9.6 L13.7 13.8 Z"/><ellipse cx="13" cy="7.2" rx="3.6" ry="2.6"/><circle cx="9.9" cy="8.4" r="1.9"/><circle cx="16.1" cy="8.4" r="1.9"/><circle cx="11.2" cy="6" r="1.7"/><circle cx="14.8" cy="6" r="1.7"/></g>`
+    + `<path d="M0 14 H26" stroke="${TINTA}" stroke-width=".9"/>` : "";
   const detalhe = CRUZ_VAS + CRUZEIRO + ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" || chave === "CRU" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" || chave === "CRU" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}${ARVORE}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {
