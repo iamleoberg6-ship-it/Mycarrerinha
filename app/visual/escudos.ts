@@ -175,6 +175,19 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + l("SC", 14.6, 6.4, 7) + l("BRAGA", 21, 5, 14)
       + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
   }
+  // Newcastle: escudinho dourado com 5 listras (3 pretas e 2 brancas), a torre com a bandeira vermelha em cima, um cavalo cinza empinado
+  // de cada lado virado para o escudo e a faixa azul-clara embaixo com o nome
+  if (chave === "EN-NEW") {
+    const OURO3 = "#D4A537", esc = "M8.6 10.4 H17.4 V17 Q17.4 21.4 13 23 Q8.6 21.4 8.6 17 Z";
+    const cavalo = `<path d="M6.2 1.2 C7.4 1.6 8.6 2.6 8.8 3.4 L8.4 4.2 C7.6 4.4 6.8 4 6.4 3.8 C6 4.8 6.2 5.8 6.6 6.4 L8.6 6.2 L8.4 7.8 L7.8 7.6 L7.8 6.9 L6.2 8.2 C5.6 9.6 5 10.2 4.6 10.4 L5.2 13.6 L4.2 13.6 L3.8 11.6 L3.2 13.6 L2.2 13.6 L2.6 11 C1.6 10.4 1.4 9 1.8 8 C.4 8.4 -.2 10.2 .4 11.4 C-1 10.6 -.6 7.6 1.6 7 C2.6 5.8 3.6 4 4.4 2.6 L5.2 .2 L5.6 1 L5.8 .4 Z" fill="#9AA0A6" stroke="#3C4248" stroke-width=".35" stroke-linejoin="round"/>`
+      + `<path d="M5 1.4 C4.3 2.6 3.7 3.8 3 5.2" fill="none" stroke="#3C4248" stroke-width=".7" stroke-linecap="round"/><circle cx="6.9" cy="2.3" r=".3" fill="#1A1A1A"/><circle cx="8.3" cy="3.6" r=".18" fill="#1A1A1A"/>`;
+    const torre = `<path d="M10.8 10.4 V6.8 H11.8 V7.6 H12.5 V6.8 H13.5 V7.6 H14.2 V6.8 H15.2 V10.4 Z" fill="${OURO3}" stroke="#6B4E12" stroke-width=".3"/><path d="M13 6.8 V2.2" stroke="#3C2A08" stroke-width=".4"/><path d="M13.2 2.2 L16.4 3.1 L13.2 4.1 Z" fill="#D0102C"/>`;
+    const listras = [0, 1, 2, 3, 4].map((k) => `<rect x="${(8.6 + k * 1.76).toFixed(2)}" y="10" width="1.8" height="14" fill="${k % 2 ? "#FFFFFF" : "#0A0A0A"}"/>`).join("");
+    return `${torre}<defs><clipPath id="cNEW"><path d="${esc}"/></clipPath></defs><g clip-path="url(#cNEW)">${listras}</g><path d="${esc}" fill="none" stroke="${OURO3}" stroke-width="1.1" stroke-linejoin="round"/>`
+      + `<g transform="translate(.4 8.4)">${cavalo}</g><g transform="translate(25.6 8.4) scale(-1 1)">${cavalo}</g>`
+      + `<path d="M1 23.6 H25 L24 25.6 L25 27.6 H1 L2 25.6 Z" fill="#7CC4F0" stroke="#1B3A5C" stroke-width=".35" stroke-linejoin="round"/>`
+      + `<text x="13" y="26.8" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="3.2" textLength="17" lengthAdjust="spacingAndGlyphs" fill="#0B1F4D">NEWCASTLE</text>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
