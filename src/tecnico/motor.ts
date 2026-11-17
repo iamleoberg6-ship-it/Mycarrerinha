@@ -3,7 +3,7 @@
 import { RNG, clamp } from "../rng.js";
 import { efeitoBeira } from "./beira.js";
 import { avaliarPlano } from "./plano-dir.js";
-import { jogosNpcDaRodada, registrarRodada, autorNpc, type ArtLiga, type GolLiga } from "./lances-liga.js";
+import { jogosNpcDaRodada, registrarRodada, autorNpc, ajustarRevista, type ArtLiga, type GolLiga } from "./lances-liga.js";
 import { semanaMercadoExtra, custoParceiros } from "./mercado-extra.js";
 import { semanaVestiario, clima, fatorClima, bonusDoJogo, prometer } from "./vestiario.js";
 import { limiteEstrangeiros, contaComoEstrangeiro } from "../estrangeiros.js";
@@ -75,7 +75,7 @@ export interface Clube {
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
   /** promessas quebradas recentes (pesam no clima) */ promessasQuebradas?: number;
-  /** artilharia e assistências da sua liga (somadas dos jogos de verdade) e os gols de cada jogo da rodada */ artLiga?: ArtLiga; lancesRodada?: Record<number, Record<string, GolLiga[]>>;
+  /** artilharia e assistências da sua liga (somadas dos jogos de verdade) e os gols de cada jogo da rodada */ artLiga?: ArtLiga; /** a artilharia de verdade das temporadas passadas (para o histórico dos clubes) */ artHist?: Record<number, ArtLiga>; lancesRodada?: Record<number, Record<string, GolLiga[]>>;
   /** escalações salvas para reusar */ escSalvas?: { nome: string; formacao: string; titulares: (string | null)[]; reservas: string[]; tatica: Tatica }[];
   /** mercado avançado: seus anúncios, jogadores oferecidos, anúncios de outros clubes e clubes parceiros */
   necessidades?: import("./mercado-extra.js").Necessidade[]; oferecidos?: import("./mercado-extra.js").Oferecido[]; procurando?: import("./mercado-extra.js").Procura[]; parceiros?: string[];
@@ -890,7 +890,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   const eventos: string[] = [], ab = semanaAbs(s), li = infoLiga(s.ligaId), w = mundo(pacote);
   let partida: Relatorio | undefined;
   // jogo de copa da semana (meio de semana): com a sua escalação, antes da rodada da liga
-  let partidaCopa: (Relatorio & { copa: string }) | undefined, meuCopa: { id: string; gc: number; gf: number } | undefined;
+  let partidaCopa: (Relatorio & { copa: string }) | undefined, meuCopa: { id: string; gc: number; gf: number; gols?: GolLiga[] } | undefined;
   const jc = jogoCopaT(pacote, s);
   if (jc) {
     if (!s.aoVivo) eventos.push(...conferirEscalacao(s));
@@ -903,7 +903,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
     for (const x of s.elenco) { const c0 = antes.get(x.id); if (c0 !== undefined && x.condicao < c0) x.condicao = Math.max(x.condicao, c0 - 7); }
     const nomeCopa = `${COPAS[jc.copa.id].curto} · ${rotuloJogo(jc.jogo)}`;
     partidaCopa = { ...rel, copa: nomeCopa };
-    meuCopa = { id: jc.jogo.id, gc: rel.gc, gf: rel.gf };
+    meuCopa = { id: jc.jogo.id, gc: rel.gc, gf: rel.gf, gols: rel.eventos.filter((e) => e.tipo === "gol").map((e) => [e.min, e.meu === souCasa, e.autor ?? "", e.assist ?? ""] as GolLiga) };
     const mg = souCasa ? rel.gc : rel.gf, dg = souCasa ? rel.gf : rel.gc;
     // jogo de copa em casa também dá bilheteria (e custo de operação)
     if (souCasa && !jc.jogo.neutro) { const bruto = bilheteria(s, clamp(0.55 + s.clube.torcida / 250, 0.3, 1), 0.9); s.clube.saldo += Math.round(bruto * 0.75); receber(s, "Bilheteria", bruto); gastar(s, "Operação dos jogos", Math.round(bruto * 0.25)); }
@@ -1083,7 +1083,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   try { viradaNegocios(pacote, s, s.temporada, (a, semanas, titular) => { for (let i = 0; i < semanas; i++) a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: "tecnico", intensidade: "normal", participacao: titular ? "titular" : i % 2 ? "entrou" : "naoJogou", moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: 0.95 }); }); } catch (err) { console.error(err); }
   try {
     const camp = Object.values(s.palmaresT?.[s.temporada] ?? {}).filter(Boolean) as string[];
-    const rev = (s.revista ??= {}); rev[ANO_INICIAL_T + s.temporada] = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [...camp, ordenar(s.tabela)[0]?.clube].filter(Boolean) as string[]);
+    const rev = (s.revista ??= {}); rev[ANO_INICIAL_T + s.temporada] = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [...camp, ordenar(s.tabela)[0]?.clube].filter(Boolean) as string[], undefined, revistaT(s));
     for (const k of Object.keys(rev).map(Number).sort((x, y) => x - y).slice(0, -3)) delete rev[k];
     noticia(s, "clube", `Saiu a revista ISPN de ${ANO_INICIAL_T + s.temporada}: os 100 melhores do mundo, da Europa, das Américas e sub-21 (Liga › Revista).`);
   } catch (err) { console.error(err); }
@@ -1115,6 +1115,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   }
   for (const a of s.elenco) guardarTemporada(s, a);
   for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.titT = 0; a.promessas = (a.promessas ?? []).filter((p) => p.tipo === "reforco"); a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
+  if (s.artLiga?.t === s.temporada) { (s.artHist ??= {})[s.temporada] = s.artLiga; s.artHist = Object.fromEntries(Object.entries(s.artHist).slice(-12)); }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.lancesRodada = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
   for (const av of viradaPatro(pacote, s)) noticia(s, "dinheiro", av);
   // o mundo vira a temporada (com a tabela da liga do técnico valendo para o acesso e o rebaixamento)
@@ -1476,3 +1477,6 @@ export function prometerT(s: SaveTecnico, id: string, tipo: import("./modelo.js"
   const fimJanela = s.semana < PRE_JANELA ? base + PRE_JANELA : s.semana < MEIO_FIM ? base + MEIO_FIM : base + 60 + PRE_JANELA;
   return prometer(s, id, tipo, ab, fimJanela, base + semanasDaTemporada(s) - 1);
 }
+
+/** Ajuste da revista para o modo técnico (números de verdade da sua liga e o seu elenco real). */
+export const revistaT = (s: SaveTecnico) => ajustarRevista(s, (id) => { const a = s.elenco.find((x) => x.id === id); return a?.notas.length ? a.notas.reduce((x, y) => x + y, 0) / a.notas.length : undefined; }, ovrDe);

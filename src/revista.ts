@@ -25,9 +25,10 @@ export function pontosRevista(c: Cand, campeoes: Set<string>): number {
   return +(c.ovr + ((c.nota - 6.5) * 9 + producao) * peso + vitrine + foraDaEuropa + (campeoes.has(c.clubeId) ? 2.5 * peso : 0)).toFixed(1);
 }
 /** Monta a edição do ano (com o jogador do usuário, se ele jogou o mínimo). */
-export function montarRevista(pacote: PacoteDados, ano: number, extra: Cand[] = [], campeoes: string[] = [], feitas?: number): EdicaoRevista {
+export function montarRevista(pacote: PacoteDados, ano: number, extra: Cand[] = [], campeoes: string[] = [], feitas?: number, ajustar?: (l: Cand[]) => Cand[]): EdicaoRevista {
   const camp = new Set(campeoes);
-  const todos: Cand[] = [...candidatosDoAno(pacote, 58, feitas), ...extra];
+  // o modo técnico troca os números da liga dele pelos dos jogos de verdade (e o elenco dele pelo elenco real)
+  const base = candidatosDoAno(pacote, 58, feitas), todos: Cand[] = [...(ajustar ? ajustar(base) : base), ...extra];
   const vistos = new Set<string>(), cands = todos.filter((c) => { const k = `${c.nome}|${c.clubeId}`; if (vistos.has(k)) return false; vistos.add(k); return true; });
   const item = (c: Cand): ItemRevista => ({ nome: c.nome, clubeId: c.clubeId, posicao: c.posicao, idade: c.idade ?? 0, nacionalidade: c.nacionalidade, pontos: pontosRevista(c, camp), nota: c.nota, gols: c.gols, assist: c.assist, jogos: c.jogos ?? 0, ...(c.eu ? { eu: true } : {}) });
   const ord = cands.map(item).sort((a, b) => b.pontos - a.pontos);

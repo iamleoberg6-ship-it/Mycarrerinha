@@ -12,6 +12,7 @@ import * as MX from "../src/tecnico/mercado-extra.js";
 import * as PD from "../src/tecnico/plano-dir.js";
 import * as G from "../src/tecnico/gestao.js";
 import { limiteEstrangeiros } from "../src/estrangeiros.js";
+import { montarRevista as montarRevistaT } from "../src/revista.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1797,6 +1798,11 @@ teste("Técnico: gols da rodada, artilharia e assistências batem com os placare
   const vendidos = (s.transferencias ?? []).filter((t) => t.venda && t.t === s.temporada).length;
   if (!vendidos) assert.equal(npc + meus, totalTabela, "gols da artilharia = gols da tabela");
   for (const v of Object.values(art)) assert.ok(v.j >= 0 && v.g >= 0 && v.a >= 0);
+  // copas: cada jogo jogado tem tantos gols com autor quanto o placar
+  for (const e of Object.values(s.copas ?? {})) for (const j of e?.jogos ?? []) if (j.gc !== undefined && j.gols) assert.equal(j.gols.length, (j.gc ?? 0) + (j.gf ?? 0));
+  // revista: na sua liga, os números são os de verdade
+  const ed = montarRevistaT(pacote, 2026, [], [], 10, T.revistaT(s));
+  for (const it of ed.listas.mundo.filter((x) => x.clubeId !== s.clubeId)) { const v = art[`${it.clubeId}|${it.nome}`]; if (v) assert.equal(it.gols, v.g); }
 });
 
 teste("Técnico: vestiário, promessas, mentoria, treino individual, bônus, estrangeiros", () => {

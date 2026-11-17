@@ -27,7 +27,7 @@ import { NOME_ACAO_NAMORO, NOME_ACAO_FILHO, NOME_ACAO_EX, NOME_ETAPA, PROFISSOES
 import { IMOVEL, nomeImovel, patrimonio, type EstadoCasa } from "../../src/casa";
 import { EMPRESAS, INVEST, DECISOES, FRANQUIAVEIS, MAX_UNIDADES, CUSTO_ASSESSOR, patrimonioInvestido, type EstadoNegocios, type TipoEmpresa, type TipoInvest, type AcaoEmpresa, type DecisaoMes } from "../../src/negocios";
 import { negociosT, abrirEmpresaT, agirEmpresaT, decidirMesT, franquiaT, aplicarT, responderPropostaNegT, assessorT, semanaVida, casaT, acoesFamiliaT, agirFamiliaT, acoesParT, agirParT, acoesFilhoT, agirFilhoT, exesT, acoesExT, agirExT, perfisDaSemanaT, curtirT, salarioTecnico, bolso, trazerVida, anoVida } from "../../src/tecnico/familia-t";
-import { copasT, jogoCopaT } from "../../src/tecnico/copas-t";
+import { rankingCopaT, copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
 import { patroSel, ofertasSel, mesaSel, negociarSel, COTAS_SEL, NOME_COTA_SEL, type CotaSel } from "../../src/tecnico/patro-sel";
 import { poolSel, convocarMelhores, convocadosDe, forcaMinhaSel, copasSel, proximoJogoSel, metaNoTorneio, textoMeta, aceitarSelecao, deixarSelecao, listaSelecoes, declararInteresseSel, FORMACOES_SEL, POS_ORDEM, type Candidato, type Formacao, type Estilo } from "../../src/tecnico/selecao-t";
@@ -108,7 +108,7 @@ import {
 import { criarAgendador, chaveNuvem, nuvemDisponivel, apagarDaNuvem } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
-  proximoJogo, outrosDaRodada, estrangeirosT, prometerT, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
+  proximoJogo, outrosDaRodada, estrangeirosT, prometerT, revistaT, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, alvoPorNome, alternarVenda,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
@@ -758,7 +758,7 @@ function abaRevista(s: SaveTecnico): string {
   const anos = Object.keys(s.revista ?? {}).map(Number).sort((a, b) => b - a);
   if (rvAno !== "previa" && !anos.includes(rvAno)) rvAno = anos[0] ?? "previa";
   let ed: EdicaoRevista | undefined;
-  if (rvAno === "previa") { const k = `${s.semente}|${s.temporada}|${s.semana}`; ed = previaCache.get(k); if (!ed) { ed = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [], Math.max(1, s.semana - SEMANAS_PRE_T)); previaCache.clear(); previaCache.set(k, ed); } }
+  if (rvAno === "previa") { const k = `${s.semente}|${s.temporada}|${s.semana}`; ed = previaCache.get(k); if (!ed) { ed = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [], Math.max(1, s.semana - SEMANAS_PRE_T), revistaT(s)); previaCache.clear(); previaCache.set(k, ed); } }
   else ed = s.revista?.[rvAno];
   return `<section class="painel">${revistaHtml(ed, { lista: rvLista, ano: rvAno, anos: ["previa", ...anos], nomeClube, escudo: (id) => escudo(id, "escudo esc-p"), foto: (x) => fotoNpcT(x.nome, x.clubeId, x.idade) })}</section>`;
 }
@@ -867,8 +867,8 @@ function abaCopas(s: SaveTecnico): string {
     const grupo = Object.entries(e.tabelas).find(([, t]) => t.some((x) => x.clube === s.clubeId));
     const tabela = grupo ? `<table class="tab" style="margin:6px 0"><thead><tr><th>#</th><th style="text-align:left">${grupo[0].length === 1 ? `Grupo ${grupo[0]}` : esc(grupo[0])}</th><th>J</th><th>SG</th><th>P</th></tr></thead><tbody>${ordenar(grupo[1]).slice(0, grupo[1].length > 12 ? 12 : grupo[1].length).map((t, i) => `<tr${t.clube === s.clubeId ? ' class="eu"' : ""}><td>${i + 1}</td><td class="cl" style="text-align:left">${escudo(t.clube, "escudo esc-p")}${nomeTime(t.clube)}</td><td>${t.j}</td><td>${t.gp - t.gc}</td><td><b>${t.pts}</b></td></tr>`).join("")}</tbody></table>` : "";
     const jogos = meus.map((j) => `<div class="not" style="display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px;align-items:center"><small class="sub">S${j.semana + 1}</small><span style="text-align:right">${nomeTime(j.casa)}</span><b>${j.gc === undefined ? "×" : `${j.gc}–${j.gf}${j.penaltis ? "*" : ""}`}</b><span>${nomeTime(j.fora)}</span><small class="sub" style="grid-column:2 / 5">${esc(rotuloJogo(j))}${j.penaltis ? ` · pênaltis: ${esc(nomeClube(j.penaltis))}` : ""}</small></div>`).join("");
-    const art = s.elenco.map((a) => ({ a, c: a.porComp?.[e.id] })).filter((x) => x.c && (x.c.g || x.c.a)).sort((x, y) => y.c!.g - x.c!.g || y.c!.a - x.c!.a).slice(0, 6);
-    const artH = art.length ? `<p class="rotulo" style="margin-top:8px">Seus artilheiros nesta copa</p>${art.map(({ a, c }) => `<div class="not" style="display:flex;justify-content:space-between"><span>${esc(a.nome)} <small class="sub">${a.pos} · ${c!.j} ${c!.j === 1 ? "jogo" : "jogos"}</small></span><span><b>${c!.g}</b> gols · ${c!.a} assist.</span></div>`).join("")}` : "";
+    const tabArt = (tipo: "g" | "a", n: number) => { const l = rankingCopaT(s, e, tipo, n); return l.length ? `<p class="rotulo" style="margin-top:8px">${tipo === "g" ? "Artilharia" : "Assistências"} da copa</p><table class="tab"><tbody>${l.map((x, i) => `<tr class="${x.meu ? "eu" : ""}"><td>${i + 1}</td><td class="cl">${escudo(x.clubeId, "escudo esc-p")}${esc(x.nome)}</td><td>${x.jogos}</td><td><b>${x.valor}</b></td></tr>`).join("")}</tbody></table>` : ""; };
+    const artH = tabArt("g", 8) + tabArt("a", 5);
     return `<section class="painel"><p class="rotulo" style="color:${info.cores[0]}">${esc(info.nome)}</p><p style="margin:0 0 4px"><b>${fase}</b></p>${onde}${tabela}${jogos}${artH}</section>`;
   }).join("") + sala;
 }
@@ -914,11 +914,14 @@ function perfilClubeT(s: SaveTecnico, clubeId: string): string {
   completarBio(s);
   const feitas = Math.max(0, s.semana - SEMANAS_PRE_T), meu = clubeId === s.clubeId;
   const dele = (s.temporadasElenco ?? []).filter((x) => x.clubeId === clubeId);
-  const ignorar = [...new Set([...dele.map((x) => x.t), ...s.historico.filter((h) => h.clubeId === clubeId).map((h) => h.t), ...(meu ? [s.temporada] : [])])];
+  // temporadas da sua liga que você jogou: os números desse clube saem dos jogos de verdade (não da estimativa do mundo)
+  const arq = meu ? [] : Object.entries({ ...(s.artHist ?? {}), ...(s.artLiga?.t === s.temporada ? { [s.temporada]: s.artLiga } : {}) }).filter(([, v]) => Object.values(v.x).some((x) => x.c === clubeId)).map(([t, v]) => ({ t: +t, l: Object.values(v.x).filter((x) => x.c === clubeId) }));
+  const ignorar = [...new Set([...dele.map((x) => x.t), ...s.historico.filter((h) => h.clubeId === clubeId).map((h) => h.t), ...arq.map((x) => x.t), ...(meu ? [s.temporada] : [])])];
   const usuario: TemporadaUsuario[] = [
     ...dele.map((x) => ({ nome: x.nome, t: x.t, j: x.j, g: x.g, a: x.a, pos: x.pos, nota: x.nota, outro: true })),
     ...(meu ? s.elenco.filter((a) => a.jogos > 0).map((a) => ({ nome: a.nome, t: s.temporada, j: a.jogos, g: a.gols, a: a.assist, pos: a.pos, nota: a.notas.length ? a.notas.reduce((x, y) => x + y, 0) / a.notas.length : undefined, outro: true })) : []),
     ...(s.bio?.temporadas ?? []).filter((x) => x.clubeId === clubeId).map((x) => ({ nome: s.bio!.apelido, t: x.t, j: x.j, g: x.g, a: x.a, pos: s.bio!.pos, nota: x.nota })),
+    ...arq.flatMap(({ t, l }) => l.map((x) => ({ nome: x.n, t, j: x.j, g: x.g, a: x.a, pos: x.p ?? "MEI", outro: true }))),
   ];
   const tit = titulosDoClube(pacote, clubeId), xi = timeDeTodosOsTempos(pacote, clubeId, usuario, feitas, ignorar), rec = recordesHistoricosDoClube(pacote, clubeId, usuario, feitas, ignorar);
   const ano = (t?: number) => (t === undefined ? "" : String(ANO_INICIAL_T + t));

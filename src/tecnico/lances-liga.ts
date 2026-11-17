@@ -13,7 +13,7 @@ import type { SaveTecnico, EventoPartida } from "./motor.js";
 /** Um gol: minuto, se foi do time da casa, autor e quem deu o passe ("" = sem assistência). */
 export type GolLiga = [number, boolean, string, string];
 export interface JogoNpc { casa: string; fora: string; gc: number; gf: number; gols: GolLiga[] }
-export interface ArtLiga { t: number; ligaId: string; /** chave: clube|nome (nomes iguais em clubes diferentes não se misturam) */ x: Record<string, { n: string; c: string; j: number; g: number; a: number }> }
+export interface ArtLiga { t: number; ligaId: string; /** chave: clube|nome (nomes iguais em clubes diferentes não se misturam) */ x: Record<string, { n: string; c: string; j: number; g: number; a: number; p?: string }> }
 
 const pesoGol = (j: JogadorNPC) => (j.posicao === "GOL" ? 0.002 : (SHARE_GOL[j.posicao as keyof typeof SHARE_GOL] ?? 0.05) * Math.pow(Math.max(40, j.ovr) / 70, 1.6));
 const pesoAss = (j: JogadorNPC) => (j.posicao === "GOL" ? 0.01 : (SHARE_ASSIST[j.posicao as keyof typeof SHARE_ASSIST] ?? 0.05) * Math.pow(Math.max(40, j.ovr) / 70, 1.5));
@@ -50,7 +50,7 @@ export function registrarRodada(pacote: PacoteDados, s: SaveTecnico, jogos: Jogo
   if (!s.artLiga || s.artLiga.t !== s.temporada || s.artLiga.ligaId !== s.ligaId || Object.values(s.artLiga.x).some((v) => !v.n)) s.artLiga = { t: s.temporada, ligaId: s.ligaId, x: {} };
   const x = s.artLiga.x, w = mundo(pacote);
   const linha = (nome: string, c: string) => (x[`${c}|${nome}`] ??= { n: nome, c, j: 0, g: 0, a: 0 });
-  const jogou = (clube: string) => { for (const j of onzeProvavel(w.clube[clube]?.elenco ?? [])) linha(j.nome, clube).j++; };
+  const jogou = (clube: string) => { for (const j of onzeProvavel(w.clube[clube]?.elenco ?? [])) { const l = linha(j.nome, clube); l.j++; l.p ??= j.posicao; } };
   for (const g of jogos) {
     jogou(g.casa); jogou(g.fora);
     for (const [, casa, autor, passe] of g.gols) { const c = casa ? g.casa : g.fora; if (autor) linha(autor, c).g++; if (passe) linha(passe, c).a++; }
@@ -59,4 +59,21 @@ export function registrarRodada(pacote: PacoteDados, s: SaveTecnico, jogos: Jogo
     jogou(meu.adv);
     for (const e of meu.eventos) if (e.tipo === "gol" && !e.meu) { if (e.autor) linha(e.autor, meu.adv).g++; if (e.assist) linha(e.assist, meu.adv).a++; }
   }
+}
+
+/** A revista do modo técnico: na sua liga valem os gols, passes e jogos de verdade; o seu clube entra com o elenco real. */
+export function ajustarRevista(s: SaveTecnico, notaMedia: (nome: string) => number | undefined, ovrDe: (a: SaveTecnico["elenco"][number]) => number) {
+  return <C extends { nome: string; clubeId: string; ligaId: string; gols: number; assist: number; jogos?: number; posicao: string; nota: number; idade?: number; ovr: number; nacionalidade: string; minimo: number }>(l: C[]): C[] => {
+    const art = s.artLiga && s.artLiga.t === s.temporada && s.artLiga.ligaId === s.ligaId ? s.artLiga.x : undefined;
+    const out = l.filter((c) => c.clubeId !== s.clubeId).map((c) => {
+      const v = c.ligaId === s.ligaId ? art?.[`${c.clubeId}|${c.nome}`] : undefined;
+      return v ? { ...c, gols: v.g, assist: v.a, jogos: Math.max(v.j, 1) } : c;
+    }).filter((c) => (c.jogos ?? 0) >= Math.min(c.minimo, 3) || c.ligaId !== s.ligaId);
+    for (const a of s.elenco) {
+      if (a.jogos < 3 || ovrDe(a) < 58) continue;
+      const nota = notaMedia(a.id) ?? 6.5;
+      out.push({ ...(l[0] ?? {}), nome: a.nome, clubeId: s.clubeId, ligaId: s.ligaId, posicao: a.pos, nota, gols: a.gols, assist: a.assist, jogos: a.jogos, idade: a.idade, ovr: ovrDe(a), nacionalidade: a.nac, minimo: 1 } as C);
+    }
+    return out;
+  };
 }

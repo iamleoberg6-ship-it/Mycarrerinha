@@ -15,6 +15,7 @@ import { figurinhaLivre } from "../figurinhas.js";
 import { viradaPatroSel, bonusSel } from "./patro-sel.js";
 import type { PosT } from "./modelo.js";
 import { ovrDe } from "./modelo.js";
+import { golsDaSemana } from "./copas-t.js";
 import type { SaveTecnico } from "./motor.js";
 import { ANO_INICIAL_T } from "./motor.js";
 
@@ -159,7 +160,7 @@ export function copasSel(pacote: PacoteDados, s: SaveTecnico): Partial<Record<Co
   // Finalíssima: campeão da Eurocopa contra o da Copa América (se você ganhou um deles)
   if (ehFinalissima(t)) { const ult = sel.titulos.filter((x) => x.t === t - 1 && (x.id === "EUR" || x.id === "AME")); if (ult.length) { const outro = todasSelecoes(pacote).filter((x) => confederacao(x.pais) !== conf && (confederacao(x.pais) === "UEFA" || confederacao(x.pais) === "CONMEBOL")).sort((a, b) => b.forca - a.forca)[0]; if (outro) copas.FIN = novaCopa("FIN", t, [meu, outro.id], forca, paisDe, confDe, s.semente); } }
   // assumiu com a temporada andando: as semanas que passaram são simuladas
-  for (const e of Object.values(copas)) for (let sem = 0; sem < s.semana && e; sem++) rodarSemana(e, sem, forca, new RNG(`${s.semente}|selT-atraso|${e.id}|${t}|${sem}`));
+  for (const e of Object.values(copas)) for (let sem = 0; sem < s.semana && e; sem++) { rodarSemana(e, sem, forca, new RNG(`${s.semente}|selT-atraso|${e.id}|${t}|${sem}`)); golsDaSemana(pacote, s, e, sem); }
   sel.copas = copas; sel.copasT = t;
   return copas;
 }
@@ -202,7 +203,7 @@ export function semanaSelecao(pacote: PacoteDados, s: SaveTecnico, nota: (t: str
     const fMe = fm ? fm.forca + bonusEstilo(sel.estilo, fm.forca, fAdv) : 0;
     const forca = (id: string) => (id === meu && fm ? fMe : w.clube[id]?.forca ?? 65);
     const antesFim = e.fase;
-    rodarSemana(e, s.semana, forca, new RNG(`${s.semente}|selT|${e.id}|${s.temporada}|${s.semana}`));
+    rodarSemana(e, s.semana, forca, new RNG(`${s.semente}|selT|${e.id}|${s.temporada}|${s.semana}`)); golsDaSemana(pacote, s, e, s.semana);
     if (jm && fm) registrarJogo(pacote, s, e, jm, fm.onze, fMe, fAdv, nota);
     if (antesFim !== "fim" && e.fase === "fim" && e.clubes.includes(meu)) fimDoTorneio(pacote, s, e, nota);
     else if (e.id !== "SEL" && e.clubes.includes(meu) && e.fase !== "fim" && !vivo(e, meu) && !sel.avaliadas.includes(`${s.temporada}-${e.id}`)) fimDoTorneio(pacote, s, e, nota);

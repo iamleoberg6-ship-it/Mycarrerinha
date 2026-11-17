@@ -10,6 +10,8 @@ import {
 } from "../copas.js";
 import { infoLiga } from "../ligas.js";
 import type { SaveTecnico } from "./motor.js";
+import { onzeProvavel } from "../relacoes.js";
+import { autorNpc } from "./lances-liga.js";
 
 const CONTINENTAIS: CopaId[] = ["LIB", "UCL", "ACL", "CON"];
 const ESTADUAIS: CopaId[] = ["PAU", "CAR", "MIN", "GAU", "PRN", "CAT", "BAI", "PER", "CEA", "GOI"];
@@ -42,7 +44,7 @@ export function copasT(pacote: PacoteDados, s: SaveTecnico): Partial<Record<Copa
   // Mundial de Clubes (a cada quatro anos, no fim da temporada)
   if (ehMundial(t)) { const ms = participantesMundialT(pacote, s); if (ms.length === 32) copas.MUN = novaCopa("MUN", t, ms, forca, paisDe, (id) => confederacao(paisDe(id) || w.info[id]?.pais || ""), s.semente); }
   // carreira que já estava rolando quando as copas chegaram: as semanas que passaram são simuladas
-  for (const e of Object.values(copas)) for (let sem = 0; sem < s.semana && e; sem++) rodarSemana(e, sem, forca, new RNG(`${s.semente}|copaT-atraso|${e.id}|${t}|${sem}`));
+  for (const e of Object.values(copas)) for (let sem = 0; sem < s.semana && e; sem++) { rodarSemana(e, sem, forca, new RNG(`${s.semente}|copaT-atraso|${e.id}|${t}|${sem}`)); golsDaSemana(pacote, s, e, sem); }
   s.copas = copas; s.copasT = t;
   return copas;
 }
@@ -76,12 +78,13 @@ export function jogoCopaT(pacote: PacoteDados, s: SaveTecnico) {
 export const temCopaPendente = (s: SaveTecnico) => Object.values(s.copas ?? {}).some((e) => e && e.temporada === s.temporada && e.jogos.some((j) => j.gc === undefined && j.semana >= s.semana && (j.casa === s.clubeId || j.fora === s.clubeId)));
 
 /** Roda a semana de todas as copas (com o placar do jogo do seu clube) e devolve os títulos e eliminações do seu clube. */
-export function rodarCopasT(pacote: PacoteDados, s: SaveTecnico, meu?: { id: string; gc: number; gf: number }): { titulos: CopaId[]; caiu: CopaId[] } {
+export function rodarCopasT(pacote: PacoteDados, s: SaveTecnico, meu?: { id: string; gc: number; gf: number; gols?: [number, boolean, string, string][] }): { titulos: CopaId[]; caiu: CopaId[] } {
   const w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60, out = { titulos: [] as CopaId[], caiu: [] as CopaId[] };
   for (const e of Object.values(copasT(pacote, s))) {
     if (!e || e.fase === "fim") continue;
     const tinha = e.clubes.includes(s.clubeId) && vivo(e, s.clubeId);
     rodarSemana(e, s.semana, forca, new RNG(`${s.semente}|copaT|${e.id}|${s.temporada}|${s.semana}`), meu);
+    golsDaSemana(pacote, s, e, s.semana, meu);
     if (e.fase === "fim" && e.campeao) (s.palmaresT ??= {})[s.temporada] = { ...(s.palmaresT?.[s.temporada] ?? {}), [e.id]: e.campeao };
     if (!tinha) continue;
     if (e.campeao === s.clubeId) out.titulos.push(e.id);
@@ -100,7 +103,7 @@ export function fecharCopasT(pacote: PacoteDados, s: SaveTecnico) {
   const w = mundo(pacote), forca = (id: string) => w.clube[id]?.forca ?? 60;
   for (const e of Object.values(s.copas ?? {})) {
     if (!e || e.fase === "fim") continue;
-    for (let sem = 0; sem <= 46 && e.fase !== "fim"; sem++) rodarSemana(e, sem, forca, new RNG(`${s.semente}|copaT-fim|${e.id}|${s.temporada}|${sem}`));
+    for (let sem = 0; sem <= 46 && e.fase !== "fim"; sem++) { rodarSemana(e, sem, forca, new RNG(`${s.semente}|copaT-fim|${e.id}|${s.temporada}|${sem}`)); golsDaSemana(pacote, s, e, sem); }
     if (e.campeao) (s.palmaresT ??= {})[s.temporada] = { ...(s.palmaresT?.[s.temporada] ?? {}), [e.id]: e.campeao };
   }
 }
@@ -114,3 +117,32 @@ export function premioDeTitulo(s: SaveTecnico, id: CopaId): { dinheiro: number; 
 }
 /** Bônus por vitória num jogo de copa (a premiação por fase). */
 export const bonusVitoriaCopa = (s: SaveTecnico, id: CopaId) => Math.round(s.clube.tv * 0.04 * peso(id));
+
+/** Artilharia (ou assistências) de uma copa: todos os clubes, somando os gols de cada jogo. */
+export function rankingCopaT(s: SaveTecnico, e: EstadoCopa, tipo: "g" | "a", limite = 10): { nome: string; clubeId: string; valor: number; jogos: number; meu: boolean }[] {
+  const x: Record<string, { n: string; c: string; v: number; j: Set<string> }> = {};
+  for (const j of e.jogos) {
+    if (!j.gols || j.amistoso) continue;
+    for (const [, casa, autor, passe] of j.gols) {
+      const nome = tipo === "g" ? autor : passe, c = casa ? j.casa : j.fora;
+      if (!nome) continue;
+      const k = `${c}|${nome}`; (x[k] ??= { n: nome, c, v: 0, j: new Set() }).v++;
+    }
+  }
+  const jogosDo = (c: string) => e.jogos.filter((j) => j.gc !== undefined && !j.amistoso && (j.casa === c || j.fora === c)).length;
+  return Object.values(x).map((v) => ({ nome: v.n, clubeId: v.c, valor: v.v, jogos: v.c === s.clubeId ? (s.elenco.find((a) => a.nome === v.n)?.porComp?.[e.id]?.j ?? jogosDo(v.c)) : jogosDo(v.c), meu: v.c === s.clubeId }))
+    .sort((a, b) => b.valor - a.valor || a.jogos - b.jogos).slice(0, limite);
+}
+
+/** Gols com autor e passe para os jogos já jogados de uma semana (o seu vem do lance narrado; os outros, do time provável). */
+export function golsDaSemana(pacote: PacoteDados, s: SaveTecnico, e: EstadoCopa, semana: number, meu?: { id: string; gols?: [number, boolean, string, string][] }) {
+  const w = mundo(pacote);
+  for (const j of e.jogos) {
+    if (j.semana !== semana || j.gc === undefined || j.gols) continue;
+    if (meu && meu.id === j.id && meu.gols) { j.gols = meu.gols; continue; }
+    const rg = new RNG(`${s.semente}|golsCopa|${e.temporada}|${j.id}`), oc = onzeProvavel(w.clube[j.casa]?.elenco ?? []), of = onzeProvavel(w.clube[j.fora]?.elenco ?? []), g: [number, boolean, string, string][] = [];
+    for (let k = 0; k < (j.gc ?? 0); k++) { const [a, p] = autorNpc(rg, oc); g.push([rg.int(1, 90), true, a, p]); }
+    for (let k = 0; k < (j.gf ?? 0); k++) { const [a, p] = autorNpc(rg, of); g.push([rg.int(1, 90), false, a, p]); }
+    j.gols = g.sort((x, y) => x[0] - y[0]);
+  }
+}

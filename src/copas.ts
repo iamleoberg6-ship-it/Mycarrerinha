@@ -109,6 +109,7 @@ export interface JogoCopa {
   /** rodada da fase de grupos/liga, ou perna (1 = ida, 2 = volta) do mata-mata */
   rodada?: number; perna?: 1 | 2; serie?: string; grupo?: string; neutro?: boolean; amistoso?: boolean;
   gc?: number; gf?: number; penaltis?: string;
+  /** gols do jogo: minuto, se foi da casa, autor e passe ("" = sem) */ gols?: [number, boolean, string, string][];
 }
 export interface EstadoCopa {
   id: CopaId; temporada: number; clubes: string[];
