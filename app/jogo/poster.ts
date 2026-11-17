@@ -68,6 +68,24 @@ const PROPRIO: Record<string, (c: string, c2: string) => string> = {
   motorolo: (c, c2) => `<circle cx="20" cy="20" r="17" fill="${c}"/><path d="M9.6 29 L15.6 10.6 L20 22.4 L24.4 10.6 L30.4 29" fill="none" stroke="${c2}" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>`,
   // só o nome em letra cursiva
   kokakolla: (c) => `<text x="20" y="25" text-anchor="middle" font-family="'Brush Script MT', 'Segoe Script', cursive" font-style="italic" font-weight="700" font-size="14" textLength="38" lengthAdjust="spacingAndGlyphs" fill="${c}">Koka-Kolla</text>`,
+  // um tiozinho em estêncil preto e branco: cabelo branco, óculos e um bigodão marcante
+  kentucky: () => `<circle cx="20" cy="20" r="18.5" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.6"/><path d="M8.4 17 C8 8.6 13 5.2 20 5.2 C27 5.2 32 8.6 31.6 17 C30.4 13 27.6 11.2 20 11.4 C12.4 11.2 9.6 13 8.4 17 Z" fill="#1A1A1A"/>`
+    + `<path d="M10.6 15.4 C10.6 26 14 31.4 20 31.4 C26 31.4 29.4 26 29.4 15.4" fill="none" stroke="#1A1A1A" stroke-width="1.6"/><g fill="none" stroke="#1A1A1A" stroke-width="1.6"><rect x="12" y="15.4" width="6.4" height="4.6" rx="2"/><rect x="21.6" y="15.4" width="6.4" height="4.6" rx="2"/><path d="M18.4 17.2 H21.6"/></g>`
+    + `<path d="M11.2 25.4 C13.4 22.4 17 22.2 20 23.4 C23 22.2 26.6 22.4 28.8 25.4 C26 25 23.4 25.4 20 26.6 C16.6 25.4 14 25 11.2 25.4 Z" fill="#1A1A1A"/><path d="M18 28 L20 33 L22 28 Z" fill="#1A1A1A"/><path d="M15 35.6 L20 33.6 L25 35.6 L25 37.4 L20 35.6 L15 37.4 Z" fill="#1A1A1A"/>`,
+  // só o nome: "Sub" em verde e "uei" em amarelo
+  subuei: () => `<text x="20" y="25.4" text-anchor="middle" font-family="'Big Shoulders Display', Arial Black, sans-serif" font-weight="900" font-size="15" textLength="38" lengthAdjust="spacingAndGlyphs" stroke="#FFFFFF" stroke-width="1.2" paint-order="stroke"><tspan fill="#008C15">Sub</tspan><tspan fill="#FFC600">uei</tspan></text>`,
+  // duas folhas vermelhas em cima e um olho redondo (a frutinha do guaraná) embaixo
+  gororo: () => `<path d="M20 15 C14 15 8.4 11 7.4 4.6 C13.6 4.4 18.6 8.4 20 15 Z" fill="#E30613"/><path d="M20 15 C26 15 31.6 11 32.6 4.6 C26.4 4.4 21.4 8.4 20 15 Z" fill="#E30613"/><circle cx="20" cy="26" r="10.6" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.6"/><circle cx="20" cy="26" r="5.4" fill="#1A1A1A"/><circle cx="18.4" cy="24.4" r="1.4" fill="#FFFFFF"/>`,
+  // uma seta redonda, dando a volta e descendo
+  skull: (c) => `<path d="M9.4 26.6 A12.4 12.4 0 1 1 30.6 26.6" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/><path d="M24.2 25 L36.4 24.2 L30.4 36 Z" fill="${c}"/>`,
+  // silhueta de um javali correndo
+  pumba: (c, c2) => `<path d="M4 22 C4 16 9 12 16 12 L18 10 L19.6 12 L21 10 L22.4 12.2 C26 12.4 29 14 31 16.6 L36.6 19.4 L37 22.4 L33.6 22.6 L32 21.6 C31 23.4 29.6 24.6 28 25 L31.6 31 L29 31.8 L25.4 26.6 L20 27 L15 26.6 L10.4 31.6 L7.8 30.8 L11.4 25.2 C8.4 24.6 6 23.6 4 22 Z" fill="${c}"/><path d="M27.2 14.2 L28.6 10.2 L30 14.8 Z" fill="${c}"/><path d="M4.6 20.4 Q1.6 19.6 2 16.2" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/><path d="M33.4 22.6 Q35.4 21.6 35.4 19.6" fill="none" stroke="${c2}" stroke-width="1.1" stroke-linecap="round"/><circle cx="31" cy="17.6" r=".9" fill="${c2}"/>`,
+  // três listras inclinadas dentro de um anel
+  adidaz: (c) => `<defs><clipPath id="cAdz"><circle cx="20" cy="20" r="14"/></clipPath></defs><circle cx="20" cy="20" r="17" fill="none" stroke="${c}" stroke-width="2.6"/><g clip-path="url(#cAdz)" fill="${c}" transform="skewX(-22) translate(8 0)">${[9.6, 17.6, 25.6].map((x) => `<rect x="${x}" y="4" width="4.6" height="32"/>`).join("")}</g>`,
+  // um círculo dividido em três
+  mercedez: (c) => `<circle cx="20" cy="20" r="16.4" fill="none" stroke="${c}" stroke-width="2.8"/><path d="M20 20 V3.6 M20 20 L5.8 28.2 M20 20 L34.2 28.2" stroke="${c}" stroke-width="2.8" stroke-linecap="round"/>`,
+  // um sinal de mais gordo e em itálico
+  chevrole: (c) => `<path d="M15 6 H25 V15 H34 V25 H25 V34 H15 V25 H6 V15 H15 Z" fill="${c}" transform="skewX(-16) translate(5.8 0)" stroke-linejoin="round"/>`,
   // dois arcos dourados
   macdonaldo: () => `<path d="M5.4 35 V17 Q5.4 5.4 12.7 5.4 Q20 5.4 20 17 Q20 5.4 27.3 5.4 Q34.6 5.4 34.6 17 V35" fill="none" stroke="#FFC72C" stroke-width="5.2" stroke-linejoin="round"/>`,
 };
