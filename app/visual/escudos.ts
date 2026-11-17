@@ -167,6 +167,14 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<rect x="${(k * 26 / 8).toFixed(2)}" y="15" width="${(26 / 8 + 0.05).toFixed(2)}" height="15" fill="${k % 2 ? "#0A0A0A" : "#D0102C"}"/>`).join("")}<path d="M0 15 H26" stroke="${TINTA}" stroke-width=".8"/></g>`
       + `<ellipse cx="13" cy="15" rx="10.6" ry="13.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
+  // Braga: escudo com o topo de torre de castelo (ameias), dividido ao meio (vermelho e branco) e "SC BRAGA" em preto e branco
+  if (chave === "PT-SCB") {
+    const esc = "M2.4 6 V2 H6 V4.2 H8.6 V2 H12 V4.2 H14 V2 H17.4 V4.2 H20 V2 H23.6 V6 V17.4 Q23.6 25 13 29 Q2.4 25 2.4 17.4 Z";
+    const l = (t: string, y: number, tam: number, larg: number) => `<text x="13" y="${y}" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="${tam}" textLength="${larg}" lengthAdjust="spacingAndGlyphs" fill="#FFFFFF" stroke="#0A0A0A" stroke-width=".8" paint-order="stroke">${t}</text>`;
+    return `<defs><clipPath id="cSCB"><path d="${esc}"/></clipPath></defs><g clip-path="url(#cSCB)"><rect width="13" height="30" fill="#E30613"/><rect x="13" width="13" height="30" fill="#FFFFFF"/></g>`
+      + l("SC", 14.6, 6.4, 7) + l("BRAGA", 21, 5, 14)
+      + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
