@@ -145,6 +145,13 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<g transform="translate(13 15) scale(.98) translate(-13 -15.2)">${cabecaLeao("#034694", "#2F6FC4", "#DCE8F7", "#011E44")}</g>${trevo(2.7)}${trevo(23.3)}`
       + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
+  // Werder Brema: um diamante comprido (losango esticado na vertical), verde, com um W branco dentro
+  if (chave === "DE-SVW") {
+    const dia = "M13 0.8 L23.4 15 L13 29.2 L2.6 15 Z";
+    return `<path d="${dia}" fill="#1D9053"/><path d="M13 3.4 L21.2 15 L13 26.6 L4.8 15 Z" fill="none" stroke="#FFFFFF" stroke-width=".6"/>`
+      + `<text x="13" y="19.4" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="12" textLength="11" lengthAdjust="spacingAndGlyphs" fill="#FFFFFF">W</text>`
+      + `<path d="${dia}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
