@@ -13,6 +13,7 @@ import * as PD from "../src/tecnico/plano-dir.js";
 import * as G from "../src/tecnico/gestao.js";
 import { limiteEstrangeiros } from "../src/estrangeiros.js";
 import { montarRevista as montarRevistaT } from "../src/revista.js";
+import * as SL from "../src/tecnico/selecao-t.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1803,6 +1804,27 @@ teste("Técnico: gols da rodada, artilharia e assistências batem com os placare
   // revista: na sua liga, os números são os de verdade
   const ed = montarRevistaT(pacote, 2026, [], [], 10, T.revistaT(s));
   for (const it of ed.listas.mundo.filter((x) => x.clubeId !== s.clubeId)) { const v = art[`${it.clubeId}|${it.nome}`]; if (v) assert.equal(it.gols, v.g); }
+});
+
+teste("Técnico de seleção: os gols do seu time saem só dos convocados", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-selgols");
+  s.ofertaSel = { pais: "ARG", salario: 300000 } as typeof s.ofertaSel;
+  assert.ok(SL.aceitarSelecao(pacote, s).ok);
+  const conv = new Set(SL.convocadosDe(pacote, s).map((c) => c.nome));
+  for (let k = 0; k < 45 && !s.selecao!.jogos.length; k++) T.avancarSemana(pacote, s);
+  assert.ok(s.selecao!.jogos.length > 0, "a seleção jogou");
+  const meu = s.selecao!.id;
+  let conferidos = 0;
+  for (const e of Object.values(s.selecao!.copas ?? {})) for (const j of e?.jogos ?? []) {
+    if (j.gc === undefined || (j.casa !== meu && j.fora !== meu)) continue;
+    const casa = j.casa === meu;
+    assert.equal((j.gols ?? []).length, (j.gc ?? 0) + (j.gf ?? 0));
+    for (const [, daCasa, autor, passe] of j.gols ?? []) if (daCasa === casa) { assert.ok(conv.has(autor), `${autor} não foi convocado`); if (passe) assert.ok(conv.has(passe)); conferidos++; }
+  }
+  // e as estatísticas da seleção batem com os gols dos jogos
+  const golsSel = Object.values(s.selecao!.jog).reduce((x, v) => x + v.g, 0);
+  assert.equal(golsSel, s.selecao!.stats.gp);
+  void conferidos;
 });
 
 teste("Técnico: vestiário, promessas, mentoria, treino individual, bônus, estrangeiros", () => {

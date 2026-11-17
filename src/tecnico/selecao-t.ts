@@ -16,6 +16,8 @@ import { viradaPatroSel, bonusSel } from "./patro-sel.js";
 import type { PosT } from "./modelo.js";
 import { ovrDe } from "./modelo.js";
 import { golsDaSemana } from "./copas-t.js";
+import { onzeProvavel } from "../relacoes.js";
+import { autorNpc } from "./lances-liga.js";
 import type { SaveTecnico } from "./motor.js";
 import { ANO_INICIAL_T } from "./motor.js";
 
@@ -229,11 +231,18 @@ function registrarJogo(pacote: PacoteDados, s: SaveTecnico, e: EstadoCopa, j: Es
   const rng = new RNG(`${s.semente}|selGols|${s.temporada}|${s.semana}|${e.id}`), gols: string[] = [];
   const sorteia = (pesos: Record<PosT, number>, sem?: string) => { const l = onze.filter((x) => x.c.chave !== sem), tot = l.reduce((a, x) => a + pesos[x.vaga] * Math.max(1, x.c.ovr - 55), 0); let r = rng.next() * tot; for (const x of l) { r -= pesos[x.vaga] * Math.max(1, x.c.ovr - 55); if (r <= 0) return x; } return l[0]; };
   for (const x of onze) { const st = (sel.jog[x.c.chave] ??= { nome: x.c.nome, pos: x.c.pos, j: 0, g: 0, a: 0 }); st.j++; }
+  // os gols do jogo (os seus saem dos convocados que você escalou; os do adversário, da seleção dele)
+  const lances: [number, boolean, string, string][] = [];
   for (let i = 0; i < gm; i++) {
     const autor = sorteia(PESO_GOL); if (!autor) break;
     sel.jog[autor.c.chave].g++; gols.push(autor.c.nome);
-    if (rng.chance(0.72)) { const as = sorteia(PESO_ASS, autor.c.chave); if (as) sel.jog[as.c.chave].a++; }
+    let passe = "";
+    if (rng.chance(0.72)) { const as = sorteia(PESO_ASS, autor.c.chave); if (as) { sel.jog[as.c.chave].a++; passe = as.c.nome; } }
+    lances.push([rng.int(1, 90), casa, autor.c.nome, passe]);
   }
+  const onzeAdv = onzeProvavel(mundo(pacote).clube[casa ? j.fora : j.casa]?.elenco ?? []);
+  for (let i = 0; i < gs; i++) { const [a, p2] = autorNpc(rng, onzeAdv); lances.push([rng.int(1, 90), !casa, a, p2]); }
+  j.gols = lances.sort((x, y) => x[0] - y[0]);
   const st = sel.stats; st.j++; st.gp += gm; st.gc += gs;
   const venceu = gm > gs || (gm === gs && j.penaltis === meu), perdeu = gm < gs || (gm === gs && j.penaltis !== undefined && j.penaltis !== meu);
   if (gm > gs) st.v++; else if (gm < gs) st.d++; else st.e++;
