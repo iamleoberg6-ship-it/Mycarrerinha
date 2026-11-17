@@ -54,6 +54,7 @@ import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, comCampanhas, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
 import { TRACOS, PAISES } from "../../src/dna";
 import { DECISOES, FRANQUIAVEIS, MAX_UNIDADES, type DecisaoMes } from "../../src/negocios";
+import { patroClubeJogo } from "../../src/jogo";
 import { decidirMesJogo, franquiaJogo, escolherProjeto, veteranosMentores, pedirMentorJogo } from "../../src/jogo";
 import { superacaoDe, curvaDoJogador, PROJETOS, metaEtapa, podeEsticar, LIMITE_GANHO, type Projeto } from "../../src/superacao";
 import { NOME_CURVA, TEXTO_CURVA } from "../../src/curvas";
@@ -171,6 +172,7 @@ function patrocinioDoClube(clubeId: string): string | undefined {
   if (m.id === "redboi") return emblemaTouros(m.cores[1], m.cores[2]);
   return nomeNoPeito(m.nome, COR_PATROCINIO[id] ?? "#FFFFFF");
 }
+const claroHex = (c: string) => { const n = parseInt(c.replace("#", "").padEnd(6, "0").slice(0, 6), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255; return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6; };
 function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const us = UNIFORME_SELECAO[clubeId];
   if (us) {
@@ -182,7 +184,10 @@ function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const [a, b] = u ? u.cores : [a0, b0];
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
   const ch = mat?.chuteira ?? (mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1], mat.cores[2]] : undefined);
-  return { patrocinio: patrocinioDoClube(clubeId), cor1: a, cor2: b ?? "#FFFFFF", faixas: u?.faixas, escudo: { chave: idClube(clubeId), nome: info.nome, cores: u?.escudo ?? [a0, b0] }, numeroCor: numeroCorClube(clubeId), calcao: calcaoDoClube(clubeId), meiao: meiaoDoClube(clubeId), padrao: u?.padrao ?? info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
+  const pm = patroClubeJogo(pacote, s, clubeId), mm = pm.master && MARCA[pm.master.marca], fm = pm.fornecedor && MARCA[pm.fornecedor.marca], gm = pm.manga && MARCA[pm.manga.marca];
+  const contraste = claroHex(a) ? "#111111" : "#FFFFFF";
+  const peito = mm ? (mm.id === "redboi" ? emblemaTouros(mm.cores[1], mm.cores[2]) : nomeNoPeito(mm.nome, COR_PATROCINIO[idClube(clubeId)] ?? contraste)) : undefined;
+  return { patrocinio: peito, fornecedor: fm ? simboloMarca(fm, contraste, a) : undefined, manga: gm ? simboloMarca(gm, contraste, a) : undefined, cor1: a, cor2: b ?? "#FFFFFF", faixas: u?.faixas, escudo: { chave: idClube(clubeId), nome: info.nome, cores: u?.escudo ?? [a0, b0] }, numeroCor: numeroCorClube(clubeId), calcao: calcaoDoClube(clubeId), meiao: meiaoDoClube(clubeId), padrao: u?.padrao ?? info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
 }
 /** Aparência com os acessórios dos patrocinadores (óculos e fone) por cima. */
 function apDe(s: Save, forcar?: Marca): Aparencia {
@@ -1400,7 +1405,7 @@ function clubeHtml(clubeId: string): string {
     : `<p class="sub">Ainda sem títulos de liga.</p>`;
   return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade)} · ${esc(infoLiga(liga).curto)}</span></div></div>
     <div class="kv" style="margin-top:10px"><span>Estádio</span><b>${esc(info.estadio)}${info.capacidade ? ` · ${info.capacidade.toLocaleString("pt-BR")} lugares` : ""}</b><span>Técnico</span><b>${tec ? esc(tec.nome) : "—"}</b></div>
-    <div class="perfil-uniforme">${save ? corpoDe(save, "jogo", clubeId) : camisaMini(clubeId, 10)}</div>${info.capacidade ? (() => { const ap = aparenciaDoEstadio(info, mundo(pacote).info); return `<div style="margin:12px 0 0">${svgEstadio(ap.dados).replace("<svg ", '<svg style="width:100%;height:auto;display:block;border-radius:12px" ')}${ap.divideCom.length ? `<p class="sub" style="text-align:center;margin-top:4px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}</div>`; })() : ""}${MARCA[CLUBE_DA_MARCA[idClube(clubeId)] ?? ""] ? `<p class="sub" style="text-align:center;margin:6px 0 0">Clube da ${logoSvg(MARCA[CLUBE_DA_MARCA[idClube(clubeId)]], 22)}</p>` : ""}<p class="sub" style="text-align:center;margin:4px 0 0">${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</p>
+    <div class="perfil-uniforme">${save ? corpoDe(save, "jogo", clubeId) : camisaMini(clubeId, 10)}</div>${info.capacidade ? (() => { const ap = aparenciaDoEstadio(info, mundo(pacote).info); return `<div style="margin:12px 0 0">${svgEstadio(ap.dados).replace("<svg ", '<svg style="width:100%;height:auto;display:block;border-radius:12px" ')}${ap.divideCom.length ? `<p class="sub" style="text-align:center;margin-top:4px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}</div>`; })() : ""}${MARCA[CLUBE_DA_MARCA[idClube(clubeId)] ?? ""] ? `<p class="sub" style="text-align:center;margin:6px 0 0">Clube da ${logoSvg(MARCA[CLUBE_DA_MARCA[idClube(clubeId)]], 22)}</p>` : ""}${save ? (() => { const pm = patroClubeJogo(pacote, save, clubeId), l = (["master", "fornecedor", "manga"] as const).filter((k) => pm[k]).map((k) => `${k === "master" ? "Master" : k === "fornecedor" ? "Material" : "Manga"}: <b>${esc(MARCA[pm[k]!.marca]?.nome ?? pm[k]!.marca)}</b>${pm[k]!.ate < 900 ? ` <small>(até ${ANO_INICIAL + pm[k]!.ate})</small>` : ""}`); return l.length ? `<p class="sub" style="text-align:center;margin:6px 0 0;font-size:12.5px">${l.join(" · ")}</p>` : ""; })() : ""}<p class="sub" style="text-align:center;margin:4px 0 0">${info.cores.map((x) => `<span style="display:inline-block;width:12px;height:12px;background:${x};border:1px solid #0003;vertical-align:middle"></span>`).join(" ")}</p>
     <p class="rotulo" style="margin-top:16px">Títulos${tit.total ? ` · ${tit.total}` : ""}</p>
     <div class="titulos">${trofeus}</div>
     <p class="rotulo" style="margin-top:16px">Time de todos os tempos</p>

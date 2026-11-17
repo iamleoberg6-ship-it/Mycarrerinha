@@ -76,6 +76,8 @@ import { valorBrl, curtoBrl } from "./moeda.js";
 // ------------------------------------------------------------------ tipos
 import { superacaoDe, curvaDoJogador, semanaSuperacao, viradaSuperacao, subirPotencial, pedirMentor, PROJETOS, type Superacao, type Projeto } from "./superacao.js";
 import type { Curva } from "./curvas.js";
+import { patroDoClube, NOME_COTA_MUNDO, type EstadoPatroMundo, type PatroClubeMundo } from "./patro-mundo.js";
+import { MARCA as MARCA_PM } from "./marcas.js";
 export interface Jogador {
   nome: string; apelido: string; posicao: Posicao; pais: string; nacionalidade: string; idade: number;
   at: Atributos; pot: number; faixaPot: [number, number]; personalidade: PersonalidadeDNA; tracos: TracoId[];
@@ -135,6 +137,7 @@ export function noticiaDeRomance(s: Save, tipo: Noticia["tipo"], titulo: string,
 }
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
 export interface Carreira {
+  /** patrocínios dos clubes do mundo (master, fornecedor e manga), guardados quando o clube aparece */ patroMundo?: EstadoPatroMundo;
   /** projetos para esticar o potencial (treino extra, mentoria...) */ superacao?: Superacao;
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
@@ -2678,6 +2681,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   sincronizar(pacote, s);
   noticiasDaVirada(pacote, s);
+  noticiasDePatrocinio(pacote, s);
   // a liga pode ter mudado (acesso ou rebaixamento): a tabela nova é a da divisão em que o clube vai jogar
   const lN = ligaAtual(pacote, s);
   c.tabela = novaTabela(lN); c.stats = statsVazias(); c.clubesTemp = undefined; c.resultadosClube = []; c.placaresRodada = {};
@@ -3055,4 +3059,24 @@ export function pedirMentorJogo(pacote: PacoteDados, s: Save, nome: string): { o
   const v = veteranosMentores(pacote, s).find((x) => x.nome === nome);
   if (!v) return { ok: false, msg: "Esse jogador não está mais no clube." };
   return pedirMentor(superacaoDe(s.carreira), { nome: v.nome, clubeId: s.carreira.clubeId, idade: v.idade, nac: v.nacionalidade }, { nac: s.jogador.nacionalidade, fama: s.carreira.fama, relTecnico: s.carreira.relTecnico, sorte: rngDe(s, "mentor", nome).next() });
+}
+
+// ------------------------------------------------------------------ patrocínios dos clubes do mundo
+/** Master, fornecedor e manga de um clube agora (renova o que venceu). */
+export function patroClubeJogo(pacote: PacoteDados, s: Save, clubeId: string): PatroClubeMundo {
+  return patroDoClube(pacote, (s.carreira.patroMundo ??= {}), s.semente, idClube(clubeId), s.carreira.temporada).pc;
+}
+/** Na virada: os clubes da sua liga renovam ou trocam de patrocinador (vira notícia o master e o fornecedor). */
+function noticiasDePatrocinio(pacote: PacoteDados, s: Save) {
+  const c = s.carreira, l = mundo(pacote).liga[c.ligaId ?? ""], est = (c.patroMundo ??= {}), nome = (x: string) => infoClube(pacote, x)?.nome ?? x;
+  if (!l) return;
+  const trocas: string[] = [];
+  for (const cl of l.clubes) {
+    if (!est[cl.id]) patroDoClube(pacote, est, s.semente, cl.id, c.temporada - 1);
+    for (const n of patroDoClube(pacote, est, s.semente, cl.id, c.temporada).novos) {
+      if (n.cota === "manga" || n.renovou) continue;
+      trocas.push(`${nome(cl.id)}: ${MARCA_PM[n.marca]?.nome ?? n.marca} (${NOME_COTA_MUNDO[n.cota]}, até ${ANO_INICIAL + n.ate})`);
+    }
+  }
+  if (trocas.length) noticia(s, "clube", "Mercado de patrocínio", `Novos contratos na liga: ${trocas.slice(0, 8).join("; ")}.`);
 }

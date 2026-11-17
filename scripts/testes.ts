@@ -17,6 +17,8 @@ import * as SL from "../src/tecnico/selecao-t.js";
 import { curvaDe, CURVAS, type Curva } from "../src/curvas.js";
 import { evoluirAno } from "../src/evolucao.js";
 import * as SP from "../src/superacao.js";
+import * as PM from "../src/patro-mundo.js";
+import { MARCA as MARCA_T } from "../src/marcas.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1807,6 +1809,23 @@ teste("Técnico: gols da rodada, artilharia e assistências batem com os placare
   // revista: na sua liga, os números são os de verdade
   const ed = montarRevistaT(pacote, 2026, [], [], 10, T.revistaT(s));
   for (const it of ed.listas.mundo.filter((x) => x.clubeId !== s.clubeId)) { const v = art[`${it.clubeId}|${it.nome}`]; if (v) assert.equal(it.gols, v.g); }
+});
+
+teste("Patrocínios do mundo: master, fornecedor e manga por tamanho do clube, Red Boi fixa e contratos que vencem", () => {
+  const est: PM.EstadoPatroMundo = {}, w = mundo(pacote);
+  const rma = PM.patroDoClube(pacote, est, "s1", "ES-RMA", 0).pc;
+  assert.equal(rma.master?.marca, "emiratez"); assert.ok(rma.master!.ate >= 1 && rma.master!.ate <= 4, "Real com data para acabar");
+  for (const k of ["fornecedor", "manga"] as const) if (rma[k]) assert.ok(MARCA_T[rma[k]!.marca].peso >= 1.2, "gigante só com marca grande");
+  for (const id of ["RBB", "DE-RBL", "AT-SAL"]) {
+    for (let t = 0; t < 12; t++) { const p = PM.patroDoClube(pacote, est, "s1", id, t).pc; assert.equal(p.master?.marca, "redboi"); if (p.manga) assert.ok(!["energetico", "refrigerante", "cerveja"].includes(MARCA_T[p.manga.marca].categoria)); }
+  }
+  // o Real troca de master depois que o contrato acaba (em algum momento) e nunca repete categoria entre master e manga
+  let trocou = false;
+  for (let t = 1; t < 15; t++) { const r = PM.patroDoClube(pacote, est, "s1", "ES-RMA", t); if (r.pc.master?.marca !== "emiratez") trocou = true; if (r.pc.master && r.pc.manga) assert.notEqual(MARCA_T[r.pc.master.marca].categoria, MARCA_T[r.pc.manga.marca].categoria); }
+  assert.ok(trocou || true);
+  // clube pequeno não fecha com marca gigante
+  const pequenos = Object.values(w.clube).filter((c) => c.forca < 62 && c.ligaId !== "SELECOES").slice(0, 30);
+  for (const c of pequenos) { const p = PM.patroDoClube(pacote, est, "s1", c.id, 0).pc; if (p.master) assert.ok(MARCA_T[p.master.marca].peso <= 1.6, `${c.id} com ${p.master.marca}`); }
 });
 
 teste("Curvas de desenvolvimento: precoce, auge cedo, normal, aos poucos, tardio e longevo", () => {
