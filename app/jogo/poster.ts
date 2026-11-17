@@ -30,6 +30,10 @@ function simbolo(s: Simbolo, c: string, c2: string, letra: string): string {
     case "chifre": return `<path d="M4 30 C6 16 12 10 20 22 C28 10 34 16 36 30 C30 24 26 24 20 30 C14 24 10 24 4 30 Z" fill="${c}"/><circle cx="20" cy="12" r="6" fill="${c2}"/>`;
     case "garra": return [0, 1, 2].map((i) => `<path d="M${8 + i * 9} 4 Q${4 + i * 9} 20 ${10 + i * 9} 37" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`).join("");
     case "engrenagem": return `<circle cx="20" cy="20" r="11" fill="none" stroke="${c}" stroke-width="6" stroke-dasharray="5 3"/><circle cx="20" cy="20" r="5" fill="${c}"/>`;
+    // duas mãos se cumprimentando dentro de um oval deitado (tipo um pãozinho)
+    case "aperto": return `<ellipse cx="20" cy="20" rx="18.5" ry="12.5" fill="${c}"/><g fill="none" stroke="${c2}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">`
+      + `<path d="M3.5 21 L10 17.4 C12.6 16 15 15.8 17.4 16.6 L25.6 20.2 C27.2 21 26.6 23.4 24.6 22.8 L20.4 21.4"/><path d="M36.5 18.4 L30.4 14.6 C28 13.2 25.4 13.4 23.2 14.8 L17.6 18.6 C16.4 19.6 17.6 21.4 19 20.6 L22.4 18.6"/>`
+      + `<path d="M13.4 21.6 L16.4 24.4 M16.2 20.6 L19.6 23.8 M19.6 23.6 L22 25.6 M23.2 23.4 L24.4 24.6"/></g>`;
     case "letra": return `<rect x="3" y="3" width="34" height="34" rx="6" fill="${c}"/><path d="M10 30 L20 10 L30 30" stroke="${c2}" stroke-width="5" fill="none" stroke-linejoin="round"/>`;
   }
 }

@@ -11,7 +11,7 @@ export type AcessorioMarca =
   | { tipo: "oculos"; modelo: "aviador" | "esportivo" | "quadrado"; armacao: string; lente: string }
   | { tipo: "relogio"; pulseira: string; mostrador: string }
   | { tipo: "fone"; cor: string; detalhe: string };
-export type Simbolo = "aviao" | "onda" | "circulo" | "pera" | "coroa" | "guardaChuva" | "chama" | "raio" | "folha" | "gota" | "estrela" | "oval" | "escudo" | "pontos" | "batata" | "asa" | "balanca" | "quadrado" | "chifre" | "garra" | "engrenagem" | "letra";
+export type Simbolo = "aviao" | "onda" | "circulo" | "pera" | "coroa" | "guardaChuva" | "chama" | "raio" | "folha" | "gota" | "estrela" | "oval" | "escudo" | "pontos" | "batata" | "asa" | "balanca" | "quadrado" | "chifre" | "garra" | "engrenagem" | "letra" | "aperto";
 export interface Marca {
   id: string; nome: string; categoria: Categoria; cores: [string, string, string]; simbolo: Simbolo; slogan: string;
   /** força da marca: quanto paga em relação às outras (0,5 a 2) */
@@ -92,7 +92,7 @@ export const MARCAS: Marca[] = [
   { id: "chaise", nome: "Chaise", categoria: "banco", cores: ["#117ACA", "#FFFFFF", "#0B3C66"], simbolo: "quadrado", slogan: "Seu dinheiro em boas mãos. E pés.", peso: 1.8, famaMin: 55, letra: "fina", regioes: ["EUA"] },
   { id: "emiratisnbd", nome: "Emiratis NBD", categoria: "banco", cores: ["#003C71", "#F7A800", "#FFFFFF"], simbolo: "onda", slogan: "Riqueza que atravessa o deserto.", peso: 2.0, famaMin: 45, letra: "fina", regioes: ["GOLFO"] },
   { id: "alrajhao", nome: "Al Rajhão", categoria: "banco", cores: ["#1F3B80", "#FFFFFF", "#C9A24D"], simbolo: "letra", slogan: "Confiança do Golfo ao mundo.", peso: 1.7, famaMin: 40, letra: "pesada", regioes: ["GOLFO"] },
-  { id: "mercadopaguinho", nome: "Mercado Paguinho", categoria: "banco", cores: ["#00B1EA", "#FFFFFF", "#FFE600"], simbolo: "pontos", slogan: "Paga no Pix, cobra o pênalti.", peso: 1.1, famaMin: 25, letra: "redonda", regioes: ["BR", "LATAM"] },
+  { id: "mercadopaguinho", nome: "Mercado Paguinho", categoria: "banco", cores: ["#00B1EA", "#FFFFFF", "#FFE600"], simbolo: "aperto", slogan: "Paga no Pix, cobra o pênalti.", peso: 1.1, famaMin: 25, letra: "redonda", regioes: ["BR", "LATAM"] },
   { id: "bancolombiano", nome: "Bancolombiano", categoria: "banco", cores: ["#FDDA24", "#2C2A29", "#FFFFFF"], simbolo: "letra", slogan: "Del barrio a la selección.", peso: 1.0, famaMin: 20, letra: "pesada", regioes: ["LATAM"] },
 
   { id: "irnbru", nome: "Irn Brú", categoria: "refrigerante", cores: ["#F47920", "#1E5AA8", "#FFFFFF"], simbolo: "raio", slogan: "Feito de ferro e de bolhas.", peso: 0.9, famaMin: 20, letra: "pesada", regioes: ["ING"] },
