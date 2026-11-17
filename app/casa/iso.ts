@@ -847,6 +847,7 @@ function bolaSvg(x: number, y: number, r: number, modelo: string, cores: [string
 /** Troféu em cima do pedestal; (x, y) é o centro do tampo. */
 export function trofeuSvg(x: number, y: number, modelo: string, cores: [string, string] | string[]): string {
   const m = cores[0], s = cores[1], lz = claro(m, 0.35), tr = `stroke="${TINTA}" stroke-width="1"`;
+  const X = (d: number) => f1(x + d), Y = (d: number) => f1(y + d);
   const base = (w: number, h: number) => `<path d="M${f1(x - w)} ${f1(y)} h${f1(2 * w)} v${f1(-h)} h${f1(-2 * w)} Z" fill="#2B2B2B" ${tr}/>`;
   switch (modelo) {
     case "taca": return base(6, 4) +
@@ -891,6 +892,72 @@ export function trofeuSvg(x: number, y: number, modelo: string, cores: [string, 
         + `<path fill="${O}" fill-rule="evenodd" ${tr} d="M${f1(x)} ${f1(y - 29.6)} C${f1(x + 7.6)} ${f1(y - 29.6)} ${f1(x + 9)} ${f1(y - 19)} ${f1(x + 7)} ${f1(y - 13)} C${f1(x + 5.6)} ${f1(y - 9)} ${f1(x + 2)} ${f1(y - 7.6)} ${f1(x)} ${f1(y - 7.6)} C${f1(x - 2)} ${f1(y - 7.6)} ${f1(x - 5.6)} ${f1(y - 9)} ${f1(x - 7)} ${f1(y - 13)} C${f1(x - 9)} ${f1(y - 19)} ${f1(x - 7.6)} ${f1(y - 29.6)} ${f1(x)} ${f1(y - 29.6)} Z M${f1(x)} ${f1(y - 26)} C${f1(x - 4.4)} ${f1(y - 26)} ${f1(x - 5)} ${f1(y - 19)} ${f1(x - 4)} ${f1(y - 15)} C${f1(x - 3)} ${f1(y - 12)} ${f1(x + 3)} ${f1(y - 12)} ${f1(x + 4)} ${f1(y - 15)} C${f1(x + 5)} ${f1(y - 19)} ${f1(x + 4.4)} ${f1(y - 26)} ${f1(x)} ${f1(y - 26)} Z"/>`
         + `<circle cx="${f1(x)}" cy="${f1(y - 18.4)}" r="3" fill="${O}" ${tr}/><path d="M${f1(x - 3)} ${f1(y - 18.4)} h6 M${f1(x)} ${f1(y - 21.4)} q-1.6 3 0 6" stroke="${Os}" stroke-width=".6" fill="none"/>`
         + `<path d="M${f1(x - 5.4)} ${f1(y - 24)} q-1.6 5 .2 9.6" stroke="${Ol}" stroke-width="1.1" fill="none"/>`;
+    }
+    // Brasileirão: taça dourada alta e fina, com a bolinha em cima e as faixas verde e amarela no pé
+    case "brasileirao": {
+      const O = "#E8B730", Os = "#A57A12", Ol = "#FFE38A";
+      return `<path d="M${X(-6)} ${Y(0)} h12 v-2.6 h-12 Z" fill="#2B2B2B" ${tr}/><rect x="${X(-5)}" y="${Y(-4.6)}" width="10" height="2" fill="#1E7A4A" ${tr}/><rect x="${X(-4.4)}" y="${Y(-6.4)}" width="8.8" height="1.8" fill="#F5C400" ${tr}/>`
+        + `<path d="M${X(-1.2)} ${Y(-6.4)} h2.4 l-.4 -4.6 h-1.6 Z" fill="${O}" ${tr}/><path d="M${X(-1.6)} ${Y(-11)} L${X(-5.4)} ${Y(-24.4)} H${X(5.4)} L${X(1.6)} ${Y(-11)} Z" fill="${O}" ${tr}/>`
+        + `<path d="M${X(-5.4)} ${Y(-24.4)} q5.4 -1.6 10.8 0" fill="${Os}" ${tr}/><circle cx="${X(0)}" cy="${Y(-27.4)}" r="2.4" fill="${O}" ${tr}/><path d="M${X(-2.4)} ${Y(-27.4)} h4.8" stroke="${Os}" stroke-width=".6"/>`
+        + `<path d="M${X(-3.2)} ${Y(-22.4)} L${X(-1)} ${Y(-13)}" stroke="${Ol}" stroke-width="1.1"/>`;
+    }
+    // Premier League: urna de prata com alças pequenas e a coroa dourada em cima
+    case "premier": {
+      const P = "#D9DEE2", Ps = "#8C959C", Pl = "#F4F6F8", O = "#E8B730";
+      return `<path d="M${X(-5.6)} ${Y(0)} h11.2 l-1 -3 h-9.2 Z" fill="${Ps}" ${tr}/><path d="M${X(-1.4)} ${Y(-3)} h2.8 v-3.4 h-2.8 Z" fill="${P}" ${tr}/>`
+        + `<path d="M${X(-6.4)} ${Y(-20)} C${X(-7)} ${Y(-12)} ${X(-3.4)} ${Y(-6.4)} ${X(0)} ${Y(-6.4)} C${X(3.4)} ${Y(-6.4)} ${X(7)} ${Y(-12)} ${X(6.4)} ${Y(-20)} Z" fill="${P}" ${tr}/>`
+        + `<path d="M${X(-6.4)} ${Y(-18)} q-3.6 .4 -2.8 4 q.8 2.4 3.4 1.6 M${X(6.4)} ${Y(-18)} q3.6 .4 2.8 4 q-.8 2.4 -3.4 1.6" stroke="${P}" stroke-width="1.5" fill="none"/>`
+        + `<rect x="${X(-6.8)}" y="${Y(-21.4)}" width="13.6" height="1.6" fill="${Ps}" ${tr}/><path d="M${X(-4)} ${Y(-21.4)} L${X(-4.6)} ${Y(-26.4)} L${X(-2)} ${Y(-24.4)} L${X(0)} ${Y(-28.4)} L${X(2)} ${Y(-24.4)} L${X(4.6)} ${Y(-26.4)} L${X(4)} ${Y(-21.4)} Z" fill="${O}" ${tr}/>`
+        + `<circle cx="${X(0)}" cy="${Y(-28.8)}" r="1" fill="#C8102E"/><path d="M${X(-3.6)} ${Y(-18)} q0 6 2.6 9" stroke="${Pl}" stroke-width="1.2" fill="none"/>`;
+    }
+    // La Liga: taça de prata larga, quase um cilindro, sem alças, com tampa, sobre uma base de dois degraus
+    case "laliga": {
+      const P = "#D9DEE2", Ps = "#8C959C", Pl = "#F4F6F8";
+      return `<path d="M${X(-7.4)} ${Y(0)} h14.8 v-2.4 h-14.8 Z" fill="#2B2B2B" ${tr}/><path d="M${X(-5.6)} ${Y(-2.4)} h11.2 v-2.2 h-11.2 Z" fill="${Ps}" ${tr}/><path d="M${X(-1.8)} ${Y(-4.6)} h3.6 l-.6 -2.6 h-2.4 Z" fill="${P}" ${tr}/>`
+        + `<path d="M${X(-6)} ${Y(-25)} H${X(6)} V${Y(-12)} Q${X(6)} ${Y(-7.2)} ${X(0)} ${Y(-7.2)} Q${X(-6)} ${Y(-7.2)} ${X(-6)} ${Y(-12)} Z" fill="${P}" ${tr}/>`
+        + `<path d="M${X(-6)} ${Y(-20)} H${X(6)} M${X(-6)} ${Y(-14)} H${X(6)}" stroke="${Ps}" stroke-width=".7"/><path d="M${X(-6.6)} ${Y(-25)} h13.2 q-1 -2.4 -6.6 -2.6 q-5.6 .2 -6.6 2.6 Z" fill="${Ps}" ${tr}/>`
+        + `<circle cx="${X(0)}" cy="${Y(-28.6)}" r="1.4" fill="${P}" ${tr}/><path d="M${X(-4)} ${Y(-23.4)} V${Y(-11)}" stroke="${Pl}" stroke-width="1.3"/>`;
+    }
+    // Serie A: fitas de prata enroladas em espiral sobre uma base dourada redonda
+    case "seriea": {
+      const P = "#D9DEE2", Ps = "#8C959C", O = "#E8B730", Os = "#A57A12";
+      return `<path d="M${X(-6.4)} ${Y(0)} h12.8 v-5.4 q-6.4 -2 -12.8 0 Z" fill="${O}" ${tr}/><path d="M${X(-6.4)} ${Y(-3)} q6.4 2 12.8 0" stroke="${Os}" stroke-width=".7" fill="none"/>`
+        + `<g fill="none" stroke-linecap="round"><path d="M${X(-1)} ${Y(-6.6)} C${X(-9)} ${Y(-9)} ${X(-9)} ${Y(-17)} ${X(0)} ${Y(-18)} C${X(9)} ${Y(-19)} ${X(9)} ${Y(-27)} ${X(1)} ${Y(-29)}" stroke="${TINTA}" stroke-width="4.4"/>`
+        + `<path d="M${X(-1)} ${Y(-6.6)} C${X(-9)} ${Y(-9)} ${X(-9)} ${Y(-17)} ${X(0)} ${Y(-18)} C${X(9)} ${Y(-19)} ${X(9)} ${Y(-27)} ${X(1)} ${Y(-29)}" stroke="${P}" stroke-width="2.6"/>`
+        + `<path d="M${X(1)} ${Y(-6.6)} C${X(9)} ${Y(-9)} ${X(9)} ${Y(-17)} ${X(0)} ${Y(-18)} C${X(-9)} ${Y(-19)} ${X(-9)} ${Y(-27)} ${X(-1)} ${Y(-29)}" stroke="${TINTA}" stroke-width="4.4"/>`
+        + `<path d="M${X(1)} ${Y(-6.6)} C${X(9)} ${Y(-9)} ${X(9)} ${Y(-17)} ${X(0)} ${Y(-18)} C${X(-9)} ${Y(-19)} ${X(-9)} ${Y(-27)} ${X(-1)} ${Y(-29)}" stroke="${Ps}" stroke-width="2.6"/></g>`;
+    }
+    // Bundesliga: a salva, um prato grande de prata com o anel de pedras verdes, num suporte
+    case "salva": {
+      const P = "#D9DEE2", Ps = "#8C959C", O = "#E8B730";
+      return `<path d="M${X(-5)} ${Y(0)} h10 l-1.4 -2.4 h-7.2 Z" fill="#2B2B2B" ${tr}/><path d="M${X(-1)} ${Y(-2.4)} h2 v-4 h-2 Z" fill="${Ps}" ${tr}/>`
+        + `<circle cx="${X(0)}" cy="${Y(-17.4)}" r="11.6" fill="${P}" ${tr}/><circle cx="${X(0)}" cy="${Y(-17.4)}" r="8.8" fill="none" stroke="${Ps}" stroke-width=".7"/>`
+        + Array.from({ length: 12 }, (_, i) => { const a = (i * Math.PI) / 6; return `<circle cx="${f1(x + 10.2 * Math.cos(a))}" cy="${f1(y - 17.4 + 10.2 * Math.sin(a))}" r=".9" fill="#1E9E5A"/>`; }).join("")
+        + `<circle cx="${X(0)}" cy="${Y(-17.4)}" r="4.2" fill="${O}" ${tr}/><path d="M${X(-2.2)} ${Y(-17.4)} h4.4 M${X(0)} ${Y(-19.6)} v4.4" stroke="#A57A12" stroke-width=".6"/><path d="M${X(-6.6)} ${Y(-21)} q1.4 -3.4 4.6 -4.6" stroke="#F4F6F8" stroke-width="1.2" fill="none"/>`;
+    }
+    // Eurocopa: prata, alta e fina, sem alças, com a boca aberta e a cintura estreita, num pé de mármore escuro
+    case "eurocopa": {
+      const P = "#D9DEE2", Ps = "#8C959C", Pl = "#F4F6F8";
+      return `<path d="M${X(-5)} ${Y(0)} h10 v-3.4 h-10 Z" fill="#1F2A2E" ${tr}/><path d="M${X(-4)} ${Y(-3.4)} h8 l-1.6 -2 h-4.8 Z" fill="${Ps}" ${tr}/>`
+        + `<path d="M${X(-2.4)} ${Y(-5.4)} C${X(-2.4)} ${Y(-10)} ${X(-1.4)} ${Y(-14)} ${X(-1.6)} ${Y(-17)} C${X(-1.8)} ${Y(-21)} ${X(-5.6)} ${Y(-24.4)} ${X(-6)} ${Y(-29)} H${X(6)} C${X(5.6)} ${Y(-24.4)} ${X(1.8)} ${Y(-21)} ${X(1.6)} ${Y(-17)} C${X(1.4)} ${Y(-14)} ${X(2.4)} ${Y(-10)} ${X(2.4)} ${Y(-5.4)} Z" fill="${P}" ${tr}/>`
+        + `<path d="M${X(-6)} ${Y(-29)} H${X(6)}" stroke="${Ps}" stroke-width="1"/><path d="M${X(-3.6)} ${Y(-27)} C${X(-3)} ${Y(-23)} ${X(-1)} ${Y(-20)} ${X(-0.8)} ${Y(-16)}" stroke="${Pl}" stroke-width="1.1" fill="none"/>`;
+    }
+    // Copa nacional (Copa do Brasil e as outras copas do país): taça dourada com alças curvas e um medalhão verde, amarelo e azul na frente
+    case "copabr": {
+      const O = "#E8B730", Os = "#A57A12", Ol = "#FFE38A";
+      return `<path d="M${X(-6)} ${Y(0)} h12 l-1.2 -3 h-9.6 Z" fill="#2B2B2B" ${tr}/><path d="M${X(-1.6)} ${Y(-3)} h3.2 l-.6 -4.4 h-2 Z" fill="${O}" ${tr}/>`
+        + `<path d="M${X(-7)} ${Y(-25)} H${X(7)} C${X(7)} ${Y(-15)} ${X(4)} ${Y(-8)} ${X(0)} ${Y(-7.4)} C${X(-4)} ${Y(-8)} ${X(-7)} ${Y(-15)} ${X(-7)} ${Y(-25)} Z" fill="${O}" ${tr}/>`
+        + `<path d="M${X(-7)} ${Y(-23)} C${X(-12.6)} ${Y(-23)} ${X(-12)} ${Y(-13)} ${X(-4.6)} ${Y(-11)} M${X(7)} ${Y(-23)} C${X(12.6)} ${Y(-23)} ${X(12)} ${Y(-13)} ${X(4.6)} ${Y(-11)}" stroke="${Os}" stroke-width="1.8" fill="none"/>`
+        + `<circle cx="${X(0)}" cy="${Y(-17.4)}" r="3.4" fill="#1E7A4A" ${tr}/><path d="M${X(-2.8)} ${Y(-17.4)} L${X(0)} ${Y(-19.4)} L${X(2.8)} ${Y(-17.4)} L${X(0)} ${Y(-15.4)} Z" fill="#F5C400"/><circle cx="${X(0)}" cy="${Y(-17.4)}" r="1.2" fill="#1B3FA0"/>`
+        + `<path d="M${X(-7)} ${Y(-25)} H${X(7)}" stroke="${Os}" stroke-width="1"/><path d="M${X(-4.6)} ${Y(-23)} q0 6 2 9" stroke="${Ol}" stroke-width="1.1" fill="none"/>`;
+    }
+    // Intercontinental: dourada, com três arcos subindo do pé e segurando uma bola no alto
+    case "intercontinental": {
+      const O = "#E8B730", Os = "#A57A12", Ol = "#FFE38A";
+      return `<path d="M${X(-6)} ${Y(0)} h12 v-3 h-12 Z" fill="#2B2B2B" ${tr}/><path d="M${X(-4.6)} ${Y(-3)} h9.2 l-1.4 -2.4 h-6.4 Z" fill="${O}" ${tr}/>`
+        + `<g fill="none" stroke-linecap="round"><path d="M${X(-3)} ${Y(-5.4)} C${X(-9)} ${Y(-13)} ${X(-7)} ${Y(-20)} ${X(-2)} ${Y(-22)} M${X(3)} ${Y(-5.4)} C${X(9)} ${Y(-13)} ${X(7)} ${Y(-20)} ${X(2)} ${Y(-22)} M${X(0)} ${Y(-5.4)} V${Y(-21)}" stroke="${TINTA}" stroke-width="3.2"/>`
+        + `<path d="M${X(-3)} ${Y(-5.4)} C${X(-9)} ${Y(-13)} ${X(-7)} ${Y(-20)} ${X(-2)} ${Y(-22)} M${X(3)} ${Y(-5.4)} C${X(9)} ${Y(-13)} ${X(7)} ${Y(-20)} ${X(2)} ${Y(-22)} M${X(0)} ${Y(-5.4)} V${Y(-21)}" stroke="${O}" stroke-width="1.8"/></g>`
+        + `<circle cx="${X(0)}" cy="${Y(-25.4)}" r="4.4" fill="${O}" ${tr}/><path d="M${X(0)} ${Y(-27.4)} l1.8 1.3 -.7 2.1 h-2.2 l-.7 -2.1 Z" fill="${Os}"/><circle cx="${X(-1.6)}" cy="${Y(-27.2)}" r="1" fill="${Ol}"/>`;
     }
     case "fitas": return base(4, 4) +
       `<path d="M${f1(x - 3)} ${f1(y - 4)} L${f1(x - 1)} ${f1(y - 14)} H${f1(x + 1)} L${f1(x + 3)} ${f1(y - 4)} Z" fill="${s}" ${tr}/>` +

@@ -2,6 +2,7 @@
 // reputação, estilo de jogo, personalidade, pontos fortes e fracos, clubes e conquistas.
 import type { Atributo, Atributos, Posicao } from "./atributos.js";
 import { RNG, clamp } from "./rng.js";
+import { TACA_DA_LIGA_CURTO } from "./trofeus.js";
 
 // ------------------------------------------------------------------ estatísticas estimadas
 export interface EstatEstimada { passe: number; chute: number; drible: number; desarme: number }
@@ -143,8 +144,8 @@ export function totaisDaCarreira(hist: Temporada[], sel?: { notaSoma?: number; n
 export interface Trofeu { nome: string; modelo: string; cores: [string, string]; vezes: { ano: number; clube: string; liga?: string }[] }
 const OURO: [string, string] = ["#E3B341", "#9A7420"], PRATA: [string, string] = ["#C9CCD1", "#7F8389"];
 const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
-  [/^Taça da Copa do Mundo/, "Copa do Mundo", "taca", OURO],
-  [/^Taça da Eurocopa/, "Eurocopa", "taca", OURO],
+  [/^Taça da Copa do Mundo/, "Copa do Mundo", "globo", OURO],
+  [/^Taça da Eurocopa/, "Eurocopa", "eurocopa", PRATA],
   [/^Taça da Copa América/, "Copa América", "taca", OURO],
   [/^Taça da Copa Africana/, "Copa Africana de Nações", "taca", OURO],
   [/^Taça da Copa da Ásia/, "Copa da Ásia", "taca", OURO],
@@ -159,11 +160,12 @@ const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
   [/^Troféu Yashin/, "Troféu Yashin", "placa", OURO],
   [/^Chuteira de Ouro/, "Chuteira de Ouro", "chuteira", OURO],
   [/^Seleção (FIFA )?do Ano/, "Seleção FIFA do Ano", "placa", PRATA],
-  [/^Taça do Mundial/, "Mundial de Clubes", "taca", OURO],
-  [/^Taça da Intercontinental/, "Copa Intercontinental", "taca", OURO],
-  [/^Taça da Libertadora/, "Copa Libertadora", "taca", OURO],
+  [/^Taça do Mundial/, "Mundial de Clubes", "mundial", OURO],
+  [/^Taça da Intercontinental/, "Copa Intercontinental", "intercontinental", OURO],
+  [/^Taça da Copa Nacional/, "Copa nacional", "copabr", OURO],
+  [/^Taça da Libertadora/, "Copa Libertadora", "alcas", PRATA],
   [/^Taça da Champions Asiática/, "Champions Asiática", "taca", OURO],
-  [/^Taça da Champions/, "Champions Ligue", "taca", OURO],
+  [/^Taça da Champions/, "Champions Ligue", "orelhas", PRATA],
   [/^Taça de campeão/, "Campeão da liga", "taca", OURO],
   [/^Taça do (Paulistão|Cariocão|Mineirão|Gauchão|Paranaense|Catarinense|Baianão|Pernambucano|Cearense|Goianão)/, "Campeão estadual", "taca", PRATA],
   [/^Artilheiro do sub-17/, "Artilheiro do sub-17", "chuteira", PRATA],
@@ -184,14 +186,17 @@ export function armario(hist: Temporada[]): Trofeu[] {
     mapa.set(nome, t);
   };
   for (const h of hist) {
-    if (h.titulo) add("Campeão da liga", "taca", OURO, h);
+    // o título da liga: cada liga com a sua taça (Brasileirão, Premiê, La Lyga...)
+    const liga = () => (h.liga && TACA_DA_LIGA_CURTO[h.liga] ? { nome: `Campeão · ${h.liga}`, modelo: TACA_DA_LIGA_CURTO[h.liga] } : { nome: "Campeão da liga", modelo: "taca" });
+    if (h.titulo) { const l = liga(); add(l.nome, l.modelo, OURO, h); }
     for (const p of h.premios ?? []) {
       const tipo = TIPOS_TROFEU.find(([re]) => re.test(p));
-      if (tipo) add(tipo[1], tipo[2], tipo[3], h);
+      if (tipo && tipo[1] === "Campeão da liga") { const l = liga(); add(l.nome, l.modelo, OURO, h); }
+      else if (tipo) add(tipo[1], tipo[2], tipo[3], h);
     }
   }
-  const ordem = TIPOS_TROFEU.map((t) => t[1]);
-  return [...mapa.values()].sort((a, b) => ordem.indexOf(a.nome) - ordem.indexOf(b.nome));
+  const ordem = TIPOS_TROFEU.map((t) => t[1]), pos = (n: string) => ordem.indexOf(n.startsWith("Campeão · ") ? "Campeão da liga" : n);
+  return [...mapa.values()].sort((a, b) => pos(a.nome) - pos(b.nome));
 }
 
 // ------------------------------------------------------------------ biografia
