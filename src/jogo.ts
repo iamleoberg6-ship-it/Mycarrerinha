@@ -2626,7 +2626,7 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     if (extra) (r.extras ??= []).push(camp); else r[estadual ? "estadual" : "copa"] = camp;
     if (campeao && sc.jogos >= (extra ? 1 : 3)) {
       const nomeT = `Taça ${COPAS[ec.id].prep} ${COPAS[ec.id].curto} ${r.ano}`;
-      receberReliquias(s, [{ conquista: `trofeu-copa-${ec.id}`, reliquia: { id: `rel-trofeu-copa-${ec.id}-${r.ano}`, chave: `trofeu-copa-${ec.id}`, tipo: "trofeu", nome: nomeT, legenda: `${cc.nome} · ${COPAS[ec.id].nome} ${r.ano}`, ano: r.ano, cores: ["#E3B341", "#B8892B"], modelo: TACA_DO_TORNEIO[ec.id] ?? "taca" } }], ev);
+      receberReliquias(s, [{ conquista: `trofeu-copa-${ec.id}`, reliquia: { id: `rel-trofeu-copa-${ec.id}-${r.ano}`, chave: `trofeu-copa-${ec.id}`, tipo: "trofeu", nome: nomeT, legenda: `${cc.nome} · ${COPAS[ec.id].nome} ${r.ano}`, ano: r.ano, cores: ["#E3B341", "#B8892B"], modelo: ec.id === "NAC" ? `copabr:${infoLiga(c.ligaId).pais}` : (TACA_DO_TORNEIO[ec.id] ?? "taca") } }], ev);
       r.premios.push(nomeT);
       const bonus = ec.id === "MUN" ? 14 : estadual ? 3 : 8;
       c.fama = clamp(c.fama + bonus, 0, 100); c.torcida = clamp((c.torcida ?? 50) + bonus * 1.5, 0, 100);

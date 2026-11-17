@@ -476,7 +476,7 @@ export function semanasNac(pais: string): Record<FaseNac, readonly number[]> {
   if (["ENG", "ESP", "ITA", "GER", "FRA", "POR", "NED", "BEL", "TUR", "SCO"].includes(pais)) return { "16avos": [9], oitavas: [14], quartas: [20], semi: [26], final: [35] };
   return { "16avos": [9], oitavas: [16], quartas: [23], semi: [26], final: [30] };
 }
-const NOMES_NAC: Record<string, [string, string]> = {
+export const NOMES_NAC: Record<string, [string, string]> = {
   BRA: ["Copa do Brasil", "Copa do Brasil"], ENG: ["Copa da Inglaterra", "Copa da Inglaterra"], ESP: ["Copa do Rei", "Copa do Rei"], ITA: ["Copa da Itália", "Copa da Itália"],
   GER: ["Copa da Alemanha", "Copa da Alemanha"], FRA: ["Copa da França", "Copa da França"], POR: ["Taça de Portugal", "Taça de Portugal"], NED: ["Copa da Holanda", "Copa da Holanda"],
   ARG: ["Copa Argentina", "Copa Argentina"], MEX: ["Copa México", "Copa México"], USA: ["Copa dos Estados Unidos", "US Cup"], KSA: ["Copa do Rei Saudita", "Copa do Rei"],

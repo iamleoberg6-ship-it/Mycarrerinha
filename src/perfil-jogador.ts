@@ -3,6 +3,7 @@
 import type { Atributo, Atributos, Posicao } from "./atributos.js";
 import { RNG, clamp } from "./rng.js";
 import { TACA_DA_LIGA_CURTO } from "./trofeus.js";
+import { NOMES_NAC } from "./copas.js";
 
 // ------------------------------------------------------------------ estatísticas estimadas
 export interface EstatEstimada { passe: number; chute: number; drible: number; desarme: number }
@@ -162,6 +163,10 @@ const TIPOS_TROFEU: [RegExp, string, string, [string, string]][] = [
   [/^Seleção (FIFA )?do Ano/, "Seleção FIFA do Ano", "placa", PRATA],
   [/^Taça do Mundial/, "Mundial de Clubes", "mundial", OURO],
   [/^Taça da Intercontinental/, "Copa Intercontinental", "intercontinental", OURO],
+  // copas nacionais: cada uma com o nome e a bandeira do país na taça
+  ...Object.entries(NOMES_NAC).filter(([p, [, curto]], i, l) => l.findIndex(([, [, c]]) => c === curto) === i)
+    .sort((a, b) => b[1][1].length - a[1][1].length)
+    .map(([pais, [, curto]]) => [new RegExp(`^Taça d[aoe] ${curto}`), curto, `copabr:${pais}`, OURO] as [RegExp, string, string, [string, string]]),
   [/^Taça da Copa Nacional/, "Copa nacional", "copabr", OURO],
   [/^Taça da Libertadora/, "Copa Libertadora", "alcas", PRATA],
   [/^Taça da Champions Asiática/, "Champions Asiática", "taca", OURO],

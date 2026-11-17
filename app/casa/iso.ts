@@ -2,6 +2,7 @@
 // Eixos: x vai para a direita-baixo, y para a esquerda-baixo, z para cima. Unidade: um ladrilho de meio metro.
 // As paredes de trás ficam em x=0 (parede da esquerda) e y=0 (parede da direita); a frente fica aberta.
 import { fonteCamisa } from "../visual/fontes-camisa";
+import { bandeiraSvg } from "../../src/bandeiras";
 import {
   ESTILOS, ITENS, REVEST, TIPOS, acabamento, area, comodoDe, coresDoClube, imovelAtual, travado,
   type Acabamento, type Comodo, type EstadoCasa, type Imovel, type Item, type Reliquia, type Vista,
@@ -849,7 +850,9 @@ export function trofeuSvg(x: number, y: number, modelo: string, cores: [string, 
   const m = cores[0], s = cores[1], lz = claro(m, 0.35), tr = `stroke="${TINTA}" stroke-width="1"`;
   const X = (d: number) => f1(x + d), Y = (d: number) => f1(y + d);
   const base = (w: number, h: number) => `<path d="M${f1(x - w)} ${f1(y)} h${f1(2 * w)} v${f1(-h)} h${f1(-2 * w)} Z" fill="#2B2B2B" ${tr}/>`;
-  switch (modelo) {
+  // a taça da copa nacional leva a bandeira do país: o modelo vem como "copabr:BRA"
+  const [mod, paisTaca] = modelo.split(":");
+  switch (mod) {
     case "taca": return base(6, 4) +
       `<path d="M${f1(x - 2)} ${f1(y - 4)} h4 l-1 -6 h-2 Z" fill="${s}" ${tr}/>` +
       `<path d="M${f1(x - 8)} ${f1(y - 26)} h16 q0 12 -8 16 q-8 -4 -8 -16 Z" fill="${m}" ${tr}/>` +
@@ -942,13 +945,13 @@ export function trofeuSvg(x: number, y: number, modelo: string, cores: [string, 
         + `<path d="M${X(-2.4)} ${Y(-5.4)} C${X(-2.4)} ${Y(-10)} ${X(-1.4)} ${Y(-14)} ${X(-1.6)} ${Y(-17)} C${X(-1.8)} ${Y(-21)} ${X(-5.6)} ${Y(-24.4)} ${X(-6)} ${Y(-29)} H${X(6)} C${X(5.6)} ${Y(-24.4)} ${X(1.8)} ${Y(-21)} ${X(1.6)} ${Y(-17)} C${X(1.4)} ${Y(-14)} ${X(2.4)} ${Y(-10)} ${X(2.4)} ${Y(-5.4)} Z" fill="${P}" ${tr}/>`
         + `<path d="M${X(-6)} ${Y(-29)} H${X(6)}" stroke="${Ps}" stroke-width="1"/><path d="M${X(-3.6)} ${Y(-27)} C${X(-3)} ${Y(-23)} ${X(-1)} ${Y(-20)} ${X(-0.8)} ${Y(-16)}" stroke="${Pl}" stroke-width="1.1" fill="none"/>`;
     }
-    // Copa nacional (Copa do Brasil e as outras copas do país): taça dourada com alças curvas e um medalhão verde, amarelo e azul na frente
+    // Copa nacional (Copa do Brasil, Copa do Rei...): taça dourada com alças curvas e a bandeira do país num medalhão na frente
     case "copabr": {
       const O = "#E8B730", Os = "#A57A12", Ol = "#FFE38A";
       return `<path d="M${X(-6)} ${Y(0)} h12 l-1.2 -3 h-9.6 Z" fill="#2B2B2B" ${tr}/><path d="M${X(-1.6)} ${Y(-3)} h3.2 l-.6 -4.4 h-2 Z" fill="${O}" ${tr}/>`
         + `<path d="M${X(-7)} ${Y(-25)} H${X(7)} C${X(7)} ${Y(-15)} ${X(4)} ${Y(-8)} ${X(0)} ${Y(-7.4)} C${X(-4)} ${Y(-8)} ${X(-7)} ${Y(-15)} ${X(-7)} ${Y(-25)} Z" fill="${O}" ${tr}/>`
         + `<path d="M${X(-7)} ${Y(-23)} C${X(-12.6)} ${Y(-23)} ${X(-12)} ${Y(-13)} ${X(-4.6)} ${Y(-11)} M${X(7)} ${Y(-23)} C${X(12.6)} ${Y(-23)} ${X(12)} ${Y(-13)} ${X(4.6)} ${Y(-11)}" stroke="${Os}" stroke-width="1.8" fill="none"/>`
-        + `<circle cx="${X(0)}" cy="${Y(-17.4)}" r="3.4" fill="#1E7A4A" ${tr}/><path d="M${X(-2.8)} ${Y(-17.4)} L${X(0)} ${Y(-19.4)} L${X(2.8)} ${Y(-17.4)} L${X(0)} ${Y(-15.4)} Z" fill="#F5C400"/><circle cx="${X(0)}" cy="${Y(-17.4)}" r="1.2" fill="#1B3FA0"/>`
+        + (() => { const id = `bdN${++seqJanela}`; return `<clipPath id="${id}"><circle cx="${X(0)}" cy="${Y(-17.4)}" r="3.6"/></clipPath><g clip-path="url(#${id})">${bandeiraSvg(paisTaca || "BRA", "").replace("<svg ", `<svg x="${X(-4.6)}" y="${Y(-22.6)}" width="9.2" height="10.4" preserveAspectRatio="xMidYMid slice" `)}</g><circle cx="${X(0)}" cy="${Y(-17.4)}" r="3.6" fill="none" ${tr}/>`; })()
         + `<path d="M${X(-7)} ${Y(-25)} H${X(7)}" stroke="${Os}" stroke-width="1"/><path d="M${X(-4.6)} ${Y(-23)} q0 6 2 9" stroke="${Ol}" stroke-width="1.1" fill="none"/>`;
     }
     // Intercontinental: dourada, com três arcos subindo do pé e segurando uma bola no alto
