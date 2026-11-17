@@ -6,7 +6,71 @@ const DISPLAY = "'Big Shoulders Display', 'Barlow', sans-serif", TEXTO = "'Barlo
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 /** Ícone do logo num quadro de 40×40 (também vai no boné e no blusão do patrocinador). */
-export const simboloMarca = (m: Marca, cor: string, cor2: string) => simbolo(m.simbolo, cor, cor2, m.nome[0]);
+export const simboloMarca = (m: Marca, cor: string, cor2: string) => desenhoMarca(m, cor, cor2);
+/** O desenho de cada marca: as que têm um logo só delas; as outras usam o símbolo do tipo. */
+function desenhoMarca(m: Marca, c: string, c2: string): string { return PROPRIO[m.id]?.(c, c2) ?? simbolo(m.simbolo, c, c2, m.nome[0]); }
+const ESTRELA5 = (cx: number, cy: number, R: number) => `M${Array.from({ length: 10 }, (_, k) => { const r = k % 2 ? R * 0.42 : R, a = -Math.PI / 2 + (k * Math.PI) / 5; return `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`; }).join(" L")} Z`;
+const LEAO_PERFIL = "M6.2 14.6 L7.6 13.2 C8.4 11.6 9.6 10.6 11 10.2 L11.4 8.6 L12.6 9.6 C13 7.4 15 6.2 17 6.6 L16.4 7.8 L18.8 7.6 L18 9 L20.6 9.4 L19.4 10.6 L21.6 11.6 L20.2 12.6 L22 14 L20.4 14.8 L21.8 16.6 L20 17 L20.8 19 L19 18.8 L19 20.8 L17.4 19.8 L16.6 21.8 L15.4 20.4 L14 22 L13.4 20.2 C12 20 10.4 19.4 9.6 18.2 L8.4 18 L9.2 17.2 L7 16.6 C6.4 16.4 6 15.4 6.2 14.6 Z";
+const PROPRIO: Record<string, (c: string, c2: string) => string> = {
+  // círculo: metade de cima vermelha, metade de baixo azul, um traço branco reto no meio
+  pepsy: () => `<circle cx="20" cy="20" r="17" fill="#FFFFFF"/><path d="M4.4 18.4 A15.6 15.6 0 0 1 35.6 18.4 Z" fill="#E32934"/><path d="M4.4 21.6 A15.6 15.6 0 0 0 35.6 21.6 Z" fill="#004B93"/>`,
+  // estrela vermelha com contorno verde
+  heinekao: () => `<path d="${ESTRELA5(20, 21, 17)}" fill="#C8102E" stroke="#FFFFFF" stroke-width="4.2" stroke-linejoin="round"/><path d="${ESTRELA5(20, 21, 17)}" fill="#C8102E" stroke="#00843D" stroke-width="2.2" stroke-linejoin="round"/>`,
+  // bola com o V em cima e o W embaixo
+  volksvagao: (c) => `<circle cx="20" cy="20" r="16.5" fill="none" stroke="${c}" stroke-width="2.6"/><g fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round"><path d="M13.4 7.4 L20 20 L26.6 7.4"/><path d="M6.6 15 L12.4 31.4 L20 22 L27.6 31.4 L33.4 15"/></g>`,
+  // bola dividida em 4 como pizza, azul e branco
+  bmv: () => `<circle cx="20" cy="20" r="17.5" fill="#111111"/><path d="M20 20 V6.5 A13.5 13.5 0 0 1 33.5 20 Z M20 20 V33.5 A13.5 13.5 0 0 1 6.5 20 Z" fill="#0066B1"/><path d="M20 20 H33.5 A13.5 13.5 0 0 1 20 33.5 Z M20 20 H6.5 A13.5 13.5 0 0 1 20 6.5 Z" fill="#FFFFFF"/>`,
+  // mapa da América do Sul, bem simples
+  latao: (c) => `<path d="M13 4 L22 4.6 L28 8 L34.6 12 L36 15.6 L32.4 21 L27 25.4 L23.6 30 L21.4 37.4 L18.6 36 L18.4 29.4 L15.6 24 L11.4 19 L8.4 14 L9.6 8.4 Z" fill="${c}"/>`,
+  // mapa do Brasil, azul, bem simples
+  azulzinha: (c) => `<path d="M9.6 9.4 L16 6.6 L21 7.4 L24.4 4.6 L28.4 8 L34 10.6 L37 15.4 L35.4 19.4 L31.6 22 L30 27.4 L25.4 30.6 L21.4 36.6 L19.2 33 L15.6 30.6 L14.2 25.4 L9.4 23.6 L5.6 20 L3.4 15.4 L6 12.4 Z" fill="#4FC3F7" stroke="${c}" stroke-width="1.4" stroke-linejoin="round"/>`,
+  // bolinha com a bandeira da Turquia
+  turquinha: () => `<circle cx="20" cy="20" r="17" fill="#E30A17" stroke="#FFFFFF" stroke-width="1.5"/><circle cx="17" cy="20" r="8.4" fill="#FFFFFF"/><circle cx="19.2" cy="20" r="6.7" fill="#E30A17"/><path d="${ESTRELA5(28, 20, 4.2)}" fill="#FFFFFF" transform="rotate(-18 28 20)"/>`,
+  // uma fatia de pizza
+  pizzarut: (c, c2) => `<path d="M20 37 L5.6 9.4 Q20 3.4 34.4 9.4 Z" fill="${c}"/><path d="M5.6 9.4 Q20 3.4 34.4 9.4" fill="none" stroke="${c}" stroke-width="4.4" stroke-linecap="round"/>${[[16, 14], [24, 16], [19, 23], [21, 30]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="${c2}"/>`).join("")}`,
+  // um B com um raio dentro
+  betona: (c, c2) => `<text x="20" y="34" text-anchor="middle" font-family="'Big Shoulders Display', Arial Black, sans-serif" font-weight="900" font-size="38" fill="${c}">B</text><path d="M22.4 8 L13.6 21 H19.4 L16.6 32 L26.4 17.6 H20.6 Z" fill="${c2}"/>`,
+  // círculo quadriculado: quadradinhos na cor e o resto vazio
+  alianca: (c) => `<defs><clipPath id="cAli"><circle cx="20" cy="20" r="16"/></clipPath></defs><g clip-path="url(#cAli)" fill="${c}">${Array.from({ length: 64 }, (_, k) => [k % 8, Math.floor(k / 8)]).filter(([i, j]) => (i + j) % 2 === 0).map(([i, j]) => `<rect x="${4 + i * 4}" y="${4 + j * 4}" width="4" height="4"/>`).join("")}</g><circle cx="20" cy="20" r="16" fill="none" stroke="${c}" stroke-width="1.8"/>`,
+  // quadrado com o nome escrito
+  itao: (c, c2) => `<rect x="2" y="5" width="36" height="30" rx="7" fill="${c}"/><text x="20" y="25.4" text-anchor="middle" font-family="'Barlow', sans-serif" font-weight="800" font-size="13" fill="${c2}">Itaó</text>`,
+  // diamante (dois losangos, um dentro do outro)
+  reno: (c) => `<g fill="none" stroke="${c}" stroke-width="3.2" stroke-linejoin="miter"><path d="M20 3 L31 20 L20 37 L9 20 Z"/><path d="M20 10.4 L26.2 20 L20 29.6 L13.8 20 Z"/></g>`,
+  // o número 366 em amarelo
+  bet366: () => `<text x="20" y="27" text-anchor="middle" font-family="'Big Shoulders Display', Arial Black, sans-serif" font-weight="900" font-size="20" textLength="36" lengthAdjust="spacingAndGlyphs" fill="#FFDF1B" stroke="#0A0A0A" stroke-width=".8" paint-order="stroke">366</text>`,
+  // só o N
+  nokya: (c) => `<text x="20" y="33" text-anchor="middle" font-family="'Big Shoulders Display', Arial Black, sans-serif" font-weight="900" font-size="36" fill="${c}">N</text>`,
+  // oval com o nome escrito
+  fordi: (c, c2) => `<ellipse cx="20" cy="20" rx="19" ry="12.5" fill="${c}"/><ellipse cx="20" cy="20" rx="17.2" ry="10.8" fill="none" stroke="${c2}" stroke-width=".8"/><text x="20" y="24.6" text-anchor="middle" font-family="'Brush Script MT', 'Segoe Script', cursive" font-style="italic" font-weight="700" font-size="13" fill="${c2}">Fordi</text>`,
+  // silhueta de uma pera mordida
+  oppo: (c, c2) => `<path d="M20 9 C27 9 25 17 29 23 C33 30 28 37 20 37 C12 37 7 30 11 23 C15 17 13 9 20 9 Z" fill="${c}"/><circle cx="31.6" cy="21.4" r="5.6" fill="${c2}"/><path d="M20 9 Q21 4.6 25 3" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  // um "certinho" (o visto de conferido)
+  naiki: (c) => `<path d="M3 21.4 L13.4 31.4 L37.4 8.6" fill="none" stroke="${c}" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  // uma pimenta
+  chilibins: (c) => `<path d="M9.4 12.6 C14 10.6 18.6 12.4 21 16.6 C24.4 22.6 29.6 28.6 36.6 33.4 C28 35 18.4 31 12.6 24.4 C9.4 20.8 7.8 16.4 9.4 12.6 Z" fill="${c}"/><path d="M10.6 12.4 C10 9 11 6.6 13.6 5.4 M10.6 12.4 C12.6 10.4 15 10.6 16.6 12" fill="none" stroke="#2E8B3E" stroke-width="2.4" stroke-linecap="round"/>`,
+  // um oval com dois risquinhos de fumaça saindo para cima
+  santandeiro: (c) => `<ellipse cx="20" cy="27" rx="15" ry="8" fill="${c}"/><path d="M15 16.6 C12.6 13.6 17.4 11 15 7.4 M24.6 16.6 C22.2 13.6 27 11 24.6 7.4" fill="none" stroke="${c}" stroke-width="2.8" stroke-linecap="round"/>`,
+  // um X: a perna laranja embaixo e a azul passando por cima
+  caixinha: () => `<path d="M8 8 L32 32" stroke="#F39200" stroke-width="7.4" stroke-linecap="round"/><path d="M32 8 L8 32" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/><path d="M32 8 L8 32" stroke="#005CA9" stroke-width="7.4" stroke-linecap="round"/>`,
+  // dois b minúsculos sobrepostos na diagonal
+  bbr: (c, c2) => `<g font-family="'Barlow', Arial Black, sans-serif" font-weight="900" font-size="24" fill="${c}" stroke="${c2}" stroke-width="1.6" paint-order="stroke"><text x="7" y="24">b</text><text x="17" y="35">b</text></g>`,
+  // coroa redonda, com joias
+  burguerrei: (c, c2) => `<path d="M5 30 L5 13 L12.6 20 L20 8 L27.4 20 L35 13 L35 30 Z" fill="${c}" stroke-linejoin="round"/><rect x="5" y="30" width="30" height="5" rx="2.4" fill="${c}"/>${[5, 20, 35].map((x, i) => `<circle cx="${x}" cy="${[13, 8, 13][i]}" r="2.4" fill="${c}"/>`).join("")}<circle cx="20" cy="23" r="2.6" fill="${c2}"/>`,
+  // um X de pernas arredondadas (dois arcos), branco num quadrado vermelho
+  brodesco: () => `<rect x="2" y="2" width="36" height="36" rx="7" fill="#CC092F"/><g fill="none" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round"><path d="M8.6 8 Q27 14 30.6 32.4"/><path d="M31.4 8 Q13 14 9.4 32.4"/></g>`,
+  // leque de pétalas abertas (como penas de pavão), em degradê
+  huawey: () => `<defs><linearGradient id="gHw" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#8E0019"/><stop offset="1" stop-color="#FF4D5E"/></linearGradient></defs><g fill="url(#gHw)">${[-72, -46, -20, 20, 46, 72].map((a) => `<path d="M20 34 C17 26 16.6 16 20 6 C23.4 16 23 26 20 34 Z" transform="rotate(${a} 20 34)"/>`).join("")}</g>`,
+  // leão de perfil
+  ingleao: (c) => `<g transform="translate(20 20) scale(1.95) translate(-14 -14.1)"><path d="${LEAO_PERFIL}" fill="${c}"/></g>`,
+  // leão de pé (só a silhueta da cabeça e da juba, dentro de um escudinho)
+  peujo: (c, c2) => `<path d="M7 4 H33 V20 Q33 32 20 37 Q7 32 7 20 Z" fill="${c}"/><g transform="translate(20 19) scale(1.3) translate(-14 -14.1)"><path d="${LEAO_PERFIL}" fill="${c2}"/></g>`,
+  // um M estilizado (duas pontas) dentro de uma bolinha
+  motorolo: (c, c2) => `<circle cx="20" cy="20" r="17" fill="${c}"/><path d="M9.6 29 L15.6 10.6 L20 22.4 L24.4 10.6 L30.4 29" fill="none" stroke="${c2}" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>`,
+  // só o nome em letra cursiva
+  kokakolla: (c) => `<text x="20" y="25" text-anchor="middle" font-family="'Brush Script MT', 'Segoe Script', cursive" font-style="italic" font-weight="700" font-size="14" textLength="38" lengthAdjust="spacingAndGlyphs" fill="${c}">Koka-Kolla</text>`,
+  // dois arcos dourados
+  macdonaldo: () => `<path d="M5.4 35 V17 Q5.4 5.4 12.7 5.4 Q20 5.4 20 17 Q20 5.4 27.3 5.4 Q34.6 5.4 34.6 17 V35" fill="none" stroke="#FFC72C" stroke-width="5.2" stroke-linejoin="round"/>`,
+};
 function simbolo(s: Simbolo, c: string, c2: string, letra: string): string {
   switch (s) {
     case "aviao": return `<path d="M20 3 C22 3 23 6 23 9 V16 L37 24 V28 L23 24 V32 L28 36 V38 L20 36 L12 38 V36 L17 32 V24 L3 28 V24 L17 16 V9 C17 6 18 3 20 3 Z" fill="${c}"/>`;
@@ -44,7 +108,7 @@ const fonteLetra = (m: Marca) => (m.letra === "fina" || m.letra === "redonda" ? 
 /** Logo: ícone + nome. Devolve um <g> com ~ (40 + texto) de largura e 40 de altura. */
 export function logoMarca(m: Marca, cor = m.cores[1], cor2 = m.cores[0], tamanho = 22): string {
   const nome = m.letra === "fina" ? m.nome.toUpperCase() : m.nome;
-  return `<g>${`<g>${simbolo(m.simbolo, cor, cor2, m.nome[0])}</g>`}<text x="48" y="${20 + tamanho * 0.36}" font-family="${fonteLetra(m)}" ${estiloLetra(m)} font-size="${tamanho}" fill="${cor}">${esc(nome)}</text></g>`;
+  return `<g>${`<g>${desenhoMarca(m, cor, cor2)}</g>`}<text x="48" y="${20 + tamanho * 0.36}" font-family="${fonteLetra(m)}" ${estiloLetra(m)} font-size="${tamanho}" fill="${cor}">${esc(nome)}</text></g>`;
 }
 export function logoSvg(m: Marca, altura = 28): string {
   const larg = 58 + m.nome.length * (m.letra === "fina" ? 17 : 13);
@@ -57,14 +121,14 @@ const HUB: Record<string, string> = { katarair: "DOH", emiratez: "DXB", etihade:
 function produto(m: Marca, apelido: string, numero: string): string {
   const [a, b, c] = m.cores;
   switch (m.categoria) {
-    case "banco": return `<g transform="translate(150 250) rotate(-10)"><rect width="150" height="94" rx="12" fill="${b}" stroke="${c}" stroke-width="2"/><rect x="14" y="30" width="24" height="18" rx="3" fill="#E3B341"/><text x="14" y="72" font-family="monospace" font-size="11" fill="${a}">5023 •••• •••• ${numero.padStart(4, "0")}</text><text x="14" y="86" font-family="${TEXTO}" font-weight="700" font-size="10" fill="${a}">${esc(apelido.toUpperCase())}</text><g transform="translate(104 8) scale(.9)">${simbolo(m.simbolo, a, b, m.nome[0])}</g></g>`;
-    case "refrigerante": case "cerveja": case "energetico": return `<g transform="translate(222 222)"><rect x="0" y="12" width="64" height="118" rx="10" fill="${a}" stroke="${c}" stroke-width="2"/><rect x="4" y="2" width="56" height="14" rx="5" fill="#C9CCD1"/><rect x="0" y="52" width="64" height="40" fill="${b}"/><g transform="translate(12 52)">${simbolo(m.simbolo, a, b, m.nome[0])}</g><path d="M8 20 V124" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/></g>${[0, 1, 2, 3, 4].map((i) => `<circle cx="${214 + i * 18}" cy="${214 - (i % 2) * 10}" r="${3 + (i % 3)}" fill="${b}" opacity=".7"/>`).join("")}`;
-    case "carro": return `<g transform="translate(14 300)"><path d="M10 52 L22 30 Q30 18 52 16 H172 Q196 16 214 30 L262 38 Q284 42 286 56 V66 H10 Z" fill="${b}" stroke="${c}" stroke-width="2"/><path d="M58 22 H160 Q178 22 190 34 H44 Z" fill="${a}" opacity=".55"/><circle cx="70" cy="68" r="18" fill="#1A1A1A"/><circle cx="70" cy="68" r="7" fill="#C9CCD1"/><circle cx="226" cy="68" r="18" fill="#1A1A1A"/><circle cx="226" cy="68" r="7" fill="#C9CCD1"/><g transform="translate(128 34) scale(.55)">${simbolo(m.simbolo, a, b, m.nome[0])}</g></g>`;
-    case "celular": return `<g transform="translate(196 196) rotate(8)"><rect width="96" height="176" rx="18" fill="#1A1A1A"/><rect x="6" y="8" width="84" height="160" rx="13" fill="${b}"/><circle cx="48" cy="18" r="4" fill="#1A1A1A"/><g transform="translate(28 64)">${simbolo(m.simbolo, a, b, m.nome[0])}</g><text x="48" y="140" text-anchor="middle" font-family="${TEXTO}" font-weight="700" font-size="11" fill="${a}">200 MP</text></g>`;
-    case "material": return `<g transform="translate(150 300) rotate(-14)"><path d="M6 46 Q4 22 22 18 L70 14 Q84 4 104 8 Q128 12 150 30 Q162 42 156 52 H14 Q6 52 6 46 Z" fill="${b}" stroke="${c}" stroke-width="2"/><path d="M14 52 H156" stroke="${a}" stroke-width="6"/>${[30, 56, 82, 108, 134].map((x) => `<rect x="${x}" y="54" width="8" height="9" rx="2" fill="${a}"/>`).join("")}<g transform="translate(60 18) scale(.7)">${simbolo(m.simbolo, a, b, m.nome[0])}</g></g>`;
+    case "banco": return `<g transform="translate(150 250) rotate(-10)"><rect width="150" height="94" rx="12" fill="${b}" stroke="${c}" stroke-width="2"/><rect x="14" y="30" width="24" height="18" rx="3" fill="#E3B341"/><text x="14" y="72" font-family="monospace" font-size="11" fill="${a}">5023 •••• •••• ${numero.padStart(4, "0")}</text><text x="14" y="86" font-family="${TEXTO}" font-weight="700" font-size="10" fill="${a}">${esc(apelido.toUpperCase())}</text><g transform="translate(104 8) scale(.9)">${desenhoMarca(m, a, b)}</g></g>`;
+    case "refrigerante": case "cerveja": case "energetico": return `<g transform="translate(222 222)"><rect x="0" y="12" width="64" height="118" rx="10" fill="${a}" stroke="${c}" stroke-width="2"/><rect x="4" y="2" width="56" height="14" rx="5" fill="#C9CCD1"/><rect x="0" y="52" width="64" height="40" fill="${b}"/><g transform="translate(12 52)">${desenhoMarca(m, a, b)}</g><path d="M8 20 V124" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/></g>${[0, 1, 2, 3, 4].map((i) => `<circle cx="${214 + i * 18}" cy="${214 - (i % 2) * 10}" r="${3 + (i % 3)}" fill="${b}" opacity=".7"/>`).join("")}`;
+    case "carro": return `<g transform="translate(14 300)"><path d="M10 52 L22 30 Q30 18 52 16 H172 Q196 16 214 30 L262 38 Q284 42 286 56 V66 H10 Z" fill="${b}" stroke="${c}" stroke-width="2"/><path d="M58 22 H160 Q178 22 190 34 H44 Z" fill="${a}" opacity=".55"/><circle cx="70" cy="68" r="18" fill="#1A1A1A"/><circle cx="70" cy="68" r="7" fill="#C9CCD1"/><circle cx="226" cy="68" r="18" fill="#1A1A1A"/><circle cx="226" cy="68" r="7" fill="#C9CCD1"/><g transform="translate(128 34) scale(.55)">${desenhoMarca(m, a, b)}</g></g>`;
+    case "celular": return `<g transform="translate(196 196) rotate(8)"><rect width="96" height="176" rx="18" fill="#1A1A1A"/><rect x="6" y="8" width="84" height="160" rx="13" fill="${b}"/><circle cx="48" cy="18" r="4" fill="#1A1A1A"/><g transform="translate(28 64)">${desenhoMarca(m, a, b)}</g><text x="48" y="140" text-anchor="middle" font-family="${TEXTO}" font-weight="700" font-size="11" fill="${a}">200 MP</text></g>`;
+    case "material": return `<g transform="translate(150 300) rotate(-14)"><path d="M6 46 Q4 22 22 18 L70 14 Q84 4 104 8 Q128 12 150 30 Q162 42 156 52 H14 Q6 52 6 46 Z" fill="${b}" stroke="${c}" stroke-width="2"/><path d="M14 52 H156" stroke="${a}" stroke-width="6"/>${[30, 56, 82, 108, 134].map((x) => `<rect x="${x}" y="54" width="8" height="9" rx="2" fill="${a}"/>`).join("")}<g transform="translate(60 18) scale(.7)">${desenhoMarca(m, a, b)}</g></g>`;
     case "oculos": {
       const ac = m.acessorio?.tipo === "oculos" ? m.acessorio : undefined, lente = ac?.lente ?? "#2A2A2A", arm = ac?.armacao ?? "#1A1A1A";
-      return `<g transform="translate(176 300) rotate(-8)"><path d="M0 10 Q40 0 120 10" stroke="${arm}" stroke-width="5" fill="none"/><ellipse cx="30" cy="26" rx="28" ry="20" fill="${lente}" stroke="${arm}" stroke-width="4"/><ellipse cx="92" cy="26" rx="28" ry="20" fill="${lente}" stroke="${arm}" stroke-width="4"/><path d="M14 18 L28 14 M76 18 L90 14" stroke="#FFFFFF" stroke-width="3" opacity=".5" stroke-linecap="round"/><g transform="translate(44 44) scale(.6)">${simbolo(m.simbolo, a, b, m.nome[0])}</g></g>`;
+      return `<g transform="translate(176 300) rotate(-8)"><path d="M0 10 Q40 0 120 10" stroke="${arm}" stroke-width="5" fill="none"/><ellipse cx="30" cy="26" rx="28" ry="20" fill="${lente}" stroke="${arm}" stroke-width="4"/><ellipse cx="92" cy="26" rx="28" ry="20" fill="${lente}" stroke="${arm}" stroke-width="4"/><path d="M14 18 L28 14 M76 18 L90 14" stroke="#FFFFFF" stroke-width="3" opacity=".5" stroke-linecap="round"/><g transform="translate(44 44) scale(.6)">${desenhoMarca(m, a, b)}</g></g>`;
     }
     case "relogio": {
       const ac = m.acessorio?.tipo === "relogio" ? m.acessorio : undefined;
