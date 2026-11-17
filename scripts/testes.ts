@@ -1781,6 +1781,7 @@ teste("Técnico: preleção, gritos, xG e relatório do analista", () => {
   while (!T.proximoJogo(s)) T.avancarSemana(pacote, s);
   const pj = T.proximoJogo(s)!;
   const rel = BZ.relatorioAdversario(pacote, s, pj.adv, 3); assert.ok(rel.destaques.length >= 2 && rel.dica);
+  const outros = T.outrosDaRodada(pacote, s), rod = s.semana - T.SEMANAS_PRE_T;
   assert.ok(T.iniciarPartida(pacote, s));
   const r1 = BZ.prelecao(pacote, s, "antes", "motivar"); assert.ok(r1.texto);
   assert.equal(BZ.prelecao(pacote, s, "antes", "cobrar").texto, "Você já falou com o time agora.");
@@ -1790,6 +1791,7 @@ teste("Técnico: preleção, gritos, xG e relatório do analista", () => {
   T.jogarAte(pacote, s, 90); BZ.prelecao(pacote, s, "fim", "elogiar");
   const res = T.avancarSemana(pacote, s);
   assert.ok(res.partida?.xg && res.partida.xg[0] >= 0 && res.partida.xg[1] >= 0);
+  for (const o of outros) { const j = s.rodadas[rod].find((x) => x[0] === o.casa)!; assert.equal(j[2], o.gols.filter((g) => g.casa).length); assert.equal(j[3], o.gols.filter((g) => !g.casa).length); }
 });
 
 teste("Técnico: categorias de base (peneira, evolução, campeonato, subir, mandar para a base, virada)", () => {

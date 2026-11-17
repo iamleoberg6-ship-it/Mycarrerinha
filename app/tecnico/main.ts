@@ -101,7 +101,7 @@ import {
 import { criarAgendador, chaveNuvem, nuvemDisponivel, apagarDaNuvem } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
-  proximoJogo, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
+  proximoJogo, outrosDaRodada, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, alvoPorNome, alternarVenda,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
@@ -1219,11 +1219,13 @@ function relatorioHtml(p: Relatorio): string {
 }
 
 // ------------------------------------------------------------------ partida ao vivo
+const nomeCurto = (id: string) => { const i = infoClube(pacote, id) as { apelido?: string; nome?: string } | undefined; return i?.apelido || i?.nome || nomeClube(id); };
 /** Estado da tela do jogo: minuto mostrado, velocidade (ms por minuto), pausa pedida e se parou no intervalo. */
-const vivo = { fala: undefined as undefined | { titulo: string; texto: string; reacoes: string[] }, mostrado: 0, vel: 260, pausado: true, pedirPausa: false, intervalo: false, passouIntervalo: false, timer: 0 as number, avisos: [] as string[] };
+const vivo = { outros: [] as ReturnType<typeof outrosDaRodada>, fala: undefined as undefined | { titulo: string; texto: string; reacoes: string[] }, mostrado: 0, vel: 260, pausado: true, pedirPausa: false, intervalo: false, passouIntervalo: false, timer: 0 as number, avisos: [] as string[] };
 const ICO_EV: Record<string, string> = { gol: "⚽", amarelo: "🟨", vermelho: "🟥", lesao: "✚", sub: "⇄", lance: "▸" };
 function abrirVivo(s: SaveTecnico, avisos: string[]) {
   const av = s.aoVivo; if (!av) return;
+  try { vivo.outros = av.rodada === s.semana - SEMANAS_PRE_T ? outrosDaRodada(pacote, s) : []; } catch { vivo.outros = []; }
   vivo.fala = undefined; vivo.mostrado = av.minuto ?? 0; vivo.avisos = avisos; vivo.pausado = true; clearTimeout(vivo.timer); vivo.pedirPausa = false; vivo.intervalo = false; vivo.passouIntervalo = vivo.mostrado >= 45;
   abrir(`<div id="vivo"></div>`);
   atualizarVivo(s);
@@ -1250,6 +1252,8 @@ function atualizarVivo(s: SaveTecnico) {
       const titulo = momento === "antes" ? "Preleção antes do jogo" : momento === "intervalo" ? "Conversa no intervalo" : "Conversa no vestiário depois do jogo";
       return `<div class="painel" style="margin:8px 0;padding:10px"><p class="rotulo" style="margin:0 0 6px">${titulo}</p><div class="chips" style="flex-wrap:wrap">${TONS.map((t) => `<button class="chip" data-prel="${momento}|${t.id}" title="${esc(t.dica)}">${esc(t.nome)}</button>`).join("")}</div><p class="sub" style="font-size:12px;margin-top:6px">O tom certo depende de ser favorito ou zebra e do placar. ${momento === "fim" ? "Mexe na moral para a semana." : "Mexe no ânimo do time em campo."}</p></div>`; })()}
     ${!fim && m > 0 ? `<div class="chips" style="flex-wrap:wrap;margin:6px 0"><span class="sub" style="font-size:12px;align-self:center">Gritar:</span>${GRITOS.map((g) => `<button class="chip" data-grito="${g.id}" title="${esc(g.dica)}">${esc(g.nome)}</button>`).join("")}</div>` : ""}
+    ${vivo.outros.length ? `<details class="outros-vivo"${parado ? " open" : ""}><summary class="sub" style="cursor:pointer">Outros jogos da rodada</summary><div class="outros-grid">${vivo.outros.map((o) => { const g = o.gols.filter((x) => x.min <= m), gc = g.filter((x) => x.casa).length, gf = g.length - gc, novo = g.some((x) => x.min > m - 3);
+      return `<div class="outro${novo && m > 0 && !fim ? " novo" : ""}"><span>${esc(nomeCurto(o.casa))}</span><b>${gc} × ${gf}</b><span>${esc(nomeCurto(o.fora))}</span></div>`; }).join("")}</div></details>` : ""}
     ${parado && !fim && cansados.length ? `<p class="sub">Cansados: ${cansados.map((n) => esc(n!)).join(", ")}.</p>` : ""}
     ${fim ? `<button class="botao grande" data-avancar>Ver o resultado</button>`
       : parado ? `<div class="botoes"><button class="botao" data-vivo-seguir>▶ ${m === 0 ? "Começar" : vivo.intervalo ? "Começar o 2º tempo" : "Continuar"}</button><button class="botao sec" data-vivo-mexer>Mexer no time e na tática</button></div>

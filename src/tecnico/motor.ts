@@ -1404,3 +1404,18 @@ export const _int = {
 
 /** Dinheiro que entra fora do mês normal (luvas de patrocínio, por exemplo). */
 export function creditar(s: SaveTecnico, k: string, v: number) { if (!v) return; s.clube.saldo += v; receber(s, k, v); }
+
+/** Os outros jogos da rodada da liga desta semana (os mesmos placares que vão para a tabela), com os minutos dos gols. */
+export function outrosDaRodada(pacote: PacoteDados, s: SaveTecnico): { casa: string; fora: string; gols: { min: number; casa: boolean }[] }[] {
+  const r = s.semana - SEMANAS_PRE_T, rodadas = rodadasDaLiga(s.ordem.length);
+  if (r < 0 || r >= rodadas.length) return [];
+  const w = mundo(pacote), rng = rngT(s, "rodada"), rm = rngT(s, "rodadaMin"), out: { casa: string; fora: string; gols: { min: number; casa: boolean }[] }[] = [];
+  for (const [ia, ib] of rodadas[r]) {
+    const casa = s.ordem[ia], fora = s.ordem[ib];
+    if (casa === s.clubeId || fora === s.clubeId) continue;
+    const [gc, gf] = simularPlacar(rng, w.clube[casa]?.forca ?? 60, w.clube[fora]?.forca ?? 60);
+    const gols = [...Array.from({ length: gc }, () => ({ min: rm.int(1, 90), casa: true })), ...Array.from({ length: gf }, () => ({ min: rm.int(1, 90), casa: false }))].sort((a, b) => a.min - b.min);
+    out.push({ casa, fora, gols });
+  }
+  return out;
+}
