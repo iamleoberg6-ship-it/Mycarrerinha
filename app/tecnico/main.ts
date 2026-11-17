@@ -31,7 +31,7 @@ import { rankingCopaT, copasT, jogoCopaT } from "../../src/tecnico/copas-t";
 import { chanceSituacao } from "../../src/tecnico/gestao";
 import { patroSel, ofertasSel, mesaSel, negociarSel, COTAS_SEL, NOME_COTA_SEL, type CotaSel } from "../../src/tecnico/patro-sel";
 import { poolSel, convocarMelhores, convocadosDe, forcaMinhaSel, copasSel, proximoJogoSel, metaNoTorneio, textoMeta, aceitarSelecao, deixarSelecao, listaSelecoes, declararInteresseSel, FORMACOES_SEL, POS_ORDEM, type Candidato, type Formacao, type Estilo } from "../../src/tecnico/selecao-t";
-import { Album, figurinhaArte, type CtxFig } from "../visual/album";
+import { Album, figurinhaArte, type CtxFig, type CapaAlbum } from "../visual/album";
 import type { Figurinha } from "../../src/figurinhas";
 import { bandeiraSvg } from "../../src/bandeiras";
 import { rankingCamisas, totalCamisas, fmtMil, precoCamisa } from "../../src/camisas";
@@ -1103,6 +1103,20 @@ function albumCardT(s: SaveTecnico): string {
   return `<section class="painel"><p class="rotulo">Álbum de figurinhas</p>${al.length ? `<button class="album-t" data-album-t style="all:unset;cursor:pointer;display:flex;gap:12px;align-items:center;width:100%"><span style="display:flex;gap:4px;width:150px;flex:none">${ult.map((f) => `<span class="fig ${f.raridade}" style="width:48px">${figurinhaArte(f, ctxFigT(s))}</span>`).join("")}</span><span><b>Abrir o álbum</b><br><small class="sub">${al.length} figurinhas${al.some((f) => f.posicao !== "TEC") ? " · a carreira de jogador e a de técnico" : ""}</small></span></button>` : `<p class="sub">A primeira figurinha de técnico sai no fim da temporada: uma por ano, com jogos, vitórias e posição, e especiais para título, acesso, técnico do ano e marcas da carreira.</p>`}</section>`;
 }
 /** O que a arte das figurinhas precisa no modo técnico: o técnico de roupa de beira de campo, ou o jogador de uniforme (álbum antigo). */
+/** A capa do álbum do técnico: ele no centro, os escudos de todos os clubes que treinou, a bandeira e a família no fundo. */
+function capaAlbumT(s: SaveTecnico): CapaAlbum {
+  const v = s.tecnico.visual ?? { roupa: "polo", cor: "clube" }, [a, b] = coresClube(s), info = infoClube(pacote, s.clubeId), n = s.namoro;
+  const u = UNIFORME_CLUBE[s.clubeId], ec = u?.escudo ?? [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
+  const esc2 = `<svg viewBox="0 0 26 30" width="26" height="30">${corpoEscudo(idClube(s.clubeId), ec[0], ec[1], info?.nome)}</svg>`;
+  const cor = a.toUpperCase() === "#FFFFFF" ? "#F4F2EC" : a;
+  const retrato = svgFoto({ aparencia: aparenciaT(s), tecnico: { roupa: v.roupa as RoupaTecnico, cor, cor2: b, escudo: esc2 }, semFundo: true });
+  const clubes = [...(s.album ?? []).filter((f) => f.tipo === "temporada" && !f.clubeId.startsWith("sel-") && !f.clubeId.startsWith("marca-")).sort((x, y) => x.ano - y.ano).map((f) => f.clubeId), ...s.historico.map((h) => h.clubeId ?? ""), s.clubeId].filter((id) => id && !id.startsWith("NAT"));
+  const pessoas: CapaAlbum["pessoas"] = [];
+  for (const f of n?.filhos ?? []) pessoas.push({ nome: f.nome, papel: f.menina ? "filha" : "filho" });
+  if (n?.par) pessoas.push({ svg: fotoDoPerfil(n.par), nome: n.par.nome, papel: n.par.etapa === "casados" ? "esposa" : "companheira" });
+  for (const e of [...(n?.exes ?? [])].reverse()) pessoas.push({ svg: fotoDoPerfil(e.par), nome: e.par.nome, papel: "ex" });
+  return { retrato, cores: [escurecerHex(a), "#0B1410"], clubes, bandeira: bandeiraSvg(s.tecnico.nac), pessoas };
+}
 function ctxFigT(s: SaveTecnico): CtxFig {
   const ap = (f: Figurinha) => ({ ...APARENCIA_PADRAO, ...(f.ap as Partial<Aparencia>) });
   const v = s.tecnico.visual ?? { roupa: "polo", cor: "clube" };
@@ -1122,7 +1136,7 @@ function ctxFigT(s: SaveTecnico): CtxFig {
 function abrirAlbumT(s: SaveTecnico) {
   abrir(`<div id="albumT" style="min-height:600px"></div>`);
   const el = document.getElementById("albumT");
-  if (el) new Album(el, { figs: () => s.album ?? [], ctx: () => ctxFigT(s), nome: () => s.tecnico.exJogador?.apelido ?? s.tecnico.nome, fechar: () => ($("dlg") as HTMLDialogElement).close() }).abrir(-1);
+  if (el) new Album(el, { figs: () => s.album ?? [], ctx: () => ctxFigT(s), nome: () => s.tecnico.exJogador?.apelido ?? s.tecnico.nome, capa: () => capaAlbumT(s), fechar: () => ($("dlg") as HTMLDialogElement).close() }).abrir(-1);
 }
 function vidaPerfil(s: SaveTecnico): string {
   completarVida(s); casaT(pacote, s);

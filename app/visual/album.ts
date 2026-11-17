@@ -255,13 +255,33 @@ const CSS = `
 @keyframes albVolta{0%{transform:rotateY(-180deg)}100%{transform:rotateY(0)}}
 @keyframes albSombra{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){.alb-virando{display:none}}
-.alb-capa{min-height:560px;border-radius:6px 14px 14px 6px;background:radial-gradient(circle at 70% 20%,#2c5c43,#0B1410 70%);color:#E3B341;box-shadow:0 10px 26px #0007,inset 12px 0 18px -10px #000a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:20px;box-sizing:border-box;border:3px solid #E3B341;outline:6px solid #0B1410}
-.alb-capa .t{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:46px;line-height:.9;letter-spacing:.04em}
-.alb-capa .s{letter-spacing:.3em;font-size:11px;text-transform:uppercase;color:#cfe3d6}
-.alb-capa .n{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:26px;color:#fff;margin-top:10px}
-.alb-capa .mini{display:flex;gap:6px;margin:14px 0 6px;transform:rotate(-4deg)}.alb-capa .mini .fig{width:64px}
+.alb-capa{position:relative;overflow:hidden;min-height:580px;border-radius:6px 14px 14px 6px;background:radial-gradient(circle at 50% 42%,#2f6a4c 0,#123222 45%,#08120d 100%);color:#E3B341;box-shadow:0 10px 26px #0007,inset 12px 0 18px -10px #000a;display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 14px 16px;box-sizing:border-box;border:3px solid #E3B341;outline:6px solid #0B1410}
+.alb-capa>*{position:relative;z-index:2}
+.alb-capa .raios{position:absolute;inset:-40%;z-index:0;background:repeating-conic-gradient(from 0deg at 50% 46%,#E3B34122 0 6deg,transparent 6deg 15deg);-webkit-mask:radial-gradient(circle at 50% 46%,#000 0,#000 22%,transparent 62%);mask:radial-gradient(circle at 50% 46%,#000 0,#000 22%,transparent 62%)}
+.alb-capa .fundo{position:absolute;inset:0;z-index:1;pointer-events:none}
+.alb-capa .pol{position:absolute;width:74px;padding:4px 4px 14px;background:#f3ecd9;border-radius:2px;box-shadow:0 4px 10px #0008;opacity:.42;filter:sepia(.55) saturate(.8);mix-blend-mode:luminosity}
+.alb-capa .pol .ft{display:block;aspect-ratio:1;overflow:hidden;background:#cbbf9f;border-radius:1px}.alb-capa .pol .ft svg,.alb-capa .pol .ft img{width:100%;height:100%;object-fit:cover;display:block}
+.alb-capa .pol .ini{display:grid;place-items:center;height:100%;font:900 30px/1 Georgia,serif;color:#5a4a2c}
+.alb-capa .pol i{position:absolute;left:0;right:0;bottom:1px;font:italic 600 8px/1 Georgia,serif;color:#5a4a2c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px}
+.alb-capa .s{letter-spacing:.3em;font-size:10px;text-transform:uppercase;color:#cfe3d6}
+.alb-capa .t{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:40px;line-height:.88;letter-spacing:.04em;text-shadow:0 3px 0 #0007,0 0 22px #E3B34155;margin-top:4px}
+.alb-capa .palco{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;gap:6px;width:100%;margin:12px 0 0}
+.alb-capa .col{display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center}
+.alb-capa .col span{display:grid;place-items:center;width:46px;height:50px;filter:drop-shadow(0 3px 4px #000a)}.alb-capa .col span svg{max-width:44px;max-height:48px}
+.alb-capa .col.miud span{width:34px;height:38px}.alb-capa .col.miud span svg{max-width:32px;max-height:36px}
+.alb-capa .col span:nth-child(odd){transform:rotate(-6deg)}.alb-capa .col span:nth-child(even){transform:rotate(5deg)}
+.alb-capa .moldura{position:relative;margin:0 auto;width:100%;max-width:190px;aspect-ratio:4/5;border-radius:50% 50% 14px 14px/38% 38% 14px 14px;background:linear-gradient(160deg,#F6D77A,#B8871F 55%,#F1CF6B);padding:5px;box-shadow:0 0 0 2px #0B1410,0 0 30px #E3B34166,0 10px 22px #000a}
+.alb-capa .moldura .dentro{width:100%;height:100%;border-radius:inherit;overflow:hidden;background:radial-gradient(circle at 50% 30%,var(--c1,#2c5c43),var(--c2,#0B1410) 85%);display:flex;align-items:flex-end;justify-content:center}
+.alb-capa .moldura .dentro svg{width:108%;height:auto;display:block;margin-bottom:-4%}
+.alb-capa .faixa{position:relative;z-index:3;display:flex;align-items:center;gap:8px;margin:-16px auto 0;padding:6px 14px;background:linear-gradient(#F1CF6B,#C8961F);color:#1a1405;border-radius:4px;box-shadow:0 4px 10px #0009;max-width:92%}
+.alb-capa .faixa:before,.alb-capa .faixa:after{content:"";position:absolute;top:6px;width:14px;height:100%;background:#9c7417;z-index:-1}
+.alb-capa .faixa:before{left:-9px;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,40% 50%)}.alb-capa .faixa:after{right:-9px;clip-path:polygon(0 0,100% 0,60% 50%,100% 100%,0 100%)}
+.alb-capa .faixa .bd{display:inline-flex;width:28px;height:19px;overflow:hidden;border-radius:2px;box-shadow:0 0 0 1px #0005}.alb-capa .faixa .bd svg{width:100%;height:100%}
+.alb-capa .n{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:24px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alb-capa .anos{margin-top:10px;font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:18px;letter-spacing:.2em;color:#fff}
+.alb-capa .mini{display:flex;gap:6px;margin:10px 0 4px}.alb-capa .mini .fig{width:54px}.alb-capa .mini .fig:nth-child(1){transform:rotate(-7deg)}.alb-capa .mini .fig:nth-child(3){transform:rotate(7deg)}
 .alb-capa .q{font-size:12px;color:#cfe3d6}
-.alb-capa button{margin-top:14px}
+.alb-capa button{margin-top:12px}
 .alb-zoom{position:absolute;inset:-6px;z-index:9;background:#0B1410f2;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;box-sizing:border-box;cursor:zoom-out}
 .alb-zoom .fig{width:min(290px,78vw)}
 .alb-zoom p{color:#E7EFE9;margin:0;text-align:center;font-size:13px}.alb-zoom .r{font-family:'Big Shoulders Display',sans-serif;font-weight:900;letter-spacing:.12em;color:#E3B341;font-size:12px}
@@ -278,7 +298,11 @@ const CSS = `
 `;
 function injetarCss() { if (typeof document === "undefined" || document.getElementById("css-album")) return; const st = document.createElement("style"); st.id = "css-album"; st.textContent = CSS; document.head.appendChild(st); }
 
-export interface OpcoesAlbum { figs: () => Figurinha[]; ctx: () => CtxFig; nome: () => string; fechar?: () => void; rodape?: () => string }
+/** A arte da capa: o retrato no centro, os escudos de todos os clubes da carreira dos lados, a bandeira e as pessoas da vida dele no fundo. */
+export interface CapaAlbum { retrato?: string; cores?: [string, string]; clubes: string[]; bandeira?: string; pessoas: { svg?: string; nome: string; papel: string }[] }
+export interface OpcoesAlbum { figs: () => Figurinha[]; ctx: () => CtxFig; nome: () => string; fechar?: () => void; rodape?: () => string; capa?: () => CapaAlbum }
+// lugares das fotos no fundo da capa (em volta do retrato, sem tapar o título): [esquerda %, topo %, giro]
+const LUGAR_POL: [number, number, number][] = [[2, 16, -14], [74, 14, 12], [-3, 62, 9], [78, 60, -10], [20, 84, -6], [60, 85, 8], [38, 3, -4], [6, 40, 6], [80, 37, -6]];
 /** O álbum montado dentro de um elemento: capa, páginas que viram (setas, índice por ano, arrastar o dedo) e zoom. */
 export class Album {
   private pag = -1; private ocupado = false; private x0?: number;
@@ -294,10 +318,18 @@ export class Album {
     if (i < 0) {
       const anos = ps.map((p) => p.ano), raras = figs.filter((f) => f.raridade === "brilhante" || f.raridade === "lenda").length;
       const mini = [...figs].sort((a, b) => ["comum", "prata", "brilhante", "lenda"].indexOf(b.raridade) - ["comum", "prata", "brilhante", "lenda"].indexOf(a.raridade)).slice(0, 3);
-      return `<div class="alb-capa"><div class="s">Álbum oficial de figurinhas</div><div class="t">MY<br>CARREIRINHA</div><div class="n">${esc(this.o.nome())}</div>
-        ${anos.length ? `<div class="s">${anos[0]}–${anos[anos.length - 1]}</div>` : ""}
+      const cp = this.o.capa?.() ?? { clubes: [], pessoas: [] }, cl = [...new Set(cp.clubes)].filter(Boolean);
+      const esq = cl.filter((_, k) => k % 2 === 0), dir = cl.filter((_, k) => k % 2 === 1), miud = cl.length > 8 ? " miud" : "";
+      const coluna = (l: string[]) => `<div class="col${miud}">${l.slice(0, 7).map((id) => `<span>${c.escudo(id)}</span>`).join("")}</div>`;
+      const pols = cp.pessoas.slice(0, LUGAR_POL.length).map((p, k) => { const [x, y, g] = LUGAR_POL[k]; return `<span class="pol" style="left:${x}%;top:${y}%;transform:rotate(${g}deg)"><span class="ft">${p.svg?.replace(' loading="lazy"', "") ?? `<b class="ini">${esc(p.nome.slice(0, 1))}</b>`}</span><i>${esc(p.nome.split(" ")[0])} · ${esc(p.papel)}</i></span>`; }).join("");
+      const [c1, c2] = cp.cores ?? ["#2c5c43", "#0B1410"];
+      return `<div class="alb-capa"><div class="raios"></div>${pols ? `<div class="fundo">${pols}</div>` : ""}
+        <div class="s">Álbum oficial de figurinhas</div><div class="t">MY CARREIRINHA</div>
+        <div class="palco">${coluna(esq)}<div><div class="moldura" style="--c1:${c1};--c2:${c2}"><div class="dentro">${cp.retrato ?? ""}</div></div>
+          <div class="faixa">${cp.bandeira ? `<span class="bd">${cp.bandeira}</span>` : ""}<span class="n">${esc(this.o.nome())}</span></div></div>${coluna(dir)}</div>
+        ${anos.length ? `<div class="anos">${anos[0]}${anos[anos.length - 1] !== anos[0] ? ` – ${anos[anos.length - 1]}` : ""}</div>` : ""}
         ${mini.length ? `<div class="mini">${mini.map((f) => `<span class="fig ${f.raridade}">${figurinhaArte(f, c)}</span>`).join("")}</div>` : ""}
-        <div class="q">${figs.length} figurinhas · ${raras} brilhantes ou lendas · ${ps.length} ${ps.length === 1 ? "página" : "páginas"}</div>
+        <div class="q">${figs.length} figurinhas · ${raras} brilhantes ou lendas · ${cl.length} ${cl.length === 1 ? "clube" : "clubes"}</div>
         ${ps.length ? `<button class="botao" data-alb="0">Abrir o álbum ›</button>` : `<p class="q">A primeira figurinha chega no fim da primeira temporada.</p>`}</div>`;
     }
     const p = ps[i];

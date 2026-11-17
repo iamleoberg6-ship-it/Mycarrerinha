@@ -3,7 +3,7 @@ import { CADEIAS } from "../../src/cadeias-dados.js";
 import { preencherPessoa } from "../../src/cadeias.js";
 // A semana do jogador: início (criação e ofertas de base), plano da semana, jogo narrado com decisões e resumo.
 import { bandeiraSvg } from "../../src/bandeiras";
-import { Album, figurinhaArte, type CtxFig } from "../visual/album";
+import { Album, figurinhaArte, type CtxFig, type CapaAlbum } from "../visual/album";
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { xgDoGol, xgDoChute, type Chute, type EventoEst, type TipoEvento } from "../../src/estatisticas-partida";
@@ -1646,6 +1646,19 @@ function pacoteHtml(s: Save, ano: number, estado: "fechado" | "rasgando" | "reve
     <div class="ferr-botoes" style="margin-top:14px"><button class="botao peq" data-colar-pacote="${ano}">Colar no álbum</button></div>`;
 }
 function desenharPacote() { const t = $("telaPacote"); if (t && save && pacoteAberto) t.innerHTML = pacoteHtml(save, pacoteAberto.ano, pacoteAberto.estado); }
+/** A capa do álbum: o jogador no centro, os escudos de todos os clubes por onde passou, a bandeira e quem fez parte da vida dele. */
+function capaAlbum(s: Save): CapaAlbum {
+  const c = s.carreira, [a, b] = cores(c.clubeId), n = namoroDe(c);
+  const clubes = [...c.historico.map((h) => h.clubeId ?? ""), c.clubeId].filter((id) => id && !id.startsWith("NAT"));
+  const ap = { ...APARENCIA_PADRAO, ...((s.jogador.aparencia as Partial<Aparencia>) ?? {}) };
+  const retrato = svgFoto({ aparencia: ap, camisa: { cor1: a.toUpperCase() === "#FFFFFF" ? "#F4F4F2" : a, cor2: b ?? "#111111", estilo: "lisa", fonte: c.clubeId }, numero: s.jogador.numero, traje: "jogo", semFundo: true, pescoco: tatuagemPescoco(visualDe(s.jogador).tatuagens.pescoco) });
+  const pessoas: CapaAlbum["pessoas"] = [];
+  (n.filhos ?? []).forEach((f, i) => pessoas.push({ svg: retratoFilho(s, f, i), nome: f.nome, papel: meninaDe(f) ? "filha" : "filho" }));
+  if (n.par) pessoas.push({ svg: fotoDoPerfil(n.par), nome: n.par.nome, papel: n.par.etapa === "casados" ? "esposa" : "namorada" });
+  for (const e of [...(n.exes ?? [])].reverse()) pessoas.push({ svg: fotoDoPerfil(e.par), nome: e.par.nome, papel: "ex" });
+  const fundo = /^#(F|E)[0-9A-F](F|E)[0-9A-F](F|E)/i.test(a) && b ? b : a;
+  return { retrato, cores: [escurecer(fundo, 0.75), escurecer(fundo, 0.3)], clubes, bandeira: bandeiraSvg(s.jogador.nacionalidade), pessoas };
+}
 /** O álbum (componente compartilhado com o modo técnico): só as temporadas com o pacote já colado. */
 let albumUi: Album | undefined;
 function desenharAlbum() {
@@ -1653,7 +1666,7 @@ function desenharAlbum() {
   if (!t || !save) return;
   if (!albumUi) albumUi = new Album(t, {
     figs: () => { const ab = save?.carreira.pacotesAbertos ?? []; return save ? albumDe(save.carreira).filter((f) => ab.includes(f.ano)) : []; },
-    ctx: ctxFig, nome: () => save?.jogador.apelido ?? "",
+    ctx: ctxFig, nome: () => save?.jogador.apelido ?? "", capa: () => (save ? capaAlbum(save) : { clubes: [], pessoas: [] }),
     fechar: () => ($("dlgAlbum") as HTMLDialogElement).close(),
     rodape: () => { const pend = save ? pacotesPendentes(save) : []; return pend.length ? `<p class="sub" style="margin-top:10px;color:#E7EFE9">Tem pacote de ${pend[0]} esperando para colar.</p><button class="botao peq" data-abrir-pacote="${pend[0]}">Abrir o pacote de ${pend[0]}</button>` : ""; },
   });
