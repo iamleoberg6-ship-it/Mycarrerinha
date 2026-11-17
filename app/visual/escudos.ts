@@ -93,6 +93,7 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<rect x="10.8" y="12.2" width="4.4" height="1.1" fill="#8E1A12"/><rect x="9.2" y="18.6" width="7.6" height="1.2" fill="#8E1A12"/>`;
     return `<circle cx="13" cy="15" r="12.6" fill="${MARINHO}"/><circle cx="13" cy="15" r="11" fill="none" stroke="#FFFFFF" stroke-width=".9"/>${torre}<circle cx="13" cy="15" r="12.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
+  if (chave === "BOT") c1 = "#0A0A0A"; // escudo preto, sempre (a estrela branca vai no centro)
   const c2 = c2r && c2r.toLowerCase() !== c1.toLowerCase() ? c2r : c1.toLowerCase() === "#ffffff" ? "#0A0A0A" : "#FFFFFF";
   const { forma, desenho } = modeloEscudo(chave), d = FORMAS[forma], id = `escR${forma}`;
   // Corinthians: um filete vermelho por dentro do contorno (o detalhe da marca, sem mudar o formato)
@@ -121,8 +122,10 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   const CATALUNHA = chave === "ES-BAR" ? `<rect x="0" y="0" width="13" height="14" fill="#FFFFFF"/><rect x="6" y="0" width="2.4" height="14" fill="#DA121A"/><rect x="0" y="6.2" width="13" height="2.4" fill="#DA121A"/>`
     + `<rect x="13" y="0" width="13" height="14" fill="#FCDD09"/>${[1, 3, 5, 7].map((k) => `<rect x="${(13 + k * 13 / 9).toFixed(2)}" y="0" width="${(13 / 9).toFixed(2)}" height="14" fill="#DA121A"/>`).join("")}`
     + `<path d="M0 14 H26 M13 0 V14" stroke="${TINTA}" stroke-width=".9"/>` : "";
-  const detalhe = COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  // Botafogo: o mesmo formato, todo preto, só com a estrela solitária branca no centro (sem letra)
+  const ESTRELA = chave === "BOT" ? `<path d="M13.00 8.20 L14.70 13.05 L19.85 13.18 L15.76 16.30 L17.23 21.22 L13.00 18.30 L8.77 21.22 L10.24 16.30 L6.15 13.18 L11.30 13.05 Z" fill="#FFFFFF" stroke-linejoin="round"/>` : "";
+  const detalhe = ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {
