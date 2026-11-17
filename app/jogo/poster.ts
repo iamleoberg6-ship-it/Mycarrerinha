@@ -43,7 +43,7 @@ const PROPRIO: Record<string, (c: string, c2: string) => string> = {
   // oval com o nome escrito
   fordi: (c, c2) => `<ellipse cx="20" cy="20" rx="19" ry="12.5" fill="${c}"/><ellipse cx="20" cy="20" rx="17.2" ry="10.8" fill="none" stroke="${c2}" stroke-width=".8"/><text x="20" y="24.6" text-anchor="middle" font-family="'Brush Script MT', 'Segoe Script', cursive" font-style="italic" font-weight="700" font-size="13" fill="${c2}">Fordi</text>`,
   // silhueta de uma pera mordida
-  oppo: (c, c2) => `<path d="M20 9 C27 9 25 17 29 23 C33 30 28 37 20 37 C12 37 7 30 11 23 C15 17 13 9 20 9 Z" fill="${c}"/><circle cx="31.6" cy="21.4" r="5.6" fill="${c2}"/><path d="M20 9 Q21 4.6 25 3" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  apel: (c, c2) => `<path d="M20 9 C27 9 25 17 29 23 C33 30 28 37 20 37 C12 37 7 30 11 23 C15 17 13 9 20 9 Z" fill="${c}"/><circle cx="31.6" cy="21.4" r="5.6" fill="${c2}"/><path d="M20 9 Q21 4.6 25 3" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
   // um "certinho" (o visto de conferido)
   naiki: (c) => `<path d="M3 21.4 L13.4 31.4 L37.4 8.6" fill="none" stroke="${c}" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round"/>`,
   // uma pimenta
@@ -86,6 +86,24 @@ const PROPRIO: Record<string, (c: string, c2: string) => string> = {
   mercedez: (c) => `<circle cx="20" cy="20" r="16.4" fill="none" stroke="${c}" stroke-width="2.8"/><path d="M20 20 V3.6 M20 20 L5.8 28.2 M20 20 L34.2 28.2" stroke="${c}" stroke-width="2.8" stroke-linecap="round"/>`,
   // um sinal de mais gordo e em itálico
   chevrole: (c) => `<path d="M15 6 H25 V15 H34 V25 H25 V34 H15 V25 H6 V15 H15 Z" fill="${c}" transform="skewX(-16) translate(5.8 0)" stroke-linejoin="round"/>`,
+  // três anéis entrelaçados
+  audy: (c) => `<g fill="none" stroke="${c}" stroke-width="2.6">${[9.6, 20, 30.4].map((x) => `<circle cx="${x}" cy="20" r="7.6"/>`).join("")}</g>`,
+  // dois bonequinhos sentados, de costas um para o outro
+  kapa: (c) => `<g fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.6 13.6 L16.6 25 L8.4 25.6 L7 33.4 M16.8 18 L9.6 15.6"/><path d="M22.4 13.6 L23.4 25 L31.6 25.6 L33 33.4 M23.2 18 L30.4 15.6"/></g><circle cx="16.4" cy="8.8" r="3.4" fill="${c}"/><circle cx="23.6" cy="8.8" r="3.4" fill="${c}"/>`,
+  // um quadrado com o nome escrito à mão, na diagonal
+  reiban: (c, c2) => `<rect x="3" y="5" width="34" height="30" rx="3" fill="${c}"/><text x="20" y="24" text-anchor="middle" transform="rotate(-14 20 20)" font-family="'Brush Script MT', 'Segoe Script', cursive" font-style="italic" font-weight="700" font-size="12" textLength="30" lengthAdjust="spacingAndGlyphs" fill="${c2}">Rei-Ban</text>`,
+  // dois U curvos se encontrando: um para cima e um de cabeça para baixo (o de baixo vira o arco de um A)
+  underarmadura: (c) => `<g fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round"><path d="M9.4 4 C9.4 29 30.6 29 30.6 4"/><path d="M9.4 36 C9.4 11 30.6 11 30.6 36"/></g>`,
+  // oval com o nome escrito dentro
+  samsong: (c, c2) => `<ellipse cx="20" cy="20" rx="19" ry="11" fill="${c}" transform="rotate(-10 20 20)"/><text x="20" y="23.6" text-anchor="middle" font-family="'Barlow', Arial, sans-serif" font-weight="800" font-size="9" letter-spacing=".4" textLength="30" lengthAdjust="spacingAndGlyphs" fill="${c2}">SAMSONG</text>`,
+  // um oval com as laterais mais grossas, que parece um O
+  ouclei: (c) => `<path fill="${c}" fill-rule="evenodd" d="M20 7 C32 7 38 13 38 20 C38 27 32 33 20 33 C8 33 2 27 2 20 C2 13 8 7 20 7 Z M20 10.6 C27.6 10.6 30.6 15 30.6 20 C30.6 25 27.6 29.4 20 29.4 C12.4 29.4 9.4 25 9.4 20 C9.4 15 12.4 10.6 20 10.6 Z"/>`,
+  // um oval com um H grosso e curvo, inclinado
+  hyundai: (c) => `<ellipse cx="20" cy="20" rx="18.4" ry="12.4" fill="none" stroke="${c}" stroke-width="2.4"/><path d="M13.4 11.6 C12.4 17 11.6 23 12.2 28.6 M26.8 11.4 C27.6 17 28.4 23 27.8 28.4 M11.8 21.8 C17 17.2 23.4 23.6 28.2 18.4" fill="none" stroke="${c}" stroke-width="3.8" stroke-linecap="round"/>`,
+  // cabeça de leão de frente, só o contorno (vazado), com os olhos vazados, e o nome embaixo
+  criptocom: (c) => `<g fill="none" stroke="${c}" stroke-width="1.9" stroke-linejoin="round"><path d="M20 2.6 L26.4 5 L31.6 4.6 L31.2 10 L35 14.6 L31.6 18.6 L31.2 24 L25.6 26.4 L20 30.4 L14.4 26.4 L8.8 24 L8.4 18.6 L5 14.6 L8.8 10 L8.4 4.6 L13.6 5 Z"/><path d="M14 9.6 L20 7.6 L26 9.6 L27 17.6 L23.6 22.4 L20 24.4 L16.4 22.4 L13 17.6 Z"/><path d="M15.6 13.6 L18.6 14.8 L15.8 16 Z M24.4 13.6 L21.4 14.8 L24.2 16 Z M18 19 H22 L20 21 Z"/></g><text x="20" y="38.4" text-anchor="middle" font-family="'Barlow', Arial, sans-serif" font-weight="800" font-size="6.4" textLength="34" lengthAdjust="spacingAndGlyphs" fill="${c}">Cripto.com</text>`,
+  // um quadrado tão arredondado que quase é um círculo, com o nome em itálico, de letras altas
+  fiato: (c, c2) => `<path d="M20 2.6 C33 2.6 37.4 7 37.4 20 C37.4 33 33 37.4 20 37.4 C7 37.4 2.6 33 2.6 20 C2.6 7 7 2.6 20 2.6 Z" fill="${c}"/><text x="20" y="27.6" text-anchor="middle" font-family="'Barlow Condensed', 'Arial Narrow', sans-serif" font-style="italic" font-weight="800" font-size="20" textLength="27" lengthAdjust="spacingAndGlyphs" fill="${c2}">Fiato</text>`,
   // dois arcos dourados
   macdonaldo: () => `<path d="M5.4 35 V17 Q5.4 5.4 12.7 5.4 Q20 5.4 20 17 Q20 5.4 27.3 5.4 Q34.6 5.4 34.6 17 V35" fill="none" stroke="#FFC72C" stroke-width="5.2" stroke-linejoin="round"/>`,
 };
