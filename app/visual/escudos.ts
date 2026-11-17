@@ -53,7 +53,22 @@ function bandeiraFlamula(cores: string[], x0: number, x1: number, y0: number, y1
   const borda = `<path d="M${x0} ${y0} ${linha(y0)} V${y1} ${volta(y1)} Z" fill="none" stroke="${contorno}" stroke-width="${contorno === "#0A0A0A" ? 0.45 : 0.7}" stroke-linejoin="round"/>`;
   return `<rect x="${x0 - 1.2}" y="${y0 - 1.4}" width=".9" height="${y1 - y0 + 6}" rx=".4" fill="#5A3E0E"/>${faixas}${q}${borda}`;
 }
+/** A cabeça de leão de frente (juba, orelhas, focinho), centrada em (13, 15). */
+const cabecaLeao = (j: string, r: string, f: string, t: string) => `<g fill="${j}" stroke="${t}" stroke-width=".45"><circle cx="18.20" cy="15.20" r="2"/><circle cx="17.50" cy="17.80" r="2"/><circle cx="15.60" cy="19.70" r="2"/><circle cx="13.00" cy="20.40" r="2"/><circle cx="10.40" cy="19.70" r="2"/><circle cx="8.50" cy="17.80" r="2"/><circle cx="7.80" cy="15.20" r="2"/><circle cx="8.50" cy="12.60" r="2"/><circle cx="10.40" cy="10.70" r="2"/><circle cx="13.00" cy="10.00" r="2"/><circle cx="15.60" cy="10.70" r="2"/><circle cx="17.50" cy="12.60" r="2"/></g><circle cx="13" cy="15.2" r="5.4" fill="${j}"/>`
+    + `<circle cx="10.4" cy="12.1" r="1.1" fill="${r}" stroke="${t}" stroke-width=".4"/><circle cx="15.6" cy="12.1" r="1.1" fill="${r}" stroke="${t}" stroke-width=".4"/>`
+    + `<ellipse cx="13" cy="15.6" rx="3.7" ry="4" fill="${r}" stroke="${t}" stroke-width=".45"/><ellipse cx="13" cy="17.6" rx="2" ry="1.4" fill="${f}"/>`
+    + `<path d="M10.8 14.4 Q11.5 13.9 12.1 14.4 M13.9 14.4 Q14.5 13.9 15.2 14.4" fill="none" stroke="${t}" stroke-width=".55" stroke-linecap="round"/><path d="M12.2 16.6 H13.8 L13 17.5 Z" fill="${t}"/>`
+    + `<path d="M13 17.5 V18.2 M12 18.5 Q13 19.1 14 18.5" fill="none" stroke="${t}" stroke-width=".38" stroke-linecap="round"/>`;
+/** A águia de asas abertas em cima do escudo (Benfica, Lazio): asas, corpo, cabeça de perfil e as garras segurando o escudo. */
+function aguiaAberta(cor: string, traco = "#5A3E0E"): string {
+  const asa = "M12.2 7.2 C9.4 3.4 5.4 2.2 1 3.6 L3 4.9 L1.2 6 L3.8 6.9 L2.4 8.2 L5.6 8.5 L4.8 10 C7.8 9.8 10.4 9.2 12.2 8.6 Z";
+  return `<g fill="${cor}" stroke="${traco}" stroke-width=".4" stroke-linejoin="round"><path d="${asa}"/><path d="${asa}" transform="translate(26 0) scale(-1 1)"/>`
+    + `<ellipse cx="13" cy="7.6" rx="1.9" ry="3"/><circle cx="13" cy="3.7" r="1.5"/><path d="M11.7 3.9 L10.4 4.6 L11.8 4.7 Z"/><path d="M11.4 10 L10.6 11.2 M14.6 10 L15.4 11.2" fill="none" stroke-width=".7" stroke-linecap="round"/></g><circle cx="12.6" cy="3.4" r=".3" fill="#0A0A0A"/>`;
+}
 export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: string, borda = 1.6): string {
+  // Lazio: o escudo do clube um pouco menor, com a águia de asas abertas em cima segurando ele (como no Benfica)
+  if (chave === "IT-LAZ") return `<g transform="translate(4.6 8.2) scale(.66)">${corpoEscudo("IT-LAZ|base", c1, c2r, nome, borda / 0.66)}</g>${aguiaAberta("#D9A93A")}`;
+  if (chave.endsWith("|base")) chave = chave.slice(0, -5);
   // seleção: a bandeira do país no lugar do escudo
   if (chave.startsWith("NAT-")) return bandeiraSvg(chave.slice(4), "").replace("<svg ", '<svg x="2" y="2" width="26" height="30" ');
   // Marselha: só um M azul, sem escudo
@@ -107,9 +122,7 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   // Benfica: a águia de asas abertas em cima, segurando o escudo meio vermelho, meio branco, com SLB pequenino em dourado
   if (chave === "PT-SLB") {
     const esc = "M6 9.6 H20 V17.6 Q20 25 13 28.6 Q6 25 6 17.6 Z", OURO2 = "#D9A93A";
-    const asa = "M12.2 7.2 C9.4 3.4 5.4 2.2 1 3.6 L3 4.9 L1.2 6 L3.8 6.9 L2.4 8.2 L5.6 8.5 L4.8 10 C7.8 9.8 10.4 9.2 12.2 8.6 Z";
-    const aguia = `<g fill="${OURO2}" stroke="#5A3E0E" stroke-width=".4" stroke-linejoin="round"><path d="${asa}"/><path d="${asa}" transform="translate(26 0) scale(-1 1)"/>`
-      + `<ellipse cx="13" cy="7.6" rx="1.9" ry="3"/><circle cx="13" cy="3.7" r="1.5"/><path d="M11.7 3.9 L10.4 4.6 L11.8 4.7 Z"/><path d="M11.4 10 L10.6 11.2 M14.6 10 L15.4 11.2" fill="none" stroke-width=".7" stroke-linecap="round"/></g><circle cx="12.6" cy="3.4" r=".3" fill="#0A0A0A"/>`;
+    const aguia = aguiaAberta(OURO2);
     return `<defs><clipPath id="cBEN"><path d="${esc}"/></clipPath></defs><path d="${esc}" fill="#FFFFFF"/><g clip-path="url(#cBEN)"><rect x="0" y="0" width="13" height="30" fill="#E30613"/></g>`
       + `<text x="13" y="20.2" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="3.4" letter-spacing=".2" fill="${OURO2}" stroke="#5A3E0E" stroke-width=".25" paint-order="stroke">SLB</text>`
       + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>${aguia}`;
@@ -123,6 +136,13 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   if (chave === "IT-INT") {
     return `<defs><clipPath id="cINT"><circle cx="13" cy="15" r="8.9"/></clipPath></defs><circle cx="13" cy="15" r="12.4" fill="#0A0A0A"/><circle cx="13" cy="15" r="10" fill="#0068A8"/>`
       + `<g clip-path="url(#cINT)" fill="#FFFFFF"><rect x="11.3" y="6" width="3.4" height="18"/><rect x="7" y="5" width="12" height="4.2"/><rect x="7" y="20.8" width="12" height="4.2"/></g>`
+      + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
+  // Chelsi: bola azul com uma bola branca dentro e a cabeça de leão azul (a mesma do Sporting) no centro; um trevo vermelho de cada lado no anel azul
+  if (chave === "EN-CHE") {
+    const trevo = (x: number) => `<g fill="#E30613"><circle cx="${x}" cy="14.1" r=".68"/><circle cx="${x - 0.68}" cy="15.1" r=".68"/><circle cx="${x + 0.68}" cy="15.1" r=".68"/><path d="M${x} 15.3 L${x} 16.9" stroke="#E30613" stroke-width=".4" stroke-linecap="round"/></g>`;
+    return `<circle cx="13" cy="15" r="12.4" fill="#034694"/><circle cx="13" cy="15" r="9" fill="#FFFFFF" stroke="#D4AF37" stroke-width=".6"/>`
+      + `<g transform="translate(13 15) scale(.98) translate(-13 -15.2)">${cabecaLeao("#034694", "#2F6FC4", "#DCE8F7", "#011E44")}</g>${trevo(2.7)}${trevo(23.3)}`
       + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
@@ -207,11 +227,7 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   // Paris FC: todo azul-marinho com a torre Eiffel (a mesma do Paris São Germano) em branco
   const TORRE_PFC = chave === "FR-PFC" ? `<g fill="#FFFFFF"><path d="M13 3.6 L13.7 8 L14.6 12.5 L16.4 19 L19.4 25.6 H16.6 Q15.6 22.4 13 22.4 Q10.4 22.4 9.4 25.6 H6.6 L9.6 19 L11.4 12.5 L12.3 8 Z"/></g><rect x="10.8" y="12.2" width="4.4" height="1.1" fill="#1B2A5B"/><rect x="9.2" y="18.6" width="7.6" height="1.2" fill="#1B2A5B"/>` : "";
   // Sporting Lisboeta: listrado na horizontal com as cores do clube e só a cabeça do leão amarela no centro
-  const LEAO_SCP = chave === "PT-SCP" ? `<g fill="#E8A20C" stroke="#0A0A0A" stroke-width=".45"><circle cx="18.20" cy="15.20" r="2"/><circle cx="17.50" cy="17.80" r="2"/><circle cx="15.60" cy="19.70" r="2"/><circle cx="13.00" cy="20.40" r="2"/><circle cx="10.40" cy="19.70" r="2"/><circle cx="8.50" cy="17.80" r="2"/><circle cx="7.80" cy="15.20" r="2"/><circle cx="8.50" cy="12.60" r="2"/><circle cx="10.40" cy="10.70" r="2"/><circle cx="13.00" cy="10.00" r="2"/><circle cx="15.60" cy="10.70" r="2"/><circle cx="17.50" cy="12.60" r="2"/></g><circle cx="13" cy="15.2" r="5.4" fill="#E8A20C"/>`
-    + `<circle cx="10.4" cy="12.1" r="1.1" fill="#FFD43B" stroke="#0A0A0A" stroke-width=".4"/><circle cx="15.6" cy="12.1" r="1.1" fill="#FFD43B" stroke="#0A0A0A" stroke-width=".4"/>`
-    + `<ellipse cx="13" cy="15.6" rx="3.7" ry="4" fill="#FFD43B" stroke="#0A0A0A" stroke-width=".45"/><ellipse cx="13" cy="17.6" rx="2" ry="1.4" fill="#FFF3C4"/>`
-    + `<path d="M10.8 14.4 Q11.5 13.9 12.1 14.4 M13.9 14.4 Q14.5 13.9 15.2 14.4" fill="none" stroke="#0A0A0A" stroke-width=".55" stroke-linecap="round"/><path d="M12.2 16.6 H13.8 L13 17.5 Z" fill="#0A0A0A"/>`
-    + `<path d="M13 17.5 V18.2 M12 18.5 Q13 19.1 14 18.5" fill="none" stroke="#0A0A0A" stroke-width=".38" stroke-linecap="round"/>` : "";
+  const LEAO_SCP = chave === "PT-SCP" ? cabecaLeao("#E8A20C", "#FFD43B", "#FFF3C4", "#0A0A0A") : "";
   // Atalanta (Bérgamo): a cabeça de uma mulher de perfil, toda branca, no centro do escudo
   const MULHER_ATA = chave === "IT-ATA" ? `<path d="M11.4 8.6 C12.6 7.6 15.6 7.4 17.2 8.8 C18.8 8.6 20.2 9.8 19.8 11.4 C19.6 12.6 18.4 13 17.6 12.8 C17.8 14.6 17.4 16.4 16.4 17.6 L16.8 21.4 L12 21.4 L12.4 19 C11.6 18.8 10.8 18.6 10.6 17.8 L10.4 17.2 L9.8 16.9 L10.3 16.5 L9.8 16.1 L10.2 15.6 L9.2 14.4 L10.2 13.2 C10.2 11.2 10.4 9.6 11.4 8.6 Z" fill="#FFFFFF" stroke="#0A0A0A" stroke-width=".5" stroke-linejoin="round"/>` : "";
   // clubes da Red Boi: os dois touros com o sol no meio do escudo, numa placa clara para aparecer em qualquer cor
