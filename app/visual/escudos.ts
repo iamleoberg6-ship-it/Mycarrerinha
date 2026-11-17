@@ -206,6 +206,14 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<rect x="0" y="0" width="26" height="10.6" fill="${AZ}"/><path d="M0 10.6 H26" stroke="${AM}" stroke-width=".7"/><rect x="10.2" y="0" width="5.6" height="30" fill="#FFFFFF"/><path d="M10.2 0 V30 M15.8 0 V30" stroke="${AM}" stroke-width=".6"/></g>`
       + letras + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
   }
+  // Brentford: círculo vermelho com um círculo branco dentro e uma abelha no meio
+  if (chave === "EN-BRE") {
+    const abelha = `<g stroke="#111111" stroke-width=".45" stroke-linejoin="round">`
+      + `<ellipse cx="10.2" cy="12.4" rx="3.2" ry="2" fill="#DCEBF7" opacity=".95" transform="rotate(-28 10.2 12.4)"/><ellipse cx="15.8" cy="12.4" rx="3.2" ry="2" fill="#DCEBF7" opacity=".95" transform="rotate(28 15.8 12.4)"/>`
+      + `<ellipse cx="13" cy="17.4" rx="3.4" ry="4.6" fill="#FFC20E"/><path d="M9.8 16.2 H16.2 M9.7 18.4 H16.3 M10.6 20.4 H15.4" stroke="#111111" stroke-width="1.1"/>`
+      + `<circle cx="13" cy="11.8" r="2" fill="#111111"/><path d="M12 10.2 Q11 8.4 9.8 8.2 M14 10.2 Q15 8.4 16.2 8.2" fill="none" stroke-width=".55" stroke-linecap="round"/><path d="M13 22 L13 23.4" stroke-width=".8" stroke-linecap="round"/></g>`;
+    return `<circle cx="13" cy="15" r="12.4" fill="#E30613"/><circle cx="13" cy="15" r="9.4" fill="#FFFFFF"/>${abelha}<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
