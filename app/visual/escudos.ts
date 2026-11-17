@@ -94,6 +94,16 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   }
   // Tigre do Carvão (Criciúma): um triângulo de base larga partido ao meio, com um vão entre as duas metades; amarelo com contorno preto
   if (chave === "CRI") return `<g fill="#FDD100" stroke="#0A0A0A" stroke-width="1.1" stroke-linejoin="round"><path d="M12.2 4.6 L1.2 26 H12.2 Z"/><path d="M13.8 4.6 L24.8 26 H13.8 Z"/></g>`;
+  // Benfica: a águia de asas abertas em cima, segurando o escudo meio vermelho, meio branco, com SLB pequenino em dourado
+  if (chave === "PT-SLB") {
+    const esc = "M6 9.6 H20 V17.6 Q20 25 13 28.6 Q6 25 6 17.6 Z", OURO2 = "#D9A93A";
+    const asa = "M12.2 7.2 C9.4 3.4 5.4 2.2 1 3.6 L3 4.9 L1.2 6 L3.8 6.9 L2.4 8.2 L5.6 8.5 L4.8 10 C7.8 9.8 10.4 9.2 12.2 8.6 Z";
+    const aguia = `<g fill="${OURO2}" stroke="#5A3E0E" stroke-width=".4" stroke-linejoin="round"><path d="${asa}"/><path d="${asa}" transform="translate(26 0) scale(-1 1)"/>`
+      + `<ellipse cx="13" cy="7.6" rx="1.9" ry="3"/><circle cx="13" cy="3.7" r="1.5"/><path d="M11.7 3.9 L10.4 4.6 L11.8 4.7 Z"/><path d="M11.4 10 L10.6 11.2 M14.6 10 L15.4 11.2" fill="none" stroke-width=".7" stroke-linecap="round"/></g><circle cx="12.6" cy="3.4" r=".3" fill="#0A0A0A"/>`;
+    return `<defs><clipPath id="cBEN"><path d="${esc}"/></clipPath></defs><path d="${esc}" fill="#FFFFFF"/><g clip-path="url(#cBEN)"><rect x="0" y="0" width="13" height="30" fill="#E30613"/></g>`
+      + `<text x="13" y="20.2" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="3.4" letter-spacing=".2" fill="${OURO2}" stroke="#5A3E0E" stroke-width=".25" paint-order="stroke">SLB</text>`
+      + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>${aguia}`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
