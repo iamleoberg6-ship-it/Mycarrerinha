@@ -1,6 +1,7 @@
 // Modo técnico — motor: começo de carreira, a semana (treino, jogo, dinheiro, diretoria), a partida e a virada de temporada.
 // O mundo é o mesmo do modo jogador (mesma semente = mesmo mundo); o clube do técnico usa o elenco do save.
 import { RNG, clamp } from "../rng.js";
+import { curvaDe, potTardio } from "../curvas.js";
 import { efeitoBeira } from "./beira.js";
 import { avaliarPlano } from "./plano-dir.js";
 import { jogosNpcDaRodada, registrarRodada, autorNpc, ajustarRevista, type ArtLiga, type GolLiga } from "./lances-liga.js";
@@ -995,7 +996,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   const ct = s.clube.ctNivel, prep = nivelStaff(s, "preparador"), fisio = nivelStaff(s, "fisio");
   for (const a of s.elenco) {
     const participacao: Participacao = a.lesao > 0 ? "ferias" : titularesIds.has(a.id) ? "titular" : entraram.has(a.id) ? "entrou" : "naoJogou";
-    a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: a.treinoInd?.foco ?? s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.94 + exDe(a).DET / 800) * (0.88 + 0.05 * ct) * (a.mentor ? 1.03 : 1), fAtrib: fatorAtributos(s.deps, a.pos, a.idade) });
+    a.at = evoluirSemana(a.at, a.pot, { curva: curvaDe(a.nome), idade: a.idade, foco: a.treinoInd?.foco ?? s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.94 + exDe(a).DET / 800) * (0.88 + 0.05 * ct) * (a.mentor ? 1.03 : 1), fAtrib: fatorAtributos(s.deps, a.pos, a.idade) });
     const rec = s.treino.intensidade === "alta" ? 18 : s.treino.intensidade === "leve" ? 34 : 26;
     a.condicao = a.lesao > 0 ? clamp(a.condicao, 0, 75) : clamp(a.condicao + rec + 2 * prep + 1.2 * fisio, 0, 100);
     // fisioterapia boa adianta a volta (às vezes o jogador volta uma semana antes)
@@ -1080,7 +1081,7 @@ const media = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.
 function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   fecharCopasT(pacote, s);
   try { viradaSelecao(pacote, s, s.temporada, (t) => noticia(s, "clube", t)); } catch (err) { console.error(err); }
-  try { viradaNegocios(pacote, s, s.temporada, (a, semanas, titular) => { for (let i = 0; i < semanas; i++) a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: "tecnico", intensidade: "normal", participacao: titular ? "titular" : i % 2 ? "entrou" : "naoJogou", moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: 0.95 }); }); } catch (err) { console.error(err); }
+  try { viradaNegocios(pacote, s, s.temporada, (a, semanas, titular) => { for (let i = 0; i < semanas; i++) a.at = evoluirSemana(a.at, a.pot, { curva: curvaDe(a.nome), idade: a.idade, foco: "tecnico", intensidade: "normal", participacao: titular ? "titular" : i % 2 ? "entrou" : "naoJogou", moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: 0.95 }); }); } catch (err) { console.error(err); }
   try {
     const camp = Object.values(s.palmaresT?.[s.temporada] ?? {}).filter(Boolean) as string[];
     const rev = (s.revista ??= {}); rev[ANO_INICIAL_T + s.temporada] = montarRevista(pacote, ANO_INICIAL_T + s.temporada, [], [...camp, ordenar(s.tabela)[0]?.clube].filter(Boolean) as string[], undefined, revistaT(s));
@@ -1114,7 +1115,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
     if (aposenta) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
   }
   for (const a of s.elenco) guardarTemporada(s, a);
-  for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.titT = 0; a.promessas = (a.promessas ?? []).filter((p) => p.tipo === "reforco"); a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
+  for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.pot = Math.min(95, a.pot + potTardio(curvaDe(a.nome), a.idade - 1, rngT(s, "potTardio", a.id).next())); a.promessa = undefined; a.titT = 0; a.promessas = (a.promessas ?? []).filter((p) => p.tipo === "reforco"); a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
   if (s.artLiga?.t === s.temporada) { (s.artHist ??= {})[s.temporada] = s.artLiga; s.artHist = Object.fromEntries(Object.entries(s.artHist).slice(-12)); }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.lancesRodada = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
   for (const av of viradaPatro(pacote, s)) noticia(s, "dinheiro", av);

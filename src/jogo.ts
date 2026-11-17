@@ -74,6 +74,8 @@ import { casaNaFamilia, atributosDasQuadras, podeTerCarro, vagasGaragem, veiculo
 import { valorBrl, curtoBrl } from "./moeda.js";
 
 // ------------------------------------------------------------------ tipos
+import { superacaoDe, curvaDoJogador, semanaSuperacao, viradaSuperacao, subirPotencial, pedirMentor, PROJETOS, type Superacao, type Projeto } from "./superacao.js";
+import type { Curva } from "./curvas.js";
 export interface Jogador {
   nome: string; apelido: string; posicao: Posicao; pais: string; nacionalidade: string; idade: number;
   at: Atributos; pot: number; faixaPot: [number, number]; personalidade: PersonalidadeDNA; tracos: TracoId[];
@@ -84,6 +86,7 @@ export interface Jogador {
   familiaridade?: Familiaridade;
   /** atributos detalhados (bola parada e mentais): ganham na primeira leitura */
   ex?: Extras;
+  /** jeito de crescer (estourou cedo, floresce tarde...) */ curva?: Curva;
 }
 export interface Stats { jogos: number; titular: number; gols: number; assist: number; notas: number[]; base: number; baseGols: number; baseNotas?: number[];
   /** melhor em campo, seleção da rodada e do mês (na temporada) */
@@ -132,6 +135,7 @@ export function noticiaDeRomance(s: Save, tipo: Noticia["tipo"], titulo: string,
 }
 export interface Noticia { semana: string; titulo: string; texto: string; tipo: "jogo" | "clube" | "vida" | "dinheiro" | "polemica" | "lesao"; img?: ImgNoticia }
 export interface Carreira {
+  /** projetos para esticar o potencial (treino extra, mentoria...) */ superacao?: Superacao;
   clubeId: string; salario: number; anosContrato: number; formacao: boolean; agente: TipoAgente;
   moral: number; fama: number; seguidores: number; cansaco: number; lesao: number; relTecnico: number; formaUlt: number[];
   /** jogos seguidos como titular (o técnico não mexe em quem vem jogando) */ seqTitular?: number;
@@ -1507,7 +1511,7 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
 
   // 4. evolução e recuperação
   if (c.lesao > 0 && participacao !== "titular" && participacao !== "entrou") { participacao = "ferias"; }
-  const evoluido = evoluirSemana(j.at, j.pot, { idade: j.idade, foco: plano.foco, intensidade: plano.intensidade, participacao, moral: c.moral, personalTrainer: !!saudeDe(c).equipe.preparador, fatorDeclinio: fatorDeclinio(saudeDe(c)), profissionalismo: j.personalidade.profissionalismo, fClube: fatorDoClube(pacote, s) });
+  const evoluido = evoluirSemana(j.at, j.pot, { curva: curvaDoJogador(j, s.semente), idade: j.idade, foco: plano.foco, intensidade: plano.intensidade, participacao, moral: c.moral, personalTrainer: !!saudeDe(c).equipe.preparador, fatorDeclinio: fatorDeclinio(saudeDe(c)), profissionalismo: j.personalidade.profissionalismo, fClube: fatorDoClube(pacote, s) });
   const vida = efeitosVida(padraoDe(c));
   // família e namoro: a semana deles mexe na moral, no treino e na recuperação
   const fam = familiaDe(pacote, s), cidadeAgora = infoClube(pacote, c.clubeId).cidade;
@@ -1533,6 +1537,13 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   const en = efeitosNamoro(nam);
   const mult = 1 + cont("treino") * 0.1 + (casa.evolucao + vida.evolucao + en.evolucao) / 100 + c.bonusEvolucao - (c.treinoPosicao ? 0.1 : 0) + (paiTreinador(fam) ? 0.05 : 0);
   for (const k of ATRIBUTOS) j.at[k] = clamp(j.at[k] + (evoluido[k] - j.at[k]) * (evoluido[k] > j.at[k] ? mult : 1), 1, 99);
+  // projeto de superação: o trabalho fora do treino estica o potencial
+  {
+    const sup = superacaoDe(c), r2 = semanaSuperacao(sup, { idade: j.idade, curva: curvaDoJogador(j, s.semente), prof: j.personalidade.profissionalismo, treinos: cont("treino"), video: cont("video") > 0, salario: c.salario, saldo: s.casa.saldo, clubeId: c.clubeId, ano: ANO_INICIAL + c.temporada });
+    if (r2.custo) s.casa.saldo -= r2.custo;
+    c.cansaco = clamp(c.cansaco + r2.cansaco, 0, 100); c.moral = clamp(c.moral + r2.moral, 0, 100); if (r2.pressao) c.pressao = clamp(c.pressao + r2.pressao, 0, 100);
+    subirPotencial(j, r2.subiu); eventos.push(...r2.avisos);
+  }
   // quadras em casa: treino extra por conta própria, cada esporte puxa atributos diferentes (até o potencial)
   if (!c.fase && ovr(j) < j.pot) for (const k of atributosDasQuadras(s.casa)) j.at[k] = clamp(j.at[k] + 0.05, 1, 99);
   // a função puxa o treino para o que ela pede; os detalhados amadurecem (determinação acelera)
@@ -2661,6 +2672,9 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
     if (tn.escandalo) { c.fama = clamp(c.fama + 1, 0, 100); c.torcida = clamp((c.torcida ?? 50) - 4, 0, 100); }
     if (tn.noticia) noticiaDeRomance(s, tn.escandalo ? "polemica" : "vida", tn.noticia, tn.escandalo ? `A vida pessoal de ${s.jogador.apelido} virou assunto nos programas de fofoca.` : `Festa para a família e os amigos do futebol.`, namoroDe(c).par); }
   feriasSaude(saudeDe(c));
+  { const st = c.stats, media = st.notas.length ? st.notas.reduce((a, b) => a + b, 0) / st.notas.length : 0;
+    const vs = viradaSuperacao(superacaoDe(c), { idade: j.idade, curva: curvaDoJogador(j, s.semente), jogos: st.jogos, media, premios: 0, ano: ANO_INICIAL + c.temporada, sorte: rngDe(s, "pot-tardio").next() });
+    subirPotencial(j, vs.subiu); ev.push(...vs.avisos); superacaoDe(c).recusou = []; }
   j.idade++; c.temporada++; c.semana = 0; c.anosContrato--; c.recusadas = [];
   sincronizar(pacote, s);
   noticiasDaVirada(pacote, s);
@@ -3022,4 +3036,23 @@ function decisoesAutomaticas(s: Save, p: Partida): ResultadoDecisao[] {
   const pos = decisaoPosJogo(s, p, ds);
   if (pos) ds.push(resolverDecisao(s, p, pos, melhorOpcao(s, p, pos)));
   return ds;
+}
+
+// ------------------------------------------------------------------ superação (esticar o potencial)
+export function escolherProjeto(s: Save, id: Projeto | ""): { ok: boolean; msg: string } {
+  const sup = superacaoDe(s.carreira);
+  if (!id) { sup.projeto = undefined; return { ok: true, msg: "Projeto parado. O progresso fica guardado." }; }
+  if (id === "mentor" && !sup.mentor) return { ok: false, msg: "Escolha um veterano do clube para pedir a mentoria." };
+  sup.projeto = id;
+  return { ok: true, msg: `Projeto escolhido: ${PROJETOS.find((p) => p.id === id)!.nome.toLowerCase()}.` };
+}
+/** Veteranos do seu clube que podem ser mentores (29+ e no mínimo do seu nível). */
+export function veteranosMentores(pacote: PacoteDados, s: Save) {
+  const c = s.carreira, cl = mundo(pacote).clube[c.clubeId], o = ovr(s.jogador);
+  return (cl?.elenco ?? []).filter((x) => x.idade >= 29 && x.ovr >= o - 3 && x.nome !== s.jogador.nome).sort((a, b) => b.ovr - a.ovr).slice(0, 6);
+}
+export function pedirMentorJogo(pacote: PacoteDados, s: Save, nome: string): { ok: boolean; msg: string } {
+  const v = veteranosMentores(pacote, s).find((x) => x.nome === nome);
+  if (!v) return { ok: false, msg: "Esse jogador não está mais no clube." };
+  return pedirMentor(superacaoDe(s.carreira), { nome: v.nome, clubeId: s.carreira.clubeId, idade: v.idade, nac: v.nacionalidade }, { nac: s.jogador.nacionalidade, fama: s.carreira.fama, relTecnico: s.carreira.relTecnico, sorte: rngDe(s, "mentor", nome).next() });
 }

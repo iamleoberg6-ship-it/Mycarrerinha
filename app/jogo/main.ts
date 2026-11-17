@@ -54,7 +54,9 @@ import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, comCampanhas, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
 import { TRACOS, PAISES } from "../../src/dna";
 import { DECISOES, FRANQUIAVEIS, MAX_UNIDADES, type DecisaoMes } from "../../src/negocios";
-import { decidirMesJogo, franquiaJogo } from "../../src/jogo";
+import { decidirMesJogo, franquiaJogo, escolherProjeto, veteranosMentores, pedirMentorJogo } from "../../src/jogo";
+import { superacaoDe, curvaDoJogador, PROJETOS, metaEtapa, podeEsticar, LIMITE_GANHO, type Projeto } from "../../src/superacao";
+import { NOME_CURVA, TEXTO_CURVA } from "../../src/curvas";
 import { EMPRESAS, INVEST, CUSTO_ASSESSOR, patrimonioInvestido, type TipoEmpresa, type TipoInvest, type AcaoEmpresa } from "../../src/negocios";
 import { STAFF, NOME_PARTE, idadeDoCorpo, previsaoAltoNivel, rotuloCorpo, custoEquipe, type Staff, type ParteCorpo } from "../../src/saude";
 import { ICONE_ORIGEM, NOME_ORIGEM } from "../../src/agenda";
@@ -1652,6 +1654,21 @@ function desenharAlbum() {
   });
   albumUi.abrir(albumPag === -1 ? -1 : undefined);
 }
+/** Desenvolvimento: o jeito de crescer do jogador e o projeto para esticar o potencial. */
+function blocoDesenvolvimento(s: Save): string {
+  const j = s.jogador, c = s.carreira, cv = curvaDoJogador(j, s.semente), sup = superacaoDe(c), pode = podeEsticar(sup, j.idade, cv);
+  const meta = metaEtapa(sup.etapas), pct = Math.min(100, Math.round((sup.progresso / meta) * 100));
+  const vets = sup.projeto === "mentor" || !sup.mentor ? veteranosMentores(pacote, s) : [];
+  const custo = (id: Projeto) => { const p = PROJETOS.find((x) => x.id === id)!, v = p.custoSemana(c.salario); return v ? ` · ${curtoBrl(v)}/sem` : " · grátis"; };
+  return `<div class="painel" style="margin-top:10px"><p class="rotulo">Desenvolvimento</p>
+    <p style="margin:2px 0"><b>${NOME_CURVA[cv]}</b></p><p class="sub" style="margin:0 0 8px">${TEXTO_CURVA[cv]}</p>
+    <p class="rotulo" style="margin-top:6px">Projeto de superação</p>
+    ${pode.ok ? `<div style="height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin:4px 0"><i style="display:block;height:100%;width:${pct}%;background:var(--ouro, #E3B341)"></i></div><p class="sub" style="font-size:12.5px;margin:0 0 6px">${sup.projeto ? `Etapa ${sup.etapas + 1}: ${pct}%. Cada etapa completa sobe o potencial (+2 até os 21 anos, +1 depois).` : "Nenhum projeto agora. Escolha um:"} Já ganhou +${sup.ganho} de ${LIMITE_GANHO} com trabalho.</p>` : `<p class="sub">${esc(pode.motivo!)}</p>`}
+    <div class="chips" style="flex-wrap:wrap">${PROJETOS.filter((p) => p.id !== "mentor" || sup.mentor).map((p) => `<button class="chip${sup.projeto === p.id ? " ativo" : ""}" data-acao="projeto" data-proj="${sup.projeto === p.id ? "" : p.id}" title="${esc(p.texto)}">${esc(p.id === "mentor" && sup.mentor ? `Mentoria com ${sup.mentor.nome}` : p.nome)}${custo(p.id)}</button>`).join("")}</div>
+    ${sup.projeto ? `<p class="sub" style="font-size:12.5px;margin-top:6px">${esc(PROJETOS.find((p) => p.id === sup.projeto)!.texto)}</p>` : ""}
+    ${!sup.mentor && vets.length ? `<details style="margin-top:8px"><summary class="sub" style="cursor:pointer">Pedir conselho a um veterano do clube (mentoria)</summary>${vets.map((v) => `<div class="not" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${esc(v.nome)} <small class="sub">${v.posicao} · ${v.idade} anos · ${v.ovr}</small></span>${(sup.recusou ?? []).includes(v.nome) ? `<small class="sub">recusou</small>` : `<button class="botao sec peq" data-acao="mentor" data-nome="${esc(v.nome)}">Pedir</button>`}</div>`).join("")}</details>` : ""}
+    <p class="sub" style="font-size:12.5px;margin-top:8px">Temporada com nota média de 7,2 ou mais (15+ jogos) também sobe o potencial.${sup.hist.length ? ` Últimos ganhos: ${sup.hist.slice(0, 3).map((h) => `${h.ano}: ${esc(h.texto)}`).join(" · ")}.` : ""}</p></div>`;
+}
 function abaJogador(s: Save): string {
   const j = s.jogador, c = s.carreira, st = c.stats;
   const visual = blocoVisual(s);
@@ -1666,7 +1683,7 @@ function abaJogador(s: Save): string {
   if (subJogador === "saude") return sub + msg + blocoSaude(s);
   if (subJogador === "negocios") return sub + msg + blocoNegocios(s);
   if (subJogador === "imprensa") return sub + abaImprensa(s);
-  return `${sub}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
+  return `${sub}${msg}${blocoDesenvolvimento(s)}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
     ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
     ${blocoDetalhados(s)}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
@@ -3253,6 +3270,8 @@ document.addEventListener("click", (ev) => {
     case "fundacao": { const r = criarFundacaoJogo(pacote, save!); msgVida = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case "fechar-retro": ($("dlgRetro") as HTMLDialogElement).close(); retro = undefined; break;
     case "baixar-save": void baixarSave(); break;
+    case "projeto": { const r = escolherProjeto(save!, (b.dataset.proj ?? "") as Projeto | ""); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
+    case "mentor": { const r = pedirMentorJogo(pacote, save!, b.dataset.nome ?? ""); msgJog = { ok: r.ok, texto: r.msg }; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); break; }
     case "nuvem-carregar": {
       if (save && !b.dataset.certeza && chaveNuvem("car", save.semente) !== b.dataset.chave) { b.dataset.certeza = "1"; b.textContent = "Toque de novo: troca de carreira"; break; }
       b.textContent = "Carregando…";

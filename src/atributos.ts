@@ -7,6 +7,7 @@ export type Atributos = Record<Atributo, number>;
 export type Posicao = "ZAG" | "LAT" | "VOL" | "MEI" | "PON" | "ATA";
 export const POSICOES: Posicao[] = ["ZAG", "LAT", "VOL", "MEI", "PON", "ATA"];
 
+import { fIdadeCurva, idadeDoDeclinio, fDeclinioCurva, type Curva } from "./curvas.js";
 export type Grupo = "fisico" | "tecnico" | "tatico";
 export const GRUPO: Record<Atributo, Grupo> = {
   VEL: "fisico", RES: "fisico", FOR: "fisico",
@@ -88,6 +89,8 @@ export interface ContextoTreino {
   profissionalismo: number; // 1–20
   /** estrutura e cultura do clube (0,9 a 1,2; 1 = neutro) */
   fClube?: number;
+  /** jeito de crescer do jogador (sem = a curva normal) */
+  curva?: Curva;
 }
 
 export const CALIB = {
@@ -116,12 +119,13 @@ export function evoluirSemana(at: Atributos, pot: number, ctx: ContextoTreino): 
   for (const a of ATRIBUTOS) {
     const g = GRUPO[a];
     const fTreino = (g === ctx.foco ? 1.5 : 0.85) * fInt * (ctx.personalTrainer ? 1.1 : 1);
-    const ganho = CALIB.taxaBase * fIdade(ctx.idade, g) * fTreino * F_JOGO[ctx.participacao] * fMoral * fProf * (ctx.fClube ?? 1) * (ctx.fAtrib?.[a] ?? 1) * Math.max(0, 1 - at[a] / pot);
+    const ganho = CALIB.taxaBase * (ctx.curva && ctx.curva !== "normal" ? (g === "tatico" && ctx.idade >= 31 && ctx.idade <= 33 ? Math.max(0.3, fIdadeCurva(ctx.curva, ctx.idade)) : fIdadeCurva(ctx.curva, ctx.idade)) : fIdade(ctx.idade, g)) * fTreino * F_JOGO[ctx.participacao] * fMoral * fProf * (ctx.fClube ?? 1) * (ctx.fAtrib?.[a] ?? 1) * Math.max(0, 1 - at[a] / pot);
     let declinio = 0;
-    // o corpo cobra cada vez mais depois dos 33: aos 38, o físico cai quase 6 pontos por temporada
-    if (g === "fisico" && ctx.idade >= 29) declinio = ctx.idade >= 36 ? 0.15 : ctx.idade >= 33 ? 0.09 : 0.05;
-    if (g === "tecnico" && ctx.idade >= 32) declinio = ctx.idade >= 36 ? 0.07 : 0.03;
-    if (g === "tatico" && ctx.idade >= 34) declinio = ctx.idade >= 37 ? 0.05 : 0.03;
+    // o corpo cobra cada vez mais depois dos 33: aos 38, o físico cai quase 6 pontos por temporada (a curva adianta ou atrasa)
+    const id = ctx.curva ? idadeDoDeclinio(ctx.curva, ctx.idade) : ctx.idade, fc = ctx.curva ? fDeclinioCurva(ctx.curva) : 1;
+    if (g === "fisico" && id >= 29) declinio = (id >= 36 ? 0.15 : id >= 33 ? 0.09 : 0.05) * fc;
+    if (g === "tecnico" && id >= 32) declinio = (id >= 36 ? 0.07 : 0.03) * fc;
+    if (g === "tatico" && id >= 34) declinio = (id >= 37 ? 0.05 : 0.03) * fc;
     novo[a] = clamp(at[a] + ganho - declinio * reducaoDeclinio * (ctx.fatorDeclinio ?? 1), 1, 99);
   }
   return novo;

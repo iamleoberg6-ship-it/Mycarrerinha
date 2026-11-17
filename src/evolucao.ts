@@ -6,6 +6,7 @@
 //  - estrutura (1–5, pela força do clube): talento médio dos garotos e o quanto evoluem;
 //  - cultura de base (1–5, src/identidade.ts): talento, evolução e quantos sobem por temporada;
 //  - escola do país: Brasil, Argentina, França, Espanha, Portugal revelam mais.
+import { curvaDe, fIdadeCurva, idadeDoDeclinio, fDeclinioCurva, potTardio } from "./curvas.js";
 import { RNG, clamp } from "./rng.js";
 import { forcaDoElenco, type Clube, type JogadorNPC } from "./liga.js";
 import { culturaBase } from "./identidade.js";
@@ -81,19 +82,24 @@ export function potDe(j: JogadorNPC): number {
 }
 /** Um ano de carreira: jovem cresce rumo ao potencial (mais com estrutura e minutos), veterano cai. Muta o jogador. */
 export function evoluirAno(j: JogadorNPC, rng: RNG, f: number) {
-  const pot = potDe(j), gol = j.posicao === "GOL" ? 2 : 0, a = j.idade - gol;
+  const pot = potDe(j), gol = j.posicao === "GOL" ? 2 : 0, cv = curvaDe(j.nome);
+  // cada um cresce do seu jeito: o ritmo do ano é a curva dele comparada com a curva normal
+  const ritmo = fIdadeCurva(cv, j.idade) / Math.max(0.1, fIdadeCurva("normal", j.idade)), a = idadeDoDeclinio(cv, j.idade) - gol, fd = fDeclinioCurva(cv);
   let d: number;
   if (j.idade <= 23) {
-    const k = j.idade <= 19 ? 0.32 : j.idade <= 21 ? 0.3 : 0.28;
+    const k = (j.idade <= 19 ? 0.32 : j.idade <= 21 ? 0.3 : 0.28) * clamp(ritmo, 0.5, 1.5);
     d = Math.max(0, pot - j.ovr) * k * f + rng.normal(0, 1);
     // nem toda promessa vinga, e tem quem desabroche tarde
     if (rng.chance(0.12)) j.pot = Math.max(j.ovr, pot - rng.int(1, 4));
     else if (rng.chance(0.06)) j.pot = Math.min(95, pot + rng.int(1, 5));
-  } else if (a <= 27) d = clamp(pot - j.ovr, 0, 2) * 0.5 + rng.normal(0, 0.8);
-  else if (a <= 29) d = -0.3 + rng.normal(0, 0.8);
-  else if (a <= 31) d = -1.2 + rng.normal(0, 1);
-  else if (a <= 33) d = -2.2 + rng.normal(0, 1.2);
-  else d = -3.5 + rng.normal(0, 1.5);
+  } else if (j.idade <= 28 && (cv === "tardio" || cv === "constante") && j.idade - gol <= 30) d = clamp(pot - j.ovr, 0, 6) * (cv === "tardio" ? 0.42 : 0.3) + rng.normal(0, 0.8);
+  else if (a <= 27) d = clamp(pot - j.ovr, 0, 2) * 0.5 * (cv === "picoCedo" && j.idade >= 25 ? 0.2 : 1) + rng.normal(0, 0.8);
+  else if (a <= 29) d = -0.3 * fd + rng.normal(0, 0.8);
+  else if (a <= 31) d = -1.2 * fd + rng.normal(0, 1);
+  else if (a <= 33) d = -2.2 * fd + rng.normal(0, 1.2);
+  else d = -3.5 * fd + rng.normal(0, 1.5);
+  // quem floresce tarde ganha potencial entre os 23 e os 27
+  const extra = potTardio(cv, j.idade, rng.next()); if (extra) j.pot = Math.min(95, (j.pot ?? pot) + extra);
   j.ovr = clamp(Math.round(j.ovr + d), 30, 95);
   j.pot = Math.max(j.pot ?? j.ovr, j.ovr);
   j.idade++;

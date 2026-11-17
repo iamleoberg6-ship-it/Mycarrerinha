@@ -14,6 +14,9 @@ import * as G from "../src/tecnico/gestao.js";
 import { limiteEstrangeiros } from "../src/estrangeiros.js";
 import { montarRevista as montarRevistaT } from "../src/revista.js";
 import * as SL from "../src/tecnico/selecao-t.js";
+import { curvaDe, CURVAS, type Curva } from "../src/curvas.js";
+import { evoluirAno } from "../src/evolucao.js";
+import * as SP from "../src/superacao.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1804,6 +1807,52 @@ teste("Técnico: gols da rodada, artilharia e assistências batem com os placare
   // revista: na sua liga, os números são os de verdade
   const ed = montarRevistaT(pacote, 2026, [], [], 10, T.revistaT(s));
   for (const it of ed.listas.mundo.filter((x) => x.clubeId !== s.clubeId)) { const v = art[`${it.clubeId}|${it.nome}`]; if (v) assert.equal(it.gols, v.g); }
+});
+
+teste("Curvas de desenvolvimento: precoce, auge cedo, normal, aos poucos, tardio e longevo", () => {
+  const cont: Record<string, number> = {};
+  for (let i = 0; i < 4000; i++) { const c = curvaDe(`jog${i}`); cont[c] = (cont[c] ?? 0) + 1; }
+  for (const c of CURVAS) assert.ok(cont[c] > 200, `${c} aparece`);
+  // carreira média de cada curva no mundo (mesmo potencial, mesmo começo aos 17)
+  const media = (curva: Curva) => {
+    const por: number[][] = [];
+    let k = 0;
+    for (let i = 0; por.length < 120 && i < 20000; i++) {
+      const nome = `x${i}`; if (curvaDe(nome) !== curva) continue;
+      const j = { nome, posicao: "MEI", ovr: 58, idade: 17, nacionalidade: "BRA", pot: 84 } as Parameters<typeof evoluirAno>[0], linha: number[] = [];
+      const rng = new RNG(`curva|${k++}`);
+      for (let a = 17; a <= 35; a++) { linha.push(j.ovr); evoluirAno(j, rng, 1); }
+      por.push(linha);
+    }
+    return por[0].map((_, a) => por.reduce((x, l) => x + l[a], 0) / por.length); // índice 0 = 17 anos
+  };
+  const pre = media("precoce"), tar = media("tardio"), nor = media("normal"), pico = media("picoCedo"), lon = media("longevo");
+  assert.ok(pre[4] > nor[4] + 2, "precoce: aos 21 já está bem acima do normal");
+  assert.ok(tar[6] < nor[6], "tardio: aos 23 ainda está abaixo");
+  assert.ok(tar[11] - tar[6] > nor[11] - nor[6] + 2, "tardio: cresce mais dos 23 aos 28");
+  assert.ok(pico[13] < nor[13], "auge cedo: aos 30 já caiu mais que o normal");
+  assert.ok(lon[17] > nor[17] + 2, "longevo: aos 34 segura melhor");
+});
+
+teste("Superação: projeto, mentoria e temporada acima do esperado sobem o potencial (com limite)", () => {
+  const sup: SP.Superacao = { progresso: 0, etapas: 0, ganho: 0, hist: [], projeto: "personal" };
+  let total = 0;
+  for (let k = 0; k < 40; k++) total += SP.semanaSuperacao(sup, { idade: 19, curva: "normal", prof: 14, treinos: 2, video: true, salario: 50000, saldo: 1e7, clubeId: "X", ano: 2026 }).subiu;
+  assert.ok(total >= 4, `subiu ${total}`);
+  for (let k = 0; k < 400; k++) total += SP.semanaSuperacao(sup, { idade: 19, curva: "normal", prof: 14, treinos: 2, video: true, salario: 50000, saldo: 1e7, clubeId: "X", ano: 2026 }).subiu;
+  assert.equal(sup.ganho, SP.LIMITE_GANHO); assert.equal(total, SP.LIMITE_GANHO);
+  const velho: SP.Superacao = { progresso: 0, etapas: 0, ganho: 0, hist: [], projeto: "extra" };
+  for (let k = 0; k < 40; k++) SP.semanaSuperacao(velho, { idade: 33, curva: "normal", prof: 14, treinos: 2, video: true, salario: 50000, saldo: 1e7, clubeId: "X", ano: 2026 });
+  assert.equal(velho.ganho, 0, "com 33 anos não sobe mais");
+  const sem: SP.Superacao = { progresso: 0, etapas: 0, ganho: 0, hist: [], projeto: "personal" };
+  assert.equal(SP.semanaSuperacao(sem, { idade: 19, curva: "normal", prof: 14, treinos: 2, video: true, salario: 50000, saldo: 0, clubeId: "X", ano: 2026 }).custo, 0, "sem dinheiro, para");
+  const t: SP.Superacao = { progresso: 0, etapas: 0, ganho: 0, hist: [] };
+  assert.ok(SP.viradaSuperacao(t, { idade: 22, curva: "normal", jogos: 30, media: 7.4, premios: 0, ano: 2026, sorte: 0.5 }).subiu === 1);
+  assert.ok(SP.viradaSuperacao({ progresso: 0, etapas: 0, ganho: 0, hist: [] }, { idade: 25, curva: "tardio", jogos: 3, media: 6, premios: 0, ano: 2026, sorte: 0.5 }).subiu >= 1, "tardio floresce");
+  const m: SP.Superacao = { progresso: 0, etapas: 0, ganho: 0, hist: [] };
+  const r = SP.pedirMentor(m, { nome: "Veterano", clubeId: "X", idade: 33, nac: "BRA" }, { nac: "BRA", fama: 30, relTecnico: 60, sorte: 0.1 });
+  assert.ok(r.ok && m.projeto === "mentor");
+  assert.equal(SP.semanaSuperacao(m, { idade: 20, curva: "normal", prof: 10, treinos: 1, video: false, salario: 1, saldo: 0, clubeId: "Y", ano: 2026 }).avisos.length, 1, "mudou de clube: mentoria acaba");
 });
 
 teste("Técnico de seleção: os gols do seu time saem só dos convocados", () => {

@@ -6,6 +6,7 @@
 // por outro clube. Quem passa da idade da categoria sobe (do Sub-17 para o Sub-20) ou tem que ser decidido: sobe para o
 // profissional ou é dispensado. Jogador do profissional que ainda tem idade de base pode ser mandado para jogar lá.
 import { RNG, clamp } from "../rng.js";
+import { curvaDe, potTardio } from "../curvas.js";
 import type { PacoteDados } from "../liga.js";
 import { mundo } from "../mundo.js";
 import { infoLiga } from "../ligas.js";
@@ -231,7 +232,7 @@ export function semanaBase(pacote: PacoteDados, s: SaveTecnico, eventos: string[
     }
     for (const j of lista) {
       const participacao = jogo && tit.has(j.a.id) ? "titular" : jogo && banco.has(j.a.id) ? "entrou" : "naoJogou";
-      j.a.at = evoluirSemana(j.a.at, j.a.pot, { idade: j.a.idade, foco: "tecnico", intensidade: "normal", participacao, moral: j.a.moral, personalTrainer: false, profissionalismo: j.a.prof, fClube: (0.9 + 0.03 * nb) * (0.92 + 0.035 * coord) });
+      j.a.at = evoluirSemana(j.a.at, j.a.pot, { curva: curvaDe(j.a.nome), idade: j.a.idade, foco: "tecnico", intensidade: "normal", participacao, moral: j.a.moral, personalTrainer: false, profissionalismo: j.a.prof, fClube: (0.9 + 0.03 * nb) * (0.92 + 0.035 * coord) });
       j.semanas++;
     }
   }
