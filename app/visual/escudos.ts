@@ -52,6 +52,25 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     const escudo = "M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z", tri = "M2 3 H24 L13 27 Z";
     return `<defs><clipPath id="escSPA"><path d="${tri}"/></clipPath></defs><path d="${escudo}" fill="#FFFFFF"/><g clip-path="url(#escSPA)"><rect x="0" y="3" width="26" height="8" fill="#0A0A0A"/><rect x="0" y="11" width="26" height="8" fill="#FFFFFF"/><rect x="0" y="19" width="26" height="9" fill="#C8102E"/></g><path d="${tri}" fill="none" stroke="${TINTA}" stroke-width=".8"/><path d="${escudo}" fill="none" stroke="${TINTA}" stroke-width="${borda}"/>`;
   }
+  // Atlético das Minas: só o galo, preto com detalhes brancos e filete branco (aparece em fundo claro e escuro)
+  if (chave === "CAM") {
+    const galo = "M7.2 6.2 C7.6 5 9 4.6 10 5.2 L10.6 4 L11.2 5 L11.9 3.9 L12.2 5.4 C12.8 6 12.9 7 12.4 7.8 C13.6 8.6 15.6 8.8 17.2 8 C17.6 6 18.6 4.2 20.4 3.4 C19.6 5 19.8 6.4 20.6 7.4 C21.2 5.6 22.4 4.8 23.4 4.8 C22.2 6.2 22.4 8.6 21.4 10.6 C20.6 12.6 18.6 14 16 14.4 L15.6 16.4 L16.8 17.2 L13.8 17.2 L14.4 14.4 L12.6 14.2 L12.4 16.4 L13.4 17.2 L10.6 17.2 L11.2 14 C9.4 13.2 8.4 11.6 8.4 9.8 C8.4 9 8 8.2 6.6 7.6 Z";
+    return `<g transform="translate(-9.2 -.4) scale(1.5)"><path d="${galo}" fill="#0A0A0A" stroke="#FFFFFF" stroke-width=".55" stroke-linejoin="round"/>`
+      + `<path d="M11.4 10.4 C13 12.2 15.6 12.4 17.6 10.8 M12.2 9 C14 10.4 16 10.4 17.8 9.2" fill="none" stroke="#FFFFFF" stroke-width=".4" stroke-linecap="round"/><circle cx="9.7" cy="6.5" r=".5" fill="#FFFFFF"/></g>`;
+  }
+  // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
+  if (chave === "IT-JUV") {
+    const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
+    return `<defs><mask id="mJUV" maskUnits="userSpaceOnUse" x="-2" y="-2" width="30" height="34"><rect x="-2" y="-2" width="30" height="34" fill="#FFF"/><path d="${j}" fill="none" stroke="#000" stroke-width=".8"/></mask></defs>`
+      + `<g mask="url(#mJUV)" fill="none" stroke-linejoin="miter"><path d="${j}" stroke="#FFFFFF" stroke-width="8.2"/><path d="${j}" stroke="#0A0A0A" stroke-width="6.6"/></g>`;
+  }
+  // Nápoles: uma bola azul com um N branco dentro
+  if (chave === "IT-NAP") {
+    const az = c1.toLowerCase() === "#ffffff" ? (c2r ?? "#12A0D7") : c1;
+    return `<circle cx="13" cy="15" r="12.4" fill="${az}"/><circle cx="13" cy="15" r="10.6" fill="none" stroke="#FFFFFF" stroke-width="1"/>`
+      + `<text x="13" y="21.4" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="18" fill="#FFFFFF">N</text>`
+      + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   const MARINHO = "#0B1F4D", OURO = "#D4AF37", OURO_ESC = "#9C7A1E";
   // Real Madrigal: escudo branco com a faixa diagonal azul, contorno azul-marinho e a coroa dourada em cima
   if (chave === "ES-RMA") {
@@ -80,7 +99,7 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   const DETALHE: Record<string, string> = { COR: "#D0102C", GRE: "#FFFFFF", SPT: "#FFD200" };
   // Santos: coroa branca com contorno preto logo acima da letra
   const COROA = chave === "SAN" ? `<path d="M8.5 14.2 L8.5 10.6 L10.9 12.5 L13 9.6 L15.1 12.5 L17.5 10.6 L17.5 14.2 Z" fill="#FFFFFF" stroke="#0A0A0A" stroke-width=".6" stroke-linejoin="round"/>` : "";
-  // Fluminense: um F branco no centro do escudo, com contorno escuro para aparecer em qualquer cor de fundo
+  // Fluminense: o escudo dividido ao meio (uma cor de cada lado) e um F branco no centro, com contorno escuro para aparecer em qualquer cor de fundo
   const LETRA_FLU = chave === "FLU" ? `<text x="13" y="21.5" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="17" fill="#FFFFFF" stroke="#0A0A0A" stroke-width=".7" paint-order="stroke">F</text>` : "";
   // Liverpool: "YNWA" em branco, fininho, no espaço vermelho acima da letra
   const YNWA = chave === "EN-LIV" ? `<text x="13" y="7.4" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-weight="400" font-size="4.6" letter-spacing=".5" fill="#FFFFFF">YNWA</text>` : "";
@@ -103,7 +122,7 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     + `<rect x="13" y="0" width="13" height="14" fill="#FCDD09"/>${[1, 3, 5, 7].map((k) => `<rect x="${(13 + k * 13 / 9).toFixed(2)}" y="0" width="${(13 / 9).toFixed(2)}" height="14" fill="#DA121A"/>`).join("")}`
     + `<path d="M0 14 H26 M13 0 V14" stroke="${TINTA}" stroke-width=".9"/>` : "";
   const detalhe = COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {
