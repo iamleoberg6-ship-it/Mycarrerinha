@@ -8,7 +8,7 @@ import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
 import { svgEscudo, corpoEscudo } from "../visual/escudos";
 import { camisaFrente } from "../visual/camisas";
-import { nomeNoPeito } from "../visual/peito";
+import { nomeNoPeito, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
 import { simboloMarca, logoSvg } from "../jogo/poster";
 import { MARCA, NOME_CATEGORIA } from "../../src/marcas";
 import { UNIFORME_CLUBE } from "../../src/reliquias";
@@ -961,12 +961,16 @@ function camisaDoClube(s: SaveTecnico): string {
   const info = infoClube(pacote, s.clubeId), u = UNIFORME_CLUBE[s.clubeId], [a, b] = u ? u.cores : [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
   const p = patrociniosDe(pacote, s), contraste = claro(a) ? "#111111" : "#FFFFFF";
   const m = p.master && MARCA[p.master.marca], f = p.fornecedor && MARCA[p.fornecedor.marca], g = p.manga && MARCA[p.manga.marca];
-  const ec = u?.escudo ?? [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"];
-  return camisaFrente({ cores: [a, b], modelo: u?.padrao ?? info?.padrao ?? "lisa", faixas: u?.faixas }, {
+  const ec = u?.escudo ?? [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"], modelo = u?.padrao ?? info?.padrao ?? "lisa";
+  // cada marca numa cor que aparece sobre o tecido de trás (nada de marca branca em camisa branca)
+  const atras = (parte: ParteCamisa) => coresAtras(modelo, a, b, u?.faixas, parte);
+  const cm = m ? corQueAparece(atras("peito"), [p.master!.cor, contraste, b, ...m.cores]) : undefined;
+  const cf = f ? corQueAparece(atras("alto"), [p.fornecedor!.cor, contraste, b, ...f.cores]) : undefined, cg = g ? corQueAparece(atras("manga"), [contraste, b, ...g.cores]) : undefined;
+  return camisaFrente({ cores: [a, b], modelo, faixas: u?.faixas }, {
     escudo: corpoEscudo(idClube(s.clubeId), ec[0], ec[1], info?.nome),
-    master: m ? nomeNoPeito(m.nome, p.master!.cor ?? contraste) : undefined,
-    fornecedor: f ? simboloMarca(f, p.fornecedor!.cor ?? contraste, a) : undefined,
-    manga: g ? simboloMarca(g, contraste, a) : undefined,
+    master: m ? nomeNoPeito(m.nome, cm!.cor, cm!.filete) : undefined,
+    fornecedor: f ? comFilete(simboloMarca(f, cf!.cor, a), cf!.filete) : undefined,
+    manga: g ? comFilete(simboloMarca(g, cg!.cor, a), cg!.filete) : undefined,
   });
 }
 function abaPatrocinios(s: SaveTecnico): string {

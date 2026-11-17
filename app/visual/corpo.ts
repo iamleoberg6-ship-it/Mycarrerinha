@@ -426,7 +426,8 @@ export function svgCorpo(o: OpcoesCorpo): string {
   if (jogo) {
     partes.push(`<path d="M123 230 L150 264 L177 230 L170 233 L150 255 L130 233 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="2" stroke-linejoin="round"/>`);
     const ex = 150 + g.peito * 0.48, ey = 300;
-    if (kit.patrocinio) partes.push(`<g transform="translate(${f1(150 - 43)} 306) scale(.86)">${kit.patrocinio}</g>`);
+    // o master fica no meio do peito, abaixo do escudo (o escudo vai até y = ey + 21): nunca um por cima do outro
+    if (kit.patrocinio) partes.push(`<g transform="translate(${f1(150 - 43)} ${f1(ey + 24)}) scale(.86)">${kit.patrocinio}</g>`);
     // fornecedor no outro lado do peito, na altura do escudo; patrocinador de manga no braço esquerdo de quem vê
     if (kit.fornecedor) { const fx = 150 - g.peito * 0.48; partes.push(`<g transform="translate(${f1(fx - 9)} ${f1(ey - 18)}) scale(.45)">${kit.fornecedor}</g>`); }
     if (kit.manga && !regata) { const b = g.bracos.find((x) => x.lado === -1) ?? g.bracos[0]; if (b) { const p = lerp(b.J, b.E, longa ? 0.32 : 0.45); partes.push(`<g transform="translate(${f1(p[0])} ${f1(p[1])}) rotate(${f1(ang(b.J, b.E) - 90)}) translate(-8 -8) scale(.4)">${kit.manga}</g>`); } }

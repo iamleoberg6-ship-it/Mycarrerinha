@@ -37,7 +37,7 @@ import { NOME_ACAO_FILHO, nomearFilho, acoesFilho, exesDe, acoesEx, NOME_ACAO_EX
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, DESIGN_PADRAO, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
 import { salvarMarcaNegocio, convidarEmbaixador as convidarEmbaixadorJogo } from "../../src/jogo";
-import { nomeNoPeito } from "../visual/peito";
+import { nomeNoPeito, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
 import { MARCA, CLUBE_DA_MARCA, COR_PATROCINIO, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
@@ -185,9 +185,13 @@ function kitDe(s: Save, clubeId = s.carreira.clubeId): Kit {
   const mat = (s.carreira.patrocinios ?? []).map((k) => MARCA[k.marca]).find((m) => m?.categoria === "material");
   const ch = mat?.chuteira ?? (mat ? [mat.cores[0] === "#FFFFFF" ? mat.cores[1] : mat.cores[0], mat.cores[1] === mat.cores[0] ? "#FFFFFF" : mat.cores[1], mat.cores[2]] : undefined);
   const pm = patroClubeJogo(pacote, s, clubeId), mm = pm.master && MARCA[pm.master.marca], fm = pm.fornecedor && MARCA[pm.fornecedor.marca], gm = pm.manga && MARCA[pm.manga.marca];
-  const contraste = claroHex(a) ? "#111111" : "#FFFFFF";
-  const peito = mm ? (mm.id === "redboi" ? emblemaTouros(mm.cores[1], mm.cores[2]) : nomeNoPeito(mm.nome, COR_PATROCINIO[idClube(clubeId)] ?? contraste)) : undefined;
-  return { patrocinio: peito, fornecedor: fm ? simboloMarca(fm, contraste, a) : undefined, manga: gm ? simboloMarca(gm, contraste, a) : undefined, cor1: a, cor2: b ?? "#FFFFFF", faixas: u?.faixas, escudo: { chave: idClube(clubeId), nome: info.nome, cores: u?.escudo ?? [a0, b0] }, numeroCor: numeroCorClube(clubeId), calcao: calcaoDoClube(clubeId), meiao: meiaoDoClube(clubeId), padrao: u?.padrao ?? info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
+  const contraste = claroHex(a) ? "#111111" : "#FFFFFF", padrao = u?.padrao ?? info.padrao, b2 = b ?? "#FFFFFF";
+  // cada marca na cor que aparece sobre o tecido de trás (camisa branca não recebe marca branca; listras ganham filete)
+  const atras = (parte: ParteCamisa) => coresAtras(padrao, a, b2, u?.faixas, parte);
+  const cm = mm && mm.id !== "redboi" ? corQueAparece(atras("peito"), [COR_PATROCINIO[idClube(clubeId)], contraste, b2, ...mm.cores]) : undefined;
+  const cf = fm ? corQueAparece(atras("alto"), [contraste, b2, ...fm.cores]) : undefined, cg = gm ? corQueAparece(atras("manga"), [contraste, b2, ...gm.cores]) : undefined;
+  const peito = mm ? (mm.id === "redboi" ? emblemaTouros(mm.cores[1], mm.cores[2]) : nomeNoPeito(mm.nome, cm!.cor, cm!.filete)) : undefined;
+  return { patrocinio: peito, fornecedor: fm ? comFilete(simboloMarca(fm, cf!.cor, a), cf!.filete) : undefined, manga: gm ? comFilete(simboloMarca(gm, cg!.cor, a), cg!.filete) : undefined, cor1: a, cor2: b ?? "#FFFFFF", faixas: u?.faixas, escudo: { chave: idClube(clubeId), nome: info.nome, cores: u?.escudo ?? [a0, b0] }, numeroCor: numeroCorClube(clubeId), calcao: calcaoDoClube(clubeId), meiao: meiaoDoClube(clubeId), padrao: u?.padrao ?? info.padrao, numero: s.jogador.numero, fonte: clubeId, chuteira: ch ? [ch[0], ch[1]] : undefined, marcaChuteira: mat && ch ? { simbolo: mat.simbolo, cor: ch[2] } : undefined };
 }
 /** Aparência com os acessórios dos patrocinadores (óculos e fone) por cima. */
 function apDe(s: Save, forcar?: Marca): Aparencia {
