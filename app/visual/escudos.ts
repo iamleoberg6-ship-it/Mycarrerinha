@@ -138,11 +138,11 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<g clip-path="url(#cINT)" fill="#FFFFFF"><rect x="11.3" y="6" width="3.4" height="18"/><rect x="7" y="5" width="12" height="4.2"/><rect x="7" y="20.8" width="12" height="4.2"/></g>`
       + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
-  // Chelsi: bola azul com uma bola branca dentro e a cabeça de leão azul (a mesma do Sporting) no centro; um trevo vermelho de cada lado no anel azul
+  // Chelsi: bola azul com uma bola branca dentro e a silhueta da cabeça de leão de perfil (sem detalhes) em azul no centro; um trevo vermelho de cada lado no anel azul
   if (chave === "EN-CHE") {
     const trevo = (x: number) => `<g fill="#E30613"><circle cx="${x}" cy="14.1" r=".68"/><circle cx="${x - 0.68}" cy="15.1" r=".68"/><circle cx="${x + 0.68}" cy="15.1" r=".68"/><path d="M${x} 15.3 L${x} 16.9" stroke="#E30613" stroke-width=".4" stroke-linecap="round"/></g>`;
     return `<circle cx="13" cy="15" r="12.4" fill="#034694"/><circle cx="13" cy="15" r="9" fill="#FFFFFF" stroke="#D4AF37" stroke-width=".6"/>`
-      + `<g transform="translate(13 15) scale(.98) translate(-13 -15.2)">${cabecaLeao("#034694", "#2F6FC4", "#DCE8F7", "#011E44")}</g>${trevo(2.7)}${trevo(23.3)}`
+      + `<g transform="translate(13 15) scale(.8) translate(-14 -14.1)"><path d="M6.2 14.6 L7.6 13.2 C8.4 11.6 9.6 10.6 11 10.2 L11.4 8.6 L12.6 9.6 C13 7.4 15 6.2 17 6.6 L16.4 7.8 L18.8 7.6 L18 9 L20.6 9.4 L19.4 10.6 L21.6 11.6 L20.2 12.6 L22 14 L20.4 14.8 L21.8 16.6 L20 17 L20.8 19 L19 18.8 L19 20.8 L17.4 19.8 L16.6 21.8 L15.4 20.4 L14 22 L13.4 20.2 C12 20 10.4 19.4 9.6 18.2 L8.4 18 L9.2 17.2 L7 16.6 C6.4 16.4 6 15.4 6.2 14.6 Z" fill="#034694" stroke-linejoin="round"/><circle cx="9.7" cy="12.9" r=".55" fill="#FFFFFF"/></g>${trevo(2.7)}${trevo(23.3)}`
       + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
   // Werder Brema: um diamante comprido (losango esticado na vertical), verde, com um W branco dentro
@@ -151,6 +151,15 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     return `<path d="${dia}" fill="#1D9053"/><path d="M13 3.4 L21.2 15 L13 26.6 L4.8 15 Z" fill="none" stroke="#FFFFFF" stroke-width=".6"/>`
       + `<text x="13" y="19.4" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="12" textLength="11" lengthAdjust="spacingAndGlyphs" fill="#FFFFFF">W</text>`
       + `<path d="${dia}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
+  }
+  // Fiorentina: losango com a metade de cima branca e a de baixo roxa, e a flor-de-lis vermelha no centro
+  if (chave === "IT-FIO") {
+    const los = "M13 1 L24.4 15 L13 29 L1.6 15 Z";
+    const petala = "M13.6 13.2 C14.8 10 18.6 9.4 19.8 11.6 C20.6 13.4 19 15.2 17.4 14.3 C18.4 13.5 17.9 12.3 16.8 12.5 C15.6 12.7 14.7 13.8 14.3 15.2 Z";
+    const flor = `<g fill="#D0102C" stroke="#FFFFFF" stroke-width=".45" stroke-linejoin="round"><path d="M13 4.8 C15.2 7.4 15.8 10 13 13.8 C10.2 10 10.8 7.4 13 4.8 Z"/><path d="${petala}"/><path d="${petala}" transform="translate(26 0) scale(-1 1)"/>`
+      + `<path d="M12.1 16.4 L11.2 21 L13 19.6 L14.8 21 L13.9 16.4 Z"/><rect x="9.2" y="14.6" width="7.6" height="1.9" rx=".5"/></g>`;
+    return `<defs><clipPath id="cFIO"><path d="${los}"/></clipPath></defs><g clip-path="url(#cFIO)"><rect width="26" height="15" fill="#FFFFFF"/><rect y="15" width="26" height="15" fill="#5B2A86"/></g>${flor}`
+      + `<path d="${los}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
   }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
