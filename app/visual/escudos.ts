@@ -209,9 +209,10 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   // Brentford: círculo vermelho com um círculo branco dentro e uma abelha no meio
   if (chave === "EN-BRE") {
     const abelha = `<g stroke="#111111" stroke-width=".45" stroke-linejoin="round">`
-      + `<ellipse cx="10.2" cy="12.4" rx="3.2" ry="2" fill="#DCEBF7" opacity=".95" transform="rotate(-28 10.2 12.4)"/><ellipse cx="15.8" cy="12.4" rx="3.2" ry="2" fill="#DCEBF7" opacity=".95" transform="rotate(28 15.8 12.4)"/>`
-      + `<ellipse cx="13" cy="17.4" rx="3.4" ry="4.6" fill="#FFC20E"/><path d="M9.8 16.2 H16.2 M9.7 18.4 H16.3 M10.6 20.4 H15.4" stroke="#111111" stroke-width="1.1"/>`
-      + `<circle cx="13" cy="11.8" r="2" fill="#111111"/><path d="M12 10.2 Q11 8.4 9.8 8.2 M14 10.2 Q15 8.4 16.2 8.2" fill="none" stroke-width=".55" stroke-linecap="round"/><path d="M13 22 L13 23.4" stroke-width=".8" stroke-linecap="round"/></g>`;
+      // as asas saem do tronco (do alto do corpo listrado), atrás dele
+      + `<ellipse cx="9.4" cy="13.6" rx="3.4" ry="2" fill="#DCEBF7" transform="rotate(-24 9.4 13.6)"/><ellipse cx="16.6" cy="13.6" rx="3.4" ry="2" fill="#DCEBF7" transform="rotate(24 16.6 13.6)"/>`
+      + `<ellipse cx="13" cy="17.4" rx="3.4" ry="4.8" fill="#FFC20E"/><path d="M9.8 16.4 H16.2 M9.7 18.6 H16.3 M10.4 20.6 H15.6" stroke="#111111" stroke-width="1.1"/>`
+      + `<circle cx="13" cy="10.8" r="1.9" fill="#111111"/><path d="M12.2 9.2 Q11.2 7.4 10 7.2 M13.8 9.2 Q14.8 7.4 16 7.2" fill="none" stroke-width=".55" stroke-linecap="round"/><path d="M13 22.2 L13 23.6" stroke-width=".8" stroke-linecap="round"/></g>`;
     return `<circle cx="13" cy="15" r="12.4" fill="#E30613"/><circle cx="13" cy="15" r="9.4" fill="#FFFFFF"/>${abelha}<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
