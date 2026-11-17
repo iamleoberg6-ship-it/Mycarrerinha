@@ -1781,6 +1781,24 @@ teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e ve
   assert.equal(T.fazerProposta(pacote, s, "x", alvo.clubeId, 1, 1).status, "erro");
 });
 
+teste("Técnico: gols da rodada, artilharia e assistências batem com os placares", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-art");
+  let previa: ReturnType<typeof T.outrosDaRodada> = [];
+  for (let k = 0; k < 10; k++) {
+    if (T.proximoJogo(s)) previa = T.outrosDaRodada(pacote, s);
+    const r = s.semana - T.SEMANAS_PRE_T;
+    T.avancarSemana(pacote, s);
+    if (previa.length && s.lancesRodada?.[r]) for (const o of previa) { const l: [number, boolean, string, string][] = s.lancesRodada[r][o.casa]; assert.deepEqual(l.map((g) => g[2]), o.gols.map((g: { autor: string }) => g.autor), "o ao vivo mostra os mesmos autores"); }
+    previa = [];
+  }
+  const totalTabela = s.tabela.reduce((x, t) => x + t.gp, 0);
+  const art = s.artLiga!.x, npc = Object.values(art).filter((v) => v.c !== s.clubeId).reduce((x, v) => x + v.g, 0);
+  const meus = s.elenco.reduce((x, a) => x + (a.porComp?.liga?.g ?? 0), 0);
+  const vendidos = (s.transferencias ?? []).filter((t) => t.venda && t.t === s.temporada).length;
+  if (!vendidos) assert.equal(npc + meus, totalTabela, "gols da artilharia = gols da tabela");
+  for (const v of Object.values(art)) assert.ok(v.j >= 0 && v.g >= 0 && v.a >= 0);
+});
+
 teste("Técnico: vestiário, promessas, mentoria, treino individual, bônus, estrangeiros", () => {
   const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-vest");
   const h = V.hierarquia(s); assert.ok([...h.values()].filter((x) => x.nivel === "lider").length >= 2);

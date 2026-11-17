@@ -3,6 +3,7 @@
 import { RNG, clamp } from "../rng.js";
 import { efeitoBeira } from "./beira.js";
 import { avaliarPlano } from "./plano-dir.js";
+import { jogosNpcDaRodada, registrarRodada, autorNpc, type ArtLiga, type GolLiga } from "./lances-liga.js";
 import { semanaMercadoExtra, custoParceiros } from "./mercado-extra.js";
 import { semanaVestiario, clima, fatorClima, bonusDoJogo, prometer } from "./vestiario.js";
 import { limiteEstrangeiros, contaComoEstrangeiro } from "../estrangeiros.js";
@@ -55,7 +56,7 @@ export const SEMANAS_PRE_T = 2;
 export const CHAVE_TECNICO = "mycarrerinha:tecnico";
 
 export interface Noticia { quando: string; texto: string; tipo: "jogo" | "clube" | "elenco" | "diretoria" | "dinheiro" | "vida" }
-export interface EventoPartida { min: number; tipo: "gol" | "amarelo" | "vermelho" | "lesao" | "sub" | "lance"; meu: boolean; texto: string; /** o lance contado (jogo ao vivo) */ narra?: string }
+export interface EventoPartida { min: number; tipo: "gol" | "amarelo" | "vermelho" | "lesao" | "sub" | "lance"; meu: boolean; texto: string; /** o lance contado (jogo ao vivo) */ narra?: string; /** gol: autor e passe */ autor?: string; assist?: string }
 export interface NotaPartida { id: string; nome: string; pos: PosT; nota: number; min: number; gols: number; assist: number }
 export interface Relatorio {
   rodada: number; casa: string; fora: string; gc: number; gf: number; souCasa: boolean; publico?: number;
@@ -74,6 +75,7 @@ export interface Clube {
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
   /** promessas quebradas recentes (pesam no clima) */ promessasQuebradas?: number;
+  /** artilharia e assistências da sua liga (somadas dos jogos de verdade) e os gols de cada jogo da rodada */ artLiga?: ArtLiga; lancesRodada?: Record<number, Record<string, GolLiga[]>>;
   /** escalações salvas para reusar */ escSalvas?: { nome: string; formacao: string; titulares: (string | null)[]; reservas: string[]; tatica: Tatica }[];
   /** mercado avançado: seus anúncios, jogadores oferecidos, anúncios de outros clubes e clubes parceiros */
   necessidades?: import("./mercado-extra.js").Necessidade[]; oferecidos?: import("./mercado-extra.js").Oferecido[]; procurando?: import("./mercado-extra.js").Procura[]; parceiros?: string[];
@@ -694,7 +696,7 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   // gols esperados do trecho (a chance criada, com um pouco de acaso)
   const xgR = rngT(s, "xg", ini); av.xg ??= [0, 0];
   av.xg[0] += lMeB * (dur / 90) * clamp(0.75 + xgR.next() * 0.5, 0.5, 1.5); av.xg[1] += lAdvB * (dur / 90) * clamp(0.75 + xgR.next() * 0.5, 0.5, 1.5);
-  const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai > min && !av.fora.includes(x.a.id));
+  const noCampo = (min: number) => campo.filter((x) => x.ent <= min && x.sai >= min && !av.fora.includes(x.a.id));
   const peso = <T>(lista: T[], fw: (x: T) => number) => { const t = lista.reduce((a, x) => a + fw(x), 0); let r = rng.next() * t; for (const x of lista) { r -= fw(x); if (r <= 0) return x; } return lista[lista.length - 1]; };
   const st = (x: EmCampo) => (av.stats[x.a.id] ??= { gols: 0, assist: 0, amarelo: 0, vermelho: false, min: 0, pos: x.pos });
   // nomes para a narração: o goleiro e um zagueiro de cada lado
@@ -717,9 +719,11 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   const umAMenos = saiuAntes < 99 ? (fim - saiuAntes) / dur : 0;
   const gMe = rng.poisson(lMeB * (dur / 90) * (1 - 0.3 * umAMenos)), gAdv = rng.poisson(lAdvB * (dur / 90) * (1 + 0.35 * umAMenos));
   // gols: a função muda quem faz e quem passa; parte sai de falta e de pênalti
+  let feitos = 0;
   for (let g = 0; g < gMe; g++) {
     const min = rng.int(ini + 1, fim), ali = noCampo(min);
     if (!ali.length) continue;
+    feitos++;
     const r = rng.next(), ehFalta = r < 0.1 && bFal && ali.includes(bFal), ehPen = !ehFalta && r < 0.17 && bPen && ali.includes(bPen);
     const autor = ehFalta ? bFal! : ehPen ? bPen! : peso(ali, (x) => (x.pos === "GOL" ? 0.001 : SHARE_GOL[x.pos as keyof typeof SHARE_GOL] * Math.pow(x.a.at.FIN / 70, 1.5) * (funcaoNaVaga(s.esc, x.a, x.pos)?.gol ?? 1)));
     st(autor).gols++;
@@ -729,14 +733,15 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
       if (outros.length) { const p = peso(outros, (x) => (x.pos === "GOL" ? 0.01 : SHARE_ASSIST[x.pos as keyof typeof SHARE_ASSIST] * Math.pow(Math.max(x.a.at.PAS, x.a.at.CRU) / 70, 1.5) * (funcaoNaVaga(s.esc, x.a, x.pos)?.assist ?? 1))); st(p).assist++; txt += ` (passe de ${p.a.nome})`; passe = p.a.nome; }
     }
     const tipo = ehFalta ? "falta" : ehPen ? "penalti" : tipoDoGol(rn, !!passe, autor.a.at.CAB, !!tat.contraAtaque);
-    av.eventos.push({ min, tipo: "gol", meu: true, texto: txt, narra: narrarGolMeu(rn, tipo, { autor: autor.a.nome, passe, gol: golAdv, zag: zag() }) });
+    av.eventos.push({ min, tipo: "gol", meu: true, texto: txt, autor: autor.a.nome, ...(passe ? { assist: passe } : {}), narra: narrarGolMeu(rn, tipo, { autor: autor.a.nome, passe, gol: golAdv, zag: zag() }) });
   }
   for (let g = 0; g < gAdv; g++) {
     const min = rng.int(ini + 1, fim);
-    const autor = onzeAdv.length ? peso(onzeAdv, (j) => (j.posicao === "GOL" ? 0.001 : SHARE_GOL[j.posicao as keyof typeof SHARE_GOL] * Math.pow(j.ovr / 70, 1.5))) : undefined;
-    av.eventos.push({ min, tipo: "gol", meu: false, texto: `Gol ${autor ? `de ${autor.nome}` : "do adversário"}`, narra: narrarGolAdv(rn, { autor: autor?.nome ?? "o atacante deles", meuGol, meuZag: meuZag() }) });
+    const [autorN, passeN] = onzeAdv.length ? autorNpc(rng, onzeAdv) : ["", ""];
+    av.eventos.push({ min, tipo: "gol", meu: false, texto: `Gol ${autorN ? `de ${autorN}` : "do adversário"}${passeN ? ` (passe de ${passeN})` : ""}`, ...(autorN ? { autor: autorN } : {}), ...(passeN ? { assist: passeN } : {}), narra: narrarGolAdv(rn, { autor: autorN || "o atacante deles", meuGol, meuZag: meuZag() }) });
   }
-  av.gMe += gMe; av.gAdv += gAdv;
+  // placar = gols com autor (um gol sem ninguém em campo não existe)
+  av.gMe += feitos; av.gAdv += gAdv;
   // chances que não viraram gol, dos dois lados (só narração: não mexem no placar)
   const atacantes = (min: number) => noCampo(min).filter((x) => x.pos !== "GOL");
   for (let k = rn.poisson(lMe * (dur / 90) * 1.7); k > 0; k--) {
@@ -923,19 +928,23 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
     if (!s.aoVivo) eventos.push(...conferirEscalacao(s));
     // quem estava suspenso cumpre agora
     const cumpriram = s.elenco.filter((a) => a.suspenso > 0);
-    const rng = rngT(s, "rodada");
-    const jogos: [string, string, number, number][] = [];
+    const npc = jogosNpcDaRodada(pacote, s, r, rngT(s, "rodada"), rngT(s, "golsLiga"));
+    const jogos: [string, string, number, number][] = [], lances: Record<string, GolLiga[]> = {};
     for (const [ia, ib] of rodadas[r]) {
       const casa = s.ordem[ia], fora = s.ordem[ib];
       if (casa === s.clubeId || fora === s.clubeId) {
         const souCasa = casa === s.clubeId;
         partida = terminarPartida(pacote, s, souCasa ? fora : casa, souCasa, r);
         jogos.push([casa, fora, partida.gc, partida.gf]);
+        lances[casa] = partida.eventos.filter((e) => e.tipo === "gol").map((e) => [e.min, e.meu === souCasa, e.autor ?? "", e.assist ?? ""] as GolLiga);
+        registrarRodada(pacote, s, [], { adv: souCasa ? fora : casa, eventos: partida.eventos });
       } else {
-        const [gc, gf] = simularPlacar(rng, w.clube[casa]?.forca ?? 60, w.clube[fora]?.forca ?? 60);
-        jogos.push([casa, fora, gc, gf]);
+        const g = npc.find((x) => x.casa === casa)!;
+        jogos.push([casa, fora, g.gc, g.gf]); lances[casa] = g.gols;
       }
     }
+    registrarRodada(pacote, s, npc);
+    (s.lancesRodada ??= {})[r] = lances;
     for (const a of cumpriram) a.suspenso = Math.max(0, a.suspenso - 1);
     for (const [casa, fora, gc, gf] of jogos) {
       const tc = s.tabela.find((t) => t.clube === casa), tf = s.tabela.find((t) => t.clube === fora);
@@ -1106,7 +1115,7 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   }
   for (const a of s.elenco) guardarTemporada(s, a);
   for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.titT = 0; a.promessas = (a.promessas ?? []).filter((p) => p.tipo === "reforco"); a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
-  s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
+  s.temporada++; s.semana = 0; s.rodadas = {}; s.lancesRodada = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
   for (const av of viradaPatro(pacote, s)) noticia(s, "dinheiro", av);
   // o mundo vira a temporada (com a tabela da liga do técnico valendo para o acesso e o rebaixamento)
   sincronizarMundo(pacote, s.semente, s.temporada, 0, s.tabelasReais, 0);
@@ -1423,19 +1432,10 @@ export const _int = {
 /** Dinheiro que entra fora do mês normal (luvas de patrocínio, por exemplo). */
 export function creditar(s: SaveTecnico, k: string, v: number) { if (!v) return; s.clube.saldo += v; receber(s, k, v); }
 
-/** Os outros jogos da rodada da liga desta semana (os mesmos placares que vão para a tabela), com os minutos dos gols. */
-export function outrosDaRodada(pacote: PacoteDados, s: SaveTecnico): { casa: string; fora: string; gols: { min: number; casa: boolean }[] }[] {
-  const r = s.semana - SEMANAS_PRE_T, rodadas = rodadasDaLiga(s.ordem.length);
-  if (r < 0 || r >= rodadas.length) return [];
-  const w = mundo(pacote), rng = rngT(s, "rodada"), rm = rngT(s, "rodadaMin"), out: { casa: string; fora: string; gols: { min: number; casa: boolean }[] }[] = [];
-  for (const [ia, ib] of rodadas[r]) {
-    const casa = s.ordem[ia], fora = s.ordem[ib];
-    if (casa === s.clubeId || fora === s.clubeId) continue;
-    const [gc, gf] = simularPlacar(rng, w.clube[casa]?.forca ?? 60, w.clube[fora]?.forca ?? 60);
-    const gols = [...Array.from({ length: gc }, () => ({ min: rm.int(1, 90), casa: true })), ...Array.from({ length: gf }, () => ({ min: rm.int(1, 90), casa: false }))].sort((a, b) => a.min - b.min);
-    out.push({ casa, fora, gols });
-  }
-  return out;
+/** Os outros jogos da rodada da liga desta semana (os mesmos placares e gols que vão para a tabela e para a artilharia). */
+export function outrosDaRodada(pacote: PacoteDados, s: SaveTecnico): { casa: string; fora: string; gols: { min: number; casa: boolean; autor: string }[] }[] {
+  const r = s.semana - SEMANAS_PRE_T;
+  return jogosNpcDaRodada(pacote, s, r, rngT(s, "rodada"), rngT(s, "golsLiga")).map((g) => ({ casa: g.casa, fora: g.fora, gols: g.gols.map(([min, casa, autor]) => ({ min, casa, autor })) }));
 }
 
 /** Limite da liga e quantos estrangeiros você tem (no elenco e relacionados agora). */

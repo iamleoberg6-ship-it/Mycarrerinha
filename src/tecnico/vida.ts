@@ -49,11 +49,17 @@ export function premiosDoMes(pacote: PacoteDados, s: SaveTecnico): string[] {
 }
 /** Artilharia e assistências da liga com o seu elenco no meio (o mundo não sabe dos números do seu time). */
 export function rankingT(pacote: PacoteDados, s: SaveTecnico, tipo: "g" | "a", limite = 10): { nome: string; clubeId: string; valor: number; jogos: number; meu: boolean }[] {
-  const feitas = Object.keys(s.rodadas).length;
-  const mundoL = rankingDaLiga(pacote, s.ligaId, feitas, tipo, 40).filter((x) => x.clubeId !== s.clubeId).map((x) => ({ ...x, meu: false }));
+  const feitas = Object.keys(s.rodadas).length, meusNomes = new Set(s.elenco.map((a) => a.nome));
+  // os gols e passes de verdade dos jogos da liga (somados rodada a rodada); save antigo sem isso usa a estimativa do mundo
+  const art = s.artLiga && s.artLiga.t === s.temporada && s.artLiga.ligaId === s.ligaId ? s.artLiga.x : undefined;
+  const mundoL = art
+    ? Object.values(art).filter((v) => v.n && !meusNomes.has(v.n) && v.c !== s.clubeId && (tipo === "g" ? v.g : v.a) > 0).map((v) => ({ nome: v.n, clubeId: v.c, valor: tipo === "g" ? v.g : v.a, jogos: v.j, meu: false }))
+    : rankingDaLiga(pacote, s.ligaId, feitas, tipo, 40).filter((x) => x.clubeId !== s.clubeId).map((x) => ({ ...x, meu: false }));
   // só os jogos da liga (copa tem artilharia própria); save antigo sem a separação usa o total
   const liga = (a: SaveTecnico["elenco"][number]) => a.porComp ? a.porComp.liga ?? { j: 0, g: 0, a: 0 } : { j: a.jogos, g: a.gols, a: a.assist };
-  const meus = s.elenco.map((a) => ({ a, l: liga(a) })).filter(({ l }) => (tipo === "g" ? l.g : l.a) > 0).map(({ a, l }) => ({ nome: a.nome, clubeId: s.clubeId, valor: tipo === "g" ? l.g : l.a, jogos: l.j, meu: true }));
+  // quem chegou no meio da temporada leva junto o que fez pelo clube antigo na mesma liga
+  const antes = (nome: string) => { const l = Object.values(art ?? {}).filter((v) => v.n === nome && v.c !== s.clubeId); return l.length ? l.reduce((x, v) => ({ ...x, j: x.j + v.j, g: x.g + v.g, a: x.a + v.a }), { n: nome, c: "", j: 0, g: 0, a: 0 }) : undefined; };
+  const meus = s.elenco.map((a) => ({ a, l: liga(a), b: antes(a.nome) })).map(({ a, l, b }) => ({ nome: a.nome, clubeId: s.clubeId, valor: (tipo === "g" ? l.g : l.a) + (b ? (tipo === "g" ? b.g : b.a) : 0), jogos: l.j + (b?.j ?? 0), meu: true })).filter((x) => x.valor > 0);
   return [...mundoL, ...meus].sort((a, b) => b.valor - a.valor || a.jogos - b.jogos).slice(0, limite);
 }
 /** Prêmios da temporada (na virada): técnico do ano da liga e artilheiro. */

@@ -875,7 +875,8 @@ function abaCopas(s: SaveTecnico): string {
 function abaLiga(s: SaveTecnico): string {
   const li = infoLiga(s.ligaId), tab = ordenar(s.tabela), n = tab.length;
   const ult = Math.max(-1, ...Object.keys(s.rodadas).map(Number));
-  const rodada = ult >= 0 ? `<section class="painel" style="margin-top:12px"><p class="rotulo">Rodada ${ult + 1}</p>${s.rodadas[ult].map(([c, f, gc, gf]) => `<div class="not" style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;${c === s.clubeId || f === s.clubeId ? "font-weight:700" : ""}"><span style="text-align:right">${esc(nomeClube(c))}</span><b>${gc} × ${gf}</b><span>${esc(nomeClube(f))}</span></div>`).join("")}</section>` : "";
+  const rodada = ult >= 0 ? `<section class="painel" style="margin-top:12px"><p class="rotulo">Rodada ${ult + 1}</p>${s.rodadas[ult].map(([c, f, gc, gf]) => { const gl = s.lancesRodada?.[ult]?.[c] ?? [];
+      return `<div class="not" style="display:grid;grid-template-columns:1fr auto 1fr;gap:2px 8px;${c === s.clubeId || f === s.clubeId ? "font-weight:700" : ""}"><span style="text-align:right">${esc(nomeClube(c))}</span><b>${gc} × ${gf}</b><span>${esc(nomeClube(f))}</span>${gl.length ? `<small class="sub" style="text-align:right;font-weight:400">${gl.filter((x) => x[1]).map((x) => `${esc(sobrenome(x[2]))} ${x[0]}'`).join(", ")}</small><span></span><small class="sub" style="font-weight:400">${gl.filter((x) => !x[1]).map((x) => `${esc(sobrenome(x[2]))} ${x[0]}'`).join(", ")}</small>` : ""}</div>`; }).join("")}</section>` : "";
   const subs = `<div class="sub-abas">${[["tabela", "Tabela"], ["copas", "Copas"], ["selecao", "Seleção"], ["revista", "Revista ISPN"], ["artilharia", "Artilharia"], ["assist", "Assistências"], ["elenco", "Seu elenco"]].map(([k, n2]) => `<button class="${(sub.liga ?? "tabela") === k ? "ativo" : ""}" data-sub="liga:${k}">${n2}</button>`).join("")}</div>`;
   if (sub.liga === "copas") return subs + abaCopas(s);
   if (sub.liga === "selecao") return subs + abaSelecao(s);
@@ -1320,6 +1321,7 @@ function relatorioHtml(p: Relatorio): string {
 }
 
 // ------------------------------------------------------------------ partida ao vivo
+const sobrenome = (n: string) => { const p = n.trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : n; };
 const nomeCurto = (id: string) => { const i = infoClube(pacote, id) as { apelido?: string; nome?: string } | undefined; return i?.apelido || i?.nome || nomeClube(id); };
 /** Estado da tela do jogo: minuto mostrado, velocidade (ms por minuto), pausa pedida e se parou no intervalo. */
 const vivo = { outros: [] as ReturnType<typeof outrosDaRodada>, fala: undefined as undefined | { titulo: string; texto: string; reacoes: string[] }, mostrado: 0, vel: 260, pausado: true, pedirPausa: false, intervalo: false, passouIntervalo: false, timer: 0 as number, avisos: [] as string[] };
@@ -1357,7 +1359,7 @@ function atualizarVivo(s: SaveTecnico) {
       return `<div class="painel" style="margin:8px 0;padding:10px"><p class="rotulo" style="margin:0 0 6px">${titulo}</p><div class="chips" style="flex-wrap:wrap">${TONS.map((t) => `<button class="chip" data-prel="${momento}|${t.id}" title="${esc(t.dica)}">${esc(t.nome)}</button>`).join("")}</div><p class="sub" style="font-size:12px;margin-top:6px">O tom certo depende de ser favorito ou zebra e do placar. ${momento === "fim" ? "Mexe na moral para a semana." : "Mexe no ânimo do time em campo."}</p></div>`; })()}
     ${!fim && m > 0 ? `<div class="chips" style="flex-wrap:wrap;margin:6px 0"><span class="sub" style="font-size:12px;align-self:center">Gritar:</span>${GRITOS.map((g) => `<button class="chip" data-grito="${g.id}" title="${esc(g.dica)}">${esc(g.nome)}</button>`).join("")}</div>` : ""}
     ${vivo.outros.length ? `<details class="outros-vivo"${parado ? " open" : ""}><summary class="sub" style="cursor:pointer">Outros jogos da rodada</summary><div class="outros-grid">${vivo.outros.map((o) => { const g = o.gols.filter((x) => x.min <= m), gc = g.filter((x) => x.casa).length, gf = g.length - gc, novo = g.some((x) => x.min > m - 3);
-      return `<div class="outro${novo && m > 0 && !fim ? " novo" : ""}"><span>${esc(nomeCurto(o.casa))}</span><b>${gc} × ${gf}</b><span>${esc(nomeCurto(o.fora))}</span></div>`; }).join("")}</div></details>` : ""}
+      return `<div class="outro${novo && m > 0 && !fim ? " novo" : ""}"><span>${esc(nomeCurto(o.casa))}</span><b>${gc} × ${gf}</b><span>${esc(nomeCurto(o.fora))}</span>${g.length ? `<small class="outro-gols">${g.map((x) => `<span${x.casa ? "" : ' class="fora"'}>⚽ ${x.min}' ${esc(sobrenome(x.autor))}</span>`).join("")}</small>` : ""}</div>`; }).join("")}</div></details>` : ""}
     ${parado && !fim && cansados.length ? `<p class="sub">Cansados: ${cansados.map((n) => esc(n!)).join(", ")}.</p>` : ""}
     ${fim ? `<button class="botao grande" data-avancar>Ver o resultado</button>`
       : parado ? `<div class="botoes"><button class="botao" data-vivo-seguir>▶ ${m === 0 ? "Começar" : vivo.intervalo ? "Começar o 2º tempo" : "Continuar"}</button><button class="botao sec" data-vivo-mexer>Mexer no time e na tática</button></div>
