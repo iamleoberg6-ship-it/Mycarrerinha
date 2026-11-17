@@ -186,7 +186,7 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     return `${torre}<defs><clipPath id="cNEW"><path d="${esc}"/></clipPath></defs><g clip-path="url(#cNEW)">${listras}</g><path d="${esc}" fill="none" stroke="${OURO3}" stroke-width="1.1" stroke-linejoin="round"/>`
       + `<g transform="translate(.4 8.4)">${cavalo}</g><g transform="translate(25.6 8.4) scale(-1 1)">${cavalo}</g>`
       + `<path d="M1 23.6 H25 L24 25.6 L25 27.6 H1 L2 25.6 Z" fill="#7CC4F0" stroke="#1B3A5C" stroke-width=".35" stroke-linejoin="round"/>`
-      + `<text x="13" y="26.8" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="3.2" textLength="17" lengthAdjust="spacingAndGlyphs" fill="#0B1F4D">NEWCASTLE</text>`;
+      + `<text x="13" y="26.8" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="3.2" textLength="17" lengthAdjust="spacingAndGlyphs" fill="#0B1F4D">NEWCASTEL</text>`;
   }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
