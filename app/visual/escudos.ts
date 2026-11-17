@@ -54,9 +54,15 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   }
   // Atlético das Minas: só o galo, preto com detalhes brancos e filete branco (aparece em fundo claro e escuro)
   if (chave === "CAM") {
-    const galo = "M7.2 6.2 C7.6 5 9 4.6 10 5.2 L10.6 4 L11.2 5 L11.9 3.9 L12.2 5.4 C12.8 6 12.9 7 12.4 7.8 C13.6 8.6 15.6 8.8 17.2 8 C17.6 6 18.6 4.2 20.4 3.4 C19.6 5 19.8 6.4 20.6 7.4 C21.2 5.6 22.4 4.8 23.4 4.8 C22.2 6.2 22.4 8.6 21.4 10.6 C20.6 12.6 18.6 14 16 14.4 L15.6 16.4 L16.8 17.2 L13.8 17.2 L14.4 14.4 L12.6 14.2 L12.4 16.4 L13.4 17.2 L10.6 17.2 L11.2 14 C9.4 13.2 8.4 11.6 8.4 9.8 C8.4 9 8 8.2 6.6 7.6 Z";
-    return `<g transform="translate(-9.2 -.4) scale(1.5)"><path d="${galo}" fill="#0A0A0A" stroke="#FFFFFF" stroke-width=".55" stroke-linejoin="round"/>`
-      + `<path d="M11.4 10.4 C13 12.2 15.6 12.4 17.6 10.8 M12.2 9 C14 10.4 16 10.4 17.8 9.2" fill="none" stroke="#FFFFFF" stroke-width=".4" stroke-linecap="round"/><circle cx="9.7" cy="6.5" r=".5" fill="#FFFFFF"/></g>`;
+    // galo de perfil, virado para a esquerda: peito estufado, crista alta, rabo em foice e as pernas firmes
+    const corpo = "M4.4 7 L6.2 6 C6.4 4.6 7.4 4 8.4 4 C9.8 4 10.8 5 10.8 6.6 C10.8 8.4 11.6 9.6 13.4 10.2 C15 10.6 16.4 10 17.4 8.6 C18 6 19.4 3.4 22.2 2.2 C21 4 21.2 5.6 22 6.6 C22.6 5 23.8 4.2 25 4.4 C23.8 5.6 24.2 7.8 24.6 9.6 C25 12.6 23.4 15.6 20.6 17.2 C19 19.4 16.4 20.6 13.8 20.6 C9.2 20.6 5 18.4 4.4 14.6 C4 12.2 5 10.2 6.2 8.8 L6.4 7.6 Z";
+    const crista = "M6.6 4.6 L6.2 2.6 L7.6 3.4 L8.2 1.6 L9.2 3.1 L10.3 2 L10.5 3.8 L10.9 4.8 Z", barbela = "M6.3 7.7 C5.2 8.1 5.2 10.1 6.4 10.1 C7.1 9.5 7.1 8.4 6.7 7.8 Z";
+    const pernas = "M11.8 20 L11.2 25.4 L8.8 26.1 M11.2 25.4 L12.7 26.4 M15.3 20 L15.8 25.4 L13.8 26.2 M15.8 25.4 L17.5 26.2 M11.5 22.8 L10.4 22.4 M15.6 22.8 L16.8 22.4";
+    const formas = (cor: string, w: number) => `<path d="${corpo}" fill="${cor}" stroke="${cor}" stroke-width="${w}" stroke-linejoin="round"/><path d="${crista}" fill="${cor}" stroke="${cor}" stroke-width="${w}" stroke-linejoin="round"/><path d="${barbela}" fill="${cor}" stroke="${cor}" stroke-width="${w}"/><path d="${pernas}" fill="none" stroke="${cor}" stroke-width="${1.1 + w * 0.6}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const detalhes = `<path d="M10.4 13.2 C12.6 11.6 16.2 12.2 17.8 14.4 C15.6 16.6 12.4 17 10.4 13.2 Z M12 14.2 C13.6 13.6 15 13.8 16 14.6" fill="none" stroke="#FFFFFF" stroke-width=".5" stroke-linejoin="round"/>`
+      + `<path d="M18.6 9.8 C20 7.2 21.4 5.6 23.4 4.9 M19.6 12.2 C21.4 10.8 23 10 24.4 10.1 M19.4 14.6 C21 14 22.6 13.6 23.8 13.8" fill="none" stroke="#FFFFFF" stroke-width=".45" stroke-linecap="round"/>`
+      + `<circle cx="8.5" cy="5.6" r=".6" fill="#FFFFFF"/>`;
+    return `<g transform="translate(-1 1.4)">${formas("#FFFFFF", 1.3)}${formas("#0A0A0A", 0)}${detalhes}</g>`;
   }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
