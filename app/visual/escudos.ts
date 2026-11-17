@@ -161,6 +161,12 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     return `<defs><clipPath id="cFIO"><path d="${los}"/></clipPath></defs><g clip-path="url(#cFIO)"><rect width="26" height="15" fill="#FFFFFF"/><rect y="15" width="26" height="15" fill="#5B2A86"/></g>${flor}`
       + `<path d="${los}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`;
   }
+  // Milan: um oval dividido ao meio; em cima a cruz vermelha no branco (a bandeira da cidade), embaixo listras vermelhas e pretas
+  if (chave === "IT-MIL") {
+    return `<defs><clipPath id="cMIL"><ellipse cx="13" cy="15" rx="10.6" ry="13.6"/></clipPath></defs><g clip-path="url(#cMIL)"><rect width="26" height="15" fill="#FFFFFF"/><rect x="11.6" y="0" width="2.8" height="15" fill="#D0102C"/><rect x="0" y="6.4" width="26" height="2.8" fill="#D0102C"/>`
+      + `${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<rect x="${(k * 26 / 8).toFixed(2)}" y="15" width="${(26 / 8 + 0.05).toFixed(2)}" height="15" fill="${k % 2 ? "#0A0A0A" : "#D0102C"}"/>`).join("")}<path d="M0 15 H26" stroke="${TINTA}" stroke-width=".8"/></g>`
+      + `<ellipse cx="13" cy="15" rx="10.6" ry="13.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
