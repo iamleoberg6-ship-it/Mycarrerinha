@@ -27,6 +27,7 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import { situacaoEstadio, aluguelDoJogo, semanaEstadio, combinarGrama, type EstadioProprio, type ObraEstadio } from "./estadio-proprio.js";
 import { propostasDaSemanaT, semanaEmprestados, vencerOpcoes, salarioEmprestados, viradaNegocios } from "./negociacao.js";
 import { mesPatroSel } from "./patro-sel.js";
 import { semanaSelecao, selPendente, viradaSelecao, type SelecaoT, type OfertaSel } from "./selecao-t.js";
@@ -82,6 +83,7 @@ export interface SaveTecnico {
   /** mercado avançado: seus anúncios, jogadores oferecidos, anúncios de outros clubes e clubes parceiros */
   necessidades?: import("./mercado-extra.js").Necessidade[]; oferecidos?: import("./mercado-extra.js").Oferecido[]; procurando?: import("./mercado-extra.js").Procura[]; parceiros?: string[];
   /** plano da diretoria para vários anos */ planoDir?: import("./plano-dir.js").PlanoDir;
+  /** estádio próprio do clube (construído) e a obra em andamento; semana da última conversa sobre a grama do estádio dividido */ estadioProprio?: EstadioProprio; obraEstadio?: ObraEstadio; gramaCombinada?: number;
   /** categorias de base (Sub-17 e Sub-20 no Brasil), peneira e campanhas */ base?: import("./base-t.js").BaseT;
   tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number; /** o nome que ele fez como jogador (0 a 100) */ prestigio?: number;
     /** contrato atual: salário, até quando e a multa que o clube paga se demitir antes */ contrato?: Contrato;
@@ -447,7 +449,7 @@ export function custoPedido(s: SaveTecnico, p: Pedido): { custo: number; lugares
   if (p === "conforto") { const nivel = (s.clube.conforto ?? 3) + 1; return { custo: Math.round(s.clube.capacidade * 260 * nivel * Math.max(0.35, fL) / 1e5) * 1e5, nivel }; }
   return { custo: 0 };
 }
-export function pedirDiretoria(s: SaveTecnico, p: Pedido): { ok: boolean; msg: string } {
+export function pedirDiretoria(s: SaveTecnico, p: Pedido, pacoteAtual?: PacoteDados): { ok: boolean; msg: string } {
   const d = s.diretoria, ab = semanaAbs(s), conf = d.confianca, { custo, lugares, nivel } = custoPedido(s, p);
   if (p !== "verba" && d.obras.some((o) => o.tipo === p)) return { ok: false, msg: "Essa obra já está em andamento." };
   if (p === "verba") {
@@ -457,6 +459,7 @@ export function pedirDiretoria(s: SaveTecnico, p: Pedido): { ok: boolean; msg: s
     noticia(s, "diretoria", "A diretoria aumentou o teto salarial em 12%.");
     return { ok: true, msg: "Aprovado: o teto da folha subiu 12%." };
   }
+  if ((p === "estadio" || p === "gramado" || p === "conforto") && pacoteAtual && situacaoEstadio(pacoteAtual, s).publico) return { ok: false, msg: "O estádio é público: o clube não pode fazer obra nele. Para reformar e ampliar, só com estádio próprio." };
   if ((p === "ct" || p === "base" || p === "gramado" || p === "conforto") && (nivel ?? 6) > 5) return { ok: false, msg: "Já está no nível máximo." };
   const minimo = p === "estadio" ? 55 : p === "ct" ? 50 : p === "conforto" ? 50 : p === "gramado" ? 40 : 45;
   if (conf < minimo) return { ok: false, msg: `A diretoria não aprovou. Ela só investe nisso com confiança de ${minimo} ou mais (hoje: ${Math.round(conf)}).` };
@@ -987,7 +990,9 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
         p.publico = Math.round(s.clube.capacidade * ocup);
         const bruto = bilheteria(s, ocup, 1);
         receber(s, "Bilheteria", bruto); gastar(s, "Operação dos jogos", Math.round(bruto * 0.25));
-        s.clube.saldo += Math.round(bruto * 0.75);
+        // estádio público: uma parte da bilheteria é o aluguel
+        const aluguel = aluguelDoJogo(pacote, s, bruto); if (aluguel) gastar(s, "Aluguel do estádio", aluguel);
+        s.clube.saldo += Math.round(bruto * 0.75) - aluguel;
       }
       // diretoria e torcida: resultado contra o esperado pela força dos dois
       const fMeu = w.clube[s.clubeId]?.forca ?? 60, fAdv = w.clube[adv]?.forca ?? 60, esperado = clamp(1.45 + (fMeu - fAdv) / 9 + (p.souCasa ? 0.25 : -0.25), 0.2, 2.6);
@@ -1048,6 +1053,8 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   // o técnico: língua do país e curso de licença
   for (const x of semanaIdiomas(idiomasT(s), lingua)) noticia(s, "clube", `Você já fala ${x.toLowerCase()}.`);
   if (s.tecnico.curso?.estudando) { const feita = semanaCurso(s.tecnico.curso, 1); if (feita) { s.tecnico.reputacao = clamp(s.tecnico.reputacao + 2, 0, 100); noticia(s, "clube", `Você concluiu a ${LICENCAS[feita]}.`); eventos.push(`Você concluiu a ${LICENCAS[feita]}.`); } }
+  // a obra do estádio próprio
+  { const r = semanaEstadio(s); if (r.gasto) gastar(s, "Obra do estádio", r.gasto); for (const a of r.avisos) noticia(s, "clube", a); if (r.pronto) eventos.push(`O ${r.pronto} ficou pronto.`); }
   // obras que terminam
   for (const o of s.diretoria.obras.filter((x) => x.fim <= ab)) {
     if (o.tipo === "estadio") { s.clube.capacidade += o.lugares ?? 0; noticia(s, "clube", `Estádio ampliado: agora cabem ${s.clube.capacidade.toLocaleString("pt-BR")} torcedores.`); }
@@ -1445,7 +1452,9 @@ export function assumirNovoClube(pacote: PacoteDados, s: SaveTecnico, clubeId: s
 }
 
 /** Altura da grama do estádio (20 a 30 mm, a faixa dos gramados oficiais). Muda na hora, vale para os jogos em casa. */
-export function ajustarGrama(s: SaveTecnico, mm: number): { ok: boolean; msg: string } {
+export function ajustarGrama(s: SaveTecnico, mm: number, pacote?: PacoteDados): { ok: boolean; msg: string } {
+  if (pacote && situacaoEstadio(pacote, s).divide.length) return combinarGrama(pacote, s, mm);
+  if (s.estadioProprio?.gramado === "sintetico") return { ok: false, msg: "O gramado é sintético: a altura não muda." };
   const v = clamp(Math.round(mm), 20, 30);
   s.clube.grama = v;
   return { ok: true, msg: `Grama cortada em ${v} mm. ${v <= 23 ? "Bola mais rápida: bom para quem toca." : v >= 27 ? "Bola mais lenta: jogo mais truncado." : "Altura padrão."}` };

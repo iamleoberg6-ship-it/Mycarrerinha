@@ -32,8 +32,10 @@ interface SaveMin { semente: string; clubeId: string; temporada: number; semana:
 
 /** O estádio do clube: o nome, se já tem marca e se é dividido com outro clube (aí não dá para vender). */
 export function arenaDoClube(pacote: PacoteDados, s: SaveMin): { nome: string; travada?: string } {
-  const info = infoClube(pacote, s.clubeId), nome = info?.estadio ?? "Estádio";
+  const proprio = (s as { estadioProprio?: { nome: string } }).estadioProprio;
+  const info = infoClube(pacote, s.clubeId), nome = proprio?.nome ?? info?.estadio ?? "Estádio";
   if (s.patro?.arena) return { nome: s.patro.arena.nome ?? nome };
+  if (proprio) return { nome };
   if (JA_TEM_MARCA.test(nome)) return { nome, travada: `O nome já é de uma marca (${nome}), com contrato longo assinado antes da sua chegada.` };
   const w = mundo(pacote), dono = Object.values(w.info).filter((i) => i.estadio === nome && i.pais === info?.pais).length;
   if (dono > 1) return { nome, travada: `O ${nome} é dividido com outro clube: o nome não é só seu para vender.` };

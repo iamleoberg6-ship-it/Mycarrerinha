@@ -11,6 +11,7 @@ import * as V from "../src/tecnico/vestiario.js";
 import * as MX from "../src/tecnico/mercado-extra.js";
 import * as PD from "../src/tecnico/plano-dir.js";
 import * as G from "../src/tecnico/gestao.js";
+import * as EP from "../src/tecnico/estadio-proprio.js";
 import * as PT from "../src/tecnico/perfil-tecnico.js";
 import { limiteEstrangeiros } from "../src/estrangeiros.js";
 import { montarRevista as montarRevistaT } from "../src/revista.js";
@@ -2045,4 +2046,31 @@ teste("Técnico: criação com origem, filosofia, personalidade, pontos e propos
   // a carreira roda com o perfil
   for (let k = 0; k < 6; k++) T.avancarSemana(pacote, s);
   assert.ok(s.semana >= 6);
+});
+
+teste("Técnico: estádio público dividido (aluguel, sem obra, grama combinada) e estádio próprio", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "FLU", "estadio-1");
+  const sit = EP.situacaoEstadio(pacote, s);
+  assert.ok(sit.publico && sit.divide.includes("FLA"), JSON.stringify(sit));
+  assert.ok(EP.aluguelDoJogo(pacote, s, 1_000_000) === 150_000);
+  s.diretoria.confianca = 80; s.clube.saldo = 9e9;
+  assert.ok(!T.pedirDiretoria(s, "estadio", pacote).ok, "não amplia estádio público");
+  assert.ok(P.arenaDoClube(pacote, s).travada);
+  // grama: uma conversa por mês
+  EP.combinarGrama(pacote, s, 22);
+  assert.ok(!EP.combinarGrama(pacote, s, 28).ok);
+  // projeto: aprova, paga a entrada e anda semana a semana até ficar pronto
+  const r = EP.iniciarEstadio(pacote, s, { nome: "Arena Tricolor", lugares: 45000, padrao: "moderno", gramado: "hibrido" });
+  assert.ok(r.ok, r.msg);
+  assert.ok(!EP.iniciarEstadio(pacote, s, { nome: "Outro", lugares: 15000, padrao: "simples", gramado: "natural" }).ok);
+  for (let k = 0; k < 400 && !s.estadioProprio; k++) EP.semanaEstadio(s);
+  assert.ok(s.estadioProprio && s.clube.capacidade === 45000 && !s.obraEstadio);
+  assert.ok(!EP.situacaoEstadio(pacote, s).publico && EP.aluguelDoJogo(pacote, s, 1e6) === 0);
+  assert.equal(P.arenaDoClube(pacote, s).nome, "Arena Tricolor"); assert.ok(!P.arenaDoClube(pacote, s).travada);
+  // sem dinheiro a obra para
+  const s2 = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "FLA", "estadio-2");
+  s2.diretoria.confianca = 80; s2.clube.saldo = EP.orcamentoEstadio(s2, { nome: "X", lugares: 80000, padrao: "arena", gramado: "natural" }).entrada;
+  assert.ok(EP.iniciarEstadio(pacote, s2, { nome: "Arena Rubro", lugares: 80000, padrao: "arena", gramado: "natural" }).ok);
+  EP.semanaEstadio(s2); assert.ok(s2.obraEstadio?.pausada && s2.obraEstadio.feitas === 0);
+  for (let k = 0; k < 3; k++) T.avancarSemana(pacote, s2);
 });

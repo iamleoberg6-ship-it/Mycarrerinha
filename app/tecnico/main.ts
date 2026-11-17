@@ -116,6 +116,7 @@ import {
   toleranciaLicenca, aceitarEmprego, recusarEmprego, assumirNovoClube, creditar,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
+import { situacaoEstadio, orcamentoEstadio, iniciarEstadio, ANOS_PARCERIA, PADRAO_EST, GRAMADO_EST, LUGARES_EST, type ProjetoEstadio, type PadraoEstadio, type GramadoTipo } from "../../src/tecnico/estadio-proprio";
 import { ORIGENS, ORDEM_ORIGENS, NIVEL_EX, FILOSOFIAS, PERSONALIDADES, ATRIBS_T, NOME_ATRIB_T, TEXTO_ATRIB_T, PONTOS_LIVRES, MAX_ATRIB, montarPerfil, combinaFilosofia, biografia, licencaDaOrigem, type Origem, type NivelEx, type Filosofia, type Personalidade, type AtribT } from "../../src/tecnico/perfil-tecnico";
 import {
   FORMACOES, NOMES_FORMACAO, NOME_MENTALIDADE, NOME_NIVEL3, NOME_AT, NOME_AT_GOL, NOME_POS_T, FUNCOES, NOME_FUNCAO, NOME_FUNCAO_PL, EFEITO_FUNCAO,
@@ -1310,11 +1311,12 @@ function abaDiretoria(s: SaveTecnico): string {
   };
   const cE = custoPedido(s, "estadio"), info = infoClube(pacote, s.clubeId), obraEst = d.obras.find((o) => o.tipo === "estadio");
   const ap = info ? aparenciaDoEstadio(info, mundo(pacote).info) : undefined;
-  const est = `<div class="estadio-box">${svgEstadio({ ...(ap?.dados ?? { nome: "Estádio", cores: ["#2E7D4F", "#FFFFFF"] }), nome: arenaDoClube(pacote, s).nome, capacidade: s.clube.capacidade, obra: !!obraEst })}</div>${ap?.divideCom.length ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}
+  const est = `<div class="estadio-box">${svgEstadio({ ...(ap?.dados ?? { nome: "Estádio", cores: ["#2E7D4F", "#FFFFFF"] }), nome: arenaDoClube(pacote, s).nome, capacidade: s.clube.capacidade, obra: !!obraEst })}</div>${ap?.divideCom.length && !s.estadioProprio ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}
     ${obraEst ? `<p class="sub" style="text-align:center;margin:-4px 0 10px">Obra de ampliação: +${(obraEst.lugares ?? 0).toLocaleString("pt-BR")} lugares em ${obraEst.fim - ab} semanas.</p>` : ""}`;
   return `${est}<div class="dl"><span>Confiança</span><b>${Math.round(d.confianca)}/100</b><span>Meta da temporada</span><b>${esc(d.expectativa.texto)} (${d.expectativa.pos}º)</b><span>Centro de treinamento</span><b>${estrelas(s.clube.ctNivel)}</b><span>Categoria de base</span><b>${estrelas(s.clube.baseNivel)}</b></div>
     ${planoHtml(s)}
     ${gramadoHtml(s)}
+    ${estadioProprioHtml(s)}
     ${governoHtml(s)}
     <p class="rotulo" style="margin-top:14px">Pedidos</p>
     ${pedido("estadio", "Ampliar o estádio", `+${(cE.lugares ?? 0).toLocaleString("pt-BR")} lugares, mais bilheteria. Precisa de confiança 55`)}
@@ -1325,12 +1327,42 @@ function abaDiretoria(s: SaveTecnico): string {
     ${pedido("verba", "Aumentar o teto salarial (+12%)", "Espaço para renovar e contratar. Precisa de confiança 70 e caixa de quatro meses de salários")}
     <p class="sub" style="margin-top:8px">A confiança sobe com vitórias acima do esperado e com campanha melhor que a meta. Abaixo de 8, você é demitido.</p>`;
 }
+/** O projeto de estádio próprio que está sendo montado na tela. */
+const projEst: ProjetoEstadio = { nome: "", lugares: 35000, padrao: "moderno", gramado: "hibrido" };
+/** Estádio público ou dividido: aluguel, sem reformas, grama combinada; e o projeto do estádio próprio. */
+function estadioProprioHtml(s: SaveTecnico): string {
+  const sit = situacaoEstadio(pacote, s), o = s.obraEstadio, ano = (t: number) => ANO_INICIAL_T + t;
+  if (s.estadioProprio) { const e = s.estadioProprio; return `<p class="rotulo" style="margin-top:14px">Estádio próprio</p><div class="not"><b>${esc(e.nome)}</b><small class="sub"> · inaugurado em ${ano(e.desde)} · ${e.lugares.toLocaleString("pt-BR")} lugares · ${PADRAO_EST[e.padrao].nome.toLowerCase()} · gramado ${GRAMADO_EST[e.gramado].nome.toLowerCase()}</small><br><small>O estádio é do clube: reformas liberadas e o nome pode ser vendido.${e.parceiroAte !== undefined && e.parceiroAte >= s.temporada ? ` A construtora parceira fica com 30% da bilheteria até ${ano(e.parceiroAte)}.` : " Sem aluguel."}</small></div>`; }
+  if (o) {
+    const pct = Math.round((o.feitas / o.semanas) * 100);
+    return `<p class="rotulo" style="margin-top:14px">Obra do estádio próprio</p><div class="not"><b>${esc(o.nome)}</b> <small class="sub">· ${o.lugares.toLocaleString("pt-BR")} lugares · ${PADRAO_EST[o.padrao].nome.toLowerCase()} · gramado ${GRAMADO_EST[o.gramado].nome.toLowerCase()}</small>
+      <div style="margin:6px 0">${barra(pct, "var(--ouro)")} <b>${pct}%</b> · faltam ${o.semanas - o.feitas} semanas${o.pausada ? ` · <span style="color:var(--neg)">parada por falta de dinheiro</span>` : ""}</div>
+      <small class="sub">Pago ${curtoBrl(o.pago)} de ${curtoBrl(o.custo)}${o.parceria ? " (a parte do clube; a construtora banca o resto)" : ""}. A parcela sai do caixa toda semana; sem dinheiro, a obra para.</small></div>`;
+  }
+  if (!sit.publico) return "";
+  const outros = sit.divide.map((id) => nomeClube(id));
+  const orc = orcamentoEstadio(s, projEst);
+  if (!projEst.nome) projEst.nome = `Arena ${nomeClube(s.clubeId).split(" ")[0]}`;
+  const chip = (attr: string, v: string, at: boolean, nome: string) => `<button class="chip${at ? " ativo" : ""}" ${attr}="${v}">${esc(nome)}</button>`;
+  return `<p class="rotulo" style="margin-top:14px">O estádio não é do clube</p>
+    <div class="not">O <b>${esc(sit.nome)}</b> é público${outros.length ? ` e dividido com ${esc(outros.join(" e "))}` : ""}. O clube paga <b>aluguel</b> (15% da bilheteria de cada jogo), <b>não pode reformar</b> nem ampliar${outros.length ? ` e a <b>altura da grama</b> é combinada com o ${esc(outros[0])}` : ""}. O nome também não pode ser vendido.</div>
+    <p class="rotulo" style="margin-top:10px">Construir um estádio próprio</p>
+    <div class="form-ini"><label>Nome do estádio<input id="iNomeEst" value="${esc(projEst.nome)}" maxlength="32" autocomplete="off"></label></div>
+    <p class="sub" style="margin:8px 0 4px">Lugares</p><div class="chips quebra">${LUGARES_EST.map((n) => chip("data-est-lug", String(n), projEst.lugares === n, `${n / 1000} mil`)).join("")}</div>
+    <p class="sub" style="margin:8px 0 4px">Padrão</p><div class="chips quebra">${(Object.keys(PADRAO_EST) as PadraoEstadio[]).map((k) => chip("data-est-pad", k, projEst.padrao === k, PADRAO_EST[k].nome)).join("")}</div><p class="sub">${PADRAO_EST[projEst.padrao].texto}</p>
+    <p class="sub" style="margin:8px 0 4px">Gramado</p><div class="chips quebra">${(Object.keys(GRAMADO_EST) as GramadoTipo[]).map((k) => chip("data-est-gra", k, projEst.gramado === k, GRAMADO_EST[k].nome)).join("")}</div><p class="sub">${GRAMADO_EST[projEst.gramado].texto}</p>
+    <p class="sub" style="margin:8px 0 4px">Quem paga</p><div class="chips quebra">${chip("data-est-par", "0", !projEst.parceria, "Só o clube")}${chip("data-est-par", "1", !!projEst.parceria, "Parceria com construtora")}</div><p class="sub">${projEst.parceria ? `A construtora banca 60% da obra e, em troca, fica com 30% da bilheteria por ${ANOS_PARCERIA} temporadas depois da inauguração.` : "O clube paga tudo e fica com toda a bilheteria desde o primeiro jogo."}</p>
+    <div class="dl" style="margin-top:8px"><span>Custo total</span><b>${curtoBrl(orc.custo)}</b>${projEst.parceria ? `<span>Parte do clube</span><b>${curtoBrl(orc.doClube)}</b>` : ""}<span>Entrada (agora)</span><b>${curtoBrl(orc.entrada)}</b><span>Obra</span><b>${orc.semanas} semanas (~${(orc.semanas / 42).toFixed(1).replace(".", ",")} temporadas)</b><span>Caixa do clube</span><b>${curtoBrl(s.clube.saldo)}</b></div>
+    <div class="botoes" style="margin-top:8px"><button class="botao" data-est-iniciar>Apresentar o projeto à diretoria</button></div>
+    <p class="sub">A diretoria aprova com confiança de 60 ou mais e a entrada em caixa. O resto sai do caixa toda semana até a obra acabar; enquanto isso, o time segue jogando no ${esc(sit.nome)}.</p>`;
+}
 /** O gramado do estádio: qualidade, conforto e a altura da grama (o técnico escolhe, de 20 a 30 mm). */
 function gramadoHtml(s: SaveTecnico): string {
   const h = s.clube.grama ?? 25, est = estiloDoTime(s);
   const dica = est >= 0.6 ? "Seu time toca a bola e joga com ritmo: grama mais baixa (20–23 mm) acelera o jogo a seu favor." : est <= -0.6 ? "Seu time é mais físico e se fecha: grama mais alta (27–30 mm) segura a bola e trava quem gosta de tocar." : "Seu time está no meio-termo: a altura padrão (25 mm) não atrapalha ninguém.";
   return `<p class="rotulo" style="margin-top:14px">Estádio e gramado</p><div class="dl"><span>Qualidade do gramado</span><b>${estrelas(s.clube.gramado ?? 3)}</b><span>Conforto das arquibancadas</span><b>${estrelas(s.clube.conforto ?? 3)}</b><span>Altura da grama</span><b>${h} mm</b></div>
     <div class="chips" style="margin:8px 0">${[20, 22, 24, 25, 26, 28, 30].map((v) => `<button class="chip${v === h ? " ativo" : ""}" data-grama="${v}">${v} mm</button>`).join("")}</div>
+    ${situacaoEstadio(pacote, s).divide.length ? `<p class="sub" style="color:var(--ouro)">O estádio é dividido: mudar a altura é uma proposta ao ${esc(nomeClube(situacaoEstadio(pacote, s).divide[0]))}, que pode recusar (uma conversa por mês).</p>` : ""}
     <p class="sub">Vale só nos jogos em casa e fica sempre dentro da faixa usada nos gramados oficiais (20 a 30 mm). Grama baixa deixa a bola rápida; grama alta deixa o jogo lento e ajuda o time mais fraco a segurar o favorito. ${dica}</p>`;
 }
 /** Quem manda no clube: presidente e mandato (associativo), o dono (SAF ou empresa), a dívida e a eleição. */
@@ -1655,7 +1687,7 @@ document.addEventListener("click", (ev) => {
   if (d.melhor !== undefined && !s.aoVivo) { s.esc = melhorEscalacao(s.elenco, s.tatica.formacao); redesenhar(false); return; }
   if (d.tat && d.v !== undefined) { const k = d.tat as keyof typeof s.tatica; (s.tatica as unknown as Record<string, number | boolean>)[k] = k === "contraAtaque" ? d.v === "1" : +d.v; redesenhar(false); return; }
   if (d.treino && d.v) { (s.treino as unknown as Record<string, string>)[d.treino] = d.v; redesenhar(false); return; }
-  if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido, pacote); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffD) { const r = demitirStaff(s, d.staffD as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.albumT !== undefined) { abrirAlbumT(s); return; }
@@ -1674,7 +1706,9 @@ document.addEventListener("click", (ev) => {
     if (d.selConv) { if (sel.convocados.length < 23 && !sel.convocados.includes(d.selConv)) sel.convocados.push(d.selConv); salvar(); abrir(poolSelHtml(s)); render(); return; }
     if (d.selSair !== undefined) { const r = deixarSelecao(pacote, s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   }
-  if (d.grama) { const r = ajustarGrama(s, +d.grama); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.estLug || d.estPad || d.estGra || d.estPar) { if (d.estPar) projEst.parceria = d.estPar === "1"; const nm = (document.getElementById("iNomeEst") as HTMLInputElement | null)?.value; if (nm !== undefined) projEst.nome = nm; if (d.estLug) projEst.lugares = +d.estLug; if (d.estPad) projEst.padrao = d.estPad as PadraoEstadio; if (d.estGra) projEst.gramado = d.estGra as GramadoTipo; redesenhar(); return; }
+  if (d.estIniciar !== undefined) { const nm = (document.getElementById("iNomeEst") as HTMLInputElement | null)?.value; if (nm !== undefined) projEst.nome = nm; const r = iniciarEstadio(pacote, s, projEst); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.grama) { const r = ajustarGrama(s, +d.grama, pacote); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.foco) { const r = mudarFoco(s, d.foco); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.observar) { const r = observar(s, d.observar, d.clube || undefined); msg = { texto: r.msg, ok: r.ok }; if (($("dlg") as HTMLDialogElement).open && d.clube) { msg = undefined; msgNeg = { texto: r.msg, ok: r.ok }; salvar(); abrir(negociarHtml(s, d.observar, d.clube)); render(); return; } redesenhar(); return; }
   if (d.poeCargo) { const [dep, nome, cargo] = d.poeCargo.split("|"); const r = mudarCargo(s, dep as Dep, nome, cargo as Cargo); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
