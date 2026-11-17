@@ -116,6 +116,7 @@ import {
   toleranciaLicenca, aceitarEmprego, recusarEmprego, assumirNovoClube, creditar,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
+import { responderShow, recebeShows } from "../../src/tecnico/shows";
 import { situacaoEstadio, orcamentoEstadio, iniciarEstadio, ANOS_PARCERIA, PADRAO_EST, GRAMADO_EST, LUGARES_EST, type ProjetoEstadio, type PadraoEstadio, type GramadoTipo } from "../../src/tecnico/estadio-proprio";
 import { ORIGENS, ORDEM_ORIGENS, NIVEL_EX, FILOSOFIAS, PERSONALIDADES, ATRIBS_T, NOME_ATRIB_T, TEXTO_ATRIB_T, PONTOS_LIVRES, MAX_ATRIB, montarPerfil, combinaFilosofia, biografia, licencaDaOrigem, type Origem, type NivelEx, type Filosofia, type Personalidade, type AtribT } from "../../src/tecnico/perfil-tecnico";
 import {
@@ -1327,12 +1328,21 @@ function abaDiretoria(s: SaveTecnico): string {
     ${pedido("verba", "Aumentar o teto salarial (+12%)", "Espaço para renovar e contratar. Precisa de confiança 70 e caixa de quatro meses de salários")}
     <p class="sub" style="margin-top:8px">A confiança sobe com vitórias acima do esperado e com campanha melhor que a meta. Abaixo de 8, você é demitido.</p>`;
 }
+/** Tem jogo em casa na semana absoluta `ab`? (para avisar que o show manda o jogo para um estádio alugado) */
+function proximoEmCasaNa(s: SaveTecnico, ab: number): boolean {
+  const j = proximoJogo({ ...s, semana: ab - s.temporada * 60 });
+  return !!j?.souCasa;
+}
 /** O projeto de estádio próprio que está sendo montado na tela. */
 const projEst: ProjetoEstadio = { nome: "", lugares: 35000, padrao: "moderno", gramado: "hibrido" };
 /** Estádio público ou dividido: aluguel, sem reformas, grama combinada; e o projeto do estádio próprio. */
 function estadioProprioHtml(s: SaveTecnico): string {
   const sit = situacaoEstadio(pacote, s), o = s.obraEstadio, ano = (t: number) => ANO_INICIAL_T + t;
-  if (s.estadioProprio) { const e = s.estadioProprio; return `<p class="rotulo" style="margin-top:14px">Estádio próprio</p><div class="not"><b>${esc(e.nome)}</b><small class="sub"> · inaugurado em ${ano(e.desde)} · ${e.lugares.toLocaleString("pt-BR")} lugares · ${PADRAO_EST[e.padrao].nome.toLowerCase()} · gramado ${GRAMADO_EST[e.gramado].nome.toLowerCase()}</small><br><small>O estádio é do clube: reformas liberadas e o nome pode ser vendido.${e.parceiroAte !== undefined && e.parceiroAte >= s.temporada ? ` A construtora parceira fica com 30% da bilheteria até ${ano(e.parceiroAte)}.` : " Sem aluguel."}</small></div>`; }
+  if (s.estadioProprio) { const e = s.estadioProprio, ab = s.temporada * 60 + s.semana;
+    const ofs = (s.showsOferta ?? []).map((o) => `<div class="not"><b>🎤 ${esc(o.artista)}</b> <small class="sub">quer o estádio daqui a ${o.semana - ab} ${o.semana - ab === 1 ? "semana" : "semanas"} · paga <b style="color:var(--pos)">${curtoBrl(o.valor)}</b> · responda em até ${o.ate - ab + 1} ${o.ate - ab + 1 === 1 ? "semana" : "semanas"}</small>${proximoEmCasaNa(s, o.semana) ? `<br><small style="color:var(--ouro)">Nessa semana tem jogo em casa: o time joga num estádio alugado (menos público e menos força de mandante).</small>` : ""}<div class="botoes" style="margin-top:6px"><button class="botao peq" data-show="${o.id}|1">Aceitar</button><button class="botao sec peq" data-show="${o.id}|0">Recusar</button></div></div>`).join("");
+    const marcados = (s.shows ?? []).map((x) => `<div class="not">🎤 ${esc(x.artista)} <small class="sub">· daqui a ${x.semana - ab} ${x.semana - ab === 1 ? "semana" : "semanas"} · ${curtoBrl(x.valor)}</small></div>`).join("");
+    const shows = recebeShows(s) ? `<p class="rotulo" style="margin-top:10px">Shows</p>${ofs}${marcados}${!ofs && !marcados ? `<p class="sub">Nenhuma proposta agora. ${e.padrao === "arena" ? "Arenas multiuso recebem propostas com frequência." : "Estádios modernos recebem propostas de vez em quando; arenas multiuso, bem mais."}</p>` : ""}${s.gramadoDano ? `<p class="sub">O gramado está se recuperando do último show.</p>` : ""}` : "";
+    return `<p class="rotulo" style="margin-top:14px">Estádio próprio</p><div class="not"><b>${esc(e.nome)}</b><small class="sub"> · inaugurado em ${ano(e.desde)} · ${e.lugares.toLocaleString("pt-BR")} lugares · ${PADRAO_EST[e.padrao].nome.toLowerCase()} · gramado ${GRAMADO_EST[e.gramado].nome.toLowerCase()}</small><br><small>O estádio é do clube: reformas liberadas e o nome pode ser vendido.${e.parceiroAte !== undefined && e.parceiroAte >= s.temporada ? ` A construtora parceira fica com 30% da bilheteria até ${ano(e.parceiroAte)}.` : " Sem aluguel."}</small></div>${shows}`; }
   if (o) {
     const pct = Math.round((o.feitas / o.semanas) * 100);
     return `<p class="rotulo" style="margin-top:14px">Obra do estádio próprio</p><div class="not"><b>${esc(o.nome)}</b> <small class="sub">· ${o.lugares.toLocaleString("pt-BR")} lugares · ${PADRAO_EST[o.padrao].nome.toLowerCase()} · gramado ${GRAMADO_EST[o.gramado].nome.toLowerCase()}</small>
@@ -1707,6 +1717,7 @@ document.addEventListener("click", (ev) => {
     if (d.selSair !== undefined) { const r = deixarSelecao(pacote, s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   }
   if (d.estLug || d.estPad || d.estGra || d.estPar) { if (d.estPar) projEst.parceria = d.estPar === "1"; const nm = (document.getElementById("iNomeEst") as HTMLInputElement | null)?.value; if (nm !== undefined) projEst.nome = nm; if (d.estLug) projEst.lugares = +d.estLug; if (d.estPad) projEst.padrao = d.estPad as PadraoEstadio; if (d.estGra) projEst.gramado = d.estGra as GramadoTipo; redesenhar(); return; }
+  if (d.show) { const [id, sim] = d.show.split("|"); const r = responderShow(s, id, sim === "1"); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.estIniciar !== undefined) { const nm = (document.getElementById("iNomeEst") as HTMLInputElement | null)?.value; if (nm !== undefined) projEst.nome = nm; const r = iniciarEstadio(pacote, s, projEst); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.grama) { const r = ajustarGrama(s, +d.grama, pacote); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.foco) { const r = mudarFoco(s, d.foco); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }

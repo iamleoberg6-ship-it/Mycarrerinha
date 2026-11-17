@@ -27,6 +27,7 @@ import type { EstadoFamilia } from "../familia.js";
 import type { EstadoNamoro } from "../namoro.js";
 import type { EstadoCasa } from "../casa.js";
 import { infoLiga } from "../ligas.js";
+import { semanaShows, estadioOcupado, type PropostaShow, type ShowMarcado } from "./shows.js";
 import { situacaoEstadio, aluguelDoJogo, semanaEstadio, combinarGrama, type EstadioProprio, type ObraEstadio } from "./estadio-proprio.js";
 import { propostasDaSemanaT, semanaEmprestados, vencerOpcoes, salarioEmprestados, viradaNegocios } from "./negociacao.js";
 import { mesPatroSel } from "./patro-sel.js";
@@ -84,6 +85,7 @@ export interface SaveTecnico {
   necessidades?: import("./mercado-extra.js").Necessidade[]; oferecidos?: import("./mercado-extra.js").Oferecido[]; procurando?: import("./mercado-extra.js").Procura[]; parceiros?: string[];
   /** plano da diretoria para vários anos */ planoDir?: import("./plano-dir.js").PlanoDir;
   /** estádio próprio do clube (construído) e a obra em andamento; semana da última conversa sobre a grama do estádio dividido */ estadioProprio?: EstadioProprio; obraEstadio?: ObraEstadio; gramaCombinada?: number;
+  /** shows no estádio: propostas, marcados e o gramado se recuperando do palco */ showsOferta?: PropostaShow[]; shows?: ShowMarcado[]; gramadoDano?: { ate: number; perda: number };
   /** categorias de base (Sub-17 e Sub-20 no Brasil), peneira e campanhas */ base?: import("./base-t.js").BaseT;
   tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number; /** o nome que ele fez como jogador (0 a 100) */ prestigio?: number;
     /** contrato atual: salário, até quando e a multa que o clube paga se demitir antes */ contrato?: Contrato;
@@ -716,8 +718,10 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   const melhor = (k: "FAL" | "PEN") => [...campo].sort((p, q) => exDe(q.a)[k] - exDe(p.a)[k])[0];
   const bFal = melhor("FAL"), bPen = melhor("PEN");
   const bp = nivelCargo(s.deps, "t_bp"), bola = (1 + ((bFal ? exDe(bFal.a).FAL : 60) - 60) / 900 + ((bPen ? exDe(bPen.a).PEN : 60) - 60) / 1400) * (1 + 0.008 * bp);
-  const gr = av.souCasa ? efeitoGramado(s, fAdv, (atk + def) / 2) : { me: 1, adv: 1 };
-  const lMe = ((av.souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto * bola * gr.me;
+  // semana de show no estádio: o jogo "em casa" é num estádio alugado (menos torcida, gramado que não é o seu)
+  const alugado = av.souCasa && estadioOcupado(s);
+  const gr = av.souCasa && !alugado ? efeitoGramado(s, fAdv, (atk + def) / 2) : { me: 1, adv: 1 };
+  const lMe = ((av.souCasa ? (alugado ? 1.14 : 1.3) : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? (alugado ? 0.08 : 0.2) : 0)) * (1 + 0.04 * m) * aberto * bola * gr.me;
   const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp) * gr.adv;
   const bz0 = efeitoBeira(av, ini), fb = fatorBeira(s), bz = { me: 1 + (bz0.me - 1) * fb, adv: 1 + (bz0.adv - 1) * fb };
   const [ftA, ftD] = fatorTecnicoJogo(s, true), fcl = fatorClima(clima(s)), lMeB = lMe * bz.me * fcl * ftA, lAdvB = lAdv * bz.adv * ftD;
@@ -987,8 +991,10 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
       if (p.souCasa) {
         const pos = ordenar(s.tabela).findIndex((t) => t.clube === s.clubeId) + 1, n = s.ordem.length;
         const ocup = clamp(0.38 + 0.025 * ((s.clube.conforto ?? 3) - 3) + s.clube.torcida / 220 + (pos <= 4 ? 0.1 : pos > n - 4 ? -0.08 : 0) + ((w.clube[adv]?.forca ?? 60) > (w.clube[s.clubeId]?.forca ?? 60) ? 0.08 : 0), 0.2, 1);
-        p.publico = Math.round(s.clube.capacidade * ocup);
-        const bruto = bilheteria(s, ocup, 1);
+        const alugado = estadioOcupado(s);
+        p.publico = Math.round(s.clube.capacidade * ocup * (alugado ? 0.55 : 1));
+        const bruto = Math.round(bilheteria(s, ocup, 1) * (alugado ? 0.6 : 1));
+        if (alugado) { const al = Math.round(bruto * 0.2); gastar(s, "Aluguel de outro estádio", al); s.clube.saldo -= al; noticia(s, "clube", "Com o show no estádio, o jogo em casa foi num estádio alugado: menos público e menos bilheteria."); }
         receber(s, "Bilheteria", bruto); gastar(s, "Operação dos jogos", Math.round(bruto * 0.25));
         // estádio público: uma parte da bilheteria é o aluguel
         const aluguel = aluguelDoJogo(pacote, s, bruto); if (aluguel) gastar(s, "Aluguel do estádio", aluguel);
@@ -1053,6 +1059,8 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   // o técnico: língua do país e curso de licença
   for (const x of semanaIdiomas(idiomasT(s), lingua)) noticia(s, "clube", `Você já fala ${x.toLowerCase()}.`);
   if (s.tecnico.curso?.estudando) { const feita = semanaCurso(s.tecnico.curso, 1); if (feita) { s.tecnico.reputacao = clamp(s.tecnico.reputacao + 2, 0, 100); noticia(s, "clube", `Você concluiu a ${LICENCAS[feita]}.`); eventos.push(`Você concluiu a ${LICENCAS[feita]}.`); } }
+  // shows no estádio próprio
+  { const r = semanaShows(s); if (r.recebido) receber(s, "Shows no estádio", r.recebido); for (const a of r.avisos) noticia(s, "clube", a); }
   // a obra do estádio próprio
   { const r = semanaEstadio(s); if (r.gasto) gastar(s, "Obra do estádio", r.gasto); for (const a of r.avisos) noticia(s, "clube", a); if (r.pronto) eventos.push(`O ${r.pronto} ficou pronto.`); }
   // obras que terminam

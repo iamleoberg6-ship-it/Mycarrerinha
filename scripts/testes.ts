@@ -12,6 +12,7 @@ import * as MX from "../src/tecnico/mercado-extra.js";
 import * as PD from "../src/tecnico/plano-dir.js";
 import * as G from "../src/tecnico/gestao.js";
 import * as EP from "../src/tecnico/estadio-proprio.js";
+import * as SH from "../src/tecnico/shows.js";
 import * as PT from "../src/tecnico/perfil-tecnico.js";
 import { limiteEstrangeiros } from "../src/estrangeiros.js";
 import { montarRevista as montarRevistaT } from "../src/revista.js";
@@ -2073,4 +2074,23 @@ teste("Técnico: estádio público dividido (aluguel, sem obra, grama combinada)
   assert.ok(EP.iniciarEstadio(pacote, s2, { nome: "Arena Rubro", lugares: 80000, padrao: "arena", gramado: "natural" }).ok);
   EP.semanaEstadio(s2); assert.ok(s2.obraEstadio?.pausada && s2.obraEstadio.feitas === 0);
   for (let k = 0; k < 3; k++) T.avancarSemana(pacote, s2);
+});
+
+teste("Técnico: shows na arena própria (proposta, aceite, estádio ocupado, dinheiro e gramado)", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "FLU", "shows-1");
+  assert.ok(!SH.recebeShows(s));
+  s.estadioProprio = { nome: "Arena T", lugares: 60000, padrao: "arena", gramado: "natural", desde: 0 };
+  s.clube.gramado = 4;
+  let k = 0;
+  for (; k < 80 && !(s.showsOferta ?? []).length; k++) { s.semana++; SH.semanaShows(s); }
+  assert.ok((s.showsOferta ?? []).length, "chega proposta de show");
+  const o = s.showsOferta![0];
+  assert.ok(SH.responderShow(s, o.id, true).ok && s.shows!.length === 1);
+  const saldo = s.clube.saldo;
+  while (s.temporada * 60 + s.semana < o.semana) { s.semana++; if (s.temporada * 60 + s.semana === o.semana) break; SH.semanaShows(s); }
+  assert.ok(SH.estadioOcupado(s));
+  SH.semanaShows(s);
+  assert.ok(s.clube.saldo >= saldo + o.valor - 1 && s.clube.gramado === 3 && s.gramadoDano);
+  for (let j = 0; j < 5; j++) { s.semana++; SH.semanaShows(s); }
+  assert.equal(s.clube.gramado, 4);
 });
