@@ -63,7 +63,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
   return `<svg viewBox="0 0 80 104" aria-hidden="true"><defs>
     <linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
     <linearGradient id="${id}l" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
-    <clipPath id="${id}c"><path d="${CORPO}"/></clipPath></defs>
+    <clipPath id="${id}c"><path d="${CORPO}"/></clipPath><clipPath id="${id}m"><path d="M65.4 13.6 L78.6 33 L68 40.6 L63.4 33 Z"/></clipPath></defs>
     <path d="M40 1 C44 1 45 5 41 7 L40 8 M33 9 L40 5 L47 9" stroke="#9aa5a0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
     <path d="${CORPO}" fill="${a}"/>
     <g clip-path="url(#${id}c)">${padrao(c.modelo, b, c.terceira ?? (c.modelo === "duasFaixasH" ? b : "#111111"), c.faixas)}
@@ -96,6 +96,6 @@ export function camisaFrente(c: DadosCamisa, p: PecasFrente = {}): string {
     ${p.escudo ? `<g transform="translate(45.5 18.5) scale(.3)">${p.escudo}</g>` : ""}
     ${p.fornecedor ? `<g transform="translate(27.5 20) scale(.16)">${p.fornecedor}</g>` : ""}
     ${p.master ? `<g transform="translate(22 40) scale(.36)">${p.master}</g>` : ""}
-    ${p.mangaNome ? `<g transform="translate(70.6 25.2) rotate(52) scale(.36) translate(-20 -6)">${p.mangaNome}</g>` : p.manga ? `<g transform="translate(69.6 24) scale(.24) translate(-20 -20)">${p.manga}</g>` : ""}
+    ${p.mangaNome || p.manga ? `<g clip-path="url(#${id}m)">${p.mangaNome ? `<g transform="translate(69.4 27.4) rotate(62) scale(.4) translate(-20 -6)">${p.mangaNome}</g>` : `<g transform="translate(69.2 28.2) scale(.18) translate(-20 -20)">${p.manga}</g>`}</g>` : ""}
   </svg>`;
 }
