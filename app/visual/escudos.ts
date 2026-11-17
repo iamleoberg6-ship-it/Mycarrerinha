@@ -127,7 +127,8 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     return `<circle cx="13" cy="15" r="12.6" fill="${MARINHO}"/><circle cx="13" cy="15" r="11" fill="none" stroke="#FFFFFF" stroke-width=".9"/>${torre}<circle cx="13" cy="15" r="12.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
   if (chave === "BOT") c1 = "#0A0A0A";
-  if (chave === "CRU") c1 = "#0B3D91"; // todo azul // escudo preto, sempre (a estrela branca vai no centro)
+  if (chave === "CRU") c1 = "#0B3D91"; // todo azul
+  if (chave === "FR-PFC") c1 = "#1B2A5B"; // todo azul-marinho // escudo preto, sempre (a estrela branca vai no centro)
   const c2 = c2r && c2r.toLowerCase() !== c1.toLowerCase() ? c2r : c1.toLowerCase() === "#ffffff" ? "#0A0A0A" : "#FFFFFF";
   const { forma, desenho } = modeloEscudo(chave), d = FORMAS[forma], id = `escR${forma}`;
   // Corinthians: um filete vermelho por dentro do contorno (o detalhe da marca, sem mudar o formato)
@@ -168,8 +169,16 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     + `<path d="M0 14 H26" stroke="${TINTA}" stroke-width=".9"/>` : "";
   // Galatasaray: dividido ao meio (uma cor de cada lado) com um G branco no centro
   const LETRA_GAL = chave === "TR-GAL" ? `<text x="13" y="21.5" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="17" fill="#FFFFFF" stroke="#0A0A0A" stroke-width=".7" paint-order="stroke">G</text>` : "";
-  const detalhe = LETRA_GAL + CRUZ_VAS + CRUZEIRO + ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" || chave === "TR-GAL" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" || chave === "CRU" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}${ARVORE}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  // Paris FC: todo azul-marinho com a torre Eiffel (a mesma do Paris São Germano) em branco
+  const TORRE_PFC = chave === "FR-PFC" ? `<g fill="#FFFFFF"><path d="M13 3.6 L13.7 8 L14.6 12.5 L16.4 19 L19.4 25.6 H16.6 Q15.6 22.4 13 22.4 Q10.4 22.4 9.4 25.6 H6.6 L9.6 19 L11.4 12.5 L12.3 8 Z"/></g><rect x="10.8" y="12.2" width="4.4" height="1.1" fill="#1B2A5B"/><rect x="9.2" y="18.6" width="7.6" height="1.2" fill="#1B2A5B"/>` : "";
+  // Sporting Lisboeta: listrado na horizontal com as cores do clube e só a cabeça do leão amarela no centro
+  const LEAO_SCP = chave === "PT-SCP" ? `<g fill="#E8A20C" stroke="#0A0A0A" stroke-width=".45"><circle cx="18.20" cy="15.20" r="2"/><circle cx="17.50" cy="17.80" r="2"/><circle cx="15.60" cy="19.70" r="2"/><circle cx="13.00" cy="20.40" r="2"/><circle cx="10.40" cy="19.70" r="2"/><circle cx="8.50" cy="17.80" r="2"/><circle cx="7.80" cy="15.20" r="2"/><circle cx="8.50" cy="12.60" r="2"/><circle cx="10.40" cy="10.70" r="2"/><circle cx="13.00" cy="10.00" r="2"/><circle cx="15.60" cy="10.70" r="2"/><circle cx="17.50" cy="12.60" r="2"/></g><circle cx="13" cy="15.2" r="5.4" fill="#E8A20C"/>`
+    + `<circle cx="10.4" cy="12.1" r="1.1" fill="#FFD43B" stroke="#0A0A0A" stroke-width=".4"/><circle cx="15.6" cy="12.1" r="1.1" fill="#FFD43B" stroke="#0A0A0A" stroke-width=".4"/>`
+    + `<ellipse cx="13" cy="15.6" rx="3.7" ry="4" fill="#FFD43B" stroke="#0A0A0A" stroke-width=".45"/><ellipse cx="13" cy="17.6" rx="2" ry="1.4" fill="#FFF3C4"/>`
+    + `<path d="M10.8 14.4 Q11.5 13.9 12.1 14.4 M13.9 14.4 Q14.5 13.9 15.2 14.4" fill="none" stroke="#0A0A0A" stroke-width=".55" stroke-linecap="round"/><path d="M12.2 16.6 H13.8 L13 17.5 Z" fill="#0A0A0A"/>`
+    + `<path d="M13 17.5 V18.2 M12 18.5 Q13 19.1 14 18.5" fill="none" stroke="#0A0A0A" stroke-width=".38" stroke-linecap="round"/>` : "";
+  const detalhe = LEAO_SCP + TORRE_PFC + LETRA_GAL + CRUZ_VAS + CRUZEIRO + ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" || chave === "TR-GAL" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" || chave === "CRU" || chave === "FR-PFC" ? "" : chave === "PT-SCP" ? [0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<rect x="0" y="${(k * 30 / 8).toFixed(2)}" width="26" height="${(30 / 8).toFixed(2)}" fill="${k % 2 ? c2 : c1}"/>`).join("") : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}${ARVORE}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {
