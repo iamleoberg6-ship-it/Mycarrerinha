@@ -148,8 +148,13 @@ function simbolo(s: Simbolo, c: string, c2: string, letra: string): string {
   }
 }
 
-const estiloLetra = (m: Marca) => m.letra === "italica" ? `font-style="italic" font-weight="800"` : m.letra === "fina" ? `font-weight="600" letter-spacing="2"` : m.letra === "redonda" ? `font-weight="700"` : `font-weight="900"`;
-const fonteLetra = (m: Marca) => (m.letra === "fina" || m.letra === "redonda" ? TEXTO : DISPLAY);
+const CURSIVA = "'Brush Script MT', 'Segoe Script', cursive";
+/** Marcas cujo logo já é o próprio nome escrito: na manga vai o nome, que aparece melhor que o logo miúdo. */
+export const LOGO_E_NOME = new Set(["kokakolla", "subuei", "bet366", "itao", "fordi", "samsong", "reiban"]);
+/** A fonte do nome da marca (a mesma do logo), para o nome no peito e na manga. */
+export const fonteDaMarca = (m: Marca): { familia: string; italico: boolean; peso: number } => m.letra === "cursiva" ? { familia: CURSIVA, italico: true, peso: 700 } : m.letra === "fina" || m.letra === "redonda" ? { familia: "Barlow, 'Arial Narrow', sans-serif", italico: false, peso: 700 } : { familia: "Barlow, 'Arial Narrow', sans-serif", italico: true, peso: 800 };
+const estiloLetra = (m: Marca) => m.letra === "cursiva" ? `font-style="italic" font-weight="700"` : m.letra === "italica" ? `font-style="italic" font-weight="800"` : m.letra === "fina" ? `font-weight="600" letter-spacing="2"` : m.letra === "redonda" ? `font-weight="700"` : `font-weight="900"`;
+const fonteLetra = (m: Marca) => (m.letra === "cursiva" ? CURSIVA : m.letra === "fina" || m.letra === "redonda" ? TEXTO : DISPLAY);
 
 /** Logo: ícone + nome. Devolve um <g> com ~ (40 + texto) de largura e 40 de altura. */
 export function logoMarca(m: Marca, cor = m.cores[1], cor2 = m.cores[0], tamanho = 22): string {

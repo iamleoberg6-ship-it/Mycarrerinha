@@ -9,7 +9,7 @@ import { valorBrl } from "../moeda.js";
 import { abrirMesaPatro, proporPatro, aceitarMesa, textoPatro, type MesaPatro, type PacotePatro } from "../negociacao-patro.js";
 
 export type Cota = "master" | "fornecedor" | "manga" | "arena";
-export interface ContratoClube { marca: string; valor: number; /** última temporada do contrato */ ate: number; /** cor do logo/nome na camisa */ cor?: string; /** nome da arena */ nome?: string;
+export interface ContratoClube { marca: string; valor: number; /** última temporada do contrato */ ate: number; /** cor do logo/nome na camisa */ cor?: string; /** na camisa vai o logo ou o nome escrito (master e manga) */ forma?: "logo" | "nome"; /** nome da arena */ nome?: string;
   /** cláusulas negociadas */ bonusTitulo?: number; bonusVaga?: number; rebaixamento?: boolean; renovacao?: boolean; anos?: number }
 export interface OfertaClube { marca: string; valor: number; anos: number; /** teto escondido */ max: number; recusou?: boolean }
 export interface PatrociniosClube {
@@ -154,6 +154,8 @@ export function rebaixamentoPatro(pacote: PacoteDados, s: SaveMin): string[] {
 }
 /** Muda a cor do logo do fornecedor ou do nome do master (a marca deixa). */
 export function corDoPatro(pacote: PacoteDados, s: SaveMin, cota: Cota, cor: string) { const c = patrociniosDe(pacote, s)[cota]; if (c) c.cor = cor; }
+/** Escolhe se a marca aparece na camisa com o logo ou com o nome escrito. */
+export function formaDoPatro(pacote: PacoteDados, s: SaveMin, cota: Cota, forma: "logo" | "nome") { const c = patrociniosDe(pacote, s)[cota]; if (c) c.forma = forma; }
 /** Receita do mês com os patrocínios. */
 export function receitaPatro(pacote: PacoteDados, s: SaveMin): Record<string, number> {
   const p = patrociniosDe(pacote, s), out: Record<string, number> = {};

@@ -8,13 +8,13 @@ import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
 import { svgEscudo, corpoEscudo } from "../visual/escudos";
 import { camisaFrente } from "../visual/camisas";
-import { nomeNoPeito, emblemaTouros, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
-import { simboloMarca, logoSvg } from "../jogo/poster";
+import { nomeNoPeito, nomeNaManga, emblemaTouros, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
+import { simboloMarca, logoSvg, LOGO_E_NOME, fonteDaMarca } from "../jogo/poster";
 import { patroDoClube, type EstadoPatroMundo } from "../../src/patro-mundo";
 import { MARCA, NOME_CATEGORIA } from "../../src/marcas";
 import { UNIFORME_CLUBE } from "../../src/reliquias";
 import { responderEvento, rankingT, TIPO_CONTATO } from "../../src/tecnico/vida";
-import { patrociniosDe, ofertasPatro, mesaPatro, negociarPatro, corDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
+import { patrociniosDe, ofertasPatro, mesaPatro, negociarPatro, corDoPatro, formaDoPatro, receitaPatro, arenaDoClube, COTAS, ORDEM_COTAS, type Cota } from "../../src/tecnico/patrocinio";
 import { svgEstadio, aparenciaDoEstadio } from "../visual/estadio";
 import { fotoDoPerfil } from "../visual/mulheres";
 import { gerarEstatCompleta } from "../../src/estatisticas-completas";
@@ -1001,7 +1001,7 @@ const hexRgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 1
 const claro = (c: string) => { const [r, g, b] = hexRgb(c); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6; };
 /** A camisa de frente com os patrocínios atuais (escudo, master, fornecedor e manga). */
 /** Os patrocínios de qualquer clube: o seu (os contratos que você fechou) ou os dos outros (o mercado do mundo decide). */
-function patrocClube(s: SaveTecnico, clubeId: string): { master?: { marca: string; cor?: string; ate?: number }; fornecedor?: { marca: string; cor?: string; ate?: number }; manga?: { marca: string; ate?: number } } {
+function patrocClube(s: SaveTecnico, clubeId: string): { master?: { marca: string; cor?: string; ate?: number; forma?: "logo" | "nome" }; fornecedor?: { marca: string; cor?: string; ate?: number }; manga?: { marca: string; cor?: string; ate?: number; forma?: "logo" | "nome" } } {
   if (clubeId === s.clubeId) { const p = patrociniosDe(pacote, s); return { master: p.master, fornecedor: p.fornecedor, manga: p.manga }; }
   const est = ((s as SaveTecnico & { patroMundo?: EstadoPatroMundo }).patroMundo ??= {});
   return patroDoClube(pacote, est, s.semente, clubeId, s.temporada).pc;
@@ -1013,13 +1013,18 @@ function camisaClubeT(s: SaveTecnico, clubeId: string): string {
   const m = p.master && MARCA[p.master.marca], f = p.fornecedor && MARCA[p.fornecedor.marca], g = p.manga && MARCA[p.manga.marca];
   const ec = u?.escudo ?? [info?.cores[0] ?? "#888", info?.cores[1] ?? "#FFF"], modelo = u?.padrao ?? info?.padrao ?? "lisa";
   const atras = (parte: ParteCamisa) => coresAtras(modelo, a, b, u?.faixas, parte);
-  const cm = m ? corQueAparece(atras("peito"), [p.master!.cor, contraste, b, ...m.cores]) : undefined;
-  const cf = f ? corQueAparece(atras("alto"), [p.fornecedor!.cor, contraste, b, ...f.cores]) : undefined, cg = g ? corQueAparece(atras("manga"), [contraste, b, ...g.cores]) : undefined;
+  // a cor que você escolheu vale como está (sem trava); sem escolha, o jogo pega uma cor que apareça sobre o tecido
+  const livre = (cor: string | undefined, parte: ParteCamisa, cand: (string | undefined)[]) => (cor ? { cor, filete: null as string | null | undefined } : corQueAparece(atras(parte), cand));
+  const cm = m ? livre(p.master!.cor, "peito", [contraste, b, ...m.cores]) : undefined;
+  const cf = f ? livre(p.fornecedor!.cor, "alto", [contraste, b, ...f.cores]) : undefined, cg = g ? livre(p.manga!.cor, "manga", [contraste, b, ...g.cores]) : undefined;
+  const mangaNome = g && (p.manga!.forma ? p.manga!.forma === "nome" : LOGO_E_NOME.has(g.id)) ? nomeNaManga(g.nome, cg!.cor, cg!.filete, fonteDaMarca(g)) : undefined;
+  const masterLogo = m && m.id !== "redboi" && p.master!.forma === "logo";
   return camisaFrente({ cores: [a, b], modelo, faixas: u?.faixas }, {
     escudo: corpoEscudo(idClube(clubeId), ec[0], ec[1], info?.nome),
-    master: m ? (m.id === "redboi" ? emblemaTouros(m.cores[1], m.cores[2]) : nomeNoPeito(m.nome, cm!.cor, cm!.filete)) : undefined,
-    fornecedor: f ? comFilete(simboloMarca(f, cf!.cor, a), cf!.filete) : undefined,
-    manga: g ? comFilete(simboloMarca(g, cg!.cor, a), cg!.filete) : undefined,
+    master: m ? (m.id === "redboi" ? emblemaTouros(m.cores[1], m.cores[2]) : masterLogo ? `<g transform="translate(29 1) scale(1.05)">${comFilete(simboloMarca(m, cm!.cor, a), cm!.filete ?? undefined)}</g>` : nomeNoPeito(m.nome, cm!.cor, cm!.filete, fonteDaMarca(m))) : undefined,
+    fornecedor: f ? comFilete(simboloMarca(f, cf!.cor, a), cf!.filete ?? undefined) : undefined,
+    manga: g ? comFilete(simboloMarca(g, cg!.cor, a), cg!.filete ?? undefined) : undefined,
+    ...(mangaNome ? { mangaNome } : {}),
   });
 }
 const camisaDoClube = (s: SaveTecnico) => camisaClubeT(s, s.clubeId);
@@ -1034,11 +1039,12 @@ function abaPatrocinios(s: SaveTecnico): string {
   const p = patrociniosDe(pacote, s), ofs = ofertasPatro(pacote, s), arena = arenaDoClube(pacote, s);
   const info = infoClube(pacote, s.clubeId), corClube = (UNIFORME_CLUBE[s.clubeId]?.cores ?? info?.cores ?? ["#888", "#FFF"])[1];
   const total = Object.values(receitaPatro(pacote, s)).reduce((x, y) => x + y, 0), ano = (t: number) => ANO_INICIAL_T + t;
-  const coresDe = (marca: string) => [["#FFFFFF", "Branco"], ["#111111", "Preto"], ["#D4AF37", "Dourado"], [corClube, "Cor do clube"], [MARCA[marca]?.cores[0] ?? "#888", "Cor da marca"]].filter((x, i, l) => l.findIndex((y) => y[0].toLowerCase() === x[0].toLowerCase()) === i);
+  const coresDe = (marca: string) => [["#FFFFFF", "Branco"], ["#111111", "Preto"], ["#D4AF37", "Dourado"], ["#C0C0C0", "Prata"], [corClube, "Cor do clube"], [MARCA[marca]?.cores[0] ?? "#888", "Cor da marca"]].filter((x, i, l) => l.findIndex((y) => y[0].toLowerCase() === x[0].toLowerCase()) === i);
   const cartao = (cota: Cota) => {
     const c = p[cota], m = c ? MARCA[c.marca] : undefined, l = ofs[cota] ?? [];
     const atual = c && m ? `<div class="patro-atual">${logoSvg(m, 24)}<div><b>${curtoBrl(c.valor)}/mês</b><small class="sub">${esc(NOME_CATEGORIA[m.categoria])} · até ${ano(c.ate)}${c.ate <= s.temporada ? " · último ano" : ""}${c.nome ? ` · ${esc(c.nome)}` : ""}${c.bonusTitulo ? ` · ${curtoBrl(c.bonusTitulo)} por título` : ""}${c.bonusVaga ? ` · ${curtoBrl(c.bonusVaga)} por vaga` : ""}${c.rebaixamento ? " · cai 40% se rebaixar" : ""}${c.renovacao ? " · preferência na renovação" : ""}</small></div></div>
-      ${cota === "master" || cota === "fornecedor" ? `<div class="chips" style="flex-wrap:wrap;margin-top:6px">${coresDe(c.marca).map(([cor, nome]) => `<button class="chip cor-chip${(c.cor ?? "") === cor ? " ativo" : ""}" data-patro-cor="${cota}|${cor}"><i style="background:${cor}"></i>${nome}</button>`).join("")}</div>` : ""}` : "";
+      ${cota !== "arena" ? `<div class="chips" style="flex-wrap:wrap;margin-top:6px"><button class="chip cor-chip${!c.cor ? " ativo" : ""}" data-patro-cor="${cota}|">Automático</button>${coresDe(c.marca).map(([cor, nome]) => `<button class="chip cor-chip${(c.cor ?? "") === cor ? " ativo" : ""}" data-patro-cor="${cota}|${cor}"><i style="background:${cor}"></i>${nome}</button>`).join("")}</div>` : ""}
+      ${cota === "master" || cota === "manga" ? (() => { const atual = c.forma ?? (cota === "manga" && LOGO_E_NOME.has(c.marca) ? "nome" : cota === "master" ? "nome" : "logo"); return `<div class="chips" style="margin-top:4px">${(["logo", "nome"] as const).map((fm) => `<button class="chip${atual === fm ? " ativo" : ""}" data-patro-forma="${cota}|${fm}">${fm === "logo" ? "Logo" : "Nome escrito"}</button>`).join("")}</div>`; })() : ""}` : "";
     const travada = cota === "arena" && arena.travada ? `<p class="sub">${esc(arena.travada)}</p>` : "";
     const ofertas = l.length ? `<p class="rotulo" style="margin-top:10px">${c ? "Ofertas para depois do contrato atual" : "Ofertas"}</p>${l.map((o) => {
       const mo = MARCA[o.marca]; if (!mo) return "";
@@ -1599,7 +1605,8 @@ document.addEventListener("click", (ev) => {
     if (r.ok || !abrirMesaPatroUI(s, chave)) { fechar(); msgNeg = undefined; msg = { texto: r.ok && r.luvas ? `${r.msg} As luvas já entraram no caixa.` : r.msg, ok: r.ok }; render(); return; }
     msgNeg = { texto: r.msg, ok: !/saiu/.test(r.msg) }; abrirMesaPatroUI(s, chave); render(); return;
   }
-  if (d.patroCor) { const [cota, cor] = d.patroCor.split("|"); corDoPatro(pacote, s, cota as Cota, cor); salvar(); render(); return; }
+  if (d.patroCor !== undefined) { const [cota, cor] = d.patroCor.split("|"); corDoPatro(pacote, s, cota as Cota, cor || (undefined as unknown as string)); if (!cor) delete patrociniosDe(pacote, s)[cota as Cota]!.cor; redesenhar(); return; }
+  if (d.patroForma) { const [cota, fm] = d.patroForma.split("|"); formaDoPatro(pacote, s, cota as Cota, fm as "logo" | "nome"); redesenhar(); return; }
   if (d.avancar !== undefined || d.avancarTatica !== undefined) {
     const r = avancarSemana(pacote, s);
     // virou a temporada com pré-contrato assinado: assume o clube novo

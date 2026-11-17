@@ -78,7 +78,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
 }
 
 /** Peças por cima da camisa de frente (SVG já pronto): escudo (quadro 26×30), nome do master (100×44), logos (40×40). */
-export interface PecasFrente { escudo?: string; master?: string; fornecedor?: string; manga?: string }
+export interface PecasFrente { escudo?: string; master?: string; fornecedor?: string; manga?: string; /** nome deitado na manga (quadro 40×12) no lugar do logo */ mangaNome?: string }
 /** SVG (viewBox 0 0 80 104) da camisa de frente, com escudo no peito esquerdo, fornecedor no direito, master no meio e o logo na manga. */
 export function camisaFrente(c: DadosCamisa, p: PecasFrente = {}): string {
   const id = `cf${(seq++).toString(36)}`;
@@ -96,6 +96,6 @@ export function camisaFrente(c: DadosCamisa, p: PecasFrente = {}): string {
     ${p.escudo ? `<g transform="translate(45.5 18.5) scale(.3)">${p.escudo}</g>` : ""}
     ${p.fornecedor ? `<g transform="translate(27.5 20) scale(.16)">${p.fornecedor}</g>` : ""}
     ${p.master ? `<g transform="translate(22 40) scale(.36)">${p.master}</g>` : ""}
-    ${p.manga ? `<g transform="translate(67.5 22) rotate(32) scale(.15)">${p.manga}</g>` : ""}
+    ${p.mangaNome ? `<g transform="translate(70.6 25.2) rotate(52) scale(.36) translate(-20 -6)">${p.mangaNome}</g>` : p.manga ? `<g transform="translate(69.6 24) scale(.24) translate(-20 -20)">${p.manga}</g>` : ""}
   </svg>`;
 }

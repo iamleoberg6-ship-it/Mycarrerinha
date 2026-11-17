@@ -17,7 +17,7 @@ export interface Marca {
   /** força da marca: quanto paga em relação às outras (0,5 a 2) */
   peso: number; famaMin: number;
   /** estilo da letra do logo */
-  letra: "redonda" | "pesada" | "fina" | "italica";
+  letra: "redonda" | "pesada" | "fina" | "italica" | "cursiva";
   /** marcas de acessório só procuram quem já é muito seguido */
   seguidoresMin?: number; acessorio?: AcessorioMarca;
   /** só patrocina clube (camisa e estádio), não jogador */
@@ -40,7 +40,7 @@ export const MARCAS: Marca[] = [
   { id: "caixinha", nome: "Caixinha Econômica", categoria: "banco", cores: ["#005CA9", "#F39200", "#FFFFFF"], simbolo: "letra", slogan: "Vale a pena torcer.", peso: 0.8, famaMin: 15, regioes: ["BR"], letra: "pesada" },
   { id: "bbr", nome: "Banco do Brasileiro", categoria: "banco", cores: ["#FCFC30", "#465EFF", "#FFFFFF"], simbolo: "pontos", slogan: "Todo brasileiro tem um craque na conta.", peso: 1.0, famaMin: 20, regioes: ["BR"], letra: "pesada" },
   // refrigerantes
-  { id: "kokakolla", nome: "Koka-Kolla", categoria: "refrigerante", cores: ["#F40009", "#FFFFFF", "#8B0000"], simbolo: "gota", slogan: "Abra o placar.", peso: 1.8, famaMin: 55, letra: "italica" },
+  { id: "kokakolla", nome: "Koka-Kolla", categoria: "refrigerante", cores: ["#F40009", "#FFFFFF", "#8B0000"], simbolo: "gota", slogan: "Abra o placar.", peso: 1.8, famaMin: 55, letra: "cursiva" },
   { id: "gororo", nome: "Gororó Antártica", categoria: "refrigerante", cores: ["#00843D", "#E30613", "#FFFFFF"], simbolo: "folha", slogan: "O sabor da virada.", peso: 1.1, famaMin: 30, regioes: ["BR"], letra: "italica" },
   { id: "pepsy", nome: "Pepsy", categoria: "refrigerante", cores: ["#004B93", "#E32934", "#FFFFFF"], simbolo: "circulo", slogan: "Pede um no intervalo.", peso: 1.3, famaMin: 40, letra: "redonda" },
   // cervejas (só maiores de idade)
