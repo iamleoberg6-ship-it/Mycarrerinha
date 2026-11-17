@@ -117,6 +117,8 @@ import {
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
 import { responderShow, recebeShows } from "../../src/tecnico/shows";
+import { botaoAjuda, tour, tourFeito, abrirAjuda } from "../visual/guia";
+import { TOUR_TECNICO, AJUDA_TECNICO, AJUDA_INICIO } from "../visual/guia-textos";
 import { situacaoEstadio, orcamentoEstadio, iniciarEstadio, ANOS_PARCERIA, PADRAO_EST, GRAMADO_EST, LUGARES_EST, type ProjetoEstadio, type PadraoEstadio, type GramadoTipo } from "../../src/tecnico/estadio-proprio";
 import { ORIGENS, ORDEM_ORIGENS, NIVEL_EX, FILOSOFIAS, PERSONALIDADES, ATRIBS_T, NOME_ATRIB_T, TEXTO_ATRIB_T, PONTOS_LIVRES, MAX_ATRIB, montarPerfil, combinaFilosofia, biografia, licencaDaOrigem, type Origem, type NivelEx, type Filosofia, type Personalidade, type AtribT } from "../../src/tecnico/perfil-tecnico";
 import {
@@ -205,13 +207,13 @@ function telaInicio(): string {
     const ok = c.exige <= rep && c.licenca <= lic + tol;
     return `<div class="clube-op${ok ? "" : " trancado"}">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">Força ${c.forca}${c.exige > rep ? ` · exige reputação ${c.exige}` : ""}${c.licenca > lic + tol ? ` · exige ${LICENCAS[c.licenca]}` : c.licenca > lic ? ` · paga o curso da ${LICENCAS[lic + 1]}` : ""}</small></div>${ok ? `<button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Assumir</button>` : `<span class="pill">Fechado</span>`}</div>`;
   }).join("");
-  if (anterior) return `<header class="marca"><strong>Mycarrerinha</strong><span>Técnico</span></header>
+  if (anterior) return `<header class="marca"><strong>Mycarrerinha</strong><span>Técnico</span>${botaoAjuda()}</header>
     <section class="painel"><p class="rotulo">De volta ao mercado</p><h2>${esc(anterior.tecnico.nome)} procura clube</h2><p class="sub">${anterior.historico.length} temporada${anterior.historico.length === 1 ? "" : "s"} de carreira, reputação ${rep}.</p></section>
     <section class="painel form-ini"><label>Liga<select id="iLiga">${ligas.map((l) => `<option value="${l.id}" ${l.id === ligaEscolhida ? "selected" : ""}>${esc(l.nome)}</option>`).join("")}</select></label></section>
     <section class="painel"><p class="rotulo">Escolha o clube</p>${listaClubes}</section>`;
   const props = propostasIniciais(pacote, ligaEscolhida, d, ex?.semente ?? d.nome);
   const chip = (attr: string, v: string, at: boolean, nome: string) => `<button class="chip${at ? " ativo" : ""}" ${attr}="${v}">${esc(nome)}</button>`;
-  return `<header class="marca"><strong>Mycarrerinha</strong><span>Técnico</span></header>
+  return `<header class="marca"><strong>Mycarrerinha</strong><span>Técnico</span>${botaoAjuda()}</header>
     <h1>Crie o seu técnico</h1>
     <p class="sub" style="font-size:16px">De onde ele veio, como pensa o jogo e o que sabe fazer de melhor. Tudo isso muda o começo e o dia a dia da carreira.</p>
     ${ex ? `<section class="painel"><p class="rotulo">Depois das chuteiras</p><h2>${esc(ex.jogador.apelido)} vira técnico</h2><p class="sub">O mesmo mundo da sua carreira, com os mesmos clubes, jogadores e amigos. A origem é a sua carreira de jogador.</p>
@@ -259,7 +261,7 @@ function nav(s: SaveTecnico): string {
 }
 function topo(s: SaveTecnico): string {
   const li = infoLiga(s.ligaId), pos = ordenar(s.tabela).findIndex((t) => t.clube === s.clubeId) + 1;
-  return `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemanaT(s))}</span></header>
+  return `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemanaT(s))}</span>${botaoAjuda()}</header>
     <section class="painel topo-clube">${escudo(s.clubeId)}<div><b>${esc(nomeClube(s.clubeId))}</b><small><button class="link-clube" data-aba="vida" data-sub="vida:perfil" style="text-decoration:underline">${esc(s.tecnico.nome)}</button> · ${esc(li.curto)}${s.semana >= SEMANAS_PRE_T ? ` · ${pos}º` : ""}</small></div>
       <div class="caixa">Caixa<br><b style="color:${s.clube.saldo < 0 ? "var(--neg)" : "var(--giz)"}">${curtoBrl(s.clube.saldo)}</b></div></section>`;
 }
@@ -1547,7 +1549,15 @@ function render() {
   }
   const corpo = aba === "inicio" ? abaInicio(s) : aba === "elenco" ? abaElenco(s) : aba === "tatica" ? abaTatica(s) : aba === "liga" ? abaLiga(s) : aba === "vida" ? abaVida(s) : abaClube(s);
   app.innerHTML = `${topo(s)}${aba === "inicio" ? aviso() + corpo : `<section class="painel tela-aba">${corpo}</section>`}${nav(s)}`;
+  // primeira vez como técnico: o tour pela tela de início
+  if (aba === "inicio" && !s.aoVivo && !tourFeito("tecnico")) setTimeout(() => { if (!document.querySelector("dialog[open]") && document.querySelector(".topo-clube")) tour("tecnico", TOUR_TECNICO); }, 500);
 }
+// o "?" abre o Como jogar
+document.addEventListener("click", (ev) => {
+  if (!(ev.target as Element).closest("[data-ajuda]")) return;
+  if (!save) abrirAjuda("Como jogar", "O básico para começar a carreira de técnico.", AJUDA_INICIO);
+  else abrirAjuda("Como jogar", "A carreira de técnico, semana a semana.", AJUDA_TECNICO, () => { aba = "inicio"; render(); setTimeout(() => tour("tecnico", TOUR_TECNICO), 300); });
+});
 
 document.addEventListener("change", (ev) => {
   const t = ev.target as HTMLElement;

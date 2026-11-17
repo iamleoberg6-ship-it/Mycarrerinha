@@ -106,6 +106,8 @@ import { paiTreinador } from "../../src/familia";
 import { NOME_RARIDADE, NOME_TIPO_FIG, type Figurinha } from "../../src/figurinhas";
 import { svgComodo } from "../casa/iso";
 import { valorBrl, valorEur, numBrl, numEur, simboloAtual, definirMoeda, moedaSugerida, MOEDAS, curtoBrl, curtoEur } from "../../src/moeda.js";
+import { botaoAjuda, tour, tourFeito, abrirAjuda } from "../visual/guia";
+import { TOUR_JOGADOR, AJUDA_JOGADOR, AJUDA_INICIO } from "../visual/guia-textos";
 import { criarAgendador, chaveNuvem, listarNuvem, lerDaNuvem, apagarDaNuvem, nuvemDisponivel } from "../nuvem";
 
 const pacote = pacoteJson as unknown as PacoteDados;
@@ -267,13 +269,15 @@ function render() {
   const semAbs = semanaAbsJogo(save.carreira);
   if (semAbs !== ultimaSemanaVista) { ultimaSemanaVista = semAbs; subJogador = "atributos"; subVida = "agenda"; vistaMercado = "eu"; subTabela = "classificacao"; semanaSub = "jogo"; }
   app.innerHTML = save.carreira.encerrada ? telaDespedida(save) : telaSemana(save);
+  // primeira vez no jogo: o tour pela tela da semana
+  if (!save.carreira.encerrada && aba === "semana" && !tourFeito("jogador") && !document.querySelector("dialog[open]")) setTimeout(() => { if (!document.querySelector("dialog[open]") && document.querySelector(".card-jogador")) tour("jogador", TOUR_JOGADOR); }, 500);
   // sub-abas que rolam: a escolhida fica à vista
   const rol = document.querySelector<HTMLElement>(".sub-abas.rolar"), at = rol?.querySelector<HTMLElement>(".ativo");
   if (rol && at) rol.scrollLeft = Math.max(0, at.offsetLeft - rol.offsetLeft - 16);
 }
 
 function telaInicio(): string {
-  return `<header class="marca"><strong>Mycarrerinha</strong><span>Carreira</span></header>
+  return `<header class="marca"><strong>Mycarrerinha</strong><span>Carreira</span>${botaoAjuda()}</header>
     <h1>Sua carreira começa na base, na várzea ou nos EUA.</h1>
     <p class="sub" style="font-size:16px">Crie o jogador, escolha por onde começar e jogue semana a semana: treino, descanso, família, redes, o jogo de domingo e a casa que você vai montando com o salário.</p>
     <a class="botao grande" href="criacao.html">Criar meu jogador</a>
@@ -348,7 +352,7 @@ function telaSemana(s: Save): string {
   const rotuloJogar = jc && escQ !== "lesionado" ? (aba === "semana" ? "Ir para o jogo de quarta" : "Jogo de quarta") : jogo && escPrev !== "lesionado" ? (aba === "semana" ? "Ir para o jogo" : "Jogar") : (aba === "semana" ? "Fechar a semana" : "Fechar semana");
   const botaoJogar = aba === "semana" ? `<button class="botao grande fixo-jogar" data-acao="jogar">${rotuloJogar}</button>` : `<button class="botao grande fixo-jogar mini" data-acao="jogar" aria-label="${rotuloJogar}" title="${rotuloJogar}"><span aria-hidden="true">▶</span></button>`;
   const nav = `<nav class="abas" role="tablist" aria-label="Menu">${([["semana", "Semana", pend.length ? String(pend.length) : ""], ["carreira", "Carreira", ""], ["pessoas", "Pessoas", (namoroDe(s.carreira).filhos ?? []).some((f) => f.nomear) ? "👶" : ""], ["mercado", "Mercado", nProp ? String(nProp) : ""], ["vida", "Vida", agendaDe(s.carreira).pendentes.length ? String(agendaDe(s.carreira).pendentes.length) : ""]] as const).map(([k, n, badge]) => `<button class="${aba === k ? "ativo" : ""}" data-aba="${k}" role="tab" aria-selected="${aba === k}"><span class="aba-ico">${ICONE_ABA[k]}${badge ? `<i class="aba-badge">${badge}</i>` : ""}</span><span class="aba-nome">${n}</span></button>`).join("")}</nav>`;
-  const cabecalho = `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}${c.aposentadoria ? " · última temporada" : ""}</span><button class="engrenagem${verOpcoes ? " ativo" : ""}" data-acao="opcoes" aria-label="Opções: salvar, carregar e simular" aria-expanded="${verOpcoes}">${ic(`<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>`)}</button></header>
+  const cabecalho = `<header class="marca"><strong>Mycarrerinha</strong><span>${esc(rotuloSemana(c))}${c.aposentadoria ? " · última temporada" : ""}</span>${botaoAjuda()}<button class="engrenagem${verOpcoes ? " ativo" : ""}" data-acao="opcoes" aria-label="Opções: salvar, carregar e simular" aria-expanded="${verOpcoes}">${ic(`<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>`)}</button></header>
   ${verOpcoes ? opcoesHtml(s) : ""}`;
   if (aba !== "semana") return `${cabecalho}<section class="painel tela-aba">${aba === "carreira" ? abaJogador(s) : aba === "pessoas" ? abaPessoas(s) : aba === "mercado" ? abaMercado(s) : aba === "vida" ? abaVida(s) : abaImprensa(s)}</section>${botaoJogar}${nav}`;
   return `${cabecalho}
@@ -3370,3 +3374,10 @@ try { render(); } catch (e) { mostrarErro(e); }
 // com save: manda uma cópia já na abertura. Carreira da conta só volta quando você escolhe "Carregar" nas opções
 // (antes ela voltava sozinha e atropelava uma carreira nova recém-criada).
 void (async () => { if (save && (await nuvemDisponivel())) nuvem.agora(); })();
+
+// o "?" abre o Como jogar (na tela inicial, a explicação geral; no jogo, a do modo jogador)
+document.addEventListener("click", (ev) => {
+  if (!(ev.target as Element).closest("[data-ajuda]")) return;
+  if (!save) abrirAjuda("Como jogar", "O básico para começar.", AJUDA_INICIO);
+  else abrirAjuda("Como jogar", "A carreira de jogador, semana a semana.", AJUDA_JOGADOR, () => { aba = "semana"; render(); setTimeout(() => tour("jogador", TOUR_JOGADOR), 300); });
+});
