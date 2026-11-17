@@ -1,4 +1,5 @@
 import { bandeiraSvg } from "../../src/bandeiras";
+import { emblemaTouros } from "./peito";
 // Escudos genéricos (nada de escudo real): cada clube ganha, de forma fixa, um formato e um desenho interno,
 // sorteados pelo id do clube, sempre com as cores dele. Desenhados num quadro de 26 × 30.
 const TINTA = "#0A0A0A";
@@ -91,6 +92,8 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<text x="13" y="20.6" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="15" letter-spacing="-.4" fill="#0A0A0A">09</text>`
       + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
+  // Tigre do Carvão (Criciúma): um triângulo de base larga partido ao meio, com um vão entre as duas metades; amarelo com contorno preto
+  if (chave === "CRI") return `<g fill="#FDD100" stroke="#0A0A0A" stroke-width="1.1" stroke-linejoin="round"><path d="M12.2 4.6 L1.2 26 H12.2 Z"/><path d="M13.8 4.6 L24.8 26 H13.8 Z"/></g>`;
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
@@ -179,8 +182,10 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     + `<path d="M13 17.5 V18.2 M12 18.5 Q13 19.1 14 18.5" fill="none" stroke="#0A0A0A" stroke-width=".38" stroke-linecap="round"/>` : "";
   // Atalanta (Bérgamo): a cabeça de uma mulher de perfil, toda branca, no centro do escudo
   const MULHER_ATA = chave === "IT-ATA" ? `<path d="M11.4 8.6 C12.6 7.6 15.6 7.4 17.2 8.8 C18.8 8.6 20.2 9.8 19.8 11.4 C19.6 12.6 18.4 13 17.6 12.8 C17.8 14.6 17.4 16.4 16.4 17.6 L16.8 21.4 L12 21.4 L12.4 19 C11.6 18.8 10.8 18.6 10.6 17.8 L10.4 17.2 L9.8 16.9 L10.3 16.5 L9.8 16.1 L10.2 15.6 L9.2 14.4 L10.2 13.2 C10.2 11.2 10.4 9.6 11.4 8.6 Z" fill="#FFFFFF" stroke="#0A0A0A" stroke-width=".5" stroke-linejoin="round"/>` : "";
-  const detalhe = MULHER_ATA + LEAO_SCP + TORRE_PFC + LETRA_GAL + CRUZ_VAS + CRUZEIRO + ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" || chave === "TR-GAL" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" || chave === "CRU" || chave === "FR-PFC" ? "" : chave === "PT-SCP" ? [0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<rect x="0" y="${(k * 30 / 8).toFixed(2)}" width="26" height="${(30 / 8).toFixed(2)}" fill="${k % 2 ? c2 : c1}"/>`).join("") : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}${ARVORE}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  // clubes da Red Boi: os dois touros com o sol no meio do escudo, numa placa clara para aparecer em qualquer cor
+  const RED_BOI = ["RBB", "DE-RBL", "US-NYR", "AT-SAL"].includes(chave) ? `<ellipse cx="13" cy="15.2" rx="11" ry="6.8" fill="#FFFFFF" stroke="${TINTA}" stroke-width=".5"/><g transform="translate(2.5 10.2) scale(.21)">${emblemaTouros("#E1001A", "#F2C200")}</g>` : "";
+  const detalhe = RED_BOI + MULHER_ATA + LEAO_SCP + TORRE_PFC + LETRA_GAL + CRUZ_VAS + CRUZEIRO + ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" || chave === "TR-GAL" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" || chave === "CRU" || chave === "FR-PFC" ? "" : chave === "PT-SCP" ? [0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<rect x="0" y="${(k * 30 / 8).toFixed(2)}" width="26" height="${(30 / 8).toFixed(2)}" fill="${k % 2 ? c2 : c1}"/>`).join("") : DESENHOS[desenho](c1, c2, RED_BOI ? "" : inicial(nome))}${CATALUNHA}${ARVORE}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {

@@ -37,3 +37,9 @@ export function corQueAparece(fundos: string[], preferidas: (string | undefined)
 }
 /** Um símbolo de marca com um contorno em volta (para aparecer sobre listras de duas cores). */
 export const comFilete = (svg: string, filete?: string) => (filete ? `<g stroke="${filete}" stroke-width="5" stroke-linejoin="round" fill="${filete}">${svg.replace(/fill="[^"]*"/g, `fill="${filete}"`).replace(/stroke="(?!none)[^"]*"/g, `stroke="${filete}"`)}</g>${svg}` : svg);
+
+/** Emblema da Red Boi: dois touros investindo um contra o outro, com o sol amarelo atrás (100×50). */
+export function emblemaTouros(vermelho: string, sol: string): string {
+  const touro = `<path d="M3 33 Q4 25 13 23 Q22 20 31 21 Q37 21 41 25 L47 31 Q49 35 45 35 L41 33 Q40 36 38 38 L35 38 L35 34 L25 35 L22 42 L18 42 L19 35 Q12 36 9 34 L7 41 L3 41 L4 35 Q2 35 3 33 Z" fill="${vermelho}"/><path d="M40 24 Q42 17 48 16 Q44 19 43 24 Z" fill="${vermelho}"/><path d="M4 26 Q-1 22 1 17" stroke="${vermelho}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+  return `<circle cx="50" cy="22" r="13" fill="${sol}"/><g>${touro}</g><g transform="translate(100 0) scale(-1 1)">${touro}</g>`;
+}

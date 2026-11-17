@@ -37,7 +37,7 @@ import { NOME_ACAO_FILHO, nomearFilho, acoesFilho, exesDe, acoesEx, NOME_ACAO_EX
 import { PROFISSOES, NOME_ETAPA, NOME_ACAO_NAMORO, acoesNamoro, chanceMatch, IDADE_MINIMA_APP, MAX_ACOES_NAMORO, type AcaoNamoro, type Par, type Perfil } from "../../src/namoro";
 import { sugerirNomes, pecaSvg, PECAS, FONTES, TAMANHOS, CORES_PALETA, ORDEM_PECAS, DESIGN_PADRAO, type DesignMarca, type PecaMarca } from "../../src/marca-propria";
 import { salvarMarcaNegocio, convidarEmbaixador as convidarEmbaixadorJogo } from "../../src/jogo";
-import { nomeNoPeito, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
+import { nomeNoPeito, emblemaTouros, coresAtras, corQueAparece, comFilete, type ParteCamisa } from "../visual/peito";
 import { MARCA, CLUBE_DA_MARCA, COR_PATROCINIO, NOME_CATEGORIA, NOME_CONTRATO, type ContratoPatrocinio, type OfertaPatrocinio, type TipoContrato } from "../../src/marcas";
 import { cartazPatrocinio, logoSvg, simboloMarca } from "./poster";
 import { svgCorpo, tatuagemPescoco, previaTatuagem, type Kit } from "../visual/corpo";
@@ -160,11 +160,6 @@ function escudo(id: string): string {
   return svgEscudo(idClube(id), a, b, infoClube(pacote, id)?.nome);
 }
 /** Uniforme do clube (cores e padrão) com a chuteira do patrocinador de material esportivo, se houver. */
-/** Emblema da Red Boi no peito: dois touros investindo um contra o outro, com o sol amarelo atrás (100×50). */
-function emblemaTouros(vermelho: string, sol: string): string {
-  const touro = `<path d="M3 33 Q4 25 13 23 Q22 20 31 21 Q37 21 41 25 L47 31 Q49 35 45 35 L41 33 Q40 36 38 38 L35 38 L35 34 L25 35 L22 42 L18 42 L19 35 Q12 36 9 34 L7 41 L3 41 L4 35 Q2 35 3 33 Z" fill="${vermelho}"/><path d="M40 24 Q42 17 48 16 Q44 19 43 24 Z" fill="${vermelho}"/><path d="M4 26 Q-1 22 1 17" stroke="${vermelho}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
-  return `<circle cx="50" cy="22" r="13" fill="${sol}"/><g>${touro}</g><g transform="translate(100 0) scale(-1 1)">${touro}</g>`;
-}
 /** Ícone da marca dona do clube, grande no meio do peito (sem o nome, como nas camisas de verdade). */
 function patrocinioDoClube(clubeId: string): string | undefined {
   const id = idClube(clubeId), m = MARCA[CLUBE_DA_MARCA[id] ?? ""];
