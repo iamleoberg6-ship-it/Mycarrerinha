@@ -188,6 +188,15 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<path d="M1 23.6 H25 L24 25.6 L25 27.6 H1 L2 25.6 Z" fill="#7CC4F0" stroke="#1B3A5C" stroke-width=".35" stroke-linejoin="round"/>`
       + `<text x="13" y="26.8" text-anchor="middle" font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="3.2" textLength="17" lengthAdjust="spacingAndGlyphs" fill="#0B1F4D">NEWCASTEL</text>`;
   }
+  // Estoque (Stoke): escudo com 5 listras verticais (3 vermelhas e 2 brancas) e, embaixo, uma faixa curva acompanhando o escudo com 1809
+  if (chave === "EN-STK") {
+    const esc = "M3 2.6 H23 V15 Q23 24.6 13 28.6 Q3 24.6 3 15 Z";
+    const listras = [0, 1, 2, 3, 4].map((k) => `<rect x="${(3 + k * 4).toFixed(2)}" y="0" width="4.05" height="30" fill="${k % 2 ? "#FFFFFF" : "#E03A3E"}"/>`).join("");
+    return `<defs><clipPath id="cSTK"><path d="${esc}"/></clipPath><path id="aSTK" d="M4.6 21.8 Q13 27.6 21.4 21.8"/></defs><g clip-path="url(#cSTK)">${listras}</g>`
+      + `<path d="${esc}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}" stroke-linejoin="round"/>`
+      + `<path d="M3.4 18.6 Q13 25.2 22.6 18.6 L23.4 22.4 Q13 29 2.6 22.4 Z" fill="#FFFFFF" stroke="${TINTA}" stroke-width=".7" stroke-linejoin="round"/>`
+      + `<text font-family="Big Shoulders Display, Arial Narrow, sans-serif" font-weight="900" font-size="3.2" letter-spacing=".3" fill="#E03A3E" text-anchor="middle"><textPath href="#aSTK" startOffset="50%">1809</textPath></text>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
