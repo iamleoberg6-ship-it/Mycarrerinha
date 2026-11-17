@@ -107,7 +107,7 @@ import {
 } from "../../src/tecnico/negociacao";
 import { criarAgendador, chaveNuvem, nuvemDisponivel, apagarDaNuvem } from "../nuvem";
 import {
-  CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
+  CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, propostasIniciais, reputacaoInicial, rotuloSemanaT,
   proximoJogo, outrosDaRodada, estrangeirosT, prometerT, revistaT, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, alvoPorNome, alternarVenda,
@@ -115,6 +115,7 @@ import {
   toleranciaLicenca, aceitarEmprego, recusarEmprego, assumirNovoClube, creditar,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
 } from "../../src/tecnico/motor";
+import { ORIGENS, ORDEM_ORIGENS, NIVEL_EX, FILOSOFIAS, PERSONALIDADES, ATRIBS_T, NOME_ATRIB_T, TEXTO_ATRIB_T, PONTOS_LIVRES, MAX_ATRIB, montarPerfil, combinaFilosofia, biografia, licencaDaOrigem, type Origem, type NivelEx, type Filosofia, type Personalidade, type AtribT } from "../../src/tecnico/perfil-tecnico";
 import {
   FORMACOES, NOMES_FORMACAO, NOME_MENTALIDADE, NOME_NIVEL3, NOME_AT, NOME_AT_GOL, NOME_POS_T, FUNCOES, NOME_FUNCAO, NOME_FUNCAO_PL, EFEITO_FUNCAO,
   forcaDoTime, ladoDe, ladoDaVaga, rotuloPos, type Lado, melhorEscalacao, ovrDe, ovrNaVaga, formaDe, disponivel, rotuloEncaixe, valorAtleta, precoIngresso, exDe, idiomasDe, funcaoNaVaga, ovrPos, type Atleta, type PosT, type Funcao,
@@ -166,37 +167,77 @@ const barra = (v: number, cor?: string) => `<span class="mini-barra"><i style="-
 const corPos = (p: PosT) => (p === "GOL" ? "#F2B705" : p === "ZAG" || p === "LAT" ? "#4C8BD9" : p === "VOL" || p === "MEI" ? "#3FAE6A" : "#E5534B");
 
 // ------------------------------------------------------------------ início de carreira
+/** O técnico que está sendo criado (origem, idade, filosofia, personalidade e os pontos a mais). */
+const cria: { nome: string; nac: string; origem: Origem; nivelEx: NivelEx; idade: number; filosofia: Filosofia; personalidade: Personalidade; extra: Partial<Record<AtribT, number>> } =
+  { nome: "", nac: "BRA", origem: "exJogador", nivelEx: "bom", idade: 38, filosofia: "posse", personalidade: "motivador", extra: {} };
+const livresCria = () => PONTOS_LIVRES - ATRIBS_T.reduce((t, k) => t + (cria.extra[k] ?? 0), 0);
+/** Os dados da criação, prontos para o motor (ex-jogador do modo jogador: a origem e a idade vêm da carreira). */
+function dadosCriados(ex: SaveJogador | null): DadosTecnico {
+  if (ex) {
+    const fama = ex.carreira.fama, nivelEx: NivelEx = fama >= 70 ? "craque" : fama >= 40 ? "bom" : "modesto";
+    return { nome: cria.nome || ex.jogador.apelido, nac: cria.nac, idade: ex.jogador.idade + 1 + pausaEscolhida, exJogador: { apelido: ex.jogador.apelido, fama }, ...heranca(ex),
+      perfil: montarPerfil({ ...cria, origem: "exJogador", nivelEx }, ex.jogador.apelido) };
+  }
+  const nome = cria.nome.trim() || "Técnico", idade = Math.max(cria.idade, ORIGENS[cria.origem].idadeMin);
+  return { nome, nac: cria.nac, idade, licenca: licencaDaOrigem(cria.origem, cria.nivelEx), perfil: montarPerfil(cria, nome) };
+}
 function telaInicio(): string {
   const jog = ler<SaveJogador>("mycarrerinha:save");
   const ex = jog?.carreira?.encerrada ? jog : null;
-  const d: DadosTecnico = ex ? { nome: ex.jogador.apelido, nac: ex.jogador.nacionalidade, idade: ex.jogador.idade + 1, exJogador: { apelido: ex.jogador.apelido, fama: ex.carreira.fama }, ...heranca(ex) } : { nome: "", nac: "BRA", idade: 38 };
-  const lic = anterior ? licencaT(anterior) : Math.max(1, d.licenca ?? 2);
-  if (anterior) { d.nome = anterior.tecnico.nome; d.nac = anterior.tecnico.nac; d.idade = anterior.tecnico.idade; }
+  if (ex && !cria.nome) { cria.nome = ex.jogador.apelido; cria.nac = ex.jogador.nacionalidade; }
+  if (anterior) { cria.nome = anterior.tecnico.nome; cria.nac = anterior.tecnico.nac; }
   // vindo do jogador: as ligas e os clubes são os do mesmo mundo, no ano em que ele começa a treinar
   const anoParou = ex ? (ex.carreira.encerrada?.ano ?? ANO_INICIAL_T + ex.carreira.temporada) : 0;
   if (ex && !anterior) sincronizarMundo(pacote, ex.semente, anoParou - ANO_INICIAL_T + 1 + pausaEscolhida, 0, {}, 0);
-  const rep = anterior ? anterior.tecnico.reputacao : reputacaoInicial(d), ligas = ligasParaComecar(pacote);
+  const d = dadosCriados(ex);
+  const lic = anterior ? licencaT(anterior) : Math.max(1, d.licenca ?? 2);
+  const rep = anterior ? anterior.tecnico.reputacao : reputacaoInicial(d) + (ex ? 3 * pausaEscolhida : 0), ligas = ligasParaComecar(pacote);
   const prest = anterior ? anterior.tecnico.prestigio ?? 0 : d.prestigio ?? 0, tol = toleranciaLicenca(prest);
   const fama = ex && !anterior ? prestigioDe(ex, d.idiomas ?? {}) : undefined;
   const nivelNome = prest >= 80 ? "Lenda mundial" : prest >= 60 ? "Ídolo conhecido" : prest >= 40 ? "Nome respeitado" : "Começando do zero";
   if (!ligas.some((l) => l.id === ligaEscolhida)) ligaEscolhida = ligas[0]?.id ?? "BRA1";
   const clubes = clubesDaLiga(pacote, ligaEscolhida);
+  const p = d.perfil!, o = ORIGENS[p.origem], livres = livresCria();
+  const listaClubes = clubes.map((c) => {
+    const ok = c.exige <= rep && c.licenca <= lic + tol;
+    return `<div class="clube-op${ok ? "" : " trancado"}">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">Força ${c.forca}${c.exige > rep ? ` · exige reputação ${c.exige}` : ""}${c.licenca > lic + tol ? ` · exige ${LICENCAS[c.licenca]}` : c.licenca > lic ? ` · paga o curso da ${LICENCAS[lic + 1]}` : ""}</small></div>${ok ? `<button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Assumir</button>` : `<span class="pill">Fechado</span>`}</div>`;
+  }).join("");
+  if (anterior) return `<header class="marca"><strong>Mycarrerinha</strong><span>Técnico</span></header>
+    <section class="painel"><p class="rotulo">De volta ao mercado</p><h2>${esc(anterior.tecnico.nome)} procura clube</h2><p class="sub">${anterior.historico.length} temporada${anterior.historico.length === 1 ? "" : "s"} de carreira, reputação ${rep}.</p></section>
+    <section class="painel form-ini"><label>Liga<select id="iLiga">${ligas.map((l) => `<option value="${l.id}" ${l.id === ligaEscolhida ? "selected" : ""}>${esc(l.nome)}</option>`).join("")}</select></label></section>
+    <section class="painel"><p class="rotulo">Escolha o clube</p>${listaClubes}</section>`;
+  const props = propostasIniciais(pacote, ligaEscolhida, d, ex?.semente ?? d.nome);
+  const chip = (attr: string, v: string, at: boolean, nome: string) => `<button class="chip${at ? " ativo" : ""}" ${attr}="${v}">${esc(nome)}</button>`;
   return `<header class="marca"><strong>Mycarrerinha</strong><span>Técnico</span></header>
-    <h1>Carreira de técnico</h1>
-    <p class="sub" style="font-size:16px">Monte o time, escolha a tática, cuide do vestiário, das finanças e da estrutura do clube. A diretoria cobra resultado.</p>
-    ${anterior ? `<section class="painel"><p class="rotulo">De volta ao mercado</p><h2>${esc(anterior.tecnico.nome)} procura clube</h2><p class="sub">${anterior.historico.length} temporada${anterior.historico.length === 1 ? "" : "s"} de carreira, reputação ${rep}.</p></section>` : ex ? `<section class="painel"><p class="rotulo">Depois das chuteiras</p><h2>${esc(ex.jogador.apelido)} vira técnico</h2><p class="sub">O mesmo mundo da sua carreira, com os mesmos clubes, jogadores e amigos. A fama abre portas: começa com reputação ${rep}.</p>
+    <h1>Crie o seu técnico</h1>
+    <p class="sub" style="font-size:16px">De onde ele veio, como pensa o jogo e o que sabe fazer de melhor. Tudo isso muda o começo e o dia a dia da carreira.</p>
+    ${ex ? `<section class="painel"><p class="rotulo">Depois das chuteiras</p><h2>${esc(ex.jogador.apelido)} vira técnico</h2><p class="sub">O mesmo mundo da sua carreira, com os mesmos clubes, jogadores e amigos. A origem é a sua carreira de jogador.</p>
       <p class="rotulo" style="margin-top:8px">Quando começar</p><div class="chips">${[0, 1, 2].map((n) => `<button class="chip${pausaEscolhida === n ? " ativo" : ""}" data-pausa="${n}">${n === 0 ? "Já na próxima temporada" : `Parar ${n} ano${n > 1 ? "s" : ""} antes`}</button>`).join("")}</div>
-      <p class="sub">Parou em ${anoParou}. Começa em ${anoParou + 1 + pausaEscolhida}.${pausaEscolhida ? " Na pausa, você descansa, estuda o jogo e chega mais maduro (+3 de reputação por ano)." : ""}</p></section>` : ""}
+      <p class="sub">Parou em ${anoParou}. Começa em ${anoParou + 1 + pausaEscolhida}, com ${d.idade} anos.${pausaEscolhida ? " Na pausa, você descansa, estuda o jogo e chega mais maduro (+3 de reputação por ano)." : ""}</p></section>` : ""}
     <section class="painel form-ini">
-      <label>Nome do técnico<input id="iNome" value="${esc(d.nome)}" maxlength="28" autocomplete="off" placeholder="Seu nome"></label>
-      <label>Nacionalidade<select id="iNac">${["BRA", "ARG", "POR", "ESP", "ITA", "ENG", "GER", "FRA", "NED", "URU", "COL", "MEX", "USA", "JPN"].map((p) => `<option ${p === d.nac ? "selected" : ""}>${p}</option>`).join("")}</select></label>
-      <label>Liga<select id="iLiga">${ligas.map((l) => `<option value="${l.id}" ${l.id === ligaEscolhida ? "selected" : ""}>${esc(l.nome)}</option>`).join("")}</select></label>
-      <p class="sub">Sua reputação: <b style="color:var(--giz)">${rep}</b> · ${LICENCAS[lic]}.${fama ? ` <b style="color:var(--giz)">${nivelNome}</b>${fama.resumo ? ` (${esc(fama.resumo)})` : ""}.` : ""} ${tol ? `Com o seu nome, clubes grandes aceitam você com até ${tol === 1 ? "uma licença" : "duas licenças"} a menos e pagam o curso.` : "Clubes grandes só aceitam técnico com nome e licença alta; comece por baixo e suba."}</p>
+      <label>Nome do técnico<input id="iNome" value="${esc(cria.nome)}" maxlength="28" autocomplete="off" placeholder="Seu nome"></label>
+      <label>Nacionalidade<select id="iNac">${["BRA", "ARG", "POR", "ESP", "ITA", "ENG", "GER", "FRA", "NED", "URU", "COL", "MEX", "USA", "JPN"].map((x) => `<option ${x === cria.nac ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+      ${ex ? "" : `<label>Idade: <b id="iIdadeV" style="color:var(--giz)">${d.idade} anos</b><input id="iIdade" type="range" min="${o.idadeMin}" max="60" value="${d.idade}"></label>
+      <p class="sub" style="margin-top:-4px">Quem começa novo tem tempo para crescer; quem começa mais velho chega com mais bagagem (um pouco mais de reputação).</p>`}
     </section>
-    <section class="painel"><p class="rotulo">Escolha o clube</p>${clubes.map((c) => {
-      const ok = c.exige <= rep && c.licenca <= lic + tol;
-      return `<div class="clube-op${ok ? "" : " trancado"}">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">Força ${c.forca}${c.exige > rep ? ` · exige reputação ${c.exige}` : ""}${c.licenca > lic + tol ? ` · exige ${LICENCAS[c.licenca]}` : c.licenca > lic ? ` · paga o curso da ${LICENCAS[lic + 1]}` : ""}</small></div>${ok ? `<button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Assumir</button>` : `<span class="pill">Fechado</span>`}</div>`;
-    }).join("")}</section>
+    ${ex ? "" : `<section class="painel"><p class="rotulo">Origem</p><div class="orig-grid">${ORDEM_ORIGENS.map((k) => `<button class="orig${k === cria.origem ? " ativo" : ""}" data-origem="${k}"><b>${ORIGENS[k].nome}</b><small>${ORIGENS[k].texto}</small></button>`).join("")}</div>
+      <p class="sub" style="margin-top:8px"><b style="color:var(--giz)">${o.nome}:</b> ${o.efeito}</p>
+      ${cria.origem === "exJogador" ? `<p class="rotulo" style="margin-top:10px">Que jogador ele foi</p><div class="chips quebra">${(Object.keys(NIVEL_EX) as NivelEx[]).map((k) => chip("data-nivelex", k, k === cria.nivelEx, NIVEL_EX[k].nome)).join("")}</div><p class="sub">${NIVEL_EX[cria.nivelEx].texto}</p>` : ""}
+      ${p.mentor ? `<p class="sub">Foi auxiliar de <b style="color:var(--giz)">${esc(p.mentor)}</b>.</p>` : ""}</section>`}
+    <section class="painel"><p class="rotulo">Filosofia de jogo</p><div class="chips quebra">${(Object.keys(FILOSOFIAS) as Filosofia[]).map((k) => chip("data-filo", k, k === cria.filosofia, FILOSOFIAS[k].nome)).join("")}</div>
+      <p class="sub">${FILOSOFIAS[cria.filosofia].texto} Quando a tática do time combina com a filosofia, o time rende um pouco mais.</p>
+      <p class="rotulo" style="margin-top:10px">Personalidade</p><div class="chips quebra">${(Object.keys(PERSONALIDADES) as Personalidade[]).map((k) => chip("data-perso", k, k === cria.personalidade, PERSONALIDADES[k].nome)).join("")}</div>
+      <p class="sub">${PERSONALIDADES[cria.personalidade].texto}</p></section>
+    <section class="painel"><p class="rotulo">Pontos fortes · <span style="color:var(--ouro)">${livres} ${livres === 1 ? "ponto livre" : "pontos livres"}</span></p>
+      ${ATRIBS_T.map((k) => `<div class="atr-linha"><div><b>${NOME_ATRIB_T[k]}</b><small>${TEXTO_ATRIB_T[k]}</small></div>${barra(p.atrib[k] * 5)}<span class="atr-n">${p.atrib[k]}</span><button class="botao peq sec" data-ponto="${k}|-1" ${(cria.extra[k] ?? 0) > 0 ? "" : "disabled"}>−</button><button class="botao peq sec" data-ponto="${k}|1" ${livres > 0 && p.atrib[k] < MAX_ATRIB ? "" : "disabled"}>+</button></div>`).join("")}</section>
+    <section class="painel"><p class="rotulo">Quem é ${esc(d.nome)}</p><p class="sub" style="color:var(--giz)">${esc(biografia(p, { nome: d.nome, idade: d.idade, pais: d.nac, apelidoEx: d.exJogador?.apelido }))}</p>
+      <p class="sub" style="margin-top:6px">Reputação <b style="color:var(--giz)">${rep}</b> · ${LICENCAS[lic]}.${fama ? ` <b style="color:var(--giz)">${nivelNome}</b>${fama.resumo ? ` (${esc(fama.resumo)})` : ""}.` : ""}</p></section>
+    <section class="painel form-ini"><p class="rotulo">Primeiro emprego</p>
+      <label>País e liga<select id="iLiga">${ligas.map((l) => `<option value="${l.id}" ${l.id === ligaEscolhida ? "selected" : ""}>${esc(l.nome)}</option>`).join("")}</select></label>
+      <p class="sub">Chegaram ${props.length} propostas de clubes que toparam o seu nome:</p>
+      ${props.map((c) => `<div class="clube-op">${escudo(c.id)}<div><b>${esc(c.nome)}</b><br><small class="sub">${esc(c.liga)} · força ${c.forca}<br>${esc(c.texto)}</small></div><button class="botao peq" data-assumir="${c.id}" data-ex="${ex ? 1 : 0}">Aceitar</button></div>`).join("")}
+      <details><summary class="sub">Ver todos os clubes da liga</summary>${listaClubes}</details>
+    </section>
     <a class="botao sec" href="index.html">Voltar para a carreira de jogador</a>`;
 }
 
@@ -1142,6 +1183,17 @@ function abrirAlbumT(s: SaveTecnico) {
   const el = document.getElementById("albumT");
   if (el) new Album(el, { figs: () => s.album ?? [], ctx: () => ctxFigT(s), nome: () => s.tecnico.exJogador?.apelido ?? s.tecnico.nome, capa: () => capaAlbumT(s), fechar: () => ($("dlg") as HTMLDialogElement).close() }).abrir(-1);
 }
+/** Quem é o técnico: origem, filosofia (e se a tática de agora combina), personalidade, pontos fortes e a biografia. */
+function blocoPerfilTecnico(s: SaveTecnico): string {
+  const p = s.tecnico.perfil;
+  if (!p) return "";
+  const combina = combinaFilosofia(p.filosofia, s.tatica);
+  return `<section class="painel"><p class="rotulo">Quem é você</p>${p.bio ? `<p class="sub" style="color:var(--giz)">${esc(p.bio)}</p>` : ""}
+    <div class="dl" style="margin-top:8px"><span>Origem</span><b>${ORIGENS[p.origem].nome}${p.nivelEx ? ` (${NIVEL_EX[p.nivelEx].nome.toLowerCase()})` : ""}</b>${p.mentor ? `<span>Mentor</span><b>${esc(p.mentor)}</b>` : ""}<span>Filosofia</span><b>${FILOSOFIAS[p.filosofia].nome}</b><span>Personalidade</span><b>${PERSONALIDADES[p.personalidade].nome}</b></div>
+    <p class="sub" style="margin-top:6px">${combina ? "✅ A tática de agora combina com a sua filosofia: o time rende um pouco mais." : `A tática de agora não é a sua cara (${esc(FILOSOFIAS[p.filosofia].texto.toLowerCase())}). Ajustando na aba Tática, o time rende um pouco mais.`}</p>
+    ${ATRIBS_T.map((k) => `<div class="atr-linha"><div><b>${NOME_ATRIB_T[k]}</b></div>${barra(p.atrib[k] * 5)}<span class="atr-n">${p.atrib[k]}</span></div>`).join("")}
+    <p class="sub" style="margin-top:6px">${esc(ORIGENS[p.origem].efeito)}</p></section>`;
+}
 function vidaPerfil(s: SaveTecnico): string {
   completarVida(s); casaT(pacote, s);
   const t = s.tecnico, n = s.namoro, par = n?.par, filhos = n?.filhos ?? [];
@@ -1149,6 +1201,7 @@ function vidaPerfil(s: SaveTecnico): string {
   const cab = `<section class="painel"><div class="v-topo"><button class="v-mini" data-sub="vida:visual" aria-label="Mudar o visual">${fotoTecnico(s)}</button><div><p class="rotulo">Técnico</p><h2 style="margin:0">${esc(t.nome)}</h2><p class="sub">${t.idade} anos · ${esc(t.nac)}${t.exJogador ? ` · ex-jogador (${esc(t.exJogador.apelido)})` : ""}</p></div></div>
     <div class="dl" style="margin-top:8px"><span>Clube</span><b>${esc(nomeClube(s.clubeId))}</b><span>Reputação</span><b>${t.reputacao}/100</b><span>Salário</span><b>${curtoBrl(salarioTecnico(s))}/mês</b>${t.contrato ? `<span>Contrato</span><b>até ${ANO_INICIAL_T + t.contrato.ate} · multa ${curtoBrl(t.contrato.multa)}</b>` : ""}<span>No bolso</span><b>${curtoBrl(bolso(s))}</b><span>Vida pessoal</span><b>${esc(resumoFam)}</b></div>
     <div class="botoes" style="margin-top:10px"><button class="botao sec" data-sub="vida:familia">Ver a família</button></div></section>
+    ${blocoPerfilTecnico(s)}
     <section class="painel"><p class="rotulo">Sua casa</p>${(() => { const c = casaT(pacote, s), m = IMOVEL[c.imovel]; return `<h3 style="margin:0">${esc(nomeImovel(c, m))}</h3><p class="sub">${esc(m.local)} · ${c.proprios.includes(c.imovel) ? "imóvel próprio" : `aluguel ${curtoBrl(m.aluguel)}/mês`} · ${c.objetos.length} itens · ${(c.carros ?? []).length} ${(c.carros ?? []).length === 1 ? "carro" : "carros"}</p><p class="sub">Patrimônio: ${curtoBrl(patrimonio(c))}</p>`; })()}
     <div class="botoes" style="margin-top:10px"><button class="botao" data-casa>Entrar em casa</button></div></section>
     ${albumCardT(s)}`;
@@ -1436,7 +1489,14 @@ document.addEventListener("change", (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset.mentor && save) { const r = definirMentor(save, t.dataset.mentor, (t as HTMLSelectElement).value || undefined); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(save, t.dataset.mentor)); render(); return; }
   if (t.dataset.funcao && save) { (save.esc.funcoes ??= {})[t.dataset.funcao] = (t as HTMLSelectElement).value; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
-  if (t.id === "iLiga") { ligaEscolhida = (t as HTMLSelectElement).value; const nome = ($("iNome") as HTMLInputElement).value, nac = ($("iNac") as HTMLSelectElement).value; render(); ($("iNome") as HTMLInputElement).value = nome; ($("iNac") as HTMLSelectElement).value = nac; }
+  if (t.id === "iLiga") { ligaEscolhida = (t as HTMLSelectElement).value; const y = window.scrollY; render(); window.scrollTo(0, y); }
+  if (t.id === "iNac") cria.nac = (t as HTMLSelectElement).value;
+  if (t.id === "iIdade") { cria.idade = +(t as HTMLInputElement).value; const y = window.scrollY; render(); window.scrollTo(0, y); }
+});
+document.addEventListener("input", (ev) => {
+  const t = ev.target as HTMLInputElement;
+  if (t.id === "iNome") cria.nome = t.value;
+  if (t.id === "iIdade") { const v = document.getElementById("iIdadeV"); if (v) v.textContent = `${t.value} anos`; }
 });
 document.addEventListener("click", (ev) => {
   const b = (ev.target as Element).closest<HTMLElement>("button, [data-fechar]");
@@ -1444,13 +1504,21 @@ document.addEventListener("click", (ev) => {
   const d = b.dataset;
   const y = window.scrollY, redesenhar = (manterMsg = true) => { if (!manterMsg) msg = undefined; salvar(); render(); window.scrollTo(0, y); };
   if (d.fechar !== undefined) { fechar(); return; }
-  if (d.pausa !== undefined && !save) { pausaEscolhida = +d.pausa; render(); return; }
+  if (!save && (d.pausa !== undefined || d.origem || d.nivelex || d.filo || d.perso || d.ponto)) {
+    if (d.pausa !== undefined) pausaEscolhida = +d.pausa;
+    if (d.origem) { cria.origem = d.origem as Origem; cria.idade = Math.max(cria.idade, ORIGENS[cria.origem].idadeMin); }
+    if (d.nivelex) cria.nivelEx = d.nivelex as NivelEx;
+    if (d.filo) cria.filosofia = d.filo as Filosofia;
+    if (d.perso) cria.personalidade = d.perso as Personalidade;
+    if (d.ponto) { const [k, n] = d.ponto.split("|"); const a = k as AtribT; cria.extra[a] = Math.max(0, (cria.extra[a] ?? 0) + (+n > 0 ? Math.min(1, livresCria()) : -1)); }
+    const y0 = window.scrollY; render(); window.scrollTo(0, y0); return;
+  }
   if (d.assumir) {
-    const nome = ($("iNome") as HTMLInputElement).value.trim() || "Técnico", nac = ($("iNac") as HTMLSelectElement).value;
     const jog = ler<SaveJogador>("mycarrerinha:save");
-    const ex = d.ex === "1" && jog?.carreira?.encerrada ? { apelido: jog.jogador.apelido, fama: jog.carreira.fama } : undefined;
+    const ex = d.ex === "1" && jog?.carreira?.encerrada ? jog : null;
     if (anterior) { save = assumirNovoClube(pacote, anterior, d.assumir); anterior = null; aba = "inicio"; msg = undefined; salvar(); nuvem.agora(); render(); window.scrollTo(0, 0); return; }
-    save = novaCarreiraTecnico(pacote, { nome, nac, idade: ex ? jog!.jogador.idade + 1 + pausaEscolhida : 38, ...(ex ? { exJogador: ex, ...heranca(jog!), vindoDe: vindoDoJogador(jog!, pausaEscolhida) } : {}) }, d.assumir);
+    const dados = dadosCriados(ex);
+    save = novaCarreiraTecnico(pacote, { ...dados, ...(ex ? { vindoDe: vindoDoJogador(ex, pausaEscolhida) } : {}) }, d.assumir);
     if (ex && pausaEscolhida) save.tecnico.reputacao = Math.min(100, save.tecnico.reputacao + 3 * pausaEscolhida);
     aba = "inicio"; msg = undefined; salvar(); nuvem.agora(); render(); window.scrollTo(0, 0); return;
   }

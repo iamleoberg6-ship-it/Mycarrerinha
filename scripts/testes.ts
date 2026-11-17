@@ -11,6 +11,7 @@ import * as V from "../src/tecnico/vestiario.js";
 import * as MX from "../src/tecnico/mercado-extra.js";
 import * as PD from "../src/tecnico/plano-dir.js";
 import * as G from "../src/tecnico/gestao.js";
+import * as PT from "../src/tecnico/perfil-tecnico.js";
 import { limiteEstrangeiros } from "../src/estrangeiros.js";
 import { montarRevista as montarRevistaT } from "../src/revista.js";
 import * as SL from "../src/tecnico/selecao-t.js";
@@ -2011,4 +2012,37 @@ teste("Técnico: negociação em duas etapas (clube e empresário), empréstimo 
   assert.ok(m && m.log.length >= 2);
   const r3 = P.negociarPatro(pacote, s, cota, m.marca, "aceitar");
   assert.ok(r3.ok && s.patro![cota], r3.msg);
+});
+
+teste("Técnico: criação com origem, filosofia, personalidade, pontos e propostas", () => {
+  // pontos: não passa dos livres nem do máximo
+  const p = PT.montarPerfil({ origem: "analista", filosofia: "pressao", personalidade: "estrategista", extra: { tatica: 30, motivacao: 5 } }, "x");
+  const base = PT.atribBase("analista");
+  const gasto = PT.ATRIBS_T.reduce((t, k) => t + p.atrib[k] - base[k], 0) - 1; // estrategista dá +1 de tática
+  assert.ok(gasto <= PT.PONTOS_LIVRES && p.atrib.tatica <= PT.MAX_ATRIB, `gasto ${gasto}`);
+  // origem muda reputação e licença; a várzea começa embaixo e o ex-craque em cima
+  const mk = (origem: PT.Origem, nivelEx?: PT.NivelEx): T.DadosTecnico => ({ nome: `T ${origem}`, nac: "BRA", idade: 40, licenca: PT.licencaDaOrigem(origem, nivelEx), perfil: PT.montarPerfil({ origem, nivelEx, filosofia: "posse", personalidade: "paizao", extra: {} }, origem) });
+  assert.ok(T.reputacaoInicial(mk("varzea")) < T.reputacaoInicial(mk("analista")) && T.reputacaoInicial(mk("analista")) < T.reputacaoInicial(mk("exJogador", "craque")));
+  const pv = T.propostasIniciais(pacote, "BRA1", mk("varzea"), "s1"), pc = T.propostasIniciais(pacote, "BRA1", mk("exJogador", "craque"), "s1");
+  assert.equal(pv.length, 3); assert.equal(pc.length, 3);
+  assert.equal(new Set(pv.map((x) => x.id)).size, 3);
+  const media = (l: { forca: number }[]) => l.reduce((t, x) => t + x.forca, 0) / l.length;
+  assert.ok(media(pv) < media(pc), `várzea ${media(pv)} < craque ${media(pc)}`);
+  // a carreira guarda o perfil e a biografia; o auxiliar tem mentor; o elenco recebe o ex-jogador bem
+  const s = T.novaCarreiraTecnico(pacote, mk("auxiliar"), pv[0].id, "perfil-1");
+  assert.ok(s.tecnico.perfil?.mentor && s.tecnico.perfil.bio && s.tecnico.perfil.bio.includes(s.tecnico.perfil.mentor));
+  const sEx = T.novaCarreiraTecnico(pacote, mk("exJogador", "craque"), pv[0].id, "perfil-1"), sAn = T.novaCarreiraTecnico(pacote, mk("analista"), pv[0].id, "perfil-1");
+  const mor = (x: T.SaveTecnico) => x.elenco.reduce((t, a) => t + a.moral, 0) / x.elenco.length;
+  assert.ok(mor(sEx) > mor(sAn));
+  // efeitos: sem perfil, tudo neutro; preparador tem menos lesão; olheiro negocia mais barato; filosofia combinando rende mais
+  const velho = { tecnico: {} };
+  assert.equal(PT.fatorLesao(velho), 1); assert.equal(PT.fatorNegocio(velho), 1); assert.equal(PT.fatorReputacao(velho), 1);
+  assert.ok(PT.fatorLesao({ tecnico: { perfil: mk("preparador").perfil } }) < 1);
+  assert.ok(PT.fatorNegocio({ tecnico: { perfil: mk("olheiro").perfil } }) < 1);
+  const sp = { tecnico: { perfil: { ...mk("auxiliar").perfil!, filosofia: "pressao" as const } }, tatica: { ...M.taticaPadrao(), pressao: 2, ritmo: 2 } };
+  const sn = { ...sp, tatica: M.taticaPadrao() };
+  assert.ok(PT.fatorTecnicoJogo(sp)[0] > PT.fatorTecnicoJogo(sn)[0]);
+  // a carreira roda com o perfil
+  for (let k = 0; k < 6; k++) T.avancarSemana(pacote, s);
+  assert.ok(s.semana >= 6);
 });

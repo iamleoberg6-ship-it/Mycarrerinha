@@ -5,6 +5,7 @@
 // avaliação vai fechando a faixa semana a semana). Você aprova quem entra; quem você demora para aprovar pode ser levado
 // por outro clube. Quem passa da idade da categoria sobe (do Sub-17 para o Sub-20) ou tem que ser decidido: sobe para o
 // profissional ou é dispensado. Jogador do profissional que ainda tem idade de base pode ser mandado para jogar lá.
+import { bonusBase } from "./perfil-tecnico.js";
 import { RNG, clamp } from "../rng.js";
 import { curvaDe, potTardio } from "../curvas.js";
 import type { PacoteDados } from "../liga.js";
@@ -69,7 +70,7 @@ function ovrTipico(s: SaveTecnico, idade: number): number {
   return 34 + (idade - 14) * 3.6 + nivelBase(s) * 2 + clamp(fL, 0.2, 1.2) * 5;
 }
 function potGerado(rng: RNG, s: SaveTecnico, ovr: number): number {
-  return Math.round(clamp(56 + nivelBase(s) * 3 + coordDe(s) * 1.6 + clamp(infoLiga(s.ligaId).fLiga, 0.2, 1.2) * 4 + rng.normal(0, 8), ovr + 6, 95));
+  return Math.round(clamp(56 + nivelBase(s) * 3 + coordDe(s) * 1.6 + clamp(infoLiga(s.ligaId).fLiga, 0.2, 1.2) * 4 + bonusBase(s) + rng.normal(0, 8), ovr + 6, 95));
 }
 function novoAtleta(rng: RNG, s: SaveTecnico, nome: string, pos: PosT, idade: number, ovr: number, pot: number, prof: number, temp: number): Atleta {
   return { id: `${s.clubeId}|base|${nome}`, nome, pos, idade, nac: infoLiga(s.ligaId).pais, at: gerarAtributos(rng, pos, ovr), pot, numero: 0, moral: 75, condicao: 100, lesao: 0, suspenso: 0, amarelos: 0,
