@@ -278,7 +278,9 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     const rf = ref[c.id], r = rngDe("elenco", c.id), amador = g.amadores.includes(c);
     if (!rf) continue;
     for (const j of subiram[c.id] ?? []) chega(c, j, "subiu");
-    const nivelAlvo = rf.forca - 3 + (c.forca - rf.forca) * 0.3; // reforço do tamanho do clube
+    // reforço do tamanho do clube: quem caiu se recompõe; quem subiu acima do tamanho dele não vira superpotência
+    // (sem esse teto, os gigantes compravam cada vez melhor e o abismo da liga crescia temporada após temporada)
+    const nivelAlvo = rf.forca - 3 + clamp(c.forca - rf.forca, -8, 1.5) * 0.3;
     /** Procura um reforço no mundo: reservas que sobram em outros clubes e agentes livres do nível; sem ninguém,
      *  titulares de clubes menores (compra); depois livres um pouco abaixo; depois um garoto da própria base. */
     const buscar = (pos: Pos, min: number, max: number): boolean => {

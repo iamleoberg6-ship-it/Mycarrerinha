@@ -7,7 +7,7 @@ export const CALIB_PARTIDA = {
   bonusMando: 0.2,
   baseFora: 1.02,
   escala: 15, // e^((F_casa − F_fora)/escala)
-  lesaoBase: 0.05,
+  lesaoBase: 0.04,
 };
 
 export function lambdas(fCasa: number, fFora: number) {
@@ -16,6 +16,20 @@ export function lambdas(fCasa: number, fFora: number) {
     casa: c.baseCasa * Math.exp((fCasa - fFora) / c.escala) + c.bonusMando,
     fora: c.baseFora * Math.exp((fFora - fCasa) / c.escala),
   };
+}
+
+/** Pontos que um time deve fazer, em média, num jogo (a conta exata do placar sorteado: vitória vale 3, empate 1).
+ *  É a régua justa da diretoria: time igual ao adversário, em média, não ganha nem perde confiança. */
+export function pontosEsperados(fCasa: number, fFora: number, souCasa: boolean): number {
+  const l = lambdas(fCasa, fFora), pc = poissonLista(l.casa), pf = poissonLista(l.fora);
+  let vence = 0, empata = 0;
+  for (let a = 0; a < pc.length; a++) for (let b = 0; b < pf.length; b++) { const p = pc[a] * pf[b]; if (a === b) empata += p; else if ((a > b) === souCasa) vence += p; }
+  return 3 * vence + empata;
+}
+function poissonLista(l: number, max = 12): number[] {
+  const out: number[] = []; let p = Math.exp(-l);
+  for (let k = 0; k <= max; k++) { out.push(p); p *= l / (k + 1); }
+  return out;
 }
 
 export function simularPlacar(rng: RNG, fCasa: number, fFora: number): [number, number] {

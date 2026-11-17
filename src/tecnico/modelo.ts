@@ -7,7 +7,7 @@ import { valorMercado, CAMBIO } from "../mercado.js";
 import type { JogadorNPC } from "../liga.js";
 import { extrasIniciais, type Extras } from "../detalhes.js";
 import { idiomasIniciais, nivelEm, fatorComunicacao, type Idiomas } from "../idiomas.js";
-import { FUNCAO, encaixe, melhorFuncao, type Funcao as FuncaoJogo } from "../funcoes.js";
+import { FUNCAO, encaixe, melhorFuncao, funcoesDa, type Funcao as FuncaoJogo } from "../funcoes.js";
 import type { CursoTecnico } from "../licencas.js";
 
 export type PosT = Posicao | "GOL";
@@ -189,6 +189,17 @@ export function melhorEscalacao(elenco: Atleta[], formacao: string, nReservas = 
 
 export interface ForcaTime { defesa: number; meio: number; ataque: number; geral: number }
 /** Força do time em campo: o OVR de cada um na vaga, a condição, a moral, o entrosamento e a tática. */
+/** O efeito médio das funções de cada posição: a função conta pelo que ela tem de diferente da média (um time escalado
+ *  sem pensar nas funções fica no nível do OVR, como os times do computador; escolher bem é que dá vantagem). */
+const MEDIA_FUNCAO = new Map<string, { ataque: number; meio: number; defesa: number }>();
+function mediaFuncao(pos: string) {
+  let m = MEDIA_FUNCAO.get(pos);
+  if (!m) { const fs = funcoesDa(pos), n = Math.max(1, fs.length); m = { ataque: fs.reduce((a, f) => a + (f.efeito.ataque ?? 0), 0) / n, meio: fs.reduce((a, f) => a + (f.efeito.meio ?? 0), 0) / n, defesa: fs.reduce((a, f) => a + (f.efeito.defesa ?? 0), 0) / n }; MEDIA_FUNCAO.set(pos, m); }
+  return m;
+}
+/** O encaixe da melhor função costuma ficar acima do OVR: só o que passa do típico é rendimento a mais
+ *  (calibrado para um time com moral normal render a força que o mundo dá ao clube). */
+const ENCAIXE_TIPICO = 1;
 export function forcaDoTime(elenco: Atleta[], esc: Escalacao, tat: Tatica, entrosamento: number, lingua?: string): ForcaTime {
   const vagas = FORMACOES[tat.formacao] ?? FORMACOES["4-3-3"], por = new Map(elenco.map((a) => [a.id, a]));
   const grupo = { defesa: [0, 0], meio: [0, 0], ataque: [0, 0] }, papel = { ataque: 0, meio: 0, defesa: 0 };
@@ -197,14 +208,15 @@ export function forcaDoTime(elenco: Atleta[], esc: Escalacao, tat: Tatica, entro
   const naVaga: { a: Atleta; v: Vaga }[] = [];
   vagas.forEach((v, i) => {
     const a = por.get(esc.titulares[i] ?? "");
-    let ef = a && disponivel(a) ? ovrNaVaga(a, v.pos, ladoDaVaga(v)) * (0.8 + 0.2 * a.condicao / 100) * (0.94 + 0.12 * a.moral / 100) : 32;
+    let ef = a && disponivel(a) ? ovrNaVaga(a, v.pos, ladoDaVaga(v)) * (0.8 + 0.2 * a.condicao / 100) * (0.961 + 0.06 * a.moral / 100) /* moral 65 (o normal de um elenco) vale 1: moral alta ajuda um pouco, baixa atrapalha um pouco (sem virar bola de neve) */ : 32;
     if (a && disponivel(a)) {
       // a função: quem encaixa bem rende acima do OVR, quem não encaixa rende abaixo; e ela puxa o time para um lado
       const fn = funcaoNaVaga(esc, a, v.pos), base = ovrPos(a.at, v.pos);
       if (fn) {
         const enc = encaixe(a.at, exDe(a), fn), forca = clamp(enc / Math.max(40, base), 0.6, 1.3);
-        ef += clamp((enc - base) * 0.25, -5, 5);
-        papel.ataque += (fn.efeito.ataque ?? 0) * forca; papel.meio += (fn.efeito.meio ?? 0) * forca; papel.defesa += (fn.efeito.defesa ?? 0) * forca;
+        ef += clamp((enc - base - ENCAIXE_TIPICO) * 0.25, -5, 5);
+        const md = mediaFuncao(v.pos);
+        papel.ataque += (fn.efeito.ataque ?? 0) * forca - md.ataque; papel.meio += (fn.efeito.meio ?? 0) * forca - md.meio; papel.defesa += (fn.efeito.defesa ?? 0) * forca - md.defesa;
         if (fn.contra && tat.contraAtaque) papel.ataque += 0.006;
       }
       // quem não fala a língua do clube se comunica pior em campo

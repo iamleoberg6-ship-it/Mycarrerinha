@@ -1,5 +1,6 @@
 // Testes do motor: fórmulas do documento e propriedades da simulação.
 import assert from "node:assert/strict";
+import { pontosEsperados } from "../src/partida.js";
 import { jeitoDe as jeitoDeFam } from "../src/familia.js";
 import * as T from "../src/tecnico/motor.js";
 import * as M from "../src/tecnico/modelo.js";
@@ -2093,4 +2094,31 @@ teste("Técnico: shows na arena própria (proposta, aceite, estádio ocupado, di
   assert.ok(s.clube.saldo >= saldo + o.valor - 1 && s.clube.gramado === 3 && s.gramadoDano);
   for (let j = 0; j < 5; j++) { s.semana++; SH.semanaShows(s); }
   assert.equal(s.clube.gramado, 4);
+});
+
+// ------------------------------------------------------------------ equilíbrio (achados do robô de carreiras longas)
+teste("Equilíbrio: time do técnico com moral normal rende a força que o mundo dá ao clube (sem vantagem escondida)", () => {
+  const w = mundo(pacote);
+  let soma = 0, n = 0;
+  for (const id of ["PAL", "FLU", "MIR", "EN-CHE", "ES-BAR"]) {
+    const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 45 }, id, `equilibrio-${id}`);
+    const el = s.elenco.map((a) => ({ ...a, moral: 65, condicao: 100 }));
+    const esc = { ...M.melhorEscalacao(el, s.tatica.formacao), capitao: s.esc.capitao, funcoes: s.esc.funcoes } as typeof s.esc;
+    const f = M.forcaDoTime(el, esc, s.tatica, 100), media = (0.65 * f.ataque + 0.35 * f.meio + 0.7 * f.defesa + 0.3 * f.meio) / 2;
+    soma += media - w.clube[id].forca; n++;
+    assert.ok(Math.abs(media - w.clube[id].forca) < 4, `${id}: ${media.toFixed(1)} contra ${w.clube[id].forca.toFixed(1)}`);
+  }
+  assert.ok(Math.abs(soma / n) < 1.2, `desvio médio ${(soma / n).toFixed(2)}`);
+});
+teste("Equilíbrio: a diretoria espera, entre times iguais, a média real de pontos (1,37 por jogo)", () => {
+  const casa = pontosEsperados(75, 75, true), fora = pontosEsperados(75, 75, false);
+  assert.ok(Math.abs((casa + fora) / 2 - 1.37) < 0.05, `${casa.toFixed(2)} / ${fora.toFixed(2)}`);
+  assert.ok(pontosEsperados(85, 70, true) > 2.3 && pontosEsperados(85, 70, false) < 0.4); // casa forte em casa; o fraco de visitante
+});
+teste("Equilíbrio: a mesma semente dá a mesma carreira de técnico mesmo depois de outra carreira no mesmo mundo", () => {
+  const a = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-sem-vazar");
+  for (let k = 0; k < 12; k++) T.avancarSemana(pacote, a);
+  const b = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-sem-vazar");
+  const c0 = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-sem-vazar");
+  assert.deepEqual(b.elenco.map((x) => [x.nome, M.ovrDe(x)]), c0.elenco.map((x) => [x.nome, M.ovrDe(x)]));
 });

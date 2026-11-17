@@ -10,6 +10,7 @@ import {
 } from "../copas.js";
 import { infoLiga } from "../ligas.js";
 import type { SaveTecnico } from "./motor.js";
+import { freioReputacao } from "./perfil-tecnico.js";
 import { onzeProvavel } from "../relacoes.js";
 import { autorNpc } from "./lances-liga.js";
 
@@ -110,7 +111,7 @@ export function fecharCopasT(pacote: PacoteDados, s: SaveTecnico) {
 /** Recompensa por título (dinheiro, reputação, confiança e torcida). */
 export function premioDeTitulo(s: SaveTecnico, id: CopaId): { dinheiro: number; texto: string } {
   const p = peso(id), dinheiro = Math.round(s.clube.tv * 0.9 * p);
-  s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.round(3 * p), 0, 100);
+  s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.round(3 * p * freioReputacao(s.tecnico.reputacao)), 0, 100);
   s.diretoria.confianca = clamp(s.diretoria.confianca + Math.round(6 * p), 0, 100);
   s.clube.torcida = clamp(s.clube.torcida + Math.round(5 * p), 0, 100);
   return { dinheiro, texto: `CAMPEÃO ${COPAS[id].prep === "do" ? "DO" : "DA"} ${COPAS[id].curto.toUpperCase()}!` };

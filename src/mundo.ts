@@ -340,6 +340,9 @@ export function tecnicoLivrePara(pacote: PacoteDados, clubeId: string, chave: st
 let versao = 0;
 /** Muda a cada vez que o mundo muda (caches de quem lê o mundo comparam com isto). */
 export const versaoMundo = () => versao;
+/** Esquece a sincronia: a próxima sincronização refaz o mundo do zero (os elencos reais). Uma carreira nova usa isso para
+ *  não herdar o elenco que outra carreira de mesma semente deixou escrito no mundo. */
+export function reiniciarSincronia() { estado = undefined; }
 /** Temporada em que o mundo está agora. */
 export const temporadaDoMundo = (pacote: PacoteDados) => garantir(pacote).temporada;
 

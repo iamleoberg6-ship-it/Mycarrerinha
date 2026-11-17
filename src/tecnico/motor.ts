@@ -3,7 +3,7 @@
 import { RNG, clamp } from "../rng.js";
 import { curvaDe, potTardio } from "../curvas.js";
 import { efeitoBeira } from "./beira.js";
-import { fatorTecnicoJogo, fatorBeira, fatorLesao, fatorCartao, fatorTreino, fatorNegocio, fatorReputacao, ajusteMoralSemana, moralDeChegada, reputacaoDaOrigem, ajusteIdade, biografia, type PerfilTecnico } from "./perfil-tecnico.js";
+import { fatorTecnicoJogo, fatorBeira, fatorLesao, fatorCartao, fatorTreino, fatorNegocio, fatorReputacao, freioReputacao, ajusteMoralSemana, moralDeChegada, reputacaoDaOrigem, ajusteIdade, biografia, type PerfilTecnico } from "./perfil-tecnico.js";
 import { avaliarPlano } from "./plano-dir.js";
 import { jogosNpcDaRodada, registrarRodada, autorNpc, ajustarRevista, type ArtLiga, type GolLiga } from "./lances-liga.js";
 import { semanaMercadoExtra, custoParceiros } from "./mercado-extra.js";
@@ -12,8 +12,8 @@ import { limiteEstrangeiros, contaComoEstrangeiro } from "../estrangeiros.js";
 import { semanaBase, viradaBase, custoBase, baseDe, daCat, subirProfissional } from "./base-t.js";
 import { evoluirSemana, type Grupo, type Intensidade, type Participacao } from "../atributos.js";
 import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type LinhaTabela, type PacoteDados, type JogadorNPC, type Liga } from "../liga.js";
-import { simularPlacar, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
-import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
+import { simularPlacar, pontosEsperados, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
+import { mundo, sincronizarMundo, reiniciarSincronia, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
 import { valorBrl } from "../moeda.js";
 import { montarRevista, type EdicaoRevista } from "../revista.js";
 import { semanaEmpregos, tabelaAgora } from "./empregos.js";
@@ -112,7 +112,7 @@ export interface SaveTecnico {
   clube: Clube;
   mes: { receitas: Record<string, number>; despesas: Record<string, number> };
   financas: LinhaFinancas[];
-  diretoria: { confianca: number; expectativa: { pos: number; texto: string }; obras: Obra[]; /** corte pedido na comissão (até quando) */ corte?: { ate: number; texto: string } };
+  diretoria: { confianca: number; expectativa: { pos: number; texto: string; /** lugar do elenco entre os mais fortes da liga quando a meta foi dada */ rank?: number }; obras: Obra[]; /** corte pedido na comissão (até quando) */ corte?: { ate: number; texto: string } };
   noticias: Noticia[];
   ultima?: Relatorio;
   historico: { t: number; clubeId?: string; ligaId: string; pos: number; n: number; pts: number; esperado: number; campeao?: boolean }[];
@@ -229,6 +229,7 @@ export function novaCarreiraTecnico(pacote: PacoteDados, d: DadosTecnico, clubeI
   const inicio = d.vindoDe ? d.vindoDe.temporada + 1 + d.vindoDe.pausa : d.continuar ? d.continuar.temporada : 0;
   if (d.vindoDe) semente = d.vindoDe.semente;
   if (d.continuar) semente = d.continuar.semente;
+  if (!d.continuar && !d.vindoDe) reiniciarSincronia();
   sincronizarMundo(pacote, semente, inicio, 0, d.continuar?.tabelas ?? {}, 0);
   const w = mundo(pacote), c = w.clube[idClube(clubeId)], info = infoClube(pacote, c.id), ligaId = info.ligaId, l = w.liga[ligaId], li = infoLiga(ligaId);
   const s: SaveTecnico = {
@@ -289,7 +290,7 @@ function definirExpectativa(pacote: PacoteDados, s: SaveTecnico) {
   const rank = 1 + s.ordem.filter((id) => id !== s.clubeId && (w.clube[id]?.forca ?? 0) > minha).length, rebaixa = infoLiga(s.ligaId).rebaixados;
   const texto = rank <= 2 ? "Brigar pelo título" : rank <= Math.ceil(n * 0.3) ? "Terminar entre os primeiros" : rank <= n - rebaixa - 3 ? "Campanha tranquila no meio da tabela" : "Escapar do rebaixamento";
   const pos = rank <= 2 ? 2 : rank <= Math.ceil(n * 0.3) ? Math.ceil(n * 0.3) : rank <= n - rebaixa - 3 ? Math.min(n - rebaixa - 1, rank + 2) : n - rebaixa;
-  s.diretoria.expectativa = { pos, texto };
+  s.diretoria.expectativa = { pos, texto, rank };
 }
 
 // ------------------------------------------------------------------ comissão técnica
@@ -717,12 +718,16 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   // bola parada: o melhor cobrador de falta e de pênalti em campo
   const melhor = (k: "FAL" | "PEN") => [...campo].sort((p, q) => exDe(q.a)[k] - exDe(p.a)[k])[0];
   const bFal = melhor("FAL"), bPen = melhor("PEN");
-  const bp = nivelCargo(s.deps, "t_bp"), bola = (1 + ((bFal ? exDe(bFal.a).FAL : 60) - 60) / 900 + ((bPen ? exDe(bPen.a).PEN : 60) - 60) / 1400) * (1 + 0.008 * bp);
+  const bp = nivelCargo(s.deps, "t_bp"), bola = (1 + ((bFal ? exDe(bFal.a).FAL : 60) - 70) / 900 + ((bPen ? exDe(bPen.a).PEN : 60) - 70) / 1400) * (1 + 0.008 * bp); // 70: o cobrador típico de um time da elite já está na força do adversário
   // semana de show no estádio: o jogo "em casa" é num estádio alugado (menos torcida, gramado que não é o seu)
   const alugado = av.souCasa && estadioOcupado(s);
   const gr = av.souCasa && !alugado ? efeitoGramado(s, fAdv, (atk + def) / 2) : { me: 1, adv: 1 };
-  const lMe = ((av.souCasa ? (alugado ? 1.14 : 1.3) : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? (alugado ? 0.08 : 0.2) : 0)) * (1 + 0.04 * m) * aberto * bola * gr.me;
-  const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp) * gr.adv;
+  // o adversário também cansa: a força dele no trecho é a de um time típico nesse minuto (titulares gastando, e três
+  // trocas frescas a partir dos 60). Assim o cansaço do seu time só pesa no que ele foge do normal (rodízio, pressão, trocas).
+  const condTipica = ini < 60 ? 98 - 32 * ini / 90 : (7 * (98 - 32 * ini / 90) + 3 * (100 - 32 * (ini - 60) / 90)) / 10;
+  const fAdvT = fAdv * (0.8 + 0.2 * condTipica / 100) / (0.8 + 0.2 * 0.98);
+  const lMe = ((av.souCasa ? (alugado ? 1.14 : 1.3) : 1.02) * Math.exp((atk - fAdvT) / 15) + (av.souCasa ? (alugado ? 0.08 : 0.2) : 0)) * (1 + 0.04 * m) * aberto * bola * gr.me;
+  const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdvT - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp) * gr.adv;
   const bz0 = efeitoBeira(av, ini), fb = fatorBeira(s), bz = { me: 1 + (bz0.me - 1) * fb, adv: 1 + (bz0.adv - 1) * fb };
   const [ftA, ftD] = fatorTecnicoJogo(s, true), fcl = fatorClima(clima(s)), lMeB = lMe * bz.me * fcl * ftA, lAdvB = lAdv * bz.adv * ftD;
   av.lambdas.push([lMeB, lAdvB]);
@@ -1001,7 +1006,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
         s.clube.saldo += Math.round(bruto * 0.75) - aluguel;
       }
       // diretoria e torcida: resultado contra o esperado pela força dos dois
-      const fMeu = w.clube[s.clubeId]?.forca ?? 60, fAdv = w.clube[adv]?.forca ?? 60, esperado = clamp(1.45 + (fMeu - fAdv) / 9 + (p.souCasa ? 0.25 : -0.25), 0.2, 2.6);
+      const fMeu = w.clube[s.clubeId]?.forca ?? 60, fAdv = w.clube[adv]?.forca ?? 60, esperado = p.souCasa ? pontosEsperados(fMeu, fAdv, true) : pontosEsperados(fAdv, fMeu, false);
       const pts = meusGols > deles ? 3 : meusGols === deles ? 1 : 0;
       s.diretoria.confianca = clamp(s.diretoria.confianca + (pts - esperado) * 1.6, 0, 100);
       s.clube.torcida = clamp(s.clube.torcida + (pts - esperado) * 3, 0, 100);
@@ -1135,9 +1140,10 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   const premio = Math.round(s.clube.tv * (1.0 * (1 - (pos - 1) / Math.max(1, n - 1)) + (campeao ? 0.8 : 0)));
   s.clube.saldo += premio; receber(s, "Premiação", premio);
   try { const b = bonusPatroTemporada(pacote, s, campeao, pos <= (li.nivel <= 1 ? 4 : 2)); if (b.total) { s.clube.saldo += b.total; receber(s, "Bônus de patrocinadores", b.total); } for (const t2 of b.avisos) noticia(s, "dinheiro", t2); } catch (err) { console.error(err); }
-  const diff = esperado - pos;
+  // elenco entre os mais fracos da liga: cair por pouco é decepção, não escândalo (a diretoria sabia do tamanho do time)
+  const fraco = (s.diretoria.expectativa.rank ?? 0) > n - li.rebaixados, diff = esperado - pos + (fraco && pos > esperado ? Math.min(2, pos - esperado) : 0);
   s.diretoria.confianca = clamp(s.diretoria.confianca + clamp(diff * 4, -25, 25) + (campeao ? 15 : 0), 0, 100);
-  { const ganho = clamp(diff, -6, 8) + (campeao ? 8 : 0) + 1; s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.round(ganho > 0 ? ganho * fatorReputacao(s) : ganho), 0, 100); }
+  { const ganho = clamp(diff, -6, 8) + (campeao ? 8 : 0) + 1; s.tecnico.reputacao = clamp(s.tecnico.reputacao + Math.round(ganho > 0 ? ganho * fatorReputacao(s) * freioReputacao(s.tecnico.reputacao) : ganho), 0, 100); }
   s.historico.push({ t, clubeId: s.clubeId, ligaId: s.ligaId, pos, n, pts: final[pos - 1]?.pts ?? 0, esperado, ...(campeao ? { campeao: true } : {}) });
   s.tabelasReais[t] = { ligaId: s.ligaId, ordem: final.map((x) => x.clube) };
   const resumo = `${ANO_INICIAL_T + t}: ${pos}º lugar na ${li.curto}${campeao ? " — CAMPEÃO!" : ""} (a diretoria esperava ${esperado}º).`;

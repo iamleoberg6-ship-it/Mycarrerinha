@@ -1577,7 +1577,10 @@ export function concluirSemana(pacote: PacoteDados, s: Save, plano: Plano, parti
   if (participacao !== "titular" && participacao !== "entrou") c.fama = clamp(c.fama * 0.995, 0, 100);
   { // a fama volta aos poucos para o tamanho real do jogador e do clube
     const cl = mundo(pacote).clube[idClube(c.clubeId)] ?? clubeDe(l, c.clubeId), ref = famaDeReferencia(ovr(j), visibilidade(c.clubeId, c.ligaId, cl?.fClube ?? 1));
-    c.fama = clamp(c.fama + (ref - c.fama) * (c.fama > ref ? 0.012 : 0.004), 0, 100);
+    // acima do tamanho real, a fama cai mais rápido quanto mais inflada estiver: um título ou uma Copa dão um pico,
+    // mas só quem é craque de verdade (ou joga num gigante) fica lá em cima por anos
+    const excesso = c.fama - ref;
+    c.fama = clamp(c.fama - (excesso > 0 ? excesso * Math.min(0.05, 0.012 + excesso * 0.0012) : excesso * 0.004), 0, 100);
   }
   // redes: quem não posta perde engajamento; repercussão de lance passa
   c.engajamento = clamp((c.engajamento ?? 40) - 2.5, 0, 100);

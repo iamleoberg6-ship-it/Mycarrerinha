@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "build:criacao": "node scripts/build-criacao.mjs",
     "build:casa": "node scripts/build-casa.mjs",
-    "build:jogo": "node scripts/build-jogo.mjs"
+    "build:jogo": "node scripts/build-jogo.mjs",
+    "robo": "tsx scripts/robo-carreiras.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

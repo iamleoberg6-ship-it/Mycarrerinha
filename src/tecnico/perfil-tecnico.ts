@@ -140,6 +140,8 @@ export function fatorNegocio(s: ComPerfil): number {
   return clamp(1 - (at(s, "negociacao") - 10) * 0.008 - (p.origem === "olheiro" ? 0.05 : 0), 0.85, 1.08);
 }
 /** Quanto a reputação ganha com o bom resultado (a perda não muda). */
+/** Reputação ganha cada vez mais devagar perto do topo: chegar a 100 é coisa de lenda (anos ganhando), não de uma boa temporada. */
+export const freioReputacao = (rep: number) => clamp(1.15 - rep / 110, 0.15, 1);
 export function fatorReputacao(s: ComPerfil): number {
   const p = s.tecnico.perfil;
   if (!p) return 1;
