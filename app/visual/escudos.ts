@@ -64,6 +64,20 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<circle cx="8.5" cy="5.6" r=".6" fill="#FFFFFF"/>`;
     return `<g transform="translate(-1 1.4)">${formas("#FFFFFF", 1.3)}${formas("#0A0A0A", 0)}${detalhes}</g>`;
   }
+  // Palmeiras: bola verde com um P branco em letra antiga (com serifa), como nos escudos de clube de antigamente
+  const ANTIGA = "Georgia, 'Times New Roman', Times, serif";
+  if (chave === "PAL") {
+    return `<circle cx="13" cy="15" r="12.4" fill="#006437"/><circle cx="13" cy="15" r="10.7" fill="none" stroke="#FFFFFF" stroke-width=".8"/>`
+      + `<text x="13.4" y="22" text-anchor="middle" font-family="${ANTIGA}" font-weight="700" font-size="20" fill="#FFFFFF">P</text>`
+      + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
+  // Inter: bola vermelha com o S, o C e o I entrelaçados (um por cima do outro), em letra antiga branca
+  if (chave === "INT") {
+    const l = (t: string, x: number, y: number, tam: number) => `<text x="${x}" y="${y}" text-anchor="middle" font-family="${ANTIGA}" font-weight="700" font-size="${tam}" fill="#FFFFFF" stroke="#E30613" stroke-width=".5" paint-order="stroke">${t}</text>`;
+    return `<circle cx="13" cy="15" r="12.4" fill="#E30613"/><circle cx="13" cy="15" r="10.7" fill="none" stroke="#FFFFFF" stroke-width=".8"/>`
+      + l("S", 8.8, 20.6, 15) + l("I", 17.8, 20.4, 15) + l("C", 13.4, 20.8, 16)
+      + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   // Juventus: um J grande no formato de escudo, cortado no meio por um fio vazio (parece um J duplo)
   if (chave === "IT-JUV") {
     const j = "M5.4 4.6 H17.6 V18 Q17.6 25.6 11.6 25.6 Q6 25.6 5.6 20";
@@ -99,7 +113,8 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<rect x="10.8" y="12.2" width="4.4" height="1.1" fill="#8E1A12"/><rect x="9.2" y="18.6" width="7.6" height="1.2" fill="#8E1A12"/>`;
     return `<circle cx="13" cy="15" r="12.6" fill="${MARINHO}"/><circle cx="13" cy="15" r="11" fill="none" stroke="#FFFFFF" stroke-width=".9"/>${torre}<circle cx="13" cy="15" r="12.6" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
   }
-  if (chave === "BOT") c1 = "#0A0A0A"; // escudo preto, sempre (a estrela branca vai no centro)
+  if (chave === "BOT") c1 = "#0A0A0A";
+  if (chave === "CRU") c1 = "#0B3D91"; // todo azul // escudo preto, sempre (a estrela branca vai no centro)
   const c2 = c2r && c2r.toLowerCase() !== c1.toLowerCase() ? c2r : c1.toLowerCase() === "#ffffff" ? "#0A0A0A" : "#FFFFFF";
   const { forma, desenho } = modeloEscudo(chave), d = FORMAS[forma], id = `escR${forma}`;
   // Corinthians: um filete vermelho por dentro do contorno (o detalhe da marca, sem mudar o formato)
@@ -130,8 +145,10 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
     + `<path d="M0 14 H26 M13 0 V14" stroke="${TINTA}" stroke-width=".9"/>` : "";
   // Botafogo: o mesmo formato, todo preto, só com a estrela solitária branca no centro (sem letra)
   const ESTRELA = chave === "BOT" ? `<path d="M13.00 8.20 L14.70 13.05 L19.85 13.18 L15.76 16.30 L17.23 21.22 L13.00 18.30 L8.77 21.22 L10.24 16.30 L6.15 13.18 L11.30 13.05 Z" fill="#FFFFFF" stroke-linejoin="round"/>` : "";
-  const detalhe = ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
-  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
+  // Cruzeiro: o escudo todo azul, com 4 estrelas brancas nas pontas do Cruzeiro do Sul (ligando os pontos, sai a cruz)
+  const CRUZEIRO = chave === "CRU" ? `<path d="M13.00 3.00 L13.66 4.89 L15.66 4.93 L14.07 6.15 L14.65 8.07 L13.00 6.92 L11.35 8.07 L11.93 6.15 L10.34 4.93 L12.34 4.89 Z M13.40 17.60 L14.11 19.63 L16.25 19.67 L14.54 20.97 L15.16 23.03 L13.40 21.80 L11.64 23.03 L12.26 20.97 L10.55 19.67 L12.69 19.63 Z M7.40 10.30 L7.99 11.99 L9.78 12.03 L8.35 13.11 L8.87 14.82 L7.40 13.80 L5.93 14.82 L6.45 13.11 L5.02 12.03 L6.81 11.99 Z M18.60 9.80 L19.16 11.42 L20.88 11.46 L19.51 12.50 L20.01 14.14 L18.60 13.16 L17.19 14.14 L17.69 12.50 L16.32 11.46 L18.04 11.42 Z" fill="#FFFFFF"/>` : "";
+  const detalhe = CRUZEIRO + ESTRELA + COROA + LETRA_FLU + YNWA + LEAO + GALO + (DETALHE[chave] ? `<path d="${d}" transform="translate(13 15) scale(.9) translate(-13 -15)" fill="none" stroke="${DETALHE[chave]}" stroke-width="1.1"/>` : "");
+  return `<defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><path d="${d}" fill="${c1}"/><g clip-path="url(#${id})">${chave === "EN-MCI" ? LISTRAS_MCI(c1) : chave === "FOR" || chave === "FLU" ? DESENHOS[3](c1, c2, "") : chave === "EN-TOT" || chave === "BOT" || chave === "CRU" ? "" : DESENHOS[desenho](c1, c2, inicial(nome))}${CATALUNHA}</g>${detalhe}<path d="${d}" fill="none" stroke="${chave === "FOR" ? "#FFFFFF" : TINTA}" stroke-width="${borda}" stroke-linejoin="round"/>`;
 }
 /** Escudo pequeno, como elemento solto na página. */
 export function svgEscudo(chave: string, c1: string, c2?: string, nome?: string, cls = "escudo"): string {
