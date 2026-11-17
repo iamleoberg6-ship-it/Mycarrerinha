@@ -112,6 +112,8 @@ const PROPRIO: Record<string, (c: string, c2: string) => string> = {
   taguer: () => `<defs><clipPath id="cTag"><path d="M4 3 H36 V20 Q36 32 20 38 Q4 32 4 20 Z"/></clipPath></defs><g clip-path="url(#cTag)"><rect width="40" height="19" fill="#00703C"/><rect y="19" width="40" height="21" fill="#D0102C"/></g>`
     + `<path d="M4 19 H36" stroke="#FFFFFF" stroke-width="1"/><path d="M4 3 H36 V20 Q36 32 20 38 Q4 32 4 20 Z" fill="none" stroke="#FFFFFF" stroke-width="1.4"/>`
     + `<g font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif" font-weight="900" fill="#FFFFFF" text-anchor="middle"><text x="20" y="16.6" font-size="13" textLength="28" lengthAdjust="spacingAndGlyphs">TAGUE</text><text x="20" y="31" font-size="12" textLength="24" lengthAdjust="spacingAndGlyphs">ROIER</text></g>`,
+  // dois retângulos em pé: o primeiro inteiro, o segundo dividido em dois quadrados (contorno preto, por dentro branco)
+  deutschebanco: () => `<g fill="#FFFFFF" stroke="#111111" stroke-width="2.4" stroke-linejoin="miter"><rect x="5" y="5" width="13" height="30"/><rect x="22" y="5" width="13" height="15"/><rect x="22" y="20" width="13" height="15"/></g>`,
   // dois arcos dourados
   macdonaldo: () => `<path d="M5.4 35 V17 Q5.4 5.4 12.7 5.4 Q20 5.4 20 17 Q20 5.4 27.3 5.4 Q34.6 5.4 34.6 17 V35" fill="none" stroke="#FFC72C" stroke-width="5.2" stroke-linejoin="round"/>`,
 };
