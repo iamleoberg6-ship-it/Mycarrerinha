@@ -41,6 +41,8 @@ export function gerarAtributos(rng: RNG, pos: PosT, alvo: number): Atributos {
 }
 
 // ------------------------------------------------------------------ atletas
+export type TipoPromessa = "titular" | "minutos" | "reforco" | "naoVender" | "renovar";
+export interface PromessaT { tipo: TipoPromessa; /** semana absoluta do prazo */ ate: number; /** posição do reforço; jogos-alvo */ pos?: PosT; alvo?: number; feitos?: number }
 export interface Atleta {
   id: string; nome: string; pos: PosT; /** pontas e laterais: lado preferido */ lado?: Lado; idade: number; nac: string; at: Atributos; pot: number; numero: number;
   /** 0 a 100 */ moral: number; /** 0 a 100 */ condicao: number;
@@ -58,6 +60,11 @@ export interface Atleta {
   /** multa rescisória (quem pagar leva), papel prometido na contratação e revenda devida ao clube antigo */ multa?: number; papel?: "estrela" | "titular" | "rotacao" | "reserva" | "promessa"; revenda?: { clubeId: string; pct: number };
   /** veio emprestado: de quem, até quando e a opção de compra */ emprestadoDe?: { clubeId: string; ate: number; opcao: number; obrigacao: boolean; salarioPct: number };
   /** temporada em que chegou */ desde: number;
+  /** treino individual: foco próprio e posição nova que está aprendendo; familiaridade com outras posições (0 a 100) */
+  treinoInd?: { foco?: "fisico" | "tecnico" | "tatico"; pos?: PosT }; posExtra?: Partial<Record<PosT, number>>;
+  /** bônus do contrato: por jogo (entrando em campo) e por gol */ bonusJogo?: number; bonusGol?: number;
+  /** promessas feitas a ele (cobradas no prazo) e jogos como titular na temporada */ promessas?: PromessaT[]; titT?: number;
+  /** quem é o mentor dele (id) */ mentor?: string; /** pediu conversa (semana) */ pedeConversa?: number;
   /** atributos detalhados (bola parada e mentais), idiomas, aulas pagas pelo clube e o curso de técnico recomendado */
   ex?: Extras; idiomas?: Idiomas; aulas?: { lingua: string; ate: number }; curso?: CursoTecnico;
 }
@@ -128,10 +135,12 @@ export function ovrNaVaga(a: Atleta, pos: PosT, lado?: Lado): number {
   const base = ovrPos(a.at, pos);
   // lado trocado: ponta rende um pouco menos (pode virar invertido); lateral sente mais
   if (a.pos === pos) return base - (lado && ladoDe(a) && ladoDe(a) !== lado ? (pos === "LAT" ? 4 : 2) : 0);
-  if (pos === "GOL" || a.pos === "GOL") return base - 25;
-  return base - (AFIM[a.pos].includes(pos) ? 3 : 9);
+  // posição aprendida no treino individual: a penalidade some aos poucos
+  const fam = (a.posExtra?.[pos] ?? 0) / 100;
+  if (pos === "GOL" || a.pos === "GOL") return base - Math.round(25 * (1 - fam * 0.6));
+  return base - Math.round((AFIM[a.pos].includes(pos) ? 3 : 9) * (1 - fam));
 }
-export const rotuloEncaixe = (a: Atleta, pos: PosT, lado?: Lado) => (a.pos === pos ? (lado && ladoDe(a) && ladoDe(a) !== lado ? "lado trocado" : "") : pos === "GOL" || a.pos === "GOL" ? "fora de posição" : AFIM[a.pos].includes(pos) ? "improvisado" : "fora de posição");
+export const rotuloEncaixe = (a: Atleta, pos: PosT, lado?: Lado) => ((a.posExtra?.[pos] ?? 0) >= 100 ? "posição aprendida" : a.pos === pos ? (lado && ladoDe(a) && ladoDe(a) !== lado ? "lado trocado" : "") : pos === "GOL" || a.pos === "GOL" ? "fora de posição" : AFIM[a.pos].includes(pos) ? "improvisado" : "fora de posição");
 
 // ------------------------------------------------------------------ tática
 export interface Tatica {

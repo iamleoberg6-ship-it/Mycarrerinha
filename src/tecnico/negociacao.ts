@@ -12,7 +12,7 @@ import { gerarAtributos } from "./modelo.js";
 import type { Atleta, PosT } from "./modelo.js";
 import { ovrDe, valorAtleta, atletaDoMundo } from "./modelo.js";
 import type { SaveTecnico, Alvo } from "./motor.js";
-import { _int, janelaT, folhaDe, semanaAbs, interesseDo, prepararMundo, ANO_INICIAL_T, agentesLivresT } from "./motor.js";
+import { _int, janelaT, estrangeirosT, folhaDe, semanaAbs, interesseDo, prepararMundo, ANO_INICIAL_T, agentesLivresT } from "./motor.js";
 import { travaContratacao } from "./gestao.js";
 import { valorBrl } from "../moeda.js";
 
@@ -29,10 +29,10 @@ const TEXTO_PERFIL: Record<Perfil, string> = {
 
 export interface PacoteTransf { avista: number; parcelado: number; parcelas: 0 | 2 | 3; bonus: number; revenda: number; troca?: string }
 export interface PacoteEmp { taxa: number; salarioPct: number; opcao: number; obrigacao: boolean }
-export interface PacoteContrato { salario: number; anos: number; luvas: number; multa: number; papel: Papel; comissao: number }
+export interface PacoteContrato { salario: number; anos: number; luvas: number; multa: number; papel: Papel; comissao: number; /** bônus por jogo e por gol */ bonusJogo?: number; bonusGol?: number }
 export interface LinhaNeg { quem: "voce" | "clube" | "jogador" | "info"; texto: string }
 export interface Negociacao {
-  id: string; nome: string; clubeId: string; tipo: "compra" | "emprestimo" | "livre"; fase: "clube" | "jogador" | "fechada" | "encerrada";
+  id: string; nome: string; clubeId: string; tipo: "compra" | "emprestimo" | "livre"; pos?: string; nac?: string; fase: "clube" | "jogador" | "fechada" | "encerrada";
   perfil: Perfil; paciencia: number; rodadas: number; janela: string;
   /** o que o clube aceita no mínimo (não aparece na tela) */ reserva: number; pedido: number;
   contraClube?: PacoteTransf; contraEmp?: PacoteEmp; acordo?: PacoteTransf; acordoEmp?: PacoteEmp;
@@ -78,7 +78,7 @@ export function abrirNeg(pacote: PacoteDados, s: SaveTecnico, nome: string, club
   const perfil = perfilDo(s, clubeId), reserva = reservaDe(s, a, perfil), nomeC = infoClube(pacote, clubeId)?.nome ?? clubeId;
   const pedido = k1000(reserva * (perfil === "duro" ? 1.32 : perfil === "negociador" ? 1.22 : 1.1));
   const anos = contratoRestante(s, nome, clubeId);
-  const n: Negociacao = { id: k, nome, clubeId, tipo, fase: "clube", perfil, paciencia: perfil === "duro" ? 3 : perfil === "negociador" ? 5 : 4, rodadas: 0, janela: _int.chaveJanela(s), reserva, pedido, log: [] };
+  const n: Negociacao = { id: k, nome, clubeId, tipo, pos: a.pos, nac: a.nac, fase: "clube", perfil, paciencia: perfil === "duro" ? 3 : perfil === "negociador" ? 5 : 4, rodadas: 0, janela: _int.chaveJanela(s), reserva, pedido, log: [] };
   n.log.push({ quem: "info", texto: `${NOME_PERFIL[perfil]}: ${TEXTO_PERFIL[perfil]}` });
   n.log.push({ quem: "info", texto: anos <= 1 ? `O contrato de ${nome} acaba no fim da temporada: o ${nomeC} prefere vender agora a perder de graça.` : `${nome} tem ${anos} anos de contrato com o ${nomeC}.` });
   if (tipo === "compra") { n.contraClube = { avista: pedido, parcelado: 0, parcelas: 0, bonus: 0, revenda: 0 }; n.log.push({ quem: "clube", texto: `Para conversar, o ${nomeC} pede ${valorBrl(pedido)}.` }); }
@@ -205,7 +205,7 @@ export function abrirLivre(pacote: PacoteDados, s: SaveTecnico, nome: string): N
   const k = chave(nome, "livre"), velha = s.negs?.[k];
   if (velha && velha.janela === _int.chaveJanela(s)) return velha;
   const forca = mundo(pacote).clube[s.clubeId]?.forca ?? 65, limite = forca + 3 + s.tecnico.reputacao / 15;
-  const n: Negociacao = { id: k, nome, clubeId: "livre", tipo: "livre", fase: "jogador", perfil: "negociador", paciencia: 3, rodadas: 0, janela: _int.chaveJanela(s), reserva: 0, pedido: 0, log: [] };
+  const n: Negociacao = { id: k, nome, clubeId: "livre", tipo: "livre", pos: x.pos, nac: x.nac, fase: "jogador", perfil: "negociador", paciencia: 3, rodadas: 0, janela: _int.chaveJanela(s), reserva: 0, pedido: 0, log: [] };
   if (x.ovr > limite) { n.fase = "encerrada"; n.log.push({ quem: "jogador", texto: `${nome} prefere esperar proposta de um clube maior.` }); }
   else {
     const d = demandaJogador(pacote, s, x, x.pedido, 0, true); n.jogador = d;
@@ -221,13 +221,21 @@ function salarioNecessario(n: Negociacao, c: PacoteContrato): number {
   const fAnos = 1 + Math.max(0, d.anosPref - c.anos) * 0.03 - Math.max(0, c.anos - d.anosPref) * 0.01;
   const fMulta = c.multa > d.quer.multa * 1.5 ? 1.04 : c.multa < d.quer.multa * 0.7 ? 0.98 : 1;
   const luvasMes = c.luvas / Math.max(1, c.anos * 12) * 0.8, luvasFalta = Math.max(0, d.quer.luvas * 0.6 - c.luvas) / Math.max(1, c.anos * 12) * 1.5;
-  return d.minSalario * fPapel * fAnos * fMulta - luvasMes + luvasFalta;
+  return d.minSalario * fPapel * fAnos * fMulta - luvasMes + luvasFalta - valorBonusMes(n, c);
+}
+const JOGOS_PAPEL: Record<Papel, number> = { estrela: 34, titular: 28, rotacao: 18, reserva: 9, promessa: 6 };
+const GOLS_POS: Record<string, number> = { ATA: 12, PON: 7, MEI: 5, VOL: 2, LAT: 1.5, ZAG: 1.5, GOL: 0 };
+/** Quanto os bônus valem por mês na cabeça do jogador (ele desconta o risco de não jogar). */
+export function valorBonusMes(n: Negociacao, c: PacoteContrato): number {
+  const pos = n.pos ?? "MEI", jogos = JOGOS_PAPEL[c.papel] * 0.85;
+  return ((c.bonusJogo ?? 0) * jogos + (c.bonusGol ?? 0) * (GOLS_POS[pos] ?? 3) * (jogos / 30)) / 12 * 0.85;
 }
 export function proporJogador(pacote: PacoteDados, s: SaveTecnico, id: string, c: PacoteContrato): { ok: boolean; msg: string } {
   const n = s.negs?.[id];
   if (!n || n.fase !== "jogador" || !n.jogador) return { ok: false, msg: "Essa conversa não está aberta." };
   const jan = janelaT(s); if (!jan.aberta && n.tipo !== "livre") return { ok: false, msg: jan.texto };
-  c = { ...c, salario: Math.round(Math.max(0, c.salario) / 100) * 100, anos: clamp(Math.round(c.anos), 1, 5), luvas: k1000(Math.max(0, c.luvas)), multa: k1000(Math.max(0, c.multa)), comissao: k1000(Math.max(0, c.comissao)) };
+  c = { ...c, salario: Math.round(Math.max(0, c.salario) / 100) * 100, anos: clamp(Math.round(c.anos), 1, 5), luvas: k1000(Math.max(0, c.luvas)), multa: k1000(Math.max(0, c.multa)), comissao: k1000(Math.max(0, c.comissao)), bonusJogo: Math.round(Math.max(0, c.bonusJogo ?? 0) / 100) * 100, bonusGol: Math.round(Math.max(0, c.bonusGol ?? 0) / 100) * 100 };
+  { const e = estrangeirosT(s); if (e.lim?.inscritos && n.nac && e.conta({ nac: n.nac } as Atleta) && e.noElenco >= e.lim.inscritos) return { ok: false, msg: `Limite de estrangeiros: você já tem ${e.noElenco} de ${e.lim.inscritos} no elenco. ${e.lim.texto}` }; }
   if (n.tipo === "emprestimo") { c.anos = 1; c.multa = 0; c.luvas = 0; }
   const salFolha = n.tipo === "emprestimo" ? c.salario * ((n.acordoEmp?.salarioPct ?? 100) / 100) : c.salario;
   if (folhaDe(s) + salFolha > s.clube.tetoFolha) return { ok: false, msg: `A diretoria barrou: ${valorBrl(c.salario)}/mês passa do teto da folha (${valorBrl(s.clube.tetoFolha)}).` };
@@ -235,7 +243,7 @@ export function proporJogador(pacote: PacoteDados, s: SaveTecnico, id: string, c
   if (s.clube.saldo < caixa) return { ok: false, msg: `O caixa não cobre tudo agora (${valorBrl(caixa)} entre clube, luvas e comissão).` };
   if (s.elenco.length >= 36) return { ok: false, msg: "O elenco está cheio (36). Venda, empreste ou dispense alguém antes." };
   const d = n.jogador; n.rodadas++;
-  n.log.push({ quem: "voce", texto: `Você ofereceu ${valorBrl(c.salario)}/mês por ${c.anos} ${c.anos === 1 ? "ano" : "anos"}${c.luvas ? `, ${valorBrl(c.luvas)} de luvas` : ""}${c.multa ? `, multa de ${valorBrl(c.multa)}` : ""}, papel de ${NOME_PAPEL[c.papel].toLowerCase()} e ${valorBrl(c.comissao)} ao empresário.` });
+  n.log.push({ quem: "voce", texto: `Você ofereceu ${valorBrl(c.salario)}/mês por ${c.anos} ${c.anos === 1 ? "ano" : "anos"}${c.bonusJogo ? `, ${valorBrl(c.bonusJogo)} por jogo` : ""}${c.bonusGol ? `, ${valorBrl(c.bonusGol)} por gol` : ""}${c.luvas ? `, ${valorBrl(c.luvas)} de luvas` : ""}${c.multa ? `, multa de ${valorBrl(c.multa)}` : ""}, papel de ${NOME_PAPEL[c.papel].toLowerCase()} e ${valorBrl(c.comissao)} ao empresário.` });
   const precisa = salarioNecessario(n, c), comissaoOk = c.comissao >= d.comissaoMin;
   if (c.salario >= precisa * 0.98 && comissaoOk) return fechar(pacote, s, n, c);
   const longe = c.salario < precisa * 0.75;
@@ -270,7 +278,7 @@ function fechar(pacote: PacoteDados, s: SaveTecnico, n: Negociacao, c: PacoteCon
     at = atletaDoMundo(npc, s.semente, s.clubeId, s.temporada, () => c.salario);
     at.salario = c.salario; at.contratoAte = s.temporada + c.anos - 1; at.moral = 76; at.condicao = 90; at.desde = s.temporada; at.numero = 0;
   }
-  at.multa = c.multa || undefined; at.papel = c.papel;
+  at.multa = c.multa || undefined; at.papel = c.papel; at.bonusJogo = c.bonusJogo || undefined; at.bonusGol = c.bonusGol || undefined;
   if (NIVEL_PAPEL[c.papel] >= 3) at.promessa = 3;
   // dinheiro: à vista agora; parcelas nas próximas temporadas; bônus se ele jogar 20 jogos na temporada
   const ac = n.acordo, emp = n.acordoEmp;

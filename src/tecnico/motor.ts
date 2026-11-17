@@ -2,6 +2,10 @@
 // O mundo é o mesmo do modo jogador (mesma semente = mesmo mundo); o clube do técnico usa o elenco do save.
 import { RNG, clamp } from "../rng.js";
 import { efeitoBeira } from "./beira.js";
+import { avaliarPlano } from "./plano-dir.js";
+import { semanaMercadoExtra, custoParceiros } from "./mercado-extra.js";
+import { semanaVestiario, clima, fatorClima, bonusDoJogo, prometer } from "./vestiario.js";
+import { limiteEstrangeiros, contaComoEstrangeiro } from "../estrangeiros.js";
 import { semanaBase, viradaBase, custoBase, baseDe, daCat, subirProfissional } from "./base-t.js";
 import { evoluirSemana, type Grupo, type Intensidade, type Participacao } from "../atributos.js";
 import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type LinhaTabela, type PacoteDados, type JogadorNPC, type Liga } from "../liga.js";
@@ -10,7 +14,7 @@ import { mundo, sincronizarMundo, versaoMundo, infoClube, idClube, agentesLivres
 import { valorBrl } from "../moeda.js";
 import { montarRevista, type EdicaoRevista } from "../revista.js";
 import { semanaEmpregos, tabelaAgora } from "./empregos.js";
-import { migrarEquipe, pedirVagaStaff, gerarMembro, cortarVagas, nivelDoClube, governoInicial, dividaInicial, parcelaDivida, abrirEleicao, votar, talvezSaf, travaContratacao, type Governo } from "./gestao.js";
+import { migrarEquipe, pedirVagaStaff, gerarMembro, cortarVagas, nivelDoClube, governoInicial, dividaInicial, parcelaDivida, abrirEleicao, votar, talvezSaf, travaContratacao, mensalSaf, type Governo } from "./gestao.js";
 import { contratoInicial, salarioOferecido, type Contrato, type Negociacao } from "./contrato.js";
 import { copasT, jogoCopaT, rodarCopasT, fecharCopasT, temCopaPendente, premioDeTitulo, bonusVitoriaCopa, type PalmaresT } from "./copas-t.js";
 import { COPAS, NOME_FASE, rotuloJogo, type CopaId, type EstadoCopa } from "../copas.js";
@@ -69,6 +73,11 @@ export interface Clube {
 }
 export interface SaveTecnico {
   versao: 1; modo: "tecnico"; semente: string;
+  /** promessas quebradas recentes (pesam no clima) */ promessasQuebradas?: number;
+  /** escalações salvas para reusar */ escSalvas?: { nome: string; formacao: string; titulares: (string | null)[]; reservas: string[]; tatica: Tatica }[];
+  /** mercado avançado: seus anúncios, jogadores oferecidos, anúncios de outros clubes e clubes parceiros */
+  necessidades?: import("./mercado-extra.js").Necessidade[]; oferecidos?: import("./mercado-extra.js").Oferecido[]; procurando?: import("./mercado-extra.js").Procura[]; parceiros?: string[];
+  /** plano da diretoria para vários anos */ planoDir?: import("./plano-dir.js").PlanoDir;
   /** categorias de base (Sub-17 e Sub-20 no Brasil), peneira e campanhas */ base?: import("./base-t.js").BaseT;
   tecnico: { nome: string; nac: string; idade: number; reputacao: number; /** dinheiro do bolso do técnico (o salário dele) */ saldo?: number; /** o nome que ele fez como jogador (0 a 100) */ prestigio?: number;
     /** contrato atual: salário, até quando e a multa que o clube paga se demitir antes */ contrato?: Contrato;
@@ -367,14 +376,15 @@ function fecharMes(pacote: PacoteDados, s: SaveTecnico) {
   // receitas fixas do mês: TV, patrocínios, sócio-torcedor e licenciamento (pela torcida)
   const socio = Math.round(base * 0.075 * (0.5 + s.clube.torcida / 100));
   const camisas = venderCamisas(s), roy = Math.round(base * 0.03 * (0.5 + s.clube.torcida / 100) * camisas.fator);
-  const rec = { ...s.mes.receitas, "TV": s.clube.tv, ...patro, "Outros patrocínios": s.clube.patrocinio, "Sócio-torcedor": socio, [`Camisas vendidas (${camisas.n.toLocaleString("pt-BR")})`]: roy };
-  const fixasRec = s.clube.tv + s.clube.patrocinio + somaPatro + socio + roy;
+  const saf = mensalSaf(s, infoLiga(s.ligaId).fLiga, infoLiga(g?.ligaVenda ?? s.ligaId).fLiga);
+  const rec = { ...s.mes.receitas, "TV": s.clube.tv, ...patro, "Outros patrocínios": s.clube.patrocinio, "Sócio-torcedor": socio, [`Camisas vendidas (${camisas.n.toLocaleString("pt-BR")})`]: roy, ...(saf ? { "Investidor da SAF": saf } : {}) };
+  const fixasRec = s.clube.tv + s.clube.patrocinio + somaPatro + socio + roy + saf;
   // despesas fixas: salários, comissão, encargos e impostos, manutenção do estádio e do CT, viagens e a parcela da dívida
   const encargos = Math.round((folhaDe(s) + folhaStaff(s)) * 0.15), manut = Math.round(base * 0.05 * capF * (0.8 + 0.1 * s.clube.ctNivel)), viagens = Math.round(base * 0.035);
   const parcela = parcelaDivida(s.clube.divida ?? 0), amort = Math.round((s.clube.divida ?? 0) / 120);
   // clube associativo repassa parte das receitas ao clube social (as outras modalidades, a sede)
   const repasse = g?.tipo === "associativo" ? Math.round(Object.values(rec).reduce((a, b) => a + b, 0) * 0.04) : 0;
-  const fixas: Record<string, number> = { "Salários do elenco": folhaDe(s), ...(salarioEmprestados(s) ? { "Salários de emprestados (sua parte)": salarioEmprestados(s) } : {}), "Comissão técnica": folhaStaff(s), ...(custoBase(s) ? { "Categorias de base": custoBase(s) } : {}), "Encargos e impostos": encargos, "Manutenção (estádio e CT)": manut, "Viagens e logística": viagens };
+  const fixas: Record<string, number> = { "Salários do elenco": folhaDe(s), ...(salarioEmprestados(s) ? { "Salários de emprestados (sua parte)": salarioEmprestados(s) } : {}), "Comissão técnica": folhaStaff(s), ...(custoBase(s) ? { "Categorias de base": custoBase(s) } : {}), ...((s.parceiros ?? []).length ? { "Clubes parceiros": custoParceiros(pacote, s) } : {}), "Encargos e impostos": encargos, "Manutenção (estádio e CT)": manut, "Viagens e logística": viagens };
   if (parcela) fixas["Parcela da dívida"] = parcela;
   if (repasse) fixas["Repasse ao clube social"] = repasse;
   const des = { ...s.mes.despesas, ...fixas };
@@ -452,8 +462,7 @@ export function conversar(s: SaveTecnico, id: string, tipo: Conversa): { ok: boo
       if (a.temp >= 14) { mudar(-10, -8); return { ok: true, msg: `${a.nome} não aceitou a cobrança e saiu batendo a porta.` }; }
       mudar(-4, -3); return { ok: true, msg: `${a.nome} ficou chateado com a cobrança.` };
     case "titular":
-      if (a.promessa !== undefined) return { ok: false, msg: "Você já prometeu isso a ele." };
-      a.promessa = 3; mudar(10, 5); return { ok: true, msg: `${a.nome} ficou animado. Ele espera ser titular nos próximos jogos (3 de folga).` };
+      return prometerT(s, a.id, "titular");
     case "reserva":
       if (a.semJogar >= 2 && (a.prof >= 10 || sorte > 0.55)) { mudar(5, 4); return { ok: true, msg: `${a.nome} entendeu a explicação e vai esperar a chance.` }; }
       if (a.semJogar < 2) { mudar(-1, 0); return { ok: true, msg: `${a.nome} estranhou a conversa: ele está jogando.` }; }
@@ -625,6 +634,7 @@ function conferirEscalacao(s: SaveTecnico): string[] {
   });
   s.esc.reservas = s.esc.reservas.filter((id) => { const a = por.get(id); return a && disponivel(a) && !usados.has(id); });
   for (const a of s.elenco.filter((x) => disponivel(x) && !usados.has(x.id) && !s.esc.reservas.includes(x.id)).sort((x, y) => ovrDe(y) - ovrDe(x))) if (s.esc.reservas.length < 9) s.esc.reservas.push(a.id);
+  avisos.push(...aplicarLimiteEstrangeiros(s));
   return avisos;
 }
 
@@ -679,7 +689,7 @@ function jogarTrecho(pacote: PacoteDados, s: SaveTecnico, av: AoVivo, ini: numbe
   const gr = av.souCasa ? efeitoGramado(s, fAdv, (atk + def) / 2) : { me: 1, adv: 1 };
   const lMe = ((av.souCasa ? 1.3 : 1.02) * Math.exp((atk - fAdv) / 15) + (av.souCasa ? 0.2 : 0)) * (1 + 0.04 * m) * aberto * bola * gr.me;
   const lAdv = ((av.souCasa ? 1.02 : 1.3) * Math.exp((fAdv - def) / 15) + (av.souCasa ? 0 : 0.2)) * (1 + 0.035 * m) * aberto * (1 - 0.004 * bp) * gr.adv;
-  const bz = efeitoBeira(av, ini), lMeB = lMe * bz.me, lAdvB = lAdv * bz.adv;
+  const bz = efeitoBeira(av, ini), fcl = fatorClima(clima(s)), lMeB = lMe * bz.me * fcl, lAdvB = lAdv * bz.adv;
   av.lambdas.push([lMeB, lAdvB]);
   // gols esperados do trecho (a chance criada, com um pouco de acaso)
   const xgR = rngT(s, "xg", ini); av.xg ??= [0, 0];
@@ -843,6 +853,7 @@ function terminarPartida(pacote: PacoteDados, s: SaveTecnico, adv: string, souCa
     a.moral = clamp(a.moral + (gm > gd ? 4 : gm === gd ? 0.5 : -2.5) + (nota - 6.5) * 1.5, 0, 100);
   }
   for (const l of av.lesoes) { const a = s.elenco.find((x) => x.id === l.id); if (a) { a.lesao = l.semanas; a.lesaoTipo = l.tipo; } }
+  const bonus = bonusDoJogo(s, notas); if (bonus) { s.clube.saldo -= bonus; gastar(s, "Bônus de jogo e gol", bonus); }
   const lm = av.lambdas.reduce((x, y) => x + y[0], 0) / Math.max(1, av.lambdas.length), la = av.lambdas.reduce((x, y) => x + y[1], 0) / Math.max(1, av.lambdas.length);
   const f = forcaDoTime(s.elenco, s.esc, s.tatica, s.entrosamento[s.tatica.formacao] ?? 40);
   const posse = Math.round(clamp(50 + (f.meio - fAdv) * 1.1 + (s.tatica.mentalidade - 2) * 2 + (s.tatica.pressao - 1) * 2, 28, 72));
@@ -966,6 +977,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
       if (a.semJogar >= 3 && ovrDe(a) >= mediaTit - 3 && a.idade >= 20) a.moral = clamp(a.moral - 3, 0, 100);
     }
   }
+  try { semanaVestiario(s, ab, Math.max(0, r + 1), titularesIds, new Set([...titularesIds, ...entraram]), r >= 0 && r < rodadas.length, nivelStaff(s, "auxiliar"), (t2) => { noticia(s, "elenco", t2); eventos.push(t2); }); } catch (err) { console.error(err); }
   try { semanaBase(pacote, s, eventos); } catch (err) { console.error(err); }
   // treino e evolução
   const lingua = linguaDe(li.pais), cap = s.elenco.find((a) => a.id === s.esc.capitao), liderCapitao = cap ? clamp((exDe(cap).LID - 60) / 6, -3, 4) : 0;
@@ -974,7 +986,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
   const ct = s.clube.ctNivel, prep = nivelStaff(s, "preparador"), fisio = nivelStaff(s, "fisio");
   for (const a of s.elenco) {
     const participacao: Participacao = a.lesao > 0 ? "ferias" : titularesIds.has(a.id) ? "titular" : entraram.has(a.id) ? "entrou" : "naoJogou";
-    a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.94 + exDe(a).DET / 800) * (0.88 + 0.05 * ct), fAtrib: fatorAtributos(s.deps, a.pos, a.idade) });
+    a.at = evoluirSemana(a.at, a.pot, { idade: a.idade, foco: a.treinoInd?.foco ?? s.treino.foco, intensidade: s.treino.intensidade, participacao, moral: a.moral, personalTrainer: false, profissionalismo: a.prof, fClube: (0.94 + exDe(a).DET / 800) * (0.88 + 0.05 * ct) * (a.mentor ? 1.03 : 1), fAtrib: fatorAtributos(s.deps, a.pos, a.idade) });
     const rec = s.treino.intensidade === "alta" ? 18 : s.treino.intensidade === "leve" ? 34 : 26;
     a.condicao = a.lesao > 0 ? clamp(a.condicao, 0, 75) : clamp(a.condicao + rec + 2 * prep + 1.2 * fisio, 0, 100);
     // fisioterapia boa adianta a volta (às vezes o jogador volta uma semana antes)
@@ -1025,7 +1037,7 @@ export function avancarSemana(pacote: PacoteDados, s: SaveTecnico): ResumoSemana
     noticia(s, "diretoria", s.demitido);
     return { eventos: [...eventos, s.demitido], partida };
   }
-  propostasDaSemanaT(pacote, s, eventos); semanaEmprestados(pacote, s); vencerOpcoes(pacote, s);
+  propostasDaSemanaT(pacote, s, eventos); try { semanaMercadoExtra(pacote, s, eventos); } catch (err) { console.error(err); } semanaEmprestados(pacote, s); vencerOpcoes(pacote, s);
   if (s.ofertaEmprego && semanaAbs(s) > s.ofertaEmprego.expira) { noticia(s, "clube", `A proposta do ${infoClube(pacote, s.ofertaEmprego.clubeId)?.nome ?? "outro clube"} expirou.`); s.ofertaEmprego = undefined; }
   s.semana++;
   let fim: string | undefined;
@@ -1093,12 +1105,18 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
     if (aposenta) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
   }
   for (const a of s.elenco) guardarTemporada(s, a);
-  for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
+  for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.promessa = undefined; a.titT = 0; a.promessas = (a.promessas ?? []).filter((p) => p.tipo === "reforco"); a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
   for (const av of viradaPatro(pacote, s)) noticia(s, "dinheiro", av);
   // o mundo vira a temporada (com a tabela da liga do técnico valendo para o acesso e o rebaixamento)
   sincronizarMundo(pacote, s.semente, s.temporada, 0, s.tabelasReais, 0);
   const w = mundo(pacote), ligaNova = w.info[s.clubeId]?.ligaId ?? s.ligaId;
+  try {
+    const titulos = Object.values(s.palmaresT?.[t] ?? {}).filter(Boolean).length + (campeao ? 1 : 0);
+    const pl = avaliarPlano(pacote, s, t, { pos, vaga: pos <= (li.nivel <= 1 ? 4 : 2) && li.divisao === 1, subiu: ligaNova !== s.ligaId && infoLiga(ligaNova).divisao < li.divisao, titulos });
+    s.diretoria.confianca = clamp(s.diretoria.confianca + pl.delta, 0, 100);
+    for (const x of pl.avisos) noticia(s, "diretoria", x);
+  } catch (err) { console.error(err); }
   if (ligaNova !== s.ligaId) {
     const subiu = infoLiga(ligaNova).divisao < li.divisao;
     if (!subiu) for (const t2 of rebaixamentoPatro(pacote, s)) noticia(s, "dinheiro", t2);
@@ -1154,7 +1172,7 @@ export function proximoJogo(s: SaveTecnico): { adv: string; souCasa: boolean; ro
   const souCasa = s.ordem[j[0]] === s.clubeId;
   return { adv: s.ordem[souCasa ? j[1] : j[0]], souCasa, rodada: r };
 }
-export { valorAtleta, ovrDe, formaDe, disponivel };
+export { valorAtleta, ovrDe, ovrNaVaga, formaDe, disponivel };
 
 // ------------------------------------------------------------------ mercado de transferências
 export interface Alvo { nome: string; pos: PosT; idade: number; ovr: number; nac: string; clubeId: string; ligaId: string; valor: number; titular: boolean }
@@ -1418,4 +1436,43 @@ export function outrosDaRodada(pacote: PacoteDados, s: SaveTecnico): { casa: str
     out.push({ casa, fora, gols });
   }
   return out;
+}
+
+/** Limite da liga e quantos estrangeiros você tem (no elenco e relacionados agora). */
+export function estrangeirosT(s: SaveTecnico) {
+  const pais = infoLiga(s.ligaId).pais, lim = limiteEstrangeiros(pais, ANO_INICIAL_T + s.temporada), conta = (a: Atleta) => contaComoEstrangeiro(a.nac, pais, lim);
+  const rel = [...s.esc.titulares, ...s.esc.reservas].map((id) => s.elenco.find((a) => a.id === id)).filter((a): a is Atleta => !!a);
+  return { lim, pais, conta, noElenco: s.elenco.filter(conta).length, relacionados: rel.filter(conta).length };
+}
+/** Tira estrangeiros a mais da súmula: primeiro do banco, depois troca titular pelo melhor da casa. */
+function aplicarLimiteEstrangeiros(s: SaveTecnico): string[] {
+  const e = estrangeirosT(s), max = e.lim?.relacionados, av: string[] = [];
+  if (!max) return av;
+  const por = new Map(s.elenco.map((a) => [a.id, a]));
+  let n = e.relacionados;
+  for (const id of [...s.esc.reservas].reverse()) { if (n <= max) break; const a = por.get(id); if (a && e.conta(a)) { s.esc.reservas = s.esc.reservas.filter((x) => x !== id); n--; } }
+  if (n > max) {
+    const vagas = FORMACOES[s.tatica.formacao];
+    const tit = s.esc.titulares.map((id, i) => ({ id, i, a: id ? por.get(id) : undefined })).filter((x) => x.a && e.conta(x.a)).sort((p, q) => ovrDe(p.a!) - ovrDe(q.a!));
+    for (const t of tit) {
+      if (n <= max) break;
+      const usados = new Set([...s.esc.titulares, ...s.esc.reservas]);
+      const sub = s.elenco.filter((x) => !e.conta(x) && disponivel(x) && !usados.has(x.id)).sort((p, q) => ovrNaVaga(q, vagas[t.i].pos) - ovrNaVaga(p, vagas[t.i].pos))[0];
+      s.esc.titulares[t.i] = sub?.id ?? null; n--;
+      av.push(`Limite de estrangeiros: ${t.a!.nome} ficou fora${sub ? `, entra ${sub.nome}` : ""}.`);
+    }
+  }
+  // completa o banco só com quem pode
+  for (const a of s.elenco.filter((x) => disponivel(x) && !s.esc.titulares.includes(x.id) && !s.esc.reservas.includes(x.id)).sort((x, y) => ovrDe(y) - ovrDe(x))) {
+    if (s.esc.reservas.length >= 9) break;
+    if (e.conta(a)) { if (n >= max) continue; n++; }
+    s.esc.reservas.push(a.id);
+  }
+  return av;
+}
+/** Prometer algo a um jogador (prazos calculados pela janela e pela temporada). */
+export function prometerT(s: SaveTecnico, id: string, tipo: import("./modelo.js").TipoPromessa): { ok: boolean; msg: string } {
+  const ab = semanaAbs(s), base = s.temporada * 60;
+  const fimJanela = s.semana < PRE_JANELA ? base + PRE_JANELA : s.semana < MEIO_FIM ? base + MEIO_FIM : base + 60 + PRE_JANELA;
+  return prometer(s, id, tipo, ab, fimJanela, base + semanasDaTemporada(s) - 1);
 }

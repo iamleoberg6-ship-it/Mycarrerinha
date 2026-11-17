@@ -7,6 +7,11 @@ import * as P from "../src/tecnico/patrocinio.js";
 import * as N from "../src/tecnico/negociacao.js";
 import * as B from "../src/tecnico/base-t.js";
 import * as BZ from "../src/tecnico/beira.js";
+import * as V from "../src/tecnico/vestiario.js";
+import * as MX from "../src/tecnico/mercado-extra.js";
+import * as PD from "../src/tecnico/plano-dir.js";
+import * as G from "../src/tecnico/gestao.js";
+import { limiteEstrangeiros } from "../src/estrangeiros.js";
 import { RNG } from "../src/rng.js";
 import { sugerirNomes, pecaSvg, bonusVitrine } from "../src/marca-propria.js";
 import { ATRIBUTOS, ovr, evoluirSemana, type Atributos } from "../src/atributos.js";
@@ -1774,6 +1779,42 @@ teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e ve
   assert.ok(!s.elenco.some((a) => a.id === v.id));
   s.semana = 10; assert.ok(!T.janelaT(s).aberta);
   assert.equal(T.fazerProposta(pacote, s, "x", alvo.clubeId, 1, 1).status, "erro");
+});
+
+teste("Técnico: vestiário, promessas, mentoria, treino individual, bônus, estrangeiros", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-vest");
+  const h = V.hierarquia(s); assert.ok([...h.values()].filter((x) => x.nivel === "lider").length >= 2);
+  assert.ok(V.gruposDe(s).length >= 1); const c = V.clima(s); assert.ok(c >= 0 && c <= 100);
+  const reserva = s.elenco.find((a) => !s.esc.titulares.includes(a.id) && a.pos !== "GOL")!;
+  assert.ok(T.prometerT(s, reserva.id, "titular").ok); assert.ok(!T.prometerT(s, reserva.id, "titular").ok);
+  const garoto = s.elenco.filter((a) => a.idade <= 23)[0], vet = V.mentoresPossiveis(s)[0];
+  if (garoto && vet) assert.ok(V.definirMentor(s, garoto.id, vet.id).ok);
+  const ze = s.elenco.find((a) => a.pos === "ZAG")!; ze.treinoInd = { pos: "VOL" };
+  const antes = T.ovrNaVaga(ze, "VOL");
+  for (let k = 0; k < 8; k++) T.avancarSemana(pacote, s);
+  assert.ok((ze.posExtra?.VOL ?? 0) > 0 && T.ovrNaVaga(ze, "VOL") >= antes);
+  assert.ok(!(reserva.promessas ?? []).some((p) => p.tipo === "titular"), "a promessa foi cobrada");
+  assert.equal(limiteEstrangeiros("BRA", 2026)!.relacionados, 9); assert.equal(limiteEstrangeiros("BRA", 2028)!.relacionados, 7); assert.equal(limiteEstrangeiros("ENG", 2026), undefined);
+  // limite na súmula: marcar muitos como estrangeiros e conferir
+  for (const a of s.elenco.slice(0, 15)) a.nac = "ARG";
+  if (T.proximoJogo(s)) { T.iniciarPartida(pacote, s); assert.ok(T.estrangeirosT(s).relacionados <= 9); }
+});
+
+teste("Técnico: anúncios, parceiros, último dia, plano da diretoria, SAF e Copinha", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "SAN", "teste-mx");
+  assert.ok(MX.anunciar(s, { pos: "ATA", idadeMax: 30, tipo: "qualquer", nivel: "elenco" }).ok);
+  for (let k = 0; k < 3; k++) T.avancarSemana(pacote, s);
+  assert.ok((s.oferecidos ?? []).length > 0, "clubes ofereceram");
+  const cand = MX.candidatosParceiro(pacote, s); assert.ok(cand.length > 0);
+  assert.ok(MX.firmarParceria(pacote, s, cand[0].id).ok);
+  const g = s.elenco.filter((a) => a.idade <= 23).sort((a, b) => T.ovrDe(a) - T.ovrDe(b))[0];
+  if (g && T.janelaT(s).aberta) { assert.ok(MX.emprestarAoParceiro(pacote, s, g.id, cand[0].id).ok); assert.ok(s.emprestados!.some((e) => e.atleta.id === g.id)); }
+  const pl = PD.planoDe(pacote, s); assert.ok(pl.metas.length >= 3 && pl.fim > pl.inicio);
+  const b = (s.base as { copinha?: unknown[] } | undefined)?.copinha; assert.ok(b && b.length === 1, "Copinha jogada");
+  if (s.governo?.tipo === "associativo") { const r = G.buscarInvestidor(s); assert.ok(r.ok && r.lista!.length >= 2); const v = G.venderSaf(s, 0); assert.ok(typeof v.msg === "string"); }
+  // último dia: avança até a janela fechar e confere que houve a semana de último dia
+  let viu = false; for (let k = 0; k < 6 && T.janelaT(s).aberta; k++) { if (MX.ultimoDia(s)) viu = true; T.avancarSemana(pacote, s); }
+  assert.ok(viu);
 });
 
 teste("Técnico: preleção, gritos, xG e relatório do analista", () => {

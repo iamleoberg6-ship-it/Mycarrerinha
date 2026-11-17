@@ -91,6 +91,13 @@ function heranca(jog: SaveJogador): { licenca: number; idiomas: Record<string, n
 }
 import { LICENCAS, CURSO_LICENCA } from "../../src/licencas";
 import { baseDe, categorias, daCat, faixaPot, faixaOvrCand, vagasSub, aprovar, reprovar, subirParaCat2, descerParaCat1, subirProfissional, dispensar as dispensarJovem, mandarParaBase, posicaoCampanha, custoBase, LIMITE_CAT, pendentesBase, type Jovem } from "../../src/tecnico/base-t";
+import { hierarquia, gruposDe, clima, nomeClima, NOME_NIVEL, NOME_PROMESSA, definirMentor, mentoresPossiveis } from "../../src/tecnico/vestiario";
+import { anunciar, tirarAnuncio, oferecerJogador, candidatosParceiro, firmarParceria, emprestarAoParceiro, ultimoDia, NOME_NIVEL_NEC, type Necessidade } from "../../src/tecnico/mercado-extra";
+import { planoDe } from "../../src/tecnico/plano-dir";
+import { buscarInvestidor, venderSaf } from "../../src/tecnico/gestao";
+import type { TipoPromessa } from "../../src/tecnico/modelo";
+import { svgCampo, quadro, moverCampo } from "./campo2d";
+import { clamp } from "../../src/rng";
 import { TONS, GRITOS, prelecao, gritar, xgTexto, relatorioAdversario, type Tom, type Grito } from "../../src/tecnico/beira";
 import { NOME_PERFIL_MARCA, textoPatro, type MesaPatro, type PacotePatro } from "../../src/negociacao-patro";
 import {
@@ -101,7 +108,7 @@ import {
 import { criarAgendador, chaveNuvem, nuvemDisponivel, apagarDaNuvem } from "../nuvem";
 import {
   CHAVE_TECNICO, ANO_INICIAL_T, SEMANAS_PRE_T, avancarSemana, novaCarreiraTecnico, prepararMundo, ligasParaComecar, clubesDaLiga, reputacaoInicial, rotuloSemanaT,
-  proximoJogo, outrosDaRodada, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
+  proximoJogo, outrosDaRodada, estrangeirosT, prometerT, folhaDe, folhaStaff, nivelStaff, candidatos, contratarStaff, demitirStaff, pedirVaga, mudarCargo, nivelDoCargo, estiloDoTime, ajustarGrama, custoPedido, pedirDiretoria, conversar, NOME_CONVERSA, pedidoRenovacao,
   renovar, dispensar, agentesLivresT, trocarNaVaga, mudarFormacao, nRodadasT, semanaAbs,
   janelaT, buscarJogadores, interesseDo, alvoPorNome, alternarVenda,
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
@@ -260,9 +267,12 @@ function abaInicio(s: SaveTecnico): string {
 const grupoPos = (p: PosT) => (p === "GOL" ? "gol" : p === "ZAG" || p === "LAT" ? "def" : p === "VOL" || p === "MEI" ? "mei" : "ata");
 function abaElenco(s: SaveTecnico): string {
   const nProp = (s.propostasV ?? []).length + (s.ofertasEmp ?? []).length + (s.opcoesCompra ?? []).length;
-  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["mercado", "Mercado"], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["base", `Base${pendentesBase(s) ? " (!)" : ""}`], ["livres", "Agentes livres"], ["scout", "Scout"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
+  const subs = `<div class="sub-abas">${[["jogadores", `Jogadores (${s.elenco.length})`], ["vestiario", "Vestiário"], ["planejador", "Planejador"], ["mercado", "Mercado"], ["anuncios", `Anúncios${(s.oferecidos ?? []).length ? ` (${s.oferecidos!.length})` : ""}`], ["propostas", `Propostas${nProp ? ` (${nProp})` : ""}`], ["base", `Base${pendentesBase(s) ? " (!)" : ""}`], ["livres", "Agentes livres"], ["scout", "Scout"]].map(([k, n]) => `<button class="${sub.elenco === k ? "ativo" : ""}" data-sub="elenco:${k}">${n}</button>`).join("")}</div>`;
   if (sub.elenco === "livres") return subs + abaLivres(s);
   if (sub.elenco === "scout") return subs + abaScout(s);
+  if (sub.elenco === "vestiario") return subs + abaVestiario(s);
+  if (sub.elenco === "planejador") return subs + abaPlanejador(s);
+  if (sub.elenco === "anuncios") return subs + abaAnuncios(s);
   if (sub.elenco === "base") return subs + abaBase(s);
   if (sub.elenco === "mercado") return subs + abaMercadoT(s);
   if (sub.elenco === "propostas") return subs + abaPropostas(s);
@@ -270,9 +280,9 @@ function abaElenco(s: SaveTecnico): string {
   const ordemPos: Record<string, number> = { GOL: 0, ZAG: 1, LAT: 2, VOL: 3, MEI: 4, PON: 5, ATA: 6 };
   const lista = s.elenco.filter((a) => filtro === "todos" || grupoPos(a.pos) === filtro).sort((a, b) => ordemPos[a.pos] - ordemPos[b.pos] || ovrDe(b) - ovrDe(a));
   const tit = new Set(s.esc.titulares);
-  return `${subs}${filtros}<p class="sub" style="margin-bottom:6px">Folha: <b style="color:var(--giz)">${curtoBrl(folhaDe(s))}</b>/mês · teto ${curtoBrl(s.clube.tetoFolha)}</p><div class="lista">${lista.map((a) => {
+  return `${subs}${filtros}<p class="sub" style="margin-bottom:6px">Folha: <b style="color:var(--giz)">${curtoBrl(folhaDe(s))}</b>/mês · teto ${curtoBrl(s.clube.tetoFolha)}${(() => { const e = estrangeirosT(s); return e.lim ? ` · estrangeiros: <b style="color:var(--giz)">${e.lim.inscritos ? `${e.noElenco}/${e.lim.inscritos} no elenco` : `${e.noElenco} no elenco`}${e.lim.relacionados ? `, ${e.relacionados}/${e.lim.relacionados} relacionados` : ""}</b>` : ""; })()}</p><div class="lista">${lista.map((a) => {
     const tags = [tit.has(a.id) ? `<span class="pill bom">Titular</span>` : "", a.lesao > 0 ? `<span class="pill ruim">Lesão ${a.lesao} sem.</span>` : "", a.suspenso > 0 ? `<span class="pill aviso">Suspenso</span>` : "",
-      a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined ? `<span class="pill">Promessa</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : "", (s.aEmprestimo ?? []).includes(a.id) ? `<span class="pill aviso">Para empréstimo</span>` : "", a.emprestadoDe ? `<span class="pill">Emprestado</span>` : ""].join("");
+      a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined || (a.promessas ?? []).length ? `<span class="pill">Promessa</span>` : "", a.pedeConversa !== undefined && a.pedeConversa >= semanaAbs(s) - 2 ? `<span class="pill aviso">Quer conversar</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : "", (s.aEmprestimo ?? []).includes(a.id) ? `<span class="pill aviso">Para empréstimo</span>` : "", a.emprestadoDe ? `<span class="pill">Emprestado</span>` : ""].join("");
     return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong>${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
   }).join("")}</div>`;
 }
@@ -297,7 +307,8 @@ function abaBase(s: SaveTecnico): string {
   return `${aviso()}<p class="sub">Base nível ${s.clube.baseNivel} · coordenação ${(Math.round(nivelStaff(s, "base") * 10) / 10).toString().replace(".", ",")} · custo ${curtoBrl(custoBase(s))}/mês. Quanto melhor a base e o coordenador, mais rápido os garotos evoluem e mais justa fica a faixa do potencial. Quem joga evolui mais.</p>
     ${pend.length ? `<div class="aviso-t erro" style="margin-top:8px">${pend.length === 1 ? "Um garoto passou" : `${pend.length} garotos passaram`} da idade do ${esc(c2.nome)}: suba para o profissional até o fim da temporada ou ${pend.length === 1 ? "ele vai" : "eles vão"} embora.</div>` : ""}
     ${pen}${cat(2)}${cat(1)}
-    ${b.hist.length ? `<p class="rotulo" style="margin-top:14px">Campanhas</p>${b.hist.map((h) => `<div class="not"><small>${ANO_INICIAL_T + h.t}</small>${esc(h.cat === 1 ? c1.nome : c2.nome)}: ${h.titulo ? "🏆 campeão" : `${h.pos}º lugar`}</div>`).join("")}` : ""}`;
+    ${(b.copinha ?? []).length ? `<p class="rotulo" style="margin-top:14px">Copinha ${ANO_INICIAL_T + b.copinha![0].t}</p><div class="not">${b.copinha![0].campeao ? "🏆 Campeão!" : `Parou na ${esc(b.copinha![0].chegou.toLowerCase())}`}</div>${b.copinha![0].jogos.map((j) => `<div class="not" style="display:flex;justify-content:space-between;gap:8px"><small>${esc(j.fase)}</small><span>${esc(nomeCurto(j.adv))} <b>${j.gp} × ${j.gc}</b>${j.pen ? ` <small>(pên. ${j.pen[0]}–${j.pen[1]})</small>` : ""}</span></div>`).join("")}` : ""}
+    ${b.hist.length ? `<p class="rotulo" style="margin-top:14px">Campanhas</p>${b.hist.map((h) => `<div class="not"><small>${ANO_INICIAL_T + h.t}</small>${esc(h.cat === 1 ? c1.nome : c2.nome)}: ${h.titulo ? (h.copinha ? "🏆 campeão da Copinha" : "🏆 campeão") : `${h.pos}º lugar`}</div>`).join("")}` : ""}`;
 }
 function fichaJovem(s: SaveTecnico, id: string): string {
   const b = baseDe(s), j = b.jovens.find((x) => x.a.id === id), [c1, c2] = categorias(infoLiga(s.ligaId).pais);
@@ -313,6 +324,80 @@ function fichaJovem(s: SaveTecnico, id: string): string {
       ${j.cat === 1 ? `<button class="botao sec" data-jov-c2="${esc(a.id)}">Subir para o ${esc(c2.nome)}</button>` : a.idade <= c1.max ? `<button class="botao sec" data-jov-c1="${esc(a.id)}">Voltar para o ${esc(c1.nome)}</button>` : ""}
       ${j.doPro ? "" : `<button class="botao sec" data-jov-fora="${esc(a.id)}">Dispensar</button>`}</div>
     <p class="sub">Subindo, ele ganha contrato profissional de três anos. Na base ele joga toda rodada e evolui mais rápido do que parado no banco do profissional.</p>`;
+}
+// ------------------------------------------------------------------ vestiário, planejador e anúncios
+const POS_T: PosT[] = ["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"];
+function abaVestiario(s: SaveTecnico): string {
+  const h = hierarquia(s), c = clima(s), gs = gruposDe(s), por = (n: string) => s.elenco.filter((a) => h.get(a.id)?.nivel === n).sort((a, b) => (h.get(b.id)?.pts ?? 0) - (h.get(a.id)?.pts ?? 0));
+  const nome = (a: Atleta) => `<button class="link-inline" data-jog="${esc(a.id)}">${esc(a.nome)}</button>`;
+  const prom = s.elenco.flatMap((a) => (a.promessas ?? []).map((p) => ({ a, p })));
+  const ments = s.elenco.filter((a) => a.mentor).map((a) => ({ a, m: s.elenco.find((x) => x.id === a.mentor) })).filter((x) => x.m);
+  return `${aviso()}<div class="painel"><p class="rotulo">Clima do vestiário</p><div style="display:flex;align-items:center;gap:12px"><strong style="font-family:var(--display);font-size:34px;color:var(--ouro-claro)">${c}</strong><div><b>${nomeClima(c)}</b><br><small class="sub">Moral do elenco, com peso maior para quem manda. Clima bom rende um pouco mais em campo; promessa quebrada pesa.</small></div></div></div>
+    <p class="rotulo" style="margin-top:12px">Hierarquia</p>
+    <div class="dl"><span>Líderes</span><b>${por("lider").map(nome).join(", ") || "–"}</b><span>Influentes</span><b>${por("influente").map(nome).join(", ") || "–"}</b><span>Novatos</span><b>${por("novato").map(nome).join(", ") || "–"}</b></div>
+    <p class="sub">Liderança, idade, tempo de casa, nível e a braçadeira definem quem manda. Líder feliz puxa o grupo dele para cima; líder insatisfeito puxa para baixo.</p>
+    <p class="rotulo" style="margin-top:12px">Grupos</p>
+    ${gs.map((g) => `<div class="not"><b>${esc(g.nome)}</b> <small class="sub">· ${g.membros.length} jogadores · moral ${g.moral}${g.lider ? ` · quem puxa: ${esc(g.lider.nome)}` : ""}</small><br><small>${g.membros.map((a) => esc(a.nome.split(" ").slice(-1)[0])).join(", ")}</small></div>`).join("")}
+    <p class="rotulo" style="margin-top:12px">Promessas em aberto</p>
+    ${prom.length ? prom.map(({ a, p }) => `<div class="not">${nome(a)}: ${NOME_PROMESSA[p.tipo].toLowerCase()}${p.alvo && (p.tipo === "titular" || p.tipo === "minutos") ? ` (${p.feitos ?? 0} de ${p.alvo})` : ""} <small class="sub">· prazo: ${p.ate - semanaAbs(s)} semanas</small></div>`).join("") : `<p class="sub">Nenhuma. Prometa algo na ficha do jogador (e cumpra).</p>`}
+    <p class="rotulo" style="margin-top:12px">Mentorias</p>
+    ${ments.length ? ments.map(({ a, m }) => `<div class="not">${nome(m!)} → ${nome(a)} <small class="sub">· profissionalismo ${m!.prof} → ${a.prof}</small></div>`).join("") : `<p class="sub">Nenhuma. Na ficha de um jogador de até 23 anos, escolha um veterano para ser o mentor dele.</p>`}`;
+}
+function fichaVestiario(s: SaveTecnico, a: Atleta): string {
+  const h = hierarquia(s).get(a.id), tipos: TipoPromessa[] = ["titular", "minutos", "reforco", "naoVender", "renovar"], ja = new Set((a.promessas ?? []).map((p) => p.tipo));
+  const mentores = a.idade <= 23 ? mentoresPossiveis(s).filter((m) => m.id !== a.id) : [];
+  const ti = a.treinoInd ?? {};
+  return `<div><p class="rotulo">Vestiário · ${h ? NOME_NIVEL[h.nivel] : "Membro"}</p>
+      ${(a.promessas ?? []).length ? `<p class="sub">Promessas: ${(a.promessas ?? []).map((p) => NOME_PROMESSA[p.tipo].toLowerCase()).join(", ")}.</p>` : ""}
+      <div class="botoes" style="margin-top:6px">${tipos.filter((t) => !ja.has(t)).map((t) => `<button class="botao sec peq" data-prometer="${t}" data-id="${esc(a.id)}">Prometer: ${NOME_PROMESSA[t].toLowerCase()}</button>`).join("")}</div>
+      <p class="sub" style="font-size:12px">Promessa dá moral na hora, mas é cobrada no prazo. Quebrar uma promessa com um líder abala o grupo dele.</p></div>
+    <div><p class="rotulo">Treino individual</p>
+      <div class="chips" style="flex-wrap:wrap">${[["", "Igual ao time"], ["fisico", "Físico"], ["tecnico", "Técnico"], ["tatico", "Tático"]].map(([k, n]) => `<button class="chip${(ti.foco ?? "") === k ? " ativo" : ""}" data-tind="${esc(a.id)}|${k}">${n}</button>`).join("")}</div>
+      <p class="sub" style="margin:8px 0 4px">Aprender posição nova${ti.pos ? ` · ${ti.pos}: ${Math.round(a.posExtra?.[ti.pos] ?? 0)}%` : ""}</p>
+      <div class="chips" style="flex-wrap:wrap">${POS_T.filter((p) => p !== a.pos && !(a.pos === "GOL") && p !== "GOL").map((p) => `<button class="chip${ti.pos === p ? " ativo" : ""}" data-tpos="${esc(a.id)}|${ti.pos === p ? "" : p}">${p}${(a.posExtra?.[p] ?? 0) >= 100 ? " ✔" : (a.posExtra?.[p] ?? 0) > 0 ? ` ${Math.round(a.posExtra![p]!)}%` : ""}</button>`).join("")}</div></div>
+    ${a.idade <= 23 ? `<div><p class="rotulo">Mentor</p><select class="campo-sel" data-mentor="${esc(a.id)}"><option value="">Sem mentor</option>${mentores.map((m) => `<option value="${esc(m.id)}"${a.mentor === m.id ? " selected" : ""}>${esc(m.nome)} (${m.idade}a · profissionalismo ${m.prof} · liderança ${Math.round(exDe(m).LID)})</option>`).join("")}</select><p class="sub" style="font-size:12px">O garoto pega o profissionalismo e o temperamento do mentor com o tempo e evolui um pouco mais.</p></div>` : ""}
+    ${a.bonusJogo || a.bonusGol ? `<p class="sub">Bônus no contrato: ${a.bonusJogo ? `${valorBrl(a.bonusJogo)} por jogo` : ""}${a.bonusJogo && a.bonusGol ? " · " : ""}${a.bonusGol ? `${valorBrl(a.bonusGol)} por gol` : ""}.</p>` : ""}`;
+}
+function abaPlanejador(s: SaveTecnico): string {
+  const fL = infoLiga(s.ligaId).fLiga, med = s.elenco.reduce((x, a) => x + ovrDe(a), 0) / Math.max(1, s.elenco.length);
+  const precisa: Record<PosT, number> = { GOL: 2, ZAG: 4, LAT: 4, VOL: 3, MEI: 3, PON: 3, ATA: 3 };
+  const linhas = POS_T.map((p) => {
+    const l = s.elenco.filter((a) => a.pos === p || (a.posExtra?.[p] ?? 0) >= 100).sort((a, b) => ovrDe(b) - ovrDe(a)), bons = l.filter((a) => ovrDe(a) >= med - 3).length;
+    const acaba = l.filter((a) => a.contratoAte <= s.temporada).length, velhos = l.filter((a) => a.idade >= 32).length;
+    const st = l.length < precisa[p] - 1 || bons === 0 ? ["Falta gente", "ruim"] : l.length < precisa[p] || bons < Math.ceil(precisa[p] / 2) ? ["Fino", "aviso"] : ["Bem servido", "bom"];
+    return `<div class="not"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${NOME_POS_T[p]}</b><span class="pill ${st[1]}">${st[0]}</span></div>
+      <small>${l.map((a) => `${esc(a.nome.split(" ").slice(-1)[0])} ${ovrDe(a)}${a.idade >= 32 ? "⌛" : a.idade <= 21 ? "🌱" : ""}${a.contratoAte <= s.temporada ? "✎" : ""}`).join(" · ") || "ninguém"}</small>
+      <small class="sub" style="display:block">${l.length} de ${precisa[p]} ideais · média ${l.length ? Math.round(l.reduce((x, a) => x + ovrDe(a), 0) / l.length) : "–"}${acaba ? ` · ${acaba} com contrato acabando` : ""}${velhos ? ` · ${velhos} veterano(s)` : ""}</small></div>`;
+  }).join("");
+  const vencem = s.elenco.filter((a) => a.contratoAte <= s.temporada + 1).sort((a, b) => a.contratoAte - b.contratoAte || ovrDe(b) - ovrDe(a));
+  return `${aviso()}<p class="sub">Profundidade de cada posição (⌛ veterano, 🌱 jovem, ✎ contrato acabando). Quem aprendeu uma posição nova conta nela também.</p>${linhas}
+    <p class="rotulo" style="margin-top:12px">Contratos que vencem em até 12 meses</p>
+    ${vencem.length ? vencem.map((a) => `<div class="not" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span><button class="link-inline" data-jog="${esc(a.id)}">${esc(a.nome)}</button> <small class="sub">${a.pos} · ${a.idade}a · ${ovrDe(a)} · vale ${curtoBrl(valorAtleta(a, fL, s.temporada))}</small></span><small>${a.contratoAte <= s.temporada ? "acaba nesta temporada" : "acaba na próxima"}</small></div>`).join("") : `<p class="sub">Nenhum.</p>`}
+    ${(s.emprestados ?? []).length ? `<p class="rotulo" style="margin-top:12px">Voltam de empréstimo</p>${s.emprestados!.map((e) => `<div class="not">${esc(e.atleta.nome)} <small class="sub">${e.atleta.pos} · ${ovrDe(e.atleta)} · no ${esc(nomeCurto(e.clubeId))}</small></div>`).join("")}` : ""}`;
+}
+let formNec: Omit<Necessidade, "id" | "desde"> = { pos: "ATA", idadeMax: 30, tipo: "qualquer", nivel: "elenco" };
+function abaAnuncios(s: SaveTecnico): string {
+  const jan = janelaT(s), ofs = s.oferecidos ?? [], procs = s.procurando ?? [], ult = ultimoDia(s);
+  const ch = (k: keyof typeof formNec, v: string | number, txt: string) => `<button class="chip${String(formNec[k]) === String(v) ? " ativo" : ""}" data-fnec="${k}|${v}">${txt}</button>`;
+  const parc = candidatosParceiro(pacote, s), meus = s.parceiros ?? [];
+  return `${aviso()}${ult ? `<div class="aviso-t erro">Último dia da janela! O que não fechar hoje fica para a próxima.</div>` : ""}<p class="sub">${esc(jan.texto)}</p>
+    <div class="painel" style="margin-top:8px"><p class="rotulo">Anunciar o que você procura</p>
+      <div class="chips" style="flex-wrap:wrap">${POS_T.map((p) => ch("pos", p, p)).join("")}</div>
+      <div class="chips" style="flex-wrap:wrap;margin-top:6px">${[21, 23, 25, 28, 30, 40].map((n) => ch("idadeMax", n, n === 40 ? "qualquer idade" : `até ${n}`)).join("")}</div>
+      <div class="chips" style="flex-wrap:wrap;margin-top:6px">${(["titular", "elenco", "jovem"] as const).map((n) => ch("nivel", n, NOME_NIVEL_NEC[n])).join("")}</div>
+      <div class="chips" style="flex-wrap:wrap;margin-top:6px">${(["qualquer", "compra", "emprestimo"] as const).map((n) => ch("tipo", n, n === "qualquer" ? "Compra ou empréstimo" : n === "compra" ? "Só compra" : "Só empréstimo")).join("")}</div>
+      <button class="botao peq" data-anunciar style="margin-top:8px">Publicar anúncio</button>
+      ${(s.necessidades ?? []).map((n) => `<div class="not" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span><b>${n.pos}</b> <small class="sub">${n.idadeMax < 40 ? `até ${n.idadeMax} anos · ` : ""}${NOME_NIVEL_NEC[n.nivel].toLowerCase()} · ${n.tipo === "qualquer" ? "compra ou empréstimo" : n.tipo}</small></span><button class="botao sec peq" data-tirar-nec="${esc(n.id)}">Tirar</button></div>`).join("")}</div>
+    <p class="rotulo" style="margin-top:12px">Jogadores oferecidos a você</p>
+    ${ofs.length ? ofs.map((o) => `<div class="not" style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center">${escudo(o.clubeId, "escudo esc-p")}<span><b>${esc(o.nome)}</b> <small class="sub">${o.pos} · ${o.idade}a · ${o.nac}</small><small class="sub" style="display:block">${esc(nomeCurto(o.clubeId))} · ${o.tipo === "compra" ? `pede ~${curtoBrl(o.valor)}` : "empréstimo"} · ${esc(o.nota)}</small></span><button class="botao sec peq" data-alvo="${esc(o.nome)}" data-clube="${o.clubeId}">Negociar</button></div>`).join("") : `<p class="sub">${(s.necessidades ?? []).length ? "Os clubes vão oferecendo a cada semana com a janela aberta." : "Publique um anúncio para receber ofertas."}</p>`}
+    <p class="rotulo" style="margin-top:12px">Clubes procurando jogadores</p>
+    ${procs.length ? procs.map((p) => { const cand = s.elenco.filter((a) => a.pos === p.pos && a.idade <= p.idadeMax && !a.emprestadoDe);
+      return `<div class="not">${escudo(p.clubeId, "escudo esc-p")} <b>${esc(nomeCurto(p.clubeId))}</b> <small class="sub">procura ${p.pos} até ${p.idadeMax} anos · ${p.tipo === "compra" ? "compra" : "empréstimo"}</small>
+        ${cand.length ? `<div style="display:flex;gap:6px;margin-top:6px"><select class="campo-sel" id="proc-${esc(p.id)}">${cand.map((a) => `<option value="${esc(a.id)}">${esc(a.nome)} (${ovrDe(a)}, ${a.idade}a)</option>`).join("")}</select><button class="botao sec peq" data-oferecer="${esc(p.id)}">Oferecer</button></div>` : `<small class="sub" style="display:block">Você não tem ninguém assim.</small>`}</div>`; }).join("") : `<p class="sub">Nenhum anúncio de outros clubes agora.</p>`}
+    <p class="rotulo" style="margin-top:12px">Clubes parceiros (${meus.length}/2)</p>
+    <p class="sub">Parceiro recebe seus garotos (até 23) como titulares, paga 60% do salário deles e mostra os melhores garotos dele para você antes de todo mundo. Você ajuda com um valor por mês.</p>
+    ${meus.map((id) => `<div class="not" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${escudo(id, "escudo esc-p")} <b>${esc(nomeCurto(id))}</b></span><button class="botao sec peq" data-parceria="${id}">Encerrar</button></div>`).join("")}
+    ${meus.length < 2 ? `<details><summary class="sub" style="cursor:pointer">Escolher parceiro</summary>${parc.filter((c) => !meus.includes(c.id)).map((c) => `<div class="not" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${escudo(c.id, "escudo esc-p")} <b>${esc(c.nome)}</b> <small class="sub">${esc(c.liga)} · força ${c.forca} · ${curtoBrl(c.custo)}/mês</small></span><button class="botao sec peq" data-parceria="${c.id}">Fechar</button></div>`).join("")}</details>` : ""}`;
 }
 /** O potencial é uma estimativa: quanto melhor o olheiro e o coordenador da base, mais justa a faixa. */
 function potTexto(s: SaveTecnico, a: Atleta): string {
@@ -341,8 +426,9 @@ function fichaJogador(s: SaveTecnico, id: string): string {
       ${(() => { const lg = linguaDe(infoLiga(s.ligaId).pais), n = nivelEm(idiomasDe(a), lg); return n < 90 ? `<div class="botoes" style="margin-top:6px">${a.aulas && a.aulas.ate > semanaAbs(s) ? `<span class="pill">Em aulas de ${esc((NOME_LINGUA[lg] ?? lg).toLowerCase())}</span>` : `<button class="botao sec peq" data-aulas="${esc(a.id)}">Pagar aulas de ${esc((NOME_LINGUA[lg] ?? lg).toLowerCase())}</button>`}</div>` : ""; })()}</div>
     <div><p class="rotulo">Curso de técnico</p><p class="sub">${a.curso?.estudando ? `Estudando a ${LICENCAS[a.curso.estudando]} (${Math.round(100 * (a.curso.progresso ?? 0) / CURSO_LICENCA[a.curso.estudando].semanas)}%).` : (a.curso?.licenca ?? 0) > 0 ? `Tem a ${LICENCAS[a.curso!.licenca]}.` : "Ainda não começou."} Quem se aposenta com licença pode entrar na sua comissão.</p>${!a.curso?.estudando && (a.curso?.licenca ?? 0) < 2 ? `<div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-curso="${esc(a.id)}">Recomendar o curso</button></div>` : ""}</div>
     <div><p class="rotulo">Conversar${conv ? " · já conversou nesta semana" : ""}</p><div class="botoes" style="margin-top:6px">${(Object.keys(NOME_CONVERSA) as Conversa[]).map((k) => `<button class="botao sec peq" data-conv="${k}" data-id="${esc(a.id)}" ${conv ? "disabled" : ""}>${NOME_CONVERSA[k]}</button>`).join("")}</div></div>
+    ${fichaVestiario(s, a)}
     <div><p class="rotulo">Renovar · pede ${valorBrl(pedido)}/mês</p><div class="botoes" style="margin-top:6px">${[1, 2, 3, 4].map((n) => `<button class="botao sec peq" data-renovar="${n}" data-id="${esc(a.id)}">${n} ano${n > 1 ? "s" : ""}</button>`).join("")}</div></div>
-    <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button>${(() => { const [, c2] = categorias(infoLiga(s.ligaId).pais), [c1] = categorias(infoLiga(s.ligaId).pais); return a.idade <= c2.max && !a.emprestadoDe ? `<button class="botao sec peq" data-mandar-base="${esc(a.id)}">Mandar jogar no ${esc(a.idade <= c1.max ? c1.nome : c2.nome)}</button>` : ""; })()}${a.emprestadoDe ? "" : `<button class="botao sec peq" data-emp-lista="${esc(a.id)}">${(s.aEmprestimo ?? []).includes(a.id) ? "Tirar da lista de empréstimo" : "Colocar para empréstimo"}</button>`}</div>
+    <div><p class="rotulo">Mercado · vale ${curtoBrl(valorAtleta(a, infoLiga(s.ligaId).fLiga, s.temporada))}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-venda="${esc(a.id)}">${(s.aVenda ?? []).includes(a.id) ? "Tirar da lista de venda" : "Colocar à venda"}</button>${(() => { const [, c2] = categorias(infoLiga(s.ligaId).pais), [c1] = categorias(infoLiga(s.ligaId).pais); return a.idade <= c2.max && !a.emprestadoDe ? `<button class="botao sec peq" data-mandar-base="${esc(a.id)}">Mandar jogar no ${esc(a.idade <= c1.max ? c1.nome : c2.nome)}</button>` : ""; })()}${!a.emprestadoDe && a.idade <= 23 ? (s.parceiros ?? []).map((pid) => `<button class="botao sec peq" data-emp-parc="${esc(a.id)}|${pid}">Emprestar ao ${esc(nomeCurto(pid))} (parceiro)</button>`).join("") : ""}${a.emprestadoDe ? "" : `<button class="botao sec peq" data-emp-lista="${esc(a.id)}">${(s.aEmprestimo ?? []).includes(a.id) ? "Tirar da lista de empréstimo" : "Colocar para empréstimo"}</button>`}</div>
       <p class="sub" style="margin-top:4px">${a.emprestadoDe ? `Emprestado pelo ${esc(nomeClube(a.emprestadoDe.clubeId))} até ${ANO_INICIAL_T + a.emprestadoDe.ate}${a.emprestadoDe.opcao ? ` · ${a.emprestadoDe.obrigacao ? "obrigação" : "opção"} de compra de ${curtoBrl(a.emprestadoDe.opcao)}` : ""}.` : ""}${a.multa ? ` Multa rescisória: ${curtoBrl(a.multa)}.` : ""}${a.papel ? ` Prometido: ${NOME_PAPEL[a.papel].toLowerCase()}.` : ""}${a.revenda ? ` ${a.revenda.pct}% de uma venda vai para o ${esc(nomeClube(a.revenda.clubeId))}.` : ""}</p></div>
     <div><p class="rotulo">Dispensar · rescisão de ${curtoBrl(multa)}</p><div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-dispensar data-id="${esc(a.id)}">Dispensar ${esc(a.nome)}</button></div></div>`;
 }
@@ -487,10 +573,12 @@ function mesaTransfHtml(s: SaveTecnico, n: Negociacao): string {
     ${emp ? "" : `<p class="sub" style="margin:8px 0 4px">Anos de contrato</p>${selNum("tn-an", [1, 2, 3, 4, 5], q.anos, (x) => `${x} ${x === 1 ? "ano" : "anos"}`)}
     <p class="sub" style="margin:8px 0 4px">Luvas (na assinatura)</p>${campoValor("tn-lu", Math.round(q.luvas * 0.5))}
     <p class="sub" style="margin:8px 0 4px">Multa rescisória (quem pagar leva ele)</p>${campoValor("tn-mu", q.multa)}`}
+    ${emp ? "" : `<p class="sub" style="margin:8px 0 4px">Bônus por jogo (quando entra em campo)</p>${campoValor("tn-bj", q.bonusJogo ?? 0)}
+    <p class="sub" style="margin:8px 0 4px">Bônus por gol</p>${campoValor("tn-bg", q.bonusGol ?? 0)}`}
     <p class="sub" style="margin:8px 0 4px">Papel prometido no time</p><select class="campo-sel" id="tn-pp">${PAPEIS.map((x) => `<option value="${x}"${x === q.papel ? " selected" : ""}>${NOME_PAPEL[x]}</option>`).join("")}</select>
     <p class="sub" style="margin:8px 0 4px">Comissão do empresário</p>${campoValor("tn-co", Math.round(q.comissao * 0.6))}
     <button class="botao" data-tn-jog-env="${idA}" style="width:100%;margin-top:10px">Enviar proposta ao jogador</button>
-    <p class="sub" style="margin-top:6px">Prometer um papel maior baixa o salário que ele pede, mas ele cobra depois se não jogar. Contrato mais curto que o que ele quer, ou multa alta, encarece. Luvas maiores reduzem o salário. O empresário tem um mínimo de comissão.</p></div>`;
+    <p class="sub" style="margin-top:6px">Prometer um papel maior baixa o salário que ele pede, mas ele cobra depois se não jogar. Contrato mais curto que o que ele quer, ou multa alta, encarece. Luvas maiores reduzem o salário. Bônus por jogo e por gol também baixam o salário fixo (ele desconta o risco de não jogar). O empresário tem um mínimo de comissão.</p></div>`;
 }
 function abaPropostas(s: SaveTecnico): string {
   const jan = janelaT(s), por = new Map(s.elenco.map((a) => [a.id, a])), fL = infoLiga(s.ligaId).fLiga, ano = (t: number) => ANO_INICIAL_T + t;
@@ -577,8 +665,9 @@ function abaTatica(s: SaveTecnico): string {
   const reservas = s.esc.reservas.map((id) => por.get(id)).filter(Boolean) as Atleta[];
   return `<div class="chips" style="margin-bottom:10px">${NOMES_FORMACAO.map((n) => `<button class="chip${n === t.formacao ? " ativo" : ""}" data-form="${n}">${n}</button>`).join("")}</div>
     <div class="forca3" style="margin-bottom:10px"><div><strong>${Math.round(f.defesa)}</strong><span>Defesa</span></div><div><strong>${Math.round(f.meio)}</strong><span>Meio</span></div><div><strong>${Math.round(f.ataque)}</strong><span>Ataque</span></div></div>
+    <div class="botoes" style="margin-bottom:8px"><button class="botao sec peq" data-melhor-time>Escalar o melhor time</button><button class="botao sec peq" data-salvar-esc>Salvar esta escalação</button>${(s.escSalvas ?? []).map((e, i) => `<button class="chip" data-usar-esc="${i}" title="${esc(e.formacao)}">${esc(e.nome)}</button><button class="chip" data-apagar-esc="${i}" aria-label="Apagar ${esc(e.nome)}">✕</button>`).join("")}</div>
     ${campo}
-    <p class="sub" style="margin:8px 0">Toque num jogador e depois em outro (no campo ou na lista) para trocar os dois de lugar. Entrosamento no ${t.formacao}: <b style="color:var(--giz)">${Math.round(s.entrosamento[t.formacao] ?? 40)}%</b>. Contorno vermelho: improvisado, lesionado ou suspenso.</p>
+    <p class="sub" style="margin:8px 0"><b style="color:var(--giz)">Arraste</b> um jogador (no campo, ou pela etiqueta da posição na lista) para outra vaga, para o banco ou para cima de outro jogador. Ou toque num e depois no outro. Entrosamento no ${t.formacao}: <b style="color:var(--giz)">${Math.round(s.entrosamento[t.formacao] ?? 40)}%</b>. Contorno vermelho: improvisado, lesionado ou suspenso.</p>
     ${s.aoVivo ? `<p class="aviso-t ok" style="margin-top:8px">Jogo parado no ${s.aoVivo.minuto ?? 0}' · ${s.aoVivo.souCasa ? s.aoVivo.gMe : s.aoVivo.gAdv} × ${s.aoVivo.souCasa ? s.aoVivo.gAdv : s.aoVivo.gMe}. As mudanças valem quando o jogo voltar. Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}.</p><button class="botao grande" data-vivo style="margin-top:8px">▶ Voltar para o jogo</button>` : `<div class="botoes"><button class="botao peq" data-melhor>Melhor escalação</button></div>`}
     ${elencoEscalacao(s, reservas)}
 
@@ -1127,6 +1216,7 @@ function abaDiretoria(s: SaveTecnico): string {
   const est = `<div class="estadio-box">${svgEstadio({ ...(ap?.dados ?? { nome: "Estádio", cores: ["#2E7D4F", "#FFFFFF"] }), nome: arenaDoClube(pacote, s).nome, capacidade: s.clube.capacidade, obra: !!obraEst })}</div>${ap?.divideCom.length ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">Estádio dividido com ${ap.divideCom.map(esc).join(" e ")}.</p>` : ""}
     ${obraEst ? `<p class="sub" style="text-align:center;margin:-4px 0 10px">Obra de ampliação: +${(obraEst.lugares ?? 0).toLocaleString("pt-BR")} lugares em ${obraEst.fim - ab} semanas.</p>` : ""}`;
   return `${est}<div class="dl"><span>Confiança</span><b>${Math.round(d.confianca)}/100</b><span>Meta da temporada</span><b>${esc(d.expectativa.texto)} (${d.expectativa.pos}º)</b><span>Centro de treinamento</span><b>${estrelas(s.clube.ctNivel)}</b><span>Categoria de base</span><b>${estrelas(s.clube.baseNivel)}</b></div>
+    ${planoHtml(s)}
     ${gramadoHtml(s)}
     ${governoHtml(s)}
     <p class="rotulo" style="margin-top:14px">Pedidos</p>
@@ -1157,7 +1247,18 @@ function governoHtml(s: SaveTecnico): string {
     ${(["situacao", "oposicao"] as const).map((k) => `<div class="not"><b>${esc(e[k].nome)}</b> <small class="sub">${k === "situacao" ? "situação" : "oposição"}</small><br><small>${esc(e[k].texto)}</small></div>`).join("")}
     <p class="sub">Pelas pesquisas, a situação tem ${Math.round(chanceSituacao(s, pos, s.diretoria.expectativa.pos) * 100)}% de chance. Se você apoiar quem ganhar, ganha crédito com a nova diretoria; se apoiar quem perder, fica marcado.</p>
     <div class="v-acoes">${(["situacao", "oposicao", "neutro"] as const).map((k) => `<button class="${(e.apoio ?? "") === k ? "v-ativo" : ""}" data-apoio="${k}">${k === "neutro" ? "Ficar neutro" : `Apoiar ${esc(e[k].nome.split(" ")[0])}`}</button>`).join("")}</div></div>` : "";
-  return `<p class="rotulo" style="margin-top:14px">Quem manda</p><div class="dl"><span>Presidente</span><b>${esc(g.presidente)}</b><span>Modelo</span><b>${tipo}</b>${g.proxEleicao !== undefined ? `<span>Próxima eleição</span><b>${ANO_INICIAL_T + g.proxEleicao}</b>` : ""}<span>Dívida</span><b>${div ? `${curtoBrl(div)} (${(div / base).toFixed(1).replace(".", ",")} folhas)` : "nenhuma"}</b></div>${eleicao}`;
+  const safHtml = g.tipo !== "associativo" ? (g.mensal ? `<p class="sub">O investidor paga ${curtoBrl(mensalSafT(s))}/mês (acompanha a divisão, nunca abaixo de ${curtoBrl(g.mensalMin ?? g.mensal)}).</p>` : "")
+    : `<div class="painel" style="margin-top:10px"><p class="rotulo">Virar SAF</p><p class="sub">Vender o futebol do clube a um investidor: dinheiro na hora, dívida assumida e um pagamento todo mês. Os sócios votam no conselho.</p>
+      ${g.votacaoSaf?.t === s.temporada ? `<p class="aviso-t ${g.tipo === "associativo" ? "erro" : "ok"}">${esc(g.votacaoSaf.texto)}</p>` : g.propostasSaf?.t === s.temporada ? g.propostasSaf.lista.map((p2, i) => `<div class="not"><b>${esc(p2.grupo)}</b> <small class="sub">${p2.perfil === "investidor" ? "investidor" : "austero"}</small><br><small>${p2.pct}% do futebol · ${curtoBrl(p2.compra)} na hora · ${curtoBrl(p2.mensal)}/mês · assume ${p2.divida}% da dívida · ${esc(p2.exige)}</small><div class="botoes" style="margin-top:6px"><button class="botao peq" data-saf-vender="${i}">Levar ao conselho</button></div></div>`).join("") : `<button class="botao sec peq" data-saf-buscar>Buscar investidor</button>`}</div>`;
+  return `<p class="rotulo" style="margin-top:14px">Quem manda</p><div class="dl"><span>Presidente</span><b>${esc(g.presidente)}</b><span>Modelo</span><b>${tipo}</b>${g.proxEleicao !== undefined ? `<span>Próxima eleição</span><b>${ANO_INICIAL_T + g.proxEleicao}</b>` : ""}<span>Dívida</span><b>${div ? `${curtoBrl(div)} (${(div / base).toFixed(1).replace(".", ",")} folhas)` : "nenhuma"}</b></div>${eleicao}${safHtml}`;
+}
+const mensalSafT = (s: SaveTecnico) => { const g = s.governo; if (!g?.mensal) return 0; return Math.max(g.mensalMin ?? g.mensal, Math.round(g.mensal * infoLiga(s.ligaId).fLiga / Math.max(0.1, infoLiga(g.ligaVenda ?? s.ligaId).fLiga) / 1e3) * 1e3); };
+/** O plano da diretoria para vários anos. */
+function planoHtml(s: SaveTecnico): string {
+  const p = planoDe(pacote, s), ic = { andamento: "◷", cumprida: "✔", falhou: "✕" } as const;
+  return `<p class="rotulo" style="margin-top:14px">Plano da diretoria · ${ANO_INICIAL_T + p.inicio} a ${ANO_INICIAL_T + p.fim}</p>
+    ${p.metas.map((m) => `<div class="not" style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:16px;color:${m.status === "cumprida" ? "var(--pos)" : m.status === "falhou" ? "var(--neg, #e57373)" : "var(--ouro)"}">${ic[m.status]}</span><span>${esc(m.texto)}${m.progresso && m.status === "andamento" ? ` <small class="sub">(${m.progresso} de ${m.alvo})</small>` : ""}</span></div>`).join("")}
+    ${p.avaliacoes.length ? `<p class="sub" style="margin-top:6px">Última avaliação (${ANO_INICIAL_T + p.avaliacoes[0].t}): ${esc(p.avaliacoes[0].texto)}</p>` : `<p class="sub" style="margin-top:6px">A diretoria avalia o plano em cada fim de temporada: meta cumprida dá confiança, meta perdida tira.</p>`}`;
 }
 const n1 = (x: number) => x.toFixed(1).replace(".", ",");
 const est = (x: number) => estrelas(Math.max(0, Math.min(5, Math.round(x))));
@@ -1227,7 +1328,10 @@ function abrirVivo(s: SaveTecnico, avisos: string[]) {
   const av = s.aoVivo; if (!av) return;
   try { vivo.outros = av.rodada === s.semana - SEMANAS_PRE_T ? outrosDaRodada(pacote, s) : []; } catch { vivo.outros = []; }
   vivo.fala = undefined; vivo.mostrado = av.minuto ?? 0; vivo.avisos = avisos; vivo.pausado = true; clearTimeout(vivo.timer); vivo.pedirPausa = false; vivo.intervalo = false; vivo.passouIntervalo = vivo.mostrado >= 45;
-  abrir(`<div id="vivo"></div>`);
+  const cm = infoClube(pacote, s.clubeId)?.cores ?? ["#2E7D4F", "#FFFFFF"], ca = infoClube(pacote, av.adv)?.cores ?? ["#C0392B", "#FFFFFF"];
+  const parecido = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  const corAdv: [string, string] = parecido(cm[0], ca[0]) ? [ca[1] ?? "#FFFFFF", ca[0]] : [ca[0], ca[1] ?? "#FFFFFF"];
+  abrir(`<div id="vivoTopo"></div><div id="campo2dBox" class="campo2d-box">${svgCampo([cm[0], cm[1] ?? "#FFFFFF"], corAdv)}</div><div id="vivo"></div>`);
   atualizarVivo(s);
 }
 function atualizarVivo(s: SaveTecnico) {
@@ -1239,7 +1343,7 @@ function atualizarVivo(s: SaveTecnico) {
   const fim = m >= 90, parado = vivo.pausado || fim;
   const vel = [[260, "1×"], [120, "2×"], [45, "4×"]].map(([v, t]) => `<button class="chip${vivo.vel === v ? " ativo" : ""}" data-vivo-vel="${v}">${t}</button>`).join("");
   const cansados = Object.entries(av.cond).filter(([id, c]) => c < 62 && s.esc.titulares.includes(id)).map(([id]) => s.elenco.find((a) => a.id === id)?.nome).filter(Boolean);
-  el.innerHTML = `<button class="fechar" data-fechar aria-label="Fechar">×</button>
+  const html = `<button class="fechar" data-fechar aria-label="Fechar">×</button>
     <p class="rotulo">Rodada ${av.rodada + 1} · ao vivo</p>
     <div class="relogio-vivo${parado ? "" : " correndo"}">${fim ? "Fim de jogo" : vivo.intervalo ? "Intervalo" : `${m}'`}</div>
     <div class="prox"><div class="lado">${escudo(casa)}<span>${esc(nomeClube(casa))}</span></div><span class="placar">${gc} × ${gf}</span><div class="lado">${escudo(fora)}<span>${esc(nomeClube(fora))}</span></div></div>
@@ -1259,6 +1363,18 @@ function atualizarVivo(s: SaveTecnico) {
       : parado ? `<div class="botoes"><button class="botao" data-vivo-seguir>▶ ${m === 0 ? "Começar" : vivo.intervalo ? "Começar o 2º tempo" : "Continuar"}</button><button class="botao sec" data-vivo-mexer>Mexer no time e na tática</button></div>
         <p class="sub">Trocas: ${trocasNoIntervalo(s)} de ${MAX_TROCAS}. <button class="link-inline" data-avancar>Pular para o fim</button></p>`
       : `<div class="botoes"><button class="botao" data-vivo-pausa>${vivo.pedirPausa ? "Parando…" : "⏸ Pausar"}</button><div class="chips">${vel}</div></div>`}`;
+  const topo = document.getElementById("vivoTopo"), k = html.indexOf('<div class="barra-tempo">');
+  if (topo && k > 0) { topo.innerHTML = html.slice(0, k); el.innerHTML = html.slice(k); } else el.innerHTML = html;
+  const box = document.getElementById("campo2dBox");
+  if (box) {
+    const vagas = FORMACOES[s.tatica.formacao], saiu = (id: string) => av.eventos.some((e) => e.min <= m && (e.tipo === "vermelho" || e.tipo === "lesao") && e.meu && e.texto.includes(s.elenco.find((a) => a.id === id)?.nome ?? "§"));
+    const minhas = vagas.map((v, i) => { const id = s.esc.titulares[i], a = id ? s.elenco.find((x) => x.id === id) : undefined; return { x: v.x, y: v.y, num: a ? String(a.numero) : "", fora: !a || (av.fora.includes(a.id) && saiu(a.id)) }; });
+    const lance = av.eventos.find((e) => e.min === m && (e.tipo === "gol" || e.tipo === "lance"));
+    const fAdv = mundo(pacote).clube[av.adv]?.forca ?? 65, f = forcaDoTime(s.elenco, s.esc, s.tatica, s.entrosamento[s.tatica.formacao] ?? 40);
+    const posse = clamp(50 + (f.meio - fAdv) * 1.1 + (s.tatica.mentalidade - 2) * 2, 30, 70);
+    const numAdv = (mundo(pacote).clube[av.adv]?.elenco ?? []).slice(0, 11).map((_, i) => String([1, 2, 4, 3, 6, 7, 5, 8, 11, 9, 10][i] ?? i + 1));
+    moverCampo(box, quadro(`${s.semente}|${av.rodada}|${av.adv}`, m, minhas, numAdv, posse, lance ? { meu: lance.meu, gol: lance.tipo === "gol" } : undefined), parado ? 400 : vivo.vel);
+  }
 }
 /** Um minuto da tela: anda o relógio; quando chega no que o motor já jogou, joga mais 5 (ou para na pausa, no intervalo e no fim). */
 function passoVivo(s: SaveTecnico) {
@@ -1295,6 +1411,7 @@ function render() {
 
 document.addEventListener("change", (ev) => {
   const t = ev.target as HTMLElement;
+  if (t.dataset.mentor && save) { const r = definirMentor(save, t.dataset.mentor, (t as HTMLSelectElement).value || undefined); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(save, t.dataset.mentor)); render(); return; }
   if (t.dataset.funcao && save) { (save.esc.funcoes ??= {})[t.dataset.funcao] = (t as HTMLSelectElement).value; salvar(); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
   if (t.id === "iLiga") { ligaEscolhida = (t as HTMLSelectElement).value; const nome = ($("iNome") as HTMLInputElement).value, nac = ($("iNac") as HTMLSelectElement).value; render(); ($("iNome") as HTMLInputElement).value = nome; ($("iNac") as HTMLSelectElement).value = nac; }
 });
@@ -1406,6 +1523,10 @@ document.addEventListener("click", (ev) => {
     else { const r = moverEscalacao(s, selEsc, d.sel); selEsc = undefined; msg = r.msg ? { texto: r.msg, ok: r.ok } : undefined; }
     redesenhar(false); return;
   }
+  if (d.melhorTime !== undefined) { s.esc = { ...melhorEscalacao(s.elenco.filter((a) => !a.emprestadoDe), s.tatica.formacao), capitao: s.esc.capitao, funcoes: s.esc.funcoes } as typeof s.esc; msg = { texto: "O auxiliar montou o melhor time disponível.", ok: true }; redesenhar(); return; }
+  if (d.salvarEsc !== undefined) { const l = (s.escSalvas ??= []); if (l.length >= 4) l.shift(); l.push({ nome: `${s.tatica.formacao} #${l.length + 1}`, formacao: s.tatica.formacao, titulares: [...s.esc.titulares], reservas: [...s.esc.reservas], tatica: { ...s.tatica } }); msg = { texto: "Escalação salva. Use os botões para trocar entre as salvas.", ok: true }; redesenhar(); return; }
+  if (d.usarEsc !== undefined) { const e = s.escSalvas?.[+d.usarEsc]; if (e) { s.tatica = { ...e.tatica }; s.entrosamento[e.formacao] ??= 40; s.esc.titulares = e.titulares.map((id) => (id && s.elenco.some((a) => a.id === id && disponivel(a)) ? id : null)); s.esc.reservas = e.reservas.filter((id) => s.elenco.some((a) => a.id === id)); msg = { texto: `Escalação "${e.nome}" carregada. Vagas de quem saiu ou está fora ficam vazias.`, ok: true }; } redesenhar(); return; }
+  if (d.apagarEsc !== undefined) { s.escSalvas = (s.escSalvas ?? []).filter((_, i) => i !== +d.apagarEsc!); redesenhar(); return; }
   if (d.selCancelar !== undefined) { selEsc = undefined; redesenhar(false); return; }
   if (d.banco) { const r = alternarBanco(s, d.banco); msg = r.msg ? { texto: r.msg, ok: r.ok } : undefined; redesenhar(false); return; }
   if (d.vaga !== undefined) { selEsc = undefined; abrir(escolherVaga(s, +d.vaga)); return; }
@@ -1458,6 +1579,17 @@ document.addEventListener("click", (ev) => {
     render(); return;
   }
   if (d.mandarBase) { const r = mandarParaBase(s, d.mandarBase); msg = { texto: r.msg, ok: r.ok }; salvar(); if (r.ok) { fechar(); sub.elenco = "base"; } else abrir(fichaJogador(s, d.mandarBase)); render(); return; }
+  if (d.prometer && d.id) { const r = prometerT(s, d.id, d.prometer as TipoPromessa); msg = { texto: r.msg, ok: r.ok }; salvar(); abrir(fichaJogador(s, d.id)); render(); return; }
+  if (d.tind) { const [id, f] = d.tind.split("|"), a = s.elenco.find((x) => x.id === id); if (a) { a.treinoInd = { ...a.treinoInd, foco: (f || undefined) as "fisico" | undefined }; salvar(); abrir(fichaJogador(s, id)); } return; }
+  if (d.tpos) { const [id, p] = d.tpos.split("|"), a = s.elenco.find((x) => x.id === id); if (a) { a.treinoInd = { ...a.treinoInd, pos: (p || undefined) as PosT | undefined }; salvar(); abrir(fichaJogador(s, id)); } return; }
+  if (d.empParc) { const [id, pid] = d.empParc.split("|"); const r = emprestarAoParceiro(pacote, s, id, pid); msg = { texto: r.msg, ok: r.ok }; salvar(); if (r.ok) fechar(); else abrir(fichaJogador(s, id)); render(); return; }
+  if (d.fnec) { const [k, v] = d.fnec.split("|"); (formNec as unknown as Record<string, string | number>)[k] = k === "idadeMax" ? +v : v; render(); return; }
+  if (d.anunciar !== undefined) { const r = anunciar(s, { ...formNec }); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.tirarNec) { tirarAnuncio(s, d.tirarNec); redesenhar(); return; }
+  if (d.oferecer) { const sel = document.getElementById(`proc-${d.oferecer}`) as HTMLSelectElement | null; const r = oferecerJogador(pacote, s, d.oferecer, sel?.value ?? ""); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.parceria) { const r = firmarParceria(pacote, s, d.parceria); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.safBuscar !== undefined) { const r = buscarInvestidor(s); msg = { texto: r.msg || "Propostas na mesa.", ok: r.ok }; redesenhar(); return; }
+  if (d.safVender) { const r = venderSaf(s, +d.safVender); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.empLista) { msg = { texto: alternarEmprestimo(s, d.empLista), ok: true }; salvar(); abrir(fichaJogador(s, d.empLista)); render(); return; }
   // mesa de transferência
   const reabrirNeg = (id: string) => { const k = id.indexOf("|"); abrir(negociarHtml(s, id.slice(k + 1), id.slice(0, k))); };
@@ -1488,7 +1620,7 @@ document.addEventListener("click", (ev) => {
     const n = s.negs?.[d.tnJogEnv], v = (id: string) => (document.getElementById(id) as HTMLSelectElement | null)?.value ?? "";
     if (!n?.jogador) return;
     const sal = lerValor("tn-sal"); if (!sal) { msgNeg = { texto: "Digite o salário.", ok: false }; reabrirNeg(d.tnJogEnv); return; }
-    fimNeg(d.tnJogEnv, proporJogador(pacote, s, d.tnJogEnv, { salario: sal, anos: +(v("tn-an") || 1), luvas: lerValor("tn-lu"), multa: lerValor("tn-mu"), papel: (v("tn-pp") || n.jogador.quer.papel) as Papel, comissao: lerValor("tn-co") })); return;
+    fimNeg(d.tnJogEnv, proporJogador(pacote, s, d.tnJogEnv, { salario: sal, anos: +(v("tn-an") || 1), luvas: lerValor("tn-lu"), multa: lerValor("tn-mu"), papel: (v("tn-pp") || n.jogador.quer.papel) as Papel, comissao: lerValor("tn-co"), bonusJogo: lerValor("tn-bj"), bonusGol: lerValor("tn-bg") })); return;
   }
   // propostas pelos seus jogadores
   if (d.pvAceitar) { const r = aceitarVenda(pacote, s, d.pvAceitar); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
@@ -1520,3 +1652,41 @@ document.addEventListener("click", (ev) => {
 if (save) prepararMundo(pacote, save);
 render();
 void (async () => { if (save && (await nuvemDisponivel())) nuvem.agora(); })();
+
+// ------------------------------------------------------------------ arrastar para escalar (campo e lista)
+{
+  let arr: { de: string; x0: number; y0: number; fantasma?: HTMLElement; alvo?: HTMLElement } | undefined, ignorarClique = false;
+  const alvoEm = (x: number, y: number) => { const el = document.elementFromPoint(x, y) as HTMLElement | null; return el?.closest<HTMLElement>("[data-sel]") ?? undefined; };
+  document.addEventListener("pointerdown", (ev) => {
+    const el = (ev.target as HTMLElement).closest<HTMLElement>("[data-sel]");
+    if (!el || !save || aba !== "tatica") return;
+    // no campo arrasta direto; na lista, pela etiqueta da posição (o resto da linha rola a tela no celular)
+    if (!el.closest(".campo") && ev.pointerType !== "mouse" && !(ev.target as HTMLElement).closest(".pos-chip")) return;
+    arr = { de: el.dataset.sel!, x0: ev.clientX, y0: ev.clientY };
+  });
+  document.addEventListener("pointermove", (ev) => {
+    if (!arr) return;
+    if (!arr.fantasma) {
+      if (Math.hypot(ev.clientX - arr.x0, ev.clientY - arr.y0) < 10) return;
+      const orig = document.querySelector<HTMLElement>(`[data-sel="${CSS.escape(arr.de)}"]`), f = document.createElement("div");
+      f.className = "fantasma-esc"; f.textContent = orig?.querySelector(".nomev, .nm b")?.textContent ?? orig?.textContent?.trim().slice(0, 18) ?? "";
+      document.body.appendChild(f); arr.fantasma = f; document.body.classList.add("arrastando");
+    }
+    ev.preventDefault();
+    arr.fantasma.style.transform = `translate(${ev.clientX - 40}px, ${ev.clientY - 30}px)`;
+    const a = alvoEm(ev.clientX, ev.clientY);
+    if (a !== arr.alvo) { arr.alvo?.classList.remove("alvo-esc"); arr.alvo = a && a.dataset.sel !== arr.de ? a : undefined; arr.alvo?.classList.add("alvo-esc"); }
+  }, { passive: false });
+  const soltar = () => {
+    if (!arr) return;
+    const a = arr, s = save;
+    arr = undefined; document.body.classList.remove("arrastando"); a.fantasma?.remove(); a.alvo?.classList.remove("alvo-esc");
+    if (!a.fantasma || !s) return;
+    ignorarClique = true; setTimeout(() => { ignorarClique = false; }, 50);
+    if (!a.alvo?.dataset.sel) return;
+    const r = moverEscalacao(s, a.de, a.alvo.dataset.sel); selEsc = undefined; msg = r.msg ? { texto: r.msg, ok: r.ok } : undefined;
+    const y = window.scrollY; salvar(); render(); window.scrollTo(0, y);
+  };
+  document.addEventListener("pointerup", soltar); document.addEventListener("pointercancel", soltar);
+  document.addEventListener("click", (ev) => { if (ignorarClique) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+}

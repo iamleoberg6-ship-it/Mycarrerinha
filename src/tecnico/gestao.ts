@@ -79,6 +79,10 @@ export interface Governo {
   tipo: TipoGoverno; presidente: string; desde: number;
   /** associativo: mandato (anos) e a temporada da próxima eleição */ mandato?: number; proxEleicao?: number;
   /** SAF: o grupo dono e o jeito dele */ dono?: string; perfil?: "investidor" | "austero";
+  /** SAF vendida por você: quanto o investidor paga por mês (recalculado pela divisão, nunca abaixo do acordado), a parte dele e a liga da venda */
+  mensal?: number; mensalMin?: number; pct?: number; ligaVenda?: string;
+  /** propostas de investidores na mesa (quando você busca a venda) e a votação */
+  propostasSaf?: { t: number; lista: PropostaSaf[] }; votacaoSaf?: { t: number; texto: string };
   eleicao?: { situacao: Candidato; oposicao: Candidato; apoio?: "situacao" | "oposicao" | "neutro"; votacao: number };
 }
 /** Clubes que já são SAF ou de dono no começo (no Brasil, os que viraram SAF de verdade). */
@@ -165,6 +169,47 @@ export function talvezSaf(s: SaveTecnico): string | undefined {
   s.clube.divida = 0; s.clube.saldo = Math.max(s.clube.saldo, base * 2); s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 0.88); s.diretoria.confianca = 50;
   cortarVagas(s, ["tecnica", "scout"]);
   return `${dono} comprou o futebol do clube e virou SAF. O grupo assumiu a dívida inteira, mas chegou cortando: teto salarial menor, comissão enxuta e contratação só com caixa sobrando (seis folhas guardadas).`;
+}
+export interface PropostaSaf { grupo: string; perfil: "investidor" | "austero"; pct: number; compra: number; mensal: number; divida: number; exige: string }
+/** Buscar investidor: até 3 grupos fazem proposta pelo futebol do clube (vale uma vez por temporada). */
+export function buscarInvestidor(s: SaveTecnico): { ok: boolean; msg: string; lista?: PropostaSaf[] } {
+  const g = s.governo;
+  if (!g) return { ok: false, msg: "Sem informação do clube." };
+  if (g.tipo !== "associativo") return { ok: false, msg: "O clube já tem dono." };
+  if (g.propostasSaf?.t === s.temporada) return { ok: true, msg: "", lista: g.propostasSaf.lista };
+  const rng = new RNG(`${s.semente}|buscaSaf|${s.clubeId}|${s.temporada}`), base = s.clube.folhaBase ?? 1, receita = s.clube.tv + (s.patro?.base ?? 0) + base;
+  const n = s.diretoria.confianca >= 40 ? 3 : 2, lista: PropostaSaf[] = [];
+  for (const grupo of rng.shuffle(GRUPOS.slice()).slice(0, n)) {
+    const perfil = rng.chance(0.6) ? "investidor" : "austero", pct = rng.pick([70, 80, 90]);
+    lista.push({ grupo, perfil, pct, compra: Math.round(base * rng.range(perfil === "investidor" ? 14 : 6, perfil === "investidor" ? 30 : 14) / 1e5) * 1e5,
+      mensal: Math.round(receita * rng.range(0.08, 0.2) / 1e4) * 1e4, divida: perfil === "austero" ? 100 : rng.pick([50, 70, 100]),
+      exige: perfil === "investidor" ? "Resultado rápido: a diretoria vai cobrar mais" : "Caixa sempre com seis folhas guardadas para contratar" });
+  }
+  g.propostasSaf = { t: s.temporada, lista };
+  return { ok: true, msg: `${lista.length} grupos fizeram proposta pelo futebol do clube.`, lista };
+}
+/** Leva a proposta ao conselho: os sócios votam (proposta boa e técnico com moral passam mais fácil). */
+export function venderSaf(s: SaveTecnico, i: number): { ok: boolean; msg: string } {
+  const g = s.governo, p = g?.propostasSaf?.t === s.temporada ? g.propostasSaf.lista[i] : undefined;
+  if (!g || !p) return { ok: false, msg: "Essa proposta não está mais na mesa." };
+  if (g.votacaoSaf?.t === s.temporada) return { ok: false, msg: "O conselho já votou uma venda nesta temporada." };
+  const base = s.clube.folhaBase ?? 1, rng = new RNG(`${s.semente}|votaSaf|${s.temporada}|${i}`);
+  const qualidade = (p.compra / base) / 20 + (p.mensal * 12 / base) / 3 + p.divida / 200 - (p.pct - 70) / 60;
+  const chance = clamp(0.25 + qualidade * 0.35 + (s.diretoria.confianca - 50) / 150 + ((s.clube.divida ?? 0) > base * 12 ? 0.15 : 0), 0.08, 0.9);
+  const sim = Math.round(chance * 100 + rng.normal(0, 8));
+  if (sim < 50) { g.votacaoSaf = { t: s.temporada, texto: `Conselho rejeitou a venda para ${p.grupo}: ${clamp(sim, 5, 49)}% a favor.` }; s.diretoria.confianca = clamp(s.diretoria.confianca - 4, 0, 100); return { ok: false, msg: g.votacaoSaf.texto }; }
+  g.tipo = "saf"; g.dono = p.grupo; g.perfil = p.perfil; g.mandato = undefined; g.proxEleicao = undefined; g.eleicao = undefined; g.desde = s.temporada;
+  g.mensal = p.mensal; g.mensalMin = p.mensal; g.pct = p.pct; g.ligaVenda = s.ligaId; g.votacaoSaf = { t: s.temporada, texto: `Conselho aprovou: ${clamp(sim, 50, 97)}% a favor.` };
+  s.clube.saldo += p.compra; s.clube.divida = Math.round((s.clube.divida ?? 0) * (1 - p.divida / 100));
+  if (p.perfil === "investidor") s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 1.25); else s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 0.92);
+  s.diretoria.confianca = clamp(s.diretoria.confianca + 8, 0, 100);
+  return { ok: true, msg: `Vendido! ${p.grupo} comprou ${p.pct}% do futebol: ${(p.compra / 1e6).toFixed(1).replace(".", ",")} mi no caixa, ${p.divida}% da dívida assumida e ${(p.mensal / 1e3).toFixed(0)} mil por mês. ${g.votacaoSaf.texto}` };
+}
+/** Pagamento mensal do investidor: acompanha a divisão (sobe na elite, cai embaixo), mas nunca abaixo do acordado. */
+export function mensalSaf(s: SaveTecnico, fLigaAgora: number, fLigaVenda: number): number {
+  const g = s.governo;
+  if (!g || g.tipo !== "saf" || !g.mensal) return 0;
+  return Math.max(g.mensalMin ?? g.mensal, Math.round(g.mensal * fLigaAgora / Math.max(0.1, fLigaVenda) / 1e3) * 1e3);
 }
 /** SAF austera: só libera contratação se sobrar caixa. */
 export function travaContratacao(s: SaveTecnico, valor: number): string | undefined {

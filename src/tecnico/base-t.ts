@@ -7,6 +7,7 @@
 // profissional ou é dispensado. Jogador do profissional que ainda tem idade de base pode ser mandado para jogar lá.
 import { RNG, clamp } from "../rng.js";
 import type { PacoteDados } from "../liga.js";
+import { mundo } from "../mundo.js";
 import { infoLiga } from "../ligas.js";
 import { gerarNome } from "../nomes.js";
 import { confederacao } from "../copas.js";
@@ -44,8 +45,10 @@ export interface BaseT {
   jovens: Jovem[];
   peneira?: { t: number; candidatos: Candidato[]; ate: number };
   campanha: Record<1 | 2, Campanha>;
-  hist: { t: number; cat: 1 | 2; pos: number; titulo: boolean }[];
+  hist: { t: number; cat: 1 | 2; pos: number; titulo: boolean; copinha?: boolean }[];
   /** temporada em que a base foi montada */ desde: number;
+  /** Copinha (Copa São Paulo de Futebol Júnior), em janeiro, para a categoria de cima (só no Brasil) */
+  copinha?: { t: number; jogos: { fase: string; adv: string; gp: number; gc: number; pen?: [number, number] }[]; campeao?: boolean; chegou: string; campeaoId?: string }[];
 }
 const POS: PosT[] = ["GOL", "ZAG", "ZAG", "LAT", "LAT", "VOL", "VOL", "MEI", "MEI", "PON", "PON", "ATA", "ATA"];
 const DESTAQUES: Record<PosT, string[]> = {
@@ -199,6 +202,7 @@ export function mandarParaBase(s: SaveTecnico, id: string): { ok: boolean; msg: 
 /** Toda semana: treino e evolução da base; em semana de rodada, cada categoria joga. */
 export function semanaBase(pacote: PacoteDados, s: SaveTecnico, eventos: string[]) {
   const b = baseDe(s), ab = semanaAbs(s), [c1, c2] = categorias(infoLiga(s.ligaId).pais);
+  if (s.semana === 0 && infoLiga(s.ligaId).pais === "BRA" && !(b.copinha ?? []).some((c) => c.t === s.temporada)) { try { eventos.push(...jogarCopinha(pacote, s)); } catch (err) { console.error(err); } }
   if (s.semana === 0 || !b.peneira || b.peneira.t !== s.temporada) {
     abrirPeneira(s);
     eventos.push(`A peneira de ${ANO_INICIAL_T + s.temporada} começou: ${b.peneira!.candidatos.length} garotos estão sendo avaliados na base.`);
@@ -274,3 +278,44 @@ export function viradaBase(s: SaveTecnico, tAntes: number): string[] {
 }
 /** Garotos que estouraram a idade e precisam de decisão. */
 export const pendentesBase = (s: SaveTecnico) => (s.base as BaseT | undefined)?.jovens?.filter((j) => j.estourou).length ?? 0;
+
+// ------------------------------------------------------------------ Copinha
+const FASES_COPINHA = ["Fase de grupos", "Segunda fase", "Terceira fase", "Oitavas de final", "Quartas de final", "Semifinal", "Final"];
+/** A Copinha inteira de uma vez (é em janeiro, antes do profissional começar): grupos, mata-mata em jogo único e pênaltis. */
+export function jogarCopinha(pacote: PacoteDados, s: SaveTecnico): string[] {
+  const b = baseDe(s), w = mundo(pacote), rng = new RNG(`${s.semente}|copinha|${s.temporada}`), [, c2] = categorias("BRA");
+  const lista = daCat(b, 2).filter((j) => j.a.idade <= 21), time = lista.slice(0, 16);
+  if (time.length < 11) return [];
+  const meu = time.slice(0, 11).reduce((x, j) => x + ovrDe(j.a), 0) / 11;
+  const brasileiros = w.ligas.filter((l) => infoLiga(l.id).pais === "BRA").flatMap((l) => l.clubes).filter((c) => c.id !== s.clubeId);
+  const ref = ovrTipico(s, 19) - nivelBase(s) * 2;
+  const forcaDe = (id: string) => ref + ((w.clube[id]?.forca ?? 60) - 66) * 0.35 + rng.normal(0, 2.5);
+  const poisson = (l: number) => { let k = 0, p = 1; const L = Math.exp(-l); do { k++; p *= rng.next(); } while (p > L); return k - 1; };
+  const jogo = (adv: string, mata: boolean) => {
+    const fa = forcaDe(adv), lam = (d: number) => clamp(1.3 + d * 0.075, 0.2, 3.8), gp = poisson(lam(meu - fa)), gc = poisson(lam(fa - meu));
+    let pen: [number, number] | undefined;
+    if (mata && gp === gc) { const a = rng.int(3, 5), c = a === 5 && rng.chance(0.5) ? rng.int(4, 6) : rng.int(2, 5); pen = a === c ? [a + 1, c] : [a, c]; if (rng.chance(0.5)) pen = [pen[1], pen[0]]; if (pen[0] === pen[1]) pen = [pen[0] + 1, pen[1]]; }
+    // gols para quem jogou
+    for (let k = 0; k < gp; k++) { const pesos = time.map((j) => ({ ATA: 5, PON: 3, MEI: 2.5, VOL: 0.8, LAT: 0.6, ZAG: 0.5, GOL: 0 } as Record<PosT, number>)[j.a.pos]); const t = pesos.reduce((x, y) => x + y, 0); let r = rng.next() * t; for (let i = 0; i < time.length; i++) { r -= pesos[i]; if (r <= 0) { time[i].g++; break; } } }
+    for (const j of time.slice(0, 13)) j.j++;
+    return { gp, gc, pen, venceu: gp > gc || (!!pen && pen[0] > pen[1]) };
+  };
+  const reg = { t: s.temporada, jogos: [] as { fase: string; adv: string; gp: number; gc: number; pen?: [number, number] }[], chegou: FASES_COPINHA[0] } as NonNullable<BaseT["copinha"]>[number];
+  const advs = rng.shuffle(brasileiros.slice()).slice(0, 12);
+  // grupos: 3 jogos, passam 2 de 4 (simplificado: 4 pontos ou mais classifica; 3 pontos depende do saldo)
+  let pts = 0, saldo = 0;
+  for (let k = 0; k < 3; k++) { const a = advs[k], r = jogo(a.id, false); reg.jogos.push({ fase: FASES_COPINHA[0], adv: a.id, gp: r.gp, gc: r.gc }); pts += r.gp > r.gc ? 3 : r.gp === r.gc ? 1 : 0; saldo += r.gp - r.gc; }
+  let vivo = pts >= 5 || (pts >= 4 && saldo >= 0) || (pts === 3 && saldo > 0 && rng.chance(0.5));
+  let fase = 1;
+  while (vivo && fase < FASES_COPINHA.length) {
+    reg.chegou = FASES_COPINHA[fase];
+    const a = advs[2 + fase], r = jogo(a.id, true);
+    reg.jogos.push({ fase: FASES_COPINHA[fase], adv: a.id, gp: r.gp, gc: r.gc, ...(r.pen ? { pen: r.pen } : {}) });
+    if (!r.venceu) vivo = false; else if (fase === FASES_COPINHA.length - 1) reg.campeao = true;
+    fase++;
+  }
+  (b.copinha ??= []).unshift(reg); b.copinha = b.copinha.slice(0, 10);
+  if (reg.campeao) { b.hist.unshift({ t: s.temporada, cat: 2, pos: 1, titulo: true, copinha: true } as BaseT["hist"][number]); for (const j of time) j.a.moral = clamp(j.a.moral + 10, 0, 100); }
+  const destaque = [...time].sort((x, y) => y.g - x.g)[0];
+  return [reg.campeao ? `O ${c2.nome} é campeão da Copinha!${destaque?.g ? ` ${destaque.a.nome} fez ${destaque.g} gols.` : ""}` : `Copinha: o ${c2.nome} parou na ${reg.chegou.toLowerCase()}.${destaque?.g ? ` Artilheiro do time: ${destaque.a.nome} (${destaque.g}).` : ""}`];
+}
