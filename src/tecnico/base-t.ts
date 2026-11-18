@@ -7,7 +7,7 @@
 // profissional ou é dispensado. Jogador do profissional que ainda tem idade de base pode ser mandado para jogar lá.
 import { bonusBase } from "./perfil-tecnico.js";
 import { RNG, clamp } from "../rng.js";
-import { curvaDe, potTardio } from "../curvas.js";
+import { curvaDe, potTardio, rumoDe, surpresaPot } from "../curvas.js";
 import type { PacoteDados } from "../liga.js";
 import { mundo } from "../mundo.js";
 import { infoLiga } from "../ligas.js";
@@ -272,6 +272,7 @@ export function viradaBase(s: SaveTecnico, tAntes: number): string[] {
     else av.push(`${j.a.nome} passou da idade sem ser aproveitado e deixou o clube.`);
   }
   for (const j of b.jovens) {
+    { const sp = surpresaPot(rumoDe(s.semente, j.a.nome), j.a.idade, j.j >= 12, new RNG(`${s.semente}|rumo-base|${s.temporada}|${j.a.id}`).next()); if (sp) j.a.pot = clamp(j.a.pot + sp, ovrDe(j.a), 95); }
     j.a.idade++; j.ovr0 = ovrDe(j.a); j.j = 0; j.g = 0; j.as = 0; j.notas = [];
     if (j.cat === 1 && j.a.idade > c1.max) { j.cat = 2; av.push(`${j.a.nome} subiu do ${c1.nome} para o ${c2.nome}.`); }
     else if (j.cat === 2 && j.a.idade > c2.max) { j.estourou = true; av.push(`${j.a.nome} passou da idade do ${c2.nome}: suba para o profissional ou ele vai embora no fim da temporada.`); }

@@ -2,7 +2,7 @@
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
 import { ordenar } from "../../src/liga";
-import { mundo, infoClube, idClube, sincronizarMundo } from "../../src/mundo";
+import { mundo, infoClube, idClube, sincronizarMundo, momentoDoClube } from "../../src/mundo";
 import { infoLiga } from "../../src/ligas";
 import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
@@ -954,6 +954,13 @@ function completarBio(s: SaveTecnico) {
 /** Perfil do clube no modo técnico: títulos, o time de todos os tempos e os recordes. O mundo simulado conta a história
  *  de todos os clubes; nas temporadas em que você treinou o clube, valem os números de verdade do seu elenco; e as suas
  *  temporadas de jogador entram como em qualquer outro clube em que você jogou. */
+/** O momento do clube no mundo: investidor, crise, ou gigante tradicional (o seu clube não entra: ele é você). */
+function momentoHtml(s: SaveTecnico, clubeId: string): string {
+  if (clubeId === s.clubeId) return "";
+  const m = momentoDoClube(pacote, clubeId), desde = m.desde !== undefined ? ` desde ${ANO_INICIAL_T + m.desde}` : "";
+  const pills = [m.tradicional ? `<span class="pill">Gigante tradicional</span>` : "", m.tipo === "investidor" ? `<span class="pill" style="color:var(--pos)">💼 Com investidor${desde}</span>` : m.tipo === "crise" ? `<span class="pill" style="color:var(--neg)">📉 Em crise financeira${desde}</span>` : ""].filter(Boolean);
+  return pills.length ? `<div class="botoes" style="margin-top:8px">${pills.join("")}</div>` : "";
+}
 function perfilClubeT(s: SaveTecnico, clubeId: string): string {
   const info = infoClube(pacote, clubeId);
   if (!info) return `<p class="sub">Clube não encontrado.</p>`;
@@ -986,6 +993,7 @@ function perfilClubeT(s: SaveTecnico, clubeId: string): string {
     ${meu ? `<div class="not">Técnico em ${ANO_INICIAL_T + s.temporada}: temporada em andamento</div>` : ""}` : "";
   const elenco = meu ? [] : plantelDoClube(pacote, clubeId).slice(0, 5);
   return `<div style="display:flex;gap:12px;align-items:center">${escudo(clubeId)}<div><h2 style="margin:0">${esc(info.nome)}</h2><span class="sub">${esc(info.cidade ?? "")} · ${esc(infoLiga(info.ligaId).curto)}${info.estadio ? ` · ${esc(info.estadio)}` : ""}</span></div></div>
+    ${momentoHtml(s, clubeId)}
     ${uniformeNoPerfil(s, clubeId)}
     <p class="rotulo" style="margin-top:14px">Títulos</p>${trofeus}
     ${passagem}

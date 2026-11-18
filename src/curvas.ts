@@ -50,3 +50,25 @@ export function potTardio(curva: Curva, idade: number, sorte: number): number {
 /** Até que idade dá para esticar o potencial com trabalho (cada curva tem o seu limite). */
 export const idadeLimiteSuperacao = (curva: Curva) => ({ precoce: 28, picoCedo: 27, normal: 29, constante: 31, tardio: 32, longevo: 31 } as Record<Curva, number>)[curva];
 export const fSuperacaoCurva = (curva: Curva, idade: number) => clamp(curva === "tardio" && idade >= 24 ? 1.2 : curva === "constante" ? 1.1 : curva === "precoce" && idade >= 22 ? 0.75 : 1, 0.5, 1.5);
+
+// ------------------------------------------------------------------ rumo escondido do potencial
+// Além da curva, cada jogador tem um rumo que ninguém vê, nem o scout: a maioria é o que parece, mas tem a joia que
+// dá um salto de repente (o barato que vira craque), a promessa que trava, o imprevisível e o que cresce com minutos.
+// É sempre o mesmo para o mesmo jogador dentro de uma carreira (a chave leva a semente do mundo), e muda de uma
+// carreira para outra.
+export type RumoPot = "estavel" | "joia" | "trava" | "oscila" | "minutos";
+export interface Rumo { rumo: RumoPot; /** idade em que o salto (ou a trava) acontece */ idade: number; tamanho: number }
+export function rumoDe(semente: string, nome: string): Rumo {
+  const h = hash(`rumo|${semente}|${nome}`), x = (h % 1000) / 1000, y = ((h >>> 10) % 1000) / 1000, z = ((h >>> 20) % 1000) / 1000;
+  const rumo: RumoPot = x < 0.11 ? "joia" : x < 0.22 ? "trava" : x < 0.3 ? "oscila" : x < 0.37 ? "minutos" : "estavel";
+  return { rumo, idade: rumo === "trava" ? 19 + Math.floor(y * 5) : 19 + Math.floor(y * 6), tamanho: 4 + Math.floor(z * 7) };
+}
+/** Quanto o potencial muda neste ano (aos `idade` anos) pelo rumo escondido. `titular`: jogou como titular a temporada;
+ *  `sorte`: um número de 0 a 1 do sorteio do ano. */
+export function surpresaPot(r: Rumo, idade: number, titular: boolean, sorte: number): number {
+  if (r.rumo === "joia" && idade === r.idade) return r.tamanho + 1;
+  if (r.rumo === "trava" && idade === r.idade) return -r.tamanho;
+  if (r.rumo === "oscila" && idade <= 25) return Math.round((sorte - 0.5) * 7);
+  if (r.rumo === "minutos" && idade <= 25) return titular ? (sorte < 0.6 ? 2 : 3) : sorte < 0.5 ? -1 : 0;
+  return 0;
+}

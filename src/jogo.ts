@@ -36,7 +36,8 @@ import { tecnicoDoClube, tecnicoLivrePara, trocasDeTecnico, lesionadosDoClube, l
 import { noticiasDaVidaDoMundo as sortearNoticiasDaVida, type JogadorDoMundo } from "./vida-mundo.js";
 import { recordesDoClube, recordesDaSelecao, recordeDaLiga, comJogador, type Lenda } from "./recordes.js";
 import { premiosDoAno, type PremiosDoAno, type IdPremio } from "./premios-mundo.js";
-import { candidatosDoAno, naSelecao, type Candidato } from "./mundo.js";
+import { candidatosDoAno, naSelecao, eventosDosClubes, type Candidato } from "./mundo.js";
+import { textoEventoClube } from "./fortuna.js";
 import { mundo, infoClube, idClube, ligaDoClube, sincronizarMundo, type TabelasReais, viradaAtual, baseDoClube, ondeJoga, versaoMundo, nivelDaBase, rankingDaLiga, janelaDoMeioAtual, idSelecao, temSelecao, selecaoDe, todasSelecoes, notasDaRodada, selecaoDaRodada, selecaoDoMes, premiosDaLiga, type Selecionado, type PremiosLiga } from "./mundo.js";
 import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
@@ -2967,6 +2968,12 @@ function noticiasDaVirada(pacote: PacoteDados, s: Save, v = viradaAtual(pacote),
   if (quando === "virada") {
     const w = mundo(pacote), lid = infoLiga(c.ligaId).id;
     const tr = trocasDeTecnico(pacote).filter((x) => x.clubeId !== id && ((w.clube[x.clubeId]?.forca ?? 0) >= 79 || w.clube[x.clubeId]?.ligaId === lid)).sort((a, b) => (w.clube[b.clubeId]?.forca ?? 0) - (w.clube[a.clubeId]?.forca ?? 0)).slice(0, 5);
+    // investidores e crises: o seu clube, a sua liga e os casos grandes do mundo
+    for (const ev of eventosDosClubes(pacote, c.temporada)) {
+      if (ev.clubeId !== id && w.clube[ev.clubeId]?.ligaId !== lid && !(ev.forte && ev.tipo === "investidor")) continue;
+      const tit = ev.tipo === "investidor" ? (ev.clubeId === id ? "Seu clube tem dono novo" : "Investidor chega") : ev.tipo === "recuperou" ? "Fim da crise" : "Crise financeira";
+      noticia(s, "clube", tit, textoEventoClube(ev, nome(ev.clubeId)) + (ev.clubeId === id ? (ev.tipo === "investidor" ? " Vem reforço por aí, e a briga por vaga vai apertar." : ev.tipo === "recuperou" ? "" : " Salário pode atrasar, e os melhores do elenco estão na vitrine.") : ""));
+    }
     if (tr.length) noticia(s, "clube", "Dança dos técnicos", tr.map((x) => `${nome(x.clubeId)}: sai ${x.saiu ?? "–"}${x.motivo === "aposentou" ? " (aposentado)" : x.motivo === "levado" ? "" : " (demitido)"}, chega ${x.entrou}${x.de ? ` (do ${nome(x.de)})` : ""}`).join(". ") + ".");
   }
   const dest = [...v.destaques].sort((a, b) => b.ovr - a.ovr).slice(0, 3);

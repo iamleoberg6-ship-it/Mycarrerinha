@@ -14,6 +14,7 @@ import { ordemFinal } from "./copas.js";
 import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
 import { gerarStats, statsAte, type StatsNPC } from "./estatisticas.js";
 import { VAGAS_433 } from "./partida.js";
+import { tradicionaisDe, atualizarFortunas, ajusteDe, type Fortuna, type EventoClube } from "./fortuna.js";
 import { criarBase, CLUBES_BASCOS, SO_BASCOS, nivelBase, virarTemporada, type GruposMundo, type Referencia, type ViradaMundo, type NivelBase, type AgenteLivre } from "./evolucao.js";
 
 export { LIGAS, LIGA_INFO, type InfoLiga };
@@ -70,6 +71,8 @@ export function mundo(pacote: PacoteDados): Mundo {
   for (const c of Object.values(m.clube)) if (CLUBES_BASCOS.has(c.id)) for (const j of c.elenco) if (c.id === SO_BASCOS || (j.nacionalidade === "ESP" && hashS(`basco|${j.nome}`) % 10 < 6)) j.basco = true;
   original = new Map(Object.values(m.clube).map((c) => [c, c.elenco.map((j) => ({ ...j }))]));
   ligasOriginais = new Map(ligas.map((l) => [l, [...l.clubes]]));
+  fClubeBase = new Map(Object.values(m.clube).map((c) => [c, c.fClube]));
+  tradicionais = tradicionaisDe(ligas.map((l) => ({ pais: l.pais, divisao: LIGA_INFO[l.id]?.divisao, clubes: l.clubes })));
   ref = Object.fromEntries(Object.values(m.clube).map((c) => [c.id, { forca: c.forca, top: forcaDoElenco(c.elenco), tamanho: c.elenco.length, nivel: nivelBase(c.id, info[c.id]?.forca ?? c.forca, c.pais) }]));
   grupos = { pro: ligas.flatMap((l) => l.clubes), convidados: conv, amadores: amadoras.flatMap((l) => l.clubes), ligas: [...ligas.map((l) => l.clubes), ...amadoras.map((l) => l.clubes), conv] };
   estado = undefined;
@@ -168,6 +171,8 @@ export const todasSelecoes = (pacote: PacoteDados) => SELECOES.map((x) => mundo(
 
 // ------------------------------------------------------------------ o mundo ao longo das temporadas
 let ligasOriginais = new Map<Liga, Clube[]>();
+/** capacidade financeira de 2026 de cada clube (a fortuna mexe nela) e os gigantes tradicionais */
+let fClubeBase = new Map<Clube, number>(), tradicionais = new Set<string>();
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
 let estado: { exJogadores?: { nome: string; pais: string; ovr: number; idade: number; t: number }[]; semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; campeoes: { t: number; liga: string; clube: string }[]; saiu: Map<string, { t: number; motivo: string }>;
   /** técnico de cada clube profissional, técnicos sem clube e as trocas de cada virada */
@@ -177,7 +182,9 @@ let estado: { exJogadores?: { nome: string; pais: string; ovr: number; idade: nu
   /** acesso e rebaixamento de cada virada (quem subiu e quem caiu, de onde para onde) */
   acessos: Record<number, Acesso[]>;
   /** primeira temporada com acesso e rebaixamento (saves antigos começam na última temporada jogada) */
-  desde: number } | undefined;
+  desde: number;
+  /** a fortuna de cada clube (investidor, crise, embalo de títulos) e o que aconteceu em cada virada */
+  fortuna: Record<string, Fortuna>; eventosClubes: Record<number, EventoClube[]> } | undefined;
 export interface Acesso { clubeId: string; de: string; para: string; sobe: boolean; campeao?: boolean }
 /** Tabela real (a do campeonato que o jogador disputou) de cada temporada: decide quem sobe e quem cai na liga dele. */
 export type TabelasReais = Record<number, { ligaId: string; ordem: string[] }>;
@@ -356,25 +363,31 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
   const m = mundo(pacote), comMeio = semana >= SEMANA_JANELA_MEIO;
   if (estado && estado.semente === semente && estado.temporada === temporada && estado.feitoMeio === comMeio) return;
   if (!estado || estado.semente !== semente || estado.desde !== desde || estado.temporada > temporada || (estado.temporada === temporada && estado.feitoMeio && !comMeio)) {
-    for (const [c, el] of original) { c.elenco = el.map((j) => ({ ...j })); c.forca = ref[c.id].forca; }
+    for (const [c, el] of original) { c.elenco = el.map((j) => ({ ...j })); c.forca = ref[c.id].forca; c.fClube = fClubeBase.get(c) ?? c.fClube; }
     // cada clube volta para a divisão de 2026
     for (const [l, cl] of ligasOriginais) { l.clubes.splice(0, l.clubes.length, ...cl); for (const c of cl) { c.ligaId = l.id; if (m.info[c.id]) m.info[c.id].ligaId = l.id; } }
     for (const id of Object.keys(m.clube)) if (id.startsWith("NAT-")) { delete m.clube[id]; delete m.info[id]; }
     const usados = new Set([...Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)), ...nomesSelecao]);
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados, c.id);
-    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), campeoes: [], saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map(), acessos: {}, desde };
+    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), campeoes: [], saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map(), acessos: {}, desde, fortuna: {}, eventosClubes: {} };
     registrarTemporada(m);
   }
   const e = estado;
-  const fazerMeio = () => { e.meio[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, true, e.livres); e.feitoMeio = true; registrarMeio(m); };
+  const ajustes = () => Object.fromEntries(Object.entries(e.fortuna).map(([id, f]) => [id, ajusteDe(f, tradicionais.has(id))]));
+  const fazerMeio = () => { e.meio[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, true, e.livres, ajustes()); e.feitoMeio = true; registrarMeio(m); };
   while (e.temporada < temporada) {
     if (!e.feitoMeio) fazerMeio();
     virarTecnicos(m, semente);
     sequelas(m);
     e.acessos[e.temporada] = e.temporada >= e.desde ? acessoERebaixamento(m, semente, e.temporada, reais[e.temporada]) : [];
+    // a fortuna dos clubes: investidores, crises, e o dinheiro dos títulos e do rebaixamento
+    { const ac = e.acessos[e.temporada], t0 = e.temporada;
+      const res = { campeoes: new Set(e.campeoes.filter((x) => x.t === t0 && LIGA_INFO[x.liga]?.divisao === 1).map((x) => x.clube)), caiu: new Set(ac.filter((x) => !x.sobe).map((x) => x.clubeId)), subiu: new Set(ac.filter((x) => x.sobe).map((x) => x.clubeId)) };
+      e.eventosClubes[t0 + 1] = atualizarFortunas(grupos.pro.map((c) => ({ id: c.id, divisao: LIGA_INFO[c.ligaId]?.divisao ?? 9 })), e.fortuna, tradicionais, semente, t0, res);
+      for (const c of grupos.pro) { const b = fClubeBase.get(c) ?? c.fClube; c.fClube = Math.round(clamp(b * (1 + 0.06 * ajusteDe(e.fortuna[c.id], tradicionais.has(c.id))), 0.3, 2.2) * 100) / 100; } }
     e.temporada++; e.feitoMeio = false;
-    e.virada = e.viradas[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, false, e.livres); registrarTemporada(m);
+    e.virada = e.viradas[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, false, e.livres, ajustes()); registrarTemporada(m);
   }
   if (comMeio && !e.feitoMeio) fazerMeio();
   montarSelecoes(m);
@@ -416,6 +429,14 @@ function acessoERebaixamento(m: Mundo, semente: string, t: number, real?: { liga
     feitos.push({ clubeId: x.clube.id, de: x.de.id, para: x.para.id, sobe: x.sobe, ...(x.campeao ? { campeao: true } : {}) });
   }
   return feitos;
+}
+/** O que aconteceu com os clubes na virada para a temporada t: investidor chegou, crise, investidor saiu, recuperação. */
+export const eventosDosClubes = (pacote: PacoteDados, t: number): EventoClube[] => { garantir(pacote); return estado?.eventosClubes[t] ?? []; };
+/** O momento de um clube agora: em que ciclo está (investidor ou crise), desde quando, e se é um gigante tradicional. */
+export function momentoDoClube(pacote: PacoteDados, id: string): { tipo?: "investidor" | "crise"; desde?: number; ajuste: number; tradicional: boolean } {
+  garantir(pacote);
+  const f = estado?.fortuna[id], tr = tradicionais.has(id);
+  return { ...(f?.tipo ? { tipo: f.tipo, desde: f.desde } : {}), ajuste: ajusteDe(f, tr), tradicional: tr };
 }
 /** Quem subiu e quem caiu na virada para a temporada t (vem da temporada t − 1). */
 export const acessosDaVirada = (pacote: PacoteDados, t: number): Acesso[] => { garantir(pacote); return estado?.acessos[t - 1] ?? []; };

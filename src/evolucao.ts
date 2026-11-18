@@ -6,7 +6,7 @@
 //  - estrutura (1–5, pela força do clube): talento médio dos garotos e o quanto evoluem;
 //  - cultura de base (1–5, src/identidade.ts): talento, evolução e quantos sobem por temporada;
 //  - escola do país: Brasil, Argentina, França, Espanha, Portugal revelam mais.
-import { curvaDe, fIdadeCurva, idadeDoDeclinio, fDeclinioCurva, potTardio } from "./curvas.js";
+import { curvaDe, fIdadeCurva, idadeDoDeclinio, fDeclinioCurva, potTardio, rumoDe, surpresaPot } from "./curvas.js";
 import { RNG, clamp } from "./rng.js";
 import { forcaDoElenco, type Clube, type JogadorNPC } from "./liga.js";
 import { culturaBase } from "./identidade.js";
@@ -81,7 +81,9 @@ export function potDe(j: JogadorNPC): number {
   return j.pot;
 }
 /** Um ano de carreira: jovem cresce rumo ao potencial (mais com estrutura e minutos), veterano cai. Muta o jogador. */
-export function evoluirAno(j: JogadorNPC, rng: RNG, f: number) {
+export function evoluirAno(j: JogadorNPC, rng: RNG, f: number, semente?: string, titular = false) {
+  // o rumo escondido mexe no potencial antes do ano: a joia dá o salto, a promessa trava
+  if (semente !== undefined) { const p0 = potDe(j), sp = surpresaPot(rumoDe(semente, j.nome), j.idade, titular, rng.next()); if (sp) j.pot = clamp(p0 + sp, j.ovr, 95); }
   const pot = potDe(j), gol = j.posicao === "GOL" ? 2 : 0, cv = curvaDe(j.nome);
   // cada um cresce do seu jeito: o ritmo do ano é a curva dele comparada com a curva normal
   const ritmo = fIdadeCurva(cv, j.idade) / Math.max(0.1, fIdadeCurva("normal", j.idade)), a = idadeDoDeclinio(cv, j.idade) - gol, fd = fDeclinioCurva(cv);
@@ -178,7 +180,9 @@ function faixaAmadora(id: string): [number, number, number] {
  */
 /** Agente livre: sem clube desde a temporada `desde`, último clube `de`. */
 export interface AgenteLivre { j: JogadorNPC; de: string; desde: number }
-export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]>, ref: Record<string, Referencia>, semente: string, t: number, usados: Set<string>, meio = false, livres: AgenteLivre[] = []): ViradaMundo {
+export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]>, ref: Record<string, Referencia>, semente: string, t: number, usados: Set<string>, meio = false, livres: AgenteLivre[] = [], ajuste: Record<string, number> = {}): ViradaMundo {
+  // a fortuna do clube (investidor, crise, embalo) muda o tamanho que ele "acha que tem" na hora de montar o elenco
+  const refE = (id: string): Referencia | undefined => { const r = ref[id], a = ajuste[id] ?? 0; return r && a ? { ...r, forca: r.forca + a, top: r.top + a } : r; };
   // `meio`: janela do meio do ano. Só o mercado (menos negócios) e a reposição; ninguém envelhece nem sobe da base.
   const rngDe = (...p: (string | number)[]) => new RNG(`${semente}|mundo|${t}|${meio ? "meio|" : ""}${p.join("|")}`);
   const saidas: Record<string, Movimento[]> = {}, chegadas: Record<string, Movimento[]> = {}, destaques: Movimento[] = [];
@@ -198,7 +202,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   // 1) um ano a mais para todo mundo; aposentadorias
   for (const c of meio ? [] : todos) {
     const r = rngDe("ano", c.id), tit = titulares(c.elenco), est = ref[c.id]?.nivel.estrutura ?? 2;
-    for (const j of [...c.elenco]) evoluirAno(j, r, 0.85 + 0.05 * est + (tit.has(j) ? 0.15 : 0));
+    for (const j of [...c.elenco]) evoluirAno(j, r, 0.85 + 0.05 * est + (tit.has(j) ? 0.15 : 0), semente, tit.has(j));
     const amador = g.amadores.includes(c), [, , maxIdade] = amador ? faixaAmadora(c.id) : [0, 0, 40];
     for (const j of [...c.elenco]) {
       const longe = j.ovr < c.forca - 12;
@@ -217,7 +221,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   if (!meio) {
     const r = rngDe("livres");
     for (const x of [...livres]) {
-      evoluirAno(x.j, r, 0.8);
+      evoluirAno(x.j, r, 0.8, semente);
       const parar = x.j.idade >= 35 || x.j.ovr < 40 || (x.j.idade >= 32 && r.chance(0.5)) || (t - x.desde >= 2 && r.chance(0.6));
       if (parar) livres.splice(livres.indexOf(x), 1);
     }
@@ -229,7 +233,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
     const b = base[c.id];
     if (!b) continue;
     const n = ref[c.id].nivel, r = rngDe("base", c.id);
-    for (const j of b) evoluirAno(j, r, n.fEvolucao);
+    for (const j of b) evoluirAno(j, r, n.fEvolucao, semente);
     const corte = c.forca - 8 - (n.cultura - 3) * 1.5;
     const candidatos = b.filter((j) => j.idade >= 18 && (j.ovr >= corte || (n.cultura >= 3 && potDe(j) >= c.forca + 3 && j.ovr >= corte - 4))).sort((a, b2) => b2.ovr + potDe(b2) * 0.5 - (a.ovr + potDe(a) * 0.5));
     subiram[c.id] = candidatos.slice(0, n.maxSobe);
@@ -245,12 +249,14 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   for (const c of g.pro) {
     for (const j of c.elenco) {
       if (j.idade <= 30 && j.ovr >= c.forca + 5 && r3.chance(meio ? 0.1 : 0.3)) vendas.push({ j, de: c });
+      // clube em crise vende os melhores para fazer caixa
+      else if ((ajuste[c.id] ?? 0) <= -3 && j.idade <= 30 && j.ovr >= c.forca + 1 && r3.chance(meio ? 0.15 : 0.35)) vendas.push({ j, de: c });
       else if (j.ovr < c.forca - 6 && r3.chance(meio ? 0.08 : 0.25)) vendas.push({ j, de: c });
     }
   }
   vendas.sort((a, b) => b.j.ovr - a.j.ovr || a.j.nome.localeCompare(b.j.nome));
   for (const { j, de } of vendas) {
-    const subindo = j.ovr >= de.forca + 5;
+    const subindo = j.ovr >= de.forca + 5 || ((ajuste[de.id] ?? 0) <= -3 && j.ovr >= de.forca + 1);
     // qualquer clube do mundo do nível certo; a chance de cada um vem da afinidade com o jogador
     const alvo = porForca.filter((c) => c !== de && aceita(c.id, j) && c.elenco.length < 32 && (subindo ? c.forca > de.forca && c.forca >= j.ovr - 5 && c.forca <= j.ovr + 1 : c.forca <= j.ovr + 4 && c.forca >= j.ovr - 3));
     if (!alvo.length) { if (!subindo) { sai(de, j, mov(j, "dispensado")); livre(j, de.id); } continue; }
@@ -275,7 +281,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   livres.sort((a, b) => b.j.ovr - a.j.ovr);
   if (livres.length > 2500) livres.splice(2500); // o banco não cresce sem fim: os piores somem do mercado
   for (const c of todos) {
-    const rf = ref[c.id], r = rngDe("elenco", c.id), amador = g.amadores.includes(c);
+    const rf = refE(c.id)!, r = rngDe("elenco", c.id), amador = g.amadores.includes(c);
     if (!rf) continue;
     for (const j of subiram[c.id] ?? []) chega(c, j, "subiu");
     // reforço do tamanho do clube: quem caiu se recompõe; quem subiu acima do tamanho dele não vira superpotência
@@ -301,7 +307,8 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
       // 2) titular de um clube menor (o clube grande compra)
       const tit: { j: JogadorNPC; de: Clube }[] = [];
       for (const o of g.pro) {
-        if (o === c || o.forca >= c.forca || g.convidados.includes(o)) continue;
+        // clube com investidor cobre a proposta de clube maior (o dinheiro novo tira craque de gigante)
+        if (o === c || o.forca >= c.forca + Math.max(0, (ajuste[c.id] ?? 0) - 1) * 1.5 || g.convidados.includes(o)) continue;
         for (const j of o.elenco) if (nivelOk(j) && !tomados.has(j) && o.elenco.filter((y) => y.posicao === pos).length > MINIMO[pos]) tit.push({ j, de: o });
         if (tit.length >= 40) break;
       }
@@ -345,7 +352,7 @@ export function virarTemporada(g: GruposMundo, base: Record<string, JogadorNPC[]
   }
   // 4b) conferência: quem perdeu gente depois de montar o elenco (vendas para clubes processados depois) completa as posições
   for (const c of todos) {
-    const rf = ref[c.id];
+    const rf = refE(c.id);
     if (!rf) continue;
     const r = rngDe("conferencia", c.id), alvoN = rf.forca - 6;
     for (const p of POSICOES) while (c.elenco.filter((j) => j.posicao === p).length < MINIMO[p]) {

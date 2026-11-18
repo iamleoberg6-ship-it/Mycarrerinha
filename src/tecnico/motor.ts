@@ -1,7 +1,8 @@
 // Modo técnico — motor: começo de carreira, a semana (treino, jogo, dinheiro, diretoria), a partida e a virada de temporada.
 // O mundo é o mesmo do modo jogador (mesma semente = mesmo mundo); o clube do técnico usa o elenco do save.
 import { RNG, clamp } from "../rng.js";
-import { curvaDe, potTardio } from "../curvas.js";
+import { curvaDe, potTardio, rumoDe, surpresaPot } from "../curvas.js";
+import { textoEventoClube } from "../fortuna.js";
 import { efeitoBeira } from "./beira.js";
 import { fatorTecnicoJogo, fatorBeira, fatorLesao, fatorCartao, fatorTreino, fatorNegocio, fatorReputacao, freioReputacao, ajusteMoralSemana, moralDeChegada, reputacaoDaOrigem, ajusteIdade, biografia, type PerfilTecnico } from "./perfil-tecnico.js";
 import { avaliarPlano } from "./plano-dir.js";
@@ -13,7 +14,7 @@ import { semanaBase, viradaBase, custoBase, baseDe, daCat, subirProfissional } f
 import { evoluirSemana, type Grupo, type Intensidade, type Participacao } from "../atributos.js";
 import { forcaDoElenco, novaTabela, ordenar, registrar, rodadasDaLiga, type LinhaTabela, type PacoteDados, type JogadorNPC, type Liga } from "../liga.js";
 import { simularPlacar, pontosEsperados, SHARE_GOL, SHARE_ASSIST } from "../partida.js";
-import { mundo, sincronizarMundo, reiniciarSincronia, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
+import { mundo, sincronizarMundo, reiniciarSincronia, eventosDosClubes, versaoMundo, infoClube, idClube, agentesLivres, LIGAS, type TabelasReais } from "../mundo.js";
 import { valorBrl } from "../moeda.js";
 import { montarRevista, type EdicaoRevista } from "../revista.js";
 import { semanaEmpregos, tabelaAgora } from "./empregos.js";
@@ -1162,6 +1163,14 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
     if (aposenta) { tirarDoElenco(s, a.id); noticia(s, "elenco", `${a.nome} pendura as chuteiras aos ${a.idade} anos.`); }
   }
   for (const a of s.elenco) guardarTemporada(s, a);
+  // o rumo escondido de cada jogador: ninguém sabia, nem o scout. Você só percebe quando acontece.
+  for (const a of s.elenco) {
+    const ru = rumoDe(s.semente, a.nome), titular = a.jogos >= 18, sp = surpresaPot(ru, a.idade, titular, rngT(s, "rumo", a.id).next());
+    if (!sp) continue;
+    const antes = a.pot; a.pot = clamp(a.pot + sp, ovrDe(a), 95);
+    if (a.pot - antes >= 4) noticia(s, "elenco", `🚀 ${a.nome} deu um salto nesta temporada: a comissão técnica acha que ele pode ir bem mais longe do que se imaginava.`);
+    else if (antes - a.pot >= 4) noticia(s, "elenco", `${a.nome} parou de evoluir como se esperava: a comissão técnica já não vê nele o craque que parecia.`);
+  }
   for (const a of s.elenco) { a.idade++; a.jogos = 0; a.gols = 0; a.assist = 0; a.porComp = undefined; a.amarelosT = 0; a.vermelhosT = 0; a.amarelos = 0; a.suspenso = 0; a.notas = []; a.condicao = 100; a.pot = Math.min(95, a.pot + potTardio(curvaDe(a.nome), a.idade - 1, rngT(s, "potTardio", a.id).next())); a.promessa = undefined; a.titT = 0; a.promessas = (a.promessas ?? []).filter((p) => p.tipo === "reforco"); a.moral = Math.round(a.moral * 0.5 + 32); a.querSair = false; a.semJogar = 0; }
   if (s.artLiga?.t === s.temporada) { (s.artHist ??= {})[s.temporada] = s.artLiga; s.artHist = Object.fromEntries(Object.entries(s.artHist).slice(-12)); }
   s.temporada++; s.semana = 0; s.rodadas = {}; s.lancesRodada = {}; s.recusas = []; s.propostas = []; s.negociacoes = {};
@@ -1169,6 +1178,8 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   // o mundo vira a temporada (com a tabela da liga do técnico valendo para o acesso e o rebaixamento)
   sincronizarMundo(pacote, s.semente, s.temporada, 0, s.tabelasReais, 0);
   const w = mundo(pacote), ligaNova = w.info[s.clubeId]?.ligaId ?? s.ligaId;
+  // o que mudou nos outros clubes: investidor, crise (os da sua liga e os casos grandes do mundo)
+  for (const ev of eventosDosClubes(pacote, s.temporada)) if (ev.clubeId !== s.clubeId && (w.clube[ev.clubeId]?.ligaId === ligaNova || (ev.forte && ev.tipo === "investidor"))) noticia(s, "clube", textoEventoClube(ev, infoClube(pacote, ev.clubeId)?.nome ?? ev.clubeId));
   try {
     const titulos = Object.values(s.palmaresT?.[t] ?? {}).filter(Boolean).length + (campeao ? 1 : 0);
     const pl = avaliarPlano(pacote, s, t, { pos, vaga: pos <= (li.nivel <= 1 ? 4 : 2) && li.divisao === 1, subiu: ligaNova !== s.ligaId && infoLiga(ligaNova).divisao < li.divisao, titulos });

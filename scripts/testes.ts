@@ -18,7 +18,8 @@ import * as PT from "../src/tecnico/perfil-tecnico.js";
 import { limiteEstrangeiros } from "../src/estrangeiros.js";
 import { montarRevista as montarRevistaT } from "../src/revista.js";
 import * as SL from "../src/tecnico/selecao-t.js";
-import { curvaDe, CURVAS, type Curva } from "../src/curvas.js";
+import { curvaDe, CURVAS, rumoDe, surpresaPot, type Curva } from "../src/curvas.js";
+import * as F from "../src/fortuna.js";
 import { evoluirAno } from "../src/evolucao.js";
 import * as SP from "../src/superacao.js";
 import * as PM from "../src/patro-mundo.js";
@@ -36,6 +37,7 @@ import { CLUBES_CASA } from "../src/clubes.js";
 import { sortearMulherRetrato, sortearMulherCorpo, sortearBebe, chaveArte, imagemArte, MULHERES_RETRATO, MULHERES_CORPO, BEBES, TONS } from "../app/visual/arte-personagens.js";
 import { novoNegocios, abrirEmpresa, decidirMes, abrirUnidade, mesNegocios, EMPRESAS as EMPRESAS_NEG } from "../src/negocios.js";
 import { ganharReliquia, registrarReliquias, ehReliquia, trocarCor, podeTerCarro, vagasGaragem } from "../src/casa.js";
+import { momentoDoClube } from "../src/mundo.js";
 import { campeoesDoClube, mundo, sincronizarMundo, baseDoClube, viradaAtual, nivelDaBase, ondeJoga, rankingDaLiga, janelaDoMundo, historicoDe, statsDaLinha, agentesLivres, selecaoDaRodada, selecaoDoMes, premiosDaLiga, todasSelecoes, selecaoDe, idSelecao } from "../src/mundo.js";
 import { convocado, participantesCopa, escalacaoSelecao, participantesTorneio } from "../src/jogo.js";
 import { ehTorneioContinental, ehFinalissima } from "../src/copas.js";
@@ -2121,4 +2123,30 @@ teste("Equilíbrio: a mesma semente dá a mesma carreira de técnico mesmo depoi
   const b = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-sem-vazar");
   const c0 = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-sem-vazar");
   assert.deepEqual(b.elenco.map((x) => [x.nome, M.ovrDe(x)]), c0.elenco.map((x) => [x.nome, M.ovrDe(x)]));
+});
+
+// ------------------------------------------------------------------ imprevisibilidade: rumo escondido e fortuna dos clubes
+teste("Rumo escondido: ~1 em 9 é joia, ~1 em 9 trava; o mesmo jogador tem o mesmo rumo na mesma carreira e muda entre carreiras", () => {
+  const n = 3000, conta: Record<string, number> = {};
+  for (let i = 0; i < n; i++) { const r = rumoDe("semente-a", `Jogador ${i}`); conta[r.rumo] = (conta[r.rumo] ?? 0) + 1; }
+  assert.ok(conta.joia / n > 0.08 && conta.joia / n < 0.14 && conta.trava / n > 0.08 && conta.trava / n < 0.14 && conta.estavel / n > 0.55, JSON.stringify(conta));
+  assert.deepEqual(rumoDe("semente-a", "Fulano"), rumoDe("semente-a", "Fulano"));
+  assert.ok(Array.from({ length: 20 }, (_, i) => rumoDe(`s${i}`, "Fulano").rumo).some((x, _, l) => x !== l[0]));
+  const j = { rumo: "joia" as const, idade: 21, tamanho: 6 };
+  assert.equal(surpresaPot(j, 21, false, 0.5), 7); assert.equal(surpresaPot(j, 22, false, 0.5), 0);
+  assert.equal(surpresaPot({ rumo: "trava", idade: 20, tamanho: 5 }, 20, true, 0.5), -5);
+});
+teste("Fortuna dos clubes: investidores e crises acontecem, e gigante tradicional nunca cai mais de 4 de força", () => {
+  const clubes = Array.from({ length: 60 }, (_, i) => ({ id: `C${i}`, divisao: i < 40 ? 1 : 2 })), trad = new Set(["C0", "C1", "C2"]), fort: Record<string, F.Fortuna> = {};
+  const tipos: Record<string, number> = {};
+  for (let t = 0; t < 60; t++) {
+    for (const e of F.atualizarFortunas(clubes, fort, trad, "fortuna-teste", t, { campeoes: new Set(), caiu: new Set(t % 3 === 0 ? ["C0", "C1"] : []), subiu: new Set() })) tipos[e.tipo] = (tipos[e.tipo] ?? 0) + 1;
+    for (const id of trad) assert.ok(F.ajusteDe(fort[id], true) >= -4);
+  }
+  assert.ok((tipos.investidor ?? 0) >= 5 && (tipos.crise ?? 0) >= 5, JSON.stringify(tipos));
+});
+teste("Fortuna dos clubes: o mundo marca os gigantes tradicionais e o perfil mostra o momento", () => {
+  sincronizarMundo(pacote, "fortuna-mundo", 0);
+  for (const id of ["ES-RMA", "ES-BAR", "FLA", "PAL", "EN-LIV"]) assert.ok(momentoDoClube(pacote, id).tradicional, id);
+  assert.ok(!momentoDoClube(pacote, "MIR").tradicional);
 });
