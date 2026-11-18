@@ -1779,8 +1779,9 @@ teste("Técnico: patrocínios do clube (master, fornecedor, manga, arena) com va
 
 teste("Técnico: mercado compra com a janela aberta, respeita caixa e teto, e vende por proposta", () => {
   const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 40 }, "PAL", "teste-mercado");
+  s.governo!.estilo = "ambiciosa"; s.diretoria.confianca = 95; s.clube.divida = 0; s.verba = undefined; // diretoria generosa: o teste é do mercado, não da verba
   assert.ok(T.janelaT(s).aberta);
-  const alvo = T.buscarJogadores(pacote, s, { alcance: true }).find((a) => a.valor * 1.6 < s.clube.saldo && T.interesseDo(pacote, s, a).topa)!;
+  const alvo = T.buscarJogadores(pacote, s, { alcance: true }).find((a) => a.valor * 1.6 < T.verbaLivreT(s) && T.interesseDo(pacote, s, a).topa)!;
   assert.ok(alvo, "algum jogador ao alcance");
   const caixa = s.clube.saldo, r = T.fazerProposta(pacote, s, alvo.nome, alvo.clubeId, Math.round(alvo.valor * 1.5), 3);
   assert.equal(r.status, "fechado");
@@ -2149,4 +2150,37 @@ teste("Fortuna dos clubes: o mundo marca os gigantes tradicionais e o perfil mos
   sincronizarMundo(pacote, "fortuna-mundo", 0);
   for (const id of ["ES-RMA", "ES-BAR", "FLA", "PAL", "EN-LIV"]) assert.ok(momentoDoClube(pacote, id).tradicional, id);
   assert.ok(!momentoDoClube(pacote, "MIR").tradicional);
+});
+
+// ------------------------------------------------------------------ verba de contratações (a diretoria decide)
+teste("Verba: cada diretoria libera uma parte do caixa livre, compra acima da verba é barrada e as vendas reabastecem", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 45 }, "ES-BAR", "teste-verba");
+  const v = T.verbaT(s);
+  assert.ok(v.total > 0 && v.total < s.clube.saldo, `verba ${v.total} de caixa ${s.clube.saldo}`);
+  assert.ok(v.texto.startsWith("Diretoria"));
+  assert.ok(T.travaVerba(s, T.verbaLivreT(s) + 1e6));
+  assert.equal(T.travaVerba(s, Math.max(1, T.verbaLivreT(s) - 1e6)), undefined);
+  const antes = T.verbaLivreT(s);
+  T._int.receber(s, "Vendas", 10e6);
+  assert.ok(T.verbaLivreT(s) > antes);
+  T._int.gastar(s, "Contratações", 5e6);
+  assert.ok(T.verbaLivreT(s) < antes + 10e6);
+});
+teste("Verba: a mesma situação rende verbas bem diferentes conforme o estilo da diretoria", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 45 }, "ES-BAR", "teste-verba2");
+  const por: Record<string, number> = {};
+  for (const e of ["ambiciosa", "equilibrada", "cautelosa", "lucro"] as const) { s.governo!.estilo = e; s.verba = undefined; por[e] = T.verbaT(s).total; }
+  assert.ok(por.ambiciosa > por.equilibrada && por.equilibrada > por.cautelosa, JSON.stringify(por));
+});
+teste("Verba: pedir mais depende da relação; insistir irrita; diretoria que confia financia obra sem caixa", () => {
+  const s = T.novaCarreiraTecnico(pacote, { nome: "Teste", nac: "BRA", idade: 45 }, "PAL", "teste-verba3");
+  s.diretoria.confianca = 30;
+  assert.equal(T.pedirVerba(s).ok, false);
+  const r2 = T.pedirVerba(s); assert.ok(!r2.ok && /pediu há pouco/.test(r2.msg));
+  // obra sem caixa: cautelosa nunca; equilibrada com confiança alta financia a base
+  s.governo!.estilo = "cautelosa"; s.diretoria.confianca = 95; s.clube.saldo = 0;
+  assert.equal(T.pedirDiretoria(s, "base", pacote).ok, false);
+  s.governo!.estilo = "equilibrada"; const div = s.clube.divida ?? 0;
+  const r = T.pedirDiretoria(s, "base", pacote);
+  assert.ok(r.ok && (s.clube.divida ?? 0) > div, r.msg);
 });

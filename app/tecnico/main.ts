@@ -3,6 +3,7 @@ import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
 import { ordenar } from "../../src/liga";
 import { mundo, infoClube, idClube, sincronizarMundo, momentoDoClube } from "../../src/mundo";
+import { ESTILO, estiloDe } from "../../src/tecnico/verba";
 import { infoLiga } from "../../src/ligas";
 import { ATRIBUTOS } from "../../src/atributos";
 import { valorBrl, curtoBrl, definirMoeda, numBrl, simboloAtual, moedaAtual, MOEDAS } from "../../src/moeda";
@@ -115,6 +116,7 @@ import {
   iniciarPartida, jogarAte, moverEscalacao, alternarBanco, trazerFamiliar, trocasNoIntervalo, reorganizarNoIntervalo, MAX_TROCAS, recomendarCurso, pagarAulas, estudarLicenca, licencaT, idiomasT,
   toleranciaLicenca, aceitarEmprego, recusarEmprego, assumirNovoClube, creditar,
   type SaveTecnico, type Relatorio, type Conversa, type Pedido, type DadosTecnico,
+  verbaT, verbaLivreT, pedirVerba,
 } from "../../src/tecnico/motor";
 import { responderShow, recebeShows } from "../../src/tecnico/shows";
 import { botaoAjuda, tour, tourFeito, abrirAjuda } from "../visual/guia";
@@ -501,7 +503,7 @@ function abaScout(s: SaveTecnico): string {
 function abaMercadoT(s: SaveTecnico): string {
   const jan = janelaT(s), f = filtroMercado, lista = buscarJogadores(pacote, s, f);
   const chip = (on: boolean, attrs: string, n: string) => `<button class="chip${on ? " ativo" : ""}" ${attrs}>${n}</button>`;
-  return `<p class="aviso-t ${jan.aberta ? "ok" : ""}" style="margin-bottom:10px">${esc(jan.texto)} Caixa: <b>${curtoBrl(s.clube.saldo)}</b> · folha ${curtoBrl(folhaDe(s))} de ${curtoBrl(s.clube.tetoFolha)}.</p>
+  return `<p class="aviso-t ${jan.aberta ? "ok" : ""}" style="margin-bottom:10px">${esc(jan.texto)} Verba para contratar: <b>${curtoBrl(verbaLivreT(s))}</b> · caixa ${curtoBrl(s.clube.saldo)} · folha ${curtoBrl(folhaDe(s))} de ${curtoBrl(s.clube.tetoFolha)}.</p>
     <div class="chips" style="margin-bottom:6px">${chip(!f.pos, 'data-mpos=""', "Todas")}${(["GOL", "ZAG", "LAT", "VOL", "MEI", "PON", "ATA"] as PosT[]).map((p) => chip(f.pos === p, `data-mpos="${p}"`, p)).join("")}</div>
     <div class="chips" style="margin-bottom:6px">${chip(!f.idadeMax, 'data-midade="0"', "Qualquer idade")}${chip(f.idadeMax === 23, 'data-midade="23"', "Até 23")}${chip(f.idadeMax === 28, 'data-midade="28"', "Até 28")}</div>
     <div class="chips" style="margin-bottom:6px">${chip(f.minhaLiga, 'data-mliga="1"', `Só na ${esc(infoLiga(s.ligaId).curto)}`)}${chip(!f.minhaLiga, 'data-mliga="0"', "Todas as ligas")}</div>
@@ -1328,6 +1330,7 @@ function abaDiretoria(s: SaveTecnico): string {
     ${planoHtml(s)}
     ${gramadoHtml(s)}
     ${estadioProprioHtml(s)}
+    ${verbaHtml(s)}
     ${governoHtml(s)}
     <p class="rotulo" style="margin-top:14px">Pedidos</p>
     ${pedido("estadio", "Ampliar o estádio", `+${(cE.lugares ?? 0).toLocaleString("pt-BR")} lugares, mais bilheteria. Precisa de confiança 55`)}
@@ -1336,7 +1339,17 @@ function abaDiretoria(s: SaveTecnico): string {
     ${pedido("gramado", `Trocar o gramado (nível ${Math.min(5, (s.clube.gramado ?? 3) + 1)})`, "Bola rola melhor para quem tem técnica e menos lesões em casa. Obra rápida (5 semanas). Precisa de confiança 40")}
     ${pedido("conforto", `Reformar arquibancadas e cadeiras (conforto ${Math.min(5, (s.clube.conforto ?? 3) + 1)})`, "Cadeiras novas, cobertura e banheiros: mais público, ingresso mais caro e torcida mais feliz. Precisa de confiança 50")}
     ${pedido("verba", "Aumentar o teto salarial (+12%)", "Espaço para renovar e contratar. Precisa de confiança 70 e caixa de quatro meses de salários")}
-    <p class="sub" style="margin-top:8px">A confiança sobe com vitórias acima do esperado e com campanha melhor que a meta. Abaixo de 8, você é demitido.</p>`;
+    <p class="sub" style="margin-top:8px">A confiança sobe com vitórias acima do esperado e com campanha melhor que a meta. Abaixo de 8, você é demitido.${financiaPossivel(s) ? " Com a confiança alta, a diretoria pode financiar uma obra mesmo sem dinheiro em caixa (a dívida sobe)." : ""}</p>`;
+}
+const financiaPossivel = (s: SaveTecnico) => s.diretoria.confianca >= 75 && estiloDe(s) !== "cautelosa";
+/** A verba de contratações: o que a diretoria liberou, o que já foi, o que sobra, o porquê e o botão de pedir mais. */
+function verbaHtml(s: SaveTecnico): string {
+  const v = verbaT(s), livre = verbaLivreT(s), est = ESTILO[estiloDe(s)], vendas = Math.round(v.vendas * est.pctVendas);
+  return `<div class="painel" style="margin-top:10px"><p class="rotulo">Verba de contratações · diretoria ${esc(est.nome.toLowerCase())}</p>
+    <div class="dl"><span>Liberada no começo da temporada</span><b>${curtoBrl(v.total)}</b>${v.extra ? `<span>Extra que você conseguiu</span><b>${curtoBrl(v.extra)}</b>` : ""}${vendas ? `<span>Vendas reinvestidas (${Math.round(est.pctVendas * 100)}%)</span><b>${curtoBrl(vendas)}</b>` : ""}<span>Já gasto</span><b>${curtoBrl(v.usado)}</b><span>Sobra para contratar</span><b class="${livre > 0 ? "" : "neg"}">${curtoBrl(livre)}</b></div>
+    <p class="sub" style="margin-top:6px">${esc(v.texto)}</p>
+    <p class="sub">Salários entram no teto da folha, não na verba. Compras parceladas usam a verba só quando cada parcela é paga.</p>
+    <div class="botoes" style="margin-top:6px"><button class="botao sec peq" data-pedir-verba>Pedir mais verba</button></div></div>`;
 }
 /** Tem jogo em casa na semana absoluta `ab`? (para avisar que o show manda o jogo para um estádio alugado) */
 function proximoEmCasaNa(s: SaveTecnico, ab: number): boolean {
@@ -1716,6 +1729,7 @@ document.addEventListener("click", (ev) => {
   if (d.tat && d.v !== undefined) { const k = d.tat as keyof typeof s.tatica; (s.tatica as unknown as Record<string, number | boolean>)[k] = k === "contraAtaque" ? d.v === "1" : +d.v; redesenhar(false); return; }
   if (d.treino && d.v) { (s.treino as unknown as Record<string, string>)[d.treino] = d.v; redesenhar(false); return; }
   if (d.ped) { const r = pedirDiretoria(s, d.ped as Pedido, pacote); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
+  if (d.pedirVerba !== undefined) { const r = pedirVerba(s); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffC && d.nome) { const r = contratarStaff(s, d.staffC as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.staffD) { const r = demitirStaff(s, d.staffD as Dep, d.nome); msg = { texto: r.msg, ok: r.ok }; redesenhar(); return; }
   if (d.albumT !== undefined) { abrirAlbumT(s); return; }

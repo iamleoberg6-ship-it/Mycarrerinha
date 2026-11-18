@@ -46,6 +46,7 @@ function decisoesDaSemana() {
     while (s.elenco.length < 24 && tent++ < 6) {
       const livres = T.agentesLivresT(pacote, s).sort((a, b) => b.ovr - a.ovr);
       const alvo = livres.find((l) => l.pedido * 12 < s.clube.saldo * 0.1);
+      // (agente livre não usa verba: só salário, dentro do teto)
       if (!alvo || !T.contratarLivre(pacote, s, alvo.nome, 2).ok) break;
       contratacoes++;
     }

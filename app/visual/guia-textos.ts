@@ -76,6 +76,8 @@ export const AJUDA_TECNICO: SecaoAjuda[] = [
   ] },
   { titulo: "Clube: dinheiro, diretoria e estádio", itens: [
     "Finanças: bilheteria, TV, patrocínios e salários. Caixa negativo vira dívida.",
+    "Quem decide quanto vai para contratações é a diretoria (ou o dono): cada uma tem um estilo, da ambiciosa à que não abre o cofre. A verba aparece em Clube > Diretoria e no Mercado. Dá para pedir mais; com confiança alta, a diretoria pode até financiar uma obra sem dinheiro em caixa.",
+    "O clube pode trocar de dono ou de presidente, e com ele muda o jeito de gastar.",
     "Patrocínios: escolha as marcas da camisa, a cor e se vai o logo ou o nome.",
     "Estádio dividido ou público paga aluguel e não pode ser reformado. Dá para construir um estádio próprio, que pode receber shows.",
     "Clube associativo pode virar SAF vendendo uma parte para um investidor.",

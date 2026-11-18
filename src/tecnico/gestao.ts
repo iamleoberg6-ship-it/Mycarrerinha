@@ -9,6 +9,7 @@ import { gerarNome } from "../nomes.js";
 import { FUNCOES, type Funcao, type Membro } from "./modelo.js";
 import { DEPS, NOME_DEP, HABS, HABS_DEP, CARGOS, CARGOS_DEP, LIMITE_DEP, vagasIniciaisDep, notaNoCargo, type Dep, type Cargo, type Hab } from "./staff.js";
 import type { SaveTecnico } from "./motor.js";
+import { estiloNovo, type EstiloDiretoria } from "./verba.js";
 
 // ------------------------------------------------------------------ comissão técnica (departamentos)
 /** Habilidades de um profissional (1 a 20): fortes no que é a especialidade, medianas no resto do departamento. */
@@ -79,6 +80,7 @@ export interface Governo {
   tipo: TipoGoverno; presidente: string; desde: number;
   /** associativo: mandato (anos) e a temporada da próxima eleição */ mandato?: number; proxEleicao?: number;
   /** SAF: o grupo dono e o jeito dele */ dono?: string; perfil?: "investidor" | "austero";
+  /** como essa diretoria (ou dono) solta dinheiro para reforços */ estilo?: EstiloDiretoria;
   /** SAF vendida por você: quanto o investidor paga por mês (recalculado pela divisão, nunca abaixo do acordado), a parte dele e a liga da venda */
   mensal?: number; mensalMin?: number; pct?: number; ligaVenda?: string;
   /** propostas de investidores na mesa (quando você busca a venda) e a votação */
@@ -148,6 +150,7 @@ export function votar(pacote: PacoteDados, s: SaveTecnico, pos: number, esperado
     s.diretoria.confianca = clamp(s.diretoria.confianca + (apoio === "situacao" ? 8 : apoio === "oposicao" ? -20 : 0), 0, 100);
     if (apoio === "oposicao") texto += " Você apoiou a oposição e perdeu: a diretoria não esquece.";
   }
+  if (venceu === "oposicao") g.estilo = estiloNovo(rng, { plataforma: quem.plataforma });
   g.presidente = quem.nome; g.desde = s.temporada; g.proxEleicao = s.temporada + (g.mandato ?? 3); g.eleicao = undefined;
   return { venceu, texto };
 }
@@ -160,7 +163,7 @@ export function talvezSaf(s: SaveTecnico): string | undefined {
   const rng = new RNG(`${s.semente}|saf|${s.clubeId}|${s.temporada}`);
   if (!rng.chance(0.04 + ((s.clube.divida ?? 0) > base * 12 ? 0.12 : 0) + (s.clube.saldo < 0 ? 0.08 : 0))) return undefined;
   const dono = rng.pick(GRUPOS), perfil = rng.chance(0.6) ? "investidor" : "austero";
-  g.tipo = "saf"; g.dono = dono; g.perfil = perfil; g.mandato = undefined; g.proxEleicao = undefined; g.eleicao = undefined; g.desde = s.temporada;
+  g.tipo = "saf"; g.dono = dono; g.perfil = perfil; g.mandato = undefined; g.proxEleicao = undefined; g.eleicao = undefined; g.desde = s.temporada; g.estilo = estiloNovo(rng, { perfil });
   if (perfil === "investidor") {
     const aporte = Math.round(base * (10 + rng.next() * 20) / 1e5) * 1e5;
     s.clube.saldo += aporte; s.clube.divida = Math.round((s.clube.divida ?? 0) * 0.5); s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 1.3); s.diretoria.confianca = 55;
@@ -199,7 +202,7 @@ export function venderSaf(s: SaveTecnico, i: number): { ok: boolean; msg: string
   const sim = Math.round(chance * 100 + rng.normal(0, 8));
   if (sim < 50) { g.votacaoSaf = { t: s.temporada, texto: `Conselho rejeitou a venda para ${p.grupo}: ${clamp(sim, 5, 49)}% a favor.` }; s.diretoria.confianca = clamp(s.diretoria.confianca - 4, 0, 100); return { ok: false, msg: g.votacaoSaf.texto }; }
   g.tipo = "saf"; g.dono = p.grupo; g.perfil = p.perfil; g.mandato = undefined; g.proxEleicao = undefined; g.eleicao = undefined; g.desde = s.temporada;
-  g.mensal = p.mensal; g.mensalMin = p.mensal; g.pct = p.pct; g.ligaVenda = s.ligaId; g.votacaoSaf = { t: s.temporada, texto: `Conselho aprovou: ${clamp(sim, 50, 97)}% a favor.` };
+  g.mensal = p.mensal; g.mensalMin = p.mensal; g.pct = p.pct; g.ligaVenda = s.ligaId; g.estilo = estiloNovo(rng, { perfil: p.perfil }); g.votacaoSaf = { t: s.temporada, texto: `Conselho aprovou: ${clamp(sim, 50, 97)}% a favor.` };
   s.clube.saldo += p.compra; s.clube.divida = Math.round((s.clube.divida ?? 0) * (1 - p.divida / 100));
   if (p.perfil === "investidor") s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 1.25); else s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 0.92);
   s.diretoria.confianca = clamp(s.diretoria.confianca + 8, 0, 100);
@@ -216,4 +219,19 @@ export function travaContratacao(s: SaveTecnico, valor: number): string | undefi
   if (s.governo?.perfil !== "austero") return undefined;
   const base = s.clube.folhaBase ?? 1;
   return s.clube.saldo - valor < base * 6 ? `${s.governo.dono} não libera: depois da compra, o caixa precisa ter pelo menos seis folhas guardadas.` : undefined;
+}
+
+/** Na virada: clube que já tem dono (SAF ou empresa) pode ser vendido a outro grupo, com outro jeito de gastar.
+ *  O novo dono pode ser generoso ou pão-duro; ninguém pergunta ao técnico. */
+export function talvezTrocaDeDono(s: SaveTecnico): string | undefined {
+  const g = s.governo, base = s.clube.folhaBase ?? 1;
+  if (!g || g.tipo === "associativo") return undefined;
+  const rng = new RNG(`${s.semente}|trocaDono|${s.clubeId}|${s.temporada}`);
+  if (s.temporada - g.desde < 3 || !rng.chance(0.035 + (s.clube.saldo < 0 ? 0.05 : 0))) return undefined;
+  const dono = rng.pick(GRUPOS.filter((x) => x !== g.dono)), perfil: "investidor" | "austero" = rng.chance(0.55) ? "investidor" : "austero";
+  const estilo: EstiloDiretoria = perfil === "austero" ? "cautelosa" : rng.pick(["ambiciosa", "ambiciosa", "lucro", "equilibrada"] as EstiloDiretoria[]);
+  g.dono = dono; g.perfil = perfil; g.estilo = estilo; g.desde = s.temporada; s.diretoria.confianca = clamp(s.diretoria.confianca * 0.6 + 20, 0, 100);
+  if (estilo === "ambiciosa") { const aporte = Math.round(base * (6 + rng.next() * 14) / 1e5) * 1e5; s.clube.saldo += aporte; return `O clube foi vendido: ${dono} é o novo dono e chega com dinheiro (${(aporte / 1e6).toFixed(1).replace(".", ",")} mi de aporte). Quer título logo.`; }
+  if (estilo === "cautelosa") { s.clube.tetoFolha = Math.round(s.clube.tetoFolha * 0.9); return `O clube foi vendido: ${dono} é o novo dono e já avisou que não vai abrir o cofre. Teto salarial 10% menor e contratação só com caixa sobrando.`; }
+  return `O clube foi vendido: ${dono} é o novo dono. ${estilo === "lucro" ? "Pensa no clube como negócio: vender bem e apostar na base." : "Promete gestão equilibrada."}`;
 }

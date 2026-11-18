@@ -126,6 +126,7 @@ export function proporClube(pacote: PacoteDados, s: SaveTecnico, id: string, p: 
   p = { ...p, avista: k1000(Math.max(0, p.avista)), parcelado: k1000(Math.max(0, p.parcelado)), bonus: k1000(Math.max(0, p.bonus)), parcelas: p.parcelado > 0 ? (p.parcelas || 2) : 0, revenda: clamp(Math.round(p.revenda), 0, 30) };
   if (s.clube.saldo < custoCaixa(p)) return { ok: false, msg: `O caixa não tem ${valorBrl(p.avista)} para pagar à vista.` };
   { const t = travaContratacao(s, custoCaixa(p)); if (t) return { ok: false, msg: t }; }
+  { const t = _int.travaVerba(s, custoCaixa(p)); if (t) return { ok: false, msg: t }; } // as parcelas saem da verba dos meses em que forem pagas
   if (p.troca && !s.elenco.some((x) => x.id === p.troca)) p.troca = undefined;
   const nomeC = infoClube(pacote, n.clubeId)?.nome ?? n.clubeId, v = valorDoPacote(s, a, p, n.perfil);
   // aceitar exatamente o que o clube pediu fecha a parte do clube (a palavra deles vale)
@@ -167,6 +168,7 @@ export function proporEmprestimo(pacote: PacoteDados, s: SaveTecnico, id: string
   const int = interesseDo(pacote, s, a); if (!int.topa) return { ok: false, msg: int.motivo };
   e = { taxa: k1000(Math.max(0, e.taxa)), salarioPct: clamp(Math.round(e.salarioPct / 10) * 10, 0, 100), opcao: k1000(Math.max(0, e.opcao)), obrigacao: !!e.obrigacao && e.opcao > 0 };
   if (s.clube.saldo < e.taxa) return { ok: false, msg: "O caixa não tem dinheiro para a taxa." };
+  { const t = _int.travaVerba(s, e.taxa); if (t) return { ok: false, msg: t }; }
   const nomeC = infoClube(pacote, n.clubeId)?.nome ?? n.clubeId;
   n.rodadas++; n.log.push({ quem: "voce", texto: `Você ofereceu ${textoEmp(e)}.` });
   if (a.titular && a.idade > 23 && n.perfil === "duro") { n.fase = "encerrada"; n.log.push({ quem: "clube", texto: `O ${nomeC} não empresta titular. Só venda.` }); return { ok: false, msg: `O ${nomeC} não empresta titular.` }; }
@@ -241,6 +243,7 @@ export function proporJogador(pacote: PacoteDados, s: SaveTecnico, id: string, c
   if (folhaDe(s) + salFolha > s.clube.tetoFolha) return { ok: false, msg: `A diretoria barrou: ${valorBrl(c.salario)}/mês passa do teto da folha (${valorBrl(s.clube.tetoFolha)}).` };
   const caixa = (n.acordo?.avista ?? 0) + (n.acordoEmp?.taxa ?? 0) + c.luvas + c.comissao;
   if (s.clube.saldo < caixa) return { ok: false, msg: `O caixa não cobre tudo agora (${valorBrl(caixa)} entre clube, luvas e comissão).` };
+  { const t = _int.travaVerba(s, c.luvas + c.comissao); if (t) return { ok: false, msg: t }; }
   if (s.elenco.length >= 36) return { ok: false, msg: "O elenco está cheio (36). Venda, empreste ou dispense alguém antes." };
   const d = n.jogador; n.rodadas++;
   n.log.push({ quem: "voce", texto: `Você ofereceu ${valorBrl(c.salario)}/mês por ${c.anos} ${c.anos === 1 ? "ano" : "anos"}${c.bonusJogo ? `, ${valorBrl(c.bonusJogo)} por jogo` : ""}${c.bonusGol ? `, ${valorBrl(c.bonusGol)} por gol` : ""}${c.luvas ? `, ${valorBrl(c.luvas)} de luvas` : ""}${c.multa ? `, multa de ${valorBrl(c.multa)}` : ""}, papel de ${NOME_PAPEL[c.papel].toLowerCase()} e ${valorBrl(c.comissao)} ao empresário.` });
@@ -528,6 +531,7 @@ export function decidirOpcao(pacote: PacoteDados, s: SaveTecnico, atletaId: stri
   s.opcoesCompra = s.opcoesCompra!.filter((x) => x !== o);
   if (!comprar) { _int.tirarDoElenco(s, a.id); _int.invalidar(); prepararMundo(pacote, s); return { ok: true, msg: `${a.nome} volta ao ${nomeC}.` }; }
   if (s.clube.saldo < o.valor) { s.opcoesCompra.push(o); return { ok: false, msg: "O caixa não cobre a opção de compra." }; }
+  { const t = _int.travaVerba(s, o.valor); if (t) { s.opcoesCompra.push(o); return { ok: false, msg: t }; } }
   const ed = a.emprestadoDe;
   s.clube.saldo -= o.valor; _int.gastar(s, "Contratações", o.valor);
   a.salario = ed ? Math.round(a.salario * 100 / Math.max(1, ed.salarioPct)) : a.salario; a.emprestadoDe = undefined; a.contratoAte = s.temporada + 3;

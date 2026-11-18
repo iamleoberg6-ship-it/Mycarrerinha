@@ -3,6 +3,7 @@
 import { RNG, clamp } from "../rng.js";
 import { curvaDe, potTardio, rumoDe, surpresaPot } from "../curvas.js";
 import { textoEventoClube } from "../fortuna.js";
+import { verbaDe, verbaLivre, travaVerba as travaVerbaV, pedirVerba as pedirVerbaV, financiaObra, GASTO_VERBA, VENDA_VERBA, type Verba } from "./verba.js";
 import { efeitoBeira } from "./beira.js";
 import { fatorTecnicoJogo, fatorBeira, fatorLesao, fatorCartao, fatorTreino, fatorNegocio, fatorReputacao, freioReputacao, ajusteMoralSemana, moralDeChegada, reputacaoDaOrigem, ajusteIdade, biografia, type PerfilTecnico } from "./perfil-tecnico.js";
 import { avaliarPlano } from "./plano-dir.js";
@@ -18,7 +19,7 @@ import { mundo, sincronizarMundo, reiniciarSincronia, eventosDosClubes, versaoMu
 import { valorBrl } from "../moeda.js";
 import { montarRevista, type EdicaoRevista } from "../revista.js";
 import { semanaEmpregos, tabelaAgora } from "./empregos.js";
-import { migrarEquipe, pedirVagaStaff, gerarMembro, cortarVagas, nivelDoClube, governoInicial, dividaInicial, parcelaDivida, abrirEleicao, votar, talvezSaf, travaContratacao, mensalSaf, type Governo } from "./gestao.js";
+import { migrarEquipe, pedirVagaStaff, gerarMembro, cortarVagas, nivelDoClube, governoInicial, dividaInicial, parcelaDivida, abrirEleicao, votar, talvezSaf, talvezTrocaDeDono, travaContratacao, mensalSaf, type Governo } from "./gestao.js";
 import { contratoInicial, salarioOferecido, type Contrato, type Negociacao } from "./contrato.js";
 import { copasT, jogoCopaT, rodarCopasT, fecharCopasT, temCopaPendente, premioDeTitulo, bonusVitoriaCopa, type PalmaresT } from "./copas-t.js";
 import { COPAS, NOME_FASE, rotuloJogo, type CopaId, type EstadoCopa } from "../copas.js";
@@ -110,6 +111,7 @@ export interface SaveTecnico {
   /** camisas vendidas na temporada (por jogador) e o histórico das anteriores */ camisas?: VendaTemporada; camisasHist?: HistCamisas[];
   /** o que o scout sabe do mundo: conhecimento por liga, focos e relatórios */ scout?: EstadoScout;
   /** quem manda no clube (presidente eleito, dono da SAF) */ governo?: Governo;
+  /** a verba de contratações que a diretoria liberou na temporada */ verba?: Verba;
   clube: Clube;
   mes: { receitas: Record<string, number>; despesas: Record<string, number> };
   financas: LinhaFinancas[];
@@ -385,8 +387,8 @@ export function efeitoGramado(s: SaveTecnico, fAdv: number, fMeu: number): { me:
 // ------------------------------------------------------------------ dinheiro
 /** Bilheteria bruta de um jogo em casa: pela régua do clube (a folha), pela ocupação e um pouco pelo tamanho do estádio. */
 export const bilheteria = (s: SaveTecnico, ocup: number, peso: number) => Math.round((s.clube.folhaBase ?? folhaDe(s)) * 0.16 * ocup * clamp(Math.sqrt(s.clube.capacidade / 35000), 0.7, 1.3) * peso * (0.88 + 0.04 * (s.clube.conforto ?? 3)));
-const receber = (s: SaveTecnico, k: string, v: number) => { s.mes.receitas[k] = (s.mes.receitas[k] ?? 0) + v; };
-const gastar = (s: SaveTecnico, k: string, v: number) => { s.mes.despesas[k] = (s.mes.despesas[k] ?? 0) + v; };
+const receber = (s: SaveTecnico, k: string, v: number) => { s.mes.receitas[k] = (s.mes.receitas[k] ?? 0) + v; if (VENDA_VERBA.has(k)) verbaDe(s, folhaDe(s) + folhaStaff(s)).vendas += v; };
+const gastar = (s: SaveTecnico, k: string, v: number) => { s.mes.despesas[k] = (s.mes.despesas[k] ?? 0) + v; if (GASTO_VERBA.has(k)) verbaDe(s, folhaDe(s) + folhaStaff(s)).usado += v; };
 /** As camisas do mês: o total sai do tamanho do clube e cresce com craque no elenco e reforço novo; divide por jogador. */
 function venderCamisas(s: SaveTecnico): { n: number; fator: number } {
   if (!s.camisas || s.camisas.temporada !== s.temporada) {
@@ -467,13 +469,18 @@ export function pedirDiretoria(s: SaveTecnico, p: Pedido, pacoteAtual?: PacoteDa
   if ((p === "ct" || p === "base" || p === "gramado" || p === "conforto") && (nivel ?? 6) > 5) return { ok: false, msg: "Já está no nível máximo." };
   const minimo = p === "estadio" ? 55 : p === "ct" ? 50 : p === "conforto" ? 50 : p === "gramado" ? 40 : 45;
   if (conf < minimo) return { ok: false, msg: `A diretoria não aprovou. Ela só investe nisso com confiança de ${minimo} ou mais (hoje: ${Math.round(conf)}).` };
-  if (s.clube.saldo < custo) return { ok: false, msg: "A diretoria gostou da ideia, mas o clube não tem esse dinheiro em caixa." };
+  let financiada = false;
+  if (s.clube.saldo < custo) {
+    if (!financiaObra(s, p)) return { ok: false, msg: "A diretoria gostou da ideia, mas o clube não tem esse dinheiro em caixa." };
+    // fora do orçamento: a diretoria confia em você e financia a obra (a dívida sobe)
+    const falta = custo - Math.max(0, s.clube.saldo); s.clube.saldo += falta; s.clube.divida = (s.clube.divida ?? 0) + Math.round(falta * 1.1); financiada = true;
+  }
   const semanas = p === "estadio" ? 30 : p === "ct" ? 20 : p === "gramado" ? 5 : p === "conforto" ? 18 : 16;
   s.clube.saldo -= custo; gastar(s, "Obras", custo);
   d.obras.push({ tipo: p, fim: ab + semanas, custo, ...(lugares ? { lugares } : {}), ...(nivel ? { nivel } : {}) });
   const o = p === "estadio" ? `a ampliação do estádio (+${lugares!.toLocaleString("pt-BR")} lugares)` : p === "ct" ? `a reforma do centro de treinamento (nível ${nivel})` : p === "gramado" ? `a troca do gramado (nível ${nivel})` : p === "conforto" ? `a reforma das arquibancadas e cadeiras (conforto ${nivel})` : `a melhoria da base (nível ${nivel})`;
-  noticia(s, "diretoria", `A diretoria aprovou ${o}. Obra de ${semanas} semanas.`);
-  return { ok: true, msg: `Aprovado: ${o}. Fica pronta em ${semanas} semanas.` };
+  noticia(s, "diretoria", `A diretoria aprovou ${o}${financiada ? ", fora do orçamento (financiada com empréstimo)" : ""}. Obra de ${semanas} semanas.`);
+  return { ok: true, msg: `Aprovado${financiada ? " fora do orçamento: a diretoria confia em você e vai financiar" : ""}: ${o}. Fica pronta em ${semanas} semanas.` };
 }
 
 // ------------------------------------------------------------------ elenco: conversas, contrato, chegadas
@@ -1218,6 +1225,8 @@ function virarTemporada(pacote: PacoteDados, s: SaveTecnico): string {
   definirExpectativa(pacote, s);
   noticia(s, "diretoria", `Temporada ${ANO_INICIAL_T + s.temporada}: a diretoria espera "${s.diretoria.expectativa.texto.toLowerCase()}".`);
   { const saf = talvezSaf(s); if (saf) noticia(s, "clube", saf); }
+  { const dono = talvezTrocaDeDono(s); if (dono) noticia(s, "clube", `🏢 ${dono}`); }
+  { const v = verbaT(s); noticia(s, "diretoria", `💰 Verba de contratações para a temporada: ${dinheiroT(v.total)}. ${v.texto}`); }
   // fim do contrato: com a diretoria satisfeita, renova com aumento; sem, você sai de graça (sem multa)
   const ct = s.tecnico.contrato;
   if (ct && ct.ate < s.temporada && !s.novoClube) {
@@ -1271,7 +1280,7 @@ export function buscarJogadores(pacote: PacoteDados, s: SaveTecnico, f: { pos?: 
       for (const j of c.elenco) {
         if (meus.has(j.nome) || j.base || (f.pos && j.posicao !== f.pos) || (f.idadeMax && j.idade > f.idadeMax) || j.ovr < (f.ovrMin ?? 0)) continue;
         const valor = valorNpc(j, li.fLiga);
-        if (f.alcance && (j.ovr > teto || valor > s.clube.saldo * 1.2 || (li.nivel < infoLiga(s.ligaId).nivel && c.forca > fMeu + 3 && j.idade < 31))) continue;
+        if (f.alcance && (j.ovr > teto || valor > Math.max(verbaLivreT(s) * 1.6, (s.clube.folhaBase ?? folhaDe(s)) * 2) || (li.nivel < infoLiga(s.ligaId).nivel && c.forca > fMeu + 3 && j.idade < 31))) continue;
         lista.push({ nome: j.nome, pos: j.posicao as PosT, idade: j.idade, ovr: j.ovr, nac: j.nacionalidade, clubeId: c.id, ligaId: l.id, valor, titular: onze.has(j.nome) });
       }
     }
@@ -1307,6 +1316,7 @@ export function fazerProposta(pacote: PacoteDados, s: SaveTecnico, nome: string,
   if (s.elenco.length >= 36) return { ok: false, status: "erro", msg: "O elenco está cheio (36). Venda ou dispense alguém antes." };
   if (s.clube.saldo < valor) return { ok: false, status: "erro", msg: "O clube não tem esse dinheiro em caixa." };
   { const trava = travaContratacao(s, valor); if (trava) return { ok: false, status: "erro", msg: trava }; }
+  { const trava = travaVerba(s, valor); if (trava) return { ok: false, status: "erro", msg: trava }; }
   if (folhaDe(s) + int.salario > s.clube.tetoFolha) return { ok: false, status: "erro", msg: `A diretoria barrou: o salário dele (${dinheiroT(int.salario)}/mês) passa do teto da folha.` };
   neg.tentativas++;
   const minimo = neg.pedido ?? minimoDoClube(s, a), nomeC = infoClube(pacote, clubeId).nome;
@@ -1489,6 +1499,7 @@ export function ajustarGrama(s: SaveTecnico, mm: number, pacote?: PacoteDados): 
 export const _int = {
   numerar, gastar, receber, noticia, tirarDoElenco, rngT, fLigaDe, sal, chaveJanela, valorNpc, dinheiroT, buscarAlvo,
   invalidar: () => { versaoAplicada = -1; },
+  travaVerba: (s: SaveTecnico, v: number) => travaVerba(s, v),
 };
 
 /** Dinheiro que entra fora do mês normal (luvas de patrocínio, por exemplo). */
@@ -1541,3 +1552,11 @@ export function prometerT(s: SaveTecnico, id: string, tipo: import("./modelo.js"
 
 /** Ajuste da revista para o modo técnico (números de verdade da sua liga e o seu elenco real). */
 export const revistaT = (s: SaveTecnico) => ajustarRevista(s, (id) => { const a = s.elenco.find((x) => x.id === id); return a?.notas.length ? a.notas.reduce((x, y) => x + y, 0) / a.notas.length : undefined; }, ovrDe);
+
+// ------------------------------------------------------------------ verba de contratações
+const folhaTotal = (s: SaveTecnico) => folhaDe(s) + folhaStaff(s);
+/** A verba da temporada (quanto a diretoria liberou, quanto já foi, e a justificativa). */
+export const verbaT = (s: SaveTecnico) => verbaDe(s, folhaTotal(s));
+export const verbaLivreT = (s: SaveTecnico) => verbaLivre(s, folhaTotal(s));
+export const travaVerba = (s: SaveTecnico, valor: number) => travaVerbaV(s, folhaTotal(s), valor, dinheiroT);
+export const pedirVerba = (s: SaveTecnico) => pedirVerbaV(s, folhaTotal(s), semanaAbs(s), dinheiroT);
