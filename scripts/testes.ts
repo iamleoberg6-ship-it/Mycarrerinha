@@ -1,5 +1,7 @@
 // Testes do motor: fórmulas do documento e propriedades da simulação.
 import assert from "node:assert/strict";
+import * as CP from "../src/competicoes.js";
+import { reiniciarSincronia, tabelaFinalDe } from "../src/mundo.js";
 import { pontosEsperados } from "../src/partida.js";
 import { jeitoDe as jeitoDeFam } from "../src/familia.js";
 import * as T from "../src/tecnico/motor.js";
@@ -2183,4 +2185,40 @@ teste("Verba: pedir mais depende da relação; insistir irrita; diretoria que co
   s.governo!.estilo = "equilibrada"; const div = s.clube.divida ?? 0;
   const r = T.pedirDiretoria(s, "base", pacote);
   assert.ok(r.ok && (s.clube.divida ?? 0) > div, r.msg);
+});
+
+// ------------------------------------------------------------------ perfil das competições (história de ligas e copas)
+teste("Mundo: refazer do zero (abrir o save) dá o mesmo mundo de quem jogou temporada a temporada", () => {
+  const foto = () => ["BRA1", "BRA2", "ENG1", "ESP1"].map((l) => mundo(pacote).liga[l].clubes.map((c) => `${c.id}:${c.elenco.map((j) => j.nome).join("/")}`).sort().join(",")).join("|");
+  reiniciarSincronia(); sincronizarMundo(pacote, "teste-det-mundo", 0);
+  for (let t = 1; t <= 2; t++) sincronizarMundo(pacote, "teste-det-mundo", t);
+  const a = foto();
+  reiniciarSincronia(); sincronizarMundo(pacote, "teste-det-mundo", 2);
+  assert.equal(foto(), a);
+});
+teste("Perfil da liga: campeões com pontos, maiores campeões, artilheiros, recordes e o jogador dentro", () => {
+  reiniciarSincronia(); sincronizarMundo(pacote, "teste-perfil-liga", 3);
+  const eu = [{ nome: "Fulano Teste", t: 1, clubeId: tabelaFinalDe(pacote, "BRA1", 1)!.o[5], idade: 15, j: 30, g: 99, a: 2 }];
+  const p = CP.perfilDaLiga(pacote, "BRA1", eu, 0, "Brasileirão");
+  assert.equal(p.edicoes, 3);
+  assert.equal(p.campeoes.length, 3); assert.ok(p.campeoes.every((c) => c.pts! > 40 && c.vice));
+  assert.equal(p.maiores.reduce((a, m) => a + m.titulos, 0), 3);
+  assert.ok(p.artilheiros[0].eu && p.artilheiros[0].valor === 99, "os gols de verdade do jogador entram");
+  assert.ok(p.golsTemp[0].eu && p.artilheirosAno.some((x) => x.eu && x.t === 1));
+  for (const r of ["Mais jovem a marcar", "Campeão com mais pontos", "Melhor ataque numa temporada", "Maior público"]) assert.ok(p.recordes.some((x) => x.titulo === r), r);
+  assert.ok(p.recordes.find((x) => x.titulo === "Mais jovem a marcar")!.texto.includes("Fulano Teste"));
+});
+teste("Perfil das copas: cada edição fica guardada no fim da temporada, com campeão, vice, artilheiros e recordes", () => {
+  const r = criarJogador({ nome: "Copeiro", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 178, pe: "direito", posicao: "ATA", semente: "copas-hist" });
+  const dados = { resultado: r, aparencia: {}, clube: null };
+  const s = novoJogo(pacote, dados, ofertasDeBase(pacote, dados)[0].clubeId, "copas-hist");
+  for (let w = 0; w < SEMANAS_TEMPORADA * 2 + 1; w++) semanaAutomatica(pacote, s);
+  const h = s.carreira.histCopas ?? {};
+  for (const k of ["LIB", "UCL", "PAU", "NAC:Copa do Brasil"]) assert.equal(h[k]?.length, 2, k);
+  const lib = CP.perfilDaCopa(pacote, "Libertadora", h.LIB);
+  assert.equal(lib.campeoes.length, 2); assert.ok(lib.campeoes.every((c) => c.vice && c.placar));
+  assert.ok(lib.artilheiros.length >= 5 && lib.artilheiros[0].valor >= lib.artilheiros[4].valor);
+  // os gols de cada edição batem com os do arquivo: os 10 primeiros não passam do total
+  for (const e of h.LIB) assert.ok(e.art.reduce((a, x) => a + x[2], 0) <= e.gols);
+  assert.ok(lib.recordes.some((x) => x.titulo === "Maior goleada") && lib.recordes.some((x) => x.titulo === "Maior público"));
 });

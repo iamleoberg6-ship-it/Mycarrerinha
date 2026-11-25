@@ -125,23 +125,31 @@ export interface EstadoCopa {
 // ------------------------------------------------------------------ classificação
 export interface FonteTabelas {
   /** liga atual do jogador e a tabela final real dela (se já houver uma temporada jogada) */
-  ligas: Record<string, Liga>; tabelaReal?: { ligaId: string; ordem: string[] };
+  ligas: Record<string, Liga>; tabelaReal?: TabelaReal;
   semente: string; temporada: number;
   /** cidade de cada clube (para saber o estado nos estaduais) */
   cidade?: (id: string) => string;
 }
-/** Ordem final da temporada anterior de uma liga: a real (a do jogador) ou simulada. */
-export function ordemFinal(f: FonteTabelas, ligaId: string): string[] {
-  if (f.tabelaReal?.ligaId === ligaId && f.tabelaReal.ordem.length) return f.tabelaReal.ordem;
+/** Tabela final real (a do jogador): a ordem e, quando houver, pontos e gols de cada um (na mesma ordem). */
+export interface TabelaReal { ligaId: string; ordem: string[]; pts?: number[]; gp?: number[]; gc?: number[] }
+/** Tabela final de uma temporada: ordem, pontos, gols feitos e sofridos (alinhados com a ordem). */
+export interface TabelaFinal { o: string[]; pts?: number[]; gp?: number[]; gc?: number[] }
+/** Tabela final da temporada de uma liga: a real (a do jogador) ou simulada (sempre a mesma para a mesma semente). */
+export function tabelaFinal(f: FonteTabelas, ligaId: string): TabelaFinal {
+  const r = f.tabelaReal;
+  if (r?.ligaId === ligaId && r.ordem.length) return { o: r.ordem, ...(r.pts ? { pts: r.pts, gp: r.gp, gc: r.gc } : {}) };
   const l = f.ligas[ligaId];
-  if (!l) return [];
+  if (!l) return { o: [] };
+  let tab: LinhaTabela[];
   if (l.clubes.length > 20) { // ligas grandes (turno único): simula pela tabela da liga
-    const tab = novaTabela(l), rng = new RNG(`${f.semente}|tabela-anterior|${ligaId}|${f.temporada}`);
-    for (const r of rodadasDaLiga(l.clubes.length)) for (const [a, b] of r) { const [x, y] = simularPlacar(rng, l.clubes[a].forca, l.clubes[b].forca); registrar(tab[a], x, y); registrar(tab[b], y, x); }
-    return ordenar(tab).map((t) => t.clube);
-  }
-  return simularTemporada(new RNG(`${f.semente}|tabela-anterior|${ligaId}|${f.temporada}`), l).tabela.map((t) => t.clube);
+    const t0 = novaTabela(l), rng = new RNG(`${f.semente}|tabela-anterior|${ligaId}|${f.temporada}`);
+    for (const rd of rodadasDaLiga(l.clubes.length)) for (const [a, b] of rd) { const [x, y] = simularPlacar(rng, l.clubes[a].forca, l.clubes[b].forca); registrar(t0[a], x, y); registrar(t0[b], y, x); }
+    tab = ordenar(t0);
+  } else tab = simularTemporada(new RNG(`${f.semente}|tabela-anterior|${ligaId}|${f.temporada}`), l).tabela;
+  return { o: tab.map((t) => t.clube), pts: tab.map((t) => t.pts), gp: tab.map((t) => t.gp), gc: tab.map((t) => t.gc) };
 }
+/** Ordem final da temporada anterior de uma liga: a real (a do jogador) ou simulada. */
+export const ordemFinal = (f: FonteTabelas, ligaId: string): string[] => tabelaFinal(f, ligaId).o;
 export function classificados(f: FonteTabelas, id: CopaId): string[] {
   const info = COPAS[id];
   if (info.uf) {

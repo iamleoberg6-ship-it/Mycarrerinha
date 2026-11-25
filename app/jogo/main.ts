@@ -54,7 +54,8 @@ import { trofeuSvg } from "../casa/iso";
 import { armario, biografia, estatisticasEstimadas, totaisDaCarreira, comCampanhas, clubesDaCarreira, personalidade, estiloDeJogo, pontos, rotuloFama, rotuloTorcida, rotuloTecnico } from "../../src/perfil-jogador";
 import { TRACOS, PAISES } from "../../src/dna";
 import { DECISOES, FRANQUIAVEIS, MAX_UNIDADES, type DecisaoMes } from "../../src/negocios";
-import { patroClubeJogo } from "../../src/jogo";
+import { patroClubeJogo, chaveCopa } from "../../src/jogo";
+import { perfilDaLiga, perfilDaCopa, type PerfilCompeticao, type Nome, type TemporadaEu } from "../../src/competicoes";
 import { decidirMesJogo, franquiaJogo, escolherProjeto, veteranosMentores, pedirMentorJogo } from "../../src/jogo";
 import { superacaoDe, curvaDoJogador, PROJETOS, metaEtapa, podeEsticar, LIMITE_GANHO, type Projeto } from "../../src/superacao";
 import { NOME_CURVA, TEXTO_CURVA } from "../../src/curvas";
@@ -423,7 +424,7 @@ function opcoesHtml(s: Save): string {
   return `<section class="painel opcoes-topo"><p class="rotulo">Opções</p><p class="sub" style="margin:8px 0">O jogo salva sozinho neste navegador e, dentro do Claude, também na sua conta: se o navegador perder o save, é só carregar a carreira da lista abaixo. Baixar o arquivo é uma cópia extra.</p><div class="ferr-botoes"><button class="botao peq" data-acao="baixar-save">Baixar save</button><button class="botao sec peq" data-acao="carregar-save">Carregar save</button></div><p id="avisoSave" class="sub aviso-save" role="status"></p><p id="statusNuvem" class="sub" style="font-size:12.5px">${textoNuvem()}</p><div id="listaNuvem" class="sub" style="font-size:13px;margin:6px 0"></div><div class="ferr-botoes"><button class="botao sec peq" data-acao="pular">Simular até a próxima janela</button><button class="botao sec peq" data-acao="recomecar">Apagar carreira e recomeçar</button></div><p class="sub" style="margin-top:6px">Simular joga as semanas no automático (decisões e plano padrão) até abrir a próxima janela de transferências com você já profissional (no máximo 60 semanas). As propostas ficam para você decidir.</p><a class="botao sec peq" href="tecnico.html" style="margin-top:8px">Carreira de técnico</a></section>`;
 }
 let vistaTabela: "liga" | "base" | CopaId = "liga", tabelaEscolhida = false, verOutras = false;
-let subTabela: "classificacao" | "estatisticas" | "premios" | "revista" = "classificacao";
+let subTabela: "classificacao" | "estatisticas" | "premios" | "revista" | "historia" = "classificacao";
 let rvLista: ListaRevista = "mundo", rvAno: number | "previa" = "previa";
 const previaRevista = new Map<string, EdicaoRevista>();
 /** Revista ISPN no modo jogador: as edições guardadas e a prévia de agora (com você, se já jogou o mínimo). */
@@ -577,7 +578,8 @@ function abaTabela(s: Save): string {
   const minhas = vistas.filter(([k]) => minha(k) || k === vistaTabela), outras = vistas.filter(([k]) => !minha(k) && k !== vistaTabela);
   const chip = ([k, n]: [typeof vistaTabela, string]) => `<button class="chip${vistaTabela === k ? " ativo" : ""}" data-vtab="${k}">${esc(n)}</button>`;
   const chips = s.carreira.fase ? "" : `<div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${minhas.map(chip).join("")}${outras.length ? `<button class="chip outras" data-outras="1" aria-expanded="${verOutras}">${verOutras ? "Menos ▴" : `Outras (${outras.length}) ▾`}</button>` : ""}${verOutras ? outras.map(chip).join("") : ""}</div>`;
-  const subT = `<div class="sub-abas rolar">${([["classificacao", "Classificação"], ["estatisticas", "Estatísticas"], ["premios", "Prêmios"], ["revista", "Revista ISPN"]] as const).map(([k, n]) => `<button class="${subTabela === k ? "ativo" : ""}" data-subtab="${k}">${n}</button>`).join("")}</div>`;
+  const subT = `<div class="sub-abas rolar">${([["classificacao", "Classificação"], ["estatisticas", "Estatísticas"], ["premios", "Prêmios"], ["historia", "História"], ["revista", "Revista ISPN"]] as const).map(([k, n]) => `<button class="${subTabela === k ? "ativo" : ""}" data-subtab="${k}">${n}</button>`).join("")}</div>`;
+  if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "historia") return chips + subT + historiaLigaHtml(s);
   if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "estatisticas") return chips + subT + (selecaoHtml(s) + rankingsHtml(s) || `<p class="sub">As estatísticas aparecem depois da primeira rodada.</p>`);
   if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "revista") return chips + subT + revistaJogHtml(s);
   if ((vistaTabela === "liga" || vistaTabela === "base") && subTabela === "premios") return chips + subT + (premiosLigaHtml(s) + premiosMundoHtml(s) || `<p class="sub">Os prêmios saem no fim da primeira temporada.</p>`);
@@ -585,9 +587,53 @@ function abaTabela(s: Save): string {
     const tb = c.tabelaBase && c.tabelaBase.t === c.temporada && c.tabelaBase.cat === categoriaBase(s.jogador.idade) ? ordenar(c.tabelaBase.tabela) : ordenar(novaTabelaDe(c));
     return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade("BASE"))}">${bannerComp("BASE", `${esc(infoLiga(c.ligaId).curto)} ${categoriaBase(s.jogador.idade)}`, "Os times da base, mesmos confrontos")}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th></tr></thead><tbody>${tb.map((x, i) => `<tr class="${x.clube === c.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${linkClube(x.clube)} ${categoriaBase(s.jogador.idade)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td></tr>`).join("")}</tbody></table></div>`;
   }
-  if (vistaTabela !== "liga" && !s.carreira.fase) return chips + abaCopa(s, vistaTabela);
+  if (vistaTabela !== "liga" && !s.carreira.fase) {
+    // nas copas: os jogos desta edição ou a história da competição
+    const hist = subTabela === "historia", subC = `<div class="sub-abas">${[["classificacao", "Esta edição"], ["historia", "História"]].map(([k, n]) => `<button class="${(k === "historia") === hist ? "ativo" : ""}" data-subtab="${k}">${n}</button>`).join("")}</div>`;
+    return chips + subC + (hist ? historiaCopaHtml(s, vistaTabela as CopaId) : abaCopa(s, vistaTabela));
+  }
   const lid = infoLiga(s.carreira.ligaId).id, feitas = Math.max(0, Math.min(nRodadas(c), c.semana - SEMANAS_PRE));
   return `${chips}${subT}<div class="comp-wrap" style="${estiloIdent(identidade(lid))}">${bannerComp(lid, esc(infoLiga(s.carreira.ligaId).nome), `${ANO_INICIAL + c.temporada} · ${feitas ? `${feitas} de ${nRodadas(c)} rodadas` : "antes da 1ª rodada"}`)}<table><thead><tr><th>#</th><th>Clube</th><th class="n">P</th><th class="n">J</th><th class="n">SG</th><th class="forma-th">Forma</th></tr></thead><tbody>${t.map((x, i) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${i + 1}</td><td>${linkClube(x.clube)}</td><td class="n">${x.pts}</td><td class="n">${x.j}</td><td class="n">${x.gp - x.gc}</td><td>${bolinhasForma(x.f)}</td></tr>`).join("")}</tbody></table></div>${calendarioHtml(s)}`;
+}
+
+// ------------------------------------------------------------------ perfil das competições (aba Tabela > História)
+/** As temporadas do jogador (com a de agora, até a rodada atual), para entrar na história da liga com os números dele. */
+function minhasTemporadas(s: Save): TemporadaEu[] {
+  const c = s.carreira, nome = s.jogador.apelido;
+  const l: TemporadaEu[] = c.historico.filter((r) => !r.fase && r.clubeId && r.jogos > 0).map((r) => ({ nome, t: r.ano - ANO_INICIAL, clubeId: r.clubeId!, idade: r.idade, j: r.jogos, g: r.gols, a: r.assist }));
+  if (!c.fase && c.stats.jogos > 0 && !l.some((x) => x.t === c.temporada && x.clubeId === c.clubeId)) l.push({ nome, t: c.temporada, clubeId: c.clubeId, idade: s.jogador.idade, j: c.stats.jogos, g: c.stats.gols, a: c.stats.assist });
+  return l;
+}
+function historiaLigaHtml(s: Save): string {
+  const c = s.carreira, lid = infoLiga(c.ligaId).id, feitas = Math.max(0, Math.min(nRodadas(c), c.semana - SEMANAS_PRE));
+  return perfilCompHtml(s, lid, perfilDaLiga(pacote, lid, minhasTemporadas(s), feitas, infoLiga(c.ligaId).nome), true);
+}
+function historiaCopaHtml(s: Save, id: CopaId): string {
+  const k = chaveCopa(id), ed = s.carreira.histCopas?.[k] ?? [];
+  return perfilCompHtml(s, id, perfilDaCopa(pacote, COPAS[id]?.nome ?? id, ed), false);
+}
+/** A tela do perfil de uma competição (liga ou copa). */
+function perfilCompHtml(s: Save, identId: string, p: PerfilCompeticao, liga: boolean): string {
+  const ano = (t?: number) => (t === undefined ? "" : String(ANO_INICIAL + t));
+  const quem = (x: Nome) => x.eu ? `<b style="color:var(--ouro)">${esc(s.jogador.apelido)}</b>` : `<button class="nome-hist" data-hist="${esc(x.nome)}">${esc(x.nome)}</button>`;
+  const sub = (t: string, extra = "") => `<p class="rotulo" style="margin:16px 0 6px">${t}${extra ? ` <small class="sub" style="text-transform:none;letter-spacing:0">${extra}</small>` : ""}</p>`;
+  const tabela = (l: Nome[], un: string, comAno = false, anoNaFrente = false) => l.length ? `<table><tbody>${l.map((x, i) => `<tr class="${x.eu ? "meu" : ""}"><td>${anoNaFrente ? ano(x.t) : i + 1}</td><td>${quem(x)} <small class="sub">${linkClube(x.clubeId)}${comAno && !anoNaFrente && x.t !== undefined ? ` · ${ano(x.t)}` : ""}</small></td><td class="n"><b>${x.valor}</b> <small class="sub">${un}</small></td></tr>`).join("")}</tbody></table>` : `<p class="sub">Ainda sem números.</p>`;
+  const vazio = !p.edicoes;
+  const cab = bannerComp(identId, esc(p.nome), vazio ? "A história começa no fim desta temporada" : `${p.edicoes} ${p.edicoes === 1 ? "edição" : "edições"} desde ${ANO_INICIAL}`);
+  const maiores = p.maiores.length ? `${sub("Maiores campeões")}${p.maiores.slice(0, 8).map((m, i) => `<div class="premio-l${i === 0 ? " ouro" : ""}"><span class="rotulo">${"🏆".repeat(Math.min(m.titulos, 5))}${m.titulos > 5 ? "+" : ""}</span><span>${linkClube(m.clube)} <small class="sub">${m.anos.map((t) => ano(t)).join(", ")}</small></span><b>${m.titulos}</b></div>`).join("")}` : "";
+  const campeoes = p.campeoes.length ? `${sub("Campeões, ano a ano")}<table><tbody>${p.campeoes.slice(0, 12).map((x) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${ano(x.t)}</td><td><b>${linkClube(x.clube)}</b>${x.vice ? ` <small class="sub">vice: ${linkClube(x.vice)}</small>` : ""}</td><td class="n"><small class="sub">${x.pts !== undefined ? `${x.pts} pts` : esc(x.placar ?? "")}</small></td></tr>`).join("")}</tbody></table>${p.campeoes.length > 12 ? `<p class="sub">…e mais ${p.campeoes.length - 12} edições.</p>` : ""}` : "";
+  const recordes = p.recordes.length ? `${sub("Recordes")}${p.recordes.map((r) => `<div style="padding:7px 0;border-bottom:1px solid var(--linha)"><small class="sub" style="display:block">${esc(r.titulo)}${r.t !== undefined ? ` · ${ano(r.t)}` : ""}</small><b${r.eu ? ' style="color:var(--ouro)"' : ""}>${esc(r.texto)}</b></div>`).join("")}` : "";
+  const artAno = p.artilheirosAno.length ? `${sub(liga ? "Artilheiro de cada temporada" : "Artilheiro de cada edição")}${tabela(p.artilheirosAno.slice(0, 10), "gols", true, true)}` : "";
+  return `<div class="comp-wrap" style="${estiloIdent(identidade(identId))}">${cab}</div>
+    ${vazio && !p.artilheiros.length ? `<p class="sub" style="margin-top:10px">Esta competição ainda não tem história no jogo: no fim da temporada entram o campeão, os artilheiros e os recordes. Volte depois!</p>` : ""}
+    ${maiores}${campeoes}
+    ${p.artilheiros.length ? `${sub("Maiores artilheiros", liga && !vazio ? "todos os tempos, com a temporada atual" : "todos os tempos")}${tabela(p.artilheiros, "gols")}` : ""}
+    ${p.assistentes.length ? `${sub("Maiores garçons", "assistências")}${tabela(p.assistentes, "assist.")}` : ""}
+    ${p.jogos.length ? `${sub("Quem mais jogou")}${tabela(p.jogos, "jogos")}` : ""}
+    ${p.golsTemp.length ? `${sub(liga ? "Mais gols numa temporada" : "Mais gols numa edição")}${tabela(p.golsTemp, "gols", true)}` : ""}
+    ${p.assistTemp.length ? `${sub(liga ? "Mais assistências numa temporada" : "Mais assistências numa edição")}${tabela(p.assistTemp, "assist.", true)}` : ""}
+    ${artAno}${recordes}
+    <p class="sub" style="margin-top:12px">${liga ? "A história conta desde o começo do jogo. O público é estimado pelo estádio e pelo tamanho do jogo." : "As copas guardam o placar de cada jogo; os gols de cada time são dos jogadores dele (os seus, com os números de verdade). O público é estimado pelo estádio e pela fase."}</p>`;
 }
 
 /** Os últimos 5 resultados em bolinhas (verde, cinza, vermelho). */

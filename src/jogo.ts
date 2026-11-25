@@ -43,7 +43,8 @@ import { forcaDoElenco, type JogadorNPC } from "./liga.js";
 import { LIGA_DA_BASE, type PaisId } from "./dna.js";
 import { montarRevista, minhasPosicoes, LISTAS_REVISTA, type EdicaoRevista, type ListaRevista } from "./revista.js";
 import { nomearCopaNacional, participantesNac, ehTorneioContinental, ehFinalissima, ehDeSelecao, TORNEIO_DA_CONF, type TorneioId } from "./copas.js";
-import { COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
+import { arquivarCopa, type CopaArquivada, type Eu } from "./historico-copas.js";
+import { type TabelaReal, COPAS, ehEstadual, ehMundial, ehCopaDoMundo, SEMANAS_SEL, confederacao, ordemFinal, ufDoClube, forcaNoEstadual, classificados, novaCopa, rodarSemana, jogoDoClubeNaSemana, copaDoClube, rotuloJogo, idaDe, regiaoNaCopa, NOME_FASE, type CopaId, type EstadoCopa, type JogoCopa } from "./copas.js";
 import { infoLiga, DA_CIDADE, NA_CIDADE } from "./ligas.js";
 import { familiaridadeInicial, penalidade, ganhoSemanal, sugestaoDoTecnico, sugestaoParaEsquema, PODE_JOGAR, type Familiaridade } from "./posicoes.js";
 import { todasEstrelas, relacoesDe, relacao, semanaRelacoes, subir, atencao, chanceCamisa, chanceIndicacao, podeAgir, rotuloNivel, famaPorOvr, onzeProvavel, numeroDe, type EstadoRelacoes, type AcaoRel } from "./relacoes.js";
@@ -156,7 +157,7 @@ export interface Carreira {
   fios?: Fio[];
   /** copas continentais da temporada, suspensão na copa, estatísticas na copa, tabela final da temporada passada (vagas)
    *  e o jogo de quarta já jogado nesta semana (entra no resumo da semana) */
-  copas?: Partial<Record<CopaId, EstadoCopa>>; suspensaoCopa?: number; statsCopa?: { jogos: number; gols: number; assist: number; notas: number[] };
+  copas?: Partial<Record<CopaId, EstadoCopa>>; /** a história de cada copa (uma edição por temporada; chave = id, ou NAC:nome) */ histCopas?: Record<string, CopaArquivada[]>; suspensaoCopa?: number; statsCopa?: { jogos: number; gols: number; assist: number; notas: number[] };
   /** estadual da temporada (fica em `copas`): suspensão e estatísticas separadas das da copa continental */
   /** nota, gols e assistências do jogador em cada rodada da liga (para a seleção da rodada e do mês) */
   notasRodada?: Record<number, { nota: number; gols: number; assist: number }>;
@@ -183,7 +184,7 @@ export interface Carreira {
   marcos?: Marco[];
   galeriaPremios?: Partial<Record<IdPremio, { ano: number; nome: string; clubeId: string; nacionalidade: string; eu?: boolean }[]>>;
   suspensaoEstadual?: number; statsEstadual?: { jogos: number; gols: number; assist: number; notas: number[] };
-  tabelaAnterior?: { ligaId: string; ordem: string[] };
+  tabelaAnterior?: TabelaReal;
   /** tabela final real de cada temporada (decide acesso e rebaixamento no mundo) e a primeira temporada com a pirâmide valendo */
   tabelasReais?: TabelasReais; piramideDesde?: number; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
@@ -2636,6 +2637,8 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
       c.fama = clamp(c.fama + bonus, 0, 100); c.torcida = clamp((c.torcida ?? 50) + bonus * 1.5, 0, 100);
     }
   }
+  // a história das copas: cada edição vira uma linha no perfil da competição
+  arquivarCopasDaTemporada(pacote, s);
   // torneios de seleções (Copa do Mundo, continentais, Finalíssima): campanha do jogador (se foi convocado) e a taça
   for (const id of ["FIN", ...TORNEIOS_FIM] as CopaId[]) {
     const cop = c.copas?.[id], nc = c.selecao?.naTorneio?.[id], nat = idSelecao(j.nacionalidade);
@@ -2659,8 +2662,8 @@ function fecharTemporada(pacote: PacoteDados, s: Save, eventos: string[]): Resum
   // vida no clube: títulos (bônus, aeroporto), figurinha do ano e o balanço da briga com o rival
   fimDeTemporadaClube(pacote, s, r, ev);
   // tabela final (vale para as vagas das copas da próxima temporada)
-  c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ordenar(c.tabela).map((t) => t.clube) };
-  if (!c.fase && !infoLiga(c.ligaId).amador) (c.tabelasReais ??= {})[c.temporada] = c.tabelaAnterior;
+  { const ord = ordenar(c.tabela); c.tabelaAnterior = { ligaId: infoLiga(c.ligaId).id, ordem: ord.map((t) => t.clube), pts: ord.map((t) => t.pts), gp: ord.map((t) => t.gp), gc: ord.map((t) => t.gc) }; }
+  if (!c.fase && !infoLiga(c.ligaId).amador) (c.tabelasReais ??= {})[c.temporada] = c.tabelaAnterior!;
   c.notasRodada = undefined;
   c.copas = undefined; c.statsCopa = undefined; c.suspensaoCopa = undefined; c.statsEstadual = undefined; c.suspensaoEstadual = undefined; c.statsExtra = undefined;
   fimDeTemporadaVida(pacote, s, r, ev);
@@ -3089,4 +3092,27 @@ function noticiasDePatrocinio(pacote: PacoteDados, s: Save) {
     }
   }
   if (trocas.length) noticia(s, "clube", "Mercado de patrocínio", `Novos contratos na liga: ${trocas.slice(0, 8).join("; ")}.`);
+}
+
+// ------------------------------------------------------------------ história das copas (perfil das competições)
+/** A chave da história de uma copa: o id, e para a copa nacional o nome dela (cada país tem a sua). */
+export const chaveCopa = (id: CopaId) => (id === "NAC" ? `NAC:${COPAS.NAC.nome}` : id);
+/** No fim da temporada, cada copa terminada vira uma edição na história dela, com você dentro (os seus números de verdade). */
+export function arquivarCopasDaTemporada(pacote: PacoteDados, s: Save) {
+  const c = s.carreira, j = s.jogador, w = mundo(pacote), nat = idSelecao(j.nacionalidade);
+  for (const e of Object.values(c.copas ?? {}) as EstadoCopa[]) {
+    if (!e || e.id === "SEL" || !e.campeao) continue;
+    let eu: Eu | undefined;
+    if (ehDeSelecao(e.id)) { const nc = c.selecao?.naTorneio?.[e.id]; if (nc?.jogos && e.clubes.includes(nat)) eu = { clubeId: nat, nome: j.apelido, idade: j.idade, jogos: nc.jogos, gols: nc.gols, assist: nc.assist ?? 0 }; }
+    else if (e.clubes.includes(c.clubeId)) {
+      const estadual = ehEstadual(e.id), extra = e.id === "INT" || e.id === "MUN" || e.id === "NAC", sc = estadual ? c.statsEstadual : extra ? c.statsExtra?.[e.id] : c.statsCopa;
+      if (sc?.jogos) eu = { clubeId: c.clubeId, nome: j.apelido, idade: j.idade, jogos: sc.jogos, gols: sc.gols, assist: sc.assist };
+    }
+    const pool = (id: string) => (w.clube[id]?.elenco ?? []).map((x) => ({ nome: x.nome, posicao: x.posicao, ovr: x.ovr, idade: x.idade }));
+    const estadio = (id: string) => { const i = w.info[id], k = w.clube[id]; return { nome: i?.estadio ?? (id.startsWith("NAT-") ? "Estádio Nacional" : "Estádio"), capacidade: i?.capacidade || (id.startsWith("NAT-") ? 60000 : 15000), forca: k?.forca ?? 60 }; };
+    const k = chaveCopa(e.id), l = ((c.histCopas ??= {})[k] ??= []);
+    if (l.some((x) => x.t === c.temporada)) continue;
+    l.push(arquivarCopa(e, c.temporada, s.semente, COPAS[e.id].nome, pool, estadio, eu));
+    if (l.length > 80) l.shift();
+  }
 }

@@ -10,7 +10,7 @@ import { gerarNome } from "./nomes.js";
 import { CLUBES_EXTRA, clubeExtra } from "./ligas-extra.js";
 import { RNG, clamp } from "./rng.js";
 import { gerarTecnico, chanceDeDemissao, type Tecnico, type TrocaTecnico } from "./tecnicos.js";
-import { ordemFinal } from "./copas.js";
+import { ordemFinal, tabelaFinal, type TabelaFinal, type TabelaReal } from "./copas.js";
 import { forcaDoElenco, rodadasDaLiga } from "./liga.js";
 import { gerarStats, statsAte, type StatsNPC } from "./estatisticas.js";
 import { VAGAS_433 } from "./partida.js";
@@ -152,7 +152,7 @@ function montarSelecoes(m: Mundo) {
     const quer: Record<string, number> = {}; for (const p of pos) quer[p] = (quer[p] ?? 0) + 1;
     for (const j of todos) if ((quer[j.posicao] ?? 0) > 0) { elenco.push(j); quer[j.posicao]--; }
     // completa com jogadores do país que não estão no mundo do jogo (sempre os mesmos, só da seleção)
-    const extras = (completar[pais] ??= (() => { const rng = new RNG(`selecao|${pais}`), l: JogadorNPC[] = []; for (const p of pos) l.push({ nome: gerarNome(rng, pais, nomesSelecao), posicao: p, ovr: Math.round(base - 6 + rng.normal(0, 2)), idade: rng.int(21, 32), nacionalidade: pais }); return l; })());
+    const extras = extrasDaSelecao(pais, base);
     for (const [p, k] of Object.entries(quer)) elenco.push(...extras.filter((x) => x.posicao === p).slice(0, k));
     const forca = Math.round(forcaDoElenco(elenco) * 10) / 10;
     const c = m.clube[id];
@@ -165,6 +165,15 @@ function montarSelecoes(m: Mundo) {
   }
 }
 const completar: Record<string, JogadorNPC[]> = {}, nomesSelecao = new Set<string>(["—"]);
+const POS_SELECAO: JogadorNPC["posicao"][] = ["GOL", "GOL", "GOL", "ZAG", "ZAG", "ZAG", "ZAG", "LAT", "LAT", "LAT", "LAT", "VOL", "VOL", "VOL", "MEI", "MEI", "MEI", "MEI", "PON", "PON", "PON", "ATA", "ATA", "ATA"];
+/** Os jogadores que só existem na seleção (completam a convocação), sempre os mesmos. */
+function extrasDaSelecao(pais: string, base: number): JogadorNPC[] {
+  return (completar[pais] ??= (() => { const rng = new RNG(`selecao|${pais}`), l: JogadorNPC[] = []; for (const p of POS_SELECAO) l.push({ nome: gerarNome(rng, pais, nomesSelecao), posicao: p, ovr: Math.round(base - 6 + rng.normal(0, 2)), idade: rng.int(21, 32), nacionalidade: pais }); return l; })());
+}
+/** Gera de uma vez (e sempre na mesma ordem) todos os nomes só de seleção: assim os nomes reservados são os mesmos em
+ *  qualquer reconstrução do mundo, e os jogadores novos do mundo nascem iguais (antes, abrir o save depois de jogar
+ *  dava nomes diferentes aos garotos da base e o mundo inteiro mudava). */
+const reservarNomesDeSelecao = () => { for (const [pais, , , , base] of SELECOES) extrasDaSelecao(pais, base); };
 /** As seleções (time com elenco e força), pela sigla do país. */
 export const selecaoDe = (pacote: PacoteDados, pais: string): Clube | undefined => { mundo(pacote); return mundo(pacote).clube[idSelecao(pais)]; };
 export const todasSelecoes = (pacote: PacoteDados) => SELECOES.map((x) => mundo(pacote).clube[idSelecao(x[0])]).filter(Boolean) as Clube[];
@@ -184,10 +193,12 @@ let estado: { exJogadores?: { nome: string; pais: string; ovr: number; idade: nu
   /** primeira temporada com acesso e rebaixamento (saves antigos começam na última temporada jogada) */
   desde: number;
   /** a fortuna de cada clube (investidor, crise, embalo de títulos) e o que aconteceu em cada virada */
-  fortuna: Record<string, Fortuna>; eventosClubes: Record<number, EventoClube[]> } | undefined;
+  fortuna: Record<string, Fortuna>; eventosClubes: Record<number, EventoClube[]>;
+  /** a tabela final de cada liga em cada temporada (a real, a do jogador, quando houver): perfil das competições */
+  classif: Record<number, Record<string, TabelaFinal>> } | undefined;
 export interface Acesso { clubeId: string; de: string; para: string; sobe: boolean; campeao?: boolean }
 /** Tabela real (a do campeonato que o jogador disputou) de cada temporada: decide quem sobe e quem cai na liga dele. */
-export type TabelasReais = Record<number, { ligaId: string; ordem: string[] }>;
+export type TabelasReais = Record<number, TabelaReal>;
 export interface Lesao { t: number; clubeId: string; ini: number; fim: number; tipo: string; ovr: number }
 /** Uma temporada na carreira de um jogador do mundo. */
 /** `liga`: o que a temporada imaginada precisa (fila na posição, titulares, força do clube, média da liga, rodadas);
@@ -280,7 +291,7 @@ function virarTecnicos(m: Mundo, semente: string) {
   const fonte = { ligas: m.liga, semente: `${semente}|sim`, temporada: t };
   const vagas: { c: Clube; saiu?: string }[] = [], bons: { c: Clube; tec: Tecnico }[] = [];
   for (const l of m.ligas) {
-    const ordem = ordemFinal(fonte, l.id), porForca = [...l.clubes].sort((a, b) => b.forca - a.forca).map((c) => c.id);
+    const ordem = e.classif[t]?.[l.id]?.o ?? ordemFinal(fonte, l.id), porForca = [...l.clubes].sort((a, b) => b.forca - a.forca).map((c) => c.id);
     // o campeão da temporada fica registrado (títulos do perfil do clube)
     if (ordem[0] && !e.campeoes.some((x) => x.t === t && x.liga === l.id)) e.campeoes.push({ t, liga: l.id, clube: ordem[0] });
     for (const c of l.clubes) {
@@ -367,17 +378,29 @@ export function sincronizarMundo(pacote: PacoteDados, semente: string, temporada
     // cada clube volta para a divisão de 2026
     for (const [l, cl] of ligasOriginais) { l.clubes.splice(0, l.clubes.length, ...cl); for (const c of cl) { c.ligaId = l.id; if (m.info[c.id]) m.info[c.id].ligaId = l.id; } }
     for (const id of Object.keys(m.clube)) if (id.startsWith("NAT-")) { delete m.clube[id]; delete m.info[id]; }
+    reservarNomesDeSelecao();
     const usados = new Set([...Object.values(m.clube).flatMap((c) => c.elenco.map((j) => j.nome)), ...nomesSelecao]);
     const base: Record<string, JogadorNPC[]> = {};
     for (const c of grupos.pro) base[c.id] = criarBase(new RNG(`${semente}|base|${c.id}`), ref[c.id].nivel, c.pais, usados, c.id);
-    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), campeoes: [], saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map(), acessos: {}, desde, fortuna: {}, eventosClubes: {} };
+    estado = { semente, temporada: 0, base, usados, viradas: {}, meio: {}, feitoMeio: false, livres: [], hist: new Map(), campeoes: [], saiu: new Map(), ...tecnicosIniciais(), lesoes: new Map(), acessos: {}, desde, fortuna: {}, eventosClubes: {}, classif: {} };
     registrarTemporada(m);
   }
   const e = estado;
+  // a tabela real de uma temporada que acabou pode chegar depois da virada do mundo (o fim de temporada do jogador
+  // grava a tabela dele): corrige a tabela guardada e o campeão daquela liga
+  for (const [tk, r] of Object.entries(reais)) {
+    const t = +tk, tf = e.classif[t]?.[r.ligaId];
+    if (!tf || !r.ordem.length || (tf.o[0] === r.ordem[0] && (tf.pts || !r.pts))) continue;
+    e.classif[t][r.ligaId] = { o: r.ordem, ...(r.pts ? { pts: r.pts, gp: r.gp, gc: r.gc } : {}) };
+    const k = e.campeoes.find((x) => x.t === t && x.liga === r.ligaId); if (k) k.clube = r.ordem[0];
+  }
   const ajustes = () => Object.fromEntries(Object.entries(e.fortuna).map(([id, f]) => [id, ajusteDe(f, tradicionais.has(id))]));
   const fazerMeio = () => { e.meio[e.temporada] = virarTemporada(grupos, e.base, ref, semente, e.temporada, e.usados, true, e.livres, ajustes()); e.feitoMeio = true; registrarMeio(m); };
   while (e.temporada < temporada) {
     if (!e.feitoMeio) fazerMeio();
+    // a tabela final de cada liga (a real, se o jogador jogou nela): campeões, perfil das competições
+    { const fonte = { ligas: m.liga, semente: `${semente}|sim`, temporada: e.temporada, ...(reais[e.temporada] ? { tabelaReal: reais[e.temporada] } : {}) };
+      e.classif[e.temporada] = Object.fromEntries(m.ligas.map((l) => [l.id, tabelaFinal(fonte, l.id)])); }
     virarTecnicos(m, semente);
     sequelas(m);
     e.acessos[e.temporada] = e.temporada >= e.desde ? acessoERebaixamento(m, semente, e.temporada, reais[e.temporada]) : [];
@@ -438,6 +461,10 @@ export function momentoDoClube(pacote: PacoteDados, id: string): { tipo?: "inves
   const f = estado?.fortuna[id], tr = tradicionais.has(id);
   return { ...(f?.tipo ? { tipo: f.tipo, desde: f.desde } : {}), ajuste: ajusteDe(f, tr), tradicional: tr };
 }
+/** A tabela final de uma liga numa temporada já terminada (undefined se a temporada ainda não acabou). */
+export const tabelaFinalDe = (pacote: PacoteDados, ligaId: string, t: number): TabelaFinal | undefined => garantir(pacote).classif[t]?.[ligaId];
+/** Temporadas terminadas no mundo (com tabela final guardada). */
+export const temporadasFechadas = (pacote: PacoteDados): number[] => Object.keys(garantir(pacote).classif).map(Number).sort((a, b) => a - b);
 /** Quem subiu e quem caiu na virada para a temporada t (vem da temporada t − 1). */
 export const acessosDaVirada = (pacote: PacoteDados, t: number): Acesso[] => { garantir(pacote); return estado?.acessos[t - 1] ?? []; };
 
