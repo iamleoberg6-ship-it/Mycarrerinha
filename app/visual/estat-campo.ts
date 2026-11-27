@@ -1,7 +1,7 @@
 // Tela de estatísticas completas da partida (modo jogador e técnico): comparação dos times, o campinho com as
 // finalizações, o mapa de calor, os passes e os desarmes de cada jogador, e a tabela com os números de todo mundo.
 // Sem JavaScript: as abas e a escolha do jogador são botões de rádio + CSS (funciona dentro de qualquer modal).
-import { GX, GY, type EstatCompleta, type Ponto } from "../../src/estatisticas-completas";
+import { GX, GY, type EstatCompleta, type Ponto, type Troca } from "../../src/estatisticas-completas";
 
 let seq = 0;
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -20,7 +20,7 @@ const COR_RES = { gol: "#F5C400", defesa: "#4FA3E0", fora: "#E06A5A", bloqueado:
 const NOME_RES = { gol: "Gol", defesa: "Defendida", fora: "Para fora", bloqueado: "Bloqueada" } as const;
 
 /** nomes: [casa, fora]; meu: o time do usuário (destaque); titulo opcional. */
-export function estatCompletaHtml(e: EstatCompleta, nomes: [string, string], meu: 0 | 1): string {
+export function estatCompletaHtml(e: EstatCompleta, nomes: [string, string], meu: 0 | 1, trocas?: Troca[]): string {
   const id = `ec${++seq}`, [a, b] = e.times;
   const barra = (rot: string, x: number, y: number, dec = 0, pct = false) => {
     const tot = x + y || 1, w = (x / tot) * 100, fmt = (n: number) => `${n.toFixed(dec).replace(".", ",")}${pct ? "%" : ""}`;
@@ -64,7 +64,8 @@ export function estatCompletaHtml(e: EstatCompleta, nomes: [string, string], meu
     <div class="ec-abas">${vistas.map(([v, n]) => `<label for="${id}-v${v}">${n}</label>`).join("")}</div>
     <div class="ec-jog">${lista.map((j, k) => `<label for="${id}-p${k}">${esc(j.nome.split(" ").slice(-1)[0])}<small>${esc(j.pos)}</small></label>`).join("")}</div>
     <div class="ec-mapas"><div class="ec-m ec-v1">${campo(tiros)}${legenda}</div>${lista.map(mapaJog).join("")}</div>
-    <p class="rotulo" style="margin-top:14px">Jogador por jogador · ${esc(nomes[meu])}</p>${tabela}</div>`;
+    <p class="rotulo" style="margin-top:14px">Jogador por jogador · ${esc(nomes[meu])}</p>${tabela}
+    ${trocas?.length ? `<p class="rotulo" style="margin-top:14px">Substituições</p><div class="ec-trocas">${trocas.map((t) => `<div><b>${t.min}'</b><span class="ec-sai">▼ ${esc(t.sai)}</span><span class="ec-entra">▲ ${esc(t.entra)}</span></div>`).join("")}</div>` : ""}</div>`;
 }
 const ordemPos = (p: string) => { const o = ["GOL", "LD", "LAT", "ZAG", "LE", "VOL", "MC", "MEI", "MO", "PD", "PE", "PON", "SA", "ATA"]; const i = o.indexOf(p); return i < 0 ? 50 : i; };
 const CSS = `.ec{margin-top:14px}.ec .ec-r{position:absolute;opacity:0;pointer-events:none}.ec-times{display:flex;justify-content:space-between;font-size:13px;margin:6px 0}.ec-times .ec-eu{color:var(--ouro,#E3B341)}
@@ -73,4 +74,5 @@ const CSS = `.ec{margin-top:14px}.ec .ec-r{position:absolute;opacity:0;pointer-e
 .ec-abas,.ec-jog{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.ec-abas label,.ec-jog label{font-size:12.5px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18);cursor:pointer;background:rgba(255,255,255,.04)}
 .ec-jog label small{opacity:.6;margin-left:4px;font-size:10px}.ec-m{display:none}.ec-campo{width:100%;height:auto;display:block;border-radius:10px}
 .ec-leg{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;opacity:.85;margin:6px 0}.ec-leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}.ec-cap{font-size:12px;opacity:.8;margin:6px 0}
+.ec-trocas{display:flex;flex-direction:column;gap:4px;font-size:13px}.ec-trocas>div{display:grid;grid-template-columns:34px 1fr 1fr;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08)}.ec-trocas b{font-family:var(--mono,monospace);font-weight:500;opacity:.8}.ec-sai{color:#F08A7A}.ec-entra{color:#7FD99B}
 .ec-tab{overflow-x:auto;-webkit-overflow-scrolling:touch}.ec-tab table{border-collapse:collapse;font-size:12px;min-width:640px;width:100%}.ec-tab th,.ec-tab td{padding:6px 5px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08);white-space:nowrap}.ec-tab tr.ec-eu td{color:var(--ouro,#E3B341)}`;

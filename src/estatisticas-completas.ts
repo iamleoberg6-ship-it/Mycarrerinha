@@ -44,7 +44,7 @@ export interface EntradaEstat {
   /** posse de bola do time 0 (casa), em % */ posse: number;
   /** força dos dois times (0 a 100) */ forca: [number, number];
   placar: [number, number];
-  /** autores dos gols (por time), com o minuto */ gols?: { time: 0 | 1; min: number; autor?: string }[];
+  /** autores dos gols (por time), com o minuto; contra = gol contra (não conta para ninguém) */ gols?: { time: 0 | 1; min: number; autor?: string; contra?: boolean }[];
   /** finalizações e no alvo já contadas (se o jogo já tinha), por time */ chutes?: [number, number]; noAlvo?: [number, number];
   cartoes?: { amarelos: [number, number]; vermelhos: [number, number] }; escanteios?: [number, number]; faltas?: [number, number];
   jogadores: JogadorEntrada[];
@@ -96,7 +96,7 @@ export function gerarEstatCompleta(e: EntradaEstat): EstatCompleta {
     const sorteia = () => { let x = rng.next() * pesos.reduce((a, b) => a + b, 0); for (let k = 0; k < meus.length; k++) { x -= pesos[k]; if (x <= 0) return meus[k]; } return meus[meus.length - 1]; };
     const gols = (e.gols ?? []).filter((g) => g.time === t);
     for (let k = 0; k < e.placar[t]; k++) {
-      const g = gols[k], autor = (g?.autor && meus.find((j) => j.nome === g.autor)) || meus.filter((j) => j.gols > 0).find((j) => finalizacoes.filter((f) => f.autor === j.nome && f.resultado === "gol").length < j.gols) || sorteia();
+      const g = gols[k], autor = g?.contra ? undefined : (g?.autor && meus.find((j) => j.nome === g.autor)) || meus.filter((j) => j.gols > 0).find((j) => finalizacoes.filter((f) => f.autor === j.nome && f.resultado === "gol").length < j.gols) || sorteia();
       const xg = +(0.18 + rng.next() * 0.55).toFixed(2);
       finalizacoes.push({ min: g?.min ?? rng.int(1, 90), time: t, x: 84 + rng.next() * 12, y: 32 + rng.next() * 36, resultado: "gol", xg, ...(autor ? { autor: autor.nome } : {}) });
     }
@@ -120,4 +120,116 @@ export function gerarEstatCompleta(e: EntradaEstat): EstatCompleta {
       escanteios: e.escanteios?.[tt] ?? Math.max(0, Math.round(2 + fs.length / 3 + rng.normal(0, 1.5))), impedimentos: Math.max(0, Math.round(1 + rng.normal(0.5, 1.2))), defesas: soma(tt, "defesas") };
   }) as [TotaisTime, TotaisTime];
   return { times, finalizacoes, jogadores: jogs };
+}
+
+// ------------------------------------------------------------------ o seu time no modo jogador
+/** Gol do seu time como a partida contou: minuto, quem fez e quem passou (nome curto). passe "" = sem assistência. */
+export interface GolDoTime { min: number; autor?: string; posAutor?: string; passe?: string; posPasse?: string; contra?: boolean }
+export interface Troca { min: number; sai: string; entra: string }
+interface Atleta { nome: string; curto: string; pos: string; ovr: number }
+const PESO_ASSIST: Record<string, number> = { PON: 3, MEI: 3, LAT: 2, ATA: 1.6, VOL: 1.2, ZAG: 0.5, GOL: 0.1 };
+const PESO_SAIR: Record<string, number> = { ATA: 3, PON: 3, MEI: 2.5, LAT: 1.4, VOL: 1.4, ZAG: 0.5, GOL: 0 };
+
+/**
+ * Monta a escalação do seu time no modo jogador com o que o jogo contou: titulares (um 4-3-3 com os melhores de cada
+ * posição), de três a cinco substituições, quem fez cada gol e quem deu o passe (quase todo gol tem assistência; pênalti,
+ * falta e jogada individual não). Quem a narração cita como autor ou garçom está em campo naquele minuto.
+ * O seu jogador entra, sai, marca e dá passe exatamente como a partida contou.
+ */
+export function escalacaoDoJogo(x: {
+  semente: string; plantel: { nome: string; posicao: string; ovr: number }[]; curto: (n: string) => string;
+  eu?: { nome: string; pos: string; entrada: number; saida: number; nota: number }; gols: GolDoTime[]; time: 0 | 1;
+}): { jogadores: JogadorEntrada[]; trocas: Troca[]; gols: { min: number; autor?: string; contra?: boolean }[] } {
+  const r = new RNG(`escalacao|${x.semente}`);
+  const vagas: [string, number][] = [["GOL", 1], ["LAT", 2], ["ZAG", 2], ["VOL", 1], ["MEI", 2], ["PON", 2], ["ATA", 1]];
+  const eu = x.eu && x.eu.entrada <= 90 && x.eu.saida > x.eu.entrada ? x.eu : undefined;
+  const todos: Atleta[] = x.plantel.map((j) => ({ nome: j.nome, curto: x.curto(j.nome), pos: j.posicao, ovr: j.ovr }));
+  const usados = new Set<string>(), onze: Atleta[] = [];
+  for (const [pos, n] of vagas) {
+    const vaga = n - (eu && eu.entrada === 0 && pos === eu.pos ? 1 : 0);
+    for (const a of todos.filter((j) => j.pos === pos && !usados.has(j.nome)).slice(0, vaga)) { onze.push(a); usados.add(a.nome); }
+  }
+  // quem a narração citou e não está no plantel do mundo (lesão, base): entra na lista com a posição que a narração deu
+  const achar = (n: string, pos?: string): Atleta => {
+    let a = todos.find((j) => j.curto === n) ?? todos.find((j) => j.nome === n);
+    if (!a) { a = { nome: n, curto: n, pos: pos ?? "MEI", ovr: 60 }; todos.push(a); }
+    return a;
+  };
+  const em = new Map<string, number>(), fora = new Map<string, number>(); // minuto em que entrou / saiu
+  for (const a of onze) em.set(a.nome, 0);
+  const trocas: Troca[] = [];
+  const emCampo = (min: number) => [...em.keys()].filter((n) => em.get(n)! <= min && (fora.get(n) ?? 91) > min);
+  // o que cada um precisa: estar em campo no minuto do gol que fez ou passou
+  const precisa = new Map<string, number[]>();
+  const golsTime = [...x.gols].sort((a, b) => a.min - b.min);
+  for (const g of golsTime) for (const [n, p] of [[g.autor, g.posAutor], [g.passe, g.posPasse]] as const) {
+    if (!n || (eu && n === eu.nome)) continue;
+    const a = achar(n, p); precisa.set(a.nome, [...(precisa.get(a.nome) ?? []), g.min]);
+  }
+  const ocupado = (nome: string, depois: number) => (precisa.get(nome) ?? []).some((m) => m >= depois);
+  const nomeDe = (n: string) => todos.find((a) => a.nome === n);
+  const trocar = (min: number, sai: string, entra: Atleta) => { fora.set(sai, min); em.set(entra.nome, min); trocas.push({ min, sai, entra: entra.nome }); };
+  /** quem sai para alguém entrar: mesma posição de preferência, nunca o goleiro nem quem ainda vai participar de um gol */
+  const quemSai = (min: number, pos: string, pesoPos = false): string | undefined => {
+    const c = emCampo(min).filter((n) => !fora.has(n) && (!pesoPos || em.get(n) === 0) && !ocupado(n, min) && nomeDe(n)?.pos !== "GOL");
+    if (!c.length) return undefined;
+    const mesma = c.filter((n) => nomeDe(n)?.pos === pos);
+    if (mesma.length && !pesoPos) return mesma.sort((a, b) => nomeDe(a)!.ovr - nomeDe(b)!.ovr)[0];
+    const pesos = c.map((n) => PESO_SAIR[nomeDe(n)!.pos] ?? 1 + 0.01);
+    let t = r.next() * pesos.reduce((s, v) => s + v, 0);
+    for (let k = 0; k < c.length; k++) { t -= pesos[k]; if (t <= 0) return c[k]; }
+    return c[c.length - 1];
+  };
+  // 1) citados que não começaram: gol no primeiro tempo = titular (no lugar do pior da posição); depois, entram antes do lance
+  for (const [nome, mins] of precisa) {
+    if (em.has(nome)) continue;
+    const a = nomeDe(nome)!, primeiro = Math.min(...mins);
+    if (primeiro <= 46) {
+      const sub = onze.filter((o) => o.pos === a.pos && !precisa.has(o.nome)).sort((p, q) => p.ovr - q.ovr)[0] ?? onze.filter((o) => o.pos !== "GOL" && !precisa.has(o.nome)).sort((p, q) => p.ovr - q.ovr)[0];
+      if (sub) { em.delete(sub.nome); onze.splice(onze.indexOf(sub), 1); }
+      onze.push(a); em.set(a.nome, 0);
+    } else {
+      const min = r.int(46, Math.max(46, primeiro - 1)), sai = quemSai(min, a.pos);
+      if (sai) trocar(min, sai, a); else em.set(a.nome, min);
+    }
+  }
+  // 2) o seu jogador: entrou do banco no lugar de alguém da posição; saiu antes do fim e alguém da posição entrou
+  const banco = () => todos.filter((a) => !em.has(a.nome) && a.nome !== eu?.nome);
+  if (eu && eu.entrada > 0) { const sai = quemSai(eu.entrada, eu.pos); if (sai) { fora.set(sai, eu.entrada); trocas.push({ min: eu.entrada, sai, entra: eu.nome }); } }
+  if (eu && eu.saida < 90) { const b = banco().filter((a) => a.pos === eu.pos)[0] ?? banco().filter((a) => a.pos !== "GOL")[0]; if (b) { em.set(b.nome, eu.saida); trocas.push({ min: eu.saida, sai: eu.nome, entra: b.nome }); } }
+  // 3) as trocas do técnico até fechar de três a cinco, do intervalo em diante (mais no fim)
+  const alvo = Math.min(5, Math.max(trocas.length, r.int(3, 5)));
+  for (let k = 0; trocas.length < alvo && k < 20; k++) {
+    const min = r.chance(0.08) ? 46 : r.int(56, 87), sai = quemSai(min, "", true);
+    if (!sai) continue;
+    const pos = nomeDe(sai)?.pos ?? "MEI", b = banco().filter((a) => a.pos === pos)[0] ?? banco().filter((a) => a.pos !== "GOL")[0];
+    if (b) trocar(min, sai, b);
+  }
+  trocas.sort((a, b) => a.min - b.min);
+  // 4) gols e passes: o que a narração disse; sem passe dito, quase sempre alguém em campo deu
+  const gols = new Map<string, number>(), assist = new Map<string, number>(), add = (m: Map<string, number>, n: string) => m.set(n, (m.get(n) ?? 0) + 1);
+  const golsSaida: { min: number; autor?: string; contra?: boolean }[] = [];
+  for (const g of golsTime) {
+    if (g.contra) { golsSaida.push({ min: g.min, contra: true }); continue; }
+    const autor = g.autor ? (eu && g.autor === eu.nome ? eu.nome : achar(g.autor).nome) : undefined;
+    if (autor) add(gols, autor);
+    golsSaida.push({ min: g.min, ...(autor ? { autor } : {}) });
+    let passe = g.passe === undefined ? undefined : g.passe === "" ? "" : eu && g.passe === eu.nome ? eu.nome : achar(g.passe).nome;
+    if (passe === undefined && r.chance(0.88)) {
+      const c = emCampo(g.min).filter((n) => n !== autor && n !== eu?.nome);
+      const pesos = c.map((n) => PESO_ASSIST[nomeDe(n)?.pos ?? "MEI"] ?? 1);
+      let t = r.next() * pesos.reduce((s, v) => s + v, 0);
+      for (let k = 0; k < c.length && passe === undefined; k++) { t -= pesos[k]; if (t <= 0) passe = c[k]; }
+    }
+    if (passe) add(assist, passe);
+  }
+  const jogadores: JogadorEntrada[] = [];
+  if (eu) jogadores.push({ id: "eu", nome: eu.nome, pos: eu.pos, min: Math.max(1, Math.min(90, eu.saida) - eu.entrada), gols: gols.get(eu.nome) ?? 0, assist: assist.get(eu.nome) ?? 0, nota: eu.nota, time: x.time, eu: true });
+  let ladoK = 0;
+  for (const [nome, ini] of em) {
+    const a = nomeDe(nome)!, min = Math.max(1, (fora.get(nome) ?? 90) - ini), g = gols.get(nome) ?? 0, as = assist.get(nome) ?? 0;
+    const nota = +clamp(6.2 + r.normal(0.1, 0.5) + g * 0.8 + as * 0.45 - (ini > 0 ? 0.1 : 0), 4.5, 9.8).toFixed(1);
+    jogadores.push({ id: nome, nome, pos: a.pos, ...(a.pos === "LAT" || a.pos === "PON" ? { lado: (ladoK++ % 2 ? "E" : "D") as "E" | "D" } : {}), min, gols: g, assist: as, nota, time: x.time });
+  }
+  return { jogadores, trocas, gols: golsSaida };
 }

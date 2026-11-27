@@ -7,7 +7,8 @@ import { Album, figurinhaArte, type CtxFig, type CapaAlbum } from "../visual/alb
 import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { xgDoGol, xgDoChute, type Chute, type EventoEst, type TipoEvento } from "../../src/estatisticas-partida";
-import { gerarEstatCompleta } from "../../src/estatisticas-completas";
+import { gerarEstatCompleta, escalacaoDoJogo } from "../../src/estatisticas-completas";
+import { nomeCurto } from "../../src/narracao";
 import { montarRevista, type EdicaoRevista, type ListaRevista } from "../../src/revista";
 import { revistaHtml } from "../visual/revista";
 import { estatCompletaHtml } from "../visual/estat-campo";
@@ -2531,24 +2532,29 @@ function estatFinal() {
   const p = partida, sv = save;
   if (!p || !sv || document.getElementById("estatFinal")) return;
   const eu: 0 | 1 = p.souCasa ? 0 : 1, meuClube = eu === 0 ? p.casa : p.fora, nome = sv.jogador.apelido, w = mundo(pacote);
-  // o seu time: o jogador e os titulares do clube no mundo (um 4-3-3 com os melhores de cada posição)
-  const vagas: [string, number][] = [["GOL", 1], ["LAT", 2], ["ZAG", 2], ["VOL", 1], ["MEI", 2], ["PON", 2], ["ATA", 1]];
+  // o seu time: os titulares do clube no mundo (um 4-3-3 com os melhores de cada posição), as substituições, e os
+  // gols e passes como a narração contou
   const minhaPos = sv.jogador.posicao, plantel = plantelDoClube(pacote, meuClube).filter((j) => j.nome !== nome);
-  const r = new RNG(`estat-final|${sv.semente}|${sv.carreira.temporada}|${sv.carreira.semana}|${p.casa}|${p.fora}`);
   const naoJoga = p.entrada > 90 || p.escalacao === "fora";
-  const meus = vagas.flatMap(([pos, n]) => plantel.filter((j) => j.posicao === pos).sort((a, b) => b.ovr - a.ovr).slice(0, n - (!naoJoga && pos === minhaPos ? 1 : 0)).map((j, i) => ({ id: j.nome, nome: j.nome, pos, ...(pos === "LAT" || pos === "PON" ? { lado: (i % 2 ? "E" : "D") as "E" | "D" } : {}), min: 90, gols: 0, assist: 0, nota: +(6 + r.normal(0.3, 0.6)).toFixed(1), time: eu })));
-  const gm = p.lances.filter((l) => l.meu === "gol").length, am = p.lances.filter((l) => l.meu === "assist").length;
-  if (!naoJoga) meus.unshift({ id: "eu", nome, pos: minhaPos, min: Math.max(1, Math.min(90, p.saida) - Math.max(0, p.entrada)), gols: gm, assist: am, nota: +(notaViva() ?? p.base.nota).toFixed(1), time: eu, eu: true } as typeof meus[number]);
+  const meuLado = eu === 0 ? "casa" : "fora";
+  const escl = escalacaoDoJogo({
+    semente: `${sv.semente}|${sv.carreira.temporada}|${sv.carreira.semana}|${p.casa}|${p.fora}`, plantel, curto: nomeCurto, time: eu,
+    ...(naoJoga ? {} : { eu: { nome, pos: minhaPos, entrada: Math.max(0, p.entrada), saida: Math.min(90, p.saida), nota: +(notaViva() ?? p.base.nota).toFixed(1) } }),
+    gols: p.lances.filter((l) => l.lado === meuLado).map((l) => ({ min: l.min, ...(l.contra ? { contra: true } : {}),
+      ...(l.meu === "gol" ? { autor: nome } : l.autor ? { autor: l.autor, ...(l.posAutor ? { posAutor: l.posAutor } : {}) } : {}),
+      ...(l.meu === "assist" ? { passe: nome } : l.passe !== undefined ? { passe: l.passe, ...(l.posPasse ? { posPasse: l.posPasse } : {}) } : l.meu === "gol" ? {} : {}) })),
+  });
+  const meus = escl.jogadores;
   const lado = (c: { lado: 0 | 1 }) => c.lado;
   const chutes: [number, number] = [0, 1].map((l) => chutesJogo.filter((c) => lado(c) === l).length) as [number, number];
   const alvo: [number, number] = [0, 1].map((l) => chutesJogo.filter((c) => lado(c) === l && c.alvo).length) as [number, number];
   const ev = (t: TipoEvento): [number, number] => [0, 1].map((l) => eventosJogo.filter((x) => x.lado === l && x.tipo === t).length) as [number, number];
   const posse = (() => { const f = p.estat?.posseCasa ?? []; return f.length ? Math.round(f.reduce((a, b) => a + b, 0) / f.length) : 50; })();
   const e = gerarEstatCompleta({ semente: `${sv.semente}|${sv.carreira.temporada}|${sv.carreira.semana}|${p.casa}|${p.fora}`, posse, forca: [w.clube[p.casa]?.forca ?? 65, w.clube[p.fora]?.forca ?? 65], placar: [placar[0], placar[1]],
-    gols: p.lances.map((l) => ({ time: (l.lado === "casa" ? 0 : 1) as 0 | 1, min: l.min, ...(l.meu === "gol" ? { autor: nome } : {}) })),
+    gols: [...escl.gols.map((g) => ({ ...g, time: eu })), ...p.lances.filter((l) => l.lado !== meuLado).map((l) => ({ time: (1 - eu) as 0 | 1, min: l.min }))],
     chutes: [Math.max(chutes[0], placar[0]), Math.max(chutes[1], placar[1])], noAlvo: [Math.max(alvo[0], placar[0]), Math.max(alvo[1], placar[1])],
     cartoes: { amarelos: ev("amarelo"), vermelhos: ev("vermelho") }, escanteios: ev("escanteio"), faltas: ev("falta"), jogadores: meus });
-  document.getElementById("estat")?.insertAdjacentHTML("afterend", `<details id="estatFinal" class="ec-det" open><summary class="botao sec" style="display:block;text-align:center;margin:8px 0">Estatísticas completas</summary>${estatCompletaHtml(e, [p.nomeCasa, p.nomeFora], eu)}</details>`);
+  document.getElementById("estat")?.insertAdjacentHTML("afterend", `<details id="estatFinal" class="ec-det" open><summary class="botao sec" style="display:block;text-align:center;margin:8px 0">Estatísticas completas</summary>${estatCompletaHtml(e, [p.nomeCasa, p.nomeFora], eu, escl.trocas)}</details>`);
 }
 function botaoFimJogo() {
   try { estatFinal(); } catch (err) { console.error(err); }

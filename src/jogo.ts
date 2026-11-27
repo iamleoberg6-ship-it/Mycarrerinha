@@ -935,7 +935,9 @@ export function previaPlano(s: Save, p: Plano) {
 // ------------------------------------------------------------------ partida
 export interface Opcao { id: string; rotulo: string }
 export interface Decisao { min: number; titulo: string; texto: string; opcoes: Opcao[]; situacao: string }
-export interface Lance { min: number; lado: "casa" | "fora"; meu?: "gol" | "assist"; texto: string }
+export interface Lance { min: number; lado: "casa" | "fora"; meu?: "gol" | "assist"; texto: string;
+  /** gols do seu time: quem fez e quem passou (nome curto e posição); passe "" = sem assistência; contra = gol contra do adversário */
+  autor?: string; posAutor?: string; passe?: string; posPasse?: string; contra?: boolean }
 export interface Partida {
   tipo: "profissional" | "base"; escalacao: Escalacao; casa: string; fora: string; nomeCasa: string; nomeFora: string; souCasa: boolean;
   /** jogo de copa continental (quarta-feira) */
@@ -1083,7 +1085,14 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   }
   lances.sort((x, y) => x.min - y.min);
   const recentes = c.frasesVistas ?? [], modelosNarr: string[] = [];
-  for (const x of lances) { const f = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv, recentes); x.texto = f.texto; modelosNarr.push(f.modelo); }
+  const posNoElenco = (n?: string) => (n ? (Object.keys(elMeu) as (keyof typeof elMeu)[]).find((k) => elMeu[k].includes(n)) : undefined);
+  for (const x of lances) {
+    const f = narrarGol(rngN, x.lado === lado(true), x.meu, nomes, elMeu, elAdv, recentes); x.texto = f.texto; modelosNarr.push(f.modelo);
+    if (x.lado !== lado(true)) continue;
+    if (f.contra) { x.contra = true; continue; }
+    if (f.autor) { x.autor = f.autor; const pa = f.autor === j.apelido ? j.posicao : posNoElenco(f.autor); if (pa) x.posAutor = pa; }
+    if (f.passe !== undefined) { x.passe = f.passe; const pp = f.passe === j.apelido ? j.posicao : posNoElenco(f.passe); if (pp) x.posPasse = pp; }
+  }
   const ecoRodada = !base && c.ultimoJogo && semanaAbsJogo(c) - c.ultimoJogo.s <= 1 ? { resultado: c.ultimoJogo.resultado, nota: c.ultimoJogo.nota } : undefined;
   const narr = narrarPartida(rngN, { mandante: jogo.souCasa, classico, chuva, base, pos: j.posicao, nota: d.nota, entrada, saida, eco: ecoRodada }, nomes, elMeu, elAdv, ligacoes, recentes);
   const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeM(jogo.casa).nome}${suf}`, nomeF = `${clubeM(jogo.fora).nome}${suf}`;

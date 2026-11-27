@@ -155,7 +155,20 @@ const GOL_ADV = [
 const escolherModelo = (rng: RNG, lista: string[], recentes?: Recentes) => rng.pick(variarPor(lista, (t) => t, recentes));
 
 /** Texto de cada gol do placar: quem fez e como (e o modelo usado, para variar nos próximos jogos). */
-export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | undefined, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco, recentes?: Recentes): { texto: string; modelo: string } {
+/** Quem fez e quem deu o passe num gol do seu time, lidos do modelo de frase: "" = sem assistência (pênalti, falta,
+ * jogada individual), undefined = a frase não diz (quem fecha a conta escolhe). */
+export interface AutoriaGol { autor?: string; passe?: string; contra?: boolean }
+const SEM_PASSE = /[Pp]ênalti|[Ff]alta|dribla|arranca|rouba a bola|lateral rápido|Contra-ataque puxado|toque de letra|aproveita o erro|aproveita falha|rebote|bate-rebate/;
+function autoriaDoGol(modelo: string, meu: "gol" | "assist" | undefined, v: Record<string, string>): AutoriaGol {
+  if (/Gol contra/.test(modelo)) return { contra: true };
+  if (meu === "assist") return { autor: v.X, passe: v.nome };
+  const autor = meu === "gol" ? v.nome : v.X;
+  // quem passou: o colega citado na frase ({Y}, {meia}, {ponta}, {comp}); {lat} e {zag} são do adversário
+  const ph = ["Y", "meia", "ponta", "comp"].find((k) => modelo.includes(`{${k}}`));
+  if (ph && v[ph] && v[ph] !== autor) return { autor, passe: v[ph] };
+  return SEM_PASSE.test(modelo) ? { autor, passe: "" } : { autor };
+}
+export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | undefined, nomes: Record<string, string>, elMeu: Elenco, elAdv: Elenco, recentes?: Recentes): { texto: string; modelo: string } & AutoriaGol {
   // quem falha muda de gol para gol
   const zag = umDe(rng, [...elAdv.ZAG.slice(0, 3), ...elAdv.LAT.slice(0, 2)], 5), zagMeu = umDe(rng, [...elMeu.ZAG.slice(0, 3), ...elMeu.LAT.slice(0, 2)], 5);
   if (meuTime) {
@@ -164,7 +177,7 @@ export function narrarGol(rng: RNG, meuTime: boolean, meu: "gol" | "assist" | un
     const modelo = escolherModelo(rng, lista, recentes);
     let texto = preencher(modelo, { ...nomes, zag, X, Y });
     if (meu === "gol" && nomes.brinca && rng.chance(0.4)) texto += " " + preencher("{brinca} corre até a torcida e comemora com todo mundo.", nomes);
-    return { texto, modelo };
+    return { texto, modelo, ...autoriaDoGol(modelo, meu, { ...nomes, X, Y }) };
   }
   const modelo = escolherModelo(rng, GOL_ADV, recentes);
   return { texto: preencher(modelo, { ...nomes, zagMeu, X: sorteia(rng, ARTILHEIROS, elAdv) }), modelo };
