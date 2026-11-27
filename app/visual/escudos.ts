@@ -73,6 +73,28 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   if (chave.startsWith("NAT-")) return bandeiraSvg(chave.slice(4), "").replace("<svg ", '<svg x="2" y="2" width="26" height="30" ');
   // Marselha: só um M azul, sem escudo
   if (chave === "FR-OM") return `<text x="13" y="23" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="26" fill="${c2r ?? "#2FAEE0"}" stroke="#0A0A0A" stroke-width=".8" paint-order="stroke">M</text>`;
+  // Seattle: escudo azul com filete verde e a torre da cidade (a agulha com o disco no alto) em branco no meio
+  if (chave === "US-SEA") {
+    const escudo = "M2 3 Q13 0.2 24 3 V15 Q24 24.6 13 29 Q2 24.6 2 15 Z";
+    const torre = "M12.6 2.6 H13.4 V6.4 H12.6 Z"
+      + " M11.1 6.6 H14.9 L14.4 8.2 H11.6 Z"
+      + " M7.6 8.6 Q13 7.4 18.4 8.6 L16.6 10.3 Q13 11 9.4 10.3 Z"
+      + " M12.1 10.6 H13.9 Q13.2 15.5 14.3 18.6 L16.2 25.4 H14.6 L13.3 20.6 H12.7 L11.4 25.4 H9.8 L11.7 18.6 Q12.8 15.5 12.1 10.6 Z"
+      + " M11.4 15.2 H14.6 L14.4 16 H11.6 Z M9 25.2 H17 V26.2 H9 Z";
+    return `<path d="${escudo}" fill="#005595" stroke="#5D9741" stroke-width="1.8" stroke-linejoin="round"/><path d="${escudo}" fill="none" stroke="${TINTA}" stroke-width=".6"/><path d="${torre}" fill="#FFFFFF"/>`;
+  }
+  // Miami: círculo preto com dois flamingos rosa se encarando (cada um numa perna só)
+  if (chave === "US-MIA") {
+    const rosa = "#F7B5CD";
+    const ave = `<ellipse cx="6.2" cy="15.6" rx="3.4" ry="2.1" transform="rotate(-18 6.2 15.6)" fill="${rosa}"/>`
+      + `<path d="M3.4 16.4 Q2.2 17.4 2.6 15.4" fill="${rosa}"/>`
+      + `<path d="M8.8 14.6 C10.9 12.9 9.5 10.6 8.5 9.2 C7.6 7.9 8.3 6.2 9.9 6.2 C11.1 6.2 11.6 7.2 11.3 8.2" fill="none" stroke="${rosa}" stroke-width="1.15" stroke-linecap="round"/>`
+      + `<circle cx="10.6" cy="6.7" r="1.1" fill="${rosa}"/><path d="M11.5 6.8 L12.6 7.9 L11.6 8.3 Z" fill="#231F20" stroke="${rosa}" stroke-width=".25"/>`
+      + `<path d="M6.4 17.4 V24.6 M6.4 20.6 L8 19.4 L7.2 21.4" fill="none" stroke="${rosa}" stroke-width=".6" stroke-linecap="round" stroke-linejoin="round"/>`;
+    return `<circle cx="13" cy="15" r="12.4" fill="#231F20"/><circle cx="13" cy="15" r="11" fill="none" stroke="${rosa}" stroke-width=".7"/>`
+      + `<g transform="translate(-.1 0)">${ave}</g><g transform="translate(26.1 0) scale(-1 1)">${ave}</g>`
+      + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   // São Paulo: escudo branco com um triângulo invertido, cortado em faixas preta, branca e vermelha
   if (chave === "SPA") {
     const escudo = "M1 1 H25 V14 Q25 24 13 29 Q1 24 1 14 Z", tri = "M2 3 H24 L13 27 Z";

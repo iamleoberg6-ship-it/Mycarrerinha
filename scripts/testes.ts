@@ -46,7 +46,7 @@ import { ehTorneioContinental, ehFinalissima } from "../src/copas.js";
 import { premiosDoAno, type ContextoPremios } from "../src/premios-mundo.js";
 import type { Candidato } from "../src/mundo.js";
 import { infoLiga } from "../src/ligas.js";
-import { titulosDoClube } from "../src/perfil-clube.js";
+import { titulosDoClube, timeDeTodosOsTempos, FORMACOES_XI } from "../src/perfil-clube.js";
 import { comJogador, recordesDaSelecao, recordesDoClube } from "../src/recordes.js";
 import { anunciarAposentadoria, desistirAposentadoria, recordesDoJogador, elencoDisponivel, sincronizar } from "../src/jogo.js";
 import { tecnicoDoClube, trocasDeTecnicoEm, lesoesDaTemporada } from "../src/mundo.js";
@@ -79,9 +79,7 @@ import { criarJogador, formacaoPermitida, PAISES, FORMACOES, FAMILIAS, type Esco
 let ok = 0;
 const pacote = carregarPacote(new URL("../data/pacote-brasil-serie-a-v0.3.json", import.meta.url).pathname);
 // cada teste começa com o mundo de 2026 (as carreiras de outros testes fazem o mundo andar)
-import { escalacaoDoJogo } from "../src/estatisticas-completas.js";
-import { plantelDoClube } from "../src/perfil-clube.js";
-import { nomeCurto } from "../src/narracao.js";
+import { escalacaoDaPartida, jogoDaSemana as jogoDaSemanaT } from "../src/jogo.js";
 const teste = (nome: string, fn: () => void) => { sincronizarMundo(pacote, "", 0); fn(); ok++; console.log("ok -", nome); };
 const todos = (v: number) => Object.fromEntries(ATRIBUTOS.map((a) => [a, v])) as Atributos;
 
@@ -2226,38 +2224,63 @@ teste("Perfil das copas: cada edição fica guardada no fim da temporada, com ca
   assert.ok(lib.recordes.some((x) => x.titulo === "Maior goleada") && lib.recordes.some((x) => x.titulo === "Maior público"));
 });
 
-teste("Fim de jogo do modo jogador: gols e passes batem com o placar, há substituições e quem marcou estava em campo", () => {
-  let golsTotal = 0, comPasse = 0, jogos = 0;
+teste("Fim de jogo do modo jogador: gols e passes batem com o placar e com a conta da semana, há trocas, e os colegas entram na artilharia", () => {
+  let golsTotal = 0, comPasse = 0, jogos = 0, conferidos = 0;
   for (const [i, pos] of (["ATA", "MEI", "ZAG"] as const).entries()) {
     const r = criarJogador({ nome: "Escala", pais: "BRA", familia: "media", formacao: "escolinha", alturaCm: 180, pe: "direito", posicao: pos, semente: `escal${i}` });
     const dados = { resultado: r, aparencia: {}, clube: "FLA" };
     const s = novoJogo(pacote, dados, ofertasDeBase(pacote, dados)[i % 3].clubeId, `escal${i}`);
     for (let w = 0; w < 30; w++) {
       const plano = planoPadrao(), p = prepararPartida(pacote, s, plano);
-      if (p) {
-        const meuLado = p.souCasa ? "casa" : "fora", eu = p.souCasa ? 0 : 1, nome = s.jogador.apelido, clube = p.souCasa ? p.casa : p.fora;
-        const meusGols = p.lances.filter((l) => l.lado === meuLado);
-        for (const l of meusGols) assert.ok(l.contra || l.autor, `gol sem autor: ${l.texto}`);
-        const naoJoga = p.entrada > 90 || p.escalacao === "fora";
-        const e = escalacaoDoJogo({ semente: `t${i}|${w}`, plantel: plantelDoClube(pacote, clube).filter((j) => j.nome !== nome), curto: nomeCurto, time: eu as 0 | 1,
-          ...(naoJoga ? {} : { eu: { nome, pos: s.jogador.posicao, entrada: Math.max(0, p.entrada), saida: Math.min(90, p.saida), nota: 6.5 } }),
-          gols: meusGols.map((l) => ({ min: l.min, ...(l.contra ? { contra: true } : {}), ...(l.meu === "gol" ? { autor: nome } : l.autor ? { autor: l.autor, posAutor: l.posAutor } : {}), ...(l.meu === "assist" ? { passe: nome } : l.passe !== undefined ? { passe: l.passe, posPasse: l.posPasse } : {}) })) });
-        const soma = (k: "gols" | "assist") => e.jogadores.reduce((a, j) => a + j[k], 0);
-        assert.equal(soma("gols"), meusGols.filter((l) => !l.contra).length, "gols da tabela não batem com o placar");
+      let e: ReturnType<typeof escalacaoDaPartida> | undefined, meusGols = 0;
+      if (p && p.tipo === "profissional") {
+        const meuLado = p.souCasa ? "casa" : "fora";
+        for (const l of p.lances.filter((x) => x.lado === meuLado)) assert.ok(l.contra || l.autor, `gol sem autor: ${l.texto}`);
+        meusGols = p.lances.filter((x) => x.lado === meuLado && !x.contra).length;
+        e = escalacaoDaPartida(pacote, s, p, []);
+        const soma = (k: "gols" | "assist") => e!.jogadores.reduce((a, j) => a + j[k], 0);
+        assert.equal(soma("gols"), meusGols, "gols da tabela não batem com o placar");
         assert.ok(soma("assist") <= soma("gols"), "mais assistências que gols");
         assert.ok(e.trocas.length >= 3 && e.trocas.length <= 6, `${e.trocas.length} trocas`);
-        assert.ok(e.jogadores.filter((j) => j.min > 0).length >= 11, "time com menos de 11");
-        const meu = e.jogadores.find((j) => j.eu);
-        if (meu) { assert.equal(meu.gols, meusGols.filter((l) => l.meu === "gol").length); assert.equal(meu.assist, meusGols.filter((l) => l.meu === "assist").length); }
-        // em campo: começou + minutos cobre o minuto do gol (titular sai no minuto = min; reserva entra em 90 - min)
-        for (const t of e.trocas) assert.ok(t.min >= 1 && t.min <= 90);
         assert.equal(new Set(e.trocas.map((t) => t.sai)).size, e.trocas.length, "alguém saiu duas vezes"); assert.equal(new Set(e.trocas.map((t) => t.entra)).size, e.trocas.length, "alguém entrou duas vezes");
         golsTotal += soma("gols"); comPasse += soma("assist"); jogos++;
       }
-      concluirSemana(pacote, s, plano, p, []);
+      const t = s.carreira.temporada, rod = jogoDaSemanaT(s)?.rodada;
+      const res = concluirSemana(pacote, s, plano, p, []);
+      if (e && res.partida) {
+        // o seu jogador: o mesmo da conta da semana (artilharia, temporada, história)
+        const meu = e.jogadores.find((j) => j.eu);
+        assert.equal(meu?.gols ?? 0, res.partida.gols, "gols do jogador diferentes da conta da semana");
+        assert.equal(meu?.assist ?? 0, res.partida.assist, "assistências do jogador diferentes da conta da semana");
+        // os colegas: o jogo entrou nos números deles daquela rodada
+        if (rod !== undefined && !p!.copa) for (const j of e.jogadores.filter((x) => !x.eu && x.min > 0)) {
+          const linha = historicoDe(pacote, j.nome).linhas.find((x) => x.t === t && x.liga && x.clubeId === s.carreira.clubeId);
+          const st = linha && statsDaLinha(pacote, j.nome, linha);
+          if (!st) continue;
+          assert.equal((st.gr ?? []).filter((x) => x === rod).length, j.gols, `${j.nome}: gols da rodada ${rod}`);
+          assert.equal((st.ar ?? []).filter((x) => x === rod).length, j.assist, `${j.nome}: assistências da rodada ${rod}`);
+          assert.ok(st.jr?.includes(rod), `${j.nome} jogou a rodada ${rod}`);
+          conferidos++;
+        }
+      }
     }
   }
-  assert.ok(jogos > 20 && golsTotal > 10, `poucos jogos/gols: ${jogos}/${golsTotal}`);
+  assert.ok(jogos > 20 && golsTotal > 10 && conferidos > 100, `poucos jogos/gols/conferidos: ${jogos}/${golsTotal}/${conferidos}`);
   const taxa = comPasse / golsTotal;
   assert.ok(taxa > 0.5 && taxa < 0.92, `assistência em ${Math.round(taxa * 100)}% dos gols`);
+});
+
+teste("Time de todos os tempos: onze jogadores, um goleiro só, numa formação de verdade", () => {
+  sincronizarMundo(pacote, "xi-teste", 4, 0);
+  const w = mundo(pacote);
+  for (const id of Object.keys(w.clube).filter((x) => !x.startsWith("NAT")).slice(0, 300)) {
+    const xi = timeDeTodosOsTempos(pacote, id);
+    if (!xi.length) continue;
+    assert.equal(xi.length, 11, `${id}: ${xi.length} jogadores`);
+    assert.equal(xi.filter((x) => x.posicao === "GOL").length, 1, `${id}: goleiros`);
+    assert.equal(xi.filter((x) => x.vaga === "GOL").length, 1, `${id}: vaga de goleiro`);
+    const f = FORMACOES_XI.find(([n]) => n === xi[0].formacao);
+    assert.ok(f, `${id}: formação ${xi[0].formacao}`);
+    for (const [pos, n] of Object.entries(f![1])) assert.equal(xi.filter((x) => x.vaga === pos).length, n, `${id}: ${pos}`);
+  }
 });

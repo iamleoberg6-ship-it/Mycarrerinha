@@ -183,7 +183,7 @@ let ligasOriginais = new Map<Liga, Clube[]>();
 /** capacidade financeira de 2026 de cada clube (a fortuna mexe nela) e os gigantes tradicionais */
 let fClubeBase = new Map<Clube, number>(), tradicionais = new Set<string>();
 let original = new Map<Clube, JogadorNPC[]>(), ref: Record<string, Referencia> = {}, grupos: GruposMundo = { pro: [], convidados: [], amadores: [], ligas: [] };
-let estado: { exJogadores?: { nome: string; pais: string; ovr: number; idade: number; t: number }[]; semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; campeoes: { t: number; liga: string; clube: string }[]; saiu: Map<string, { t: number; motivo: string }>;
+let estado: { /** jogos do seu time de verdade (modo jogador): `${t}|${clube}` → rodada → nome → [minutos, gols, assist.] */ reais?: Map<string, Map<number, Record<string, JogoReal>>>; reaisFonte?: unknown; exJogadores?: { nome: string; pais: string; ovr: number; idade: number; t: number }[]; semente: string; temporada: number; base: Record<string, JogadorNPC[]>; usados: Set<string>; virada?: ViradaMundo; viradas: Record<number, ViradaMundo>; meio: Record<number, ViradaMundo>; feitoMeio: boolean; livres: AgenteLivre[]; hist: Map<string, LinhaHistorico[]>; campeoes: { t: number; liga: string; clube: string }[]; saiu: Map<string, { t: number; motivo: string }>;
   /** técnico de cada clube profissional, técnicos sem clube e as trocas de cada virada */
   tecnicos: Record<string, Tecnico>; tecLivres: Tecnico[]; trocas: Record<number, TrocaTecnico[]>; nomesTec: Set<string>;
   /** lesões graves da temporada (rodadas da liga em que o jogador fica fora) */
@@ -517,10 +517,49 @@ export function statsDaLinhaAte(pacote: PacoteDados, nome: string, x: LinhaHisto
   if (x.t !== garantir(pacote).temporada || !x.liga) return st;
   return statsAte(st, feitas, x.liga[4]);
 }
+/** [minutos, gols, assistências] de um colega num jogo do seu time. */
+export type JogoReal = [number, number, number];
+/** Jogos do seu time guardados no save: temporada → rodada → { c: clube, j: nome → [min, gols, assist.] }. */
+export type JogosReais = Record<number, Record<number, { c: string; j: Record<string, JogoReal> }>>;
+/** Troca, nas estatísticas sorteadas de um colega, as rodadas que o seu time jogou de verdade pelo que aconteceu nelas. */
+function aplicarReais(st: StatsNPC, rodadas: Map<number, Record<string, JogoReal>>, nome: string): StatsNPC {
+  let jr = [...(st.jr ?? [])], gr = [...(st.gr ?? [])], ar = [...(st.ar ?? [])];
+  for (const [r, cont] of rodadas) {
+    jr = jr.filter((x) => x !== r); gr = gr.filter((x) => x !== r); ar = ar.filter((x) => x !== r);
+    const v = cont[nome];
+    if (v && v[0] > 0) { jr.push(r); for (let k = 0; k < v[1]; k++) gr.push(r); for (let k = 0; k < v[2]; k++) ar.push(r); }
+  }
+  const ord = (l: number[]) => l.sort((a, b) => a - b);
+  return { ...st, j: jr.length, g: gr.length, a: ar.length, jr: ord(jr), gr: ord(gr), ar: ord(ar) };
+}
+const invalidarClube = (e: NonNullable<typeof estado>, t: number, clubeId: string) => { for (const ls of e.hist.values()) for (const x of ls) if (x.t === t && x.clubeId === clubeId && x.liga) x.st = undefined; };
+/** Guarda um jogo do seu time (modo jogador): os números dos colegas na artilharia, na temporada e na história saem dele. */
+export function registrarJogoReal(pacote: PacoteDados, t: number, clubeId: string, rodada: number, cont: Record<string, JogoReal>) {
+  const e = garantir(pacote), k = `${t}|${clubeId}`;
+  e.reais ??= new Map();
+  if (!e.reais.has(k)) e.reais.set(k, new Map());
+  e.reais.get(k)!.set(rodada, cont);
+  invalidarClube(e, t, clubeId);
+}
+/** Recoloca no mundo os jogos de verdade guardados no save (ao abrir o jogo ou quando o mundo é refeito). */
+export function carregarJogosReais(pacote: PacoteDados, todos: JogosReais | undefined) {
+  const e = garantir(pacote);
+  if (!todos || e.reaisFonte === todos) return;
+  e.reaisFonte = todos; e.reais = new Map();
+  const mexidos = new Set<string>();
+  for (const [t, rods] of Object.entries(todos)) for (const [r, x] of Object.entries(rods)) {
+    const k = `${t}|${x.c}`;
+    if (!e.reais.has(k)) e.reais.set(k, new Map());
+    e.reais.get(k)!.set(+r, x.j); mexidos.add(k);
+  }
+  for (const k of mexidos) { const [t, c] = k.split("|"); invalidarClube(e, +t, c); }
+}
 export function statsDaLinha(pacote: PacoteDados, nome: string, x: LinhaHistorico): StatsNPC | undefined {
   if (x.st || !x.liga) return x.st;
   const [rank, vagas, forca, media, n, ini, fim] = x.liga;
   x.st = gerarStats(new RNG(`${garantir(pacote).semente}|stats|${x.t}|${x.clubeId}|${nome}`), { nome, posicao: x.posicao as JogadorNPC["posicao"], ovr: x.ovr, idade: x.idade, nacionalidade: "" }, rank, vagas, forca, media, n, ini ?? 0, fim ?? n, x.les);
+  const reais = estado?.reais?.get(`${x.t}|${x.clubeId}`);
+  if (reais?.size) x.st = aplicarReais(x.st, reais, nome);
   return x.st;
 }
 /** Uma movimentação da janela de transferências do mundo (na virada para a temporada t). */

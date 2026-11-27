@@ -19,7 +19,18 @@ export function titulosDoClube(pacote: PacoteDados, clubeId: string): { total: n
   return { total: ligas.reduce((a, l) => a + l.anos.length, 0), ligas };
 }
 
-export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number; melhorAno: number; melhorNota: number; /** o próprio jogador do usuário */ eu?: boolean }
+export interface TitularHistorico { nome: string; posicao: string; vezes: number; nota: number; temporadas: number; melhorAno: number; melhorNota: number; /** o próprio jogador do usuário */ eu?: boolean;
+  /** a vaga que ocupa no time (quase sempre a posição dele; diferente quando completou uma vaga de outra posição) */ vaga?: string; /** a formação do time ("4-3-3", "3-5-2"...) */ formacao?: string }
+/** Formações de verdade para o time de todos os tempos: sempre um goleiro e dez na linha. */
+export const FORMACOES_XI: [string, Partial<Record<string, number>>][] = [
+  ["4-3-3", { ZAG: 2, LAT: 2, VOL: 1, MEI: 2, PON: 2, ATA: 1 }],
+  ["4-2-3-1", { ZAG: 2, LAT: 2, VOL: 2, MEI: 1, PON: 2, ATA: 1 }],
+  ["4-4-2", { ZAG: 2, LAT: 2, VOL: 2, PON: 2, ATA: 2 }],
+  ["4-3-1-2", { ZAG: 2, LAT: 2, VOL: 1, MEI: 3, ATA: 2 }],
+  ["3-5-2", { ZAG: 3, LAT: 2, VOL: 1, MEI: 2, ATA: 2 }],
+  ["3-4-3", { ZAG: 3, LAT: 2, VOL: 1, MEI: 1, PON: 2, ATA: 1 }],
+  ["4-1-4-1", { ZAG: 2, LAT: 2, VOL: 1, MEI: 2, PON: 2, ATA: 1 }],
+];
 
 /** O melhor de cada posição em cada temporada (mín. de jogos), contado ao longo da história; o time sai dos que mais vezes foram o melhor. */
 export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuario: TemporadaUsuario[] = [], feitas = 999, ignorar: number[] = []): TitularHistorico[] {
@@ -58,29 +69,39 @@ export function timeDeTodosOsTempos(pacote: PacoteDados, clubeId: string, usuari
     const mt = melhorTemp.get(nome)!;
     return { nome, posicao: v.posicao, vezes: v.vezes, nota: +(a.soma / a.n).toFixed(2), temporadas: a.temporadas, melhorAno: mt.t, melhorNota: +mt.nota.toFixed(2), ...(usuario.some((u) => u.nome === nome && !u.outro) ? { eu: true } : {}) };
   });
-  // o XI: por posição, quem mais foi o melhor da posição (desempate pela nota média); goleiro é um só
+  // o XI: uma formação de verdade, a que melhor encaixa os que mais vezes foram o melhor da posição; um goleiro só
+  const ordem = (a: TitularHistorico, b: TitularHistorico) => b.vezes - a.vezes || b.nota - a.nota;
+  const porPos = (pos: string) => todos.filter((t) => t.posicao === pos).sort(ordem);
+  const valor = (t: TitularHistorico) => t.vezes * 10 + t.nota;
+  let melhor: [string, Partial<Record<string, number>>] = FORMACOES_XI[0], melhorV = -Infinity;
+  for (const f of FORMACOES_XI) {
+    let v = 0;
+    for (const [pos, n] of Object.entries(f[1])) { const l = porPos(pos); for (let i = 0; i < n!; i++) v += l[i] ? valor(l[i]) : -40; }
+    if (v > melhorV + 1e-9) { melhor = f; melhorV = v; } // empate: fica a primeira (4-3-3)
+  }
+  const [formacao, vagas] = melhor;
   const xi: TitularHistorico[] = [];
-  for (const [pos, n] of [["GOL", 1], ...Object.entries(VAGAS_433)] as [string, number][]) {
-    xi.push(...todos.filter((t) => t.posicao === pos).sort((a, b) => b.vezes - a.vezes || b.nota - a.nota).slice(0, n));
+  const goleiro = porPos("GOL")[0];
+  if (goleiro) xi.push({ ...goleiro, vaga: "GOL", formacao });
+  for (const [pos, n] of Object.entries(vagas)) for (const t of porPos(pos).slice(0, n)) xi.push({ ...t, vaga: pos, formacao });
+  // vaga de linha sem jogador da posição: quem sobrou no clube (nunca um goleiro), pelo mesmo critério
+  const usados = new Set(xi.map((t) => t.nome));
+  const sobra = todos.filter((t) => !usados.has(t.nome) && t.posicao !== "GOL").sort(ordem);
+  for (const [pos, n] of Object.entries(vagas)) {
+    const falta = n! - xi.filter((t) => t.vaga === pos).length;
+    for (let i = 0; i < falta && sobra.length; i++) { const t = sobra.shift()!; usados.add(t.nome); xi.push({ ...t, vaga: pos, formacao }); }
   }
-  // vaga sem jogador da posição (clube com pouca história nela): quem sobrou no clube, pelo mesmo critério, ocupa a vaga
-  const sobra = todos.filter((t) => !xi.includes(t)).sort((a, b) => b.vezes - a.vezes || b.nota - a.nota);
-  for (const [pos, n] of [["GOL", 1], ...Object.entries(VAGAS_433)] as [string, number][]) {
-    const falta = n - xi.filter((t) => t.posicao === pos).length;
-    for (let i = 0; i < falta && sobra.length; i++) xi.push(sobra.shift()!);
-  }
-  // clube com pouca história (nem os sobras bastam): o elenco atual completa as vagas, pelo overall, com nota e títulos zerados
+  // clube com pouca história: o elenco atual completa as vagas pelo overall (goleiro só no gol), com nota e títulos zerados
   if (xi.length < 11) {
-    const ja = new Set(xi.map((t) => t.nome));
     const ano = Math.max(0, ...pool.map(({ x }) => x.t));
-    const elenco = plantelDoClube(pacote, clubeId).filter((j) => !ja.has(j.nome)).sort((a, b) => b.ovr - a.ovr);
-    for (const [pos, n] of [["GOL", 1], ...Object.entries(VAGAS_433)] as [string, number][]) {
-      const falta = n - xi.filter((t) => t.posicao === pos).length;
-      for (let i = 0; i < falta && xi.length < 11; i++) {
-        const j = elenco.find((x) => x.posicao === pos) ?? elenco[0];
+    const elenco = plantelDoClube(pacote, clubeId).filter((j) => !usados.has(j.nome)).sort((a, b) => b.ovr - a.ovr);
+    for (const [pos, n] of [["GOL", 1], ...Object.entries(vagas)] as [string, number][]) {
+      const falta = n - xi.filter((t) => t.vaga === pos).length;
+      for (let i = 0; i < falta; i++) {
+        const j = elenco.find((x) => x.posicao === pos) ?? (pos === "GOL" ? undefined : elenco.find((x) => x.posicao !== "GOL"));
         if (!j) break;
         elenco.splice(elenco.indexOf(j), 1);
-        xi.push({ nome: j.nome, posicao: j.posicao, vezes: 0, nota: 0, temporadas: 0, melhorAno: ano, melhorNota: 0 });
+        xi.push({ nome: j.nome, posicao: j.posicao, vezes: 0, nota: 0, temporadas: 0, melhorAno: ano, melhorNota: 0, vaga: pos, formacao });
       }
     }
   }

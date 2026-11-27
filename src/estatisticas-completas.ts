@@ -128,6 +128,7 @@ export interface GolDoTime { min: number; autor?: string; posAutor?: string; pas
 export interface Troca { min: number; sai: string; entra: string }
 interface Atleta { nome: string; curto: string; pos: string; ovr: number }
 const PESO_ASSIST: Record<string, number> = { PON: 3, MEI: 3, LAT: 2, ATA: 1.6, VOL: 1.2, ZAG: 0.5, GOL: 0.1 };
+const PESO_GOL: Record<string, number> = { ATA: 4, PON: 2.6, MEI: 1.6, VOL: 0.6, LAT: 0.4, ZAG: 0.6, GOL: 0 };
 const PESO_SAIR: Record<string, number> = { ATA: 3, PON: 3, MEI: 2.5, LAT: 1.4, VOL: 1.4, ZAG: 0.5, GOL: 0 };
 
 /**
@@ -211,7 +212,15 @@ export function escalacaoDoJogo(x: {
   const golsSaida: { min: number; autor?: string; contra?: boolean }[] = [];
   for (const g of golsTime) {
     if (g.contra) { golsSaida.push({ min: g.min, contra: true }); continue; }
-    const autor = g.autor ? (eu && g.autor === eu.nome ? eu.nome : achar(g.autor).nome) : undefined;
+    let autor = g.autor ? (eu && g.autor === eu.nome ? eu.nome : achar(g.autor).nome) : undefined;
+    if (!autor) { // a partida não disse quem fez (gol que saiu de uma decisão sua, por exemplo): alguém em campo
+      const passeJa = g.passe && !(eu && g.passe === eu.nome) ? achar(g.passe).nome : g.passe;
+      const c = emCampo(g.min).filter((n) => n !== passeJa && nomeDe(n)?.pos !== "GOL");
+      const pesos = c.map((n) => PESO_GOL[nomeDe(n)?.pos ?? "MEI"] ?? 1);
+      let t = r.next() * pesos.reduce((s, v) => s + v, 0);
+      for (let k = 0; k < c.length && !autor; k++) { t -= pesos[k]; if (t <= 0) autor = c[k]; }
+      autor ??= c[c.length - 1];
+    }
     if (autor) add(gols, autor);
     golsSaida.push({ min: g.min, ...(autor ? { autor } : {}) });
     let passe = g.passe === undefined ? undefined : g.passe === "" ? "" : eu && g.passe === eu.nome ? eu.nome : achar(g.passe).nome;

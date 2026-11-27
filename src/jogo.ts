@@ -64,7 +64,10 @@ import { bonusJovem, chanceSubir, culturaBase, NOME_CULTURA, type Cultura } from
 import { semanaDoMercado, propostaPorIndicacao, janelaAberta, fimDaTemporadaNoMercado, contratoVencido, decidirAutomatico, type DadosMercado } from "./transferencias.js";
 import { gradeDeNumeros, numeroLivre, numeroParaChegada, limparNumeros, type Camisa } from "./numeros.js";
 import { semanaDoCaminho, fimDeTemporadaDoCaminho, decidirCaminhoAutomatico, caminhoDe, faseAmadora, IDADE_INICIAL, FASE_INICIAL, CAMINHOS, type Caminho, type Fase, type EstadoCaminho } from "./caminhos.js";
-import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, tracosDoElenco, type LinhaNarracao } from "./narracao.js";
+import { elencoDe, nomesDaPartida, narrarGol, narrarPartida, tracosDoElenco, nomeCurto, type LinhaNarracao } from "./narracao.js";
+import { escalacaoDoJogo, type GolDoTime } from "./estatisticas-completas.js";
+import { plantelDoClube } from "./perfil-clube.js";
+import { registrarJogoReal, carregarJogosReais, type JogoReal, type JogosReais } from "./mundo.js";
 import { estatisticaBase, type EstatBase } from "./estatisticas-partida.js";
 import { ligacoesDoElenco } from "./relacoes-npc.js";
 import { reliquiasDaPartida, premiosDaTemporada, UNIFORME_SELECAO, type Ganho } from "./reliquias.js";
@@ -186,7 +189,7 @@ export interface Carreira {
   suspensaoEstadual?: number; statsEstadual?: { jogos: number; gols: number; assist: number; notas: number[] };
   tabelaAnterior?: TabelaReal;
   /** tabela final real de cada temporada (decide acesso e rebaixamento no mundo) e a primeira temporada com a pirâmide valendo */
-  tabelasReais?: TabelasReais; piramideDesde?: number; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
+  tabelasReais?: TabelasReais; /** os jogos de liga do seu time como aconteceram: minutos, gols e passes dos colegas */ jogosReais?: JogosReais; piramideDesde?: number; avisosCopa?: Record<string, string>; meioSemana?: { semana: number; resumo: ResumoPartida; participacao: Participacao; nota: number; eventos: string[] };
   /** liga do clube atual (saves antigos: Série A) */
   ligaId?: string;
   /** comissão acordada com o agente do banco (sem ela, vale a de referência) e conversa de comissão em aberto */
@@ -329,6 +332,7 @@ export function sincronizar(pacote: PacoteDados, s: Save) {
   c.piramideDesde ??= Math.max(0, c.temporada - 1);
   const reais: TabelasReais = { ...(c.tabelaAnterior && c.temporada > 0 ? { [c.temporada - 1]: c.tabelaAnterior } : {}), ...(c.tabelasReais ?? {}) };
   sincronizarMundo(pacote, s.semente, s.carreira.temporada, s.carreira.semana, reais, c.piramideDesde);
+  carregarJogosReais(pacote, c.jogosReais);
   encaixarFamiliaNoMundo(pacote, s);
   mudancaDeDivisao(pacote, s);
   if (c.tecnicoClube !== c.clubeId && !c.fase) {
@@ -1049,6 +1053,15 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
     if (emCampo && g > 0) { meu = "gol"; g--; } else if (emCampo && a > 0) { meu = "assist"; a--; }
     lances.push({ min: m, lado: lado(true), meu, texto: "" });
   }
+  // gol ou passe do jogador que não coube no tempo em campo: um gol do time de fora desse tempo passa para dentro dele
+  // (assim o placar, a narração, a tabela do fim de jogo e os números da temporada contam a mesma coisa)
+  if ((g > 0 || a > 0) && saida > entrada) for (const l of lances) {
+    if (g <= 0 && a <= 0) break;
+    if (l.meu || (l.min >= entrada && l.min <= saida)) continue;
+    l.min = rng.int(Math.max(2, entrada), Math.max(Math.max(2, entrada), Math.min(89, saida)));
+    if (g > 0) { l.meu = "gol"; g--; } else { l.meu = "assist"; a--; }
+  }
+  lances.sort((x, y) => x.min - y.min);
   for (let i = 0; i < golsAdv; i++) lances.push({ min: minutosLivres(), lado: lado(false), texto: "" });
   // quem é quem, contexto do jogo e narração (sorteios próprios: não mexem no placar)
   const rngN = rngDe(s, cj ? `narracao-${cj.id}` : "narracao"), rngL = rngDe(s, cj ? `lances-${cj.id}` : "lances");
@@ -1098,7 +1111,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const cat = categoriaBase(j.idade), suf = base && !amador ? ` ${cat}` : "", nomeC = `${clubeM(jogo.casa).nome}${suf}`, nomeF = `${clubeM(jogo.fora).nome}${suf}`;
   void adv;
   return { tipo: base ? "base" : "profissional", escalacao: esc, casa: jogo.casa, fora: jogo.fora, nomeCasa: nomeC, nomeFora: nomeF, souCasa: jogo.souCasa, ...(infoCopa ? { copa: infoCopa } : {}),
-    entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols, assist: d.assistencias, nota: d.nota }, fAdv: advF,
+    entrada, saida, golsCasa: gc, golsFora: gf, lances, decisoes, base: { gols: d.gols - g, assist: d.assistencias - a, nota: d.nota }, fAdv: advF,
     nomes, ctx, abertura: narr.abertura, narracao: narr.linhas, estat: estatisticaBase(rngDe(s, "estat"), [forcaNorm(infoClube(pacote, jogo.casa)?.forca ?? 60), forcaNorm(infoClube(pacote, jogo.fora)?.forca ?? 60)]), modelos: [...modelosNarr, ...narr.linhas.flatMap((l) => (l.modelo ? [l.modelo] : []))], ...(clima ? { clima } : {}) };
 }
 
@@ -1217,6 +1230,46 @@ function registrarNarracaoEFios(s: Save, partida: Partida, decisoes: ResultadoDe
     if (d.noticia) c.fios!.push({ id: `r${ab}-${i}`, quando: ab + r.int(3, 5), tipo: "repercussao", titulo: "A polêmica voltou", texto: `Os programas esportivos voltaram ao assunto que envolve ${s.jogador.apelido}, agora com outras opiniões.` });
   });
 }
+/**
+ * Os gols do seu time como o jogo terminou: os do placar sorteado e os das suas decisões. Do seu jogador só contam os
+ * gols e passes até ele sair (expulso ou substituído numa decisão), exatamente como na conta da semana.
+ */
+export function golsDoJogo(p: Partida, decisoes: ResultadoDecisao[], eu: string): { meus: GolDoTime[]; foraMin: number } {
+  const meuLado = p.souCasa ? "casa" : "fora";
+  let amarelos = 0, expulsoMin = 99, saiuMin = 99;
+  const valem: ResultadoDecisao[] = [];
+  for (const d of [...decisoes].sort((a, b) => a.min - b.min)) {
+    const pos = SITUACAO[d.situacao]?.momento === "pos";
+    if (!pos && d.min > Math.min(expulsoMin, saiuMin)) continue;
+    valem.push(d);
+    if (d.amarelo) amarelos++;
+    if (d.vermelho || amarelos >= 2) expulsoMin = Math.min(expulsoMin, d.min);
+    if (d.sai && !d.vermelho && saiuMin === 99 && expulsoMin === 99) saiuMin = d.min;
+  }
+  const foraMin = Math.min(expulsoMin, saiuMin), meus: GolDoTime[] = [];
+  for (const l of p.lances) {
+    if (l.lado !== meuLado) continue;
+    if (l.contra) { meus.push({ min: l.min, contra: true }); continue; }
+    const credito = l.min <= foraMin ? l.meu : undefined;
+    // autor: você (se ainda estava em campo) ou o colega que a narração citou; passe: idem
+    const autor = l.meu === "gol" ? (credito ? eu : undefined) : l.autor;
+    const passe = l.meu === "assist" ? (credito ? eu : undefined) : l.passe;
+    meus.push({ min: l.min, ...(autor ? { autor, ...(l.meu !== "gol" && l.posAutor ? { posAutor: l.posAutor } : {}) } : {}),
+      ...(passe !== undefined ? { passe, ...(l.meu !== "assist" && l.posPasse ? { posPasse: l.posPasse } : {}) } : {}) });
+  }
+  for (const d of valem) if (d.golPro) meus.push({ min: d.min, ...(d.meu === "gol" ? { autor: eu } : {}), ...(d.meu === "assist" ? { passe: eu } : {}) });
+  return { meus: meus.sort((a, b) => a.min - b.min), foraMin };
+}
+/** A escalação do seu time no fim do jogo (titulares, trocas, gols e passes de cada um), a mesma da tela e da artilharia. */
+export function escalacaoDaPartida(pacote: PacoteDados, s: Save, p: Partida, decisoes: ResultadoDecisao[], nota = p.base.nota) {
+  const nome = s.jogador.apelido, clube = p.souCasa ? p.casa : p.fora, { meus, foraMin } = golsDoJogo(p, decisoes, nome);
+  const saida = Math.min(90, p.saida, foraMin), entrada = Math.max(0, p.entrada);
+  const joga = p.tipo === "profissional" && p.escalacao !== "fora" && p.escalacao !== "lesionado" && p.escalacao !== "suspenso" && p.entrada <= 90 && saida > entrada;
+  return escalacaoDoJogo({
+    semente: `${s.semente}|${s.carreira.temporada}|${s.carreira.semana}|${p.casa}|${p.fora}`, plantel: plantelDoClube(pacote, clube).filter((j) => j.nome !== nome),
+    curto: nomeCurto, time: p.souCasa ? 0 : 1, ...(joga ? { eu: { nome, pos: s.jogador.posicao, entrada, saida, nota: +nota.toFixed(1) } } : {}), gols: meus,
+  });
+}
 function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes: ResultadoDecisao[], notaExtra: number, intensidadeAlta: boolean, rng: RNG, eventos: string[]):
   { resumo?: ResumoPartida; participacao: Participacao; nota: number; placar?: [number, number]; placarBase?: [number, number] } {
   registrarNarracaoEFios(s, partida, decisoes);
@@ -1271,6 +1324,16 @@ function aplicarPartida(pacote: PacoteDados, s: Save, partida: Partida, decisoes
   }
   const resumo: ResumoPartida = { nomeCasa: partida.nomeCasa, nomeFora: partida.nomeFora, idCasa: partida.casa, idFora: partida.fora, golsCasa: gc, golsFora: gf, nota, gols, assist, minutos, tipo: partida.tipo, escalacao: partida.escalacao,
     ...(copa ? { competicao: copa.nome, rotulo: copa.rotulo } : {}) };
+  // jogo de liga do time profissional: os números dos colegas (gols, passes, minutos) entram na artilharia, na temporada e na história
+  if (pro && !copa) {
+    const jl = jogoDaSemana(s);
+    if (jl) {
+      const cont: Record<string, JogoReal> = {};
+      for (const x of escalacaoDaPartida(pacote, s, partida, decisoes).jogadores) if (!x.eu && x.min > 0) cont[x.nome] = [x.min, x.gols, x.assist];
+      ((c.jogosReais ??= {})[c.temporada] ??= {})[jl.rodada] = { c: c.clubeId, j: cont };
+      registrarJogoReal(pacote, c.temporada, c.clubeId, jl.rodada, cont);
+    }
+  }
   if (minutos <= 0) {
     if (partida.escalacao === "banco") { c.moral = clamp(c.moral - 1, 0, 100); eventos.push(copa ? "Ficou no banco o jogo da copa todo." : "Ficou no banco o jogo todo."); }
     return { resumo, participacao: "naoJogou", nota: 0, placar, placarBase };
