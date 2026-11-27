@@ -25,7 +25,7 @@ export type ParteCamisa = "peito" | "alto" | "manga";
 /** As cores do tecido atrás de cada lugar da camisa: o meio do peito (master), o alto do peito (fornecedor) e a manga. */
 export function coresAtras(padrao: string, cor1: string, cor2: string, faixas: string[] | undefined, parte: ParteCamisa): string[] {
   const l = [cor1];
-  if (parte === "manga") return padrao === "centro" ? [cor2] : ["listrasV", "listrasH", "listrasHG"].includes(padrao) ? [cor1, cor2] : l;
+  if (parte === "manga") return padrao === "centro" ? [cor2] : ["listrasV", "listrasVG", "listrasH", "listrasHG"].includes(padrao) ? [cor1, cor2] : l;
   if (!padrao || padrao === "lisa" || padrao === "centro") return l;
   if (parte === "alto" && ["faixaH", "tresFaixasH", "duasFaixasH", "metade", "faixaV"].includes(padrao)) return l;
   if (["tresFaixasH", "duasFaixasH", "duasFaixasV"].includes(padrao)) return [...l, ...(faixas?.length ? faixas : [cor2])];

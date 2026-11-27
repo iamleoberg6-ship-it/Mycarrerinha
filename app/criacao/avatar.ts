@@ -20,7 +20,7 @@ export type AcessorioCabeca = "nenhum" | "faixa" | "bandana" | "oculos" | "gorro
 export type Piercing = "nenhum" | "nariz" | "sobrancelha" | "dois" | "labio" | "orelha";
 /** Óculos escuros de patrocinador: modelo e cores (a marca é que dá). */
 export interface OculosSol { modelo: "aviador" | "esportivo" | "quadrado"; armacao: string; lente: string }
-export type EstiloCamisa = "lisa" | "listrasV" | "listrasH" | "faixa" | "faixaH" | "diagonais";
+export type EstiloCamisa = "lisa" | "listrasV" | "listrasVG" | "listrasH" | "faixa" | "faixaH" | "diagonais";
 export interface Camisa { cor1: string; cor2: string; cor3?: string; estilo: EstiloCamisa; /** clube (id): escolhe a fonte do número */ fonte?: string }
 
 export interface Aparencia {
@@ -570,6 +570,7 @@ function padraoCamisa(c: Camisa): string {
   switch (c.estilo) {
     case "diagonais": return [220, 280, 340].map((y) => `<path d="M-6 ${y + 60} L306 ${y - 40} L306 ${y - 16} L-6 ${y + 84} Z" fill="${c.cor2}"/>`).join("");
     case "listrasV": return Array.from({ length: 11 }, (_, i) => `<rect x="${-6 + i * 30}" y="210" width="15" height="150" fill="${c.cor2}"/>`).join("");
+    case "listrasVG": return Array.from({ length: 6 }, (_, i) => `<rect x="${-6 + i * 60}" y="210" width="30" height="150" fill="${c.cor2}"/>`).join("") + Array.from({ length: 12 }, (_, i) => `<rect x="${-7 + i * 30}" y="210" width="2" height="150" fill="#FFFFFF"/>`).join("");
     case "listrasH": return Array.from({ length: 8 }, (_, i) => `<rect x="0" y="${246 + i * 18}" width="300" height="9" fill="${c.cor2}"/>`).join("");
     case "faixa": return `<path d="M54 250 L88 242 L300 352 L300 360 L258 360 Z" fill="${c.cor2}"/>`;
     case "faixaH": return `<rect x="0" y="326" width="300" height="12" fill="${c.cor2}"/>${c.cor3 ? `<rect x="0" y="338" width="300" height="12" fill="${c.cor3}"/>` : ""}`;
@@ -581,7 +582,7 @@ function uniforme(c: Camisa, numero: string | undefined, pele: string, sombraPel
   const id = novoId("tr");
   const golaCor = luminancia(c.cor1) > 0.8 ? c.cor2 : c.estilo === "lisa" ? escurecer(c.cor1, 0.55) : c.cor2;
   const friso = luminancia(golaCor) < 0.4 ? "#E9E2CF" : escurecer(golaCor, 0.6);
-  const corNumero = luminancia(c.cor1) < 0.5 || c.estilo === "listrasV" ? "#F2E6C2" : escurecer(c.cor1, 0.4);
+  const corNumero = luminancia(c.cor1) < 0.5 || (c.estilo === "listrasV" || c.estilo === "listrasVG") ? "#F2E6C2" : escurecer(c.cor1, 0.4);
   return `<path d="${GOLA_TRAS}" fill="${golaCor}" stroke="${TINTA}" stroke-width="${TRACO * 0.8}" stroke-linejoin="round"/>
     <path d="${PESCOCO}" fill="${pele}" stroke="${TINTA}" stroke-width="${TRACO}" stroke-linejoin="round"/>
     <path d="${PEITO}" fill="${pele}"/>

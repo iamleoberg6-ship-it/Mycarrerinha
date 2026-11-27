@@ -111,6 +111,12 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
       + `<path d="${coroa}" fill="#FFFFFF"/><circle cx="6.6" cy="10.4" r=".9" fill="#FFFFFF"/><circle cx="13" cy="8.1" r=".9" fill="#FFFFFF"/><circle cx="19.4" cy="10.4" r=".9" fill="#FFFFFF"/>`
       + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="#3A3A3A" stroke-width="${borda * 0.5}"/>`;
   }
+  // Grêmio Gaúcho: redondo, azul-celeste com a faixa preta no meio e o filete branco por dentro
+  if (chave === "GRE") {
+    return `<defs><clipPath id="escGRE"><circle cx="13" cy="15" r="12.4"/></clipPath></defs><circle cx="13" cy="15" r="12.4" fill="#0D80BF"/>`
+      + `<rect x="0" y="12.4" width="26" height="5.2" fill="#000000" clip-path="url(#escGRE)"/>`
+      + `<circle cx="13" cy="15" r="10.9" fill="none" stroke="#FFFFFF" stroke-width=".9"/><circle cx="13" cy="15" r="12.4" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
   // Seattle: escudo azul com filete verde e a torre da cidade (a agulha com o disco no alto) em branco no meio
   if (chave === "US-SEA") {
     const escudo = "M2 3 Q13 0.2 24 3 V15 Q24 24.6 13 29 Q2 24.6 2 15 Z";

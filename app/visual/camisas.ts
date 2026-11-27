@@ -20,6 +20,8 @@ function padrao(modelo: string, c2: string, c3: string, faixas?: string[]): stri
     /** listras finas, no mesmo ritmo do uniforme do campo (uma listra a cada 8 unidades) */
     case "listrasV": return Array.from({ length: 10 }, (_, i) => `<rect x="${4 + i * 8}" y="0" width="4" height="104" fill="${c2}"/>`).join("");
     case "listrasH": return Array.from({ length: 11 }, (_, i) => `<rect x="0" y="${14.9 + i * 8}" width="80" height="4" fill="${c2}"/>`).join("");
+    /** listras verticais grossas com um filete branco fininho entre cada uma (Grêmio Gaúcho) */
+    case "listrasVG": return Array.from({ length: 5 }, (_, i) => `<rect x="${8 + i * 16}" y="0" width="8" height="104" fill="${c2}"/>`).join("") + Array.from({ length: 10 }, (_, i) => `<rect x="${7.7 + i * 8}" y="0" width=".6" height="104" fill="#FFFFFF"/>`).join("");
     /** listras grossas horizontais (Fortaleza): cinco faixas, a primeira logo abaixo do ombro */
     case "listrasHG": return Array.from({ length: 5 }, (_, i) => `<rect x="0" y="${9.8 + i * 20.4}" width="80" height="10.2" fill="${c2}"/>`).join("");
     case "faixa": return `<path d="M10 12 L24 8 L70 92 L56 96 Z" fill="${c2}"/>`;
@@ -53,7 +55,7 @@ export function camisaCostas(c: DadosCamisa, nome: string, apagada = false): str
   }
   const [a, b0] = c.cores, b = b0 && b0.toLowerCase() !== a.toLowerCase() ? b0 : luz(a) > 0.6 ? "#1A1A1A" : "#FFFFFF";
   // nome e número com a cor que mais contrasta com a cor principal
-  const tinta = c.modelo === "listrasV" || c.modelo === "listrasH" || c.modelo === "listrasHG" || c.modelo === "centro"
+  const tinta = c.modelo === "listrasV" || c.modelo === "listrasVG" || c.modelo === "listrasH" || c.modelo === "listrasHG" || c.modelo === "centro"
     ? (luz(a) > 0.55 && luz(b) > 0.55 ? "#1A1A1A" : "#FFFFFF")
     : luz(a) > 0.55 ? (luz(b) < 0.45 ? b : "#1A1A1A") : (luz(b) > 0.55 ? b : "#FFFFFF");
   const borda = luz(tinta) > 0.5 ? mistura(a, "#000000", 0.55) : mistura(a, "#FFFFFF", 0.6);
