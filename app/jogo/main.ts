@@ -8,7 +8,7 @@ import { cruzar, type GenesFilho } from "../../src/genes";
 import { svgFilho, tracosDaMae, tracosDoPai } from "../visual/criancas";
 import { xgDoGol, xgDoChute, type Chute, type EventoEst, type TipoEvento } from "../../src/estatisticas-partida";
 import { gerarEstatCompleta } from "../../src/estatisticas-completas";
-import { escalacaoDaPartida } from "../../src/jogo";
+import { escalacaoDaPartida, placarDoJogo } from "../../src/jogo";
 import { montarRevista, type EdicaoRevista, type ListaRevista } from "../../src/revista";
 import { revistaHtml } from "../visual/revista";
 import { estatCompletaHtml } from "../visual/estat-campo";
@@ -2752,24 +2752,33 @@ function flashGol(meu: boolean, nome: string) {
   t.appendChild(d); setTimeout(() => d.remove(), 1500);
 }
 function avancar() {
-  clearTimeout(timer); clearInterval(relogioTick); relogioTick = 0;
+  clearTimeout(timer); clearInterval(relogioTick); relogioTick = 0; aCaminho = undefined;
   const item = fila.shift();
   if (!partida || !save) return;
   if (!item) { $("rodapeJogo").innerHTML = botaoFimJogo(); return; }
   andarAte(item.min, () => mostrarItem(item));
 }
 /** O relógio anda até o minuto do próximo lance, na velocidade escolhida (ou pula, se o jogador pediu). */
+/** O lance que o relógio está indo mostrar (para "acelerar" chegar nele, e não pular por cima dele). */
+let aCaminho: { alvo: number; depois: () => void } | undefined;
 function andarAte(alvo: number, depois: () => void) {
-  if (pular || relogio >= alvo) { pular = false; relogio = Math.max(relogio, alvo); minutoAtual = Math.floor(relogio); atualizarPlacar(); depois(); return; }
+  if (pular || relogio >= alvo) { pular = false; aCaminho = undefined; relogio = Math.max(relogio, alvo); minutoAtual = Math.floor(relogio); atualizarPlacar(); depois(); return; }
   let ultimo = performance.now();
+  aCaminho = { alvo, depois };
   relogioTick = window.setInterval(() => {
     const agora = performance.now(), dt = (agora - ultimo) / 1000;
     ultimo = agora;
     relogio = Math.min(alvo, relogio + dt * MIN_POR_SEG * velocidade);
     minutoAtual = Math.floor(relogio);
     atualizarPlacar();
-    if (relogio >= alvo) { clearInterval(relogioTick); relogioTick = 0; depois(); }
+    if (relogio >= alvo) { clearInterval(relogioTick); relogioTick = 0; aCaminho = undefined; depois(); }
   }, 80);
+}
+/** Acelerar: se o relógio está indo para um lance, chega nele agora; senão, passa para o próximo. Nenhum lance some. */
+function acelerar() {
+  clearTimeout(timer);
+  if (relogioTick && aCaminho) { const a = aCaminho; clearInterval(relogioTick); relogioTick = 0; aCaminho = undefined; relogio = Math.max(relogio, a.alvo); minutoAtual = Math.floor(relogio); atualizarPlacar(); a.depois(); return; }
+  pular = true; avancar();
 }
 function pausaDoItem(item: ItemFila) { return Math.max(120, (item.gol ? 900 : 350) / Math.sqrt(velocidade)); }
 function mostrarItem(item: ItemFila) {
@@ -2802,11 +2811,26 @@ function mostrarItem(item: ItemFila) {
   if (item.gol && !item.meu) { const re = reacaoGol(item.gol); if (re) adicionarLance(item.min, re, "reacao"); }
   if (item.meu === "gol") abrirComemoracao(item.min);
   if (item.fim && !disputaFeita && precisaDisputa()) { disputaFeita = true; iniciarDisputa(); return; }
+  if (item.fim) conferirPlacarFinal();
   if (item.fim && !posFeito) posApito();
   if (!fila.length) { $("rodapeJogo").innerHTML = botaoFimJogo(); return; }
   timer = window.setTimeout(avancar, pausaDoItem(item));
 }
 
+/** No apito final, o placar da tela tem que ser o do jogo (o mesmo da entrevista, da tabela e da artilharia): se algum gol
+ *  ficou sem aparecer na narração (uma decisão respondida tarde, por exemplo), ele entra aqui, com o minuto dele. */
+function conferirPlacarFinal() {
+  if (!partida) return;
+  const certo = placarDoJogo(partida, resultados);
+  for (const lado of [0, 1] as const) while (placar[lado] < certo[lado]) {
+    placar[lado]++;
+    const nome = lado === 0 ? partida.nomeCasa : partida.nomeFora;
+    adicionarLance(90, `Gol do ${esc(nome)} confirmado pela arbitragem no fim.`, "gol");
+  }
+  if (placar[0] !== certo[0] || placar[1] !== certo[1]) console.warn("placar da tela diferente do jogo", placar, certo);
+  placar = [certo[0], certo[1]];
+  atualizarPlacar();
+}
 /** Depois do apito, às vezes ainda tem entrevista, troca de camisa, conversa com o técnico... */
 function posApito() {
   posFeito = true;
@@ -3391,7 +3415,7 @@ document.addEventListener("click", (ev) => {
       plano = planoPadrao(); aba = "mercado"; const feito = [vida.familia && `${vida.familia}× falou com a família`, vida.par && `${vida.par} programas a dois`, vida.filhos && `${vida.filhos}× com os filhos`, vida.outros && `${vida.outros} conversas com casinhos e matches`, vida.amigos && `${vida.amigos} mensagens para amigos`].filter(Boolean);
       msgMercado = erro ? { texto: `A simulação parou depois de ${n} semanas por um erro: ${erro}. Baixe o save (aba Vida) e mande para corrigir.`, ok: false } : { texto: `${n} semanas simuladas.${feito.length ? ` Nesse tempo, você ${feito.join(", ")}.` : ""}`, ok: true }; salvar(); render(); window.scrollTo(0, 0);
     } break;
-    case "acelerar": clearTimeout(timer); pular = true; avancar(); break;
+    case "acelerar": acelerar(); break;
     case "continuar": $("telaJogo").classList.remove("decidindo"); document.querySelectorAll(".decisao.atual").forEach((x) => x.classList.remove("atual")); $("rodapeJogo").innerHTML = `<button class="botao sec grande" data-acao="acelerar">Pular para o próximo lance</button>`; avancar(); break;
     case "fimjogo": fecharSemana(); break;
     case "fimcopa": fecharJogoDaCopa(); break;

@@ -28,12 +28,14 @@ export const nomeCurto = (n: string) => {
 };
 
 /** Elenco por posição, do melhor para o pior. Na base, só os mais novos (quando há gente suficiente). */
-export function elencoDe(clube: Clube, base: boolean): Elenco {
+/** Elenco por posição para a narração. `evitar`: o apelido do seu jogador; colega com o mesmo nome curto
+ *  (um irmão, um xará) aparece com o nome completo, para a narração nunca dar o gol dele a você. */
+export function elencoDe(clube: Clube, base: boolean, evitar?: string): Elenco {
   const todos = clube.elenco;
   const novos = todos.filter((j) => j.idade <= 21);
   const lista = base && novos.length >= 11 ? novos : todos;
   const el: Elenco = { GOL: [], ZAG: [], LAT: [], VOL: [], MEI: [], PON: [], ATA: [] };
-  const porPos = (l: JogadorNPC[]) => { const r: Partial<Elenco> = {}; for (const j of [...l].sort((a, b) => b.ovr - a.ovr)) (r[j.posicao as keyof Elenco] ??= []).push(nomeCurto(j.nome)); return r; };
+  const porPos = (l: JogadorNPC[]) => { const r: Partial<Elenco> = {}; for (const j of [...l].sort((a, b) => b.ovr - a.ovr)) (r[j.posicao as keyof Elenco] ??= []).push(evitar && nomeCurto(j.nome) === evitar ? j.nome : nomeCurto(j.nome)); return r; };
   const daLista = porPos(lista), deTodos = porPos(todos);
   // posição sem ninguém entre os novos: usa o elenco inteiro; sem ninguém no elenco: um nome de camisa
   for (const k of Object.keys(el) as (keyof Elenco)[]) el[k] = daLista[k]?.length ? daLista[k]! : deTodos[k]?.length ? deTodos[k]! : [`Camisa ${({ GOL: 1, ZAG: 4, LAT: 2, VOL: 5, MEI: 10, PON: 7, ATA: 9 } as Record<string, number>)[k]}`];

@@ -972,8 +972,9 @@ export function decisaoComemoracao(s: Save, p: Partida, min: number): Decisao {
 export function decisaoPosJogo(s: Save, p: Partida, resultados: ResultadoDecisao[]): Decisao | undefined {
   if (Math.min(90, p.saida) - p.entrada <= 0) return;
   const meuLado = p.souCasa;
-  let gm = meuLado ? p.golsCasa : p.golsFora, ga = meuLado ? p.golsFora : p.golsCasa, gols = p.lances.filter((l) => l.meu === "gol").length, nota = p.base.nota, amarelos = 0, expulso = false;
-  for (const r of resultados) { if (r.golPro) gm++; if (r.golContra) ga++; if (r.meu === "gol") gols++; nota += r.nota; if (r.amarelo) amarelos++; if (r.vermelho || amarelos >= 2) expulso = true; }
+  const [pc, pf] = placarDoJogo(p, resultados), gm = meuLado ? pc : pf, ga = meuLado ? pf : pc;
+  let gols = p.lances.filter((l) => l.meu === "gol").length, nota = p.base.nota, amarelos = 0, expulso = false;
+  for (const r of resultados) { if (r.meu === "gol") gols++; nota += r.nota; if (r.amarelo) amarelos++; if (r.vermelho || amarelos >= 2) expulso = true; }
   const rng = rngDe(s, "posjogo");
   if (!expulso && !rng.chance(0.5)) return;
   const ctx: Contexto = { ...p.ctx, min: 90, saldo: gm - ga, resultado: gm > ga ? "v" : gm === ga ? "e" : "d", gols, expulso, nota };
@@ -1071,7 +1072,7 @@ export function prepararPartida(pacote: PacoteDados, s: Save, plano: Plano, copa
   const naBase = base && !amador;
   const poolMeu = naBase ? timeDaBase(pacote, c.clubeId, j.idade) : selecaoJogo ? meuClube.elenco : elencoDisponivel(pacote, s);
   const poolAdv = naBase ? timeDaBase(pacote, adv.id, j.idade) : selecaoJogo ? adv.elenco : elencoDisponivel(pacote, s, adv.id);
-  const elMeu = elencoDe({ ...meuClube, elenco: poolMeu }, false), elAdv = elencoDe({ ...adv, elenco: poolAdv }, false);
+  const elMeu = elencoDe({ ...meuClube, elenco: poolMeu.filter((x) => x.nome !== j.nome) }, false, j.apelido), elAdv = elencoDe({ ...adv, elenco: poolAdv }, false, j.apelido);
   const tracos = tracosDoElenco([...poolMeu, ...poolAdv]);
   const ligacoes = [...ligacoesDoElenco(pacote, poolMeu), ...ligacoesDoElenco(pacote, poolAdv)];
   const estadio = cj?.neutro ? `estádio da ${NOME_FASE[cj.fase].toLowerCase()}` : base && !amador ? `CT do ${cp(jogo.casa).apelido}` : cp(jogo.casa).estadio;
@@ -1234,7 +1235,7 @@ function registrarNarracaoEFios(s: Save, partida: Partida, decisoes: ResultadoDe
  * Os gols do seu time como o jogo terminou: os do placar sorteado e os das suas decisões. Do seu jogador só contam os
  * gols e passes até ele sair (expulso ou substituído numa decisão), exatamente como na conta da semana.
  */
-export function golsDoJogo(p: Partida, decisoes: ResultadoDecisao[], eu: string): { meus: GolDoTime[]; foraMin: number } {
+export function golsDoJogo(p: Partida, decisoes: ResultadoDecisao[], eu: string): { meus: GolDoTime[]; adv: number[]; foraMin: number } {
   const meuLado = p.souCasa ? "casa" : "fora";
   let amarelos = 0, expulsoMin = 99, saiuMin = 99;
   const valem: ResultadoDecisao[] = [];
@@ -1258,7 +1259,13 @@ export function golsDoJogo(p: Partida, decisoes: ResultadoDecisao[], eu: string)
       ...(passe !== undefined ? { passe, ...(l.meu !== "assist" && l.posPasse ? { posPasse: l.posPasse } : {}) } : {}) });
   }
   for (const d of valem) if (d.golPro) meus.push({ min: d.min, ...(d.meu === "gol" ? { autor: eu } : {}), ...(d.meu === "assist" ? { passe: eu } : {}) });
-  return { meus: meus.sort((a, b) => a.min - b.min), foraMin };
+  const adv = [...p.lances.filter((l) => l.lado !== meuLado).map((l) => l.min), ...valem.filter((d) => d.golContra).map((d) => d.min)].sort((a, b) => a - b);
+  return { meus: meus.sort((a, b) => a.min - b.min), adv, foraMin };
+}
+/** O placar final [casa, fora] do jogo com as suas decisões: o mesmo da narração, da entrevista e da tabela. */
+export function placarDoJogo(p: Partida, decisoes: ResultadoDecisao[]): [number, number] {
+  const { meus, adv } = golsDoJogo(p, decisoes, "");
+  return p.souCasa ? [meus.length, adv.length] : [adv.length, meus.length];
 }
 /** A escalação do seu time no fim do jogo (titulares, trocas, gols e passes de cada um), a mesma da tela e da artilharia. */
 export function escalacaoDaPartida(pacote: PacoteDados, s: Save, p: Partida, decisoes: ResultadoDecisao[], nota = p.base.nota) {

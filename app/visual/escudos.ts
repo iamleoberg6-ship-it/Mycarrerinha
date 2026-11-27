@@ -73,6 +73,44 @@ export function corpoEscudo(chave: string, c1: string, c2r?: string, nome?: stri
   if (chave.startsWith("NAT-")) return bandeiraSvg(chave.slice(4), "").replace("<svg ", '<svg x="2" y="2" width="26" height="30" ');
   // Marselha: só um M azul, sem escudo
   if (chave === "FR-OM") return `<text x="13" y="23" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="26" fill="${c2r ?? "#2FAEE0"}" stroke="#0A0A0A" stroke-width=".8" paint-order="stroke">M</text>`;
+  // escudo de clube americano (forma comum a Galáxia, Náxvil e Orlândia)
+  const ESC_US = "M2 3 Q13 0.2 24 3 V15 Q24 24.6 13 29 Q2 24.6 2 15 Z";
+  const estrela = (x: number, y: number, r: number, cor: string) => {
+    const pts = Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.42 : r; return `${(x + rr * Math.cos(a)).toFixed(2)},${(y + rr * Math.sin(a)).toFixed(2)}`; });
+    return `<polygon points="${pts.join(" ")}" fill="${cor}"/>`;
+  };
+  // LA Galáxia: escudo azul-marinho cheio de estrelas brancas e uma faixa amarela embaixo, escrito GALÁXIA
+  if (chave === "US-LAG") {
+    const ceu = [[7, 6.5, 1.5], [13, 5, 2.1], [19, 6.8, 1.4], [9.6, 10.6, 1.1], [16.6, 10.8, 1.7], [6, 13.4, 1.2], [13, 14, 1.3], [20, 14, 1.1], [10, 24.4, .8], [16, 24.4, .8]] as const;
+    return `<defs><clipPath id="escLAG"><path d="${ESC_US}"/></clipPath></defs><path d="${ESC_US}" fill="#00245D"/>`
+      + `<g clip-path="url(#escLAG)">${ceu.map(([x, y, r]) => estrela(x, y, r, "#FFFFFF")).join("")}<rect x="0" y="17.4" width="26" height="4.6" fill="#F1B42F"/></g>`
+      + `<text x="13" y="20.95" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="3.3" letter-spacing=".15" fill="#00245D">GALÁXIA</text>`
+      + `<path d="${ESC_US}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
+  // Náxvil: escudo todo amarelo com um N azul-marinho
+  if (chave === "US-NSH") {
+    return `<path d="${ESC_US}" fill="#ECE83A"/><path d="M7.6 22 V7.4 H10.4 L16 16.2 V7.4 H18.6 V22 H15.8 L10.2 13.2 V22 Z" fill="#1F1646"/>`
+      + `<path d="${ESC_US}" fill="none" stroke="#1F1646" stroke-width="${borda * 0.8}"/>`;
+  }
+  // Orlândia: escudo roxo com a cabeça de um leão dourado, de frente, com a juba em raios
+  if (chave === "US-ORL") {
+    const ouro = "#FDE192", ouroE = "#E0B54E", roxo = "#633492", cx = 13, cy = 14.4;
+    const juba = Array.from({ length: 28 }, (_, i) => { const a = (i * Math.PI) / 14, r = i % 2 ? 6.4 : 8.6; return `${(cx + r * Math.sin(a)).toFixed(2)},${(cy - r * Math.cos(a) * 1.04).toFixed(2)}`; }).join(" ");
+    const cara = `<path d="M8.6 12.4 Q8.6 8.6 13 8.4 Q17.4 8.6 17.4 12.4 Q17.4 16.6 15.4 19 Q13 20.6 10.6 19 Q8.6 16.6 8.6 12.4 Z" fill="${ouro}"/>`;
+    const orelhas = `<circle cx="9.2" cy="9.4" r="1.4" fill="${ouro}"/><circle cx="16.8" cy="9.4" r="1.4" fill="${ouro}"/><circle cx="9.2" cy="9.4" r=".6" fill="${roxo}"/><circle cx="16.8" cy="9.4" r=".6" fill="${roxo}"/>`;
+    const rosto = `<path d="M10.2 12.6 L11.9 12.9 M15.8 12.6 L14.1 12.9" stroke="${roxo}" stroke-width=".8" stroke-linecap="round"/>`
+      + `<path d="M11.7 15.6 H14.3 L13 17 Z" fill="${roxo}"/><path d="M13 17 V18 M13 18 Q12 18.9 11.1 18.4 M13 18 Q14 18.9 14.9 18.4" fill="none" stroke="${roxo}" stroke-width=".55" stroke-linecap="round"/>`
+      + `<path d="M11.4 11 Q13 10.2 14.6 11" fill="none" stroke="${ouroE}" stroke-width=".5"/>`;
+    return `<path d="${ESC_US}" fill="${roxo}"/><polygon points="${juba}" fill="${ouroE}"/>${orelhas}${cara}${rosto}`
+      + `<path d="${ESC_US}" fill="none" stroke="${TINTA}" stroke-width="${borda * 0.8}"/>`;
+  }
+  // Charlote: bola preta com uma bola azul dentro, e na azul a silhueta de uma coroa branca
+  if (chave === "US-CLT") {
+    const coroa = "M7.6 18.6 L6.6 10.8 L9.8 13.6 L13 8.6 L16.2 13.6 L19.4 10.8 L18.4 18.6 Z M7.8 19.6 H18.2 V21.2 H7.8 Z";
+    return `<circle cx="13" cy="15" r="12.4" fill="#000000"/><circle cx="13" cy="15" r="9.4" fill="#1A85C8"/>`
+      + `<path d="${coroa}" fill="#FFFFFF"/><circle cx="6.6" cy="10.4" r=".9" fill="#FFFFFF"/><circle cx="13" cy="8.1" r=".9" fill="#FFFFFF"/><circle cx="19.4" cy="10.4" r=".9" fill="#FFFFFF"/>`
+      + `<circle cx="13" cy="15" r="12.4" fill="none" stroke="#3A3A3A" stroke-width="${borda * 0.5}"/>`;
+  }
   // Seattle: escudo azul com filete verde e a torre da cidade (a agulha com o disco no alto) em branco no meio
   if (chave === "US-SEA") {
     const escudo = "M2 3 Q13 0.2 24 3 V15 Q24 24.6 13 29 Q2 24.6 2 15 Z";
