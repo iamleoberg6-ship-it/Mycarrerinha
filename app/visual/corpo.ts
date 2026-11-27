@@ -7,8 +7,11 @@ import type { Visual, AreaTatuagem } from "../../src/visual";
 import { tatuagemVisivel } from "../../src/visual";
 import { corpoEscudo } from "./escudos";
 
-const TINTA = "#0A0A0A", TRACO = 2.8, TINTA_TAT = "#1F2A36";
+// traço sóbrio (o mesmo da cabeça): contorno fino e quente; tatuagem em tinta só, sem cor
+const TINTA = "#241C17", TRACO = 1.6, TINTA_TAT = "#22262C";
 type P = [number, number];
+/** cabeça um pouco menor que a do retrato: proporção de atleta, não de boneco */
+const ESCALA_CABECA = 0.84;
 let seq = 0;
 const novoId = (p: string) => `${p}${(seq++).toString(36)}`;
 
@@ -88,7 +91,7 @@ function desenhoTatuagem(id: string): string {
   const est = (x: number, y: number, r: number) => `<path d="${Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r; return `${i ? "L" : "M"}${f1(x + Math.cos(a) * rr)} ${f1(y + Math.sin(a) * rr)}`; }).join(" ")} Z" fill="${TINTA_TAT}" fill-opacity=".85"/>`;
   switch (id) {
     case "estrelas": return est(-4, -14, 6) + est(5, 0, 5) + est(-2, 13, 4);
-    case "rosa": return `<path d="M0 6 Q-2 18 2 24" ${t}/><path d="M1 14 Q-9 12 -10 18 Q-3 20 1 14 Z" fill="#3E6B4A" stroke="${TINTA_TAT}" stroke-width="1"/><circle cx="0" cy="-2" r="9" fill="#B3263A" stroke="${TINTA_TAT}" stroke-width="1.4"/><path d="M-4 -3 Q0 -9 4 -3 Q0 2 -3 -1 M-6 1 Q0 6 6 0" ${t} stroke-width="1.1"/>`;
+    case "rosa": return `<path d="M0 6 Q-2 18 2 24" ${t}/><path d="M1 14 Q-9 12 -10 18 Q-3 20 1 14 Z" fill="${TINTA_TAT}" fill-opacity=".7" stroke="${TINTA_TAT}" stroke-width="1"/><circle cx="0" cy="-2" r="9" fill="${TINTA_TAT}" fill-opacity=".7" stroke="${TINTA_TAT}" stroke-width="1.4"/><path d="M-4 -3 Q0 -9 4 -3 Q0 2 -3 -1 M-6 1 Q0 6 6 0" ${t} stroke-width="1.1"/>`;
     case "terco": return Array.from({ length: 7 }, (_, i) => `<circle cx="${f1(Math.sin(i * 0.9) * 3)}" cy="${-20 + i * 5}" r="1.6" fill="${TINTA_TAT}"/>`).join("") + `<path d="M0 14 V26 M-4 18 H4" ${t} stroke-width="2"/>`;
     case "tribal": return `<path d="M-8 -22 Q6 -12 -2 0 Q-8 8 4 22 Q-4 14 -8 6 Q-10 -6 -2 -10 Q-6 -16 -8 -22 Z" fill="${TINTA_TAT}" fill-opacity=".88"/><path d="M6 -18 Q12 -8 6 0 Q10 -10 4 -16 Z" fill="${TINTA_TAT}" fill-opacity=".88"/>`;
     case "escrita": return `<text x="0" y="0" transform="rotate(90)" text-anchor="middle" dominant-baseline="middle" font-family="'Brush Script MT','Segoe Script',cursive" font-style="italic" font-size="11" fill="${TINTA_TAT}">Família</text>`;
@@ -98,9 +101,9 @@ function desenhoTatuagem(id: string): string {
     case "bola": return `<circle r="9" ${t} stroke-width="1.6"/><path d="M0 -4 L4 -1 L2.5 4 L-2.5 4 L-4 -1 Z" fill="${TINTA_TAT}"/><path d="M0 -4 V-9 M4 -1 L8.5 -3 M2.5 4 L5 8 M-2.5 4 L-5 8 M-4 -1 L-8.5 -3" ${t} stroke-width="1"/>`;
     case "leao": return `<path d="${Array.from({ length: 16 }, (_, i) => { const a = (i * Math.PI) / 8, r = i % 2 ? 9 : 13; return `${i ? "L" : "M"}${f1(Math.cos(a) * r)} ${f1(Math.sin(a) * r)}`; }).join(" ")} Z" fill="${TINTA_TAT}" fill-opacity=".8"/><circle r="7" fill="#C98C63" stroke="${TINTA_TAT}" stroke-width="1.2"/><circle cx="-2.6" cy="-1.5" r="1" fill="${TINTA_TAT}"/><circle cx="2.6" cy="-1.5" r="1" fill="${TINTA_TAT}"/><path d="M-2 2 L0 4 L2 2 M0 4 V5.5" ${t} stroke-width="1.1"/>`;
     case "cruz": return `<path d="M0 -15 V15 M-7 -6 H7" ${t} stroke-width="2.6"/><path d="M-9 -12 L-12 -15 M9 -12 L12 -15 M-11 0 L-15 0 M11 0 L15 0" ${t} stroke-width="1"/>`;
-    case "mae": return `<text x="0" y="-4" transform="rotate(90)" text-anchor="middle" dominant-baseline="middle" font-family="'Brush Script MT','Segoe Script',cursive" font-style="italic" font-size="12" fill="${TINTA_TAT}">Mãe</text><path d="M0 16 C-6 11 -5 7 -2.4 7 C-1 7 0 8.4 0 9.4 C0 8.4 1 7 2.4 7 C5 7 6 11 0 16 Z" fill="#B3263A" stroke="${TINTA_TAT}" stroke-width="1"/>`;
+    case "mae": return `<text x="0" y="-4" transform="rotate(90)" text-anchor="middle" dominant-baseline="middle" font-family="'Brush Script MT','Segoe Script',cursive" font-style="italic" font-size="12" fill="${TINTA_TAT}">Mãe</text><path d="M0 16 C-6 11 -5 7 -2.4 7 C-1 7 0 8.4 0 9.4 C0 8.4 1 7 2.4 7 C5 7 6 11 0 16 Z" fill="${TINTA_TAT}" fill-opacity=".7" stroke="${TINTA_TAT}" stroke-width="1"/>`;
     case "mandala": return `<circle r="11" ${t} stroke-width="1.3"/><circle r="6.5" ${t} stroke-width="1.2"/><circle r="2" fill="${TINTA_TAT}"/>${Array.from({ length: 12 }, (_, i) => { const a = (i * Math.PI) / 6; return `<circle cx="${f1(Math.cos(a) * 8.8)}" cy="${f1(Math.sin(a) * 8.8)}" r="1" fill="${TINTA_TAT}"/><path d="M${f1(Math.cos(a) * 11)} ${f1(Math.sin(a) * 11)} L${f1(Math.cos(a) * 14)} ${f1(Math.sin(a) * 14)}" ${t} stroke-width="1"/>`; }).join("")}`;
-    case "relogio": return `<circle cy="-8" r="9" fill="#FFFFFF" fill-opacity=".15" stroke="${TINTA_TAT}" stroke-width="1.5"/><path d="M0 -8 V-14 M0 -8 L4 -6" ${t} stroke-width="1.3"/><path d="M0 4 Q-2 14 1 22" ${t}/><circle cy="6" r="5" fill="#B3263A" stroke="${TINTA_TAT}" stroke-width="1.1"/>`;
+    case "relogio": return `<circle cy="-8" r="9" fill="#FFFFFF" fill-opacity=".15" stroke="${TINTA_TAT}" stroke-width="1.5"/><path d="M0 -8 V-14 M0 -8 L4 -6" ${t} stroke-width="1.3"/><path d="M0 4 Q-2 14 1 22" ${t}/><circle cy="6" r="5" fill="${TINTA_TAT}" fill-opacity=".7" stroke="${TINTA_TAT}" stroke-width="1.1"/>`;
     case "lua": return `<path d="M2 -13 A13 13 0 0 0 2 13 A10 13 0 0 1 2 -13 Z" fill="${TINTA_TAT}" fill-opacity=".85"/><circle cx="10" cy="-8" r="1.4" fill="${TINTA_TAT}"/><circle cx="13" cy="2" r="1.2" fill="${TINTA_TAT}"/><circle cx="9" cy="11" r="1.4" fill="${TINTA_TAT}"/>`;
     case "coracao": return `<path d="M0 6 C-12 -2 -8 -12 0 -6 C8 -12 12 -2 0 6 Z" fill="${TINTA_TAT}" fill-opacity=".85"/>`;
     case "ancora": return `<circle cx="0" cy="-10" r="3" ${t}/><path d="M0 -7 V13 M-7 4 Q-7 14 0 13 Q7 14 7 4 M-6 -2 H6" ${t} stroke-width="2"/>`;
@@ -284,7 +287,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   // blusão de patrocinador: fora de campo vira o moletom, nas cores da marca, com o símbolo no peito
   const blusao = o.traje === "casual" ? o.aparencia?.blusaoPatro ?? null : null;
   const ap = o.aparencia ?? {}, v = blusao ? { ...o.visual, casual: "moletom" as const } : o.visual, g = geometria(v, o.alturaCm ?? 178);
-  const pele = PELES[ap.pele ?? 3], sombraPele = mistura(pele, "#2A1206", 0.28);
+  const pele = PELES[ap.pele ?? 3], sombraPele = mistura(pele, "#2A1206", 0.2);
   const kit = o.kit ?? { cor1: "#C8102E", cor2: "#FFFFFF", padrao: "lisa", numero: "10" };
   const jogo = o.traje === "jogo";
   const largo = jogo ? v.caimento === "largo" : v.casual === "moletom";
@@ -353,7 +356,7 @@ export function svgCorpo(o: OpcoesCorpo): string {
   // capuz do moletom: deitado atrás do pescoço (o pescoço passa na frente; só as laterais aparecem)
   if (!jogo && v.casual === "moletom") partes.push(`<path d="M108 240 C102 216 124 202 150 202 C176 202 198 216 192 240 Z" fill="${camisaCor2}" stroke="${TINTA}" stroke-width="2.4" stroke-linejoin="round"/><path d="M118 232 C118 218 134 210 150 210 C166 210 182 218 182 232" fill="none" stroke="${TINTA}" stroke-width="1.2" opacity=".45"/>`);
   // 3. cabeça (com pescoço e tatuagem do pescoço)
-  partes.push(svgFoto({ aparencia: { ...(ap as Aparencia) }, soCabeca: true, fora: !jogo, pescoco: vis("pescoco") ? tatuagemPescoco(tat.pescoco) : "" }).replace("<svg ", '<svg x="0" y="0" width="300" height="360" '));
+  partes.push(`<g transform="translate(150 240) scale(${ESCALA_CABECA}) translate(-150 -240)">${svgFoto({ aparencia: { ...(ap as Aparencia) }, soCabeca: true, fora: !jogo, pescoco: vis("pescoco") ? tatuagemPescoco(tat.pescoco) : "" }).replace("<svg ", '<svg x="0" y="0" width="300" height="360" ')}</g>`);
 
   // 4. braços, tatuagens dos antebraços e mãos
   const regata = !jogo && v.casual === "regata";

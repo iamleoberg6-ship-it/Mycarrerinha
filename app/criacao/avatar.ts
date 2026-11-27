@@ -140,8 +140,9 @@ const f1 = (n: number) => n.toFixed(1);
 // cada formato de rosto muda só o contorno, e cabelo, barba e orelhas são calculados a partir dele.
 // ============================================================================================
 
-const TINTA = "#0A0A0A";
-const TRACO = 2.8;
+// traço sóbrio: contorno fino e quente no lugar do preto grosso de quadrinho
+const TINTA = "#241C17";
+const TRACO = 1.6;
 const LARG = 300, ALT = 360;
 
 function mistura(a: string, b: string, t: number): string {
@@ -271,7 +272,8 @@ function fios(f: Forma, s: string): string {
 }
 function cabeloFrente(c: Cabelo, f: Forma, cor: string, pele: string): string {
   const s = escurecer(cor, 0.68), T = f.T, w = f.w122, cheia = calota(f);
-  const brilho = luminancia(cor) < 0.3 ? mistura(cor, "#FFFFFF", 0.18) : mistura(cor, "#FFFFFF", 0.35);
+  // reflexo discreto (o brilho forte era de desenho animado)
+  const brilho = luminancia(cor) < 0.3 ? mistura(cor, "#FFFFFF", 0.08) : mistura(cor, "#FFFFFF", 0.16);
   const reflexo = `<path d="M${150 - 0.5 * w} ${T + 4} Q${150 - 0.2 * w} ${T - 6} ${150 + 0.1 * w} ${T - 5}" stroke="${brilho}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
   switch (c) {
     case "entradas": { const d = calota(f, { volume: 3, testa: T + 12 }); return contorno(d, cor) + recorte(d, fios(f, s) + reflexo) + `<path d="M${150 - 0.42 * w} ${T + 16} Q${150 - 0.3 * w} ${T + 4} ${150 - 0.18 * w} ${T + 10} M${150 + 0.42 * w} ${T + 16} Q${150 + 0.3 * w} ${T + 4} ${150 + 0.18 * w} ${T + 10}" stroke="${pele}" stroke-width="7" fill="none" stroke-linecap="round"/>`; }
@@ -418,10 +420,10 @@ function olho(x: number, espelho: boolean, f: Olho, cor: string, pele: string, s
     : `<path d="M-9 -8.4 Q0 -12.5 9 -8.4" stroke="${TINTA}" stroke-width="1.1" fill="none" opacity="0.55"/>`;
   return `<g transform="translate(${x} 141)${espelho ? " scale(-1 1)" : ""}">
     <clipPath id="${id}"><path d="${FORMA_OLHO[f]}"/></clipPath>
-    <path d="${FORMA_OLHO[f]}" fill="#F4EFE6"/>
-    <g clip-path="url(#${id})"><circle cx="0.8" cy="0.2" r="5.2" fill="${cor}"/><circle cx="0.8" cy="0.2" r="2.4" fill="#000"/><circle cx="2.4" cy="-1.6" r="1.3" fill="#fff"/>
+    <path d="${FORMA_OLHO[f]}" fill="#E6DFD4"/>
+    <g clip-path="url(#${id})"><circle cx="0.8" cy="0.2" r="5.2" fill="${cor}"/><circle cx="0.8" cy="0.2" r="2.4" fill="#000"/><circle cx="2.2" cy="-1.4" r=".8" fill="#fff" opacity=".55"/>
       <path d="${PALPEBRA[f]}" stroke="${pele}" stroke-width="2" fill="none" opacity="0.4"/></g>
-    <path d="${PALPEBRA[f]}" stroke="${TINTA}" stroke-width="${f === "semdobra" ? 3.2 : 2.6}" fill="none" stroke-linecap="round"/>
+    <path d="${PALPEBRA[f]}" stroke="${TINTA}" stroke-width="${f === "semdobra" ? 2.4 : 1.8}" fill="none" stroke-linecap="round"/>
     ${vinco}</g>`;
 }
 
@@ -431,7 +433,7 @@ function sobrancelhas(f: Sobrancelha, esp: number, cor: string, pele: string): s
     suave: "M113 129 Q127 124 141 126.5", corte: "M113 131 Q127 120 141 125.5",
   };
   const larg = 1.6 * esp + 1.5;
-  const uma = (t: Sobrancelha) => `<path d="${d[t]}" stroke="${TINTA}" stroke-width="${larg + 2}" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="${d[t]}" stroke="${cor}" stroke-width="${larg}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  const uma = (t: Sobrancelha) => `<path d="${d[t]}" stroke="${TINTA}" stroke-width="${larg + 0.5}" stroke-opacity=".6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="${d[t]}" stroke="${cor}" stroke-width="${larg}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
   // corte: dois riscos raspados que atravessam a sobrancelha inteira. A máscara abre um vão de verdade: some o pelo e o
   // contorno, e a pele aparece no meio.
   if (f === "corte") {
@@ -444,7 +446,7 @@ function sobrancelhas(f: Sobrancelha, esp: number, cor: string, pele: string): s
 }
 
 function nariz(n: Nariz, luz: string): string {
-  const l = (d: string, w = 2.4) => `<path d="${d}" stroke="${TINTA}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  const l = (d: string, w = 2.4) => `<path d="${d}" stroke="${TINTA}" stroke-width="${f1(w * 0.7)}" stroke-opacity=".55" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
   const narinas = (x1: number, x2: number, y: number) => `<g fill="${TINTA}" opacity="0.75"><ellipse cx="${x1}" cy="${y}" rx="2.3" ry="1.3"/><ellipse cx="${x2}" cy="${y}" rx="2.3" ry="1.3"/></g>`;
   const ponta = (x: number, y: number) => `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="2.2" fill="${luz}"/>`;
   switch (n) {
@@ -785,19 +787,19 @@ export interface OpcoesFoto {
 }
 
 /** Fundos do avatar (acabamento aprovado: gradiente em dois tons, como o das mulheres). */
-const FUNDO_AVATAR: [string, string][] = [["#2C3E50", "#4CA1AF"], ["#3B2667", "#BC78EC"], ["#134E5E", "#71B280"], ["#4B1D3F", "#D05353"]];
+const FUNDO_AVATAR: [string, string][] = [["#1E242C", "#3A4552"], ["#22252B", "#41464F"], ["#1C2420", "#38463F"], ["#26201E", "#4A403B"]];
 export function svgFoto(o: OpcoesFoto): string {
   const a = { ...APARENCIA_PADRAO, ...(o.aparencia ?? {}) };
   const silhueta = !o.aparencia;
   const f = FORMAS[a.rosto];
   const rostoD = contornoRosto(f);
   const pele = silhueta ? "#1E2E28" : PELES[a.pele];
-  const sombraPele = silhueta ? "#18261F" : mistura(pele, "#2A1206", 0.28);
-  const luzPele = silhueta ? pele : mistura(pele, "#FFF3E0", 0.22);
+  const sombraPele = silhueta ? "#18261F" : mistura(pele, "#2A1206", 0.2);
+  const luzPele = silhueta ? pele : mistura(pele, "#FFF3E0", 0.1);
   const cor = silhueta ? "#14211C" : CORES_CABELO[a.corCabelo];
   const corSobr = silhueta ? cor : (a.corCabelo >= 7 ? CORES_CABELO[2] : cor);
   const hach = novoId("hc"), clipRosto = novoId("cr");
-  const defs = `<defs><pattern id="${hach}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><line x1="0" y1="0" x2="0" y2="6" stroke="${TINTA}" stroke-width="1"/></pattern>
+  const defs = `<defs><pattern id="${hach}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><line x1="0" y1="0" x2="0" y2="6" stroke="${TINTA}" stroke-width="1" stroke-opacity="0"/></pattern>
     <clipPath id="${clipRosto}"><path d="${rostoD}"/></clipPath></defs>`;
   const wO = largura(f, 146);
   const orelha = (lado: -1 | 1) => {
@@ -836,8 +838,8 @@ export function svgFoto(o: OpcoesFoto): string {
     ${a.rugas ? rugas(pele) : ""}
     ${detalhes}`;
   const fundoId = novoId("fu"), skinId = novoId("sk");
-  const [fa, fb] = o.fundo ?? FUNDO_AVATAR[a.pele % FUNDO_AVATAR.length];
-  const cenario = o.soCabeca || o.semFundo ? "" : o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : silhueta ? `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>` : `<rect width="${LARG}" height="${ALT}" fill="url(#${fundoId})"/><circle cx="240" cy="70" r="46" fill="#fff" opacity=".18"/><circle cx="56" cy="300" r="70" fill="#fff" opacity=".08"/>`;
+  const [fa, fb] = (o.fundo ?? FUNDO_AVATAR[a.pele % FUNDO_AVATAR.length]).map((c, i) => (o.fundo ? mistura(c, "#0E1115", i ? 0.5 : 0.7) : c));
+  const cenario = o.soCabeca || o.semFundo ? "" : o.cenario ? `<g transform="scale(1.5 1.6364)">${o.cenario}</g>` : silhueta ? `<rect width="${LARG}" height="${ALT}" fill="#13261F"/>` : `<rect width="${LARG}" height="${ALT}" fill="url(#${fundoId})"/><rect width="${LARG}" height="${ALT}" fill="#000" opacity=".18"/>`;
   const acabamento = silhueta ? "" : `<linearGradient id="${fundoId}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${fa}"/><stop offset="1" stop-color="${fb}"/></linearGradient><radialGradient id="${skinId}" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="${luzPele}"/><stop offset=".55" stop-color="${pele}"/><stop offset="1" stop-color="${sombraPele}"/></radialGradient>`;
   return `<svg viewBox="0 0 ${LARG} ${ALT}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foto de perfil do jogador">
   ${defs}${acabamento ? `<defs>${acabamento}</defs>` : ""}${cenario}
@@ -852,7 +854,7 @@ export function svgFoto(o: OpcoesFoto): string {
   <g clip-path="url(#${clipRosto})">
     <path d="${sombraRosto(f)}" fill="${sombraPele}"/>
     <path d="${sombraRosto(f)}" fill="url(#${hach})" opacity="0.35"/>
-    ${silhueta ? "" : `<path d="M${150 - 0.7 * f.w100} ${f.T + 30} Q${150 - 0.5 * f.w100} ${f.T + 18} ${150 - 0.15 * f.w100} ${f.T + 18} Q${150 - 0.45 * f.w100} ${f.T + 26} ${150 - 0.55 * f.w100} ${f.T + 46} Z" fill="${luzPele}"/>`}
+    ${silhueta ? "" : `<path d="M${150 - 0.7 * f.w100} ${f.T + 30} Q${150 - 0.5 * f.w100} ${f.T + 18} ${150 - 0.15 * f.w100} ${f.T + 18} Q${150 - 0.45 * f.w100} ${f.T + 26} ${150 - 0.55 * f.w100} ${f.T + 46} Z" fill="${luzPele}" opacity=".45"/>`}
     <path d="M${150 - f.w176 + 2} 176 Q150 ${f.Q + 6} ${150 + f.w176 - 2} 176 L${150 + f.w176} ${f.Q + 10} L${150 - f.w176} ${f.Q + 10} Z" fill="${sombraPele}" opacity="0.25"/>
   </g>
   ${silhueta ? "" : barba(a.barba, f, rostoD, a.boca, a.nariz, cor, pele)}
