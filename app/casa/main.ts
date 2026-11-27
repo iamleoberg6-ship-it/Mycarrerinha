@@ -13,7 +13,10 @@ import { salarioLiquido, registrarMarco, type Save } from "../../src/jogo";
 import type { SaveTecnico } from "../../src/tecnico/motor";
 import { salarioTecnico } from "../../src/tecnico/familia-t";
 import { CONQUISTAS, OURO, PRATA, coresDaBola, padraoCamisa, type Grupo } from "../../src/reliquias";
+import { instalarIcones } from "../visual/icones";
+import { aplicarTema } from "../visual/tema";
 import { svgComodo, svgFantasma, svgItem, svgRevestimento, telaParaChao } from "./iso";
+instalarIcones();
 
 const FASES = [
   { id: "base", nome: "Base", salario: 2000 },
@@ -83,6 +86,7 @@ const objSel = (): Objeto | undefined => st.e.objetos.find((o) => o.uid === ui.s
 
 // ------------------------------------------------------------------ render
 function renderConta() {
+  aplicarTema(st.e.clube?.cores);
   const m = imovelAtual(st.e), dono = st.e.proprios.includes(m.id);
   const s = $("saldo"); s.textContent = dinheiro(st.e.saldo); s.classList.toggle("neg", st.e.saldo < 0);
   $("linhas").innerHTML = `<span>Salário <b>${dinheiro(salario())}</b>/mês${carreira || tecnico ? " líquido" : ""}</span><span>${m.aluguel === 0 ? "Sem aluguel" : dono ? "Imóvel próprio" : `Aluguel <b>${dinheiro(m.aluguel)}</b>`}</span><span>Patrimônio <b>${dinheiro(patrimonio(st.e))}</b></span>${carreira || tecnico ? "" : `<span>Mês <b>${st.e.mes + 1}</b></span>`}${(() => { const f = estruturaFamiliar(st.e); return `<span>Quartos com cama <b>${f.quartos}</b> · crianças ${f.filhos ? "✓" : "✗"} · hóspedes ${f.hospedes ? "✓" : "✗"}</span>`; })()}`;

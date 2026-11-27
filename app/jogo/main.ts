@@ -110,6 +110,9 @@ import { valorBrl, valorEur, numBrl, numEur, simboloAtual, definirMoeda, moedaSu
 import { botaoAjuda, tour, tourFeito, abrirAjuda } from "../visual/guia";
 import { TOUR_JOGADOR, AJUDA_JOGADOR, AJUDA_INICIO } from "../visual/guia-textos";
 import { criarAgendador, chaveNuvem, listarNuvem, lerDaNuvem, apagarDaNuvem, nuvemDisponivel } from "../nuvem";
+import { instalarIcones } from "../visual/icones";
+import { aplicarTema } from "../visual/tema";
+instalarIcones();
 
 const pacote = pacoteJson as unknown as PacoteDados;
 void liga;
@@ -255,6 +258,8 @@ const ICO_COMP: Record<string, string> = { parceiro: "🤝", invejoso: "😒", m
 const humor = (rel: number) => (rel >= 70 ? "😄" : rel >= 45 ? "🙂" : rel >= 30 ? "😐" : "😠");
 const barra = (nome: string, v: number, max = 100, cor?: string, txt?: string) =>
   `<div class="barra"><span>${nome}</span><b>${txt ?? Math.round(v)}</b><i style="--v:${Math.max(0, Math.min(100, (100 * v) / max))}%${cor ? `;--c:${cor}` : ""}"></i></div>`;
+/** Cor do atributo como nos jogos de gestão: verde alto, amarelo médio, laranja baixo. */
+const corAt = (v: number) => (v >= 80 ? "#5FD18B" : v >= 70 ? "#B5DB5E" : v >= 60 ? "#F2C14E" : v >= 50 ? "#F2954E" : "#F06A5A");
 const estrelas = (n: number) => `<span class="estrelas" aria-label="${n} de 5">${"★".repeat(n)}${'<span style="opacity:.25">' + "★".repeat(5 - n) + "</span>"}</span>`;
 const sinal = (v: number, casas = 0) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(casas)}`;
 
@@ -262,6 +267,7 @@ const sinal = (v: number, casas = 0) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Ma
 function render() {
   definirMoeda(save?.moeda);
   const app = $("app");
+  aplicarTema(save ? (UNIFORME_CLUBE[save.carreira.clubeId]?.cores ?? infoClube(pacote, save.carreira.clubeId)?.cores) : undefined);
   if (!save) {
     const dados = ler<DadosCriacao>(CHAVE_JOGADOR);
     app.innerHTML = dados?.resultado ? telaOfertas(dados) : telaInicio();
@@ -358,10 +364,11 @@ function telaSemana(s: Save): string {
   if (aba !== "semana") return `${cabecalho}<section class="painel tela-aba">${aba === "carreira" ? abaJogador(s) : aba === "pessoas" ? abaPessoas(s) : aba === "mercado" ? abaMercado(s) : aba === "vida" ? abaVida(s) : abaImprensa(s)}</section>${botaoJogar}${nav}`;
   return `${cabecalho}
   <section class="painel card-jogador" data-acao="perfil" role="button" tabindex="0" aria-label="Abrir o perfil do jogador">
+    <span class="num-fundo" aria-hidden="true">${esc(String(j.numero ?? ""))}</span>
     <div class="jogador"><div class="foto">${foto(s)}</div>
       <div><div class="nome">${esc(j.apelido)}</div><div class="det">${NOME_POS[j.posicao]} · ${j.idade} anos · ${linkClube(c.clubeId)}${c.fase ? ` (${NOME_FASE[c.fase].toLowerCase().replace("eua", "EUA")})` : c.formacao ? ` <span class="nowrap">(base)</span>` : ""}</div><div class="det">${esc(j.perfilNome)}</div><div class="det ver-perfil">Ver perfil completo ›</div></div>
       <div class="ovr"><strong>${Math.round(ovr(j))}</strong><span>OVR</span></div></div>
-    <div class="barras">${barra("Moral", c.moral, 100, "#74D394")}${barra(`Cansaço <small class="dica-barra">menos é melhor</small>`, c.cansaco, 100, c.cansaco > 60 ? "#EC7D69" : "#E3B341")}${barra("Forma", forma(c), 10, "#6FB7E0", forma(c).toFixed(1))}${barra("Técnico", c.relTecnico, 100, "#B9A3E8")}</div>
+    <div class="barras">${barra("Moral", c.moral, 100, "var(--ouro)")}${barra(`Cansaço <small class="dica-barra">menos é melhor</small>`, c.cansaco, 100, c.cansaco > 60 ? "var(--neg)" : "var(--giz)")}${barra("Forma", forma(c), 10, "var(--giz)", forma(c).toFixed(1))}${barra("Técnico", c.relTecnico, 100, "var(--giz)")}</div>
     <div class="linha-info"><span>Saldo <b>${dinheiro(s.casa.saldo)}</b></span><span>Salário <b>${dinheiro(c.salario)}</b>/mês</span><span>Fama <b>${Math.round(c.fama)}</b></span><span><b>${compacto(c.seguidores)}</b> seguidores</span>${c.lesao ? `<span style="color:var(--neg)">Lesionado: <b>${c.lesao}</b> sem.</span>` : ""}</div>
   </section>
 
@@ -624,7 +631,7 @@ function perfilCompHtml(s: Save, identId: string, p: PerfilCompeticao, liga: boo
   const campeoes = p.campeoes.length ? `${sub("Campeões, ano a ano")}<table><tbody>${p.campeoes.slice(0, 12).map((x) => `<tr class="${x.clube === s.carreira.clubeId ? "meu" : ""}"><td>${ano(x.t)}</td><td><b>${linkClube(x.clube)}</b>${x.vice ? ` <small class="sub">vice: ${linkClube(x.vice)}</small>` : ""}</td><td class="n"><small class="sub">${x.pts !== undefined ? `${x.pts} pts` : esc(x.placar ?? "")}</small></td></tr>`).join("")}</tbody></table>${p.campeoes.length > 12 ? `<p class="sub">…e mais ${p.campeoes.length - 12} edições.</p>` : ""}` : "";
   const recordes = p.recordes.length ? `${sub("Recordes")}${p.recordes.map((r) => `<div style="padding:7px 0;border-bottom:1px solid var(--linha)"><small class="sub" style="display:block">${esc(r.titulo)}${r.t !== undefined ? ` · ${ano(r.t)}` : ""}</small><b${r.eu ? ' style="color:var(--ouro)"' : ""}>${esc(r.texto)}</b></div>`).join("")}` : "";
   const artAno = p.artilheirosAno.length ? `${sub(liga ? "Artilheiro de cada temporada" : "Artilheiro de cada edição")}${tabela(p.artilheirosAno.slice(0, 10), "gols", true, true)}` : "";
-  return `<div class="comp-wrap" style="${estiloIdent(identidade(identId))}">${cab}</div>
+  return `<div class="ed"><div class="comp-wrap" style="${estiloIdent(identidade(identId))}">${cab}</div>
     ${vazio && !p.artilheiros.length ? `<p class="sub" style="margin-top:10px">Esta competição ainda não tem história no jogo: no fim da temporada entram o campeão, os artilheiros e os recordes. Volte depois!</p>` : ""}
     ${maiores}${campeoes}
     ${p.artilheiros.length ? `${sub("Maiores artilheiros", liga && !vazio ? "todos os tempos, com a temporada atual" : "todos os tempos")}${tabela(p.artilheiros, "gols")}` : ""}
@@ -633,7 +640,7 @@ function perfilCompHtml(s: Save, identId: string, p: PerfilCompeticao, liga: boo
     ${p.golsTemp.length ? `${sub(liga ? "Mais gols numa temporada" : "Mais gols numa edição")}${tabela(p.golsTemp, "gols", true)}` : ""}
     ${p.assistTemp.length ? `${sub(liga ? "Mais assistências numa temporada" : "Mais assistências numa edição")}${tabela(p.assistTemp, "assist.", true)}` : ""}
     ${artAno}${recordes}
-    <p class="sub" style="margin-top:12px">${liga ? "A história conta desde o começo do jogo. O público é estimado pelo estádio e pelo tamanho do jogo." : "As copas guardam o placar de cada jogo; os gols de cada time são dos jogadores dele (os seus, com os números de verdade). O público é estimado pelo estádio e pela fase."}</p>`;
+    <p class="sub" style="margin-top:12px">${liga ? "A história conta desde o começo do jogo. O público é estimado pelo estádio e pelo tamanho do jogo." : "As copas guardam o placar de cada jogo; os gols de cada time são dos jogadores dele (os seus, com os números de verdade). O público é estimado pelo estádio e pela fase."}</p></div>`;
 }
 
 /** Os últimos 5 resultados em bolinhas (verde, cinza, vermelho). */
@@ -1751,7 +1758,7 @@ function abaJogador(s: Save): string {
   if (subJogador === "negocios") return sub + msg + blocoNegocios(s);
   if (subJogador === "imprensa") return sub + abaImprensa(s);
   return `${sub}${msg}${blocoDesenvolvimento(s)}${blocoPosicoes(s)}<p class="rotulo" style="margin-top:16px">Atributos · olheiros veem potencial ${j.faixaPot[0]}–${j.faixaPot[1]}</p>
-    ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, "#E3B341", j.at[a].toFixed(0))).join("")}</div>`).join("")}
+    ${grupos.map(([n, g]) => `<p class="sub" style="margin:10px 0 6px;font-weight:600">${n}</p><div class="atrs">${ATRIBUTOS.filter((a) => GRUPO[a] === g).map((a) => barra(NOME_AT[a], j.at[a], 99, corAt(j.at[a]), `<span style="color:${corAt(j.at[a])}">${j.at[a].toFixed(0)}</span>`)).join("")}</div>`).join("")}
     ${blocoDetalhados(s)}
     <p class="rotulo" style="margin-top:16px">Temporada</p>
     <div class="kv" style="margin-top:6px"><span>Jogos no profissional</span><b>${st.jogos} (${st.titular} como titular)</b><span>Gols / assistências</span><b>${st.gols} / ${st.assist}</b><span>Nota média</span><b>${media}</b><span>Jogos na base</span><b>${st.base} (${st.baseGols} gols)</b><span>Contrato</span><b>${c.formacao ? "Base" : "Profissional"} · ${c.anosContrato} ${c.anosContrato === 1 ? "ano" : "anos"}</b><span>Salário líquido</span><b>${dinheiro(salarioLiquido(c))}/mês</b></div>

@@ -1,4 +1,6 @@
 // Modo técnico: a página. Mesmo mundo e mesmo visual do modo jogador; o save fica em outra chave.
+import { instalarIcones } from "../visual/icones";
+import { aplicarTema } from "../visual/tema";
 import pacoteJson from "../../data/pacote-brasil-serie-a-v0.3.json";
 import type { PacoteDados } from "../../src/liga";
 import { ordenar } from "../../src/liga";
@@ -127,6 +129,7 @@ import {
   FORMACOES, NOMES_FORMACAO, NOME_MENTALIDADE, NOME_NIVEL3, NOME_AT, NOME_AT_GOL, NOME_POS_T, FUNCOES, NOME_FUNCAO, NOME_FUNCAO_PL, EFEITO_FUNCAO,
   forcaDoTime, ladoDe, ladoDaVaga, rotuloPos, type Lado, melhorEscalacao, ovrDe, ovrNaVaga, formaDe, disponivel, rotuloEncaixe, valorAtleta, precoIngresso, exDe, idiomasDe, funcaoNaVaga, ovrPos, type Atleta, type PosT, type Funcao,
 } from "../../src/tecnico/modelo";
+instalarIcones();
 
 const pacote = pacoteJson as unknown as PacoteDados;
 const $ = (id: string) => document.getElementById(id)!;
@@ -160,6 +163,8 @@ let ligaEscolhida = "BRA1";
 /** Técnico demitido procurando clube: leva a reputação e o histórico. */
 let anterior: SaveTecnico | null = null;
 const nuvem = criarAgendador(() => save ? { chave: chaveNuvem("tec", save.semente), modo: "tecnico", json: JSON.stringify(save), rotulo: `${save.tecnico.nome} · ${infoClube(pacote, save.clubeId)?.nome ?? ""} · ${ANO_INICIAL_T + save.temporada}` } : null);
+/** OVR com a cor dos jogos de gestão: verde alto, amarelo médio, laranja baixo. */
+const corOvr = (v: number) => (v >= 80 ? "#5FD18B" : v >= 72 ? "#B5DB5E" : v >= 64 ? "#F2C14E" : v >= 56 ? "#F2954E" : "#F06A5A");
 const salvar = () => { if (save) gravar(CHAVE_TECNICO, save); nuvem.agendar(); };
 
 /** Moeda do país da liga (como nos eventos do modo jogador). */
@@ -331,7 +336,7 @@ function abaElenco(s: SaveTecnico): string {
   return `${subs}${filtros}<p class="sub" style="margin-bottom:6px">Folha: <b style="color:var(--giz)">${curtoBrl(folhaDe(s))}</b>/mês · teto ${curtoBrl(s.clube.tetoFolha)}${(() => { const e = estrangeirosT(s); return e.lim ? ` · estrangeiros: <b style="color:var(--giz)">${e.lim.inscritos ? `${e.noElenco}/${e.lim.inscritos} no elenco` : `${e.noElenco} no elenco`}${e.lim.relacionados ? `, ${e.relacionados}/${e.lim.relacionados} relacionados` : ""}</b>` : ""; })()}</p><div class="lista">${lista.map((a) => {
     const tags = [tit.has(a.id) ? `<span class="pill bom">Titular</span>` : "", a.lesao > 0 ? `<span class="pill ruim">Lesão ${a.lesao} sem.</span>` : "", a.suspenso > 0 ? `<span class="pill aviso">Suspenso</span>` : "",
       a.querSair ? `<span class="pill ruim">Quer sair</span>` : "", a.contratoAte <= s.temporada ? `<span class="pill aviso">Contrato acaba</span>` : "", a.promessa !== undefined || (a.promessas ?? []).length ? `<span class="pill">Promessa</span>` : "", a.pedeConversa !== undefined && a.pedeConversa >= semanaAbs(s) - 2 ? `<span class="pill aviso">Quer conversar</span>` : "", a.base ? `<span class="pill">Base</span>` : "", (s.aVenda ?? []).includes(a.id) ? `<span class="pill aviso">À venda</span>` : "", (s.aEmprestimo ?? []).includes(a.id) ? `<span class="pill aviso">Para empréstimo</span>` : "", a.emprestadoDe ? `<span class="pill">Emprestado</span>` : ""].join("");
-    return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong>${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
+    return `<button class="lin" data-jog="${esc(a.id)}"><span class="num">${a.numero}</span><span class="nm"><b>${esc(a.nome)}</b><small>${rotuloPos(a)} · ${a.idade}a · moral ${barra(a.moral)} · físico ${barra(a.condicao)}${tags}</small></span><span class="ov"><strong style="color:${corOvr(ovrDe(a))}">${ovrDe(a)}</strong><span>${potTexto(s, a)}</span></span></button>`;
   }).join("")}</div>`;
 }
 // ------------------------------------------------------------------ categorias de base
@@ -1560,8 +1565,9 @@ function abrir(html: string) { $("tela").innerHTML = html; const d = $("dlg") as
 function fechar() { const d = $("dlg") as HTMLDialogElement; if (d.open) d.close(); }
 function render() {
   const app = $("app");
-  if (!save) { definirMoeda("BRL"); app.innerHTML = telaInicio(); return; }
+  if (!save) { definirMoeda("BRL"); aplicarTema(); app.innerHTML = telaInicio(); return; }
   const s = save;
+  aplicarTema(coresClube(s));
   moedaDaLiga(s.ligaId);
   if (s.demitido) {
     app.innerHTML = `${topo(s)}<section class="painel"><p class="rotulo">Fim de linha</p><h2>${esc(s.demitido)}</h2><p class="sub" style="margin-top:6px">Reputação ${s.tecnico.reputacao}. Você pode recomeçar num clube que aceite o seu nome.</p>
